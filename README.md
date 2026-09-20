@@ -2,6 +2,8 @@
 
 **Integrated Measurement, State Estimation, and Visualization Workbench**
 
+A **Notation Systems** workbench. Short product name: **Notation Systems Workbench**.
+
 > A terminal-first workbench that connects computational instruments to synchronized numerical, temporal, spectral, and 2D/3D representations of physical-system observations and estimated states.
 
 ## Overview
