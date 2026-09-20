@@ -52,6 +52,7 @@ The architecture document maps its components to these directories.
 │   └── cli.py                Headless analysis, service control, health probe, terminal access
 ├── godot/                    Godot project for the 2D/3D viewport, a client of the session
 ├── deploy/                   Deployment guides: native controller and container backend
+├── examples/                 Reference inputs for integrated instruments, such as `examples/plsr/`
 ├── scripts/                  Integration checks and the native deployment controller
 ├── tests/                    Python test suites; conformance tests go under `tests/conformance/`
 └── docs/
@@ -66,7 +67,7 @@ The architecture document maps its components to these directories.
 
 `recordings/`, `results/`, and the native deployment's `.ciw/` data directory hold local outputs and are ignored by git.
 
-Planned growth follows the same tree: `src/ciw/instruments.py` becomes the package `src/ciw/instruments/` when a second instrument lands; terminal panels go under `src/ciw/tui/`; protocol codecs for binary transport go under `src/ciw/protocol/`; reference instruments used by conformance tests go under `examples/`.
+Planned growth follows the same tree: `src/ciw/instruments.py` becomes the package `src/ciw/instruments/` when a second instrument lands; terminal panels go under `src/ciw/tui/`; protocol codecs for binary transport go under `src/ciw/protocol/`; reference instruments and their fixtures used by conformance tests go under `examples/`.
 
 ## Conformance tests
 
