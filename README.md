@@ -61,10 +61,12 @@ Instruments connect to the runtime through one contract that fixes the meaning o
 
 ## Status
 
-The first executable prototype is available: a Python/NumPy demo instrument, terminal analysis, a shared local WebSocket session, saved-workspace replay, and an optional Godot 2D/3D viewport. Follow the [quickstart](docs/quickstart.md) to run it from source. This is a synthetic-instrument prototype; existing instrument and PayloadOS adapters, the broader capabilities described above, and packaged releases remain future work. The architecture is being finalized.
+The first executable prototype is available: a Python/NumPy demonstration instrument, headless terminal analysis, a shared local session that terminal and viewport clients attach to, saved-workspace replay, and an optional Godot 2D/3D viewport. Follow the [quickstart](docs/quickstart.md) to run it from source. The prototype uses a synthetic instrument; adapters for existing instruments and persistence infrastructure, the broader capabilities described above, and packaged releases are future work. The architecture is being finalized and will be published under `docs/`.
 
 ## Documentation
 
+- Quickstart: [`docs/quickstart.md`](docs/quickstart.md)
 - Architecture: `docs/ARCHITECTURE.md` (forthcoming)
+- Protocol: [`docs/PROTOCOL.md`](docs/PROTOCOL.md)
 - Design decisions: [`docs/adr/`](docs/adr/README.md)
 - Development guide: [`docs/DEVELOPMENT.md`](docs/DEVELOPMENT.md)

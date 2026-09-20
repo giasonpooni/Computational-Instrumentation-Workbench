@@ -9,7 +9,7 @@ Development proceeds in two tracks that hand off through this repository.
 | Track | Owns | Delivers |
 |---|---|---|
 | Documentation | `README.md`, `docs/ARCHITECTURE.md`, `docs/adr/` | The contracts, data model, synchronization semantics, and quality budgets, each stated as a numbered requirement |
-| Prototype | The executable prototype, `docs/PROTOCOL.md`, test suites, integration checks | An implementation of the contracts, the wire-level protocol specification, and the evidence that the implementation conforms |
+| Prototype | `src/ciw/`, `godot/`, `scripts/`, `tests/`, `docs/PROTOCOL.md`, `docs/quickstart.md`, `docs/coordination.md`, continuous integration | An implementation of the contracts, the wire-level protocol specification, and the evidence that the implementation conforms |
 
 The hand-off rule is: the architecture defines contracts; the prototype implements them; tests and integration checks verify conformance against requirement identifiers; decisions raised by either track are recorded as ADRs.
 
@@ -36,32 +36,33 @@ Tests and integration checks cite the identifier they verify. The conformance ta
 
 ## Repository layout
 
-Code and documents land in the following places. The architecture document maps its components to these directories.
+The architecture document maps its components to these directories.
 
 ```
 .
 ├── README.md
-├── pyproject.toml            Python package metadata for `ciw`
-├── ciw/                      Runtime, instrument host, and terminal frontend (Python)
-│   ├── runtime/              Sessions, result envelope, synchronization state, provenance
-│   ├── host/                 Instrument lifecycle, transports (in-process, subprocess, remote), backpressure
-│   ├── protocol/             Message types and codecs implementing docs/PROTOCOL.md
-│   ├── instruments/          Built-in instruments and adapters
-│   ├── views/                Representation logic: numerical, temporal, spectral, in-terminal 2D
-│   ├── tui/                  Terminal frontend: widgets, layouts, keybindings, command line
-│   └── cli/                  Entry points, headless and scripted runs
-├── viewport/                 Godot project for the 2D/3D viewport, a client of the runtime
-├── examples/                 Reference instruments: scalar/time-series, state estimation, spatial
-├── tests/
-│   ├── unit/
-│   ├── integration/
-│   └── conformance/          Tests that verify requirement identifiers
+├── AGENTS.md                 Instructions for automated contributors
+├── pyproject.toml            Python package metadata; installs the `ciw` command
+├── src/ciw/                  Runtime service, instruments, and terminal client (Python)
+│   ├── instruments.py        Scientific records and computations of the first instrument
+│   ├── session.py            Authoritative session: selection, immutable results, workspaces
+│   ├── server.py             Loopback WebSocket transport for the session
+│   └── cli.py                Headless analysis and terminal access to a live session
+├── godot/                    Godot project for the 2D/3D viewport, a client of the session
+├── scripts/                  Integration checks, including the Godot bridge check
+├── tests/                    Python test suites; conformance tests go under `tests/conformance/`
 └── docs/
-    ├── ARCHITECTURE.md
-    ├── PROTOCOL.md
-    ├── DEVELOPMENT.md
-    └── adr/
+    ├── ARCHITECTURE.md       Architecture and normative requirements
+    ├── PROTOCOL.md           Wire-level protocol, owned by the prototype track
+    ├── quickstart.md         Running the prototype from source
+    ├── coordination.md       Build coordination and integration sequence
+    ├── DEVELOPMENT.md        This guide
+    └── adr/                  Architecture Decision Records
 ```
+
+`recordings/` and `results/` hold local outputs and are ignored by git.
+
+Planned growth follows the same tree: `src/ciw/instruments.py` becomes the package `src/ciw/instruments/` when a second instrument lands; terminal panels go under `src/ciw/tui/`; protocol codecs for binary transport go under `src/ciw/protocol/`; reference instruments used by conformance tests go under `examples/`.
 
 ## Conformance tests
 
@@ -78,7 +79,7 @@ Both tracks commit to `main`. Pull with rebase before pushing, keep documentatio
 3. [ADR-0002](adr/0002-foundational-runtime-positioning.md), for the positioning as a foundational runtime, the contract-first rule, and the reusability target.
 4. [ADR-0003](adr/0003-reference-implementation-arrangement.md), for the reference implementation arrangement and its alternatives.
 5. `docs/ARCHITECTURE.md`, for the component architecture, data model, instrument contract, synchronization model, conformance table, and roadmap.
-6. `docs/PROTOCOL.md`, once published, for the wire-level protocol.
+6. [`docs/PROTOCOL.md`](PROTOCOL.md), for the wire-level protocol, and [`docs/quickstart.md`](quickstart.md) to run the prototype.
 7. The [ADR index](adr/README.md), for later decisions.
 
 ## Recording decisions
