@@ -152,6 +152,33 @@ Source and runtime bindings are supplied explicitly and are not executed from
 saved workspace declarations. Refer to [validation and limits](ADAPTERS.md#validation-and-current-limits)
 before extending the snapshot fixture to a new measurement arrangement.
 
+## Covariance provenance and JSPT operations
+
+The [covariance guide](COVARIANCE.md) gives exact setup, schema, commands and
+limits for the RCI v2 → FSRT v2 → JSPT path. Exact source revisions are retained
+in [`adapter-runtimes.json`](../src/ciw/adapter-runtimes.json), including historical
+pins needed by older saved investigations. Numerical calculations stay in the
+domain repositories; the workbench validates and retains their artifacts.
+
+```sh
+python -m ciw investigation create --inputs examples/adapters/two-reservoir-covariance.json --rci-repo ../rci --fsrt-repo ../fsrt --output-dir results/covariance
+python -m ciw covariance results/covariance/workspace.json --jspt-repo ../jspt --parameters examples/adapters/tank-covariance-map.json --output-dir results/covariance-map
+python -m ciw covariance-replay results/covariance-map/workspace.json --jspt-repo ../jspt --output-dir results/covariance-replay
+python -m ciw investigation inspect results/covariance-map/workspace.json --evaluated-at 2030-01-01T00:00:00Z
+```
+
+| Contract | Delivered specification |
+| --- | --- |
+| RCI operation | `rci.calibrate.v2`; raw bytes preserved; native scale/zero covariance with component provenance, explicit exclusions, source dependencies and immutable acquisition applicability |
+| FSRT operation | `fsrt.tank-reconstruct.v2`; observation, prior, total, innovation, posterior and reconciled covariance artifacts; explicit model independence |
+| JSPT operation | `jspt.covariance-propagate.v1`; full covariance pushed through a caller-declared Jacobian using existing JSPT kernels |
+| Artifact | `covariance-artifact.v1`; content identity, ordered quantities/units, frame, reference values, full matrix, method, basis, source links and assumptions |
+| Views | Terminal full matrices and structured JSON; calibration serving metadata on session/result reads; no uncertainty viewport in this increment |
+| Failure | Invalid basis, unsupported dependence, invalid matrices or runtime drift refuses computation; refusal has an execution identity and no result |
+| Replay | Saved source results and covariance dependencies remain intact; explicit replay appends new execution/result identities and compares data |
+| Validation | [`test_covariance_integration.py`](../tests/test_covariance_integration.py) exercises all three pinned providers; [`check_adapters.py`](../scripts/check_adapters.py) also supplies historical checkouts |
+| Limits | Synthetic two-reservoir snapshot; cross-assembly shared uncertainty currently requires a joint model and is refused; no inferred independence, automatic Jacobian derivation, nonlinear Monte Carlo, NIS/NEES/coverage qualification or physical verification |
+
 ## Parameterized Lyapunov Stability Runtime (PLSR)
 
 PLSR evaluates quadratic Lyapunov certificates for declared linear and

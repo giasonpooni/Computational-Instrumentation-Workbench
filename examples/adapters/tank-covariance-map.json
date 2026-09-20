@@ -1,0 +1,27 @@
+{
+  "source_artifact": "reconciled",
+  "jacobian": [
+    [
+      1.0,
+      1.0
+    ],
+    [
+      1.0,
+      -1.0
+    ]
+  ],
+  "output_quantity_ids": [
+    "total_mass",
+    "mass_difference"
+  ],
+  "output_units": [
+    "kg",
+    "kg"
+  ],
+  "output_frame": "reservoir2.total_difference",
+  "output_reference_values": [
+    100.0,
+    40.0
+  ],
+  "map_kind": "coordinate_change"
+}

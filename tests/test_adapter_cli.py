@@ -93,7 +93,8 @@ def test_real_cli_create_inspect_and_offline_replay(tmp_path):
                              "--output-dir", tmp_path / "created", "--json"))
     workspace = tmp_path / "created/workspace.json"
     before = workspace.read_bytes()
-    inspected = json.loads(run("investigation", "inspect", workspace, "--json"))
+    inspected = json.loads(run("investigation", "inspect", workspace, "--evaluated-at",
+                              created["calibration"][0]["serving"]["evaluated_at"], "--json"))
     # Serving-time expiry is a display fact, evaluated afresh without changing
     # any immutable source or result record.
     for summary in (created, inspected):

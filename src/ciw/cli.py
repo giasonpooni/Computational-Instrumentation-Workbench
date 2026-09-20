@@ -23,6 +23,20 @@ def print_json(value) -> None:
     print(json.dumps(value, indent=2, allow_nan=False))
 
 
+def _print_matrix(name: str, matrix: list, order: list | None = None, unit: object = None) -> None:
+    """Render every covariance entry; never substitute marginal sigmas."""
+    print(f"Covariance: {name}")
+    if order:
+        print("  Axis order: " + ", ".join(map(str, order)))
+    if unit:
+        if isinstance(unit, list):
+            print("  Axis units: " + json.dumps(unit) + "; entry (i, j) uses unit[i] * unit[j]")
+        else:
+            print("  Units: " + (json.dumps(unit) if isinstance(unit, dict) else str(unit)))
+    for row in matrix:
+        print("  [" + ", ".join(format(value, ".12g") for value in row) + "]")
+
+
 def print_investigation(summary: dict) -> None:
     """Present retained states without interpreting or calculating domain values."""
     print(f"Investigation: {summary['status']}")
@@ -42,6 +56,33 @@ def print_investigation(summary: dict) -> None:
         print()
         for row in rows:
             print("  ".join(value.ljust(width) for value, width in zip(row, widths)).rstrip())
+    for status in summary.get("calibration", []):
+        acquisition, serving = status["acquisition"], status["serving"]
+        print(f"Calibration: {status['source']} / {status['calibration_id']}")
+        print(f"  Acquisition applicable: {str(acquisition['applicable_at_acquisition']).lower()}"
+              f" at {acquisition['observed_at']} ({acquisition['provenance']})")
+        print(f"  Current applicable: {str(serving['current_applicability']).lower()}; "
+              f"expired: {str(serving['expired']).lower()}; "
+              f"not yet valid: {str(serving['not_yet_valid']).lower()}")
+        print(f"  Evaluated at: {serving['evaluated_at']}; valid interval: "
+              f"[{status['valid_from']}, {status['valid_until']})")
+    covariances = summary.get("covariances", [])
+    for covariance in covariances:
+        _print_matrix(covariance.get("name", covariance.get("covariance_id", "retained covariance")),
+                      covariance.get("matrix", covariance.get("covariance", [])),
+                      covariance.get("quantity_ids", covariance.get("order", covariance.get("state_order", covariance.get("parameter_order")))),
+                      covariance.get("units", covariance.get("unit")))
+        for field in ("frame", "method", "covariance_id", "result_id"):
+            if field in covariance:
+                print(f"  {field}: {covariance[field]}")
+    if not covariances:
+        for result in summary.get("results", []):
+            data = result.get("data", {})
+            estimate = data.get("estimate", {})
+            if isinstance(estimate, dict) and isinstance(estimate.get("covariance"), list):
+                sources = data.get("calibrated_observation", {}).get("source_ids")
+                _print_matrix("estimated state / " + result["result_id"], estimate["covariance"],
+                              sources, str(estimate.get("unit", "")) + "²")
     for refusal in summary.get("refusals", []):
         detail = refusal.get("refusal", refusal)
         print(f"Refusal: {detail.get('code', 'refused')}: {detail.get('message', '')}")
@@ -174,6 +215,8 @@ def parser() -> argparse.ArgumentParser:
                         help="Use 0.0.0.0 explicitly inside a container; default stays loopback")
     server.add_argument("--fsrt-repo", type=Path,
                         help="Explicit trusted checkout for pinned FSRT operations")
+    server.add_argument("--jspt-repo", type=Path,
+                        help="Explicit trusted checkout for pinned JSPT covariance operations")
     server.add_argument("--python", dest="python_executable", type=Path,
                         help="Python for external adapters; defaults to this interpreter")
     health = commands.add_parser("health", help="Check a live session with a bounded read-only request")
@@ -209,6 +252,8 @@ def parser() -> argparse.ArgumentParser:
     inspect_investigation = investigation_actions.add_parser(
         "inspect", help="Inspect a saved investigation offline without executing its adapters")
     inspect_investigation.add_argument("path", type=Path)
+    inspect_investigation.add_argument("--evaluated-at",
+                                      help="Aware ISO timestamp for read-only calibration status")
     replay_investigation = investigation_actions.add_parser(
         "replay", help="Replay retained inputs with fresh execution and result identities")
     replay_investigation.add_argument("path", type=Path)
@@ -222,6 +267,16 @@ def parser() -> argparse.ArgumentParser:
                             help="Python for external adapters; defaults to this interpreter")
     for action in (create, inspect_investigation, replay_investigation):
         action.add_argument("--json", action="store_true", help="Print the complete machine-readable summary")
+    covariance = commands.add_parser("covariance", help="Run pinned JSPT covariance operations on a saved investigation")
+    covariance_replay = commands.add_parser("covariance-replay", help="Replay retained JSPT covariance inputs")
+    covariance.add_argument("--parameters", type=Path, required=True,
+                            help="JSON scientific operation parameters, never executable code")
+    for action in (covariance, covariance_replay):
+        action.add_argument("path", type=Path)
+        action.add_argument("--jspt-repo", type=Path, required=True)
+        action.add_argument("--output-dir", type=Path, required=True)
+        action.add_argument("--adapter-python", "--python", dest="python_executable", type=Path)
+        action.add_argument("--json", action="store_true")
     return root
 
 
@@ -253,6 +308,9 @@ def main(argv: list[str] | None = None) -> int:
             if args.fsrt_repo is not None:
                 from .investigation import bind_fsrt
                 bind_fsrt(session, args.fsrt_repo, python_executable=args.python_executable)
+            if args.jspt_repo is not None:
+                from .covariance_workflow import bind_jspt
+                bind_jspt(session, args.jspt_repo, python_executable=args.python_executable)
             asyncio.run(run_server(session, args.port, args.bind))
         elif args.command == "health":
             print_json(asyncio.run(health_remote(args.url)))
@@ -271,7 +329,7 @@ def main(argv: list[str] | None = None) -> int:
         elif args.command == "investigation":
             from .investigation import create_investigation, inspect_investigation, replay_investigation
             if args.investigation_command == "inspect":
-                result = inspect_investigation(args.path)
+                result = inspect_investigation(args.path, evaluated_at=args.evaluated_at)
             else:
                 arguments = {"rci_repo": args.rci_repo, "fsrt_repo": args.fsrt_repo,
                              "output_dir": args.output_dir, "python_executable": args.python_executable}
@@ -282,6 +340,21 @@ def main(argv: list[str] | None = None) -> int:
                     result = create_investigation(inputs, **arguments)
                 else:
                     result = replay_investigation(args.path, **arguments)
+            if args.json:
+                print_json(result)
+            else:
+                print_investigation(result)
+        elif args.command in {"covariance", "covariance-replay"}:
+            from .covariance_workflow import execute_covariance, replay_covariance
+            arguments = {"jspt_repo": args.jspt_repo, "output_dir": args.output_dir,
+                         "python_executable": args.python_executable}
+            if args.command == "covariance":
+                parameters = read_json(args.parameters)
+                if not isinstance(parameters, dict):
+                    raise ValueError("covariance parameters must be a JSON object")
+                result = execute_covariance(args.path, parameters=parameters, **arguments)
+            else:
+                result = replay_covariance(args.path, **arguments)
             if args.json:
                 print_json(result)
             else:

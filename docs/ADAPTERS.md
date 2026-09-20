@@ -47,9 +47,9 @@ tracked bytes by disabling Git line-ending conversion for these checkouts.
 ```sh
 python -m pip install -e '.[dev]'
 git -c core.autocrlf=false clone https://github.com/giasonpooni/Retrofitted-Computational-Instrumentation.git ../rci
-git -C ../rci checkout --detach 97fcc01a45985defd6a76532b1fefe90d66dd159
+git -C ../rci checkout --detach f863bdd69d49224e0cdc871943bbb052e5b0a975
 git -c core.autocrlf=false clone https://github.com/giasonpooni/Fluid-State-Reconstruction-Testbed.git ../fsrt
-git -C ../fsrt checkout --detach d34588819f657b6639c8e9a19450215844610007
+git -C ../fsrt checkout --detach 09a756dd9cdd3a9bb6cb14b5cd498f6259937ac2
 ```
 
 The adapter reads domain code from the checkout's `src` directory. It does not
@@ -204,8 +204,9 @@ uncertainty retention, offline reopening/replay and terminal representations.
 The complete checked-out-repository path is also exercised using the fixture
 and CLI commands above.
 
-This first slice does not integrate JSPT, Intrinsic Surface Geodesics, Curved
-Surface Runtime, CSE, SRA, YWIR, GAT or DAF. Their proposed roles remain separate.
+The covariance extension below integrates JSPT propagation operations. Intrinsic
+Surface Geodesics, Curved Surface Runtime, CSE, SRA, YWIR, GAT and DAF remain
+planned integrations with separate roles.
 PLSR's existing terminal bundle path remains available; attaching its
 verification results to shared investigations is a subsequent integration.
 The generic seam does not establish arbitrary event-stream resampling,
@@ -215,6 +216,26 @@ or physical qualification.
 Domain authority remains in the upstream
 [RCI repository](https://github.com/giasonpooni/Retrofitted-Computational-Instrumentation)
 and [FSRT repository](https://github.com/giasonpooni/Fluid-State-Reconstruction-Testbed).
+
+## Additive v2 covariance path
+
+The [covariance operating guide](COVARIANCE.md) extends this first-slice contract
+with `rci.calibrate.v2`, `fsrt.tank-reconstruct.v2` and the JSPT operation
+`jspt.covariance-propagate.v1`. It supplies current runtime setup, a complete
+RCI → FSRT → JSPT example, typed full covariance artifacts, explicit component
+and exclusion provenance, source-dependence refusal, and offline replay.
+
+The original v1 fixture and scientific result formats remain available. Use
+`examples/adapters/two-reservoir-covariance.json` for v2 and
+`examples/adapters/tank-covariance-map.json` for the declared covariance map.
+Inspect with `--evaluated-at` to freeze the serving-time expiry view. Current
+calibration expiry is derived separately from persisted acquisition
+applicability and never changes a saved measurement or result identity.
+
+The checkout commands earlier in this guide use the current pins, which support
+both v1 and v2. The covariance guide adds the JSPT checkout for propagation. Historical replay needs the saved allowlisted revision in
+an explicitly supplied local checkout. JSPT is an operation provider; it is not
+a measurement source, an automatic derivative verifier or a physical certificate.
 
 The small manifest/batch protocol implemented here is an additive executable
 slice, not completion of the architecture's broader M1/M3 contracts. The

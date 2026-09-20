@@ -2,7 +2,13 @@
 from __future__ import annotations
 
 from dataclasses import dataclass
+import re
 from typing import Callable
+
+
+def valid_operation_id(value: object) -> bool:
+    """A version is explicit; a syntactically valid name never loads a provider."""
+    return isinstance(value, str) and re.fullmatch(r"[a-z][a-z0-9_-]*(?:\.[a-z][a-z0-9_-]*)*\.v[1-9][0-9]*", value) is not None
 
 
 @dataclass(frozen=True)
@@ -23,7 +29,7 @@ class OperationRegistry:
     def register(self, operation: Operation) -> None:
         if operation.operation_id in self._operations:
             raise ValueError(f"Operation already registered: {operation.operation_id}")
-        if not operation.operation_id.endswith(".v1") or operation.role not in {
+        if not valid_operation_id(operation.operation_id) or operation.role not in {
             "analysis", "state_estimator", "calibration", "verification", "decision", "backend"
         }:
             raise ValueError("An operation needs a versioned identity and an explicit role")

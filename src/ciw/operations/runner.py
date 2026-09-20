@@ -11,7 +11,7 @@ from datetime import datetime, timezone
 
 from ..adapters.protocol import AdapterRefusal
 from ..core.records import finite_tree
-from .registry import OperationRegistry
+from .registry import OperationRegistry, valid_operation_id
 from .schemas import validate_payload, validate_role
 
 
@@ -100,7 +100,7 @@ def validate_execution(execution: dict, run: dict, revision: int, results: dict)
         raise ValueError("Invalid execution parameters")
     finite_tree(execution, "execution")
     operation_id = execution.get("operation_id")
-    if not isinstance(operation_id, str) or not operation_id.endswith(".v1"):
+    if not valid_operation_id(operation_id):
         raise ValueError("Invalid execution operation identity")
     channel, interval = execution.get("channel"), execution.get("interval_s")
     if not isinstance(channel, str) or channel not in run["channels"]:

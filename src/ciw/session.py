@@ -14,10 +14,11 @@ from datetime import datetime, timezone
 from pathlib import Path
 from typing import Any
 
-from .operations.registry import default_registry as default_operations
+from .operations.registry import default_registry as default_operations, valid_operation_id
 from .operations.runner import execute as execute_operation, check_seal, validate_execution
 from .adapters.protocol import AdapterRefusal
 from .core.identities import validate_evidence_identity
+from .calibration_status import calibration_status
 
 from .instruments import (
     compute_spectrum, compute_statistics, inspect_sample, run_metadata, validate_run,
@@ -96,6 +97,12 @@ def _keys(payload: dict, allowed: set[str], required: set[str] | None = None) ->
         raise ProtocolError("invalid_payload", "Unknown payload fields: " + ", ".join(sorted(payload.keys() - allowed)))
     if required and required - payload.keys():
         raise ProtocolError("invalid_payload", "Missing payload fields: " + ", ".join(sorted(required - payload.keys())))
+
+
+def _evaluated_at(payload: dict) -> str | None:
+    if "evaluated_at" in payload and not isinstance(payload["evaluated_at"], str):
+        raise ProtocolError("invalid_payload", "evaluated_at must be a timezone-aware ISO timestamp")
+    return payload.get("evaluated_at")
 
 
 def _digest(value: Any) -> str:
@@ -189,8 +196,7 @@ def _validate_saved_result(result: Any, run: dict, revision: int, recording_file
                 or not isinstance(result.get("parameters"), dict)
                 or not isinstance(result.get("data"), dict)
                 or result.get("role") not in {"analysis", "state_estimator", "calibration", "verification", "decision", "backend"}
-                or not isinstance(result.get("operation_id"), str)
-                or not result["operation_id"].endswith(".v1")):
+                or not valid_operation_id(result.get("operation_id"))):
             raise ValueError("Invalid saved operation result")
         for key, value in (("channel", channel), ("interval_s", [start, end])):
             if key in result["parameters"] and result["parameters"][key] != value:
@@ -225,10 +231,14 @@ class Session:
         self.recording_file = _recording_file(self.run)
         write_json(self.output_dir / self.recording_file, self.run)
 
-    def snapshot(self) -> dict:
+    def snapshot(self, evaluated_at: str | None = None) -> dict:
         with self._lock:
-            return {"session_id": self.session_id, "run": run_metadata(self.run),
-                    "selection": copy.deepcopy(self.selection), "results": self._result_summaries()}
+            snapshot = {"session_id": self.session_id, "run": run_metadata(self.run),
+                        "selection": copy.deepcopy(self.selection), "results": self._result_summaries()}
+            calibration = calibration_status(self.run, evaluated_at)
+            if calibration:
+                snapshot["calibration"] = calibration
+            return snapshot
 
     def _result_summaries(self) -> list[dict]:
         with self._lock:
@@ -262,7 +272,14 @@ class Session:
             if not isinstance(kind, str) or not isinstance(payload, dict):
                 raise ProtocolError("invalid_request", "type must be a string and payload an object")
             result = self._dispatch(kind, payload)
-            return envelope("response", result, request_id)
+            response = envelope("response", result, request_id)
+            if kind == "result.get":
+                # The payload remains the exact retained result, including its
+                # seal. Serving-time metadata belongs outside that artifact.
+                calibration = calibration_status(self.run, _evaluated_at(payload))
+                if calibration:
+                    response["calibration"] = calibration
+            return response
         except (ProtocolError, AdapterRefusal) as exc:
             return envelope("error", {"code": exc.code, "message": str(exc)}, request_id)
         except (ValueError, TypeError) as exc:
@@ -272,8 +289,8 @@ class Session:
 
     def _dispatch(self, kind: str, payload: dict) -> dict:
         if kind == "session.get":
-            _keys(payload, set())
-            return self.snapshot()
+            _keys(payload, {"evaluated_at"})
+            return self.snapshot(_evaluated_at(payload))
         if kind == "run.get":
             _keys(payload, set())
             return copy.deepcopy(self.run)
@@ -333,9 +350,9 @@ class Session:
                 return {"executions": copy.deepcopy(list(self.executions.values()))}
         if kind == "operation.execute":
             _keys(payload, {"operation_id", "parameters"}, {"operation_id"})
-            if (not isinstance(payload["operation_id"], str) or not payload["operation_id"].endswith(".v1")
+            if (not valid_operation_id(payload["operation_id"])
                     or not isinstance(payload.get("parameters", {}), dict)):
-                raise ProtocolError("invalid_payload", "operation_id must end in .v1 and parameters must be an object")
+                raise ProtocolError("invalid_payload", "operation_id must be versioned and parameters must be an object")
             # Reserve bounded capacity and capture the scientific request. A
             # subprocess may wait up to its deadline, so it cannot own the
             # shared selection/publication lock while it calculates.
@@ -375,10 +392,14 @@ class Session:
                 return {"status": "refused", "execution": copy.deepcopy(execution), "result": None}
             return {"status": "completed", "execution": copy.deepcopy(execution), "result": copy.deepcopy(result)}
         if kind == "result.list":
-            _keys(payload, set())
-            return {"results": self._result_summaries()}
+            _keys(payload, {"evaluated_at"})
+            result = {"results": self._result_summaries()}
+            calibration = calibration_status(self.run, _evaluated_at(payload))
+            if calibration:
+                result["calibration"] = calibration
+            return result
         if kind == "result.get":
-            _keys(payload, {"result_id"}, {"result_id"})
+            _keys(payload, {"result_id", "evaluated_at"}, {"result_id"})
             result_id = payload["result_id"]
             with self._lock:
                 if not isinstance(result_id, str) or result_id not in self.results:
@@ -439,6 +460,8 @@ class Session:
                 raise ValueError("Saved result identity mismatch or duplication")
             result_map[result_id] = result
             execution_ids.add(result["execution_id"])
+        from .adapters.covariance_records import validate_result_dependencies
+        validate_result_dependencies(result_map)
         executions = workspace.get("executions", [])
         if not isinstance(executions, list) or len(executions) > 1024:
             raise ValueError("Invalid saved executions")

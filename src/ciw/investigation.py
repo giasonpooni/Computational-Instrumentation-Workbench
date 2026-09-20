@@ -25,6 +25,8 @@ from .session import Session, read_json
 
 RCI_OPERATION = "rci.calibrate.v1"
 FSRT_OPERATION = "fsrt.tank-reconstruct.v1"
+RCI_OPERATION_V2 = "rci.calibrate.v2"
+FSRT_OPERATION_V2 = "fsrt.tank-reconstruct.v2"
 
 
 def _runtime(name, repo, python_executable=None, expected=None):
@@ -32,8 +34,12 @@ def _runtime(name, repo, python_executable=None, expected=None):
     spec = pins[name]
     kwargs = {}
     if expected:
-        if expected["revision"] != spec["revision"] or expected["module"] != spec["module"]:
+        allowed = [spec, *spec.get("historical", [])]
+        matches = [entry for entry in allowed if expected["revision"] == entry["revision"]
+                   and expected["module"] == entry["module"]]
+        if not matches:
             raise AdapterRefusal("runtime_mismatch", "Saved runtime does not match the supported adapter pin")
+        spec = matches[0]
         kwargs = {"expected_python_sha256": expected["python_sha256"],
                   "expected_python_version": expected["python_version"],
                   "expected_dependencies": expected["dependencies"]}
@@ -49,7 +55,8 @@ def _rci_digest(value):
 
 
 def _validate_batch(batch, request):
-    if batch.get("schema") != "measurement-record-batch.v1" or len(batch.get("records", [])) != 1:
+    version = "v2" if request.get("operation_id") == RCI_OPERATION_V2 else "v1"
+    if batch.get("schema") != f"measurement-record-batch.{version}" or len(batch.get("records", [])) != 1:
         raise AdapterRefusal("unsupported_measurement_batch", "The first tank slice requires one record per assembly")
     record = batch["records"][0]
     if record.get("raw_record_b64") != request["inputs"]["records"][0]["raw_record_b64"]:
@@ -82,6 +89,17 @@ def _validate_batch(batch, request):
     covariance = batch["uncertainty"]["output_covariance"]
     if len(covariance) != 1 or len(covariance[0]) != 1:
         raise ValueError("Single-record output covariance must be 1 by 1")
+    if version == "v2":
+        from .adapters.rci_records import validate_v2_provenance
+        validate_v2_provenance(batch, request)
+        if record.get("schema") != "measurement-record.v2":
+            raise ValueError("Expected v2 calibrated record")
+        basis = batch["calibration"].get("covariance_basis")
+        if not isinstance(basis, dict) or batch["uncertainty"].get("covariance_basis") != basis:
+            raise ValueError("Covariance basis must remain bound to its profile")
+        # Full scientific consistency remains the domain provider's responsibility;
+        # inspection verifies the retained shape, provenance and source relations.
+        _measurement_covariance(batch, "sample")
 
 
 def _validate_source(run):
@@ -93,7 +111,7 @@ def _validate_source(run):
 
 def _validate_source_fields(run):
     source = run["metadata"]["rci_source"]
-    if source.get("schema") != "ciw.rci-source.v1" or source.get("cross_assembly_independent") is not True:
+    if source.get("schema") not in {"ciw.rci-source.v1", "ciw.rci-source.v2"} or source.get("cross_assembly_independent") is not True:
         raise AdapterRefusal("unsupported_covariance", "Cross-assembly independence must be explicitly declared")
     sensors = source.get("sensors")
     if not isinstance(sensors, list) or len(sensors) != 2:
@@ -106,7 +124,15 @@ def _validate_source_fields(run):
     if run["time_s"] != [0.0] or run["metadata"]["sample_count"] != 1:
         raise ValueError("Retained RCI tank slice must describe one simultaneous observation")
     for sensor in sensors:
+        required_operation = RCI_OPERATION_V2 if source["schema"] == "ciw.rci-source.v2" else RCI_OPERATION
+        if sensor["request"].get("operation_id") != required_operation:
+            raise ValueError("Calibration operation and retained source versions disagree")
         _validate_batch(sensor["measurement"], sensor["request"])
+        if source["schema"] == "ciw.rci-source.v2":
+            if sensor["request"].get("operation_id") != RCI_OPERATION_V2:
+                raise ValueError("The v2 source requires v2 calibration")
+            if sensor.get("covariance") != _measurement_covariance(sensor["measurement"], sensor["name"]):
+                raise ValueError("Retained covariance artifact differs from calibrated evidence")
         for state, key in (("observation", "raw"), ("calibrated_observation", "calibrated")):
             channel = run["channels"][f"{key}.{sensor['name']}"]
             record = sensor["measurement"]["records"][0]
@@ -121,10 +147,62 @@ def _validate_source_fields(run):
             raise AdapterRefusal("unsupported_covariance", f"Independent assemblies need distinct {field}")
     if records[0]["observed_at"] != records[1]["observed_at"]:
         raise AdapterRefusal("unsupported_temporal_covariance", "First FSRT operation requires simultaneous observations")
+    if source["schema"] == "ciw.rci-source.v2":
+        _validate_model_independence(source.get("model_independence"))
+        left, right = (_dependencies(sensor["measurement"]["calibration"]["covariance_basis"]) for sensor in sensors)
+        if left & right:
+            raise AdapterRefusal("unsupported_cross_assembly_dependence",
+                                 "Declared independent assemblies share uncertainty sources; an explicit joint model is required")
+        from .calibration_status import calibration_status
+        calibration_status(run)
     return source
 
 
+def _validate_model_independence(value):
+    flags = {"prior_independent_of_observations", "declared_total_independent_of_observations", "prior_independent_of_declared_total"}
+    if (not isinstance(value, dict) or set(value) != flags | {"reason"}
+            or any(value[key] is not True for key in flags)
+            or not isinstance(value["reason"], str) or not value["reason"].strip()):
+        raise AdapterRefusal("unsupported_model_dependence", "V2 requires an explicit reason and mutually independent prior, observations, and declared total")
+
+
+def _dependencies(basis):
+    """Identifiers declare dependence; distinct identifiers never prove independence."""
+    result = set()
+    blocks = [*basis.get("parameter_components", []), basis.get("raw", {}), basis.get("residual", {})]
+    for block in blocks:
+        if block.get("status") == "excluded" and block.get("represented_by") is None:
+            continue
+        for name in ("dependency_ids", "shared_source_ids"):
+            items = block.get(name)
+            if not isinstance(items, list) or any(not isinstance(item, str) or not item for item in items):
+                raise ValueError("Covariance provenance requires explicit dependency and shared-source lists")
+            result.update(items)
+    return result
+
+
+def _measurement_covariance(batch, name):
+    from .core.covariance import create_covariance_artifact
+    record = batch["records"][0]
+    uncertainty = batch["uncertainty"]
+    basis = batch["calibration"]["covariance_basis"]
+    return create_covariance_artifact(
+        matrix=uncertainty["output_covariance"], quantity_ids=[name], units=[record["calibrated"]["unit"]],
+        frame="reservoir2.mass", reference_values=[record["calibrated"]["value"]],
+        method=uncertainty["method"], basis={"kind": "calibrated_observation", "id": "sha256:" + batch["uncertainty_digest"]},
+        provenance={"provider": "rci.calibrate.v2", "source_evidence_ids": ["sha256:" + record["derived_evidence_digest"]],
+                    "source_covariance_ids": [], "metadata": {"covariance_basis": basis,
+                    "shared_dependencies": sorted(_dependencies(basis)), "calibration_digest": batch["calibration_digest"],
+                    "covariance_coverage": uncertainty.get("covariance_coverage"), "parameterization": uncertainty.get("parameterization")}},
+        assumptions=["First-order native scale/zero calibration", "Declared raw/parameter and residual independence", "No traceability conferred by this artifact"],
+    )
+
+
 def _make_run(inputs, sensors, runtime):
+    is_v2 = inputs["schema"] == "ciw.tank-investigation-input.v2"
+    if is_v2:
+        for sensor in sensors:
+            sensor["covariance"] = _measurement_covariance(sensor["measurement"], sensor["name"])
     channels = {}
     for sensor in sensors:
         record = sensor["measurement"]["records"][0]
@@ -136,8 +214,8 @@ def _make_run(inputs, sensors, runtime):
                 "calibration_state": "not_applied" if key == "raw" else record["calibration_state"],
             }
     manifest = InstrumentManifest(
-        instrument_id="org.notationsystems.rci", version="1", role="measurement_adapter",
-        inputs=("measurement-record.v1",), outputs=("run.v1",),
+        instrument_id="org.notationsystems.rci", version="2" if is_v2 else "1", role="measurement_adapter",
+        inputs=("measurement-record.v2" if is_v2 else "measurement-record.v1",), outputs=("run.v1",),
         units={name: channel["unit"] for name, channel in channels.items()}, frames=("two-reservoir-mass",),
         sampling={"mode": "single_simultaneous_event", "duration_s_semantics": "selection support only; not acquisition cadence"},
         normalization={"raw": "unchanged", "calibrated": "declared RCI transform"},
@@ -151,8 +229,10 @@ def _make_run(inputs, sensors, runtime):
                         "coordinate_frame": "two-reservoir-mass", "manifest": manifest.to_dict(),
                         "model": inputs["model"],
                         "provenance": {"source": inputs["source_description"], "time_reference": "simultaneous acquisition instant; 1 s selection support", "claim_scope": "declared calibration and model only"},
-                        "rci_source": {"schema": "ciw.rci-source.v1", "cross_assembly_independent": inputs["cross_assembly_independent"],
+                        "rci_source": {"schema": "ciw.rci-source.v2" if is_v2 else "ciw.rci-source.v1", "cross_assembly_independent": inputs["cross_assembly_independent"],
                                        "runtime": runtime, "sensors": sensors}}}
+    if is_v2:
+        run["metadata"]["rci_source"]["model_independence"] = copy.deepcopy(inputs["model_independence"])
     _validate_source(run)
     run["evidence_id"] = evidence_id(run)
     return run
@@ -177,13 +257,42 @@ def _fsrt_inputs(run, parameters):
 
 def bind_fsrt(session, repo, python_executable=None, expected=None):
     adapter = _runtime("fsrt", repo, python_executable, expected)
-    session.operations.register(Operation(FSRT_OPERATION, "state_estimator",
-        lambda run, parameters: adapter.invoke(FSRT_OPERATION, _fsrt_inputs(run, parameters)),
+    operation = fsrt_operation(session.run)
+    session.operations.register(Operation(operation, "state_estimator",
+        lambda run, parameters: adapter.invoke(operation, _fsrt_inputs_v2(run, parameters) if operation == FSRT_OPERATION_V2 else _fsrt_inputs(run, parameters)),
         adapter.runtime_identity))
     return adapter
 
 
-def _summary(session, path):
+def fsrt_operation(run):
+    return FSRT_OPERATION_V2 if run["metadata"].get("rci_source", {}).get("schema") == "ciw.rci-source.v2" else FSRT_OPERATION
+
+
+def _fsrt_inputs_v2(run, parameters):
+    from .core.covariance import create_covariance_artifact
+    inputs = _fsrt_inputs(run, parameters)
+    sensors = run["metadata"]["rci_source"]["sensors"]
+    observation = inputs["observations"][0]
+    independence = run["metadata"]["rci_source"]["model_independence"]
+    inputs["state_order"] = ["tank-1.mass", "tank-2.mass"]
+    inputs["observation_covariance"] = create_covariance_artifact(
+        matrix=observation["covariance"], quantity_ids=observation["source_ids"], units=["kg", "kg"],
+        frame="reservoir2.mass", reference_values=observation["values"], method="declared_independent_assembly_blocks",
+        basis={"kind": "calibrated_observation", "id": run["evidence_id"]},
+        provenance={"provider": "ciw.rci-source.v2", "source_evidence_ids": observation["evidence_ids"],
+                    "source_covariance_ids": [sensor["covariance"]["covariance_id"] for sensor in sensors],
+                    "metadata": {"shared_dependencies": sorted(set().union(*[_dependencies(s["measurement"]["calibration"]["covariance_basis"]) for s in sensors])),
+                                 **copy.deepcopy(independence),
+                                 "uncertainty_context": [{"source": s["name"], "covariance_basis": s["measurement"]["calibration"]["covariance_basis"],
+                                      "covariance_coverage": s["measurement"]["uncertainty"]["covariance_coverage"],
+                                      "parameterization": s["measurement"]["uncertainty"]["parameterization"]} for s in sensors]}},
+        assumptions=["Caller explicitly declares independent assemblies; distinct IDs alone do not prove independence",
+                     "Prior, observations, and declared total are mutually independent under the declared model"],
+    )
+    return inputs
+
+
+def _summary(session, path, evaluated_at=None):
     rows = []
     for name, channel in session.run["channels"].items():
         rows.append({"state": channel.get("kind", "observation"), "quantity": name,
@@ -191,29 +300,39 @@ def _summary(session, path):
     results = list(session.results.values())
     for result in results:
         data = result["data"]
-        if result["operation_id"] == FSRT_OPERATION:
+        if result["operation_id"] in {FSRT_OPERATION, FSRT_OPERATION_V2}:
             rows.append({"state": "estimated_state", "quantity": "reservoir masses", "value": data["estimate"]["values"], "unit": "kg", "evidence_id": result["result_id"]})
             rows.append({"state": "residual", "quantity": "physical balance before reconciliation", "value": data["residuals"].get("balance_before"), "unit": "kg", "evidence_id": result["result_id"]})
             rows.append({"state": "diagnostic", "quantity": "physical model / fault attribution", "value": data["diagnostics"]["physical_model_status"] + " / " + data["diagnostics"]["fault_attribution"], "unit": "—", "evidence_id": result["result_id"]})
     refusals = [e for e in session.executions.values() if e["status"] == "refused"]
     latest = next(reversed(session.executions.values()), None) if session.executions else None
-    evaluated_at = datetime.now(timezone.utc)
-    calibration = []
+    from .calibration_status import calibration_status
+    calibration = calibration_status(session.run, evaluated_at)
+    # Retain the first slice's summary aliases; authoritative status also carries
+    # explicit acquisition and serving provenance shared with live read APIs.
+    for item in calibration:
+        item.update(applicable_at_acquisition=item["acquisition"]["applicable_at_acquisition"],
+                    expired=item["serving"]["expired"], evaluated_at=item["serving"]["evaluated_at"])
+    covariances = []
     for sensor in session.run["metadata"].get("rci_source", {}).get("sensors", []):
-        profile = sensor["measurement"]["calibration"]
-        calibration.append({"source": sensor["name"], "applicable_at_acquisition": True,
-                            "expired": evaluated_at >= datetime.fromisoformat(profile["valid_until"]),
-                            "evaluated_at": evaluated_at.isoformat(), "valid_until": profile["valid_until"]})
+        if "covariance" in sensor:
+            covariances.append({"name": "calibrated." + sensor["name"], **copy.deepcopy(sensor["covariance"])})
+    for result in results:
+        for name, artifact in result["data"].get("covariance_artifacts", {}).items():
+            if artifact is not None:
+                covariances.append({"name": name, "result_id": result["result_id"], **copy.deepcopy(artifact)})
+        if "output_covariance" in result["data"] and result["operation_id"] == "jspt.covariance-propagate.v1":
+            covariances.append({"name": "propagated", "result_id": result["result_id"], **copy.deepcopy(result["data"]["output_covariance"])})
     return {"calibration": calibration, "status": "refused" if latest and latest["status"] == "refused" else "completed",
             "workspace_file": str(path), "run_id": session.run["run_id"], "evidence_id": session.run["evidence_id"],
-            "results": copy.deepcopy(results), "refusals": copy.deepcopy(refusals), "terminal_rows": rows,
+            "results": copy.deepcopy(results), "refusals": copy.deepcopy(refusals), "terminal_rows": rows, "covariances": covariances,
             "execution_ids": list(session.executions),
             "note": "Declared calibration and model evaluation; no physical verification or traceability conferred."}
 
 
 def _evaluate_and_save(session, path, parameters=None):
     response = session.handle({"protocol_version": 1, "request_id": uuid.uuid4().hex,
-                               "type": "operation.execute", "payload": {"operation_id": FSRT_OPERATION, "parameters": parameters if parameters is not None else {"model": session.run["metadata"]["model"]}}})
+                               "type": "operation.execute", "payload": {"operation_id": fsrt_operation(session.run), "parameters": parameters if parameters is not None else {"model": session.run["metadata"]["model"]}}})
     if response["type"] == "error":
         raise ValueError(response["payload"]["message"])
     session.save_workspace(path)
@@ -222,8 +341,11 @@ def _evaluate_and_save(session, path, parameters=None):
 
 def create_investigation(inputs, rci_repo, fsrt_repo, output_dir, python_executable=None):
     required = {"schema", "sensors", "cross_assembly_independent", "model", "source_description"}
-    if not isinstance(inputs, dict) or set(inputs) != required or inputs["schema"] != "ciw.tank-investigation-input.v1":
-        raise ValueError("Expected ciw.tank-investigation-input.v1 with sensors, model, independence and source description")
+    if isinstance(inputs, dict) and inputs.get("schema") == "ciw.tank-investigation-input.v2":
+        required.add("model_independence")
+        _validate_model_independence(inputs.get("model_independence"))
+    if not isinstance(inputs, dict) or set(inputs) != required or inputs["schema"] not in {"ciw.tank-investigation-input.v1", "ciw.tank-investigation-input.v2"}:
+        raise ValueError("Expected a supported versioned tank input with sensors, model, independence and source description")
     if not isinstance(inputs["sensors"], list) or len(inputs["sensors"]) != 2:
         raise ValueError("Exactly two sensor requests are required")
     if (not isinstance(inputs["model"], dict) or not isinstance(inputs["source_description"], str)
@@ -238,13 +360,14 @@ def create_investigation(inputs, rci_repo, fsrt_repo, output_dir, python_executa
     if any(not isinstance(n, str) or not n for n in names) or len(set(names)) != 2:
         raise ValueError("Two distinct sensor names are required")
     adapter = _runtime("rci", rci_repo, python_executable)
+    operation = RCI_OPERATION_V2 if inputs["schema"] == "ciw.tank-investigation-input.v2" else RCI_OPERATION
     sensors = []
     # No workspace or result is written unless all calibrations are applicable.
     for sensor in inputs["sensors"]:
         request = sensor["request"]
-        if request.get("schema") != "ciw.adapter-request.v1" or request.get("operation_id") != RCI_OPERATION:
-            raise ValueError("Expected an explicit rci.calibrate.v1 request")
-        measurement = adapter.invoke(RCI_OPERATION, request["inputs"])
+        if request.get("schema") != "ciw.adapter-request.v1" or request.get("operation_id") != operation:
+            raise ValueError("Expected an explicit calibration request matching the investigation version")
+        measurement = adapter.invoke(operation, request["inputs"])
         _validate_batch(measurement, request)
         sensors.append({"name": sensor["name"], "request": copy.deepcopy(request), "measurement": measurement})
     run = _make_run(inputs, sensors, adapter.runtime_identity())
@@ -253,13 +376,13 @@ def create_investigation(inputs, rci_repo, fsrt_repo, output_dir, python_executa
     return _evaluate_and_save(session, Path(output_dir) / "workspace.json")
 
 
-def inspect_investigation(path):
+def inspect_investigation(path, evaluated_at=None):
     # Restore validation never imports/executes a domain provider, and never
     # writes into the source investigation during read-only inspection.
     with tempfile.TemporaryDirectory(prefix="ciw-inspect-") as directory:
         session = Session.from_workspace(Path(path), Path(directory))
         _validate_source(session.run)
-        return _summary(session, path)
+        return _summary(session, path, evaluated_at)
 
 
 def replay_investigation(path, rci_repo, fsrt_repo, output_dir, python_executable=None):
@@ -269,14 +392,17 @@ def replay_investigation(path, rci_repo, fsrt_repo, output_dir, python_executabl
         source = _validate_source(original.run)
         rci = _runtime("rci", rci_repo, python_executable, source["runtime"])
         for sensor in source["sensors"]:
-            actual = rci.invoke(RCI_OPERATION, sensor["request"]["inputs"])
+            actual = rci.invoke(sensor["request"]["operation_id"], sensor["request"]["inputs"])
             if digest(actual) != digest(sensor["measurement"]):
                 raise AdapterRefusal("replay_mismatch", "Replayed calibration differs from retained derived evidence")
-        successful = [r for r in original.results.values() if r["operation_id"] == FSRT_OPERATION]
-        previous = [e for e in original.executions.values() if e["operation_id"] == FSRT_OPERATION]
+        operation = fsrt_operation(original.run)
+        successful = [r for r in original.results.values() if r["operation_id"] == operation]
+        previous = [e for e in original.executions.values() if e["operation_id"] == operation]
         if not previous:
             raise AdapterRefusal("replay_unavailable", "No FSRT invocation retained for replay")
         expected = previous[-1]["runtime"]
+        if expected is None:
+            raise AdapterRefusal("replay_unavailable", "The retained attempt had no bound numerical runtime; execute a new operation explicitly")
         parameters = previous[-1]["parameters"]
         fsrt = _runtime("fsrt", fsrt_repo, python_executable, expected)
         # Pin validation precedes any writes into the requested destination.

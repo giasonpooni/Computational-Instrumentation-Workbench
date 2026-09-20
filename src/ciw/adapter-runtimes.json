@@ -1,12 +1,29 @@
 {
   "rci": {
     "repository": "https://github.com/giasonpooni/Retrofitted-Computational-Instrumentation",
-    "revision": "97fcc01a45985defd6a76532b1fefe90d66dd159",
-    "module": "instrument_chain.ciw_adapter"
+    "revision": "f863bdd69d49224e0cdc871943bbb052e5b0a975",
+    "module": "instrument_chain.ciw_adapter",
+    "historical": [
+      {
+        "revision": "97fcc01a45985defd6a76532b1fefe90d66dd159",
+        "module": "instrument_chain.ciw_adapter"
+      }
+    ]
   },
   "fsrt": {
     "repository": "https://github.com/giasonpooni/Fluid-State-Reconstruction-Testbed",
-    "revision": "d34588819f657b6639c8e9a19450215844610007",
-    "module": "set_lcm.bridge.ciw"
+    "revision": "09a756dd9cdd3a9bb6cb14b5cd498f6259937ac2",
+    "module": "set_lcm.bridge.ciw",
+    "historical": [
+      {
+        "revision": "d34588819f657b6639c8e9a19450215844610007",
+        "module": "set_lcm.bridge.ciw"
+      }
+    ]
+  },
+  "jspt": {
+    "repository": "https://github.com/giasonpooni/Jacobian-Sensitivity-Propagation-Testbed",
+    "revision": "d910f5a1d7f6dd5f2dd87dfca66990f714f97b18",
+    "module": "sensitivity.ciw_adapter"
   }
 }

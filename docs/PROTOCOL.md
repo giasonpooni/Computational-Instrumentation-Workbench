@@ -45,7 +45,7 @@ Spectrum data: `{sample_count, method:"periodogram", window:"hann", detrend:"con
 
 `RESULT_SUMMARY` includes result/operation/execution IDs, channel, interval, creation time and verification status, without numerical arrays. Snapshots and `result.list` expose these so fresh clients can discover analyses restored from a workspace. New analyses do not yet produce an event; refresh the list to discover results created by another client.
 
-Future binary arrays must declare meaning, shape, dtype, byte order, order, units, frame, time reference, and execution/result identity. Binary transport, existing-instrument adapters, uncertainty propagation, occupancy operations, acquisition and spectrograms are later work, not implemented capabilities.
+Future binary arrays must declare meaning, shape, dtype, byte order, order, units, frame, time reference, and execution/result identity. Binary transport, occupancy operations, live acquisition and spectrograms are later work. The additive adapter and covariance sections below specify the delivered external-provider operations.
 
 ## Workspace replay
 
@@ -97,3 +97,51 @@ the exact pinned single-snapshot scope, raw-byte retention, covariance mapping,
 terminal commands and offline replay setup. This additive slice does not claim
 the architecture's complete streaming, binary transport, multi-run journal or
 physical-validation milestones.
+
+## Additive covariance and calibration-serving contract
+
+Protocol version remains 1 and workspace version remains 2. Operation IDs use
+an explicit positive version suffix (`.v1`, `.v2`, ...); a syntactically valid
+identity never binds code. Unregistered operations produce retained refusals.
+The new trusted payload schemas are `fsrt.tank-reconstruct.v2` and
+`jspt.covariance-propagate.v1`. Calibration acquisition uses `rci.calibrate.v2`.
+Their exact domain versions are pinned in `adapter-runtimes.json`.
+
+`covariance-artifact.v1` carries `covariance_id`, ordered `quantity_ids` and
+`units`, `frame`, `reference_values`, full `matrix`, `method`, `basis`,
+`provenance` and `assumptions`. Its content identity includes every field except
+`covariance_id`; matrix entry (i,j) has units `units[i] * units[j]`. Numerical
+values are never silently symmetrized, clipped, diagonalized or reordered by
+CIW validation. A positive semidefinite singular matrix is a valid artifact;
+a specific operation can still refuse it under its numerical requirements.
+See [COVARIANCE.md](COVARIANCE.md) for the exact artifact and input contracts.
+
+`session.get`, `result.list` and `result.get` accept optional `evaluated_at`,
+a timezone-aware ISO timestamp including seconds. Omission means current UTC.
+For an RCI-backed run, session snapshots and list responses carry `calibration`
+next to their other payload fields. A `result.get` success carries `calibration`
+as a sibling of `payload` in the response envelope: the payload remains the
+exact immutable saved result. Oscillator responses add no calibration field.
+A connection snapshot evaluates serving time at connection, and never changes
+historical acquisition evidence.
+
+Each calibration status contains source/profile identities and validity bounds,
+`acquisition {observed_at, applicable_at_acquisition, valid_from, valid_until,
+basis, provenance}`, and `serving {evaluated_at, expired, not_yet_valid,
+current_applicability}`. Acquisition provenance is `persisted.v2` for the new
+RCI record or explicitly `derived.legacy-v1` for older records. Serving metadata
+is not persisted into, or hashed as, the scientific evidence/result. Present
+expiry does not invalidate a historically applicable observation.
+
+JSPT `operation.execute` parameters retain `source_result_id`, `source_artifact`,
+the exact `source_covariance`, and the declared map fields. The CLI resolves
+these from a retained FSRT/JSPT result; live clients may reuse those exact
+parameters with an explicitly bound `--jspt-repo`. The service checks source
+links before execution. Reopening checks retained dependencies and rejects
+missing, mismatched or cyclic references before writing a destination.
+
+A saved runtime is executable only if its revision/module is on the built-in
+current-or-historical allowlist and the operator supplies that exact clean
+checkout and matching interpreter/dependencies. A saved file cannot extend
+this allowlist. An invocation with no bound runtime cannot be silently replayed
+using the latest engine; it requires an explicit new execution.
