@@ -9,6 +9,8 @@ Each ADR records one decision: the context that made it necessary, the decision 
 | ADR | Title | Status |
 |-----|-------|--------|
 | [0001](0001-project-name-and-definition.md) | Project name and definition | Accepted |
+| [0002](0002-foundational-runtime-positioning.md) | Position the workbench as a foundational instrumentation runtime | Accepted |
+| [0003](0003-reference-implementation-arrangement.md) | Reference implementation arrangement | Accepted |
 
 ## Adding an ADR
 
