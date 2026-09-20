@@ -1,0 +1,24 @@
+[build-system]
+requires = ["setuptools>=77"]
+build-backend = "setuptools.build_meta"
+
+[project]
+name = "computational-instrumentation-workbench"
+version = "0.1.0"
+description = "Terminal-first computational instruments with synchronized optional Godot views"
+requires-python = ">=3.11"
+dependencies = ["numpy==2.4.3", "websockets==16.0"]
+
+[project.optional-dependencies]
+dev = ["pytest==9.0.2"]
+
+[project.scripts]
+ciw = "ciw.cli:main"
+
+[tool.setuptools.packages.find]
+where = ["src"]
+
+[tool.pytest.ini_options]
+testpaths = ["tests"]
+pythonpath = ["src"]
+addopts = "-ra"

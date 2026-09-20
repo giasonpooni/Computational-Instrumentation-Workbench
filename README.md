@@ -61,7 +61,7 @@ Instruments connect to the runtime through one contract that fixes the meaning o
 
 ## Status
 
-CIW is in its architecture and prototype phase. The architecture is being finalized and will be published in this repository under `docs/`. Installable releases are not yet available.
+The first executable prototype is available: a Python/NumPy demo instrument, terminal analysis, a shared local WebSocket session, saved-workspace replay, and an optional Godot 2D/3D viewport. Follow the [quickstart](docs/quickstart.md) to run it from source. This is a synthetic-instrument prototype; existing instrument and PayloadOS adapters, the broader capabilities described above, and packaged releases remain future work. The architecture is being finalized.
 
 ## Documentation
 
