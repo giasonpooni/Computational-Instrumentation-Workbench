@@ -61,7 +61,7 @@ Instruments connect to the runtime through one contract that fixes the meaning o
 
 ## Status
 
-The first executable prototype is available: a Python/NumPy demonstration instrument, headless terminal analysis, a shared local session that terminal and viewport clients attach to, saved-workspace replay, and an optional Godot 2D/3D viewport. Follow the [quickstart](docs/quickstart.md) to run it from source. The prototype uses a synthetic instrument; adapters for existing instruments and persistence infrastructure, the broader capabilities described above, and packaged releases are future work. The architecture is being finalized and will be published under `docs/`.
+The first executable prototype is available: a Python/NumPy demonstration instrument, headless terminal analysis, a shared local session that terminal and viewport clients attach to, saved-workspace replay, and an optional Godot 2D/3D viewport. Follow the [quickstart](docs/quickstart.md) to run it from source. The prototype uses a synthetic instrument; adapters for existing instruments and persistence infrastructure, the broader capabilities described above, and packaged releases are future work. The architecture is published in [docs/ARCHITECTURE.md](docs/ARCHITECTURE.md).
 
 ## Integrated tools
 
@@ -87,7 +87,7 @@ for the required commands, specifications, version pins, and validation evidence
 
 - Quickstart: [`docs/quickstart.md`](docs/quickstart.md)
 - Integrated tool instructions and specifications: [`docs/INSTRUMENTS.md`](docs/INSTRUMENTS.md)
-- Architecture: `docs/ARCHITECTURE.md` (forthcoming)
+- Architecture: [`docs/ARCHITECTURE.md`](docs/ARCHITECTURE.md)
 - Protocol: [`docs/PROTOCOL.md`](docs/PROTOCOL.md)
 - Design decisions: [`docs/adr/`](docs/adr/README.md)
 - Development guide: [`docs/DEVELOPMENT.md`](docs/DEVELOPMENT.md)
