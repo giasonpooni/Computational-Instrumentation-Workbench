@@ -150,12 +150,18 @@ POSIX shell examples that capture the generated filename.
 | Sample | `plsr-sample-v1`: explicit `x`, `theta`, `theta_dot`; no synthetic defaults |
 | Operation and output | `plsr.verdict.v1`; immutable `ciw-plsr-run-v1` bundle with separate evidence, operation, execution, result and verification identities |
 | Integrity and replay | Model artifact, companion record and bundle digests; replay retains its source binding and compares the companion digest exactly |
-| Status and exit codes | Raw runtime code and all three verdict booleans retained; exit `0` means command success, `2` input/configuration/execution failure, `3` replay mismatch |
+| Reference corpus | `ciw-plsr-corpus-v1`: declared models, explicit samples, recorded expectations, the runtime identity they were recorded against and a per-field numerical tolerance policy; `python -m ciw plsr corpus check examples/plsr/corpus.json` |
+| Status and exit codes | Raw runtime code and all three verdict booleans retained; exit `0` means command success, `2` input/configuration/execution failure, `3` replay mismatch, `4` a corpus case did not reproduce or a recording was refused, `5` the corpus is stale against the installed runtime |
 | Views | Headless terminal JSON; no shared WebSocket session or Godot PLSR view in this increment |
 | Verification | `not_verified`; `may_authorize: false`; physical validation `not_started`; `proof_status: NOT_CHECKED` |
 
 `NUMERICAL_INCONCLUSIVE` is a numerical refusal and `NOT_CERTIFIED` is a
 certificate violation; both may be valid saved results with exit code zero.
+The [reference corpus](PLSR.md#reference-corpus-and-contract-checks) reproduces
+twenty-three declared cases offline and covers every runtime status reachable
+through a declared model. Checking never rewrites an expectation, and a corpus
+recorded against a different runtime pin fails as stale rather than as a
+numerical difference.
 One invocation evaluates one explicit sample. Host scripts can repeat it for
 offline sweeps; no real-time loop performance or physical-system validation is
 claimed. See the [guide's validation and limits](PLSR.md#validation-and-limits)

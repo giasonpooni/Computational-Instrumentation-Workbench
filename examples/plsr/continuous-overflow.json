@@ -1,0 +1,76 @@
+{
+  "artifact_digest": "9d7817bd8d4217bc795877145dd4743bf74be73358347bcbd636eb23bda88420",
+  "artifact_schema": "model-artifact-v1",
+  "certificate": {
+    "P": [
+      [
+        1e+200,
+        0.0
+      ],
+      [
+        0.0,
+        1e+200
+      ]
+    ],
+    "kind": "quadratic"
+  },
+  "claim_scope": "computational-integrity-only",
+  "estimator": {
+    "configuration_digest": "ac779a790debf57a514f4c2dc8eb74edc9add8a4402c7e095b19b4fe1b0114fc",
+    "identity": "caller-supplied-synthetic-state",
+    "state_compatibility": "The caller supplies x1 then x2 in dimensionless units; no sensor, calibration, or physical estimator is represented.",
+    "version": "1"
+  },
+  "may_authorize": false,
+  "model_id": "plsr-example-continuous-overflow",
+  "model_version": "1",
+  "plant": {
+    "A": [
+      [
+        -1e+200,
+        0.0
+      ],
+      [
+        0.0,
+        -1e+200
+      ]
+    ],
+    "kind": "linear"
+  },
+  "policy": {
+    "claim_codes_schema": "claim-codes-v1",
+    "level": null,
+    "margin_derivation": {
+      "description": "Fixed demonstration threshold 0.1 in declared coordinates; no physical uncertainty analysis.",
+      "evidence_digest": null,
+      "method": "fixture-demonstration-threshold",
+      "quantity": "negative-largest-eigenvalue-of-decrease-matrix"
+    },
+    "numerical_policy": "float64-decrease-v1",
+    "required_margin": 0.1,
+    "runtime_status_schema": "runtime-status-v1"
+  },
+  "provenance": {
+    "construction_report_digest": "f1102d263d524adc43a615b1180dd366283b0e122c047b4d835da40368ba79ff",
+    "model_data_digest": "54048b1429133d54ef7f1ff38a9a9a87f0aa3546413b166d292962dfe1b7766a",
+    "producer": "plsr-reference-corpus",
+    "producer_version": "1"
+  },
+  "state": {
+    "coordinates": [
+      {
+        "name": "x1",
+        "unit": "1"
+      },
+      {
+        "name": "x2",
+        "unit": "1"
+      }
+    ],
+    "definition": "Synthetic ordered state x=(x1,x2); both coordinates are dimensionless, with equilibrium x=0."
+  },
+  "time": {
+    "convention": "continuous",
+    "sample_period_s": null
+  }
+}

@@ -14,7 +14,7 @@ import tempfile
 def call(*args: str, cwd: Path, env: dict[str, str]) -> dict:
     completed = subprocess.run(
         [sys.executable, "-I", "-m", "ciw", "plsr", *args], cwd=cwd, env=env,
-        check=True, capture_output=True, text=True, timeout=30,
+        check=True, capture_output=True, text=True, timeout=300,
     )
     return json.loads(completed.stdout)
 
@@ -27,7 +27,7 @@ def main() -> None:
         root = Path(directory)
         location = subprocess.run(
             [sys.executable, "-I", "-c", "import ciw; print(ciw.__file__)"],
-            cwd=root, env=env, check=True, capture_output=True, text=True, timeout=30,
+            cwd=root, env=env, check=True, capture_output=True, text=True, timeout=300,
         )
         installed = Path(location.stdout.strip()).resolve()
         if installed.is_relative_to(repository / "src"):
@@ -63,6 +63,20 @@ def main() -> None:
             assert replay["execution_id"] != bundle["execution_id"]
             assert saved.read_bytes() == original
             assert Path(replayed["saved_file"]).is_file()
+        corpus = repository / "examples" / "plsr" / "corpus.json"
+        before = corpus.read_bytes()
+        report = call("corpus", "check", str(corpus), cwd=root, env=env)
+        assert report["runtime_status"] == "supported", report["runtime_differences"]
+        assert report["status"] == "reproduced", [
+            case for case in report["cases"] if case["differences"]]
+        assert report["outcome_counts"]["reproduced"] == report["case_count"]
+        assert report["unused_tolerances"] == []
+        # Checking is a read: an expectation is never refreshed by reproducing it.
+        assert corpus.read_bytes() == before
+        digests = [case["record_digest_matches"] for case in report["cases"]
+                   if case["observed_outcome"] == "evaluated"]
+        print(f"PASS: reference corpus reproduced {report['case_count']} declared cases; "
+              f"{sum(1 for match in digests if match)}/{len(digests)} record digests matched")
     print("PASS: installed PLSR adapter imports, evaluates, inspects, retains and replays both model types")
 
 

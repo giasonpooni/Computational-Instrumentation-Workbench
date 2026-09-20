@@ -203,6 +203,11 @@ def evaluate_run(model_path: Path, sample_path: Path, output_dir: Path) -> dict:
     return _evaluate(engine.load_model(model_path), _read(sample_path), output_dir)
 
 
+def evaluate_sample(model: Any, sample: dict, output_dir: Path) -> dict:
+    """Evaluate an already loaded model and in-memory sample, retaining a bundle."""
+    return _evaluate(model, sample, output_dir)
+
+
 def inspect_run(path: Path) -> dict:
     """Check saved bindings without executing the scientific verdict again."""
     return {"saved_file": str(path), "bundle": _validate_bundle(_read(path))}

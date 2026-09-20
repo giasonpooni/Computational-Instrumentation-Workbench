@@ -52,7 +52,8 @@ The architecture document maps its components to these directories.
 │   ├── server.py             WebSocket transport, bind policy, and saved shutdown
 │   ├── cli.py                Headless analysis, service control, health probe, terminal access
 │   ├── plsr.py               Portable PLSR run bundles: evaluate, inspect, replay
-│   └── plsr_engine.py        Source-pinned bridge to the optional external PLSR runtime
+│   ├── plsr_engine.py        Source-pinned bridge to the optional external PLSR runtime
+│   └── plsr_corpus.py        Declared reference corpus: reproduce, compare, re-record
 ├── godot/                    Godot project for the 2D/3D viewport, a client of the session
 ├── deploy/                   Deployment guides: native controller and container backend
 ├── examples/                 Reference inputs for integrated instruments, such as `examples/plsr/`

@@ -1,0 +1,1549 @@
+{
+  "corpus_schema": "ciw-plsr-corpus-v1",
+  "corpus_id": "plsr-reference-corpus",
+  "corpus_version": "1",
+  "description": "Declared PLSR models, explicit samples and recorded outputs covering certification, margin shortfall, violations, declared-domain refusals, float64 boundaries and adapter contract refusals.",
+  "runtime": {
+    "repository": "https://github.com/giasonpooni/Parameterized-Lyapunov-Stability-Runtime",
+    "commit": "19ea6967060166ba09db6cd4563bd87bd6b3d196",
+    "package_version": "0.1.0rc1",
+    "source_digest": "a6fee6b3b4eb7852b31f5a285fe8c50b535f25762e1daf82e36720ef8dd1b7c7",
+    "python_version": "3.12.3",
+    "numpy_version": "2.4.3",
+    "jsonschema_version": "4.26.0",
+    "adapter_version": "ciw-plsr-adapter-v1"
+  },
+  "runtime_binding": [
+    "repository",
+    "commit",
+    "package_version",
+    "source_digest",
+    "adapter_version"
+  ],
+  "tolerance_policy": {
+    "policy_id": "plsr-corpus-tolerance-v1",
+    "description": "Codes, categories, booleans, integers, strings and every float not named here are compared exactly. The named fields are read from a LAPACK symmetric eigensolver, whose last bits are not fixed by the reference; they are compared relatively. An eigenvalue of exactly zero therefore still compares exactly in magnitude, because the absolute tolerance is zero.",
+    "digest_enforcement": "reported",
+    "fields": {
+      "diagnostics.min_P": {
+        "relative": 1e-12,
+        "absolute": 0.0
+      },
+      "diagnostics.max_decrease": {
+        "relative": 1e-12,
+        "absolute": 0.0
+      },
+      "diagnostics.margin": {
+        "relative": 1e-12,
+        "absolute": 0.0
+      },
+      "diagnostics.margin_ratio": {
+        "relative": 1e-12,
+        "absolute": 0.0
+      }
+    }
+  },
+  "cases": [
+    {
+      "case_id": "continuous-certified",
+      "purpose": "certification",
+      "description": "The published continuous affine fixture at an interior parameter and rate.",
+      "model_file": "continuous-affine.json",
+      "model_artifact_digest": "46254ea6f964076dab2f944177e06eff920c3d1a6c07fc5cc92f5358ebe11efd",
+      "sample": {
+        "sample_schema": "plsr-sample-v1",
+        "x": [
+          0.1,
+          0.2
+        ],
+        "theta": [
+          0.5
+        ],
+        "theta_dot": [
+          0.1
+        ]
+      },
+      "expect": {
+        "outcome": "evaluated",
+        "code": "CERTIFIED_WITH_MARGIN",
+        "presentation_category": "computationally_acceptable",
+        "inequality_certified": true,
+        "meets_required_margin": true,
+        "operationally_acceptable": true,
+        "required_margin": 0.1,
+        "level": 4.0,
+        "record_digest": "f4121853fcc991407e16144ca400c2a0dc9a0f90fd9f502df900fca364f8fe1d",
+        "diagnostics": {
+          "scaled_decrease": -16.875999999999998,
+          "decrease": -0.26368749999999996,
+          "value": 0.05125,
+          "min_P": 1.025,
+          "state_scale": 0.125,
+          "max_decrease": -3.8387499999999997,
+          "scaled_value": 3.28,
+          "resolution": 1.7521539774634226e-14,
+          "margin": 3.8387499999999997,
+          "margin_ratio": 219087480288537.38,
+          "nonfinite_fields": [],
+          "value_overflow": false,
+          "decrease_overflow": false,
+          "value_underflow": false,
+          "decrease_underflow": false,
+          "value_out_of_range": false,
+          "state_scale_exponent": -3,
+          "value_mantissa_exponent": [
+            0.82,
+            -4
+          ],
+          "decrease_mantissa_exponent": [
+            -0.5273749999999999,
+            -1
+          ],
+          "A": [
+            [
+              -1.875,
+              0.0
+            ],
+            [
+              0.0,
+              -2.75
+            ]
+          ],
+          "P": [
+            [
+              1.025,
+              0.0
+            ],
+            [
+              0.0,
+              1.025
+            ]
+          ],
+          "decrease_matrix": [
+            [
+              -3.8387499999999997,
+              0.0
+            ],
+            [
+              0.0,
+              -5.632499999999999
+            ]
+          ],
+          "P_rate": [
+            [
+              0.005000000000000001,
+              0.0
+            ],
+            [
+              0.0,
+              0.005000000000000001
+            ]
+          ]
+        }
+      }
+    },
+    {
+      "case_id": "continuous-box-upper-endpoint",
+      "purpose": "domain_refusal",
+      "description": "Both boxes evaluated at their upper endpoints, which are inside the closed box.",
+      "model_file": "continuous-affine.json",
+      "model_artifact_digest": "46254ea6f964076dab2f944177e06eff920c3d1a6c07fc5cc92f5358ebe11efd",
+      "sample": {
+        "sample_schema": "plsr-sample-v1",
+        "x": [
+          0.1,
+          0.2
+        ],
+        "theta": [
+          1.0
+        ],
+        "theta_dot": [
+          0.2
+        ]
+      },
+      "expect": {
+        "outcome": "evaluated",
+        "code": "CERTIFIED_WITH_MARGIN",
+        "presentation_category": "computationally_acceptable",
+        "inequality_certified": true,
+        "meets_required_margin": true,
+        "operationally_acceptable": true,
+        "required_margin": 0.1,
+        "level": 4.0,
+        "record_digest": "0616daf46485d2f9a03fcbc093b2619a25d083ca38d726be593fbafb173a7247",
+        "diagnostics": {
+          "scaled_decrease": -15.760000000000002,
+          "decrease": -0.24625000000000002,
+          "value": 0.05250000000000001,
+          "min_P": 1.05,
+          "state_scale": 0.125,
+          "max_decrease": -3.6650000000000005,
+          "scaled_value": 3.3600000000000008,
+          "resolution": 1.6313617123842056e-14,
+          "margin": 3.6650000000000005,
+          "margin_ratio": 224658944253611.88,
+          "nonfinite_fields": [],
+          "value_overflow": false,
+          "decrease_overflow": false,
+          "value_underflow": false,
+          "decrease_underflow": false,
+          "value_out_of_range": false,
+          "state_scale_exponent": -3,
+          "value_mantissa_exponent": [
+            0.8400000000000002,
+            -4
+          ],
+          "decrease_mantissa_exponent": [
+            -0.9850000000000001,
+            -2
+          ],
+          "A": [
+            [
+              -1.75,
+              0.0
+            ],
+            [
+              0.0,
+              -2.5
+            ]
+          ],
+          "P": [
+            [
+              1.05,
+              0.0
+            ],
+            [
+              0.0,
+              1.05
+            ]
+          ],
+          "decrease_matrix": [
+            [
+              -3.6650000000000005,
+              0.0
+            ],
+            [
+              0.0,
+              -5.24
+            ]
+          ],
+          "P_rate": [
+            [
+              0.010000000000000002,
+              0.0
+            ],
+            [
+              0.0,
+              0.010000000000000002
+            ]
+          ]
+        }
+      }
+    },
+    {
+      "case_id": "continuous-box-lower-endpoint",
+      "purpose": "domain_refusal",
+      "description": "Both boxes evaluated at their lower endpoints, which are inside the closed box.",
+      "model_file": "continuous-affine.json",
+      "model_artifact_digest": "46254ea6f964076dab2f944177e06eff920c3d1a6c07fc5cc92f5358ebe11efd",
+      "sample": {
+        "sample_schema": "plsr-sample-v1",
+        "x": [
+          0.1,
+          0.2
+        ],
+        "theta": [
+          -1.0
+        ],
+        "theta_dot": [
+          -0.2
+        ]
+      },
+      "expect": {
+        "outcome": "evaluated",
+        "code": "CERTIFIED_WITH_MARGIN",
+        "presentation_category": "computationally_acceptable",
+        "inequality_certified": true,
+        "meets_required_margin": true,
+        "operationally_acceptable": true,
+        "required_margin": 0.1,
+        "level": 4.0,
+        "record_digest": "f1ad58be61e40a0792fa9d996969c4fac918bd38882cc5f0c7b00548c731fa2a",
+        "diagnostics": {
+          "scaled_decrease": -19.791999999999998,
+          "decrease": -0.30924999999999997,
+          "value": 0.04750000000000001,
+          "min_P": 0.95,
+          "state_scale": 0.125,
+          "max_decrease": -4.284999999999999,
+          "scaled_value": 3.0400000000000005,
+          "resolution": 2.0683454948766677e-14,
+          "margin": 4.284999999999999,
+          "margin_ratio": 207170417641251.34,
+          "nonfinite_fields": [],
+          "value_overflow": false,
+          "decrease_overflow": false,
+          "value_underflow": false,
+          "decrease_underflow": false,
+          "value_out_of_range": false,
+          "state_scale_exponent": -3,
+          "value_mantissa_exponent": [
+            0.7600000000000001,
+            -4
+          ],
+          "decrease_mantissa_exponent": [
+            -0.6184999999999999,
+            -1
+          ],
+          "A": [
+            [
+              -2.25,
+              0.0
+            ],
+            [
+              0.0,
+              -3.5
+            ]
+          ],
+          "P": [
+            [
+              0.95,
+              0.0
+            ],
+            [
+              0.0,
+              0.95
+            ]
+          ],
+          "decrease_matrix": [
+            [
+              -4.284999999999999,
+              0.0
+            ],
+            [
+              0.0,
+              -6.659999999999999
+            ]
+          ],
+          "P_rate": [
+            [
+              -0.010000000000000002,
+              0.0
+            ],
+            [
+              0.0,
+              -0.010000000000000002
+            ]
+          ]
+        }
+      }
+    },
+    {
+      "case_id": "continuous-theta-one-ulp-above-box",
+      "purpose": "domain_refusal",
+      "description": "One float64 step above the declared upper parameter bound is outside the box.",
+      "model_file": "continuous-affine.json",
+      "model_artifact_digest": "46254ea6f964076dab2f944177e06eff920c3d1a6c07fc5cc92f5358ebe11efd",
+      "sample": {
+        "sample_schema": "plsr-sample-v1",
+        "x": [
+          0.1,
+          0.2
+        ],
+        "theta": [
+          1.0000000000000002
+        ],
+        "theta_dot": [
+          0.0
+        ]
+      },
+      "expect": {
+        "outcome": "evaluated",
+        "code": "OUTSIDE_PARAMETER_BOX",
+        "presentation_category": "outside_declared_domain",
+        "inequality_certified": false,
+        "meets_required_margin": false,
+        "operationally_acceptable": false,
+        "required_margin": 0.1,
+        "level": 4.0,
+        "record_digest": "06659f4a4c8095fd8230b58af0d81a8f41c9d65e72916ab204896ab4be122f65",
+        "diagnostics": null
+      }
+    },
+    {
+      "case_id": "continuous-rate-one-ulp-above-box",
+      "purpose": "domain_refusal",
+      "description": "One float64 step above the declared upper rate bound is outside the box.",
+      "model_file": "continuous-affine.json",
+      "model_artifact_digest": "46254ea6f964076dab2f944177e06eff920c3d1a6c07fc5cc92f5358ebe11efd",
+      "sample": {
+        "sample_schema": "plsr-sample-v1",
+        "x": [
+          0.1,
+          0.2
+        ],
+        "theta": [
+          0.0
+        ],
+        "theta_dot": [
+          0.20000000000000004
+        ]
+      },
+      "expect": {
+        "outcome": "evaluated",
+        "code": "OUTSIDE_PARAMETER_BOX",
+        "presentation_category": "outside_declared_domain",
+        "inequality_certified": false,
+        "meets_required_margin": false,
+        "operationally_acceptable": false,
+        "required_margin": 0.1,
+        "level": 4.0,
+        "record_digest": "ed6adfa3b6d711ed599d3a57281222f7af10dd726d19a20e37d4dbf987c9c405",
+        "diagnostics": null
+      }
+    },
+    {
+      "case_id": "continuous-outside-level-set",
+      "purpose": "domain_refusal",
+      "description": "A state whose V exceeds the declared level of 4.0, with the decrease still holding.",
+      "model_file": "continuous-affine.json",
+      "model_artifact_digest": "46254ea6f964076dab2f944177e06eff920c3d1a6c07fc5cc92f5358ebe11efd",
+      "sample": {
+        "sample_schema": "plsr-sample-v1",
+        "x": [
+          3.0,
+          0.0
+        ],
+        "theta": [
+          0.0
+        ],
+        "theta_dot": [
+          0.0
+        ]
+      },
+      "expect": {
+        "outcome": "evaluated",
+        "code": "OUTSIDE_LEVEL_SET",
+        "presentation_category": "outside_declared_domain",
+        "inequality_certified": true,
+        "meets_required_margin": true,
+        "operationally_acceptable": false,
+        "required_margin": 0.1,
+        "level": 4.0,
+        "record_digest": "4b61b68b90bae367316deb64ff5d40c408ad0da82b8f04153b3aa920111ef655",
+        "diagnostics": {
+          "scaled_decrease": -9.0,
+          "decrease": -36.0,
+          "value": 9.0,
+          "min_P": 1.0,
+          "state_scale": 2.0,
+          "max_decrease": -4.0,
+          "scaled_value": 2.25,
+          "resolution": 1.8651746813702636e-14,
+          "margin": 4.0,
+          "margin_ratio": 214457125112880.7,
+          "nonfinite_fields": [],
+          "value_overflow": false,
+          "decrease_overflow": false,
+          "value_underflow": false,
+          "decrease_underflow": false,
+          "value_out_of_range": false,
+          "state_scale_exponent": 1,
+          "value_mantissa_exponent": [
+            0.5625,
+            4
+          ],
+          "decrease_mantissa_exponent": [
+            -0.5625,
+            6
+          ],
+          "A": [
+            [
+              -2.0,
+              0.0
+            ],
+            [
+              0.0,
+              -3.0
+            ]
+          ],
+          "P": [
+            [
+              1.0,
+              0.0
+            ],
+            [
+              0.0,
+              1.0
+            ]
+          ],
+          "decrease_matrix": [
+            [
+              -4.0,
+              0.0
+            ],
+            [
+              0.0,
+              -6.0
+            ]
+          ],
+          "P_rate": [
+            [
+              0.0,
+              0.0
+            ],
+            [
+              0.0,
+              0.0
+            ]
+          ]
+        }
+      }
+    },
+    {
+      "case_id": "continuous-origin",
+      "purpose": "numerical_boundary",
+      "description": "The zero state: nothing to scale, V and the scalar decrease are both exactly zero.",
+      "model_file": "continuous-affine.json",
+      "model_artifact_digest": "46254ea6f964076dab2f944177e06eff920c3d1a6c07fc5cc92f5358ebe11efd",
+      "sample": {
+        "sample_schema": "plsr-sample-v1",
+        "x": [
+          0.0,
+          0.0
+        ],
+        "theta": [
+          0.5
+        ],
+        "theta_dot": [
+          0.1
+        ]
+      },
+      "expect": {
+        "outcome": "evaluated",
+        "code": "CERTIFIED_WITH_MARGIN",
+        "presentation_category": "computationally_acceptable",
+        "inequality_certified": true,
+        "meets_required_margin": true,
+        "operationally_acceptable": true,
+        "required_margin": 0.1,
+        "level": 4.0,
+        "record_digest": "aa29ee5dbbccff166461dd73946ec3cd28607d159ec6b70c56544a55c2271ded",
+        "diagnostics": {
+          "scaled_decrease": 0.0,
+          "decrease": 0.0,
+          "value": 0.0,
+          "min_P": 1.025,
+          "state_scale": 1.0,
+          "max_decrease": -3.8387499999999997,
+          "scaled_value": 0.0,
+          "resolution": 1.7521539774634226e-14,
+          "margin": 3.8387499999999997,
+          "margin_ratio": 219087480288537.38,
+          "nonfinite_fields": [],
+          "value_overflow": false,
+          "decrease_overflow": false,
+          "value_underflow": false,
+          "decrease_underflow": false,
+          "value_out_of_range": false,
+          "state_scale_exponent": 0,
+          "value_mantissa_exponent": [
+            0.0,
+            0
+          ],
+          "decrease_mantissa_exponent": [
+            0.0,
+            0
+          ],
+          "A": [
+            [
+              -1.875,
+              0.0
+            ],
+            [
+              0.0,
+              -2.75
+            ]
+          ],
+          "P": [
+            [
+              1.025,
+              0.0
+            ],
+            [
+              0.0,
+              1.025
+            ]
+          ],
+          "decrease_matrix": [
+            [
+              -3.8387499999999997,
+              0.0
+            ],
+            [
+              0.0,
+              -5.632499999999999
+            ]
+          ],
+          "P_rate": [
+            [
+              0.005000000000000001,
+              0.0
+            ],
+            [
+              0.0,
+              0.005000000000000001
+            ]
+          ]
+        }
+      }
+    },
+    {
+      "case_id": "continuous-denormal-state",
+      "purpose": "numerical_boundary",
+      "description": "The smallest positive denormal state; the reported V underflows while the scaled representation stays exact.",
+      "model_file": "continuous-affine.json",
+      "model_artifact_digest": "46254ea6f964076dab2f944177e06eff920c3d1a6c07fc5cc92f5358ebe11efd",
+      "sample": {
+        "sample_schema": "plsr-sample-v1",
+        "x": [
+          5e-324,
+          0.0
+        ],
+        "theta": [
+          0.5
+        ],
+        "theta_dot": [
+          0.1
+        ]
+      },
+      "expect": {
+        "outcome": "evaluated",
+        "code": "CERTIFIED_WITH_MARGIN",
+        "presentation_category": "computationally_acceptable",
+        "inequality_certified": true,
+        "meets_required_margin": true,
+        "operationally_acceptable": true,
+        "required_margin": 0.1,
+        "level": 4.0,
+        "record_digest": "75da95f526a6c76867dc10ca2128b8c7283c7885f698eab9c1024814ededef24",
+        "diagnostics": {
+          "scaled_decrease": -3.8387499999999997,
+          "decrease": -0.0,
+          "value": 0.0,
+          "min_P": 1.025,
+          "state_scale": 5e-324,
+          "max_decrease": -3.8387499999999997,
+          "scaled_value": 1.025,
+          "resolution": 1.7521539774634226e-14,
+          "margin": 3.8387499999999997,
+          "margin_ratio": 219087480288537.38,
+          "nonfinite_fields": [],
+          "value_overflow": false,
+          "decrease_overflow": false,
+          "value_underflow": true,
+          "decrease_underflow": true,
+          "value_out_of_range": true,
+          "state_scale_exponent": -1074,
+          "value_mantissa_exponent": [
+            0.5125,
+            -2147
+          ],
+          "decrease_mantissa_exponent": [
+            -0.9596874999999999,
+            -2146
+          ],
+          "A": [
+            [
+              -1.875,
+              0.0
+            ],
+            [
+              0.0,
+              -2.75
+            ]
+          ],
+          "P": [
+            [
+              1.025,
+              0.0
+            ],
+            [
+              0.0,
+              1.025
+            ]
+          ],
+          "decrease_matrix": [
+            [
+              -3.8387499999999997,
+              0.0
+            ],
+            [
+              0.0,
+              -5.632499999999999
+            ]
+          ],
+          "P_rate": [
+            [
+              0.005000000000000001,
+              0.0
+            ],
+            [
+              0.0,
+              0.005000000000000001
+            ]
+          ]
+        }
+      }
+    },
+    {
+      "case_id": "continuous-huge-state-outside-level",
+      "purpose": "numerical_boundary",
+      "description": "A state near the float64 ceiling: the reported V overflows and the declared level is exceeded through the scaled comparison.",
+      "model_file": "continuous-affine.json",
+      "model_artifact_digest": "46254ea6f964076dab2f944177e06eff920c3d1a6c07fc5cc92f5358ebe11efd",
+      "sample": {
+        "sample_schema": "plsr-sample-v1",
+        "x": [
+          1e+300,
+          0.0
+        ],
+        "theta": [
+          0.0
+        ],
+        "theta_dot": [
+          0.0
+        ]
+      },
+      "expect": {
+        "outcome": "evaluated",
+        "code": "OUTSIDE_LEVEL_SET",
+        "presentation_category": "outside_declared_domain",
+        "inequality_certified": true,
+        "meets_required_margin": true,
+        "operationally_acceptable": false,
+        "required_margin": 0.1,
+        "level": 4.0,
+        "record_digest": "520c820aa73e906bb43077511c53c01833778b05a4cf251c956869e068dc00df",
+        "diagnostics": {
+          "scaled_decrease": -8.918845251806431,
+          "decrease": null,
+          "value": null,
+          "min_P": 1.0,
+          "state_scale": 6.696928794914171e+299,
+          "max_decrease": -4.0,
+          "scaled_value": 2.2297113129516077,
+          "resolution": 1.8651746813702636e-14,
+          "margin": 4.0,
+          "margin_ratio": 214457125112880.7,
+          "nonfinite_fields": [
+            "decrease",
+            "value"
+          ],
+          "value_overflow": true,
+          "decrease_overflow": true,
+          "value_underflow": false,
+          "decrease_underflow": false,
+          "value_out_of_range": true,
+          "state_scale_exponent": 996,
+          "value_mantissa_exponent": [
+            0.5574278282379019,
+            1994
+          ],
+          "decrease_mantissa_exponent": [
+            -0.5574278282379019,
+            1996
+          ],
+          "A": [
+            [
+              -2.0,
+              0.0
+            ],
+            [
+              0.0,
+              -3.0
+            ]
+          ],
+          "P": [
+            [
+              1.0,
+              0.0
+            ],
+            [
+              0.0,
+              1.0
+            ]
+          ],
+          "decrease_matrix": [
+            [
+              -4.0,
+              0.0
+            ],
+            [
+              0.0,
+              -6.0
+            ]
+          ],
+          "P_rate": [
+            [
+              0.0,
+              0.0
+            ],
+            [
+              0.0,
+              0.0
+            ]
+          ]
+        }
+      }
+    },
+    {
+      "case_id": "continuous-huge-state-no-level",
+      "purpose": "numerical_boundary",
+      "description": "The same overflowing state with no declared level: the conclusion is still reached on the scaled state, and only the reported numbers do not fit.",
+      "model_file": "continuous-unbounded.json",
+      "model_artifact_digest": "03d3ec8e313f62d9d29e4cc4313c3dd451bd66c8e325e589d838a68e9356e40c",
+      "sample": {
+        "sample_schema": "plsr-sample-v1",
+        "x": [
+          1e+300,
+          0.0
+        ],
+        "theta": null,
+        "theta_dot": null
+      },
+      "expect": {
+        "outcome": "evaluated",
+        "code": "CERTIFIED_WITH_MARGIN",
+        "presentation_category": "computationally_acceptable",
+        "inequality_certified": true,
+        "meets_required_margin": true,
+        "operationally_acceptable": true,
+        "required_margin": 0.1,
+        "level": null,
+        "record_digest": "a33124cf321728977848a262e5713b766e7603d52d621b2dccb8871173dd6ab0",
+        "diagnostics": {
+          "scaled_decrease": -8.918845251806431,
+          "decrease": null,
+          "value": null,
+          "min_P": 1.0,
+          "state_scale": 6.696928794914171e+299,
+          "max_decrease": -4.0,
+          "scaled_value": 2.2297113129516077,
+          "resolution": 1.8651746813702636e-14,
+          "margin": 4.0,
+          "margin_ratio": 214457125112880.7,
+          "nonfinite_fields": [
+            "decrease",
+            "value"
+          ],
+          "value_overflow": true,
+          "decrease_overflow": true,
+          "value_underflow": false,
+          "decrease_underflow": false,
+          "value_out_of_range": true,
+          "state_scale_exponent": 996,
+          "value_mantissa_exponent": [
+            0.5574278282379019,
+            1994
+          ],
+          "decrease_mantissa_exponent": [
+            -0.5574278282379019,
+            1996
+          ],
+          "A": [
+            [
+              -2.0,
+              0.0
+            ],
+            [
+              0.0,
+              -3.0
+            ]
+          ],
+          "P": [
+            [
+              1.0,
+              0.0
+            ],
+            [
+              0.0,
+              1.0
+            ]
+          ],
+          "decrease_matrix": [
+            [
+              -4.0,
+              0.0
+            ],
+            [
+              0.0,
+              -6.0
+            ]
+          ],
+          "P_rate": [
+            [
+              0.0,
+              0.0
+            ],
+            [
+              0.0,
+              0.0
+            ]
+          ]
+        }
+      }
+    },
+    {
+      "case_id": "discrete-certified",
+      "purpose": "certification",
+      "description": "The published discrete linear fixture; A already represents the one-step transition.",
+      "model_file": "discrete-linear.json",
+      "model_artifact_digest": "c86e2e761cfbebbe25604d8c7bbb9177e6dc4ed89c841a264032844159a8dc11",
+      "sample": {
+        "sample_schema": "plsr-sample-v1",
+        "x": [
+          0.25,
+          -0.5
+        ],
+        "theta": null,
+        "theta_dot": null
+      },
+      "expect": {
+        "outcome": "evaluated",
+        "code": "CERTIFIED_WITH_MARGIN",
+        "presentation_category": "computationally_acceptable",
+        "inequality_certified": true,
+        "meets_required_margin": true,
+        "operationally_acceptable": true,
+        "required_margin": 0.1,
+        "level": 4.0,
+        "record_digest": "05f0da00d80d1154d5a2dcdfb137e9304faf3d43346363cb5089e148f512c465",
+        "diagnostics": {
+          "scaled_decrease": -0.6,
+          "decrease": -0.15,
+          "value": 0.3125,
+          "min_P": 1.0,
+          "state_scale": 0.5,
+          "max_decrease": -0.3599999999999999,
+          "scaled_value": 1.25,
+          "resolution": 6.359357485052901e-15,
+          "margin": 0.3599999999999999,
+          "margin_ratio": 56609492522813.445,
+          "nonfinite_fields": [],
+          "value_overflow": false,
+          "decrease_overflow": false,
+          "value_underflow": false,
+          "decrease_underflow": false,
+          "value_out_of_range": false,
+          "state_scale_exponent": -1,
+          "value_mantissa_exponent": [
+            0.625,
+            -1
+          ],
+          "decrease_mantissa_exponent": [
+            -0.6,
+            -2
+          ],
+          "A": [
+            [
+              0.8,
+              0.0
+            ],
+            [
+              0.0,
+              0.7
+            ]
+          ],
+          "P": [
+            [
+              1.0,
+              0.0
+            ],
+            [
+              0.0,
+              1.0
+            ]
+          ],
+          "decrease_matrix": [
+            [
+              -0.3599999999999999,
+              0.0
+            ],
+            [
+              0.0,
+              -0.51
+            ]
+          ],
+          "P_rate": null
+        }
+      }
+    },
+    {
+      "case_id": "continuous-margin-shortfall",
+      "purpose": "margin_shortfall",
+      "description": "A decrease margin of 0.04 against a declared required margin of 0.1.",
+      "model_file": "continuous-shortfall.json",
+      "model_artifact_digest": "52b63e359357abd9931bcda40a28ff3fd3210cd920082a0af56bf6ed6776db73",
+      "sample": {
+        "sample_schema": "plsr-sample-v1",
+        "x": [
+          0.1,
+          0.2
+        ],
+        "theta": null,
+        "theta_dot": null
+      },
+      "expect": {
+        "outcome": "evaluated",
+        "code": "MARGIN_LOW",
+        "presentation_category": "margin_shortfall",
+        "inequality_certified": true,
+        "meets_required_margin": false,
+        "operationally_acceptable": false,
+        "required_margin": 0.1,
+        "level": 4.0,
+        "record_digest": "9267abd00678bc994739ab4dd0c9ab1469ef64780023e73bd300ede6cee1339f",
+        "diagnostics": {
+          "scaled_decrease": -5.145600000000001,
+          "decrease": -0.08040000000000001,
+          "value": 0.05000000000000001,
+          "min_P": 1.0,
+          "state_scale": 0.125,
+          "max_decrease": -0.04,
+          "scaled_value": 3.2000000000000006,
+          "resolution": 6.217248937900879e-15,
+          "margin": 0.04,
+          "margin_ratio": 6433713753386.421,
+          "nonfinite_fields": [],
+          "value_overflow": false,
+          "decrease_overflow": false,
+          "value_underflow": false,
+          "decrease_underflow": false,
+          "value_out_of_range": false,
+          "state_scale_exponent": -3,
+          "value_mantissa_exponent": [
+            0.8000000000000002,
+            -4
+          ],
+          "decrease_mantissa_exponent": [
+            -0.6432000000000001,
+            -3
+          ],
+          "A": [
+            [
+              -0.02,
+              0.0
+            ],
+            [
+              0.0,
+              -1.0
+            ]
+          ],
+          "P": [
+            [
+              1.0,
+              0.0
+            ],
+            [
+              0.0,
+              1.0
+            ]
+          ],
+          "decrease_matrix": [
+            [
+              -0.04,
+              0.0
+            ],
+            [
+              0.0,
+              -2.0
+            ]
+          ],
+          "P_rate": [
+            [
+              0.0,
+              0.0
+            ],
+            [
+              0.0,
+              0.0
+            ]
+          ]
+        }
+      }
+    },
+    {
+      "case_id": "continuous-sample-violation",
+      "purpose": "violation",
+      "description": "An indefinite decrease form sampled where x^T M x is resolvably positive.",
+      "model_file": "continuous-indefinite.json",
+      "model_artifact_digest": "e1ef541a13e657e968ee605769dcb13edff854c1f9cde1b271b91ac29f17fba0",
+      "sample": {
+        "sample_schema": "plsr-sample-v1",
+        "x": [
+          1.0,
+          0.0
+        ],
+        "theta": null,
+        "theta_dot": null
+      },
+      "expect": {
+        "outcome": "evaluated",
+        "code": "NOT_CERTIFIED",
+        "presentation_category": "certificate_violation",
+        "inequality_certified": false,
+        "meets_required_margin": false,
+        "operationally_acceptable": false,
+        "required_margin": 0.1,
+        "level": 4.0,
+        "record_digest": "5fbe2b77c56874100ae830202391c9c825725961c0e4af10165115c5a4565e3b",
+        "diagnostics": {
+          "scaled_decrease": 2.0,
+          "decrease": 2.0,
+          "value": 1.0,
+          "min_P": 1.0,
+          "state_scale": 1.0,
+          "max_decrease": 2.0,
+          "scaled_value": 1.0,
+          "resolution": 6.217248937900879e-15,
+          "margin": -2.0,
+          "margin_ratio": -321685687669321.0,
+          "nonfinite_fields": [],
+          "value_overflow": false,
+          "decrease_overflow": false,
+          "value_underflow": false,
+          "decrease_underflow": false,
+          "value_out_of_range": false,
+          "state_scale_exponent": 0,
+          "value_mantissa_exponent": [
+            0.5,
+            1
+          ],
+          "decrease_mantissa_exponent": [
+            0.5,
+            2
+          ],
+          "A": [
+            [
+              1.0,
+              0.0
+            ],
+            [
+              0.0,
+              -1.0
+            ]
+          ],
+          "P": [
+            [
+              1.0,
+              0.0
+            ],
+            [
+              0.0,
+              1.0
+            ]
+          ],
+          "decrease_matrix": [
+            [
+              2.0,
+              0.0
+            ],
+            [
+              0.0,
+              -2.0
+            ]
+          ],
+          "P_rate": [
+            [
+              0.0,
+              0.0
+            ],
+            [
+              0.0,
+              0.0
+            ]
+          ]
+        }
+      }
+    },
+    {
+      "case_id": "continuous-decrease-not-definite",
+      "purpose": "violation",
+      "description": "The same indefinite form sampled where this state decreases although the form is not negative definite.",
+      "model_file": "continuous-indefinite.json",
+      "model_artifact_digest": "e1ef541a13e657e968ee605769dcb13edff854c1f9cde1b271b91ac29f17fba0",
+      "sample": {
+        "sample_schema": "plsr-sample-v1",
+        "x": [
+          0.0,
+          1.0
+        ],
+        "theta": null,
+        "theta_dot": null
+      },
+      "expect": {
+        "outcome": "evaluated",
+        "code": "DECREASE_NOT_DEFINITE",
+        "presentation_category": "decrease_not_definite",
+        "inequality_certified": false,
+        "meets_required_margin": false,
+        "operationally_acceptable": false,
+        "required_margin": 0.1,
+        "level": 4.0,
+        "record_digest": "8e75257aed82de56a0e8e81dfff12014fe62c2dfdfc9314d9ffb6cbabb95ff2e",
+        "diagnostics": {
+          "scaled_decrease": -2.0,
+          "decrease": -2.0,
+          "value": 1.0,
+          "min_P": 1.0,
+          "state_scale": 1.0,
+          "max_decrease": 2.0,
+          "scaled_value": 1.0,
+          "resolution": 6.217248937900879e-15,
+          "margin": -2.0,
+          "margin_ratio": -321685687669321.0,
+          "nonfinite_fields": [],
+          "value_overflow": false,
+          "decrease_overflow": false,
+          "value_underflow": false,
+          "decrease_underflow": false,
+          "value_out_of_range": false,
+          "state_scale_exponent": 0,
+          "value_mantissa_exponent": [
+            0.5,
+            1
+          ],
+          "decrease_mantissa_exponent": [
+            -0.5,
+            2
+          ],
+          "A": [
+            [
+              1.0,
+              0.0
+            ],
+            [
+              0.0,
+              -1.0
+            ]
+          ],
+          "P": [
+            [
+              1.0,
+              0.0
+            ],
+            [
+              0.0,
+              1.0
+            ]
+          ],
+          "decrease_matrix": [
+            [
+              2.0,
+              0.0
+            ],
+            [
+              0.0,
+              -2.0
+            ]
+          ],
+          "P_rate": [
+            [
+              0.0,
+              0.0
+            ],
+            [
+              0.0,
+              0.0
+            ]
+          ]
+        }
+      }
+    },
+    {
+      "case_id": "continuous-numerically-inconclusive",
+      "purpose": "numerical_boundary",
+      "description": "An undamped oscillator whose decrease form is exactly zero, below the float64 resolution of forming it.",
+      "model_file": "continuous-undamped.json",
+      "model_artifact_digest": "79c77e0a88ef4a135c2a0607c68af44b069bfb209f06e89d381e8a6eed0fec97",
+      "sample": {
+        "sample_schema": "plsr-sample-v1",
+        "x": [
+          0.5,
+          0.5
+        ],
+        "theta": null,
+        "theta_dot": null
+      },
+      "expect": {
+        "outcome": "evaluated",
+        "code": "NUMERICAL_INCONCLUSIVE",
+        "presentation_category": "numerical_refusal",
+        "inequality_certified": false,
+        "meets_required_margin": false,
+        "operationally_acceptable": false,
+        "required_margin": 0.1,
+        "level": 4.0,
+        "record_digest": "1304cc524a4da08bd4590c692ad7e68266b94231fb10f0be620c295f1c3fca3d",
+        "diagnostics": {
+          "scaled_decrease": 0.0,
+          "decrease": 0.0,
+          "value": 0.5,
+          "min_P": 1.0,
+          "state_scale": 0.5,
+          "max_decrease": 0.0,
+          "scaled_value": 2.0,
+          "resolution": 4.4408920985006285e-15,
+          "margin": -0.0,
+          "margin_ratio": -0.0,
+          "nonfinite_fields": [],
+          "value_overflow": false,
+          "decrease_overflow": false,
+          "value_underflow": false,
+          "decrease_underflow": false,
+          "value_out_of_range": false,
+          "state_scale_exponent": -1,
+          "value_mantissa_exponent": [
+            0.5,
+            0
+          ],
+          "decrease_mantissa_exponent": [
+            0.0,
+            -2
+          ],
+          "A": [
+            [
+              0.0,
+              1.0
+            ],
+            [
+              -1.0,
+              0.0
+            ]
+          ],
+          "P": [
+            [
+              1.0,
+              0.0
+            ],
+            [
+              0.0,
+              1.0
+            ]
+          ],
+          "decrease_matrix": [
+            [
+              0.0,
+              0.0
+            ],
+            [
+              0.0,
+              0.0
+            ]
+          ],
+          "P_rate": [
+            [
+              0.0,
+              0.0
+            ],
+            [
+              0.0,
+              0.0
+            ]
+          ]
+        }
+      }
+    },
+    {
+      "case_id": "continuous-numerical-overflow",
+      "purpose": "numerical_boundary",
+      "description": "Finite declared matrices whose decrease form leaves float64; no sample is read.",
+      "model_file": "continuous-overflow.json",
+      "model_artifact_digest": "9d7817bd8d4217bc795877145dd4743bf74be73358347bcbd636eb23bda88420",
+      "sample": {
+        "sample_schema": "plsr-sample-v1",
+        "x": [
+          1.0,
+          1.0
+        ],
+        "theta": null,
+        "theta_dot": null
+      },
+      "expect": {
+        "outcome": "evaluated",
+        "code": "NUMERICAL_OVERFLOW",
+        "presentation_category": "numerical_refusal",
+        "inequality_certified": false,
+        "meets_required_margin": false,
+        "operationally_acceptable": false,
+        "required_margin": 0.1,
+        "level": null,
+        "record_digest": "2a1ff4a7743fb7e3d0aae07073586923167cd1832a9b8280b3e8643cfc9c467a",
+        "diagnostics": null
+      }
+    },
+    {
+      "case_id": "refusal-affine-certificate-not-positive",
+      "purpose": "contract_refusal",
+      "description": "An affine certificate that loses positive definiteness inside the declared parameter box is an input refusal, not a CERTIFICATE_NOT_POSITIVE verdict.",
+      "model_file": "continuous-affine-nonpositive.json",
+      "model_artifact_digest": "1c60c33cae45585f82dc16a15bf7b324c2d1f6b5b05e1f57f7d9f75a87ea5832",
+      "sample": {
+        "sample_schema": "plsr-sample-v1",
+        "x": [
+          0.1,
+          0.2
+        ],
+        "theta": [
+          -1.0
+        ],
+        "theta_dot": [
+          0.0
+        ]
+      },
+      "expect": {
+        "outcome": "refused",
+        "reason_contains": "must be positive definite"
+      }
+    },
+    {
+      "case_id": "refusal-theta-on-linear-plant",
+      "purpose": "contract_refusal",
+      "description": "A linear plant takes no parameter vector.",
+      "model_file": "discrete-linear.json",
+      "model_artifact_digest": "c86e2e761cfbebbe25604d8c7bbb9177e6dc4ed89c841a264032844159a8dc11",
+      "sample": {
+        "sample_schema": "plsr-sample-v1",
+        "x": [
+          0.25,
+          -0.5
+        ],
+        "theta": [
+          0.5
+        ],
+        "theta_dot": null
+      },
+      "expect": {
+        "outcome": "refused",
+        "reason_contains": "theta must be null for a linear plant"
+      }
+    },
+    {
+      "case_id": "refusal-rate-on-discrete-plant",
+      "purpose": "contract_refusal",
+      "description": "A discrete plant takes no parameter rate.",
+      "model_file": "discrete-linear.json",
+      "model_artifact_digest": "c86e2e761cfbebbe25604d8c7bbb9177e6dc4ed89c841a264032844159a8dc11",
+      "sample": {
+        "sample_schema": "plsr-sample-v1",
+        "x": [
+          0.25,
+          -0.5
+        ],
+        "theta": null,
+        "theta_dot": [
+          0.1
+        ]
+      },
+      "expect": {
+        "outcome": "refused",
+        "reason_contains": "theta_dot must be null for linear or discrete plants"
+      }
+    },
+    {
+      "case_id": "refusal-missing-theta",
+      "purpose": "contract_refusal",
+      "description": "An affine plant requires the parameter vector explicitly.",
+      "model_file": "continuous-affine.json",
+      "model_artifact_digest": "46254ea6f964076dab2f944177e06eff920c3d1a6c07fc5cc92f5358ebe11efd",
+      "sample": {
+        "sample_schema": "plsr-sample-v1",
+        "x": [
+          0.1,
+          0.2
+        ],
+        "theta": null,
+        "theta_dot": [
+          0.1
+        ]
+      },
+      "expect": {
+        "outcome": "refused",
+        "reason_contains": "theta must be an explicit JSON array of 1 numbers"
+      }
+    },
+    {
+      "case_id": "refusal-state-dimension",
+      "purpose": "contract_refusal",
+      "description": "The state vector must match the declared state dimension.",
+      "model_file": "continuous-affine.json",
+      "model_artifact_digest": "46254ea6f964076dab2f944177e06eff920c3d1a6c07fc5cc92f5358ebe11efd",
+      "sample": {
+        "sample_schema": "plsr-sample-v1",
+        "x": [
+          0.1
+        ],
+        "theta": [
+          0.5
+        ],
+        "theta_dot": [
+          0.1
+        ]
+      },
+      "expect": {
+        "outcome": "refused",
+        "reason_contains": "x must be an explicit JSON array of 2 numbers"
+      }
+    },
+    {
+      "case_id": "refusal-boolean-state-entry",
+      "purpose": "contract_refusal",
+      "description": "A JSON boolean is not a number, even where it would coerce.",
+      "model_file": "continuous-affine.json",
+      "model_artifact_digest": "46254ea6f964076dab2f944177e06eff920c3d1a6c07fc5cc92f5358ebe11efd",
+      "sample": {
+        "sample_schema": "plsr-sample-v1",
+        "x": [
+          true,
+          0.2
+        ],
+        "theta": [
+          0.5
+        ],
+        "theta_dot": [
+          0.1
+        ]
+      },
+      "expect": {
+        "outcome": "refused",
+        "reason_contains": "must be a finite JSON number, not a boolean or string"
+      }
+    },
+    {
+      "case_id": "refusal-unknown-sample-schema",
+      "purpose": "contract_refusal",
+      "description": "An unrecognized sample schema version is refused rather than assumed.",
+      "model_file": "continuous-affine.json",
+      "model_artifact_digest": "46254ea6f964076dab2f944177e06eff920c3d1a6c07fc5cc92f5358ebe11efd",
+      "sample": {
+        "sample_schema": "plsr-sample-v2",
+        "x": [
+          0.1,
+          0.2
+        ],
+        "theta": [
+          0.5
+        ],
+        "theta_dot": [
+          0.1
+        ]
+      },
+      "expect": {
+        "outcome": "refused",
+        "reason_contains": "sample_schema must be 'plsr-sample-v1'"
+      }
+    }
+  ],
+  "corpus_digest": "903418be84de2b0809361428a4bcf3756a7a96afe9ceed74781ee9ed51b96c57"
+}

@@ -162,6 +162,23 @@ def parser() -> argparse.ArgumentParser:
     replay = actions.add_parser("replay", help="Reevaluate saved inputs; retain new evidence and comparison")
     replay.add_argument("path", type=Path)
     replay.add_argument("--output-dir", type=Path, required=True)
+    corpus = actions.add_parser("corpus", help="Reproduce or re-record the declared reference corpus")
+    corpus_actions = corpus.add_subparsers(dest="corpus_command", required=True)
+    corpus_check = corpus_actions.add_parser(
+        "check", help="Reproduce every declared case; never writes an expectation")
+    corpus_check.add_argument("path", type=Path)
+    corpus_check.add_argument("--case", action="append", dest="cases", metavar="CASE_ID",
+                              help="Check only this case; repeatable")
+    corpus_check.add_argument("--output-dir", type=Path,
+                              help="Also retain one run bundle per evaluated case")
+    corpus_record = corpus_actions.add_parser(
+        "record", help="Re-observe every case and report the changes before writing")
+    corpus_record.add_argument("path", type=Path)
+    corpus_record.add_argument("--output", type=Path, required=True)
+    corpus_record.add_argument("--accept-changes", action="store_true",
+                               help="Replace an existing corpus whose expectations differ")
+    corpus_record.add_argument("--output-dir", type=Path,
+                               help="Also retain one run bundle per recorded case")
     return root
 
 
@@ -212,6 +229,20 @@ def main(argv: list[str] | None = None) -> int:
                 result = evaluate_run(args.model, args.sample, args.output_dir)
             elif args.plsr_command == "inspect":
                 result = inspect_run(args.path)
+            elif args.plsr_command == "corpus":
+                from .plsr_corpus import check_corpus, record_corpus
+                if args.corpus_command == "check":
+                    report = check_corpus(args.path, output_dir=args.output_dir,
+                                          case_ids=args.cases)
+                    print_json(report)
+                    if report["runtime_status"] == "stale":
+                        return 5
+                    return 0 if report["status"] == "reproduced" else 4
+                report = record_corpus(args.path, args.output,
+                                       accept_changes=args.accept_changes,
+                                       output_dir=args.output_dir)
+                print_json(report)
+                return 0 if report["written"] else 4
             else:
                 result = replay_run(args.path, args.output_dir)
             print_json(result)
