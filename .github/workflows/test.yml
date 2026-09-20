@@ -22,6 +22,37 @@ jobs:
       - run: python -m pip install -e ".[dev]"
       - run: python -m pytest -q
 
+  installed-package:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-python@v5
+        with:
+          python-version: '3.12'
+      - name: Build installable wheel
+        run: python -m pip wheel --no-deps . --wheel-dir dist
+      - name: Install and exercise wheel outside the checkout
+        run: |
+          python -m venv "$RUNNER_TEMP/ciw-installed"
+          "$RUNNER_TEMP/ciw-installed/bin/python" -m pip install dist/*.whl
+          "$RUNNER_TEMP/ciw-installed/bin/python" scripts/check_installed.py
+      - uses: actions/upload-artifact@v4
+        with:
+          name: ciw-python-wheel
+          path: dist/*.whl
+
+  container-deployment:
+    runs-on: ubuntu-latest
+    timeout-minutes: 15
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-python@v5
+        with:
+          python-version: '3.12'
+      - run: python -m pip install -e .
+      - name: Build, deploy, restart and verify persisted workspace
+        run: python scripts/check_container.py
+
   godot-bridge:
     runs-on: ubuntu-latest
     steps:

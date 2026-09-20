@@ -9,4 +9,5 @@ dist/
 results/
 recordings/
 work/
+.ciw/
 *.log

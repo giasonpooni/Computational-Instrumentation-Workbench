@@ -4,6 +4,8 @@ Computational Instrumentation Workbench is a terminal-first workbench that conne
 
 This first slice is a local prototype with one **synthetic damped-oscillator instrument**. It does not yet adapt an existing PayloadOS instrument or acquire physical observations. Python owns the float64 scientific record and all calculations. A terminal can operate alone; the optional Godot window attaches to the same service.
 
+For persistent native service control or the containerized backend, use the [deployment guide](../deploy/README.md).
+
 ## Install
 
 Use Python 3.11 or newer. Commands below work from the repository root; activate the virtual environment before subsequent commands.

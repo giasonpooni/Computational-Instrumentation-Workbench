@@ -1,0 +1,22 @@
+services:
+  backend:
+    build:
+      context: .
+    image: ciw-backend:local
+    command: ["ciw", "serve", "--bind", "0.0.0.0", "--resume", "--output-dir", "/data"]
+    ports:
+      - "127.0.0.1:${CIW_PORT:-8765}:8765"
+    volumes:
+      - workspace:/data
+    read_only: true
+    tmpfs:
+      - /tmp:rw,noexec,nosuid,size=64m,mode=1777
+    cap_drop:
+      - ALL
+    security_opt:
+      - no-new-privileges:true
+    stop_grace_period: 30s
+    restart: "on-failure:3"
+
+volumes:
+  workspace:

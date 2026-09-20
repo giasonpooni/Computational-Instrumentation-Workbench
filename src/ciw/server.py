@@ -1,10 +1,11 @@
-"""Loopback-only WebSocket transport for the shared instrument session."""
+"""Local WebSocket transport with an explicit container bind and saved shutdown."""
 
 from __future__ import annotations
 
 import asyncio
 import json
 import logging
+import signal
 
 from websockets.asyncio.server import serve
 from websockets.exceptions import ConnectionClosed
@@ -67,11 +68,59 @@ class WorkbenchServer:
             self.clients.discard(websocket)
 
 
-async def run_server(session: Session, port: int = 8765) -> None:
+async def run_server(session: Session, port: int = 8765, bind: str = "127.0.0.1",
+                     *, stop_event: asyncio.Event | None = None) -> None:
+    """Drain connections and persist the workspace when the process is stopped.
+
+    SIGINT/SIGTERM stop this process only. There is no remote shutdown operation.
+    An embedding application may supply its own stop event instead of installing
+    process signal handlers. SIGTERM handling is exercised on POSIX; Windows
+    process termination is immediate and must be preceded by workspace.save.
+    """
+    if bind not in {"127.0.0.1", "0.0.0.0"}:
+        raise ValueError("bind must be 127.0.0.1 or explicitly 0.0.0.0 for a container")
     bridge = WorkbenchServer(session)
-    # Native local clients only. Browser origins and non-loopback binds are excluded.
-    async with serve(bridge.handler, "127.0.0.1", port, origins=[None],
-                     max_size=1_048_576, max_queue=16, close_timeout=2):
-        print(f"Computational Instrumentation Workbench: ws://127.0.0.1:{port}", flush=True)
-        print(f"Session {session.session_id} | {session.run['run_id']} | Ctrl+C to stop", flush=True)
-        await asyncio.Future()
+    loop = asyncio.get_running_loop()
+    managed_signals = stop_event is None
+    stopped = stop_event if stop_event is not None else asyncio.Event()
+    installed = []
+    started = False
+    try:
+        if managed_signals:
+            for signum in (signal.SIGINT, signal.SIGTERM):
+                previous = signal.getsignal(signum)
+                try:
+                    loop.add_signal_handler(signum, stopped.set)
+                    installed.append((signum, previous, True))
+                except (NotImplementedError, RuntimeError):
+                    # Windows event loops do not expose add_signal_handler.
+                    try:
+                        signal.signal(signum, lambda *_: loop.call_soon_threadsafe(stopped.set))
+                        installed.append((signum, previous, False))
+                    except ValueError:
+                        LOG.warning("Signal handlers require the main thread; supply stop_event when embedding")
+        # Native clients only; Compose publishes the explicit container bind
+        # through a host-loopback port. Browser-origin connections stay rejected.
+        async with serve(bridge.handler, bind, port, origins=[None],
+                         max_size=1_048_576, max_queue=16, close_timeout=2):
+            started = True
+            print(f"Computational Instrumentation Workbench: ws://{bind}:{port}", flush=True)
+            print(f"Session {session.session_id} | {session.run['run_id']} | Ctrl+C to stop", flush=True)
+            await stopped.wait()
+        # Exiting serve closes the listener and waits for handlers, including
+        # in-flight scientific operations, before snapshotting their results.
+    finally:
+        try:
+            if started:
+                workspace = session.output_dir / "workspace.json"
+                try:
+                    await asyncio.to_thread(session.save_workspace, workspace)
+                except Exception:
+                    LOG.exception("Unable to save workspace during shutdown: %s", workspace)
+                    raise
+                print(f"Saved workspace: {workspace}", flush=True)
+        finally:
+            for signum, previous, via_loop in installed:
+                if via_loop:
+                    loop.remove_signal_handler(signum)
+                signal.signal(signum, previous)

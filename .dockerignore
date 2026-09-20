@@ -1,0 +1,11 @@
+# Only the backend package and its build metadata enter the build context.
+**
+!Dockerfile
+!.dockerignore
+!pyproject.toml
+!README.md
+!src/
+!src/**
+**/__pycache__
+**/*.py[cod]
+**/*.egg-info
