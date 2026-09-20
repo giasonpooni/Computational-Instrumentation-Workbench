@@ -112,6 +112,23 @@ checked. Successful upstream tests or a published input schema alone establish
 standalone readiness, not workbench integration. Keep pending tools in a clearly
 labelled section until the adapter and its verification are delivered.
 
+## Names and deployment namespace
+
+The formal technical name is used wherever a contract is stated. The organization and product labels are presentation; the slug is deployment. A name from the presentation or deployment rows never appears in a record's identity.
+
+| Role | Value | Used in |
+|---|---|---|
+| Formal technical name | Computational Instrumentation Workbench | `docs/ARCHITECTURE.md`, `docs/PROTOCOL.md`, package documentation |
+| Short form | CIW | Requirement identifiers, the `ciw` command, instrument identifiers, file and directory names |
+| Organization and display label | Notation Systems | README header, interface branding, container labels, launchers, workspace browser labels |
+| Short product label | Notation Systems Workbench | Product-facing contexts needing a single name |
+| Machine slug | `notation-systems-ciw` | Compose project name, container names, deployment data-directory namespacing |
+| Container image repository | `notation-systems/ciw-backend` | The backend service image |
+
+Unchanged by this convention: the distribution name `computational-instrumentation-workbench`, the `ciw` console script, requirement identifiers, instrument identifiers (`org.ciw.*`), operation identifiers, every identity field in a record, and the repository name.
+
+A compose project name is the prefix of its named volumes, so adopting the slug as the project name renames the workspace volume and an existing deployment no longer finds its saved investigation under the new project. The change that sets the project name carries a migration note in the deployment guide: copy `/data` out and back in, or keep running under the former project name.
+
 ## Recording decisions
 
 The architecture document's Decisions table (Section 19) is the published record of every decision the contracts rest on: one row per decision, with the trade-off that settled it. A change that revisits a decision updates that row in the same push. Longer deliberation, including the alternatives that were weighed and rejected, is kept outside this repository.

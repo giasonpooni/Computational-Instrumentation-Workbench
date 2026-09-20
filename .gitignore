@@ -11,3 +11,5 @@ recordings/
 work/
 .ciw/
 *.log
+docs/adr/
+.decisions/

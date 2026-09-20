@@ -1214,6 +1214,7 @@ A milestone closes only when its conformance rows pass and, from M1, CIW-EXT-006
 | D30 | Vector-shaped channels with component labels, not one channel per component. | Matches `channels{name: {unit, values}}`; covariance stays with its state. |
 | D31 | Saved shutdown on SIGINT or SIGTERM (POSIX); the native controller on Windows requests `workspace.save`, verifies it, then terminates the owned process only; no shutdown request in the client protocol (CIW-SESS-012). | A protocol shutdown would let any local client stop a shared session. |
 | D32 | External instruments: adapters call the upstream engine under a verified source pin and never vendor it; PLSR is a headless terminal adapter that changes no protocol. | One numerical implementation to validate. |
+| D33 | The formal technical name states every contract; an organization label, a short product label, and a deployment slug cover presentation and deployment only, and never enter a record's identity (names in `docs/DEVELOPMENT.md`). | Product and deployment surfaces need stable, owned names without changing the name the contracts are written against. |
 
 ## 20. Related documents
 
