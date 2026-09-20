@@ -43,24 +43,28 @@ The architecture document maps its components to these directories.
 ├── README.md
 ├── AGENTS.md                 Instructions for automated contributors
 ├── pyproject.toml            Python package metadata; installs the `ciw` command
+├── compose.yaml              Container backend definition for Docker Compose
+├── Dockerfile                Container image for the backend service
 ├── src/ciw/                  Runtime service, instruments, and terminal client (Python)
 │   ├── instruments.py        Scientific records and computations of the first instrument
 │   ├── session.py            Authoritative session: selection, immutable results, workspaces
-│   ├── server.py             Loopback WebSocket transport for the session
-│   └── cli.py                Headless analysis and terminal access to a live session
+│   ├── server.py             WebSocket transport, bind policy, and saved shutdown
+│   └── cli.py                Headless analysis, service control, health probe, terminal access
 ├── godot/                    Godot project for the 2D/3D viewport, a client of the session
-├── scripts/                  Integration checks, including the Godot bridge check
+├── deploy/                   Deployment guides: native controller and container backend
+├── scripts/                  Integration checks and the native deployment controller
 ├── tests/                    Python test suites; conformance tests go under `tests/conformance/`
 └── docs/
     ├── ARCHITECTURE.md       Architecture and normative requirements
     ├── PROTOCOL.md           Wire-level protocol, owned by the prototype track
+    ├── INSTRUMENTS.md        Catalogue of integrated instruments with their specifications
     ├── quickstart.md         Running the prototype from source
     ├── coordination.md       Build coordination and integration sequence
     ├── DEVELOPMENT.md        This guide
     └── adr/                  Architecture Decision Records
 ```
 
-`recordings/` and `results/` hold local outputs and are ignored by git.
+`recordings/`, `results/`, and the native deployment's `.ciw/` data directory hold local outputs and are ignored by git.
 
 Planned growth follows the same tree: `src/ciw/instruments.py` becomes the package `src/ciw/instruments/` when a second instrument lands; terminal panels go under `src/ciw/tui/`; protocol codecs for binary transport go under `src/ciw/protocol/`; reference instruments used by conformance tests go under `examples/`.
 
