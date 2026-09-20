@@ -12,6 +12,7 @@ This is the public repository inventory reviewed on 2026-09-20. “Executable”
 | --- | --- | --- | --- |
 | [Computational Instrumentation Workbench](https://github.com/giasonpooni/Computational-Instrumentation-Workbench) | Operation, inspection and replay | Executable prototype | Host; oscillator, five external tool workflows and read-only exchange inspection |
 | [Provenance Preserving Data Acquisition](https://github.com/giasonpooni/Provenance-Preserving-Data-Acquisition) | Source acquisition and observation lineage | Executable acquisition, storage and source adapters | Read-only exchange inspection; no native measurement adapter |
+| [Streaming Telemetry Feature Extraction](https://github.com/giasonpooni/Telemetric-State-Stream-Filter) | Causal/offline signal conditioning, spectral/temporal features and stream-quality diagnostics | Specification seed; no executable operator, validator or tests | Registered planned provider; no CIW adapter or replay path |
 | [Evidence and State Management](https://github.com/giasonpooni/Evidence-and-State-Management) | Evidence retention, state admission and release | Executable local rails and bounded domain implementations; demonstration corpora | No CIW persistence adapter |
 | [Scientific Computation Runtime](https://github.com/giasonpooni/Scientific-Computation-Runtime) | Scientific workload execution and verification records | Executable runtime and state/evidence packages; backend-specific prerequisites | Read-only exchange inspection; no execution adapter |
 | [Retrofitted Computational Instrumentation](https://github.com/giasonpooni/Retrofitted-Computational-Instrumentation) | Measurement-chain records and declared calibration | Executable host-side software with simulated examples | Pinned RCI calibration provider used by CIW |
@@ -31,7 +32,7 @@ This is the public repository inventory reviewed on 2026-09-20. “Executable”
 | [Intrinsic Surface Geodesics Testbed](https://github.com/giasonpooni/Intrinsic-Surface-Geodesics-Testbed) | Intrinsic paths on triangle meshes | Planned scaffold; metadata checks only | No numerical implementation or adapter |
 | [Translation Surface Dynamics Explorer](https://github.com/giasonpooni/Translation-Surface-Dynamics-Explorer) | Trajectory dynamics on translation surfaces | Planned scaffold; metadata checks only | No numerical implementation or adapter |
 
-The oscillator is built into CIW and is not a twenty-first repository. Three geometry repositories are planned scaffolds, Constraint-Based State Reconciliation is declarative, and State Estimation Evaluation Testbed implements exchange validators without an estimator/evaluation runner.
+The oscillator is built into CIW and is not a twenty-second repository. Three geometry repositories are planned scaffolds, Streaming Telemetry Feature Extraction is a specification seed, Constraint-Based State Reconciliation is declarative, and State Estimation Evaluation Testbed implements exchange validators without an estimator/evaluation runner.
 
 ## Implemented workbench paths
 
@@ -44,7 +45,7 @@ The oscillator is built into CIW and is not a twenty-first repository. Three geo
 | Declared plant/certificate → PLSR terminal workflow | Model and sample artifacts, verdicts and replay digests in separate bundles | [Lyapunov workflow](PLSR.md) |
 | Acquisition/runtime exchange artifacts → pinned testbed validator → CIW inspector | Read-only conformance report, original parsed artifacts, byte digests and supplied-reference matches; no workspace import | [Exchange inspection](EXCHANGE.md) |
 
-These are bounded paths. PLSR bundles are outside the shared session and viewport. The Godot client renders oscillator data; other external instruments expose the terminal/JSON paths in their guides. General live acquisition, universal sensor fusion, GNSS/RTK processing and automatic equipment control are not capabilities established by these integrations.
+These are bounded paths. PLSR bundles are outside the shared session and viewport. The Godot client renders oscillator data; other external instruments expose the terminal/JSON paths in their guides. General live acquisition, executable streaming feature extraction, universal sensor fusion, GNSS/RTK processing and automatic equipment control are not capabilities established by these integrations.
 
 Standalone companion relationships also exist: the flat-torus reference exports a versioned geometry artifact; CSE can bind companion commitments; SRA can call optional pinned numerical kernels. A commitment binding records identity and does not by itself compose scientific meaning or validate a measurement.
 
@@ -68,6 +69,8 @@ Integration must declare quantity order and units, coordinate frame and basis, o
 Evidence, operation, execution, result and verification identities remain distinct. Reading a retained artifact does not authorize execution. Re-execution records a new invocation rather than replacing the evidence that produced the original result. Source revision, contract version and result identity answer different questions.
 
 The [CIW protocol](PROTOCOL.md), [covariance contract](COVARIANCE.md) and each provider's operation contract remain authoritative for implemented fields. The separate [State Estimation Evaluation Testbed](https://github.com/giasonpooni/State-Estimation-Evaluation-Testbed) validates `notation.instrument.*` exchange artifacts; those schemas are not automatically interchangeable with CIW's `ciw.*` records. CIW now inspects those exchange artifacts through the [read-only conformance path](EXCHANGE.md), without translating them into native workspace or covariance records. A translation requires an explicit mapping and validation. This map does not introduce a new universal wire protocol.
+
+The [Streaming Telemetry Feature Extraction draft contract](https://github.com/giasonpooni/Telemetric-State-Stream-Filter/blob/main/docs/CONTRACT.md) defines proposed telemetry-window, feature-record and stream-quality companion records. Scalar ordered features may be mapped explicitly to `notation.instrument.result-artifact.v1`; frequency axes, filter state and window policy remain referenced domain information. No executable schema, generic exchange mapping or CIW adapter is currently registered.
 
 ## Scientific use and qualification
 
