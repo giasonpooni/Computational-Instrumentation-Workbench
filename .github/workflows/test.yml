@@ -53,6 +53,20 @@ jobs:
       - name: Build, deploy, restart and verify persisted workspace
         run: python scripts/check_container.py
 
+  native-windows-deployment:
+    runs-on: windows-latest
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-python@v5
+        with:
+          python-version: '3.12'
+      - name: Set up the local service environment
+        shell: pwsh
+        run: ./scripts/workbench.ps1 Setup -PythonExecutable (Get-Command python).Source
+      - name: Verify owned-process start, stop and persisted restart
+        shell: pwsh
+        run: ./scripts/check_local.ps1
+
   godot-bridge:
     runs-on: ubuntu-latest
     steps:
