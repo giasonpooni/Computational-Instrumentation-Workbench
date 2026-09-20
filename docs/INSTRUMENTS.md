@@ -221,6 +221,35 @@ offline sweeps; no real-time loop performance or physical-system validation is
 claimed. See the [guide's validation and limits](PLSR.md#validation-and-limits)
 for the bounded integration.
 
+## Geometric Telemetry Engine (GTE)
+
+The [GTE operating guide](GTE.md) provides setup, pins, exact commands, retained
+record semantics and validation. This bounded reference operation evaluates a
+declared circle in a Euclidean plane; GTE owns geometry and covariance transport,
+and CIW supplies the existing pinned subprocess, session and identity substrate.
+
+```sh
+python -m ciw geodesic create --inputs examples/adapters/circle.json --gte-repo ../gte --output-dir results/circle
+python -m ciw geodesic inspect results/circle/workspace.json --json
+python -m ciw geodesic replay results/circle/workspace.json --gte-repo ../gte --output-dir results/circle-replay --json
+```
+
+| Contract | Delivered specification |
+| --- | --- |
+| Tool and adapter pins | Full GTE revision in [`adapter-runtimes.json`](../src/ciw/adapter-runtimes.json); `ciw-pinned-subprocess-v1` |
+| Input | `gte.circle-request.v1`; metre `[x,y]` observations, explicit frame/time origin, full sample-major joint covariance, versioned exact circle and policy |
+| Operation | `gte.project-circle.v1`; candidate projection and first-order tangent/ambient covariance, retained original residuals and signed shortest-arc diagnostics |
+| Outcome | Eligible or held candidate distinct from a refused execution; no physical verification or state-commit authority |
+| Evidence and replay | Exact original bytes and parsed request; distinct raw evidence, execution, result and verification identities; offline read and explicit pinned replay |
+| Parameters | Whole constraint/policy overrides retained with execution; observations/covariance cannot be replaced through parameters |
+| Views | Terminal state table and complete JSON, shared session; no domain Godot viewport |
+| Validation and limits | Real CLI/session/replay tests in `tests/test_geodesic.py`; synthetic example, no GNSS solver or dynamical-model claim |
+
+The operation requires a selected interval containing the full retained batch;
+narrower selections are refused. It does not infer cross-sample independence, sensor accuracy,
+winding count, velocity, or a calibrated posterior. See [status and limits](GTE.md#status-and-limits)
+before extending the reference geometry or attaching real measurements.
+
 ## Documenting the next integration
 
 Update this catalogue and the README when an integration is delivered. Each entry

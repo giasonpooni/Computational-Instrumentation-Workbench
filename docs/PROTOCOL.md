@@ -145,3 +145,17 @@ current-or-historical allowlist and the operator supplies that exact clean
 checkout and matching interpreter/dependencies. A saved file cannot extend
 this allowlist. An invocation with no bound runtime cannot be silently replayed
 using the latest engine; it requires an explicit new execution.
+
+## Additive geometric reconciliation contract
+
+The additive GTE operation `gte.project-circle.v1` uses the same operation and
+workspace envelopes. Bind an operator-supplied checkout with `serve --gte-repo`
+or the `geodesic create/replay` commands. Its complete retained batch is the
+scientific scope; the selected interval must contain all retained samples or
+the operation refuses without a result (`selection_scope`). Only explicit
+whole-object `constraint` and `policy` overrides are accepted as parameters;
+observations, covariance, frame and acquisition time remain bound to evidence.
+The existing `backend` role identifies this geometric result within the generic
+enum and does not claim state-estimator semantics. Read-only source
+and result validation is built into CIW, so reopening needs no GTE runtime.
+See [GTE.md](GTE.md) for exact inputs, statuses, covariance meaning and limits.
