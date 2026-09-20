@@ -1,5 +1,8 @@
 # Instruments: instructions and specifications
 
+For the current public component inventory and integration boundaries, see the
+[Notation Systems stack map](STACK.md) and [this component's role](STACK_ROLE.md).
+
 This catalogue records tools that can be used through the workbench and the
 contracts needed to reproduce their results. An external tool is listed as
 integrated only after its workbench entry point, saved evidence and replay path

@@ -1,5 +1,8 @@
 # Executable architecture
 
+For the current public component inventory and integration boundaries, see the
+[Notation Systems stack map](STACK.md) and [this component's role](STACK_ROLE.md).
+
 This document describes the implementation in this repository. Exact wire and
 record fields are specified in [PROTOCOL.md](PROTOCOL.md); supported operations
 and their qualifications are listed in [INSTRUMENTS.md](INSTRUMENTS.md).
