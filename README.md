@@ -1,45 +1,70 @@
 # Computational Instrumentation Workbench
 
-*Integrated Measurement, State Estimation, and Visualization Workbench*
+**Integrated Measurement, State Estimation, and Visualization Workbench**
 
 > A terminal-first workbench that connects computational instruments to synchronized numerical, temporal, spectral, and 2D/3D representations of physical-system observations and estimated states.
 
-## What it is
+## Overview
 
-The Computational Instrumentation Workbench (CIW) is an environment for investigating physical systems. Computational instruments (estimators, reconstructions, integrators, signal-processing stages, and sources of measured data) run as replaceable backends behind a common contract. The workbench composes them and presents their outputs in four synchronized representation families: numerical readouts and tables, temporal traces, spectral views, and 2D/3D views of fields, trajectories, and states. The primary interface is a terminal, and it works headless and over SSH.
+The Computational Instrumentation Workbench (CIW) is an environment for investigating physical systems through measurements, models, and diagnostics. It brings computational instruments into one workspace: state estimators, field reconstructions, model integrators, signal-processing stages, and sources of recorded or live measurements. Their outputs are inspected side by side in synchronized views, compared across runs, and recorded so that any investigation can be reopened or replayed.
 
-Each word of the name carries a specific meaning:
+CIW is built for people who work with physical data and the models that explain it: experimentalists, estimation and control engineers, simulation users, and analysts who need to move between numbers, time series, spectra, and geometry without losing track of what produced each result.
 
-- **Computational** covers the estimation, reconstruction, integration, and signal-processing backends, not just directly measured values.
-- **Instrumentation** keeps the focus on investigating physical systems through measurements, models, and diagnostics.
-- **Workbench** describes an environment in which several instruments and analytical operations can be used together. It does not imply that the visualization layer replaces those instruments.
+## What you can do with it
 
-## Positioning
+- **Attach a source.** Recorded telemetry, a live data stream, or a simulation.
+- **Select what to look at.** The quantities of interest and the time window or spatial region.
+- **Run an operation.** Estimate a state, reconstruct a field, integrate a model, or analyze a spectrum.
+- **Inspect the result.** Numerical, temporal, spectral, and 2D/3D views that share one time cursor, one selection, and one set of units.
+- **Compare.** Runs, scenarios, and parameter choices side by side, with residuals where a reference exists.
+- **Save and replay.** Every investigation is stored with its full provenance and can be reopened or re-executed.
 
-CIW is a foundational instrumentation runtime: a common layer underneath specialized tooling. It stays small because it captures the operations every instrument shares, not because it omits their meaning. That recurring loop is: attach a source, select quantities and a domain, run an operation, inspect the result, compare, save or replay. The host manages that loop without knowing the equations inside any instrument.
+## Capabilities
 
-The workbench supplies the operating environment; the instrument supplies the scientific meaning. Views are driven by what an instrument declares it produces, never compulsory. Generality lives in the result envelope and execution contract, which fix meaning at the boundary (units, shapes, coordinate frames, time bases, uncertainty, provenance), while payloads and engines stay flexible behind it. The reusability target is that a new instrument is the existing workbench plus an adapter plus domain-specific computation and checks. See [ADR-0002](docs/adr/0002-foundational-runtime-positioning.md).
+- **Synchronized representations.** Numerical readouts and tables, time-domain traces, spectral views, and 2D/3D views of fields, trajectories, and states are linked. Moving the cursor, changing the selection, or switching units in one view is reflected in all of them.
+- **Computational instruments, not just readouts.** Estimation, reconstruction, integration, and signal processing are first-class instruments, alongside direct measurement sources.
+- **Observations and estimates kept distinct.** Measured data and estimated states are separate kinds of data. Each carries its units, time base, coordinate frame, and available uncertainty, so an estimate is never mistaken for a measurement.
+- **Terminal-first.** Full control from a terminal, over SSH, and in headless or scripted runs. Spatial results open in a companion 2D/3D viewport that stays in step with the terminal.
+- **Provenance built in.** Every result records which instrument produced it, with which parameters and inputs, and which checks support it.
+- **Extensible by design.** A new instrument is an adapter plus its domain-specific computation and checks. The workbench supplies the operating environment; the instrument supplies the scientific meaning. Views appear only where an instrument's output makes them meaningful.
 
-The reference implementation pairs Python/NumPy engines with a terminal frontend and a Godot-based 2D/3D viewport, both clients of the same runtime. See [ADR-0003](docs/adr/0003-reference-implementation-arrangement.md).
+## Example applications
+
+| Application | What the workbench provides | What the domain brings |
+|---|---|---|
+| Fluid-state reconstruction | Channel inspection, time selection, residual plots, scenario comparison | Flow model, observation equations, boundary conditions, validation cases |
+| Construction-state estimation from building models | Entity selection, observation history, spatial overlays, saved investigations | Building semantics, admissibility constraints, interpretation of evidence |
+| Polymer and process experiments | Batch comparison, temperature and pressure traces, parameter fitting, numerical export | Material models, experimental protocols, calibration |
+| GNSS and odometry instrumentation | Timestamped trajectories, coordinate-frame inspection, uncertainty display, replay | Positioning algorithms, reference systems, correction handling, receiver integration |
+| Dynamical-system and observer experiments | Parameter controls, numerical states, phase portraits, comparative runs | Dynamics, estimators, stability conditions, verification procedures |
+
+## How it works
+
+```mermaid
+flowchart LR
+    subgraph Sources and instruments
+        S[Measurement sources]
+        E[Estimators and reconstructions]
+        M[Model integrators and signal processing]
+    end
+    R[Workbench runtime<br/>sessions, synchronization, provenance]
+    T[Terminal frontend<br/>numerical, temporal, spectral views]
+    V[2D/3D viewport<br/>fields, trajectories, states]
+    S --> R
+    E --> R
+    M --> R
+    R --> T
+    R --> V
+```
+
+Instruments connect to the runtime through one contract that fixes the meaning of every result: what it is, which quantities it holds, what its coordinates and timestamps mean, how it was produced, and which evidence supports it. The terminal frontend and the 2D/3D viewport are both clients of the runtime. They present the same records and share the same cursor, selection, and units; neither performs calculations of its own.
 
 ## Status
 
-The project is at the architecture stage. There is no code to install or run yet. The name and definition are fixed in [ADR-0001](docs/adr/0001-project-name-and-definition.md); the architecture document is in progress.
+CIW is in its architecture and prototype phase. The architecture is being finalized and will be published in this repository under `docs/`. Installable releases are not yet available.
 
-## Workstreams
+## Documentation
 
-Development proceeds in two tracks that hand off through the repository:
-
-- **Documentation track:** this README, the architecture document, and the Architecture Decision Records (ADRs). The architecture document defines the contracts, data model, synchronization semantics, and quality budgets, each as a numbered requirement.
-- **Prototype track:** the executable prototype, the wire-level protocol specification and its implementation, the test suites, and the integration checks. Tests and integration checks verify the prototype against the numbered requirements.
-
-Decisions raised by either track are recorded as ADRs.
-
-## Reading order
-
-1. This README, for the name, definition, and scope.
-2. [ADR-0001](docs/adr/0001-project-name-and-definition.md), for the naming decision and the alternatives that were rejected.
-3. [ADR-0002](docs/adr/0002-foundational-runtime-positioning.md), for the positioning as a foundational runtime, the contract-first rule, and the reusability target.
-4. [ADR-0003](docs/adr/0003-reference-implementation-arrangement.md), for the reference implementation arrangement and its alternatives.
-5. The [ADR index](docs/adr/README.md), for later decisions.
-6. `docs/ARCHITECTURE.md`, once it lands, for the component architecture, data model, instrument contract, synchronization model, and roadmap.
+- Architecture: `docs/ARCHITECTURE.md` (forthcoming)
+- Design decisions: [`docs/adr/`](docs/adr/README.md)
+- Development guide: [`docs/DEVELOPMENT.md`](docs/DEVELOPMENT.md)

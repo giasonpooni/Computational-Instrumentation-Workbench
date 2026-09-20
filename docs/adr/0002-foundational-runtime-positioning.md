@@ -36,7 +36,7 @@ The Computational Instrumentation Workbench is a **foundational instrumentation 
 - The architecture document defines the result envelope and the execution contract as normative requirements, and organizes the roadmap around the three reference instruments.
 - The conformance table includes, per reference instrument, the headless reference tests, the same-records check across frontends, and the reopen-versus-recompute distinction.
 - Progress is measured by how much less infrastructure must be rebuilt for the next instrument, not by how many panels the application shows.
-- In its first deployment the workbench operates as an instrumentation workspace over an existing evidence-and-result infrastructure (PayloadOS, at Notation Systems). It does not become a new database, a new operating system, or a universal solver. The envelope's evidence, operation, execution, and verification identities are the integration points; the adapter to that infrastructure is specified separately.
+- Where a deployment already has an evidence-and-result infrastructure, the workbench operates as an instrumentation workspace over it. It does not become a new database, a new operating system, or a universal solver. The envelope's evidence, operation, execution, and verification identities are the integration points; the adapter to such an infrastructure is specified separately.
 - The name stays Computational Instrumentation Workbench. "Foundational instrumentation runtime" describes its position under specialized tooling; it is not a rename.
 
 ## Precedents
