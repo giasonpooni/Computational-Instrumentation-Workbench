@@ -10,10 +10,10 @@ This is the public repository inventory reviewed on 2026-09-20. “Executable”
 
 | Component | Responsibility | Present scope | CIW connection |
 | --- | --- | --- | --- |
-| [Computational Instrumentation Workbench](https://github.com/giasonpooni/Computational-Instrumentation-Workbench) | Operation, inspection and replay | Executable prototype | Host; oscillator plus five external tool workflows |
-| [Provenance Preserving Data Acquisition](https://github.com/giasonpooni/Provenance-Preserving-Data-Acquisition) | Source acquisition and observation lineage | Executable acquisition, storage and source adapters | No CIW adapter |
+| [Computational Instrumentation Workbench](https://github.com/giasonpooni/Computational-Instrumentation-Workbench) | Operation, inspection and replay | Executable prototype | Host; oscillator, five external tool workflows and read-only exchange inspection |
+| [Provenance Preserving Data Acquisition](https://github.com/giasonpooni/Provenance-Preserving-Data-Acquisition) | Source acquisition and observation lineage | Executable acquisition, storage and source adapters | Read-only exchange inspection; no native measurement adapter |
 | [Evidence and State Management](https://github.com/giasonpooni/Evidence-and-State-Management) | Evidence retention, state admission and release | Executable local rails and bounded domain implementations; demonstration corpora | No CIW persistence adapter |
-| [Scientific Computation Runtime](https://github.com/giasonpooni/Scientific-Computation-Runtime) | Scientific workload execution and verification records | Executable runtime and state/evidence packages; backend-specific prerequisites | No CIW runtime adapter |
+| [Scientific Computation Runtime](https://github.com/giasonpooni/Scientific-Computation-Runtime) | Scientific workload execution and verification records | Executable runtime and state/evidence packages; backend-specific prerequisites | Read-only exchange inspection; no execution adapter |
 | [Retrofitted Computational Instrumentation](https://github.com/giasonpooni/Retrofitted-Computational-Instrumentation) | Measurement-chain records and declared calibration | Executable host-side software with simulated examples | Pinned RCI calibration provider used by CIW |
 | [Fluid State Reconstruction Testbed](https://github.com/giasonpooni/Fluid-State-Reconstruction-Testbed) | Fluid-state estimation and balance reconciliation | Executable experimental fluid toolkit | Pinned two-reservoir snapshot and covariance workflows |
 | [Jacobian Sensitivity Propagation Testbed](https://github.com/giasonpooni/Jacobian-Sensitivity-Propagation-Testbed) | Local derivatives, sensitivity and covariance transport | Executable numerical testbed | Pinned covariance propagation provider |
@@ -25,7 +25,7 @@ This is the public repository inventory reviewed on 2026-09-20. “Executable”
 | [Geospatial State Visualization](https://github.com/giasonpooni/Geospatial-State-Visualization) | Geographic and temporal inspection | Executable browser client with synthetic provider | Separate client; no CIW session/replay connection |
 | [Flat Torus Geodesic Reference](https://github.com/giasonpooni/Flat-Torus-Geodesic-Reference) | Exact flat-geometry reference and representation invariants | Executable mathematical reference | Standalone; versioned companion artifact |
 | [Curved Surface Geodesic Sensitivity Runtime](https://github.com/giasonpooni/Curved-Surface-Geodesic-Sensitivity-Runtime) | Curvature-dependent path sensitivity | Executable numerical engine and tolerance experiments | Standalone; flat-reference companion boundary |
-| [State Estimation Evaluation Testbed](https://github.com/giasonpooni/State-Estimation-Evaluation-Testbed) | Instrument-exchange validation and estimator evaluation scope | Executable contract validators; no estimator or evaluation runner | No CIW adapter |
+| [State Estimation Evaluation Testbed](https://github.com/giasonpooni/State-Estimation-Evaluation-Testbed) | Instrument-exchange validation and estimator evaluation scope | Executable contract validators; no estimator or evaluation runner | Pinned exchange conformance checker; no evaluation runner or session adapter |
 | [Constraint Based State Reconciliation](https://github.com/giasonpooni/Constraint-Based-State-Reconciliation) | General constraint-reconciliation specification | Declarative invariant corpus only | No executable engine or adapter |
 | [Covariance Geometry and Geodesic Testbed](https://github.com/giasonpooni/Covariance-Geometry-and-Geodesic-Testbed) | Geometry of covariance matrices | Planned scaffold; metadata checks only | No numerical implementation or adapter |
 | [Intrinsic Surface Geodesics Testbed](https://github.com/giasonpooni/Intrinsic-Surface-Geodesics-Testbed) | Intrinsic paths on triangle meshes | Planned scaffold; metadata checks only | No numerical implementation or adapter |
@@ -42,6 +42,7 @@ The oscillator is built into CIW and is not a twenty-first repository. Three geo
 | Retained covariance → JSPT | Explicit mapping/Jacobian, ordered covariance and source/result relationships | [Covariance workflow](COVARIANCE.md) |
 | Declared circle observations → GTE | Original observations, candidate, residuals, tangent uncertainty and replay inputs | [Geometric telemetry](GTE.md) |
 | Declared plant/certificate → PLSR terminal workflow | Model and sample artifacts, verdicts and replay digests in separate bundles | [Lyapunov workflow](PLSR.md) |
+| Acquisition/runtime exchange artifacts → pinned testbed validator → CIW inspector | Read-only conformance report, original parsed artifacts, byte digests and supplied-reference matches; no workspace import | [Exchange inspection](EXCHANGE.md) |
 
 These are bounded paths. PLSR bundles are outside the shared session and viewport. The Godot client renders oscillator data; other external instruments expose the terminal/JSON paths in their guides. General live acquisition, universal sensor fusion, GNSS/RTK processing and automatic equipment control are not capabilities established by these integrations.
 
@@ -66,7 +67,7 @@ Integration must declare quantity order and units, coordinate frame and basis, o
 
 Evidence, operation, execution, result and verification identities remain distinct. Reading a retained artifact does not authorize execution. Re-execution records a new invocation rather than replacing the evidence that produced the original result. Source revision, contract version and result identity answer different questions.
 
-The [CIW protocol](PROTOCOL.md), [covariance contract](COVARIANCE.md) and each provider's operation contract remain authoritative for implemented fields. The separate [State Estimation Evaluation Testbed](https://github.com/giasonpooni/State-Estimation-Evaluation-Testbed) validates `notation.instrument.*` exchange artifacts; those schemas are not automatically interchangeable with CIW's `ciw.*` records. A translation requires an explicit mapping and validation. This map does not introduce a new universal wire protocol.
+The [CIW protocol](PROTOCOL.md), [covariance contract](COVARIANCE.md) and each provider's operation contract remain authoritative for implemented fields. The separate [State Estimation Evaluation Testbed](https://github.com/giasonpooni/State-Estimation-Evaluation-Testbed) validates `notation.instrument.*` exchange artifacts; those schemas are not automatically interchangeable with CIW's `ciw.*` records. CIW now inspects those exchange artifacts through the [read-only conformance path](EXCHANGE.md), without translating them into native workspace or covariance records. A translation requires an explicit mapping and validation. This map does not introduce a new universal wire protocol.
 
 ## Scientific use and qualification
 
