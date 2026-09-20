@@ -232,6 +232,12 @@ def parser() -> argparse.ArgumentParser:
     watch.add_argument("--url", default="ws://127.0.0.1:8765")
     inspect = commands.add_parser("inspect", help="Inspect a saved result/workspace without executing it")
     inspect.add_argument("path", type=Path)
+    exchange = commands.add_parser("exchange", help="Inspect external exchange artifacts without admission")
+    exchange_actions = exchange.add_subparsers(dest="exchange_command", required=True)
+    exchange_inspect = exchange_actions.add_parser("inspect", help="Read-only pinned contract conformance")
+    exchange_inspect.add_argument("paths", type=Path, nargs="+")
+    exchange_inspect.add_argument("--validator-repo", type=Path, required=True,
+                                  help="Explicit checkout/export of the pinned testbed validator")
     plsr = commands.add_parser("plsr", help="Import, evaluate, inspect and replay pinned Lyapunov artifacts")
     actions = plsr.add_subparsers(dest="plsr_command", required=True)
     import_model = actions.add_parser("import", help="Validate and retain a sealed model artifact")
@@ -346,6 +352,9 @@ def main(argv: list[str] | None = None) -> int:
             asyncio.run(watch_remote(args.url))
         elif args.command == "inspect":
             print_json(read_json(args.path))
+        elif args.command == "exchange":
+            from .exchange import inspect_exchange
+            print_json(inspect_exchange(args.paths, validator_repo=args.validator_repo))
         elif args.command == "investigation":
             from .investigation import create_investigation, inspect_investigation, replay_investigation
             if args.investigation_command == "inspect":

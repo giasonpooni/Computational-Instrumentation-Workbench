@@ -253,6 +253,31 @@ narrower selections are refused. It does not infer cross-sample independence, se
 winding count, velocity, or a calibrated posterior. See [status and limits](GTE.md#status-and-limits)
 before extending the reference geometry or attaching real measurements.
 
+## Instrument-exchange inspection
+
+The experimental `ciw-exchange-inspector.v1` terminal path reads external
+observation, result and verification JSON without creating a CIW workspace or
+granting any artifact operational authority. The complete [exchange guide](EXCHANGE.md)
+records the validator pin, setup, input/output and refusal contracts, worked
+example, actual-producer integration tests and limits.
+
+```sh
+python -m ciw exchange inspect examples/exchange/observation.json --validator-repo ../State-Estimation-Evaluation-Testbed
+```
+
+The result is `ciw.exchange-inspection.v1`: unchanged source artifacts, exact
+source-byte digests, covariance conformance diagnostics and supplied-reference
+matches. Unknown covariance retains `matrix: null` and `effective_rank: null`;
+it is never substituted with a zero covariance. Exit zero means conformance,
+including a structurally valid *failed* verification record. Exit two means
+invalid input, unsupported schema, numerical refusal or validator source drift.
+
+The testbed is source-pinned in [`exchange-runtime.json`](../src/ciw/exchange-runtime.json).
+This bounded path has been exercised with actual acquisition/runtime builders
+and synthetic native-byte execution commitments. It is not a native observation
+adapter, an execution backend, independent verification, physical validation,
+a new covariance representation, or a session/viewport integration.
+
 ## Related components
 
 The [related stack catalogue](../README.md#related-stack-components) records the
@@ -260,11 +285,11 @@ current technical names and responsibilities of Scientific Computation Runtime,
 Provenance-Preserving Data Acquisition, Geospatial State Visualization, State
 Estimation Evaluation Testbed, Evidence and State Management, and Constraint-Based
 State Reconciliation. None is registered as an integrated CIW tool in this
-catalogue. The evaluation repository has an early executable contract slice but
-no evaluation runner or CIW adapter; the reconciliation component has no executable
-adapter. Their [boundaries](ADAPTERS.md#related-component-boundaries) retain
-existing evidence, operation, execution, result, verification and runtime
-identities.
+catalogue as operational instrument adapters. Acquisition/runtime exchange
+records and the evaluation testbed have the read-only conformance path above;
+there is no evaluation runner or reconciliation adapter. Their
+[boundaries](ADAPTERS.md#related-component-boundaries) retain existing evidence,
+operation, execution, result, verification and runtime identities.
 
 ## Catalogue documentation requirements
 

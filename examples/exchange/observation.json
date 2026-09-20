@@ -1,0 +1,30 @@
+{
+  "schema": "notation.instrument.observation-batch.v1",
+  "batch_id": "example:synthetic-position-1",
+  "observed_at": "2026-09-20T12:00:00Z",
+  "received_at": "2026-09-20T12:00:01Z",
+  "clock_basis": "synthetic UTC fixture",
+  "components": [
+    {"name": "east", "value": 1.2, "unit": "m"},
+    {"name": "north", "value": -0.4, "unit": "m"}
+  ],
+  "covariance": {
+    "status": "reported",
+    "variables": ["east", "north"],
+    "units": ["m", "m"],
+    "matrix": [[0.04, 0.01], [0.01, 0.09]],
+    "frame": {
+      "id": "frame:synthetic-plane",
+      "semantics": "intrinsic_physical",
+      "basis": ["east", "north"]
+    },
+    "method": "declared synthetic fixture",
+    "source_refs": ["example:fixture"],
+    "calibration_refs": [],
+    "numerical_status": "unchecked"
+  },
+  "source_artifact_refs": ["example:fixture"],
+  "admission_ref": "example:unresolved-declaration",
+  "admission_status": "reference_only",
+  "calibration_refs": []
+}

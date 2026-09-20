@@ -20,7 +20,7 @@ ciw = "ciw.cli:main"
 where = ["src"]
 
 [tool.setuptools.package-data]
-ciw = ["plsr-runtime.json", "adapter-runtimes.json"]
+ciw = ["plsr-runtime.json", "adapter-runtimes.json", "exchange-runtime.json"]
 
 [tool.pytest.ini_options]
 testpaths = ["tests"]
