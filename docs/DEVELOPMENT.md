@@ -34,6 +34,43 @@ Tests and integration checks cite the identifier they verify. The conformance ta
 
 `docs/ARCHITECTURE.md` specifies the instrument protocol at the level of semantics: message families, required fields, ordering guarantees, backpressure, cancellation, error semantics, versioning policy, and invariants. The concrete wire specification (exact encodings and schemas, handshake sequences, version negotiation) lives in `docs/PROTOCOL.md`, owned by the prototype track, and must satisfy the architecture's requirements.
 
+## Repository layout
+
+Code and documents land in the following places. The architecture document maps its components to these directories.
+
+```
+.
+├── README.md
+├── pyproject.toml            Python package metadata for `ciw`
+├── ciw/                      Runtime, instrument host, and terminal frontend (Python)
+│   ├── runtime/              Sessions, result envelope, synchronization state, provenance
+│   ├── host/                 Instrument lifecycle, transports (in-process, subprocess, remote), backpressure
+│   ├── protocol/             Message types and codecs implementing docs/PROTOCOL.md
+│   ├── instruments/          Built-in instruments and adapters
+│   ├── views/                Representation logic: numerical, temporal, spectral, in-terminal 2D
+│   ├── tui/                  Terminal frontend: widgets, layouts, keybindings, command line
+│   └── cli/                  Entry points, headless and scripted runs
+├── viewport/                 Godot project for the 2D/3D viewport, a client of the runtime
+├── examples/                 Reference instruments: scalar/time-series, state estimation, spatial
+├── tests/
+│   ├── unit/
+│   ├── integration/
+│   └── conformance/          Tests that verify requirement identifiers
+└── docs/
+    ├── ARCHITECTURE.md
+    ├── PROTOCOL.md
+    ├── DEVELOPMENT.md
+    └── adr/
+```
+
+## Conformance tests
+
+Every conformance test names the requirement it verifies. Use the identifier in the test name (for example `test_ciw_sync_003_cursor_propagates_to_all_views`) or in a marker that carries the identifier, and keep one module per area under `tests/conformance/`. The conformance table in `docs/ARCHITECTURE.md` is the source of truth for which method verifies each identifier and by which milestone it must pass; a test that verifies an identifier not in that table is a signal to update the table.
+
+## Working on the shared branch
+
+Both tracks commit to `main`. Pull with rebase before pushing, keep documentation and code changes in separate commits, and never rewrite published history. A change that alters a contract, a requirement identifier, or the reference implementation arrangement is accompanied by an ADR in the same push.
+
 ## Reading order for contributors
 
 1. `README.md`, for the name, definition, and scope.
