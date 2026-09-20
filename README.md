@@ -93,5 +93,6 @@ See the [adapter ownership boundaries](docs/ADAPTERS.md#related-component-bounda
 - Generic adapters and the RCI/FSRT investigation: [`docs/ADAPTERS.md`](docs/ADAPTERS.md)
 - Covariance provenance, propagation and replay: [`docs/COVARIANCE.md`](docs/COVARIANCE.md)
 - Architecture: [`docs/ARCHITECTURE.md`](docs/ARCHITECTURE.md)
+- Implementation status: [`docs/RECONCILIATION.md`](docs/RECONCILIATION.md)
 - Protocol: [`docs/PROTOCOL.md`](docs/PROTOCOL.md)
 - Development guide: [`docs/DEVELOPMENT.md`](docs/DEVELOPMENT.md)

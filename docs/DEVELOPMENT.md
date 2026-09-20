@@ -60,9 +60,11 @@ scientific sources. Source-dependent tests skip when their documented checkout
 variables are absent; report those skips. The optional PLSR environment and
 installed-package checks are described in [PLSR.md](PLSR.md).
 
-For viewport changes run the headless Godot import and bridge checks documented
-in [godot/README.md](../godot/README.md). Deployment changes use the checks in
-[deploy/README.md](../deploy/README.md). Record unavailable checks honestly.
+For viewport changes run `python scripts/check_godot.py --godot <Godot 4.5.2 executable>`
+(import, `godot/tests/protocol_smoke.gd`, `channel_generality.gd`, `adapter_boundary.gd`);
+[godot/README.md](../godot/README.md) documents the individual commands. Deployment
+changes use the checks in [deploy/README.md](../deploy/README.md). Record unavailable
+checks honestly.
 Covariance validation includes `tests/test_covariance_artifacts.py` for the
 artifact contract, `tests/test_covariance_records.py` for saved dependencies and
 cycle refusal, and `tests/test_covariance_integration.py` for the pinned v2 path
@@ -74,6 +76,8 @@ Coverage is not exhaustive: the off-allowlist `runtime_mismatch`,
 `RUNTIME_UNAVAILABLE` and `RUNTIME_IO` branches, covariance CLI argument parsing,
 and the calibration-refusal exit code lack dedicated assertions in the current
 suite. Passing shared helper tests does not separately validate those paths.
+[RECONCILIATION.md](RECONCILIATION.md) records, per contract area, the behavior
+the current tests assert, what they cover in part, and what is not implemented.
 
 Documentation-only edits require working links and consistency with the
 implemented interfaces; they do not imply a new numerical validation result.
@@ -98,7 +102,8 @@ Installation or a standalone schema alone does not establish integration.
 ## Names and deployment namespace
 
 The distribution is `computational-instrumentation-workbench`; the console
-command is `ciw`. The Compose project slug is `notation-systems-ciw` and the
-image repository is `notation-systems/ciw-backend`. Presentation names do not
-change scientific record identities. Consult the deployment guide before
-changing a Compose project name because it changes named-volume prefixes.
+command is `ciw`. `compose.yaml` declares no project name, so Compose uses the
+checkout directory's name, and builds the image as `ciw-backend:local`; the
+container check runs under a temporary `ciw-check-<id>` project. Presentation
+names do not change scientific record identities. Changing a Compose project
+name changes named-volume prefixes; consult the deployment guide first.
