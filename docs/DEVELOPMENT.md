@@ -82,6 +82,36 @@ Both tracks commit to `main`. Pull with rebase before pushing, keep documentatio
 6. [`docs/PROTOCOL.md`](PROTOCOL.md), for the wire-level protocol, and [`docs/quickstart.md`](quickstart.md) to run the prototype.
 7. The [ADR index](adr/README.md), for later decisions.
 
+## Documenting an integrated tool
+
+The README is the entry point for successfully integrated tools. Update its
+catalogue and [the instrument guide](INSTRUMENTS.md) in the same change that
+delivers or changes a tool's workbench connection. Preserve the surrounding
+architecture documentation and review concurrent documentation edits before
+publishing.
+
+Each entry must provide:
+
+- Purpose and current integration status, distinguishing synthetic examples,
+  computational validation, and physical validation.
+- Tool and adapter identity, schema/protocol versions, and a reproducible release
+  or full commit pin. Built-in tools use the CIW revision and their instrument ID.
+- Prerequisites, installation/configuration instructions, and copyable terminal
+  commands with explicit inputs and expected outputs.
+- Supported operations; input/output schemas; dimensions, state/channel order,
+  units, coordinate frames, time and sampling conventions where applicable.
+- Result, refusal and error meanings, including exit-code behavior and the
+  evidence/provenance retained by the workbench.
+- A worked example, validation commands and linked test evidence for the actual
+  CIW path; supported views and save/reopen behavior where implemented.
+- Known limitations and links to the upstream instrument's authoritative docs.
+
+Promote a tool to the integrated catalogue only after its documented CIW path
+has been exercised with a representative input and its output and provenance
+checked. Successful upstream tests or a published input schema alone establish
+standalone readiness, not workbench integration. Keep pending tools in a clearly
+labelled section until the adapter and its verification are delivered.
+
 ## Recording decisions
 
 Decisions that change scope, contracts, or the reference implementation are recorded as ADRs. The procedure is in the [ADR index](adr/README.md).

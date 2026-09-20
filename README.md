@@ -63,9 +63,30 @@ Instruments connect to the runtime through one contract that fixes the meaning o
 
 The first executable prototype is available: a Python/NumPy demonstration instrument, headless terminal analysis, a shared local session that terminal and viewport clients attach to, saved-workspace replay, and an optional Godot 2D/3D viewport. Follow the [quickstart](docs/quickstart.md) to run it from source. The prototype uses a synthetic instrument; adapters for existing instruments and persistence infrastructure, the broader capabilities described above, and packaged releases are future work. The architecture is being finalized and will be published under `docs/`.
 
+## Integrated tools
+
+This catalogue lists tools that can currently be run through CIW. Each tool's
+guide records installation, commands, input/output specifications, validation,
+and limits. Integration status describes the workbench connection; it does not
+establish physical validation or deployment readiness.
+
+| Tool | Integration status | Available operations | Instructions and specifications |
+| --- | --- | --- | --- |
+| Synthetic damped oscillator (`analytic-damped-oscillator.v1`) | Integrated prototype; built into CIW | Generate a recording, inspect samples, calculate statistics and periodogram spectra, share a session, save and reopen results | [Tool guide](docs/INSTRUMENTS.md#synthetic-damped-oscillator), [quickstart](docs/quickstart.md), [record and protocol specification](docs/PROTOCOL.md) |
+
+**Next instrument: PLSR.** The Parameterized Lyapunov Stability Runtime's
+versioned model-artifact interface is published and validated independently.
+Its CIW adapter is pending, so it is not yet listed as successfully integrated.
+See the [integration status and upstream specifications](docs/INSTRUMENTS.md#plsr-integration-pending).
+
+Every successful tool integration updates this catalogue and its operating guide
+in the same change. See the [documentation requirements](docs/DEVELOPMENT.md#documenting-an-integrated-tool)
+for the required commands, specifications, version pins, and validation evidence.
+
 ## Documentation
 
 - Quickstart: [`docs/quickstart.md`](docs/quickstart.md)
+- Integrated tool instructions and specifications: [`docs/INSTRUMENTS.md`](docs/INSTRUMENTS.md)
 - Architecture: `docs/ARCHITECTURE.md` (forthcoming)
 - Protocol: [`docs/PROTOCOL.md`](docs/PROTOCOL.md)
 - Design decisions: [`docs/adr/`](docs/adr/README.md)
