@@ -119,3 +119,20 @@ viewport. Geometry/path, curved-surface sensitivity, verification and decision
 providers should adopt the same artifact/source boundary when integrated.
 PLSR/CSE/SRA/YWIR/DAQ/ASSAY/SCL/STE/DAF remain in their existing roles; this change
 does not turn them all into instruments or merge their repositories into CIW.
+
+## Existing cross-platform reproduction issue
+
+The broad FSRT Windows/Python 3.13 workflow at the new pin reports one failure
+in `tests/test_real_noaa_month.py::test_the_report_reproduces`, outside the
+changed adapter. Its fast unit gate passed 1029 tests; the broader run passed
+1387 tests before reporting a tide-month profile log-likelihood outside the
+existing cross-build tolerance. The [new workflow](https://github.com/giasonpooni/Fluid-State-Reconstruction-Testbed/actions/runs/35536619209)
+and [previous-pin workflow](https://github.com/giasonpooni/Fluid-State-Reconstruction-Testbed/actions/runs/35533956823)
+show that the same NOAA reproduction test also failed on Windows before this
+increment. Linux passed that previous-pin suite.
+
+The covariance work did not change the NOAA model, fit, report or reproduction
+tolerance. Treat this as a separate numerical reproducibility investigation;
+do not widen the tolerance or regenerate the scientific report solely to make
+the workflow green. The local affected FSRT gate and the full pinned CIW
+integration remain the validation evidence for this increment.
