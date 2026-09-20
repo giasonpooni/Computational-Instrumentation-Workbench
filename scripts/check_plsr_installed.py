@@ -11,12 +11,58 @@ import sys
 import tempfile
 
 
-def call(*args: str, cwd: Path, env: dict[str, str]) -> dict:
+def call(*args: str, cwd: Path, env: dict[str, str], expect: int = 0) -> dict:
     completed = subprocess.run(
         [sys.executable, "-I", "-m", "ciw", "plsr", *args], cwd=cwd, env=env,
-        check=True, capture_output=True, text=True, timeout=300,
+        capture_output=True, text=True, timeout=300,
     )
+    if completed.returncode != expect:
+        raise AssertionError(
+            f"ciw plsr {' '.join(args)} exited {completed.returncode}, expected {expect}: "
+            f"{completed.stderr.strip()}")
     return json.loads(completed.stdout)
+
+
+def check_batch_milestone(repository: Path, root: Path, env: dict[str, str]) -> None:
+    """Run an offline collection, interrupt it, resume, and compare two batches."""
+    plan = repository / "examples" / "plsr" / "batch-parameter-sweep.json"
+    first = root / "batch-a"
+    partial = call("batch", "run", str(plan), "--output-dir", str(first), "--limit", "4",
+                   cwd=root, env=env, expect=7)
+    assert partial["status"] == "incomplete"
+    assert partial["outcomes"]["unfinished"] == partial["requested"] - 4
+    journal = (first / "journal.jsonl").read_bytes()
+    retained = {path.name: path.read_bytes() for path in (first / "runs").iterdir()}
+    assert len(retained) == 4
+
+    # A run killed mid-write leaves an unterminated line. Resuming must discard
+    # exactly those bytes and keep every bundle that finished.
+    (first / "journal.jsonl").write_bytes(journal + b'{"entry_schema": "ciw-plsr-bat')
+    finished = call("batch", "run", str(plan), "--output-dir", str(first), "--resume",
+                    cwd=root, env=env)
+    assert finished["status"] == "complete" and finished["discarded_partial_bytes"] == 30
+    assert finished["outcomes"]["unfinished"] == 0
+    assert sum(finished["outcomes"].values()) == finished["requested"]
+    assert finished["resumed"] is True and finished["evaluated_this_run"] > 0
+    for name, content in retained.items():
+        assert (first / "runs" / name).read_bytes() == content
+    assert (first / "journal.jsonl").read_bytes().startswith(journal)
+    assert call("batch", "status", str(first), cwd=root, env=env) == finished
+    for entry in finished["entries"]:
+        bundle = call("inspect", str(first / "runs" / entry["saved_file"]),
+                      cwd=root, env=env)["bundle"]
+        assert bundle["record"]["record_digest"] == entry["record_digest"]
+
+    second = root / "batch-b"
+    again = call("batch", "run", str(plan), "--output-dir", str(second), cwd=root, env=env)
+    assert again["status"] == "complete"
+    comparison = call("batch", "compare", str(first), str(second), cwd=root, env=env)
+    assert comparison["status"] == "identical", comparison["compatibility"]
+    assert comparison["summary"]["compared"] == finished["requested"]
+    assert comparison["summary"]["changed"] == 0
+    assert {entry["baseline"]["resolution"] for entry in comparison["samples"]} == {"validated"}
+    print(f"PASS: batch of {finished['requested']} samples interrupted, resumed and compared; "
+          f"outcomes {finished['outcomes']}")
 
 
 def main() -> None:
@@ -77,6 +123,7 @@ def main() -> None:
                    if case["observed_outcome"] == "evaluated"]
         print(f"PASS: reference corpus reproduced {report['case_count']} declared cases; "
               f"{sum(1 for match in digests if match)}/{len(digests)} record digests matched")
+        check_batch_milestone(repository, root, env)
     print("PASS: installed PLSR adapter imports, evaluates, inspects, retains and replays both model types")
 
 

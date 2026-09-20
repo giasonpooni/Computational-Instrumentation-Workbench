@@ -35,7 +35,7 @@ jobs:
       - name: Install pinned optional instrument and run adapter tests
         run: |
           python -m pip install -e ".[dev,plsr]"
-          python -m pytest -q tests/test_plsr.py tests/test_plsr_engine.py tests/test_plsr_corpus.py tests/test_plsr_batch.py
+          python -m pytest -q tests/test_plsr.py tests/test_plsr_engine.py tests/test_plsr_corpus.py tests/test_plsr_batch.py tests/test_plsr_compare.py
       - name: Build and install the workbench wheel
         run: |
           python -m pip wheel --no-deps . --wheel-dir dist

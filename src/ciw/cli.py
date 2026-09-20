@@ -192,6 +192,12 @@ def parser() -> argparse.ArgumentParser:
     batch_status = batch_actions.add_parser(
         "status", help="Read a saved batch index without evaluating anything")
     batch_status.add_argument("output_dir", type=Path)
+    batch_compare = batch_actions.add_parser(
+        "compare", help="Compare two saved batches from their retained evidence")
+    batch_compare.add_argument("baseline", type=Path)
+    batch_compare.add_argument("candidate", type=Path)
+    batch_compare.add_argument("--tolerance-policy", type=Path,
+                               help="A tolerance policy, or a corpus that declares one")
     return root
 
 
@@ -244,6 +250,14 @@ def main(argv: list[str] | None = None) -> int:
                 result = inspect_run(args.path)
             elif args.plsr_command == "batch":
                 from .plsr_batch import read_index, run_batch
+                if args.batch_command == "compare":
+                    from .plsr_compare import compare_batches, load_tolerance_policy
+                    policy = (None if args.tolerance_policy is None
+                              else load_tolerance_policy(args.tolerance_policy))
+                    comparison = compare_batches(args.baseline, args.candidate,
+                                                 tolerance_policy=policy)
+                    print_json(comparison)
+                    return {"identical": 0, "changed": 4, "incompatible": 5}[comparison["status"]]
                 if args.batch_command == "run":
                     index = run_batch(args.path, args.output_dir, resume=args.resume,
                                       limit=args.limit)

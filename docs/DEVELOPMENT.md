@@ -54,7 +54,8 @@ The architecture document maps its components to these directories.
 │   ├── plsr.py               Portable PLSR run bundles: evaluate, inspect, replay
 │   ├── plsr_engine.py        Source-pinned bridge to the optional external PLSR runtime
 │   ├── plsr_corpus.py        Declared reference corpus: reproduce, compare, re-record
-│   └── plsr_batch.py         Bounded, journalled, resumable batch evaluation
+│   ├── plsr_batch.py         Bounded, journalled, resumable batch evaluation
+│   └── plsr_compare.py       Comparison of saved batches from retained evidence
 ├── godot/                    Godot project for the 2D/3D viewport, a client of the session
 ├── deploy/                   Deployment guides: native controller and container backend
 ├── examples/                 Reference inputs for integrated instruments, such as `examples/plsr/`
