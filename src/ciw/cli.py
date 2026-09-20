@@ -13,6 +13,7 @@ from pathlib import Path
 from websockets.asyncio.client import connect
 from websockets.exceptions import WebSocketException
 
+from .adapters.protocol import AdapterRefusal
 from .instruments import make_demo_run, validate_run
 from .server import run_server
 from .session import Session, _reject_constant, read_json, write_json
@@ -20,6 +21,33 @@ from .session import Session, _reject_constant, read_json, write_json
 
 def print_json(value) -> None:
     print(json.dumps(value, indent=2, allow_nan=False))
+
+
+def print_investigation(summary: dict) -> None:
+    """Present retained states without interpreting or calculating domain values."""
+    print(f"Investigation: {summary['status']}")
+    if summary.get("workspace_file"):
+        print(f"Workspace: {summary['workspace_file']}")
+    if summary.get("run_id"):
+        print(f"Run: {summary['run_id']}")
+    rows = [["State", "Quantity", "Value", "Unit"]]
+    for row in summary.get("terminal_rows", []):
+        value = row.get("value")
+        rendered = (format(value, ".12g") if type(value) in (int, float)
+                    else json.dumps(value, allow_nan=False, ensure_ascii=False))
+        rows.append([str(row.get("state", "")), str(row.get("quantity", "")),
+                     rendered, str(row.get("unit", ""))])
+    if len(rows) > 1:
+        widths = [max(len(row[index]) for row in rows) for index in range(4)]
+        print()
+        for row in rows:
+            print("  ".join(value.ljust(width) for value, width in zip(row, widths)).rstrip())
+    for refusal in summary.get("refusals", []):
+        detail = refusal.get("refusal", refusal)
+        print(f"Refusal: {detail.get('code', 'refused')}: {detail.get('message', '')}")
+    if summary.get("note"):
+        print(summary["note"])
+    print("Use --json to inspect full identities, covariance and provenance.")
 
 
 def load_run(path: Path | None) -> dict:
@@ -73,20 +101,27 @@ async def health_remote(url: str) -> dict:
             or type(selection.get("revision")) is not int or selection["revision"] < 0):
         raise ValueError("Health probe received an invalid shared selection")
     try:
-        duration, rate, cursor = metadata["duration_s"], metadata["sample_rate_hz"], selection["cursor_s"]
+        duration, cursor = metadata["duration_s"], selection["cursor_s"]
         interval = selection["interval_s"]
         count = metadata["sample_count"]
-        if not isinstance(interval, list) or len(interval) != 2 or type(count) is not int or count < 2:
+        oscillator = run["instrument"] == "analytic-damped-oscillator.v1"
+        if (not isinstance(interval, list) or len(interval) != 2
+                or type(count) is not int or count < (2 if oscillator else 1)):
             raise ValueError
-        numbers = (duration, rate, cursor, *interval)
+        numbers = (duration, cursor, *interval)
         if any(type(value) not in (int, float) or not math.isfinite(value) for value in numbers):
             raise ValueError
-        if not (duration > 0 and rate > 0 and 0 <= cursor <= duration
+        if not (duration > 0 and 0 <= cursor <= duration
                 and 0 <= interval[0] < interval[1] <= duration):
             raise ValueError
-        if (not math.isclose(duration, count / rate, rel_tol=1e-8)
-                or cursor > (count - 1) / rate):
-            raise ValueError
+        rate = metadata.get("sample_rate_hz")
+        if oscillator or rate is not None:
+            if type(rate) not in (int, float) or not math.isfinite(rate) or rate <= 0:
+                raise ValueError
+        if oscillator:
+            if (not math.isclose(duration, count / rate, rel_tol=1e-8)
+                    or cursor > (count - 1) / rate):
+                raise ValueError
     except (KeyError, TypeError, ValueError, OverflowError) as exc:
         raise ValueError("Health probe received invalid recording bounds") from exc
     return {"status": "healthy", "session_id": payload["session_id"], "run_id": run["run_id"]}
@@ -124,7 +159,7 @@ def parser() -> argparse.ArgumentParser:
     analyze = commands.add_parser("analyze", help="Run headless analysis and save a reopenable workspace")
     analyze.add_argument("operation", choices=["stats", "spectrum"])
     analyze.add_argument("--recording", type=Path)
-    analyze.add_argument("--channel", default="q")
+    analyze.add_argument("--channel", help="Defaults to the recording's first channel")
     analyze.add_argument("--start", type=float, default=0)
     analyze.add_argument("--end", type=float)
     analyze.add_argument("--output-dir", type=Path, default=Path("results"))
@@ -137,6 +172,10 @@ def parser() -> argparse.ArgumentParser:
     server.add_argument("--port", type=int, default=8765)
     server.add_argument("--bind", choices=["127.0.0.1", "0.0.0.0"], default="127.0.0.1",
                         help="Use 0.0.0.0 explicitly inside a container; default stays loopback")
+    server.add_argument("--fsrt-repo", type=Path,
+                        help="Explicit trusted checkout for pinned FSRT operations")
+    server.add_argument("--python", dest="python_executable", type=Path,
+                        help="Python for external adapters; defaults to this interpreter")
     health = commands.add_parser("health", help="Check a live session with a bounded read-only request")
     health.add_argument("--url", default="ws://127.0.0.1:8765")
     send = commands.add_parser("send", help="Send a structured request to a running session")
@@ -162,6 +201,27 @@ def parser() -> argparse.ArgumentParser:
     replay = actions.add_parser("replay", help="Reevaluate saved inputs; retain new evidence and comparison")
     replay.add_argument("path", type=Path)
     replay.add_argument("--output-dir", type=Path, required=True)
+    investigation = commands.add_parser(
+        "investigation", help="Calibrate RCI observations, evaluate FSRT and retain a shared workspace")
+    investigation_actions = investigation.add_subparsers(dest="investigation_command", required=True)
+    create = investigation_actions.add_parser("create", help="Create an RCI/FSRT investigation from explicit inputs")
+    create.add_argument("--inputs", type=Path, required=True)
+    inspect_investigation = investigation_actions.add_parser(
+        "inspect", help="Inspect a saved investigation offline without executing its adapters")
+    inspect_investigation.add_argument("path", type=Path)
+    replay_investigation = investigation_actions.add_parser(
+        "replay", help="Replay retained inputs with fresh execution and result identities")
+    replay_investigation.add_argument("path", type=Path)
+    for action in (create, replay_investigation):
+        action.add_argument("--rci-repo", type=Path, required=True,
+                            help="Explicit trusted RCI checkout at the pinned revision")
+        action.add_argument("--fsrt-repo", type=Path, required=True,
+                            help="Explicit trusted FSRT checkout at the pinned revision")
+        action.add_argument("--output-dir", type=Path, required=True)
+        action.add_argument("--python", dest="python_executable", type=Path,
+                            help="Python for external adapters; defaults to this interpreter")
+    for action in (create, inspect_investigation, replay_investigation):
+        action.add_argument("--json", action="store_true", help="Print the complete machine-readable summary")
     return root
 
 
@@ -179,7 +239,9 @@ def main(argv: list[str] | None = None) -> int:
             interval = [args.start, args.end if args.end is not None else run["metadata"]["duration_s"]]
             response = session.handle({"protocol_version": 1, "request_id": uuid.uuid4().hex,
                                        "type": "analysis." + args.operation,
-                                       "payload": {"channel": args.channel, "interval_s": interval}})
+                                       "payload": {"channel": (session.selection["channel"] if args.channel is None
+                                                               else args.channel),
+                                                   "interval_s": interval}})
             print_json(response)
             if response["type"] == "error":
                 return 2
@@ -188,6 +250,9 @@ def main(argv: list[str] | None = None) -> int:
             if not 1 <= args.port <= 65535:
                 raise ValueError("port must be between 1 and 65535")
             session = load_server_session(args)
+            if args.fsrt_repo is not None:
+                from .investigation import bind_fsrt
+                bind_fsrt(session, args.fsrt_repo, python_executable=args.python_executable)
             asyncio.run(run_server(session, args.port, args.bind))
         elif args.command == "health":
             print_json(asyncio.run(health_remote(args.url)))
@@ -203,6 +268,24 @@ def main(argv: list[str] | None = None) -> int:
             asyncio.run(watch_remote(args.url))
         elif args.command == "inspect":
             print_json(read_json(args.path))
+        elif args.command == "investigation":
+            from .investigation import create_investigation, inspect_investigation, replay_investigation
+            if args.investigation_command == "inspect":
+                result = inspect_investigation(args.path)
+            else:
+                arguments = {"rci_repo": args.rci_repo, "fsrt_repo": args.fsrt_repo,
+                             "output_dir": args.output_dir, "python_executable": args.python_executable}
+                if args.investigation_command == "create":
+                    inputs = read_json(args.inputs)
+                    if not isinstance(inputs, dict):
+                        raise ValueError("investigation inputs must be a JSON object")
+                    result = create_investigation(inputs, **arguments)
+                else:
+                    result = replay_investigation(args.path, **arguments)
+            if args.json:
+                print_json(result)
+            else:
+                print_investigation(result)
         elif args.command == "plsr":
             # The optional engine is loaded only through this terminal boundary.
             from .plsr import evaluate_run, import_model, inspect_run, replay_run
@@ -220,6 +303,9 @@ def main(argv: list[str] | None = None) -> int:
         return 0
     except KeyboardInterrupt:
         return 0
+    except AdapterRefusal as exc:
+        print(f"ciw: {exc.code}: {exc}", file=sys.stderr)
+        return 2
     except (OSError, ValueError, RuntimeError, TimeoutError, WebSocketException) as exc:
         print(f"ciw: {exc}", file=sys.stderr)
         return 2

@@ -5,10 +5,12 @@ contracts needed to reproduce their results. An external tool is listed as
 integrated only after its workbench entry point, saved evidence and replay path
 have been exercised together.
 
-| Instrument | Workbench status | Entry point |
+| Tool and role | Workbench status | Entry point |
 | --- | --- | --- |
 | `analytic-damped-oscillator.v1` | Integrated built-in synthetic instrument | `python -m ciw demo`, `analyze stats`, `analyze spectrum` |
-| Parameterized Lyapunov Stability Runtime (PLSR) | Integrated experimental terminal instrument; Python 3.12+ and optional `plsr` extra | `python -m ciw plsr import`, `evaluate`, `inspect`, `replay` |
+| RCI measurement-chain/calibration adapter | Integrated experimental pinned subprocess; synthetic mass fixture | `python -m ciw investigation create`, `inspect`, `replay` |
+| FSRT state-estimation operation | Integrated experimental pinned subprocess; one simultaneous two-reservoir snapshot | Same investigation; shared `operation.execute` after explicit runtime binding |
+| Parameterized Lyapunov Stability Runtime (PLSR) verification operation | Integrated experimental terminal operation; Python 3.12+ and optional `plsr` extra | `python -m ciw plsr import`, `evaluate`, `inspect`, `replay` |
 
 ## Synthetic damped oscillator
 
@@ -115,9 +117,40 @@ python -m pip install -e '.[dev]'
 python -m pytest -q
 ```
 
-The delivered input contract is one small uniformly sampled oscillator recording
-per session. It is not a universal instrument format. Data are synthetic; device
-acquisition, uncertainty estimates and physical validation are not supplied.
+This adapter's input contract is one small uniformly sampled oscillator recording
+per session. The shared adapter boundary also accepts separately declared
+external recordings. Oscillator data are synthetic; device acquisition,
+uncertainty estimates and physical validation are not supplied by this adapter.
+
+## RCI calibration and FSRT estimation
+
+The [adapter operating guide](ADAPTERS.md) documents setup, exact runtime pins,
+the input fixture, terminal commands, retained evidence and offline replay.
+RCI remains the authority for acquisition and calibration semantics. FSRT remains
+the authority for the reservoir model, estimate, covariance and diagnostics.
+
+```sh
+python -m ciw investigation create --inputs examples/adapters/two-reservoir.json --rci-repo ../rci --fsrt-repo ../fsrt --output-dir results/two-reservoir
+python -m ciw investigation inspect results/two-reservoir/workspace.json --json
+python -m ciw investigation replay results/two-reservoir/workspace.json --rci-repo ../rci --fsrt-repo ../fsrt --output-dir results/two-reservoir-replay
+```
+
+| Contract | Delivered specification |
+| --- | --- |
+| Source/adapter pins | Full upstream revisions in [`adapter-runtimes.json`](../src/ciw/adapter-runtimes.json); CIW adapter version retained with the execution |
+| Input | Two distinct synthetic mass measurement chains at the same acquisition instant, explicit calibration profiles and covariance, declared two-reservoir model |
+| Calibration | Exact raw bytes retained; corrected observations get distinct evidence identities; missing, expired or mismatched calibration refuses a derived result |
+| Uncertainty | Parameter covariance and ordering retained; propagated observation covariance passed to FSRT |
+| Estimate | FSRT mass-state estimate and covariance, residuals and physical-model/fault diagnostics |
+| Persistence | One shared workspace with retained inputs, results and execution/refusal history; read-only offline inspection and explicit offline replay |
+| Views | Terminal state table and complete JSON; shared session inspection; no domain-specific Godot fluid view |
+| Qualification | Synthetic integration fixture; calibration traceability and physical validation are not established |
+
+Calibration is evaluated at the observation's acquisition time so a historical
+record can be replayed later without relabelling it as a current measurement.
+Source and runtime bindings are supplied explicitly and are not executed from
+saved workspace declarations. Refer to [validation and limits](ADAPTERS.md#validation-and-current-limits)
+before extending the snapshot fixture to a new measurement arrangement.
 
 ## Parameterized Lyapunov Stability Runtime (PLSR)
 

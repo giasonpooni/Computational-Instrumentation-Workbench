@@ -116,6 +116,7 @@ def run_godot(executable: str, label: str, arguments: list[str], timeout: int) -
 
 
 GENERALITY_PASS = "PASS: the viewport builds channels"
+BOUNDARY_PASS = "PASS: generic adapters remain terminal-only"
 
 
 def check(executable: str) -> None:
@@ -153,12 +154,18 @@ def check(executable: str) -> None:
                 )
                 if not any(line.startswith(GENERALITY_PASS) for line in generality.splitlines()):
                     raise CheckError("Channel generality check exited without its PASS sentinel")
+                boundary = run_godot(
+                    executable, "generic adapter boundary",
+                    ["--script", "res://tests/adapter_boundary.gd"], timeout=60,
+                )
+                if not any(line.startswith(BOUNDARY_PASS) for line in boundary.splitlines()):
+                    raise CheckError("Generic adapter boundary check exited without its PASS sentinel")
                 failed = False
             finally:
                 stop_service(process)
                 if failed:
                     show_output("temporary service diagnostics", log_path.read_text(encoding="utf-8", errors="replace"))
-    print("PASS: Godot import, live protocol and channel generality checks; temporary service stopped.",
+    print("PASS: Godot import, live protocol, channel generality and adapter boundary checks; temporary service stopped.",
           flush=True)
 
 

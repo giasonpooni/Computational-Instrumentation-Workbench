@@ -34,6 +34,8 @@ var _play_time := 0.0
 var _duration := 0.0
 var _synchronizing := false
 var _identity_run := ""
+var _view_supported := true
+const UNSUPPORTED_VIEW := "This adapter uses the generic run contract. Inspect raw, calibrated, estimated and refusal states in the terminal; this viewport supports the legacy recording contract only."
 
 
 func _ready() -> void:
@@ -282,6 +284,9 @@ func _set_interaction(enabled: bool) -> void:
 
 
 func _on_status(state: String, detail: String) -> void:
+	if not _view_supported:
+		state = "unsupported view"
+		detail = UNSUPPORTED_VIEW
 	var ready := state == "ready"
 	_status.text = "●  " + state.to_upper()
 	_status.add_theme_color_override("font_color", TEAL if ready else AMBER)
@@ -294,13 +299,28 @@ func _on_status(state: String, detail: String) -> void:
 	_set_interaction(ready)
 	if not ready:
 		_stop_playback()
-		if not _identity_run.is_empty():
+		if not _view_supported:
+			_sample_label.text = "TERMINAL ONLY  /  adapter values are not rendered by this viewport"
+		elif not _identity_run.is_empty():
 			_sample_label.text = "STALE RETAINED INSPECTION  /  reconnect to synchronize"
 
 
 func _on_snapshot(snapshot: Dictionary) -> void:
 	var run: Dictionary = snapshot.run
 	var metadata: Dictionary = run.metadata
+	# Generic adapters may carry point sampling, missing values and new channel
+	# kinds. Do not reinterpret those through the legacy viewport's float casts.
+	_view_supported = not run.has("run_schema") and not metadata.has("manifest")
+	_phase.visible = _view_supported
+	_energy.visible = _view_supported
+	if not _view_supported:
+		_identity_run = str(run.get("run_id", ""))
+		_rebuild_channels([])
+		_run_meta.text = str(run.get("instrument", "")) + "  /  terminal inspection available"
+		_identity.text = "Session %s   /   Run %s   /   Evidence %s" % [snapshot.get("session_id", ""), _identity_run, run.get("evidence_id", "")]
+		_identity.tooltip_text = _identity.text
+		_on_status("unsupported view", UNSUPPORTED_VIEW)
+		return
 	_rebuild_channels(Dictionary(run.get("channels", {})).keys())
 	var previous_run := _identity_run
 	_identity_run = str(run.run_id)
@@ -318,11 +338,15 @@ func _on_snapshot(snapshot: Dictionary) -> void:
 
 
 func _on_run(run: Dictionary) -> void:
+	if not _view_supported:
+		return
 	_phase.set_run(run)
 	_energy.set_run(run)
 
 
 func _on_selection(selection: Dictionary) -> void:
+	if not _view_supported:
+		return
 	_synchronizing = true
 	var cursor := float(selection.cursor_s)
 	_slider.set_value_no_signal(cursor)
@@ -339,10 +363,12 @@ func _on_selection(selection: Dictionary) -> void:
 
 
 func _on_sample(sample: Dictionary) -> void:
+	if not _view_supported:
+		return
 	var values: Dictionary = sample.values
 	var units: Dictionary = sample.units
 	for channel in _value_labels:
-		if values.has(channel):
+		if values.has(channel) and (values[channel] is float or values[channel] is int):
 			_value_labels[channel].text = "%.6f %s" % [float(values[channel]), str(units.get(channel, ""))]
 		else:
 			_value_labels[channel].text = "—"

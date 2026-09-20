@@ -56,3 +56,44 @@ The demo evidence ID is SHA256 over canonical JSON of instrument, metadata, time
 Native local connections have no Origin header. The launcher binds `127.0.0.1` by default and rejects browser-origin connections. The container explicitly binds `0.0.0.0` inside its network namespace, with Compose publishing only on the host's `127.0.0.1`. Remote execution/authentication are outside this prototype. Cursor requests are bounded by the first and last retained sample timestamp; interval end may equal recording duration. Integer-valued revisions are compared numerically; Python envelopes reject boolean revisions and protocol versions.
 
 The service drains connections and saves its workspace on graceful shutdown. Windows process termination is immediate; the native controller sends `workspace.save` and verifies the response before stopping its owned process. Forced termination and power loss are not covered by an autosave guarantee.
+
+## Additive adapter and operation slice
+
+The legacy oscillator request/response contract above remains protocol version 1.
+Generic scalar/event recordings use `run_schema: "run.v1"` and embed a strict
+`ciw.instrument-manifest.v1` under `metadata.manifest`. An event record can have
+one timestamp, no sample rate, arbitrary declared channels and no render data.
+The manifest role distinguishes measurement adapters from instruments and
+operation providers. The current Godot client explicitly declines this new
+record/view contract; the terminal and structured session API expose it.
+
+Three additive session requests are available:
+
+| Request | Payload | Response |
+| --- | --- | --- |
+| `operation.list` | `{}` | Locally registered operation IDs and roles |
+| `operation.execute` | `{"operation_id":"fsrt.tank-reconstruct.v1","parameters":{"model":{...}}}` | `status`, retained `execution`, and a `result` or `null` |
+| `execution.list` | `{}` | Retained completed/refused execution records |
+
+A refusal is a recorded invocation with no result, not an estimated state.
+Calibration failures during acquisition/import raise `calibration_unavailable`
+and do not create a calibrated run or result. Invalid protocol/configuration
+requests retain the existing error envelope. Source bindings must be supplied
+explicitly by the operator; opening a saved workspace cannot authorize code.
+
+Operation results use `schema: "ciw.operation-result.v1"` and executions use
+`schema: "ciw.execution.v1"`. They retain operation, run, source evidence,
+selection, parameters and runtime bindings, distinct execution/result IDs, and
+content-integrity digests. An execution's `result_id` is null when refused.
+Verification remains `not_verified` with `verification_id: null`; no estimator
+or successful replay can promote that status. Domain output schemas are
+validated without executing their scientific providers during reopening.
+
+A workspace with retained operation executions uses `workspace_version: 2` and
+an `executions` array. Version 1 workspaces continue to open unchanged. Reopening
+preserves identities and results; explicit replay invokes trusted local bindings
+and appends fresh execution/result identities. See [ADAPTERS.md](ADAPTERS.md) for
+the exact pinned single-snapshot scope, raw-byte retention, covariance mapping,
+terminal commands and offline replay setup. This additive slice does not claim
+the architecture's complete streaming, binary transport, multi-run journal or
+physical-validation milestones.

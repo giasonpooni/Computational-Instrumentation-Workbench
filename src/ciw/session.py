@@ -14,6 +14,11 @@ from datetime import datetime, timezone
 from pathlib import Path
 from typing import Any
 
+from .operations.registry import default_registry as default_operations
+from .operations.runner import execute as execute_operation, check_seal, validate_execution
+from .adapters.protocol import AdapterRefusal
+from .core.identities import validate_evidence_identity
+
 from .instruments import (
     compute_spectrum, compute_statistics, inspect_sample, run_metadata, validate_run,
 )
@@ -45,7 +50,15 @@ def _reject_constant(value: str) -> None:
 
 
 def read_json(path: Path) -> Any:
-    return json.loads(Path(path).read_text(encoding="utf-8"), parse_constant=_reject_constant)
+    def unique_pairs(items):
+        result = {}
+        for key, value in items:
+            if key in result:
+                raise ValueError(f"Duplicate JSON key: {key}")
+            result[key] = value
+        return result
+    return json.loads(Path(path).read_text(encoding="utf-8"), parse_constant=_reject_constant,
+                      object_pairs_hook=unique_pairs)
 
 
 def write_json(path: Path, data: Any) -> Path:
@@ -92,11 +105,10 @@ def _digest(value: Any) -> str:
 
 def _validate_evidence(run: dict) -> None:
     validate_run(run)
-    # This is content integrity, not an assertion of authenticity or verification.
-    # Keep this scope aligned with make_demo_run's scientific-record digest.
-    scientific_record = {key: run[key] for key in ("instrument", "metadata", "time_s", "channels")}
-    if run["evidence_id"] != "sha256:" + _digest(scientific_record):
-        raise ValueError("Evidence integrity mismatch: scientific content does not match evidence_id")
+    validate_evidence_identity(run)
+    if run["instrument"] == "org.notationsystems.rci":
+        from .investigation import _validate_source
+        _validate_source(run)
 
 
 def _recording_file(run: dict) -> str:
@@ -171,78 +183,45 @@ def _validate_saved_result(result: Any, run: dict, revision: int, recording_file
     _timestamp(result["created_at"], "Saved result created_at")
     channel = _channel_for_run(run, result["channel"])
     start, end = _interval_for_run(run, result["interval_s"])
-    # Counting retained timestamps checks the stored shape, without evaluating
-    # statistics, applying a window, or executing a Fourier transform.
-    expected_count = sum(start <= time < end for time in run["time_s"])
-    data = result["data"]
-    if not isinstance(data, dict):
-        raise ValueError("Saved result data must be an object")
-    count = data.get("sample_count")
-    if type(count) is not int or count != expected_count:
-        raise ValueError("Saved result sample_count does not match its source interval")
-    unit = run["channels"][channel]["unit"]
-    operation = result["operation_id"]
-    if operation == "statistics.v1":
-        if data.keys() != {"sample_count", "mean", "minimum", "maximum", "rms", "unit"}:
-            raise ValueError("Invalid saved statistics data fields")
-        if data["unit"] != unit:
-            raise ValueError("Saved statistics unit does not match its source channel")
-        mean, minimum, maximum, rms = (_number(data[key], f"Saved statistics {key}")
-                                      for key in ("mean", "minimum", "maximum", "rms"))
-        if minimum > maximum or rms < 0:
-            raise ValueError("Saved statistics have invalid bounds or negative RMS")
-        if ((mean < minimum and not math.isclose(mean, minimum, rel_tol=1e-12))
-                or (mean > maximum and not math.isclose(mean, maximum, rel_tol=1e-12))):
-            raise ValueError("Saved statistics mean is outside its bounds")
-    elif operation == "spectrum.periodogram.v1":
-        fields = {"sample_count", "method", "window", "detrend", "scaling", "frequency_hz",
-                  "psd", "unit", "peak_frequency_hz", "sample_rate_hz"}
-        if data.keys() != fields or count < 4:
-            raise ValueError("Invalid saved spectrum data fields or sample count")
-        for name, expected in (("method", "periodogram"), ("window", "hann"),
-                               ("detrend", "constant"), ("scaling", "density")):
-            if data[name] != expected:
-                raise ValueError(f"Unsupported saved spectrum {name}")
-        sample_rate = _number(data["sample_rate_hz"], "Saved spectrum sample_rate_hz")
-        if sample_rate != run["metadata"]["sample_rate_hz"] or data["unit"] != f"({unit})^2/Hz":
-            raise ValueError("Saved spectrum sample rate or density unit does not match its source")
-        frequencies, psd = data["frequency_hz"], data["psd"]
-        size = count // 2 + 1
-        if not isinstance(frequencies, list) or not isinstance(psd, list) or len(frequencies) != size or len(psd) != size:
-            raise ValueError("Saved spectrum arrays do not match the one-sided transform shape")
-        for index, (frequency, density) in enumerate(zip(frequencies, psd)):
-            frequency = _number(frequency, "Saved spectrum frequency_hz")
-            density = _number(density, "Saved spectrum psd")
-            if density < 0:
-                raise ValueError("Saved spectrum density must be nonnegative")
-            expected_frequency = index * (sample_rate / count)
-            if not math.isclose(frequency, expected_frequency, rel_tol=1e-12, abs_tol=sample_rate * 1e-14):
-                raise ValueError("Saved spectrum frequency grid does not match its sample rate and count")
-        peak = data["peak_frequency_hz"]
-        maximum = max(psd)
-        if maximum == 0:
-            if peak is not None:
-                raise ValueError("A zero saved spectrum must have a null peak")
-        elif _number(peak, "Saved spectrum peak_frequency_hz") != frequencies[psd.index(maximum)]:
-            raise ValueError("Saved spectrum peak does not match its stored density array")
-    else:
-        raise ValueError("Unsupported saved result operation_id")
+    if result.get("schema") == "ciw.operation-result.v1":
+        check_seal(result)
+        if (not isinstance(result.get("runtime"), dict)
+                or not isinstance(result.get("parameters"), dict)
+                or not isinstance(result.get("data"), dict)
+                or result.get("role") not in {"analysis", "state_estimator", "calibration", "verification", "decision", "backend"}
+                or not isinstance(result.get("operation_id"), str)
+                or not result["operation_id"].endswith(".v1")):
+            raise ValueError("Invalid saved operation result")
+        for key, value in (("channel", channel), ("interval_s", [start, end])):
+            if key in result["parameters"] and result["parameters"][key] != value:
+                raise ValueError("Saved operation parameters contradict its captured selection")
+        from .operations.schemas import validate_payload, validate_role
+        validate_role(result["operation_id"], result["role"])
+        validate_payload(result["operation_id"], result["data"], run, result["parameters"],
+                         {"channel": channel, "interval_s": [start, end]})
+        return
+    from .operations.schemas import validate_payload
+    validate_payload(result["operation_id"], result["data"], run, {},
+                     {"channel": channel, "interval_s": [start, end]})
     json.dumps(result, allow_nan=False)
 
 
 class Session:
-    def __init__(self, run: dict, output_dir: Path):
+    def __init__(self, run: dict, output_dir: Path, *, operations=None):
         _validate_evidence(run)
         self.run = copy.deepcopy(run)
         self.output_dir = Path(output_dir)
         self.session_id = "session-" + uuid.uuid4().hex
         self.selection = {
-            "run_id": run["run_id"], "channel": "q",
-            "interval_s": [0.0, run["metadata"]["duration_s"]], "cursor_s": 0.0,
+            "run_id": run["run_id"], "channel": "q" if "q" in run["channels"] else next(iter(run["channels"])),
+            "interval_s": [0.0, run["metadata"]["duration_s"]], "cursor_s": run["time_s"][0],
             "coordinate_frame": run["metadata"]["coordinate_frame"], "revision": 0,
         }
         self.results: dict[str, dict] = {}
+        self.executions: dict[str, dict] = {}
+        self.operations = operations if operations is not None else default_operations()
         self._lock = threading.RLock()
+        self._pending_operations = 0
         self.recording_file = _recording_file(self.run)
         write_json(self.output_dir / self.recording_file, self.run)
 
@@ -284,7 +263,7 @@ class Session:
                 raise ProtocolError("invalid_request", "type must be a string and payload an object")
             result = self._dispatch(kind, payload)
             return envelope("response", result, request_id)
-        except ProtocolError as exc:
+        except (ProtocolError, AdapterRefusal) as exc:
             return envelope("error", {"code": exc.code, "message": str(exc)}, request_id)
         except (ValueError, TypeError) as exc:
             return envelope("error", {"code": "invalid_payload", "message": str(exc)}, request_id)
@@ -327,8 +306,8 @@ class Session:
                 selected = copy.deepcopy(self.selection)
             channel = self._channel(payload.get("channel", selected["channel"]))
             interval = self._interval(payload.get("interval_s", selected["interval_s"]))
-            compute = compute_statistics if kind == "analysis.stats" else compute_spectrum
-            data = compute(self.run, channel, interval)
+            operation_id = "statistics.v1" if kind == "analysis.stats" else "spectrum.periodogram.v1"
+            data = self.operations.get(operation_id).execute(self.run, {"channel": channel, "interval_s": interval})
             result_id = "result-" + uuid.uuid4().hex
             result = {
                 "result_id": result_id, "evidence_id": self.run["evidence_id"],
@@ -345,6 +324,56 @@ class Session:
                 write_json(self.output_dir / f"{result_id}.json", result)
                 self.results[result_id] = result
             return copy.deepcopy(result)
+        if kind == "operation.list":
+            _keys(payload, set())
+            return {"operations": self.operations.describe()}
+        if kind == "execution.list":
+            _keys(payload, set())
+            with self._lock:
+                return {"executions": copy.deepcopy(list(self.executions.values()))}
+        if kind == "operation.execute":
+            _keys(payload, {"operation_id", "parameters"}, {"operation_id"})
+            if (not isinstance(payload["operation_id"], str) or not payload["operation_id"].endswith(".v1")
+                    or not isinstance(payload.get("parameters", {}), dict)):
+                raise ProtocolError("invalid_payload", "operation_id must end in .v1 and parameters must be an object")
+            # Reserve bounded capacity and capture the scientific request. A
+            # subprocess may wait up to its deadline, so it cannot own the
+            # shared selection/publication lock while it calculates.
+            with self._lock:
+                if (len(self.results) + self._pending_operations >= 1024
+                        or len(self.executions) + self._pending_operations >= 1024):
+                    raise ProtocolError("capacity_exceeded", "Save and start a new session after 1024 operations")
+                selected = copy.deepcopy(self.selection)
+                parameters = copy.deepcopy(payload.get("parameters", {}))
+                if "channel" in parameters:
+                    selected["channel"] = self._channel(parameters["channel"])
+                if "interval_s" in parameters:
+                    selected["interval_s"] = self._interval(parameters["interval_s"])
+                captured_run = copy.deepcopy(self.run)
+                recording_file = self.recording_file
+                operation_id = payload["operation_id"]
+                operations = self.operations
+                self._pending_operations += 1
+            try:
+                execution, result = execute_operation(
+                    operations, captured_run, selected, recording_file, operation_id, parameters)
+                with self._lock:
+                    # Legacy analysis can publish while this provider runs;
+                    # recheck before writing either half of the operation pair.
+                    if (len(self.executions) >= 1024
+                            or (result is not None and len(self.results) >= 1024)):
+                        raise ProtocolError("capacity_exceeded", "Save and start a new session after 1024 operations")
+                    write_json(self.output_dir / (execution["execution_id"] + ".json"), execution)
+                    if result is not None:
+                        write_json(self.output_dir / (result["result_id"] + ".json"), result)
+                        self.results[result["result_id"]] = result
+                    self.executions[execution["execution_id"]] = execution
+            finally:
+                with self._lock:
+                    self._pending_operations -= 1
+            if result is None:
+                return {"status": "refused", "execution": copy.deepcopy(execution), "result": None}
+            return {"status": "completed", "execution": copy.deepcopy(execution), "result": copy.deepcopy(result)}
         if kind == "result.list":
             _keys(payload, set())
             return {"results": self._result_summaries()}
@@ -366,13 +395,16 @@ class Session:
             workspace = {"workspace_version": 1, "saved_at": utc_now(), "run": self.run,
                          "selection": self.selection, "results": list(self.results.values()),
                          "view_settings": {}}
+            if self.executions:
+                workspace["workspace_version"] = 2
+                workspace["executions"] = list(self.executions.values())
             return write_json(path, workspace)
 
     @classmethod
     def from_workspace(cls, path: Path, output_dir: Path | None = None) -> Session:
         """Reopen stored evidence/results without executing an analysis."""
         workspace = read_json(path)
-        if not isinstance(workspace, dict) or type(workspace.get("workspace_version")) is not int or workspace["workspace_version"] != 1:
+        if not isinstance(workspace, dict) or type(workspace.get("workspace_version")) is not int or workspace["workspace_version"] not in (1, 2):
             raise ValueError("Unsupported workspace format")
         run = workspace.get("run")
         _validate_evidence(run)
@@ -407,9 +439,32 @@ class Session:
                 raise ValueError("Saved result identity mismatch or duplication")
             result_map[result_id] = result
             execution_ids.add(result["execution_id"])
+        executions = workspace.get("executions", [])
+        if not isinstance(executions, list) or len(executions) > 1024:
+            raise ValueError("Invalid saved executions")
+        if workspace["workspace_version"] == 1 and executions:
+            raise ValueError("Executions require workspace version 2")
+        execution_map = {}
+        for execution in executions:
+            validate_execution(execution, run, selection["revision"], result_map)
+            eid = execution["execution_id"]
+            if eid in execution_map:
+                raise ValueError("Duplicate execution identity")
+            if eid in execution_ids and execution.get("result_id") not in result_map:
+                raise ValueError("Execution identity collision")
+            execution_map[eid] = execution
+        for result in result_map.values():
+            if result.get("schema") == "ciw.operation-result.v1":
+                execution = execution_map.get(result["execution_id"])
+                if (execution is None or execution["status"] != "completed"
+                        or execution["result_id"] != result["result_id"]):
+                    raise ValueError("Operation result is missing its completed execution")
         restored = cls(run, output_dir or Path(path).parent)
         restored.selection = copy.deepcopy(selection)
         restored.results = copy.deepcopy(result_map)
+        restored.executions = copy.deepcopy(execution_map)
         for result in restored.results.values():
             write_json(restored.output_dir / (result["result_id"] + ".json"), result)
+        for execution in restored.executions.values():
+            write_json(restored.output_dir / (execution["execution_id"] + ".json"), execution)
         return restored

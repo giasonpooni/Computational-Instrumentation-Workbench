@@ -1,0 +1,111 @@
+{
+  "schema": "ciw.tank-investigation-input.v1",
+  "sensors": [
+    {
+      "name": "tank-1",
+      "request": {
+        "schema": "ciw.adapter-request.v1",
+        "operation_id": "rci.calibrate.v1",
+        "inputs": {
+          "assembly_toml": "schema = \"rci-assembly-v1\"\nassembly_id = \"simulated-reservoir-1-mass\"\nversion = \"1\"\ntitle = \"Simulated reservoir mass fixture; no physical device or traceability claim\"\n[board]\nid = \"simulated-reservoir-1-board\"\nmodel = \"host-fixture\"\nrevision = \"1\"\nmcu = \"none\"\ncitation = \"Declared synthetic CIW fixture\"\n[interface]\nid = \"simulated-reservoir-1-interface\"\nkind = \"simulated-counts\"\nelectrical = \"none; software fixture\"\ncitation = \"Declared synthetic CIW fixture\"\n[instrument]\nid = \"simulated-reservoir-1-mass-sensor\"\nquantity = \"mass\"\nunit = \"kg\"\nprinciple = \"simulated-linear-indication\"\nrange_min = 0.0\nrange_max = 100.0\ncitation = \"Declared synthetic CIW fixture\"\n[installation]\nid = \"simulated-reservoir-1-installation\"\nasset = \"reservoir-1\"\nmount = \"none; software fixture\"\n[calibration]\nid = \"simulated-reservoir-1-calibration-v1\"\nmethod = \"linear\"\nraw_unit = \"count\"\noutput_unit = \"kg\"\ntheta = [0.01, 0.0]\nrange_min = 0.0\nrange_max = 10000.0\nsigma = 0.02\nsigma_unit = \"kg\"\nsigma_reason = \"Declared independent synthetic residual standard uncertainty; not a physical calibration certificate\"\ncitation = \"Synthetic scale and zero with declared parameter covariance\"\n",
+          "calibration": {
+            "schema": "rci-calibration-binding.v1",
+            "calibration_id": "simulated-reservoir-1-calibration-v1",
+            "assembly_id": "simulated-reservoir-1-mass",
+            "assembly_version": "1",
+            "installation_id": "simulated-reservoir-1-installation",
+            "assembly_digest": "490923ba0a819f5312b174e3e07670485c4daa23b311b58c6cfb3bf1211604c5",
+            "valid_from": "2026-01-01T00:00:00Z",
+            "valid_until": "2026-02-01T00:00:00Z",
+            "parameter_order": [
+              "scale",
+              "zero_raw"
+            ],
+            "parameter_covariance": [
+              [
+                1e-10,
+                1e-07
+              ],
+              [
+                1e-07,
+                0.04
+              ]
+            ],
+            "residual_correlation": "independent",
+            "raw_parameter_independent": true
+          },
+          "records": [
+            {
+              "raw_record_b64": "ewogICJvYnNlcnZhdGlvbl9pZCI6ICJzaW11bGF0ZWQtcmVzZXJ2b2lyLTEtYWNxdWlzaXRpb246MCIsCiAgInNlc3Npb25faWQiOiAic2ltdWxhdGVkLXJlc2Vydm9pci0xLWFjcXVpc2l0aW9uIiwKICAic2VxdWVuY2UiOiAwLAogICJkZXZpY2VfdGlja3MiOiAwLAogICJ0aW1lc3RhbXBfbWVhbmluZyI6ICJkZXZpY2VfY2xvY2tfYXRfcmVhZG91dCIsCiAgImFzc2VtYmx5X2lkIjogInNpbXVsYXRlZC1yZXNlcnZvaXItMS1tYXNzIiwKICAiYXNzZW1ibHlfdmVyc2lvbiI6ICIxIiwKICAiY2FsaWJyYXRpb25faWQiOiAic2ltdWxhdGVkLXJlc2Vydm9pci0xLWNhbGlicmF0aW9uLXYxIiwKICAicmF3IjogNzAwMC4wLAogICJyYXdfdW5pdCI6ICJjb3VudCIsCiAgImluZGljYXRlZCI6IDcwLjAsCiAgImluZGljYXRlZF91bml0IjogImtnIiwKICAic2lnbWEiOiAwLjAyLAogICJzaWdtYV91bml0IjogImtnIiwKICAic2lnbWFfcmVhc29uIjogIkRlY2xhcmVkIGluZGVwZW5kZW50IHN5bnRoZXRpYyByZXNpZHVhbCBzdGFuZGFyZCB1bmNlcnRhaW50eTsgbm90IGEgcGh5c2ljYWwgY2FsaWJyYXRpb24gY2VydGlmaWNhdGUiLAogICJxdWFsaXR5IjogewogICAgImFjcXVpc2l0aW9uIjogInJlY2VpdmVkIiwKICAgICJ0aW1pbmciOiAiZGV2aWNlX2Nsb2NrIiwKICAgICJjYWxpYnJhdGlvbiI6ICJhcHBsaWNhYmxlIiwKICAgICJpbmZlcmVuY2UiOiAibm90X3J1biIKICB9Cn0K",
+              "observed_at": "2026-01-15T12:00:00Z"
+            }
+          ],
+          "raw_covariance": [
+            [
+              0.25
+            ]
+          ]
+        }
+      }
+    },
+    {
+      "name": "tank-2",
+      "request": {
+        "schema": "ciw.adapter-request.v1",
+        "operation_id": "rci.calibrate.v1",
+        "inputs": {
+          "assembly_toml": "schema = \"rci-assembly-v1\"\nassembly_id = \"simulated-reservoir-2-mass\"\nversion = \"1\"\ntitle = \"Simulated reservoir mass fixture; no physical device or traceability claim\"\n[board]\nid = \"simulated-reservoir-2-board\"\nmodel = \"host-fixture\"\nrevision = \"1\"\nmcu = \"none\"\ncitation = \"Declared synthetic CIW fixture\"\n[interface]\nid = \"simulated-reservoir-2-interface\"\nkind = \"simulated-counts\"\nelectrical = \"none; software fixture\"\ncitation = \"Declared synthetic CIW fixture\"\n[instrument]\nid = \"simulated-reservoir-2-mass-sensor\"\nquantity = \"mass\"\nunit = \"kg\"\nprinciple = \"simulated-linear-indication\"\nrange_min = 0.0\nrange_max = 100.0\ncitation = \"Declared synthetic CIW fixture\"\n[installation]\nid = \"simulated-reservoir-2-installation\"\nasset = \"reservoir-2\"\nmount = \"none; software fixture\"\n[calibration]\nid = \"simulated-reservoir-2-calibration-v1\"\nmethod = \"linear\"\nraw_unit = \"count\"\noutput_unit = \"kg\"\ntheta = [0.01, 0.0]\nrange_min = 0.0\nrange_max = 10000.0\nsigma = 0.02\nsigma_unit = \"kg\"\nsigma_reason = \"Declared independent synthetic residual standard uncertainty; not a physical calibration certificate\"\ncitation = \"Synthetic scale and zero with declared parameter covariance\"\n",
+          "calibration": {
+            "schema": "rci-calibration-binding.v1",
+            "calibration_id": "simulated-reservoir-2-calibration-v1",
+            "assembly_id": "simulated-reservoir-2-mass",
+            "assembly_version": "1",
+            "installation_id": "simulated-reservoir-2-installation",
+            "assembly_digest": "01519f2a340bbc6ec946d23203d42cdc5a1f11e79f4eb856756826edb2b0f236",
+            "valid_from": "2026-01-01T00:00:00Z",
+            "valid_until": "2026-02-01T00:00:00Z",
+            "parameter_order": [
+              "scale",
+              "zero_raw"
+            ],
+            "parameter_covariance": [
+              [
+                1e-10,
+                1e-07
+              ],
+              [
+                1e-07,
+                0.04
+              ]
+            ],
+            "residual_correlation": "independent",
+            "raw_parameter_independent": true
+          },
+          "records": [
+            {
+              "raw_record_b64": "ewogICJvYnNlcnZhdGlvbl9pZCI6ICJzaW11bGF0ZWQtcmVzZXJ2b2lyLTItYWNxdWlzaXRpb246MCIsCiAgInNlc3Npb25faWQiOiAic2ltdWxhdGVkLXJlc2Vydm9pci0yLWFjcXVpc2l0aW9uIiwKICAic2VxdWVuY2UiOiAwLAogICJkZXZpY2VfdGlja3MiOiAwLAogICJ0aW1lc3RhbXBfbWVhbmluZyI6ICJkZXZpY2VfY2xvY2tfYXRfcmVhZG91dCIsCiAgImFzc2VtYmx5X2lkIjogInNpbXVsYXRlZC1yZXNlcnZvaXItMi1tYXNzIiwKICAiYXNzZW1ibHlfdmVyc2lvbiI6ICIxIiwKICAiY2FsaWJyYXRpb25faWQiOiAic2ltdWxhdGVkLXJlc2Vydm9pci0yLWNhbGlicmF0aW9uLXYxIiwKICAicmF3IjogMzAwMC4wLAogICJyYXdfdW5pdCI6ICJjb3VudCIsCiAgImluZGljYXRlZCI6IDMwLjAsCiAgImluZGljYXRlZF91bml0IjogImtnIiwKICAic2lnbWEiOiAwLjAyLAogICJzaWdtYV91bml0IjogImtnIiwKICAic2lnbWFfcmVhc29uIjogIkRlY2xhcmVkIGluZGVwZW5kZW50IHN5bnRoZXRpYyByZXNpZHVhbCBzdGFuZGFyZCB1bmNlcnRhaW50eTsgbm90IGEgcGh5c2ljYWwgY2FsaWJyYXRpb24gY2VydGlmaWNhdGUiLAogICJxdWFsaXR5IjogewogICAgImFjcXVpc2l0aW9uIjogInJlY2VpdmVkIiwKICAgICJ0aW1pbmciOiAiZGV2aWNlX2Nsb2NrIiwKICAgICJjYWxpYnJhdGlvbiI6ICJhcHBsaWNhYmxlIiwKICAgICJpbmZlcmVuY2UiOiAibm90X3J1biIKICB9Cn0K",
+              "observed_at": "2026-01-15T12:00:00Z"
+            }
+          ],
+          "raw_covariance": [
+            [
+              0.25
+            ]
+          ]
+        }
+      }
+    }
+  ],
+  "cross_assembly_independent": true,
+  "model": {
+    "kind": "reservoir2-linear-v1",
+    "prior_mean": [
+      70.0,
+      30.0
+    ],
+    "prior_std": 5.0,
+    "total_mass_kg": 100.0,
+    "total_mass_variance_kg2": 0.25
+  },
+  "source_description": "Two independent simulated reservoir mass sensors; no physical device, field acquisition or metrological traceability claim"
+}

@@ -63,7 +63,7 @@ Instruments connect to the runtime through one contract that fixes the meaning o
 
 ## Status
 
-The executable prototype includes a Python/NumPy demonstration instrument, headless terminal analysis, a shared local session that terminal and viewport clients attach to, saved-workspace replay, and an optional Godot 2D/3D viewport. Follow the [quickstart](docs/quickstart.md) to run it from source. PLSR is the first external instrument integrated through the terminal: import a declared model, evaluate an explicit sample, inspect and retain the evidence, then replay it. Its [operating guide](docs/PLSR.md) covers setup and the computational scope. PLSR runs currently use separate saved bundles; they do not attach to the shared session or viewport. Further instrument and persistence adapters, the broader capabilities described above, and packaged releases remain future work. The architecture is published in [docs/ARCHITECTURE.md](docs/ARCHITECTURE.md).
+The executable prototype includes an ordinary oscillator adapter, headless terminal analysis, a shared local session, saved-workspace replay, and an optional Godot 2D/3D viewport. Follow the [quickstart](docs/quickstart.md) to run it from source. The [RCI-to-FSRT integration](docs/ADAPTERS.md) adds a generic adapter boundary, declared calibration of two independent synthetic mass observations, one pinned FSRT estimation operation, and offline investigation replay. Domain calculations remain in their authoritative repositories. PLSR's [terminal verification workflow](docs/PLSR.md) retains its separate saved bundles; it does not yet attach to the shared session or viewport. Further adapters, the broader capabilities described above, and packaged releases remain future work. The architecture is published in [docs/ARCHITECTURE.md](docs/ARCHITECTURE.md).
 
 ## Integrated tools
 
@@ -75,7 +75,9 @@ establish physical validation or deployment readiness.
 | Tool | Integration status | Available operations | Instructions and specifications |
 | --- | --- | --- | --- |
 | Synthetic damped oscillator (`analytic-damped-oscillator.v1`) | Integrated prototype; built into CIW | Generate a recording, inspect samples, calculate statistics and periodogram spectra, share a session, save and reopen results | [Tool guide](docs/INSTRUMENTS.md#synthetic-damped-oscillator), [quickstart](docs/quickstart.md), [record and protocol specification](docs/PROTOCOL.md) |
-| Parameterized Lyapunov Stability Runtime (PLSR; `ciw-plsr-adapter-v1`) | Integrated experimental terminal instrument; optional `plsr` extra, Python 3.12+ | Import a declared model, evaluate an explicit sample, inspect a retained run, replay with digest comparison | [Setup, commands and specifications](docs/PLSR.md), [catalogue entry](docs/INSTRUMENTS.md#parameterized-lyapunov-stability-runtime-plsr) |
+| Retrofitted Computational Instrumentation (RCI) | Integrated experimental measurement-chain adapter; pinned subprocess | Retain exact raw observations, validate declared calibration, derive distinct calibrated evidence with parameter covariance | [Setup, commands and specifications](docs/ADAPTERS.md), [catalogue entry](docs/INSTRUMENTS.md#rci-calibration-and-fsrt-estimation) |
+| Fluid State Reconstruction Testbed (FSRT) | Integrated experimental state-estimation operation; pinned subprocess | Evaluate one simultaneous two-reservoir snapshot, retain estimate/covariance/residuals and diagnostics, share and replay the investigation | [Setup, commands and specifications](docs/ADAPTERS.md), [catalogue entry](docs/INSTRUMENTS.md#rci-calibration-and-fsrt-estimation) |
+| Parameterized Lyapunov Stability Runtime (PLSR; `ciw-plsr-adapter-v1`) | Integrated experimental terminal verification operation; optional `plsr` extra, Python 3.12+ | Import a declared model, evaluate an explicit sample, inspect a retained run, replay with digest comparison | [Setup, commands and specifications](docs/PLSR.md), [catalogue entry](docs/INSTRUMENTS.md#parameterized-lyapunov-stability-runtime-plsr) |
 
 PLSR is pinned to upstream commit
 [`19ea6967060166ba09db6cd4563bd87bd6b3d196`](https://github.com/giasonpooni/Parameterized-Lyapunov-Stability-Runtime/tree/19ea6967060166ba09db6cd4563bd87bd6b3d196).
@@ -91,6 +93,7 @@ for the required commands, specifications, version pins, and validation evidence
 - Quickstart: [`docs/quickstart.md`](docs/quickstart.md)
 - Integrated tool instructions and specifications: [`docs/INSTRUMENTS.md`](docs/INSTRUMENTS.md)
 - PLSR terminal workflow and saved-run specification: [`docs/PLSR.md`](docs/PLSR.md)
+- Generic adapters and the RCI/FSRT investigation: [`docs/ADAPTERS.md`](docs/ADAPTERS.md)
 - Architecture: [`docs/ARCHITECTURE.md`](docs/ARCHITECTURE.md)
 - Protocol: [`docs/PROTOCOL.md`](docs/PROTOCOL.md)
 - Development guide: [`docs/DEVELOPMENT.md`](docs/DEVELOPMENT.md)

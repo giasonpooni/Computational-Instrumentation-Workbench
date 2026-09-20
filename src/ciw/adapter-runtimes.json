@@ -1,0 +1,12 @@
+{
+  "rci": {
+    "repository": "https://github.com/giasonpooni/Retrofitted-Computational-Instrumentation",
+    "revision": "97fcc01a45985defd6a76532b1fefe90d66dd159",
+    "module": "instrument_chain.ciw_adapter"
+  },
+  "fsrt": {
+    "repository": "https://github.com/giasonpooni/Fluid-State-Reconstruction-Testbed",
+    "revision": "d34588819f657b6639c8e9a19450215844610007",
+    "module": "set_lcm.bridge.ciw"
+  }
+}
