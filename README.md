@@ -93,5 +93,4 @@ for the required commands, specifications, version pins, and validation evidence
 - PLSR terminal workflow and saved-run specification: [`docs/PLSR.md`](docs/PLSR.md)
 - Architecture: [`docs/ARCHITECTURE.md`](docs/ARCHITECTURE.md)
 - Protocol: [`docs/PROTOCOL.md`](docs/PROTOCOL.md)
-- Design decisions: [`docs/adr/`](docs/adr/README.md)
 - Development guide: [`docs/DEVELOPMENT.md`](docs/DEVELOPMENT.md)

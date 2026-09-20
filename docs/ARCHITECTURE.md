@@ -38,7 +38,7 @@ Each word of the name has a role:
 - **Instrumentation** keeps the focus on investigating physical systems through measurements, models, and diagnostics.
 - **Workbench** describes an environment in which several instruments and analytical operations can be used together. It does not imply that the visualization layer replaces those instruments.
 
-Within the definition: *terminal-first* means the primary, fully capable interface is a terminal that works headless and over SSH; richer 2D/3D output may use terminal graphics protocols or an auxiliary viewer, but the terminal remains the control surface. *Synchronized* means the four representation families share time base, cursor and selection, units, and the same underlying data, and a change in one is reflected in the others deterministically. *Observations* (measured data, kind `observation`; quantities computed from other channels carry kind `derived` with `derived_from`, Section 7.2) and *estimated states* (outputs of estimators, reconstructions, integrators) are distinct kinds of data, distinguishable in the data model and in every view, including uncertainty. The workbench *connects* instruments; it does not absorb them. Instruments are replaceable backends behind a contract. The engineering title, *Integrated Measurement, State Estimation, and Visualization Workbench*, appears only in the README subtitle and in technical abstracts (ADR-0001).
+Within the definition: *terminal-first* means the primary, fully capable interface is a terminal that works headless and over SSH; richer 2D/3D output may use terminal graphics protocols or an auxiliary viewer, but the terminal remains the control surface. *Synchronized* means the four representation families share time base, cursor and selection, units, and the same underlying data, and a change in one is reflected in the others deterministically. *Observations* (measured data, kind `observation`; quantities computed from other channels carry kind `derived` with `derived_from`, Section 7.2) and *estimated states* (outputs of estimators, reconstructions, integrators) are distinct kinds of data, distinguishable in the data model and in every view, including uncertainty. The workbench *connects* instruments; it does not absorb them. Instruments are replaceable backends behind a contract. The engineering title, *Integrated Measurement, State Estimation, and Visualization Workbench*, appears only in the README subtitle and in technical abstracts.
 
 ### 2.2 Position
 
@@ -175,7 +175,7 @@ flowchart LR
 | **Workspace** | `workspace.json`, `recording-<hash>.json`, `result-<id>.json`; a session directory in the extension. | Anything active. |
 | **Headless adapter** (v1) | Drives an external instrument without the service, calling the upstream engine under a verified source pin and writing immutable run bundles with the identity model (8.13). | Attach to a session or publish to clients (extension, CIW-SESS-014); compute a verdict itself. |
 
-Naming: the **Session Service** is the *Workbench runtime* of `README.md`; the **Terminal Client** is the *terminal frontend* of `README.md` and ADR-0003; the **Viewport** is the 2D/3D viewport in all three.
+Naming: the **Session Service** is the *Workbench runtime* of `README.md`; the **Terminal Client** is the *terminal frontend* of `README.md`; the **Viewport** is the 2D/3D viewport in all three.
 
 ### 5.2 Process model
 | Process | Count | Survives |
@@ -897,7 +897,7 @@ Proposed uses of the workbench; candidates, not commitments.
 
 ### 13.8 First external adapter: PLSR (v1, headless)
 
-The Parameterized Lyapunov Stability Runtime (PLSR) evaluates quadratic Lyapunov certificates for declared linear and affine-parameter models. It is the first external adapter, in the dynamical-system/observer candidate family, decided in [ADR-0004](adr/0004-plsr-terminal-adapter.md) and documented in [`docs/PLSR.md`](PLSR.md) and [`docs/INSTRUMENTS.md`](INSTRUMENTS.md). v1 facts: commands `ciw plsr import | evaluate | inspect | replay` (exit codes per CIW-OPS-001); optional `plsr` extra pinned to an upstream commit, Python 3.12+ (the base workbench stays 3.11); adapter `ciw-plsr-adapter-v1`; operation `plsr.verdict.v1`; input `plsr-sample-v1` (explicit `x`, `theta`, `theta_dot`, no defaults); saved run `ciw-plsr-run-v1`, written atomically as `run-<result uuid>.json` (the UUID suffix of `result_id`) and never overwritten with different content, embedding the complete model declaration, the sample, the runtime companion record, and the runtime identity; `evidence_id` a digest over the model `artifact_digest` and the sample; model `artifact_digest`, companion `record_digest`, and CIW `bundle_digest` validated against one another; `verification_status: "not_verified"`, `may_authorize: false`, physical validation `not_started`, `proof_status: NOT_CHECKED`; one explicit sample per invocation; no shared session, no viewport, no change to protocol v1; numerical views only.
+The Parameterized Lyapunov Stability Runtime (PLSR) evaluates quadratic Lyapunov certificates for declared linear and affine-parameter models. It is the first external adapter, in the dynamical-system/observer candidate family, documented in [`docs/PLSR.md`](PLSR.md) and [`docs/INSTRUMENTS.md`](INSTRUMENTS.md). v1 facts: commands `ciw plsr import | evaluate | inspect | replay` (exit codes per CIW-OPS-001); optional `plsr` extra pinned to an upstream commit, Python 3.12+ (the base workbench stays 3.11); adapter `ciw-plsr-adapter-v1`; operation `plsr.verdict.v1`; input `plsr-sample-v1` (explicit `x`, `theta`, `theta_dot`, no defaults); saved run `ciw-plsr-run-v1`, written atomically as `run-<result uuid>.json` (the UUID suffix of `result_id`) and never overwritten with different content, embedding the complete model declaration, the sample, the runtime companion record, and the runtime identity; `evidence_id` a digest over the model `artifact_digest` and the sample; model `artifact_digest`, companion `record_digest`, and CIW `bundle_digest` validated against one another; `verification_status: "not_verified"`, `may_authorize: false`, physical validation `not_started`, `proof_status: NOT_CHECKED`; one explicit sample per invocation; no shared session, no viewport, no change to protocol v1; numerical views only.
 
 M1 items delivered at M0: the existing-instrument adapter with the upstream engine and its status semantics preserved (CIW-EXT-009), runtime pin in provenance, separate identities, inspect versus replay (CIW-INST-021), catalogue entry (CIW-EXT-010). Remaining: manifest and schema (CIW-INST-005), session attachment of bundles (CIW-SESS-014), capability-driven views (CIW-VIEW-001), the subprocess binding (CIW-INST-018), and the reference instrument (a) adapter with its reusability report (CIW-EXT-005, CIW-EXT-006).
 
@@ -920,7 +920,7 @@ M1 items delivered at M0: the existing-instrument adapter with the upstream engi
 | `prompt_toolkit` or `urwid` | Lighter; no compositor, reflow, or headless driver. | Not chosen. |
 | Go with Bubble Tea; C++20 with notcurses; Zig | Static binaries and the best terminal graphics; thinner numerics and Arrow ecosystems. | Not chosen; notcurses' blitters inform 10.3. |
 | Arrow IPC as the default bulk format | Better schema evolution; needs an Arrow reader in the viewport and adds framing overhead for small live frames. | Kept for tables and export. |
-| Browser frontend as primary; viewer embedded in the terminal process | Moves the control surface off the terminal; couples it to a GPU process. | Rejected (ADR-0003). |
+| Browser frontend as primary; viewer embedded in the terminal process | Moves the control surface off the terminal; couples it to a GPU process. | Rejected. |
 
 ## 15. Repository layout
 
@@ -949,8 +949,7 @@ The tree is reproduced unchanged from the development guide, whose annotations i
     ├── INSTRUMENTS.md        Catalogue of integrated instruments with their specifications
     ├── quickstart.md         Running the prototype from source
     ├── coordination.md       Build coordination and integration sequence
-    ├── DEVELOPMENT.md        This guide
-    └── adr/                  Architecture Decision Records
+    └── DEVELOPMENT.md        This guide
 ```
 
 `recordings/`, `results/`, and the native deployment's `.ciw/` data directory hold local outputs and are ignored by git. Planned growth follows the same tree: `src/ciw/instruments.py` becomes the package `src/ciw/instruments/` when a second instrument lands; terminal panels go under `src/ciw/tui/`; protocol codecs for binary transport go under `src/ciw/protocol/`; reference instruments and their fixtures used by conformance tests go under `examples/`.
@@ -1156,7 +1155,7 @@ Budgets are measured on a profile: 4 physical cores at 2.5 GHz or better, 16 GiB
 | R12 | The envelope's identities may not fit a deployment's evidence infrastructure. | Identities are opaque strings; the adapter maps without merging (M2). |
 | R13 | Shared versus per-client camera on high-latency links. | Shared by default with local prediction; revisit after the M4 trial. |
 | R14 | Journal growth in long sessions. | Cursor coalescing (CIW-SYNC-008); `session compact`; rotation (CIW-SESS-005). |
-| R15 | The PLSR upstream kernel API is marked `changing`. | Source-manifest verification rejects any other source (CIW-EXT-009); a pin update requires a compatibility review and a decision record (ADR-0004). |
+| R15 | The PLSR upstream kernel API is marked `changing`. | Source-manifest verification rejects any other source (CIW-EXT-009); a pin update requires a compatibility review and a recorded decision. |
 | R16 | Autosave covers graceful shutdown only. | `workspace.save` as the explicit checkpoint; controller Stop saves and verifies; 30 s container grace; the M2 journal makes every mutation durable. |
 
 ## 18. Roadmap
@@ -1214,16 +1213,7 @@ A milestone closes only when its conformance rows pass and, from M1, CIW-EXT-006
 | D29 | Verification: `verification_id` null and `not_verified` until a distinct verification execution references the result; `checks[]` are self-checks. | Never inferred from a scene. |
 | D30 | Vector-shaped channels with component labels, not one channel per component. | Matches `channels{name: {unit, values}}`; covariance stays with its state. |
 | D31 | Saved shutdown on SIGINT or SIGTERM (POSIX); the native controller on Windows requests `workspace.save`, verifies it, then terminates the owned process only; no shutdown request in the client protocol (CIW-SESS-012). | A protocol shutdown would let any local client stop a shared session. |
-| D32 | External instruments: adapters call the upstream engine under a verified source pin and never vendor it; PLSR is a headless terminal adapter that changes no protocol (ADR-0004). | One numerical implementation to validate. |
-
-Decision records:
-
-| Decision | Record |
-|---|---|
-| Project name and definition | [ADR-0001](adr/0001-project-name-and-definition.md) |
-| Positioning as a foundational instrumentation runtime; contract-first rule; reusability target | [ADR-0002](adr/0002-foundational-runtime-positioning.md) |
-| Reference implementation arrangement (Python/NumPy engines, terminal frontend, Godot viewport) and the native alternative | [ADR-0003](adr/0003-reference-implementation-arrangement.md) |
-| PLSR integrated through a bounded headless terminal adapter | [ADR-0004](adr/0004-plsr-terminal-adapter.md) |
+| D32 | External instruments: adapters call the upstream engine under a verified source pin and never vendor it; PLSR is a headless terminal adapter that changes no protocol. | One numerical implementation to validate. |
 
 ## 20. Related documents
 
@@ -1235,4 +1225,3 @@ Decision records:
 - [`docs/PLSR.md`](PLSR.md) — the PLSR headless terminal adapter: commands, run bundle, digests, exit codes.
 - [`deploy/README.md`](../deploy/README.md) — deployment paths: native controller and container backend.
 - [`deploy/CONTAINER.md`](../deploy/CONTAINER.md) — container backend: Compose service, volume, stop and resume, validation status.
-- [`docs/adr/README.md`](adr/README.md) — decision records index.

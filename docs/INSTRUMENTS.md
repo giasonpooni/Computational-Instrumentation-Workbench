@@ -159,7 +159,7 @@ certificate violation; both may be valid saved results with exit code zero.
 One invocation evaluates one explicit sample. Host scripts can repeat it for
 offline sweeps; no real-time loop performance or physical-system validation is
 claimed. See the [guide's validation and limits](PLSR.md#validation-and-limits)
-and [ADR-0004](adr/0004-plsr-terminal-adapter.md) for the bounded integration.
+for the bounded integration.
 
 ## Documenting the next integration
 

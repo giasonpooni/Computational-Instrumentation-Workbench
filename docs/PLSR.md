@@ -10,7 +10,6 @@ plant.
 This adapter is headless. PLSR runs are self-contained JSON bundles, separate
 from the oscillator's shared WebSocket session and Godot viewport. No viewport
 is needed, and PLSR results are not currently published to a live shared session.
-The scope decision is recorded in [ADR-0004](adr/0004-plsr-terminal-adapter.md).
 
 ## Installation and pinned versions
 

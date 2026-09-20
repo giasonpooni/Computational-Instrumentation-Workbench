@@ -8,7 +8,7 @@ Development proceeds in two tracks that hand off through this repository.
 
 | Track | Owns | Delivers |
 |---|---|---|
-| Documentation | `README.md`, `docs/ARCHITECTURE.md`, `docs/adr/` | The contracts, data model, synchronization semantics, and quality budgets, each stated as a numbered requirement |
+| Documentation | `README.md`, `docs/ARCHITECTURE.md` | The contracts, data model, synchronization semantics, and quality budgets, each stated as a numbered requirement |
 | Prototype | `src/ciw/`, `godot/`, `scripts/`, `tests/`, `docs/PROTOCOL.md`, `docs/quickstart.md`, `docs/coordination.md`, continuous integration | An implementation of the contracts, the wire-level protocol specification, and the evidence that the implementation conforms |
 
 The hand-off rule is: the architecture defines contracts; the prototype implements them; tests and integration checks verify conformance against requirement identifiers; decisions raised by either track are recorded as ADRs.
@@ -61,8 +61,7 @@ The architecture document maps its components to these directories.
     ├── INSTRUMENTS.md        Catalogue of integrated instruments with their specifications
     ├── quickstart.md         Running the prototype from source
     ├── coordination.md       Build coordination and integration sequence
-    ├── DEVELOPMENT.md        This guide
-    └── adr/                  Architecture Decision Records
+    └── DEVELOPMENT.md        This guide
 ```
 
 `recordings/`, `results/`, and the native deployment's `.ciw/` data directory hold local outputs and are ignored by git.
@@ -75,17 +74,13 @@ Every conformance test names the requirement it verifies. Use the identifier in 
 
 ## Working on the shared branch
 
-Both tracks commit to `main`. Pull with rebase before pushing, keep documentation and code changes in separate commits, and never rewrite published history. A change that alters a contract, a requirement identifier, or the reference implementation arrangement is accompanied by an ADR in the same push.
+Both tracks commit to `main`. Pull with rebase before pushing, keep documentation and code changes in separate commits, and never rewrite published history. A change that alters a contract, a requirement identifier, or the reference implementation arrangement updates the architecture document in the same push.
 
 ## Reading order for contributors
 
 1. `README.md`, for the name, definition, and scope.
-2. [ADR-0001](adr/0001-project-name-and-definition.md), for the naming decision and the alternatives that were rejected.
-3. [ADR-0002](adr/0002-foundational-runtime-positioning.md), for the positioning as a foundational runtime, the contract-first rule, and the reusability target.
-4. [ADR-0003](adr/0003-reference-implementation-arrangement.md), for the reference implementation arrangement and its alternatives.
-5. `docs/ARCHITECTURE.md`, for the component architecture, data model, instrument contract, synchronization model, conformance table, and roadmap.
-6. [`docs/PROTOCOL.md`](PROTOCOL.md), for the wire-level protocol, and [`docs/quickstart.md`](quickstart.md) to run the prototype.
-7. The [ADR index](adr/README.md), for later decisions.
+2. [`docs/ARCHITECTURE.md`](ARCHITECTURE.md), for the component architecture, data model, instrument contract, synchronization model, conformance table, and roadmap. Its Purpose section carries the naming and positioning that the contracts rest on, and its Decisions table (Section 19) carries the decision behind each one.
+3. [`docs/PROTOCOL.md`](PROTOCOL.md), for the wire-level protocol, and [`docs/quickstart.md`](quickstart.md) to run the prototype.
 
 ## Documenting an integrated tool
 
@@ -119,4 +114,4 @@ labelled section until the adapter and its verification are delivered.
 
 ## Recording decisions
 
-Decisions that change scope, contracts, or the reference implementation are recorded as ADRs. The procedure is in the [ADR index](adr/README.md).
+The architecture document's Decisions table (Section 19) is the published record of every decision the contracts rest on: one row per decision, with the trade-off that settled it. A change that revisits a decision updates that row in the same push. Longer deliberation, including the alternatives that were weighed and rejected, is kept outside this repository.
