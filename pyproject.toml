@@ -6,6 +6,8 @@ build-backend = "setuptools.build_meta"
 name = "computational-instrumentation-workbench"
 version = "0.1.0"
 description = "Terminal-first computational instruments with synchronized optional Godot views"
+license = "LicenseRef-Notation-Systems-Proprietary"
+license-files = ["LICENSE", "LICENSE-POLICY.md"]
 requires-python = ">=3.11"
 dependencies = ["numpy==2.4.3", "websockets==16.0"]
 

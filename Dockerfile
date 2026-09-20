@@ -5,7 +5,7 @@ ENV PYTHONDONTWRITEBYTECODE=1 \
     PIP_DISABLE_PIP_VERSION_CHECK=1
 
 WORKDIR /opt/ciw
-COPY pyproject.toml README.md ./
+COPY pyproject.toml README.md LICENSE LICENSE-POLICY.md ./
 COPY src/ ./src/
 RUN python -m pip install --no-cache-dir . \
     && groupadd --gid 10001 ciw \
