@@ -250,6 +250,17 @@ narrower selections are refused. It does not infer cross-sample independence, se
 winding count, velocity, or a calibrated posterior. See [status and limits](GTE.md#status-and-limits)
 before extending the reference geometry or attaching real measurements.
 
+## Related components awaiting adapters
+
+The [related stack catalogue](../README.md#related-stack-components) records the
+current technical names and responsibilities of Scientific Computation Runtime,
+Provenance-Preserving Data Acquisition, Geospatial State Visualization, State
+Estimation Evaluation Testbed, Evidence and State Management, and Constraint-Based
+State Reconciliation. None is registered as an integrated CIW tool in this
+catalogue. The evaluation and reconciliation repositories remain specifications.
+Their [adapter boundaries](ADAPTERS.md#extension-roles) preserve existing evidence,
+operation, execution, result, verification, and runtime identities.
+
 ## Documenting the next integration
 
 Update this catalogue and the README when an integration is delivered. Each entry

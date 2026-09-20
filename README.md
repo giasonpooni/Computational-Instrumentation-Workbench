@@ -97,6 +97,27 @@ Every successful tool integration updates this catalogue and its operating guide
 in the same change. See the [documentation requirements](docs/DEVELOPMENT.md#documenting-an-integrated-tool)
 for the required commands, specifications, version pins, and validation evidence.
 
+## Related stack components
+
+Notation Systems develops computational instrumentation for physical systems.
+CIW supplies the working environment for operating and inspecting instruments;
+the following repositories retain distinct engineering responsibilities.
+
+| Component | Responsibility | CIW status |
+| --- | --- | --- |
+| [Provenance-Preserving Data Acquisition](https://github.com/giasonpooni/Provenance-Preserving-Data-Acquisition) | Source acquisition, observations, and durable artifact/history retention with source identity, extraction lineage, and explicit missingness | Adapter not yet integrated |
+| [Evidence and State Management](https://github.com/giasonpooni/Evidence-and-State-Management) | Evidence, versioned state, admission, review, and release management across scientific and physical-economy domains | Persistence/governance adapter not yet integrated |
+| [Scientific Computation Runtime](https://github.com/giasonpooni/Scientific-Computation-Runtime) | Versioned scientific state, declared computational workloads, and provenance-bearing execution | Runtime adapter not yet integrated |
+| [Geospatial State Visualization](https://github.com/giasonpooni/Geospatial-State-Visualization) | Read-only inspection of geographic entities, routes, flows, and temporal states | Separate visualization client; no CIW connection |
+| [State Estimation Evaluation Testbed](https://github.com/giasonpooni/State-Estimation-Evaluation-Testbed) | Evaluation of state reconstruction under noise, missingness, latency, and degradation | Specification-stage component; no executable adapter |
+| [Constraint-Based State Reconciliation](https://github.com/giasonpooni/Constraint-Based-State-Reconciliation) | Reconciliation of estimated states against declared constraints | Specification-stage component; no executable adapter |
+
+These roles extend the existing substrate. A repository rename does not change
+operation IDs, schemas, retained evidence, execution/result/verification identities,
+or historical runtime pins. The integrated catalogue above remains the record of
+exercised CIW paths; a related repository is not an integration by itself.
+See the [adapter ownership boundaries](docs/ADAPTERS.md#extension-roles).
+
 ## Documentation
 
 - Quickstart: [`docs/quickstart.md`](docs/quickstart.md)
