@@ -68,4 +68,4 @@ python scripts/check_container.py
 
 The Godot check needs a free port 8765. The container check uses a fresh Compose project, temporary host port and dedicated temporary volume, and removes only those test resources afterward. It checks persisted selection/result identity after SIGTERM and restart, without sending an explicit workspace-save request first.
 
-The current deployment is a local synthetic-instrument prototype. It has no remote authentication, multi-user isolation, external device access, guaranteed latency, high availability or certified measurement behavior. Existing instrument and PayloadOS adapters remain the next integration milestone.
+The current deployment is a local synthetic-instrument prototype. It has no remote authentication, multi-user isolation, external device access, guaranteed latency, high availability or certified measurement behavior. Instrument adapters remain the next integration milestone.

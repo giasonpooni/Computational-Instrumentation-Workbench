@@ -2,7 +2,7 @@
 
 Computational Instrumentation Workbench is a terminal-first workbench that connects computational instruments to synchronized numerical, temporal, spectral, and 2D/3D representations of physical-system observations and estimated states.
 
-This first slice is a local prototype with one **synthetic damped-oscillator instrument**. It does not yet adapt an existing PayloadOS instrument or acquire physical observations. Python owns the float64 scientific record and all calculations. A terminal can operate alone; the optional Godot window attaches to the same service.
+This first slice is a local prototype with one **synthetic damped-oscillator instrument**. It does not yet acquire physical observations. Python owns the float64 scientific record and all calculations. A terminal can operate alone; the optional Godot window attaches to the same service.
 
 For persistent native service control or the containerized backend, use the [deployment guide](../deploy/README.md).
 
@@ -89,6 +89,6 @@ The scripted Godot check requires port 8765 to be free; it starts and stops its 
 - The terminal client currently emits JSON and event lines. Rich/Textual panels and in-terminal plots are planned extensions to this scriptable CLI.
 - Local native clients, text JSON, maximum 1 MiB incoming messages and 1,024 analysis results per session. No remote authentication, device acquisition or hard real-time control.
 - Periodogram only; streaming telemetry, spectrograms, region occupancy, cancellation and binary arrays are future work.
-- Local JSON is prototype persistence. PayloadOS evidence/result integration, an instrument catalog and a worker supervisor remain integration work; no replacement database is introduced.
+- Local JSON is prototype persistence. An instrument catalog and a worker supervisor remain integration work; no replacement database is introduced.
 - No uncertainty estimate or verification certificate is fabricated. Result records explicitly say `not_verified`.
 - Performance at real instrument data volumes and a deployment bundle have not been established.
