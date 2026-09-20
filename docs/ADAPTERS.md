@@ -41,13 +41,14 @@ on the adapter's capabilities.
 Use Python 3.12 or newer for this external-tool example. CIW itself supports
 Python 3.11 and newer. The executable revision pins are retained in
 [`adapter-runtimes.json`](../src/ciw/adapter-runtimes.json). Keep both domain
-repositories as separate clean checkouts at those commits.
+repositories as separate clean checkouts at those commits. Preserve their exact
+tracked bytes by disabling Git line-ending conversion for these checkouts.
 
 ```sh
 python -m pip install -e '.[dev]'
-git clone https://github.com/giasonpooni/Retrofitted-Computational-Instrumentation.git ../rci
+git -c core.autocrlf=false clone https://github.com/giasonpooni/Retrofitted-Computational-Instrumentation.git ../rci
 git -C ../rci checkout --detach 97fcc01a45985defd6a76532b1fefe90d66dd159
-git clone https://github.com/giasonpooni/Fluid-State-Reconstruction-Testbed.git ../fsrt
+git -c core.autocrlf=false clone https://github.com/giasonpooni/Fluid-State-Reconstruction-Testbed.git ../fsrt
 git -C ../fsrt checkout --detach d34588819f657b6639c8e9a19450215844610007
 ```
 

@@ -1,6 +1,8 @@
 """The domain-neutral seam preserves oscillator science and refuses implicit execution."""
 
 from copy import deepcopy
+import hashlib
+import json
 import math
 
 import pytest
@@ -39,8 +41,14 @@ def event_run():
 
 def test_oscillator_is_ordinary_adapter_with_unchanged_evidence_and_outputs():
     run = make_demo_run()
-    assert run["evidence_id"] == "sha256:824a01978910ebcf738dffb75370c931e7fffc0eef6ee97bc11ec3223f1323c2"
-    assert digest(run) == "13973f4027d9ff40d37105d22301c1d07e99281ff498ec0fdd349a13c1ef6083"
+    # libm/NumPy may differ in the last float bits between operating systems.
+    # Bind the retained values exactly; scientific equivalence is checked by
+    # the analytic/tolerance tests in test_instruments, not a platform hash.
+    scientific = {key: run[key] for key in ("instrument", "metadata", "time_s", "channels")}
+    canonical = json.dumps(scientific, sort_keys=True, separators=(",", ":"), allow_nan=False)
+    assert run["evidence_id"] == "sha256:" + hashlib.sha256(canonical.encode()).hexdigest()
+    baseline_digest = digest(run)
+    assert make_demo_run() == run
     assert "manifest" not in run["metadata"]  # No retroactive hash or provenance rewrite.
     registry = AdapterRegistry()
     registry.register(OscillatorAdapter())
@@ -48,6 +56,7 @@ def test_oscillator_is_ordinary_adapter_with_unchanged_evidence_and_outputs():
     result = registry.execute("statistics.v1", run, {"channel": "q", "interval_s": [0.0, 12.0]})
     assert result["sample_count"] == 768
     assert result["unit"] == "m"
+    assert digest(run) == baseline_digest
 
 
 def test_event_record_can_be_reopened_without_engine_or_fictitious_sampling():

@@ -59,6 +59,9 @@ def checkout(tmp_path: Path) -> tuple[Path, str]:
     # A checkout-root module must not shadow the actual standard library.
     (root / 'json.py').write_text('raise RuntimeError("cwd shadow executed")\n')
     git(root, 'init', '-q')
+    # Pin the fixture's exact working bytes on Windows as well as POSIX;
+    # user/global autocrlf settings must not normalize the committed blobs.
+    git(root, 'config', 'core.autocrlf', 'false')
     git(root, 'add', '.')
     git(root, '-c', 'user.name=CIW Test', '-c', 'user.email=ciw@example.test', 'commit', '-qm', 'fixture')
     return root, git(root, 'rev-parse', 'HEAD')
