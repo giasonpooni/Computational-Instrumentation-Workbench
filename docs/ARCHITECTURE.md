@@ -424,7 +424,7 @@ Manifest of reference instrument (b), a batch linear-Gaussian path-state estimat
     {"name": "metrology", "kinds": ["observation", "reference"], "dimension": "m", "shape": [3], "sampling": "regular", "coordinate_frame": "bench", "required": true}
   ],
   "outputs": [
-    {"name": "state", "mode": "batch", "operation_id": "path_state.solve.v1", "representations": ["numerical", "temporal", "spatial2d"], "blocks": ["information_measurement", "information_prior"],
+    {"name": "state", "mode": "batch", "operation_id": "path_state.solve.v1", "representations": ["numerical", "temporal", "spatial2d"], "blocks": ["information_measurement", "information_prior", "posterior_covariance", "information_eigenbasis"],
      "channels": [
        {"channel_id": "path.lat0", "kind": "estimate", "dtype": "f64", "shape": [], "unit": "m",
         "coordinate_frame": "path", "time_base": "input:encoder", "missing": "nan", "cursor_policy": "nearest",
@@ -888,10 +888,11 @@ class PathStateEstimator(Instrument):
         env = Envelope(output="state", kind="estimate", status="partial")
         ctx.emit(env)
         rows = self.stack(ctx.read_inputs(inputs, align="encoder"), params)   # existing NumPy code, unchanged
-        t, mean, sigma, cov, eigenvalues = self.solve_sqrt(rows)              # QR; no explicit inverse is formed
+        t, mean, sigma, cov, info_meas, info_prior, eigenbasis = self.solve_sqrt(rows)   # QR; no explicit inverse is formed
         ctx.emit(Frame(env, time=t, values={"path.lat0": mean[:, 0], "path.head0": mean[:, 1]},
                        uncertainty={"path.lat0": sigma[:, 0], "path.head0": sigma[:, 1]}))
-        ctx.emit_table(env, posterior_covariance=cov, information_eigenvalues=eigenvalues)
+        ctx.emit_table(env, information_measurement=info_meas, information_prior=info_prior,
+                       posterior_covariance=cov, information_eigenbasis=eigenbasis)   # the blocks[] the manifest declares
         ctx.end(env, status="cancelled" if ctx.cancelled else "complete")
 
 run_main(PathStateEstimator)   # attach, credits, heartbeat, cancel, digests handled by the SDK
@@ -1003,7 +1004,7 @@ The last two classes are unrepresentable before M5: CIW-DATA-001 requires strict
 
 `CIW-CAL-007` (extension, M1) A bench run MUST produce a **report, never a bare boolean**. The report MUST carry, per fixture and per metric, the computed value, the **residual** against the fixture's expected result, the tolerance applied and `declared_in ∈ {corpus_metric_tolerances, corpus_field_policy, manifest_checks}` naming where it was declared, and a pass or fail; and MUST carry the identities of the instrument, the profile, the corpus, and the runtime it ran under, and, per declared check of CIW-INST-025 the run evaluated, its `name`, the computed value, the `bound` it was compared against, and a pass or fail — for a consistency check also its `samples{}`, `residual`, and `interpretation: necessary_not_sufficient` (CIW-INST-026) — in a `checks[]` block beside `fixtures[]`; a `trials{}` block naming the calibration and validation trials (CIW-CAL-013); and, per corrected fixture, the `uncertainty{}` block of CIW-CAL-012 with the shared parameter term and the per-sample term shown separately. It MUST be either a session result or, run without the service, a run bundle under CIW-INST-021, so it has identities, persistence, and reopen validation and cannot be overwritten with different content. Being evidence of reproducibility, it MUST keep `verification_status: not_verified` with `verification_id: null` (CIW-EXT-012, D29). The bench command is the `bench` verb of CIW-OPS-002; a failed metric MUST exit 1 under CIW-OPS-010, as a failed `assert` does, and never 3, which is reserved for the verification, reproducibility, and conformance failures of `ciw verify` and `ciw plsr replay`. The report's verification method is `unit` and `golden`, never `benchmark`: `benchmark` in 16.3 is latency and throughput regression against a baseline under `scripts/`, and a calibration residual MUST NOT close a milestone through it.
 
-`CIW-CAL-008` (extension, M1) A bench report MUST track and report these metrics separately, each with the fixture class that exercises it. Tolerances are **instrument-specific**, declared in the corpus policy's `metric_tolerances` block (CIW-CAL-006); no global accuracy figure exists, and none may be stated, as CIW-PERF-014 states for latency.
+`CIW-CAL-008` (extension, M1 replay repeatability; M3 measurement repeatability under CIW-CAL-009) A bench report MUST track and report these metrics separately, each with the fixture class that exercises it. Tolerances are **instrument-specific**, declared in the corpus policy's `metric_tolerances` block (CIW-CAL-006); no global accuracy figure exists, and none may be stated, as CIW-PERF-014 states for latency.
 
 | Metric | Meaning | Fixture class | Statistic (CIW-OPS-011) |
 |---|---|---|---|
