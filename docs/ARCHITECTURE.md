@@ -1,7 +1,5 @@
 # Computational Instrumentation Workbench — Architecture
 
-**Integrated Measurement, State Estimation, and Visualization Workbench**
-
 Short form: **CIW**. Protocol baseline: version 1, as implemented in `src/ciw/` and specified in [`docs/PROTOCOL.md`](PROTOCOL.md). Normative statements carry identifiers `CIW-<AREA>-<NNN>` with MUST / SHOULD / MAY wording; Section 16.4 maps every identifier to its verification, milestone, and prototype status.
 
 ## 1. Summary
@@ -10,21 +8,21 @@ The Computational Instrumentation Workbench is:
 
 > A terminal-first workbench that connects computational instruments to synchronized numerical, temporal, spectral, and 2D/3D representations of physical-system observations and estimated states.
 
-**What it is.** A small runtime, the *session service*, that attaches computational instruments (measurement sources, state estimators, field reconstructions, model integrators, signal-processing stages) through one contract, holds the scientific record and the shared selection for one investigation, executes operations on that record, and serves records and results to clients. Two clients exist: a terminal client, which is the control surface and works alone, headless, and over SSH; and a Godot 2D/3D viewport, which attaches to the same service over the same protocol and owns no calculation. The recurring operation loop is the same for every instrument: attach a source, select quantities and a domain, run an operation, inspect the result, compare, save or replay.
+**What it is.** A small runtime, the *session service*, that attaches computational instruments (measurement sources, state estimators, field reconstructions, model integrators, signal-processing stages) through one contract, holds the scientific record and the shared selection for one investigation, executes operations on that record, and serves records and results to clients. Two frontends exist: a terminal client, which is the control surface and works alone, headless, and over SSH; and a Godot 2D/3D viewport, which attaches to the same service over the same protocol and owns no calculation; any script or CI job that speaks the session protocol is an equally ordinary client. The recurring operation loop is the same for every instrument: attach a source, select quantities and a domain, run an operation, inspect the result, compare, save or replay.
 
 **What it guarantees.**
 
 - The service is authoritative. Clients render what the service holds and compute nothing that produces a record; render geometry is never used to compute a measurement.
 - Every result carries an envelope: what it is, which quantities and units it contains, what its timestamps and coordinates mean, how it was produced, and separate evidence, operation, execution, and verification identities. Results are immutable; recomputing creates a new execution and result.
 - All views share one revisioned selection: run, channel, half-open analysis interval, playback cursor, coordinate frame. Changes are sequenced by the service and broadcast to every client in one order. The cursor is separate from the interval; moving it never recomputes an analysis.
-- Observations and estimated states are distinct kinds with distinct styling in every view; estimates carry their declared uncertainty.
+- From M1, observations and estimated states are distinct kinds with one styling convention in every view; from M3, estimates carry their declared uncertainty. v1 holds a single synthetic recording without kinds or uncertainty and states this as a limit.
 - Under the streaming extensions, ingest never loses data silently: the bulk path is credit-based end to end and every drop is recorded as a gap.
 
-**How it is structured.** Five components with fixed boundaries: the **Session Service** (record, selection, operations, results, persistence, gateway), **Instruments** (in-process today; subprocess, remote, and observed bindings as extensions), the **Terminal Client** (`ciw` CLI today; Textual panels as an extension), the **Viewport** (Godot 4), and the **Workspace** (a JSON file today; a session directory as an extension). Section 6 states the v1 baseline as built and presents everything beyond it as versioned extensions with identifiers and target milestones.
+**How it is structured.** Five components with fixed boundaries: the **Session Service** (record, selection, operations, results, persistence, gateway), **Instruments** (in-process today; subprocess, remote, and observed bindings as extensions), the **Terminal Client** (`ciw` CLI today; Textual panels as an extension), the **Viewport** (Godot 4), and the **Workspace** (a JSON file today; a session directory as an extension). A headless instrument path (Section 8.13) drives an external instrument from the terminal client without the service and writes self-contained run bundles that carry the same identities. Section 6 states the v1 baseline as built and presents everything beyond it as versioned extensions with identifiers and target milestones.
 
-**Reference implementation.** Service, instruments, and terminal client in Python 3.11+ with NumPy (SciPy where needed); Textual panels as an extension of the scriptable CLI; Godot 4 as the viewport, a client over a loopback WebSocket carrying text JSON in v1 and binary buffers with an explicit descriptor as an extension; in-terminal braille and half-block rasters, with Kitty, iTerm2, and Sixel graphics where detected, when no viewport is attached. A Rust host with ratatui and Arrow is the documented alternative for a later native path; every contract is language-neutral.
+**Reference implementation.** Service, instruments, and terminal client in Python 3.11+ with NumPy (SciPy where needed); Textual panels as an extension of the scriptable CLI; Godot 4 as the viewport, a client over a loopback WebSocket carrying text JSON in v1 and binary buffers with an explicit descriptor as an extension; in-terminal braille and half-block rasters when no viewport is attached as an extension (M1), with Kitty, iTerm2, and Sixel graphics where detected (M4). A Rust host with ratatui and Arrow is the documented alternative for a later native path; every contract is language-neutral.
 
-**Roadmap.** The prototype (v0.1) is milestone M0. M1 adapts an existing NumPy instrument through a manifest while preserving its headless calculation and tolerances (reference instrument a). M2 adds a persistence adapter that reuses an external evidence-and-result infrastructure's identities without merging them. M3 adds the state-estimation reference instrument with uncertainty and revisions; M4 the spatial reference instrument with binary frames and viewport resources; M5 spectrograms, streaming with separate acquisition, publish, and render rates, cancellation, and stale-result handling; M6 a deployment for a stated use with measured workloads. Readiness stages standalone-ready, workbench-ready, and deployment-ready are defined in Section 18.
+**Roadmap.** The prototype (v0.1) is milestone M0. M1 adapts an existing NumPy instrument through a manifest and the subprocess binding in batch mode while preserving its headless calculation and tolerances (reference instrument a). The PLSR headless adapter (Section 13.8) already delivers the adapter part of M1 without session attachment or views. M2 adds a persistence adapter that reuses an external evidence-and-result infrastructure's identities without merging them. M3 adds the state-estimation reference instrument with uncertainty and revisions; M4 the spatial reference instrument with binary frames on the client link and viewport resources; M5 spectrograms, streaming with separate acquisition, publish, and render rates, cancellation, and stale-result handling; M6 a deployment for a stated use with measured workloads. Readiness stages standalone-ready, workbench-ready, and deployment-ready are defined in Section 18.
 
 ## 2. Purpose, scope, and non-goals
 
@@ -38,7 +36,7 @@ Each word of the name has a role:
 - **Instrumentation** keeps the focus on investigating physical systems through measurements, models, and diagnostics.
 - **Workbench** describes an environment in which several instruments and analytical operations can be used together. It does not imply that the visualization layer replaces those instruments.
 
-Within the definition: *terminal-first* means the primary, fully capable interface is a terminal that works headless and over SSH; richer 2D/3D output may use terminal graphics protocols or an auxiliary viewer, but the terminal remains the control surface. *Synchronized* means the four representation families share time base, cursor and selection, units, and the same underlying data, and a change in one is reflected in the others deterministically. *Observations* (measured or derived data) and *estimated states* (outputs of estimators, reconstructions, integrators) are distinct kinds of data, distinguishable in the data model and in every view, including uncertainty. The workbench *connects* instruments; it does not absorb them. Instruments are replaceable backends behind a contract. The engineering title, *Integrated Measurement, State Estimation, and Visualization Workbench*, is used only as a subtitle and in abstracts.
+Within the definition: *terminal-first* means the primary, fully capable interface is a terminal that works headless and over SSH; richer 2D/3D output may use terminal graphics protocols or an auxiliary viewer, but the terminal remains the control surface. *Synchronized* means the four representation families share time base, cursor and selection, units, and the same underlying data, and a change in one is reflected in the others deterministically. *Observations* (measured data, kind `observation`; quantities computed from other channels carry kind `derived` with `derived_from`, Section 7.2) and *estimated states* (outputs of estimators, reconstructions, integrators) are distinct kinds of data, distinguishable in the data model and in every view, including uncertainty. The workbench *connects* instruments; it does not absorb them. Instruments are replaceable backends behind a contract. The engineering title, *Integrated Measurement, State Estimation, and Visualization Workbench*, appears only in the README subtitle and in abstracts (ADR-0001).
 
 ### 2.2 Position
 
@@ -77,14 +75,14 @@ Every requirement is marked **v1** (implemented in the prototype) or **extension
 | **Revision** | Integer incremented by the service on every accepted selection update; updates carry `expected_revision`. |
 | **Cursor** | The playback position `cursor_s`, separate from the analysis interval. |
 | **Interval** | The half-open analysis interval `interval_s: [start, end)` that operations consume. |
-| **Snapshot** | The `session.snapshot` event and `session.get` response `{session_id, run: RUN_METADATA, selection, results: [RESULT_SUMMARY]}`; in the extension also the immutable `(revision, watermark vector)` one render tick draws from. |
+| **Snapshot** | The `session.snapshot` event and `session.get` response `{session_id, run: RUN_METADATA, selection, results: [RESULT_SUMMARY], view_settings (M1)}`; in the extension also the immutable `(revision, watermark vector)` one render tick draws from. |
 | **Render geometry** | Backend-prepared, non-measurement display data (`run.render`) resolving to retained samples through `sample_indices` with a declared `transform`. |
-| **Workspace** | The persisted session: `{workspace_version, run, selection, results[], view_settings{}}`. |
+| **Workspace** | The persisted session: `{workspace_version, saved_at, run, selection, results[], view_settings{}}`. |
 | **Instrument** | A computational backend behind the contract: source, estimator, reconstruction, integrator, or signal-processing stage; declared by a manifest (extension). |
-| **Observation** | Measured or directly derived data, kind `observation`. |
+| **Observation** | Measured data, or data a source declares as its measurement, kind `observation`. |
 | **Estimated state** | Output of an estimator, reconstruction, or integrator, kind `estimate`, with a declared uncertainty form. |
 | **Derived** | A quantity computed from other channels by an instrument or the service (innovation, residual, spectrum), kind `derived`, always with `derived_from`. |
-| **Channel** | A named, unit-bearing sequence of samples on one time base: `channels{name: {unit, values}}` in v1; a descriptor in the extension. |
+| **Channel** | A named, unit-bearing sequence of samples on one time base: `channels{name: {unit, values}}` in v1; a descriptor in the extension. Referenced by its bare `channel_id`, unique within a session (CIW-SYNC-022). |
 | **Time base** | The clock timestamps are expressed in: `time_s`, float seconds since run start (v1); named bases with clock, epoch, and mapping (extension). |
 | **Frame** (data) | One batch of samples with a descriptor; the unit of transfer in the streaming extension. Distinct from a *coordinate frame*, always written in full. |
 | **Coordinate frame** | A named spatial reference with parent, transform, handedness, and axis units. |
@@ -93,6 +91,7 @@ Every requirement is marked **v1** (implemented in the prototype) or **extension
 | **Client** | A process attached over the session protocol: terminal client, viewport, or script. |
 | **Credit** | Frames and bytes a consumer has authorized a producer to send (extension). |
 | **Journal** | The append-only, sequence-numbered log of mutations, commands, and events (extension). |
+| **Run bundle** | A self-contained immutable JSON file written by the headless instrument path (8.13): inputs, output record, runtime identity, identities, digests. |
 
 ## 4. Conceptual model
 
@@ -100,7 +99,7 @@ The operation loop is the primary command and session model; each step maps to c
 
 | Loop step | v1 realization | Component | Contract |
 |---|---|---|---|
-| attach a source | `ciw serve --recording` or `--workspace` | Session Service, Instrument | Instrument API (8.1), manifest (8.2) |
+| attach a source | `ciw serve --recording`, `--workspace`, or `--resume`; `ciw plsr evaluate` (headless path, 8.13) | Session Service, Instrument | Instrument API (8.1), manifest (8.2), headless path (8.13) |
 | select quantities and a domain | `selection.update {channel, interval_s, cursor_s}` | Session Service | Selection (9) |
 | run an operation | `analysis.stats`, `analysis.spectrum` | Session Service, Instrument | Results (7.8), contract (8) |
 | inspect the result | `sample.get`, `result.get`, readouts, viewport cards | Terminal Client, Viewport | Representation layer (10) |
@@ -134,7 +133,7 @@ flowchart LR
         VP[Viewport<br/>Godot 4]
         SC[Script / CI client]
     end
-    WS[(Workspace<br/>workspace.json, results/, recordings/)]
+    WS[("Workspace<br/>workspace.json, recording-#lt;hash#gt;.json, result-#lt;id#gt;.json")]
     I1 --> REC
     I2 -. control + bulk .-> REC
     I3 -. TLS / ssh .-> REC
@@ -158,10 +157,11 @@ flowchart LR
 | **Gateway** | Terminates client connections, validates envelopes, correlates `request_id`, sends `session.snapshot` on connect, fans out broadcasts. | Mutate the selection outside the sequencer. |
 | **Persistence** | Writes the recording file, one file per result, and the workspace atomically; reopens after full validation. | Run an operation while reopening. |
 | **Instrument Supervisor** (extension) | Launches, monitors, detaches subprocess and remote instruments; grants credits; validates frames and envelopes at the boundary. | Interpret payloads beyond the envelope. |
-| **Reducer** (extension) | Produces `derived` results: decimation, resampling with a declared method, spectrograms, spatial level of detail; caches by key. | Produce anything without provenance. |
+| **Reducer** (extension) | Produces `derived` reductions at view resolution: decimation, resampling with a declared method, spectrogram column reduction, spatial level of detail; caches by key. Spectra and spectrograms are operations, not reductions; the reducer only fits their columns to a pane's width (CIW-SYNC-015). | Produce anything without provenance. |
 | **Terminal Client** | Control surface: headless analysis, `send`, `watch`, `inspect`; panels, command line, keybindings, layouts, rasters (extension). | Compute a record; hold data beyond what it displays. |
 | **Viewport** | 2D/3D renderer: phase portrait, backend-supplied energy surface and trajectory, shared cursor, cards from `sample.get`. | Reconstruct values from geometry; update the selection without the observed revision. |
 | **Workspace** | Files: `workspace.json`, `recording-<hash>.json`, `result-<id>.json`; a session directory in the extension. | Anything active. |
+| **Headless adapter** (v1) | Drives an external instrument from the terminal client without the service; writes self-contained immutable run bundles carrying the identity model (8.13). | Attach to a session or publish to clients (extension). |
 
 ### 5.2 Process model
 
@@ -172,8 +172,10 @@ flowchart LR
 | Viewport (Godot) | Zero or one by default | Service restart (shows STALE, offers Reconnect) |
 | Subprocess instrument (extension) | One per instrument | Nothing beyond its lifetime; the service survives it |
 | Remote or observed instrument (extension) | Zero or more, elsewhere | Service restarts (the service reattaches) |
+| Headless instrument run (`ciw plsr evaluate\|replay`) | Zero or more, short-lived | Nothing; its bundle survives it |
+| Deployment controller (`workbench.ps1`) or Compose | Zero or one per deployment | Owns the service process; native Stop saves before stopping, the container sends SIGTERM with a 30 s grace period |
 
-The service is a separate process from both clients so that a rendering stall or client crash cannot delay sequencing and the same service serves both clients symmetrically. `ciw analyze` runs the session code headless and in-process. In-process instruments share the service's failure domain and are restricted to bounded calls; the subprocess binding is the default for anything else.
+The service is a separate process from both clients so that a client crash cannot delay sequencing and a stalled client is bounded (v1: by the 2 s delivery timeout in 5.3; from M1: cannot delay it, CIW-SYNC-021) and the same service serves both clients symmetrically. `ciw analyze` runs the session code headless and in-process. In-process instruments share the service's failure domain and are restricted to bounded calls; the subprocess binding is the default for anything else.
 
 ### 5.3 Threading inside the service
 
@@ -188,13 +190,13 @@ The service is Python; the design assumes the GIL and arranges that hot paths re
  snapshot on connect                                                               supervisor timers, heartbeats
 ```
 
-Only the main thread mutates the selection or the result index; `selection.update` runs under an `asyncio.Lock` so broadcast order equals revision order across clients; operations and disk I/O run in worker threads so socket polling never blocks; a client that does not accept a broadcast within 2 s is disconnected. In the extension, ingest threads validate descriptors, place buffers, and post `frame_ready` to the main loop; reducer workers pull from a coalescing queue keyed by `(channel, client, resolution, window)`; the recorder has priority over chunk sealing.
+Only the main thread mutates the selection; `selection.update` runs under an `asyncio.Lock` so broadcast order equals revision order across clients; results are registered by the operation's worker thread under the session lock after the result file write succeeds; operations and disk I/O run in worker threads so socket polling never blocks. In v1 the sequencer awaits delivery of `selection.changed` to every client under the lock with a 2 s timeout per client, after which the client is disconnected: one stalled client delays the next accepted update by up to 2 s, and CIW-PERF-002 does not hold for the other clients while any client is stalled. CIW-SYNC-021 removes this at M1. In the extension, ingest threads validate descriptors, place buffers, and post `frame_ready` to the main loop; reducer workers pull from a coalescing queue keyed by `(channel, client, resolution, window)`; the recorder has priority over chunk sealing.
 
 ### 5.4 IPC summary
 
 | Link | v1 | Extension |
 |---|---|---|
-| Client ↔ service | Loopback WebSocket `ws://127.0.0.1:8765`, text JSON, no authentication, browser origins rejected, 1 MiB maximum incoming message | Binary frames with descriptor on the same connection; Unix socket and TCP with token or TLS; SSH forwarding |
+| Client ↔ service | Loopback WebSocket `ws://127.0.0.1:8765`, text JSON, no authentication, browser origins rejected, 1 MiB maximum incoming message; container bind `0.0.0.0` inside its namespace, published on the host's loopback only | Binary frames with descriptor on the same connection; Unix socket and TCP with token or TLS; SSH forwarding |
 | Service ↔ in-process instrument | Python calls (8.1) | Bounded by `max_call_ms` |
 | Service ↔ subprocess instrument | — | Length-prefixed JSON control on stdin/stdout, stderr as log; bulk in a shared-memory segment on the same host, inline otherwise |
 | Service ↔ remote instrument | — | Same records over `ssh://host//path/exec` (stdio forwarded, no daemon) or TCP with TLS |
@@ -218,16 +220,27 @@ A large simulation may provide reduced visualization data while its full results
 | Failure | Effect | Recovery |
 |---|---|---|
 | Viewport or terminal client disconnects | Connection dropped; session unchanged | Reconnect; `session.snapshot` |
-| Service stops | Viewport shows STALE, disables shared interaction, offers Reconnect; `ciw send` exits 2 | `ciw serve --workspace` restores saved state |
+| Service stops (SIGINT/SIGTERM) | Viewport shows STALE, disables shared interaction, offers Reconnect; `ciw send` exits 2; an operation in flight completes and its result is saved before exit (CIW-SESS-012); a request unanswered at exit is seen by its client as a disconnect | `ciw serve --resume` (or `--workspace`) restores the workspace saved at shutdown; `ciw health` confirms the session before clients reconnect |
+| Service killed after the grace period, or power loss | Changes since the last completed save are lost | Save explicitly (`workspace.save`) before forced termination; `--resume` reopens the last save |
 | Invalid request | `type: "error"` with `{code, message}`; session unaffected | Client corrects and retries |
 | 1,024 results reached | `capacity_exceeded`; no result created | Save the workspace; start a new session |
 | Storage error | `storage_error`; result not registered | Free space; retry |
-| Instrument exits or misses 3 heartbeats (extension) | Instrument `Failed`; channels frozen and marked stale; open executions get a `cancelled` envelope | Manual restart by default; bounded `auto` (8.8) |
+| Instrument exits or misses 3 heartbeats (extension) | Instrument `Failed`; channels frozen and marked stale; open executions closed with `status: failed` and `truncated_at {frame_seq, reason: instrument_failed \| heartbeat_loss}` | Manual restart by default; bounded `auto` (8.8) |
 | Recorder cannot keep up (extension) | Ingest credits stop; the source's overflow policy applies; nothing accepted is lost | Free space or lower rate |
 
 ### 5.7 Observability (extension, M5)
 
 The service exposes its own operation as channels under the reserved instrument id `host`: per-instrument ingest rate, credit balance, ring occupancy, reducer queue depth and latency, gateway backlog per client, journal sequence and commit lag; queryable headless with `ciw stats --json`. Every request carries a `request_id`, every journaled event a sequence number.
+
+### 5.8 Deployment paths and shutdown (v1)
+
+Two deployment paths share the same service and protocol. The native controller (`scripts/workbench.ps1`: Setup, Start, Status, Stop) runs the service as a hidden process on `ws://127.0.0.1:8765` with a `.ciw/` data directory holding recordings, results, `workspace.json`, logs, and `service.json` ownership metadata; Stop saves and verifies the workspace and stops only the owned process; Start restores a saved workspace and errors on corrupt data rather than starting a new investigation. The container backend (Compose service `backend`) runs `ciw serve --bind 0.0.0.0 --resume --output-dir /data`; the host publishes only `127.0.0.1:${CIW_PORT:-8765}`; a named volume `workspace` holds `/data`; read-only root filesystem, tmpfs `/tmp`, all capabilities dropped, no-new-privileges, non-root uid 10001, `stop_grace_period` 30 s, `restart: on-failure:3`, Docker healthcheck via `ciw health`. See [`deploy/README.md`](../deploy/README.md) and [`deploy/CONTAINER.md`](../deploy/CONTAINER.md).
+
+`CIW-SESS-012` (v1) On SIGINT or SIGTERM the service MUST stop accepting connections, drain clients, finish in-flight operations, save `workspace.json` to the output directory, then exit. There is no shutdown request in the client protocol. Forced termination, termination after a container grace period, and power loss are not covered by autosave; `workspace.save` is the explicit checkpoint. `serve --resume` MUST reopen `<output-dir>/workspace.json` when present, MUST start a new investigation only when no workspace exists, and MUST fail on corrupt or incompatible saved data. The runtime `session_id` MAY change across restart; run, evidence, execution, and result identities MUST NOT.
+
+`CIW-OPS-013` (v1) `ciw health --url` MUST be a read-only `session.get` request bounded at 3 s that runs no scientific calculation and creates no record, MUST validate the snapshot (protocol version, session identity, run identity, selection bounds), and MUST exit 0 printing `{status: "healthy", session_id, run_id}` or 2 otherwise.
+
+`CIW-PERF-012` (v1) `serve --bind` MUST accept only `127.0.0.1` (default) and `0.0.0.0`; `0.0.0.0` MUST be used only inside a container network namespace whose host publishes a loopback port; browser-origin connections MUST be rejected on both binds; there is no authentication.
 
 ## 6. Protocol v1 baseline and extension policy
 
@@ -248,24 +261,27 @@ The service exposes its own operation as channels under the reserved instrument 
 | `result.list` | Discover stored analyses without running them | `{results: [RESULT_SUMMARY]}` |
 | `workspace.save` | Write `workspace.json` to the output directory | `{workspace_file}` |
 
-`CIW-PERF-001` (v1) The v1 limits MUST be stated as limits: one uniformly sampled recording per session; text JSON only, 1 MiB maximum incoming message; 1,024 results per session; loopback only, no authentication; no streaming, cancellation, binary arrays, spectrograms, uncertainty, or device acquisition; local JSON persistence only. New analyses produce no event in v1; clients refresh `result.list`.
+`CIW-PERF-001` (v1) The v1 limits MUST be stated as limits: one uniformly sampled recording per session; text JSON only, 1 MiB maximum incoming message; 1,024 results per session; loopback only at the host boundary (container: `0.0.0.0` inside the namespace, published on host loopback), no authentication; no streaming, cancellation, binary arrays, spectrograms, uncertainty, or device acquisition; local JSON persistence only. New analyses produce no event in v1; clients refresh `result.list`.
 
 ### 6.2 Extension policy
 
-`CIW-INST-003` (v1) `protocol_version` MUST be an integer; a service MUST reject a major version it does not implement with `unsupported_version`. Within a version, optional fields MAY be added and unknown optional fields MUST be ignored; any change to the meaning of an existing field MUST increment the version.
+`CIW-INST-003` (v1; minor mechanism M1) The client session protocol's `protocol_version` MUST be an integer major (1); a service MUST reject a request whose major it does not implement with `unsupported_version`. A service MUST reject unknown request fields (CIW-INST-002); in v1 as built every unknown field is rejected. From M1 the service MUST report `protocol_minor` in `session.snapshot`; an addition within a major MUST be an optional field or a new message type listed per minor in `docs/PROTOCOL.md` (the declaration form is owned there); a service MUST accept and ignore a declared optional request field it does not implement and MUST continue to reject undeclared fields; a client MUST ignore unknown optional fields and unknown broadcast types in responses and broadcasts; any change to the meaning of an existing field or message type MUST increment the major. The instrument link (Section 8) carries its own version (CIW-INST-019); the two version spaces are independent.
 
 | Extension | Adds | Requirements | Milestone |
 |---|---|---|---|
-| Manifest and adapter | Manifest, capability-driven representations, existing-instrument adapter | INST-004..006, 019, VIEW-001, EXT-001 | M1 |
-| Result events and envelope v1.1 | `result.created` broadcast; uncertainty, frames, payload types, `reduced_of`, `checks[]` | DATA-013..015, SYNC-016 | M1 |
-| Terminal panels | Textual panels, command line, keybindings, layouts, rasters | VIEW-004..020, OPS-006..012 | M1–M4 |
-| Journal and session store | Sequence-numbered journal, session directory, replay | SESS-005..011, OPS-004 | M2 |
+| Manifest and adapter | Manifest, channel descriptors, capability-driven representations, subprocess binding in batch mode and SDK shim, existing-instrument adapter, operations as instrument code, one channel namespace, determinism harness, proto-check | INST-005, 006, 007 (batch lifecycle), 008 (batch families), 009, 013, 014, 016 (batch), 018 (subprocess), 019, 020 (attach, run, detach), DATA-003 (descriptor), 016 (bulk plane), SYNC-022, VIEW-001, EXT-001, 005 (a), 006 (a), 008, PERF-007 (instrument Ready) | M1 |
+| Unit grammar and reductions | UCUM grammar and dimension vector, display-unit preferences, min/max reductions | DATA-008 (grammar), 009, 020, PERF-006 (decimation) | M1 |
+| Result events and envelope v1.1 | `result.created` broadcast; protocol minor; uncertainty declarations, payload types, `reduced_of`, `checks[]`, `refused` status, stale marker; non-blocking broadcast queues | INST-003 (minor mechanism), DATA-013 (v1.1 fields), 015, 021 (session envelope `refused`), SYNC-016 (marker), 021 | M1 |
+| Terminal panels | Textual panels, tiers, command grammar, keybindings, layouts, scripts, `assert`, render tick; `view.update` and `view.changed` | VIEW-003 (styling), 004..008, 009 (pane), 010, 011, 013 (pane), 016 (preview), SYNC-009 († fields), 010, 012, 013, 014, 017 (benchmark), OPS-002, 003 (form), 005..009, 010 (full), 011, PERF-002 (benchmark), 003 | M1 |
+| Journal and session store | Sequence-numbered journal, session directory, replay, `verify` for operations, csv/arrow/npz exports | SESS-005, 006, 008, 009 (operations), 010 (csv, arrow, npz), SYNC-008, OPS-004, VIEW-022, EXT-003, DATA-019 (journal), PERF-008 (journal replay) | M2 |
 | Persistence adapter | Resolver mapping the identities to an external infrastructure | EXT-004 | M2 |
-| Uncertainty and revisions | Uncertainty forms, superseding results, `t_avail`, `as_of` | DATA-003, 017, 018, VIEW-012 | M3 |
-| Binary frames and viewport resources | Bulk buffers with descriptor; resources by id; shared camera | DATA-016, SYNC-018, VIEW-019, 020 | M4 |
-| Streaming | Credits, cancellation, heartbeats, subprocess and remote bindings, time bases, gaps | INST-007..018, 020, DATA-004..007, 011, SYNC-011, 020 | M5 |
-| Spectral expansion | Welch, spectrogram, frequency cursor, link groups | SYNC-015, 019, VIEW-014, 015 | M5 |
-| Deployment | Observed service class, packaging, measured workloads | PERF-004..011 | M6 |
+| Uncertainty and revisions | Uncertainty forms and rendering, superseding results, `t_avail`, `as_of`, live parameters, `xy` plots, `verify` for instruments | DATA-003 (mandatory form), 010, 017, 018, INST-015, VIEW-003 (uncertainty), 012, 018, EXT-002, 005 (b), 006 (b), SESS-009 (instruments) | M3 |
+| Binary frames and viewport resources | Bulk buffers with descriptor on the client link, coordinate-frame tree and gaps, resources by id, shared camera, rasterizer and graphics tier, gltf/png exports | DATA-011 (M4 part), 016 (client link), SYNC-009 (camera), 018, VIEW-006 (graphics), 016 (rasterizer), 017, 020, EXT-005 (c), 006 (c), SESS-010 (gltf, png), PERF-011 (viewport query) | M4 |
+| Streaming | Credits, cancellation, heartbeats, remote and observed bindings, time bases, follow-live, recording, `host` channels | INST-007 (cancel, stream), 008 (stream types), 010..012, 016 (stream), 018 (remote, observed), 020 (credit, cancel), DATA-005..007, SYNC-007 (policy), 009 (follow), 011, 020, SESS-007, PERF-004, 005, 010 | M5 |
+| Spectral expansion | Welch, spectrogram, frequency cursor, link groups | SYNC-009 (freq_cursor), 015 (spectrogram), 019, VIEW-014, 015, EXT-008 (Welch), PERF-006 (Welch) | M5 |
+| Deployment | Observed service class profile (R11), packaging, measured workloads, fault injection | PERF-009 | M6 |
+
+Where this table and an identifier's own tag differ, the tag is authoritative.
 
 ## 7. Data model
 
@@ -277,17 +293,19 @@ The service exposes its own operation as channels under the reserved instrument 
 
 ### 7.2 Channels and kinds
 
-`CIW-DATA-003` (extension, M3) A channel descriptor MUST carry `channel_id`, `kind`, `dtype`, `shape` (inner shape per sample), `components[]` for vectors, `unit`, `time_base`, `coordinate_frame` or `null`, `missing`, `uncertainty` (a form, or `none` with a `reason` for estimates), `representations[]`, and `cursor_policy`. `kind` MUST be `observation`, `estimate`, `derived`, or `reference`; any producer MAY emit any kind. A `derived` channel MUST carry `derived_from[]` naming its inputs' kinds, so a quantity derived from an estimate (innovation, residual, normalized innovation squared) is never presented as an observation. `reference` marks ground-truth data used for comparison.
+`CIW-DATA-003` (extension, M1; uncertainty form mandatory M3) From M1 a channel descriptor MUST carry `channel_id`, `kind`, `dtype`, `shape` (inner shape per sample), `unit`, `time_base`, `coordinate_frame` or `null`, `missing`, and `uncertainty` (a form, `none`, or absent); it MUST carry `components[]` when `shape` is non-scalar and MAY carry `cursor_policy` (`nearest` when omitted; `at_or_before` per CIW-SYNC-007). From M3 an `estimate` channel MUST carry a form or `none` with a `reason`. `representations[]` is declared per output (CIW-INST-005, CIW-INST-006) and per result envelope (CIW-DATA-013), never per channel, and applies to every channel of that output. `kind` MUST be `observation`, `estimate`, `derived`, or `reference`; any producer MAY emit any kind. A `derived` channel MUST carry `derived_from[]` naming its inputs' kinds, so a quantity derived from an estimate (innovation, residual, normalized innovation squared) is never presented as an observation. `reference` marks ground-truth data used for comparison.
+
+A source instrument declares the kind of what it emits: recorded or synthetic evidence that stands in for a measurement is `observation` (the v0.1 oscillator's `q`, `v`, and `energy` stand in for measurements, its provenance says so, and they carry kind `observation` once descriptors exist at M1); the output of an estimator, reconstruction, or integrator run inside the session is `estimate`.
 
 ### 7.3 Time bases and sampling
 
 `CIW-DATA-004` (v1) Sample times MUST be `time_s`, float64 seconds relative to run start, with `metadata.provenance.time_reference` stating the reference; intervals and cursors on the wire MUST use the same unit. Cursors MUST lie within the first and last retained timestamps; an interval end MAY equal `duration_s`.
 
-`CIW-DATA-005` (extension, M5) A time base MUST declare `id`, `clock ∈ {monotonic, wall, sim}`, `epoch` (ISO 8601 with offset for `wall`; session origin for `monotonic`; model t = 0 for `sim`), and `resolution_ns`; streamed timestamps MUST be `int64` nanoseconds relative to the epoch. Channels in different bases MUST NOT be combined unless a `mapping {offset_ns, drift_ppb, valid_from, source, version}` has been declared with evidence; the default is no mapping, the cursor is then per base, and views show `unmapped`. A device-clocked source MUST send `clock_sync {tb_ns, host_ns}` at least every 10 s; the service MUST fit offset and drift over the last 60 s, store raw timestamps unmodified with the mapping alongside, and version each refit so alignment can improve without rewriting data.
+`CIW-DATA-005` (extension, M5) A time base MUST declare `id`, `clock ∈ {monotonic, wall, sim}`, `epoch` (ISO 8601 with offset for `wall`; session origin for `monotonic`; model t = 0 for `sim`), and `resolution_ns`; streamed timestamps MUST be `int64` nanoseconds relative to the epoch. Selection cursors and intervals remain float64 seconds relative to the base's epoch (`CIW-DATA-004`). For a channel in an `int64` base the service MUST convert each interval bound once, `t_ns = round_half_even(t_s × 1e9)`, and evaluate membership in integers as `start_ns ≤ t_ns < end_ns`; the result envelope MUST record the converted `interval_ns` alongside `interval_s`, and `ciw verify` MUST re-execute from `interval_ns`. Channels in different bases MUST NOT be combined unless a `mapping {offset_ns, drift_ppb, valid_from, source, version}` has been declared with evidence; the default is no mapping, the cursor is then per base, and views show `unmapped`. A device-clocked source MUST send `clock_sync {tb_ns, host_ns}` at least every 10 s; the service MUST fit offset and drift over the last 60 s, store raw timestamps unmodified with the mapping alongside, and version each refit so alignment can improve without rewriting data.
 
-`CIW-DATA-006` (extension, M5) A channel MUST declare `regular {rate, phase, jitter_tol}` (default 1 % of the interval), `irregular`, or `event` sampling; regular frames MAY carry `(t0, dt, n)`. Timestamps MUST be non-decreasing within a channel (`time_order` on violation); equal timestamps are preserved in arrival order; a regular sample off its grid by more than `jitter_tol` MUST be rejected with `sampling_grid` unless a gap precedes it. Spectral operations MUST require regular sampling.
+`CIW-DATA-006` (extension, M5) A channel MUST declare `regular {rate, phase, jitter_tol}` (`jitter_tol` default 1 % of the nominal sample period), `irregular`, or `event` sampling; regular frames MAY carry `(t0, dt, n)`. Timestamps MUST be non-decreasing within a channel (`time_order` on violation); equal timestamps are preserved in arrival order; a regular sample off its grid by more than `jitter_tol` MUST be rejected with `sampling_grid` unless a gap precedes it. Spectral operations MUST require regular sampling.
 
-`CIW-DATA-007` (extension, M5) The service MUST NOT resample implicitly. Resampling MUST be an explicit derivation whose provenance names the method (`hold`, `linear`, `nearest`, `pchip`) and `gap_policy` (default `nan`). Uncertainty handling MUST be defined per method: `hold` and `nearest` copy σ; `linear` combines the neighbours' variances. Defaults: `linear` for residuals between observations, `nearest` with a warning above 1 % jitter for spectra, `none` for estimates unless requested.
+`CIW-DATA-007` (extension, M5) The service MUST NOT resample implicitly. Resampling MUST be an explicit derivation whose provenance names the method (`hold`, `linear`, `nearest`, `pchip`) and `gap_policy` (default `nan`). Uncertainty handling MUST be defined per method: `hold` and `nearest` copy σ; `linear` combines the neighbours' variances. A spectral operation on an `irregular` or `event` channel MUST be refused with `sampling_irregular`; the operator MAY first create an explicit `resample` derivation (method and target rate recorded in provenance) and run the spectrum on it. Default methods when a resample derivation is requested: `linear` for observations (including residuals between observations), `none` for estimates (refused unless a method is named).
 
 ### 7.4 Units
 
@@ -297,11 +315,11 @@ The service exposes its own operation as channels under the reserved instrument 
 
 ### 7.5 Uncertainty
 
-`CIW-DATA-010` (extension, M3) Uncertainty, when present, MUST be `stddev`, `variance`, `covariance` (default layout full row-major `[d, d]` per sample; `packed_lower` and `block_diagonal` MAY be declared), `interval {lower, upper, level}`, `quantiles`, or `ensemble {members}`. Absent uncertainty MUST be absent, never zero. Uncertainty MUST travel as companion columns of the same channel with the same time column. Covariance MUST be symmetric positive semi-definite; the service SHOULD check symmetry and MAY check semi-definiteness by sampled Cholesky, reporting failures as channel-scoped warnings. A unit-quaternion state MUST declare its covariance in the tangent space (`[3, 3]`, `rad2`).
+`CIW-DATA-010` (extension, M3) Uncertainty, when present, MUST be `stddev`, `variance`, `covariance` (default layout full row-major `[d, d]` per sample; `packed_lower` and `block_diagonal` MAY be declared), `interval {lower, upper, level}`, `quantiles`, or `ensemble {members}`. Absent uncertainty MUST be absent, never zero. Uncertainty MUST travel as companion columns of the same channel with the same time column. Covariance MUST be symmetric positive semi-definite; the service SHOULD check symmetry and MAY check semi-definiteness by sampled Cholesky, reporting failures as channel-scoped warnings. A unit-quaternion state MUST declare its covariance in the tangent space (`[3, 3]`, `rad2`). A companion column is addressed as `<channel_id>.<column>` with the column name fixed by the form: `.stddev`, `.variance`, `.covariance`, `.lower` and `.upper` (`interval`), `.quantiles` (one column with the levels in its descriptor), `.ensemble` (members on the inner axis); the missing-data mask of CIW-DATA-011 is `<channel_id>.mask`. A companion column is not a channel: it is implied by the channel's declared `uncertainty` or `missing`, MUST NOT be listed in a frame's `channel_ids[]`, appears in `buffers[]` as `{channel_id, column}` (CIW-DATA-016), and its `unit` and `shape` MUST equal the declared form's. A manifest MUST NOT declare a `channel_id` equal to another channel's companion name; the boundary check of CIW-INST-019 MUST accept exactly these derived columns and no other undeclared column.
 
 ### 7.6 Coordinate frames and missing data
 
-`CIW-DATA-011` (v1; extended M4) Every run and spatial channel MUST name a coordinate frame; in v1 `metadata.coordinate_frame`, `render.coordinate_frame`, and the selection's `coordinate_frame` MUST match. From M4 a frame declaration MUST carry `id`, `parent` or `null`, `transform` (4×4 row-major float64 to the parent, or a time-indexed transform channel), `handedness`, and axis `units`; chains MUST be acyclic; a spatial view MUST refuse to overlay channels in different frames unless a transform is registered. Missing data MUST be declared per channel as `nan`, `mask` (companion boolean column; required for integer, complex, and table columns), or `none`; gaps MUST be recorded as data `{from, to, reason ∈ {overflow_drop, source_unavailable, cancelled, resample_max_gap, declared}}` that survive persistence and replay; reducers MUST propagate missing values as gaps.
+`CIW-DATA-011` (v1; extended M4) Every run and spatial channel MUST name a coordinate frame; in v1 `metadata.coordinate_frame`, `render.coordinate_frame`, and the selection's `coordinate_frame` MUST match. From M4 a coordinate-frame declaration MUST carry `id`, `parent` or `null`, `transform` (4×4 row-major float64 to the parent, or a time-indexed transform channel), `handedness`, and axis `units`; chains MUST be acyclic; a spatial view MUST refuse to overlay channels in different frames unless a transform is registered. Missing data MUST be declared per channel as `nan`, `mask` (companion boolean column; required for integer, complex, and table columns), or `none`; gaps MUST be recorded as data `{from, to, reason ∈ {overflow_drop, source_unavailable, cancelled, resample_max_gap, declared}}` that survive persistence and replay; reducers MUST propagate missing values as gaps.
 
 ### 7.7 Render geometry
 
@@ -309,13 +327,15 @@ The service exposes its own operation as channels under the reserved instrument 
 
 ### 7.8 Results and the result envelope
 
-`CIW-DATA-013` (v1; fields added M1) A result MUST be `{result_id, evidence_id, operation_id, execution_id, verification_id, verification_status, run_id, selection_revision, channel, interval_s, created_at, recording_file, data}`. The four identities MUST be distinct fields, never derived from one another. Two executions of one operation on one evidence MUST share `operation_id` and `evidence_id` and differ in `execution_id` and `result_id`; from M1 an operation with parameters MUST fold a canonical parameter hash into `operation_id`. `verification_id` MUST be `null` and `verification_status` `not_verified` until a distinct verification execution references the result; verification MUST never be inferred from a displayed scene. From M1 the envelope MUST also carry `envelope_version`, `kind`, `channels[]` (descriptors with units, shapes, time base, frame, missing convention, uncertainty), `payload {type}`, `representations[]`, `status ∈ {partial, complete, cancelled, failed}`, and optionally `reduced_of`, `supersedes {result_id, interval}`, and `checks[]` (instrument self-checks with outcomes; they do not set `verification_id`).
+`CIW-DATA-013` (v1; fields added M1) A result MUST be `{result_id, evidence_id, operation_id, execution_id, verification_id, verification_status, run_id, selection_revision, channel, interval_s, created_at, recording_file, data}`. The four identities MUST be distinct fields, never derived from one another. Two executions of one operation on one evidence MUST share `operation_id` and `evidence_id` and differ in `execution_id` and `result_id`; from M1 an operation with parameters MUST fold a canonical parameter hash into `operation_id`. `verification_id` MUST be `null` and `verification_status` `not_verified` until a distinct verification execution references the result; verification MUST never be inferred from a displayed scene. From M1 the envelope MUST also carry `envelope_version`, `kind`, `channels[]` (descriptors with units, shapes, time base, frame, missing convention, uncertainty), `payload {type}`, `representations[]`, `status ∈ {partial, complete, refused, cancelled, failed}` (`refused` per CIW-DATA-021), and optionally `reduced_of`, `supersedes {result_id, interval}`, `checks[]` (instrument self-checks with outcomes; they do not set `verification_id`), and `truncated_at {frame_seq, reason ∈ {cancel, instrument_failed, heartbeat_loss, transport}}`, the last valid `frame_seq` when an execution ended before `end_of_stream`.
 
 `CIW-DATA-014` (v1) Results MUST be immutable and MUST capture the `selection_revision` and exact `interval_s` that produced them; `data` MUST be computed from full-resolution retained samples in the half-open interval, never from render geometry or terminal summaries. Saved results MUST be validated on reopen (identity form, source binding, shape of `data`) without executing the operation.
 
 `CIW-DATA-015` (extension, M1) `payload.type` MUST be `array`, `table` (columns sharing a time column; Arrow IPC at rest), `mesh`, `sparse` (COO or CSR), or `reference` (URI, content hash, referenced type). A `reference` MUST carry an inline `summary` of a concrete type so views render without dereferencing; dereferencing MUST be explicit and record the resolved hash; an unresolvable reference MUST NOT fail the envelope. An output declared `reduced_of` delivers visualization-resolution data while the full result is retained elsewhere and referenced; views MUST show that data is reduced.
 
-Example v1 result as written to `results/<result_id>.json`, with envelope v1.1 fields marked `+`:
+`CIW-DATA-021` (v1) A result MUST carry an outcome status separate from transport errors and from verification. A refusal (the instrument declines to resolve or certify; for PLSR `NUMERICAL_INCONCLUSIVE`, shown as `numerical_refusal`) and a violation (`NOT_CERTIFIED`, shown as `certificate_violation`) MUST be stored as valid results with the raw instrument status code and every verdict field retained, MUST NOT be reported as `type: "error"` or a nonzero exit, and MUST NOT set or imply any verification outcome; an input, configuration, or execution failure is an error and produces no result. From M1 the envelope `status` set of CIW-DATA-013 MUST include `refused` alongside `partial`, `complete`, `cancelled`, `failed`.
+
+Example v1 result as written to `<output-dir>/result-<id>.json`, with envelope v1.1 fields marked `+`:
 
 ```json
 {
@@ -334,7 +354,7 @@ Example v1 result as written to `results/<result_id>.json`, with envelope v1.1 f
   "data": {"sample_count": 384, "mean": -0.0132, "minimum": -0.5811, "maximum": 0.6094, "rms": 0.2937, "unit": "m"},
   "+envelope_version": "1.1",
   "+kind": "derived",
-  "+channels": [{"channel_id": "q.stats", "kind": "derived", "derived_from": ["observation"], "unit": "m", "shape": [],
+  "+channels": [{"channel_id": "q.stats", "kind": "derived", "derived_from": ["observation"], "dtype": "f64", "unit": "m", "shape": [],
                  "time_base": "run", "coordinate_frame": null, "missing": "none", "uncertainty": "none"}],
   "+payload": {"type": "table"},
   "+representations": ["numerical"],
@@ -344,25 +364,26 @@ Example v1 result as written to `results/<result_id>.json`, with envelope v1.1 f
 
 ### 7.9 Frames and the binary descriptor
 
-`CIW-DATA-016` (extension, M4) A bulk frame MUST carry a descriptor sufficient to interpret its buffers without the envelope: `frame_seq`, `execution_id`, `result_id` or `channel_ids[]`, and per buffer `dtype`, `shape`, `byte_order` (`little`), `order` (`C`), `byte_offset`, `byte_length`, `unit`, `coordinate_frame`, plus `time {column}` or `time {t0, dt, n}` with its `time_base`. The default transfer and at-rest format is NumPy-compatible raw contiguous buffers with this descriptor; Arrow IPC (pyarrow) is the format for table payloads and export and MAY be negotiated per link. Buffers MUST NOT be embedded in text records.
+`CIW-DATA-016` (extension, M1 instrument bulk plane; M4 client link) A bulk frame MUST carry a descriptor sufficient to interpret its buffers without the envelope: `frame_seq`, `execution_id`, `stream` (the manifest output, as `<instrument short id>/<output name>`), `result_id` or `channel_ids[]`, and per buffer `dtype`, `shape`, `byte_order` (`little`), `order` (`C`), `byte_offset`, `byte_length`, `unit`, `coordinate_frame`, plus `time {column}` or `time {t0, dt, n}` with its `time_base`. The default transfer and at-rest format is NumPy-compatible raw contiguous buffers with this descriptor; Arrow IPC (pyarrow) is the format for table payloads and export and MAY be negotiated per link. Buffers MUST NOT be embedded in text records. Each buffer MUST name `channel_id` (`null` for the time column, which carries no `column`) and, for a channel buffer, `column ∈ {value, stddev, variance, covariance, lower, upper, quantiles, ensemble, mask}` (further column names only for forms `CIW-DATA-010` declares); companion columns are not channels and MUST NOT appear in `channel_ids[]`.
 
-Control record announcing a frame from the state-estimation reference instrument (framing per `docs/PROTOCOL.md`):
+Instrument-link `data/frame` record (CIW-INST-008) announcing a frame from the state-estimation reference instrument; the service forwards the same `payload` to subscribed clients as a `frame` broadcast of the client session protocol (a minor addition at M4, `bulk` replaced by the binary WebSocket message that follows), framing per `docs/PROTOCOL.md`:
 
 ```json
 {
-  "protocol_version": 2, "request_id": null, "type": "frame",
+  "family": "data", "type": "frame", "seq": 90311,
   "payload": {
     "stream": "attitude-ekf/state", "frame_seq": 4182,
     "execution_id": "execution-9d0e5b4a3c2f1e8d7b6a5c4f3e2d1b0a",
-    "channels": ["att.quat", "att.quat.cov", "att.bias"],
+    "channel_ids": ["att.quat", "att.bias"],
     "time": {"column": 0, "time_base": "imu_mono"},
     "buffers": [
-      {"channel": null,           "dtype": "i64", "shape": [256],       "byte_order": "little", "order": "C", "byte_offset": 0,     "byte_length": 2048,  "unit": "ns"},
-      {"channel": "att.quat",     "dtype": "f64", "shape": [256, 4],    "byte_order": "little", "order": "C", "byte_offset": 2048,  "byte_length": 8192,  "unit": "1", "coordinate_frame": "body_to_nav"},
-      {"channel": "att.quat.cov", "dtype": "f64", "shape": [256, 3, 3], "byte_order": "little", "order": "C", "byte_offset": 10240, "byte_length": 18432, "unit": "rad2"},
-      {"channel": "att.bias",     "dtype": "f64", "shape": [256, 3],    "byte_order": "little", "order": "C", "byte_offset": 28672, "byte_length": 6144,  "unit": "rad/s"}
+      {"channel_id": null,                                "dtype": "i64", "shape": [256],       "byte_order": "little", "order": "C", "byte_offset": 0,     "byte_length": 2048,  "unit": "ns"},
+      {"channel_id": "att.quat", "column": "value",      "dtype": "f64", "shape": [256, 4],    "byte_order": "little", "order": "C", "byte_offset": 2048,  "byte_length": 8192,  "unit": "1", "coordinate_frame": "body_to_nav"},
+      {"channel_id": "att.quat", "column": "covariance", "dtype": "f64", "shape": [256, 3, 3], "byte_order": "little", "order": "C", "byte_offset": 10240, "byte_length": 18432, "unit": "rad2"},
+      {"channel_id": "att.bias", "column": "value",      "dtype": "f64", "shape": [256, 3],    "byte_order": "little", "order": "C", "byte_offset": 28672, "byte_length": 6144,  "unit": "rad/s"},
+      {"channel_id": "att.bias", "column": "stddev",     "dtype": "f64", "shape": [256, 3],    "byte_order": "little", "order": "C", "byte_offset": 34816, "byte_length": 6144,  "unit": "rad/s"}
     ],
-    "bulk": {"binding": "shm", "segment": "ciw-7f3a-000091", "byte_length": 34816}
+    "bulk": {"binding": "shm", "segment": "ciw-7f3a-000091", "byte_length": 40960}
   }
 }
 ```
@@ -375,7 +396,7 @@ Control record announcing a frame from the state-estimation reference instrument
 
 ### 7.11 Provenance and versioning
 
-`CIW-DATA-019` (v1; journal M2) `workspace_version`, `protocol_version`, and from M1 `envelope_version` and `manifest_version` MUST be checked on read; a reader MUST refuse a higher major version naming the converter. `metadata.provenance` MUST name generator and version, dtype, time reference, and sampling convention. From M2 the journal MUST record for every execution the operation, parameters, seed, input identities, and manifest hash.
+`CIW-DATA-019` (v1; journal M2) `workspace_version`, `protocol_version`, and from M1 `envelope_version` and `manifest_version` MUST be checked on read; a reader MUST refuse a higher major version naming the converter. `metadata.provenance` MUST name generator and version, dtype, time reference, and sampling convention, and for an external instrument the runtime identity of CIW-INST-022. From M2 the journal MUST record for every execution the operation, parameters, seed, input identities, and manifest hash.
 
 ### 7.12 Reductions
 
@@ -385,11 +406,11 @@ Control record announcing a frame from the state-estimation reference instrument
 
 ### 8.1 The v1 in-process instrument API
 
-`CIW-INST-004` (v1) An in-process instrument MUST provide `make_demo_run() -> dict` (or an equivalent loader), `validate_run(run)`, `run_metadata(run) -> dict`, `inspect_sample(run, time_s) -> dict`, `compute_statistics(run, channel, interval_s) -> dict`, and `compute_spectrum(run, channel, interval_s) -> dict`. Computations MUST validate the complete source recording and their inputs, MUST read full-resolution float64 retained samples, and MUST return operation-specific `data` only; the session wraps provenance and persistence. `compute_spectrum` in v1 MUST be a one-sided, constant-detrended, periodic-Hann periodogram PSD with density normalization `fs · Σw²`, interior bins doubled, DC and the even-length Nyquist bin not doubled, returning `{sample_count, method, window, detrend, scaling, frequency_hz[], psd[], unit, peak_frequency_hz, sample_rate_hz}`; it is not Welch and not a spectrogram.
+`CIW-INST-004` (v1) The v1 in-process instrument module (`ciw.instruments`) MUST provide `make_demo_run() -> dict` (or an equivalent loader), `validate_run(run)`, `run_metadata(run) -> dict`, `inspect_sample(run, time_s) -> dict`, `compute_statistics(run, channel, interval_s) -> dict`, and `compute_spectrum(run, channel, interval_s) -> dict`. Computations MUST validate the complete source recording and their inputs, MUST read full-resolution float64 retained samples, and MUST return operation-specific `data` only; the session wraps provenance and persistence. `compute_spectrum` in v1 MUST be a one-sided, constant-detrended, periodic-Hann periodogram PSD with density normalization `fs · Σw²`, interior bins doubled, DC and the even-length Nyquist bin not doubled, returning `{sample_count, method, window, detrend, scaling, frequency_hz[], psd[], unit, peak_frequency_hz, sample_rate_hz}`; it is not Welch and not a spectrogram.
 
 ### 8.2 Manifest
 
-`CIW-INST-005` (extension, M1) Every instrument MUST ship `instrument.json` with `manifest_version`, `id` (reverse-DNS), `version` (semver), `title`, `binding ∈ {inprocess, subprocess, remote, observed}`, `entrypoint` or `endpoint`, `determinism` with optional `tolerance {abs, rel}`, `isolation`, `max_call_ms`, `heartbeat_ms`, `restart {policy, max}`, `parameters[]` (name, type, unit, default, range, `scope ∈ {execution, live}`, optional `source ∈ {selection.cursor, selection.interval}`), `inputs[]` (name, accepted kinds, dimension, shape, sampling, required), `outputs[]` (name, `mode ∈ {stream, batch}`, channel descriptors, `representations[]`, `overflow`), and `checks[]`. The service MUST refuse an instrument whose manifest fails schema validation and MUST record the manifest hash in provenance. JSON is the manifest format because it is the serialization the protocol and workspace already use and it embeds verbatim in `hello`.
+`CIW-INST-005` (extension, M1) Every instrument MUST ship `instrument.json` with `manifest_version`, `id` (reverse-DNS), `version` (semver), `title`, `binding ∈ {inprocess, subprocess, remote, observed}`, `entrypoint` or `endpoint`, `determinism` with optional `tolerance {abs, rel}`, `isolation`, `max_call_ms` (required for `binding: inprocess`, default 50 ms per 5.5; absent otherwise), `heartbeat_ms`, `restart {policy, max}`, `parameters[]` (name, type, unit, default, range, `scope ∈ {execution, live}`, optional `source ∈ {selection.cursor, selection.interval}`), `inputs[]` (name, accepted kinds, dimension, shape, sampling, required), `outputs[]` (name, `mode ∈ {stream, batch}`, channel descriptors, `representations[]`, `overflow`), and `checks[]`. The service MUST refuse an instrument whose manifest fails schema validation and MUST record the manifest hash in provenance. JSON is the manifest format because it is the serialization the protocol and workspace already use and it embeds verbatim in `hello`.
 
 `CIW-INST-006` (extension, M1) An output's `representations[]` MUST be a subset of the families that accept its shape; the service MUST offer only those families.
 
@@ -425,18 +446,20 @@ Manifest of reference instrument (b), a quaternion attitude EKF:
        {"channel_id": "att.quat", "kind": "estimate", "dtype": "f64", "shape": [4], "components": ["w", "x", "y", "z"], "unit": "1",
         "coordinate_frame": "body_to_nav", "time_base": "input:gyro", "missing": "nan", "cursor_policy": "nearest",
         "uncertainty": {"form": "covariance", "layout": "full", "shape": [3, 3], "unit": "rad2", "note": "tangent-space rotation vector"}},
-       {"channel_id": "att.bias", "kind": "estimate", "dtype": "f64", "shape": [3], "unit": "rad/s", "coordinate_frame": null,
+       {"channel_id": "att.bias", "kind": "estimate", "dtype": "f64", "shape": [3], "components": ["x", "y", "z"], "unit": "rad/s", "coordinate_frame": null,
         "time_base": "input:gyro", "missing": "nan", "uncertainty": {"form": "stddev"}}
      ]},
     {"name": "innovation", "mode": "stream", "representations": ["numerical", "temporal", "spectral"], "overflow": "drop_oldest",
      "channels": [
        {"channel_id": "att.nis", "kind": "derived", "derived_from": ["observation", "estimate"], "dtype": "f64", "shape": [], "unit": "1",
-        "time_base": "input:gyro", "missing": "nan", "uncertainty": "none"}
+        "coordinate_frame": null, "time_base": "input:gyro", "missing": "nan", "uncertainty": "none"}
      ]}
   ],
   "checks": [{"name": "innovation_nis", "description": "Normalized innovation squared inside the chi-square 95 % bound for at least 95 % of samples"}]
 }
 ```
+
+At M3 both outputs run in `batch` mode over the recorded input; `mode: stream` and `overflow` take effect at M5 when the instrument consumes live sources.
 
 ### 8.3 Lifecycle
 
@@ -460,11 +483,11 @@ stateDiagram-v2
   Failed --> [*]
 ```
 
-`CIW-INST-007` (extension, M5) An instrument MUST follow the state machine above with these obligations and timeouts. Attaching: reply to `hello` with `manifest` within 5 s, verified against the on-disk copy. Ready: validate parameters and reply `ready` within 30 s of `attach`. Running: consume and emit as credits allow; `heartbeat` every `heartbeat_ms`; `progress` at least every 1 s in batch mode. Draining: emit remaining outputs, `end_of_stream` per output, then `finalized` with per-output content digests, within 30 s or the service escalates to cancel. Cancelling: stop producing (target 200 ms) and send `cancel_ack` within `2 × heartbeat_ms` (default 2 s); frames already sent remain valid; the envelope status becomes `cancelled` with the last valid `frame_seq`. Failed: emit `error(fatal)` before exit; the service retains everything received and marks the stream `truncated`. Each `run` MUST carry a new `execution_id`; every transition MUST be journaled; concurrent executions require `concurrency > 1` in the manifest.
+`CIW-INST-007` (extension, M1 batch lifecycle for the subprocess binding: Discovered, Attaching, Ready, Running, Draining, Detaching, Failed with `hello`, `ready`, `heartbeat`, `progress`, `finalized` and their timeouts; M5 Cancelling, `cancel_ack`, and stream mode) An instrument MUST follow the state machine above with these obligations and timeouts. Attaching: reply to `hello` with `manifest` within 5 s, verified against the on-disk copy. Ready: validate parameters and reply `ready` within 30 s of `attach`. Running: consume and emit as credits allow; `heartbeat` every `heartbeat_ms`; `progress` at least every 1 s in batch mode. Draining: emit remaining outputs, `end_of_stream` per output, then `finalized` with per-output content digests, within 30 s or the service escalates to cancel. Cancelling: stop producing (target 200 ms) and send `cancel_ack` within `2 × heartbeat_ms` (default 2 s); frames already sent remain valid; the envelope status becomes `cancelled` with `truncated_at {frame_seq, reason: cancel}`. Failed: emit `error(fatal)` before exit; the service retains everything received and closes the envelope with `status: failed` and `truncated_at` set to the last valid `frame_seq`. Each `run` MUST carry a new `execution_id`; every transition MUST be journaled; concurrent executions require `concurrency > 1` in the manifest.
 
 ### 8.4 Message families
 
-`CIW-INST-008` (extension, M5) The instrument protocol MUST have exactly four families; each record carries `family`, `type`, `seq` (per direction, per link), and `correlation_id` for request/response pairs. Control and bulk data MUST travel on separate planes, buffers referenced by offset or segment name and never embedded in text records. `checkpoint` and `seek` are optional capabilities: an opaque blob a later `run` may resume from, so replay can seek without recomputing.
+`CIW-INST-008` (extension, M1 families and batch types; M5 `credit`, `cancel`, `cancel_ack`, `gap`, `watermark`, `clock_sync`, `checkpoint`, `seek`) The instrument protocol MUST have exactly four families; each record carries `family`, `type`, `seq` (per direction, per link), and `correlation_id` for request/response pairs. Control and bulk data MUST travel on separate planes, buffers referenced by offset or segment name and never embedded in text records. `checkpoint` and `seek` are optional capabilities: an opaque blob a later `run` may resume from, so replay can seek without recomputing.
 
 | Family | Direction | Types (minimum) |
 |---|---|---|
@@ -477,21 +500,21 @@ stateDiagram-v2
 
 ### 8.5 Ordering
 
-`CIW-INST-009` (extension, M5) Within one link direction records MUST be delivered in `seq` order; within one output stream frames MUST arrive in `frame_seq` order without gaps and the envelope MUST precede the first frame; an out-of-order frame MUST be rejected with `seq_gap`, never reordered. Across streams and instruments the journal defines the session order. Control and data on one link arrive in send order, so an instrument MUST check for control records at least every 100 ms while draining input.
+`CIW-INST-009` (extension, M1) Within one link direction records MUST be delivered in `seq` order; within one output stream frames MUST arrive in `frame_seq` order without gaps and the envelope MUST precede the first frame; an out-of-order frame MUST be rejected with `seq_gap`, never reordered. Across streams and instruments the journal defines the session order. Control and data on one link arrive in send order, so an instrument MUST check for control records at least every 100 ms while draining input.
 
 ### 8.6 Backpressure
 
-`CIW-INST-010` (extension, M5) Every bulk stream MUST be credit-based in frames and bytes: the consumer grants, the producer MUST NOT send without sufficient credit in both units, the consumer replenishes as it commits. Defaults: 64 frames and 64 MiB per instrument stream; 8 frames and 8 MiB per client subscription. The service is the only component that buffers between instruments: frames are committed to the store and read back for downstream inputs, so a slow consumer bounds read-ahead and never stalls the producer. The recorder is a credit consumer with priority: when it cannot keep up, ingest credits stop.
+`CIW-INST-010` (extension, M5) Every bulk stream MUST be credit-based in frames and bytes: the consumer grants, the producer MUST NOT send without sufficient credit in both units, the consumer replenishes as it commits. Defaults: 64 frames and 64 MiB per instrument stream; 8 frames and 8 MiB per client subscription. The service is the only component that buffers between instruments: frames are committed to the store and read back for downstream inputs, so a slow consumer bounds read-ahead and never stalls the producer. The recorder is a credit consumer with priority: when it cannot keep up, ingest credits stop. Until M5 a batch output is delivered whole after completion (CIW-INST-016) and no `credit` records are exchanged; this is a stated limit of the M1 binding.
 
 `CIW-INST-011` (extension, M5) On exhausted credit an instrument MUST apply its output's declared overflow policy: `block` (default), `drop_oldest` (report the dropped range as a `gap` record), or `fail`. A deterministic or seeded instrument MUST NOT drop. Silent loss is not permitted; the conformance suite MUST withhold credit and assert that a `drop_oldest` source emits gaps.
 
 ### 8.7 Cancellation
 
-`CIW-INST-012` (extension, M5) On `cancel(execution_id)` the instrument MUST stop producing for that execution and send `cancel_ack` within `2 × heartbeat_ms`; a non-acknowledging instrument MUST be moved to `Failed` and, for the subprocess binding, its process group terminated. Cancelling a client-requested analysis MUST leave earlier results untouched and MUST produce a `status: cancelled` result when partial frames were delivered.
+`CIW-INST-012` (extension, M5) On `cancel(execution_id)` the instrument MUST stop producing for that execution and send `cancel_ack` within `2 × heartbeat_ms`; a non-acknowledging instrument MUST be moved to `Failed` and, for the subprocess binding, its process group terminated. Cancelling a client-requested analysis MUST leave earlier results untouched and MUST produce a `status: cancelled` result when partial frames were delivered. `status: cancelled` MUST be produced only in response to `cancel`; every other early end is `failed`.
 
 ### 8.8 Errors and restart
 
-`CIW-INST-013` (extension, M5) Errors MUST be structured `{code, class, severity ∈ {warning, error, fatal}, recoverable, scope ∈ {link, instrument, execution, stream, frame}, message, detail}`, journaled and surfaced. Restart policy: `manual` by default; `auto` restarts a crashed subprocess at most `restart.max` (default 3) times after a `recoverable` error; every restart is a new execution.
+`CIW-INST-013` (extension, M1) Errors MUST be structured `{code, class, severity ∈ {warning, error, fatal}, recoverable, scope ∈ {link, instrument, execution, stream, frame}, message, detail}`, journaled and surfaced. Restart policy: `manual` by default; `auto` restarts a crashed subprocess at most `restart.max` (default 3) times after a `recoverable` error; every restart is a new execution.
 
 | Class (code prefix) | Fatal default | Service action |
 |---|---|---|
@@ -500,7 +523,7 @@ stateDiagram-v2
 | `overrun` | no | Gap recorded and rendered |
 | `resource_*` | yes | Execution failed; message shown |
 | `numeric_*` (`numeric_diverged`, `numeric_singular`) | instrument's choice | A non-fatal numeric error MUST still emit a time-aligned sample (NaN value, infinite covariance) so estimate output never loses alignment |
-| `transport` | yes (service-generated) | Stream marked `truncated` |
+| `transport` | yes (service-generated) | Envelope closed with `status: failed` and `truncated_at {reason: transport}` |
 | `contract` (bad seq, credit exceeded, descriptor mismatch) | yes (service-generated) | Execution failed; offending record logged |
 | `internal` | yes | As `resource_*` |
 
@@ -508,13 +531,13 @@ stateDiagram-v2
 
 `CIW-INST-014` (extension, M1) The manifest MUST declare `determinism` as `deterministic` (equal within declared `tolerance`; bitwise if none), `seeded` (deterministic given a `seed` the service supplies and records), or `nondeterministic`. `finalized` MUST carry a content digest per output, which the service computes independently. Deterministic and seeded instruments MUST produce the same sample sequence regardless of how inputs were split into frames; the SDK MUST ship a harness that re-frames inputs randomly. The conformance suite MUST verify determinism claims by re-execution for each reference instrument.
 
-`CIW-INST-015` (extension, M1) A parameter with `scope: execution` MUST NOT affect a running execution; it applies to the next `run` and yields a new `operation_id`. A `scope: live` parameter MAY change during an execution; every change MUST be journaled and recorded in the envelope's parameter history.
+`CIW-INST-015` (extension, M3) A parameter with `scope: execution` MUST NOT affect a running execution; it applies to the next `run` and yields a new `operation_id`. A `scope: live` parameter MAY change during an execution; every change MUST be journaled and recorded in the envelope's parameter history.
 
 ### 8.10 Streaming, batch, and selection isolation
 
-`CIW-INST-016` (extension, M5) A `stream` output MUST deliver frames as produced and end with `end_of_stream`; a `batch` output MUST deliver its envelope and all frames after completion, then `end_of_stream`; a batch execution over a selection MUST receive the interval explicitly and record it in the envelope.
+`CIW-INST-016` (extension, M1 batch; M5 stream) A `stream` output MUST deliver frames as produced and end with `end_of_stream`; a `batch` output MUST deliver its envelope and all frames after completion, then `end_of_stream`; a batch execution over a selection MUST receive the interval explicitly and record it in the envelope.
 
-`CIW-INST-017` (extension, M1) Instruments MUST NOT read the selection or view settings. Where an instrument needs the cursor or interval, the manifest MUST declare a parameter with `source: selection.cursor` or `selection.interval`, delivered with the `revision` it came from. v1 already works this way: `compute_statistics` and `compute_spectrum` receive `interval_s` explicitly and the result captures `selection_revision`.
+`CIW-INST-017` (v1) Instruments MUST NOT read the selection or view settings. Where an instrument needs the cursor or interval, the manifest MUST declare a parameter with `source: selection.cursor` or `selection.interval`, delivered with the `revision` it came from. v1 already works this way: `compute_statistics` and `compute_spectrum` receive `interval_s` explicitly and the result captures `selection_revision`.
 
 ### 8.11 Bindings
 
@@ -529,9 +552,15 @@ stateDiagram-v2
 
 ### 8.12 Versioning, invariants, conformance harness
 
-`CIW-INST-019` (extension, M1) `hello` MUST carry a semantic protocol version; majors MUST match or the link is refused with `unsupported_version`; the minor in effect is the lower of the two; unknown fields MUST be ignored; manifest, envelope, and protocol versions are independent. The service MUST enforce at the boundary: every frame's channels are declared in the current envelope; every buffer's byte length equals `dtype size × product(shape)`; timestamps are non-decreasing; the envelope's `kind` matches every channel's; every unit parses; every spatial channel names a declared frame.
+`CIW-INST-019` (extension, M1) `hello` on the instrument link MUST carry `instrument_protocol {major, minor}`, independent of the client session `protocol_version`; majors MUST match or the link is refused with `unsupported_version`; the minor in effect is the lower of the two; unknown fields on the instrument link MUST be ignored; manifest, envelope, and both protocol versions are independent. The service MUST enforce at the boundary: every frame column is either a channel declared in the current envelope or a companion column of one (CIW-DATA-010); every buffer's byte length equals `dtype size × product(shape)`; timestamps are non-decreasing; the envelope's `kind` matches every channel's; every unit parses; every spatial channel names a declared coordinate frame.
 
-`CIW-INST-020` (extension, M1) `docs/PROTOCOL.md` MUST specify the concrete encoding for every requirement in this section and MUST ship a harness (`ciw-proto-check <manifest>`) that drives an instrument through attach, run, credit exhaustion, cancel, and detach and reports pass or fail per identifier.
+`CIW-INST-020` (extension, M1; M5 credit and cancel) `docs/PROTOCOL.md` MUST specify the concrete encoding for every requirement in this section and MUST ship a harness (`ciw-proto-check <manifest>`) that drives an instrument through attach, run (batch), and detach at M1, with credit exhaustion and cancel added to the harness at M5, and reports pass or fail per identifier.
+
+### 8.13 Headless instrument path
+
+`CIW-INST-021` (v1) An instrument MAY be driven from the terminal client without the session service. Such a run MUST be written as one self-contained immutable JSON bundle embedding the complete input declaration, the explicit sample or inputs, the instrument's own output record, and the runtime identity; it MUST carry separate `evidence_id`, `operation_id`, `execution_id`, `result_id`, and `verification_id` (`null`, `verification_status: "not_verified"`) and content digests whose relationships are validated on read; `inspect` MUST validate a bundle without recomputation; `replay` MUST re-evaluate the embedded inputs under new execution and result identities, record `replay_of` source bindings and an exact digest comparison, and MUST NOT modify the source bundle or promote verification. Attaching such runs to a session as workspace results is an extension (remaining M1 item, 18.2).
+
+`CIW-INST-022` (v1) An adapter to an external instrument MUST call the upstream engine and MUST NOT vendor or re-implement its numerical computation. Provenance MUST record the runtime identity (repository, commit or source digest, package version) and the adapter version; the installed runtime MUST be verified against a pinned source manifest and a different source MUST be rejected.
 
 ## 9. Synchronization model
 
@@ -546,9 +575,11 @@ stateDiagram-v2
  "cursor_s": 3.0, "coordinate_frame": "oscillator-state", "revision": 4}
 ```
 
+`CIW-SYNC-022` (extension, M1) Channel references are bare `channel_id`s in one session namespace: the dot in `att.quat` is part of the id, never a namespace separator. Every `channel_id` MUST be unique across the session's run and the declared outputs of every attached instrument; the service MUST refuse `attach` with `channel_conflict` when an instrument declares an id already present. The selection's `channel`, every binding in `view_settings.channels`, and every channel argument in Section 12.2 MUST use this form. Channels produced by an execution belong to that execution's result (`channels[]`, CIW-DATA-013) and become addressable when the envelope is committed; `run_id` continues to name the session's recording, and in v1 the namespace is that run's channels.
+
 ### 9.2 Revisions and conflict
 
-`CIW-SYNC-003` (v1) Every `selection.update` MUST carry `expected_revision`; the service MUST apply it only if equal to the current revision, MUST increment `revision` by exactly one, and MUST reject a stale update with `revision_conflict` without mutating anything. An update that changes nothing MUST be rejected with `invalid_payload`; revisions MUST be integers compared numerically and booleans rejected.
+`CIW-SYNC-003` (v1) Every `selection.update` MUST carry `expected_revision`; the service MUST apply it only if equal to the current revision, MUST increment `revision` by exactly one, and MUST reject a stale update with `revision_conflict` without mutating anything. An update that names no field besides `expected_revision` MUST be rejected with `invalid_payload`; an update that restates the current values MUST be accepted and MUST increment `revision` (v1 as built); revisions MUST be integers compared numerically and booleans rejected.
 
 `CIW-SYNC-004` (v1) After an accepted update the service MUST broadcast `selection.changed` with the full selection to every client in revision order and MUST send `session.snapshot` to every new connection. A client MUST apply broadcasts in increasing revision and discard one not greater than the revision it shows.
 
@@ -584,7 +615,7 @@ sequenceDiagram
 
 ### 9.6 View settings
 
-`CIW-SYNC-009` (extension; † M1, camera M4, follow and freq_cursor M5) `view_settings` (empty in v1) MUST hold exactly the fields below when populated; a change to any of them MUST be a revisioned update like the selection and MUST never alter stored data.
+`CIW-SYNC-009` (extension; † M1, camera M4, follow and freq_cursor M5) `view_settings` (empty in v1) MUST hold exactly the fields below when populated; a change to any of them MUST be a revisioned update like the selection and MUST never alter stored data. View settings and the selection share one revision counter. A change MUST be sent as `view.update {expected_revision, <fields>}`, applied by the selection sequencer under the same lock with the same conflict rule as CIW-SYNC-003, and broadcast as `view.changed` carrying the full `view_settings` and the new `revision`; from M1 `session.snapshot` and the `session.get` response MUST include `view_settings`. `focus` is per-client presentation state: it is never broadcast, is persisted only as the saving client's value, and MUST NOT change in another client.
 
 | Field | Type | Default | Meaning |
 |---|---|---|---|
@@ -595,7 +626,7 @@ sequenceDiagram
 | `time_display` † | `relative \| absolute` | `relative` | Axis and readout labelling |
 | `channels` † | pane → ordered bindings | selection channel | Active channels per pane |
 | `layout` † | pane tree | `single` | Section 12.3 |
-| `focus` † | pane id | first pane | Pane receiving keys |
+| `focus` † | pane id | first pane | Pane receiving keys (per client; not synchronized) |
 | `freq_cursor` | Hz or `null` | `null` | Shared by spectral panes |
 | `camera` | pane → `{kind, target, distance, yaw, pitch, fov, up}` | per-pane default | Projection shared by terminal raster and viewport |
 | `as_of` | time or `latest` | `latest` | Estimate availability epoch (7.10) |
@@ -625,7 +656,7 @@ sequenceDiagram
 
 ### 9.9 Spectral coherence
 
-`CIW-SYNC-015` (v1 rule; spectrogram M5) A spectral result MUST be computed by the service from the retained samples of exactly the interval captured in the result, never by a client and never from the cursor; the temporal pane MUST shade that interval, snapped inward to sample boundaries. A spectrogram's time axis MUST coincide with the temporal `window`; each column MUST be timestamped at the centre of its segment; the hop MUST be `max(segment / 4, bucket width)`; the temporal cursor MUST map to the nearest column centre, shown in the readout. `freq_cursor` MUST be shared by all spectral panes and read out at or before the bin; the frequency axis MUST derive from the actual sampling in the interval.
+`CIW-SYNC-015` (v1 rule; spectrogram M5) A spectral result MUST be computed by the service from the retained samples of exactly the interval captured in the result, never by a client and never from the cursor; the temporal pane MUST shade that interval, snapped inward to sample boundaries. A spectrogram's time axis MUST coincide with the temporal `window`; each column MUST be timestamped at the centre of its segment; `spectrum.stft.v1` MUST take `segment` and `hop` as explicit operation parameters (defaults 1024 and `segment / 4`) folded into `operation_id`; the result's columns are fixed by those parameters and the interval; a spectrogram pane MUST reduce result columns to its bucket width through the reducer (per-bucket maximum and minimum per frequency row, CIW-DATA-020) and MUST NOT request a recompute to fit its width; the temporal cursor MUST map to the nearest column centre, shown in the readout. `freq_cursor` MUST be shared by all spectral panes and read out at or before the bin; the frequency axis MUST derive from the actual sampling in the interval.
 
 `CIW-SYNC-016` (v1 identity; marker M1) A displayed result MUST show its `selection_revision` and `interval_s`; when the current selection's channel or interval differs, the pane MUST mark the result stale and the service MUST NOT recompute automatically. A pending recompute (extension) MUST render the previous result dimmed without blocking the tick.
 
@@ -637,13 +668,15 @@ sequenceDiagram
 
 `CIW-SYNC-019` (extension, M5) Every temporal axis MUST belong to one link group; `t` links all temporal axes and spectrogram time axes, `f` all frequency axes; a window change applies to every axis of the group in one revision.
 
-`CIW-SYNC-020` (extension, M5) With channels in more than one time base selected, the selection MUST hold one cursor per base, linked only through declared mappings.
+`CIW-SYNC-020` (extension, M5) With channels in more than one time base selected, the selection MUST hold one cursor per base, linked only through declared mappings. From M5 the selection MUST carry `cursors {<time_base_id>: {cursor_ns}}` and `intervals {<time_base_id>: [start_ns, end_ns)}` alongside the v1 fields; `cursor_s` and `interval_s` remain the projection onto the run's base for v1 clients. Cursor resolution converts `cursor_s` to `cursor_ns` with the bound conversion of CIW-DATA-005 before the nearest-sample rule of CIW-SYNC-007.
+
+`CIW-SYNC-021` (extension, M1) The sequencer MUST NOT await network delivery. After applying an update it MUST append the broadcast to a per-client bounded outbound queue (default 64 messages) and return; a client whose queue overflows or that does not drain a message within 2 s MUST be disconnected off the sequencing path; per-client order is preserved by the queue.
 
 ## 10. Representation layer
 
 ### 10.1 Capability-driven views; clients own no calculation
 
-`CIW-VIEW-001` (extension, M1) A view family MUST be offered for an output only if its `representations[]` includes it; no client or service MAY synthesize a spectral or spatial view an output does not declare. The v1 demo declares `numerical`, `temporal`, `spectral`, and `spatial3d`.
+`CIW-VIEW-001` (extension, M1) A view family MUST be offered for an output only if its `representations[]` includes it; no client or service MAY synthesize a spectral or spatial view an output does not declare. At M1 the demo instrument's manifest declares `numerical`, `temporal`, `spectral`, and `spatial3d`; in v1 the families are implied by the run's channels and `render` block.
 
 `CIW-VIEW-002` (v1) Clients MUST NOT compute anything that produces a record or readout: every numerical card MUST be a `sample.get` or `result.get` value; traces MUST be drawn from retained samples or service reductions; render geometry is display only.
 
@@ -702,11 +735,11 @@ sequenceDiagram
 
 ### 10.7 2D/3D
 
-`CIW-VIEW-016` (v1 preview; rasterizer M4) Without a viewport the terminal MUST render `spatial2d` outputs at the selected tier and `spatial3d` outputs at least as a labelled orthographic projection along a selectable axis. From M4 a software rasterizer MUST render wireframe meshes, depth-sorted points, and trajectories with the pane's camera into braille, half-block, or a graphics image, and MUST produce the same clip-space coordinates before quantization as the viewport for the same camera, so a pick in one maps to the same world coordinates in the other. Attaching a viewport MUST NOT change what the terminal shows.
+`CIW-VIEW-016` (extension, M1 preview; rasterizer M4) Without a viewport the terminal MUST render `spatial2d` outputs at the selected tier and `spatial3d` outputs at least as a labelled orthographic projection along a selectable axis. From M4 a software rasterizer MUST render wireframe meshes, depth-sorted points, and trajectories with the pane's camera into braille, half-block, or a graphics image, and MUST produce the same clip-space coordinates before quantization as the viewport for the same camera, so a pick in one maps to the same world coordinates in the other. Attaching a viewport MUST NOT change what the terminal shows.
 
 `CIW-VIEW-017` (extension, M4) A 2D/3D pane MUST render the sample resolved at the cursor; trajectories MUST show the trail over `[cursor − trail_s, cursor]` (default 2 s) and the uncertainty ellipse or ellipsoid at the cursor sample; field panes MUST share colormap range between terminal raster and viewport and show range and unit in the header; overlays MUST follow `CIW-DATA-011`.
 
-`CIW-VIEW-018` (extension, M3) An `xy` phase-plot view (one channel against another over the window, time as colour) MUST be available for channel pairs with compatible time bases; the viewport's phase portrait is its first instance.
+`CIW-VIEW-018` (extension, M3) An `xy` phase-plot representation of family `spatial2d` (one channel against another over the window, time as colour) MUST be available for any two channels whose `representations[]` both include `temporal` and whose time bases are compatible; the viewport's phase portrait is its first instance.
 
 ### 10.8 Viewport
 
@@ -724,7 +757,7 @@ sequenceDiagram
 
 ### 11.1 Workspace v1
 
-`CIW-SESS-001` (v1) A workspace MUST be a JSON file `{workspace_version: 1, saved_at, run, selection, results[], view_settings{}}` with the complete run, the selection at save time, every immutable result, and reserved `view_settings`. Results MUST be persisted as `results/<result_id>.json` when created, the source recording separately as `recording-<content hash>.json`; `workspace.save` MUST write atomically (temporary file, fsync, rename); files MUST be readable without the service.
+`CIW-SESS-001` (v1) A workspace MUST be a JSON file `{workspace_version: 1, saved_at, run, selection, results[], view_settings{}}` with the complete run, the selection at save time, every immutable result, and reserved `view_settings`. Results MUST be persisted as `result-<id>.json` when created and the source recording as `recording-<content hash>.json`, both in the output directory beside `workspace.json` (the CLI default output directory is `results/`); `workspace.save` MUST write atomically (temporary file, fsync, rename); files MUST be readable without the service.
 
 ```json
 {
@@ -760,7 +793,7 @@ sequenceDiagram
 
 ```
 <session>/
-  workspace.json            # workspace v1 fields plus format_version, session ids, time bases, frames, layout refs
+  workspace.json            # workspace v1 fields plus format_version, session ids, time bases, coordinate frames, layout refs
   journal.jsonl             # sequence-numbered events, one per line, rotated at 64 MiB
   recordings/recording-<hash>.json            # v1 runs; from M4 binary runs as chunks + descriptor
   results/<result_id>.json                    # immutable results (envelopes and small data)
@@ -771,6 +804,8 @@ sequenceDiagram
   layouts/<layout_id>.json
   exports/                                    # exports and their sidecars
 ```
+
+M2 moves the v1 flat files into `recordings/` and `results/`; a v1 output directory MUST still open.
 
 `CIW-SESS-006` (extension, M2) The journal MUST be append-only; each entry MUST carry `seq` (contiguous from 1), `t_mono` (session clock ns), `t_wall` (RFC 3339 with offset), `origin` (`tui`, `cli`, `script:<path>:<line>`, `client:<id>`, `viewport:<id>`, `system`), and either `cmd` with its structured `result` or `event` (selection change with revision, result created, instrument transition, error, frame range per flush). No event MAY be published before it is in the journal buffer; fsync at least every 250 ms (`durability: normal`) or before publishing (`strict`). `session compact` MAY keep the last selection per second while preserving every non-selection entry.
 
@@ -787,7 +822,7 @@ sequenceDiagram
 
 ### 11.5 Deterministic re-execution
 
-`CIW-SESS-009` (extension, M2 operations; M3 instruments) `ciw verify <session>` MUST: (1) leave nondeterministic instruments unstarted and use their recordings; (2) re-execute deterministic and seeded operations and instruments in topological order of provenance, in batch mode, from recorded inputs, parameters, and seeds; (3) compare each new result to the recorded one by digest (bitwise without tolerance) or element-wise within `tolerance`, NaN equal to NaN; (4) report any mismatch as `NONREPRODUCIBLE` with the first differing `(frame_seq, row)` and a drift report `{channel, execution_old, execution_new, max_abs_diff}`; (5) write its outputs as new results in a new session referencing the original by hash. Exit codes: 0 reproducible, 3 nonreproducible, 2 command error, 4 instrument failure. Cross-platform drift is reported, not failed, unless `--strict`.
+`CIW-SESS-009` (extension, M2 operations; M3 instruments) `ciw verify <session>` MUST: (1) leave nondeterministic instruments unstarted and use their recordings; (2) re-execute deterministic and seeded operations and instruments in topological order of provenance, in batch mode, from recorded inputs, parameters, and seeds; (3) compare each new result to the recorded one by digest (bitwise without tolerance) or element-wise within `tolerance`, NaN equal to NaN; (4) report any mismatch as `NONREPRODUCIBLE` with the first differing `(frame_seq, row)` and a drift report `{channel, execution_old, execution_new, max_abs_diff}`; (5) write its outputs as new results in a new session referencing the original by hash. Exit codes follow CIW-OPS-010: 0 reproducible, 2 command error, 3 nonreproducible, 4 instrument failure, 5 storage error. Cross-platform drift is reported, not failed, unless `--strict`.
 
 ### 11.6 Export
 
@@ -799,7 +834,7 @@ sequenceDiagram
 
 ### 12.1 The v1 terminal client
 
-`CIW-OPS-001` (v1) The terminal client MUST provide `ciw demo` (write a deterministic synthetic recording), `ciw analyze stats|spectrum --recording --channel --start --end --output-dir` (headless analysis writing a recording copy, an immutable result, and a reopenable `workspace.json`), `ciw serve --recording|--workspace --output-dir --port`, `ciw send <type> --payload|--payload-file` (one request, JSON response on stdout, exit 0 on `response` and 2 on `error`), `ciw watch` (snapshot and events as JSON lines), and `ciw inspect <path>` (print a saved file without executing anything). Every operator action MUST be expressible as one of these or, from M1, as a command below.
+`CIW-OPS-001` (v1) The terminal client MUST provide `ciw demo` (write a deterministic synthetic recording), `ciw analyze stats|spectrum --recording --channel --start --end --output-dir` (headless analysis writing a recording copy, an immutable result, and a reopenable `workspace.json`), `ciw serve --recording|--workspace|--resume --output-dir --port --bind {127.0.0.1|0.0.0.0}` (CIW-SESS-012, CIW-PERF-012), `ciw send <type> --payload|--payload-file` (one request, JSON response on stdout, exit 0 on `response` and 2 on `error`), `ciw watch` (snapshot and events as JSON lines), `ciw health --url` (CIW-OPS-013), `ciw inspect <path>` (print a saved file without executing anything), and `ciw plsr import|evaluate|inspect|replay` (8.13; optional `plsr` extra; exit 0 when the command succeeds even if the record holds a refusal or violation, 2 on input, configuration, or execution failure, 3 on replay digest mismatch). Every operator action MUST be expressible as one of these or, from M1, as a command below. The v1 terminal client prints JSON and event lines only; panels and in-terminal rasters are extensions (Sections 10.3, 10.7).
 
 ### 12.2 Command model
 
@@ -813,6 +848,8 @@ sequenceDiagram
 | inspect | `view`, `layout`, `readout`, `sample` | `view temporal q,v --pane p1`, `sample 3.0s` |
 | compare | `compare`, `residual`, `assert` | `compare result-3f9c… result-a1b2…`, `residual att.quat ref.quat` |
 | save / replay | `save`, `open`, `replay`, `verify`, `export` | `save`, `export csv q --interval sel`, `verify` |
+
+The `frame` verb sets the selection's coordinate frame, never a data frame.
 
 `CIW-OPS-003` (v1 envelope; M1 form) Every command MUST produce exactly one structured result, `{id, ok: true, value}` or `{id, ok: false, error: {code, message, detail}}`; the v1 envelope is this result on the wire. The command line renders it; headless mode writes one JSON line; the gateway returns it as the response. Side effects MUST complete before the result unless the command is documented as asynchronous, in which case `value` MUST carry an `execution_id`.
 
@@ -844,7 +881,7 @@ sequenceDiagram
 
 `CIW-OPS-009` (extension, M1) A script MUST be commands one per line, executed by `ciw run <script> --session <dir> --headless` exactly as if typed, with `let` variables substituted before tokenization; a failing command MUST abort unless prefixed with `-` or `--continue` is given; scripts MUST run without a TTY.
 
-`CIW-OPS-010` (v1 `send`; M1 full) Headless commands MUST exit 0 on success, 1 if any `assert` failed, 2 on a command or protocol error, 3 on instrument failure, 4 on conformance or verification failure, 5 on storage error, and MUST write results as JSON lines to stdout or `--results <path>`.
+`CIW-OPS-010` (v1 `send`, `plsr`; M1 full) Headless commands MUST exit 0 on success (for the headless instrument path also when the stored record holds a refusal or violation), 1 if any `assert` failed, 2 on a command, protocol, input, or configuration error, 3 on a verification, reproducibility, or conformance failure (`ciw verify` nonreproducible; `ciw plsr replay` digest mismatch), 4 on instrument failure, 5 on storage error, and MUST write results as JSON lines to stdout or `--results <path>`. In v1 the headless instrument path reports instrument execution and persistence failures as 2; codes 4 and 5 apply from M1.
 
 `CIW-OPS-011` (extension, M1) `assert` MUST evaluate a named statistic over a channel and interval against a bound: at least `min`, `max`, `mean`, `std`, `rms`, `count`, `rms-error --against <channel>`, `max-abs-error --against <channel>`, and `coverage --sigma <k>` (fraction of reference samples inside `k·σ` of the estimate); it MUST also accept an expression over values at the cursor, aggregates, watermarks, and instrument states (`assert abs(att.euler.roll@cursor - 0.1) < 0.01`); its result MUST contain the computed value.
 
@@ -856,7 +893,9 @@ The reusability target, **new instrument = existing workbench + adapter + domain
 
 ### 13.1 Adding an instrument
 
-`CIW-EXT-001` (extension, M1) A new instrument MUST be addable by a manifest and an adapter, registered by a Python entry point in group `ciw.instruments` (in-process) or by manifest path (subprocess, remote), with no change to service code. The adapter's obligations are exactly: emit valid envelopes and frames, honour credits, acknowledge cancel, send heartbeats, declare determinism truthfully, and preserve the wrapped instrument's headless calculation and tolerances. Discovery MUST search `./instruments/` (`examples/`, `src/ciw/instruments/`), `$CIW_INSTRUMENT_PATH`, the user data directory, then built-ins, in that order.
+`CIW-EXT-001` (extension, M1) A new instrument MUST be addable by a manifest and an adapter, registered by a Python entry point in group `ciw.instruments` (in-process) or by manifest path (subprocess, remote), with no change to service code. The adapter's obligations are exactly: emit valid envelopes and frames, send heartbeats, declare determinism truthfully, preserve the wrapped instrument's headless calculation and tolerances, and from M5 honour credits and acknowledge cancel. Discovery MUST search `./instruments/` (`examples/`, `src/ciw/instruments/`), `$CIW_INSTRUMENT_PATH`, the user data directory, then built-ins, in that order.
+
+An instrument is listed as integrated in [`docs/INSTRUMENTS.md`](INSTRUMENTS.md) only after its workbench entry point, saved evidence, and replay path have been exercised together; standalone readiness is not workbench integration.
 
 ```python
 from ciw.sdk import Instrument, Envelope, Frame, run_main
@@ -868,8 +907,8 @@ class AttitudeEKF(Instrument):
         env = Envelope(output="state", kind="estimate", status="partial")
         ctx.emit(env)
         for gyro, accel in ctx.iter_inputs(inputs, align="gyro"):   # aligned input frames
-            t, q, cov, bias = self.step(gyro, accel, params)        # existing NumPy code, unchanged
-            ctx.emit(Frame(env, time=t, columns={"att.quat": q, "att.quat.cov": cov, "att.bias": bias}))
+            t, q, cov, bias, bias_sigma = self.step(gyro, accel, params)   # existing NumPy code, unchanged
+            ctx.emit(Frame(env, time=t, values={"att.quat": q, "att.bias": bias}, uncertainty={"att.quat": cov, "att.bias": bias_sigma}))
             if ctx.cancelled:
                 break
         ctx.end(env, status="cancelled" if ctx.cancelled else "complete")
@@ -879,7 +918,7 @@ run_main(AttitudeEKF)   # attach, credits, heartbeat, cancel, digests handled by
 
 ### 13.2 Adding a representation
 
-`CIW-EXT-002` (extension, M1) A representation MUST be a client-side plugin implementing `CIW-VIEW-004`, registered under a family name with its `describe()` metadata and accepted kinds, dtypes, and shapes; it MUST ship a tier-0 rendering, golden-raster tests at two sizes and two backends, and a `hit_test` test; it MUST consume only records, results, and the selection; it MUST NOT require service changes beyond, at most, a new reducer registered under `ciw.reducers` with declared provenance fields.
+`CIW-EXT-002` (extension, M3) A representation MUST be a client-side plugin implementing `CIW-VIEW-004`, registered under a family name with its `describe()` metadata and accepted kinds, dtypes, and shapes; it MUST ship a tier-0 rendering, golden-raster tests at two sizes and two backends, and a `hit_test` test; it MUST consume only records, results, and the selection; it MUST NOT require service changes beyond, at most, a new reducer registered under `ciw.reducers` with declared provenance fields.
 
 ### 13.3 Adding an export
 
@@ -895,13 +934,13 @@ run_main(AttitudeEKF)   # attach, credits, heartbeat, cancel, digests handled by
 
 | Reference instrument | Kind | Outputs | Exercises |
 |---|---|---|---|
-| (a) `org.ciw.ref.timeseries` (M1): an existing NumPy scalar/time-series instrument behind an adapter; the v0.1 oscillator is its precursor | source, `deterministic` | scalar observations, regular sampling | manifest, adapter, numerical/temporal/spectral panels, preserved tolerances, reopen versus recompute |
+| (a) `org.ciw.ref.timeseries` (M1): the built-in oscillator (`analytic-damped-oscillator.v1`) qualifies as the scalar/time-series reference instrument and remains required for the reusability test; at M1 it is placed behind a manifest and adapter with its calculation unchanged. PLSR (13.8) does not replace it | source, `deterministic` | scalar observations, regular sampling | manifest, adapter, numerical/temporal/spectral panels, preserved tolerances, reopen versus recompute |
 | (b) `org.ciw.ref.attitude-ekf` (M3) | estimator, `deterministic` with tolerance | `att.quat` (tangent-space covariance, superseding results with lag), `att.bias` (σ), `att.nis` (derived) | estimate styling, uncertainty, revisions and `as_of`, residuals, `coverage --sigma`, verify |
 | (c) `org.ciw.ref.field-reconstruct` (M4) | processor, `deterministic` | `grid2d` field observation, `points` estimate with σ, `reduced_of` mesh with `reference` | spatial family in terminal and viewport, binary frames, resources, camera sharing, colormap range |
 
 `CIW-EXT-006` (extension, M1–M4) For each reference instrument the conformance suite MUST report lines changed in `src/ciw/session.py`, `src/ciw/server.py`, and `src/ciw/cli.py` versus lines added under the instrument's adapter, manifest, and specialized views; a milestone MUST NOT close if service changes exceeded adapter changes without an accepted decision record.
 
-`CIW-EXT-007` (v1) The architecture MUST remain valid if any of the three layers (engines, terminal client, viewport) is replaced: no contract in Sections 6–12 MAY reference a language, toolkit, or renderer, and every extension MUST declare the protocol, envelope, and manifest majors it targets.
+`CIW-EXT-007` (v1) The architecture MUST remain valid if any of the three layers (engines, terminal client, viewport) is replaced. Every contract in Sections 6-12 MUST be implementable from any language: it MUST NOT depend on a language runtime, toolkit, or renderer, and named byte formats (NumPy-compatible contiguous layout, Arrow IPC) are permitted only as layouts a replacement can read. The in-process binding (CIW-INST-004 and the `inprocess` row of 8.11) is host-language specific by definition and is the only language-bound contract; a replacement host provides its own in-process binding behind the same manifest. Every extension MUST declare the protocol, envelope, and manifest majors it targets.
 
 ### 13.6 Candidate instruments
 
@@ -913,7 +952,15 @@ Proposed uses of the workbench; candidates, not commitments.
 | BIM/construction-state estimation | entity selection, observation history, result inspection, spatial overlays, saved investigations | building semantics, admissibility constraints, interpretation of evidence |
 | Polymer/process experiments | batch comparison, temperature/pressure traces, parameter fitting, numerical exports, optional geometry | material models, experimental protocols, calibration, process-specific interpretation |
 | GNSS/odometry instrumentation | timestamped trajectories, coordinate-frame inspection, uncertainty displays, replay | positioning algorithms, reference systems, correction handling, receiver integration |
-| Dynamical-system / observer experiments | parameter controls, numerical states, phase portraits, function surfaces, comparative runs | dynamics, estimators, stability conditions, verification procedures |
+| Dynamical-system / observer experiments | parameter controls, numerical states, phase portraits, function surfaces, comparative runs; first external adapter: PLSR (13.8) | dynamics, estimators, stability conditions, verification procedures |
+
+### 13.7 Adding an operation
+
+`CIW-EXT-008` (extension, M1) An operation (`statistics.v1`, `spectrum.periodogram.v1`, and the `spectrum.welch.v1` and `spectrum.stft.v1` operations of `CIW-VIEW-015`) MUST be supplied by instrument code: in v1 by the functions of `CIW-INST-004`; from M1 by an instrument registered per `CIW-EXT-001` whose manifest declares a `batch` output naming the `operation_id`. The service's Operation runner MUST only sequence the execution, pass the explicit interval and parameters, wrap `data` in the envelope, assign identities, and persist; it MUST NOT contain numerical code. Adding an operation MUST NOT change `src/ciw/session.py` beyond registration.
+
+### 13.8 First external adapter: PLSR (v1, headless)
+
+PLSR evaluates quadratic Lyapunov certificates for declared linear and affine-parameter models; it belongs to the dynamical-system/observer candidate family (13.6) and is the first external adapter, decided in ADR-0004 and documented in `docs/PLSR.md` and `docs/INSTRUMENTS.md`. Commands: `ciw plsr import | evaluate | inspect | replay`; optional `plsr` extra pinned to an upstream commit, Python 3.12+ (the base workbench stays 3.11); adapter `ciw-plsr-adapter-v1`; operation `plsr.verdict.v1`; input `plsr-sample-v1` (explicit `x`, `theta`, `theta_dot`, no defaults); saved run `ciw-plsr-run-v1` with model `artifact_digest`, companion `record_digest`, and CIW `bundle_digest`; `verification_status: "not_verified"`, `may_authorize: false`, physical validation `not_started`, `proof_status: NOT_CHECKED`; exit codes 0 (command succeeded; the record may hold a refusal or violation), 2 (input, configuration, or execution failure), 3 (replay digest mismatch); one explicit sample per invocation; no shared session, no viewport, no change to protocol v1; numerical views only. M1 items delivered by this adapter: existing-instrument adapter with preserved engine, tolerances, and status semantics; runtime pin in provenance; separate identities; inspect versus replay. M1 items remaining: manifest and schema, session attachment of bundles, capability-driven views, subprocess binding, and the reference instrument (a) adapter.
 
 ## 14. Reference implementation stack
 
@@ -947,38 +994,46 @@ The tree is fixed by `docs/DEVELOPMENT.md`:
 ├── README.md
 ├── AGENTS.md                 Instructions for automated contributors
 ├── pyproject.toml            Python package metadata; installs the `ciw` command
+├── compose.yaml              Container backend definition for Docker Compose
+├── Dockerfile                Container image for the backend service
 ├── src/ciw/                  Runtime service, instruments, and terminal client (Python)
 │   ├── instruments.py        Scientific records and computations of the first instrument
 │   ├── session.py            Authoritative session: selection, immutable results, workspaces
-│   ├── server.py             Loopback WebSocket transport for the session
-│   └── cli.py                Headless analysis and terminal access to a live session
+│   ├── server.py             WebSocket transport, bind policy, and saved shutdown
+│   └── cli.py                Headless analysis, service control, health probe, terminal access
 ├── godot/                    Godot project for the 2D/3D viewport, a client of the session
-├── scripts/                  Integration checks, including the Godot bridge check
+├── deploy/                   Deployment guides: native controller and container backend
+├── scripts/                  Integration checks and the native deployment controller
 ├── tests/                    Python test suites; conformance tests go under `tests/conformance/`
 └── docs/
     ├── ARCHITECTURE.md       Architecture and normative requirements
     ├── PROTOCOL.md           Wire-level protocol, owned by the prototype track
+    ├── INSTRUMENTS.md        Catalogue of integrated instruments with their specifications
     ├── quickstart.md         Running the prototype from source
     ├── coordination.md       Build coordination and integration sequence
     ├── DEVELOPMENT.md        This guide
     └── adr/                  Architecture Decision Records
 ```
 
-`recordings/` and `results/` hold local outputs and are ignored by git. Planned growth follows the same tree: `src/ciw/instruments.py` becomes the package `src/ciw/instruments/` when a second instrument lands; terminal panels go under `src/ciw/tui/`; protocol codecs for binary transport go under `src/ciw/protocol/`; reference instruments used by conformance tests go under `examples/`.
+`recordings/`, `results/`, and the native deployment's `.ciw/` data directory hold local outputs and are ignored by git. Planned growth follows the same tree: `src/ciw/instruments.py` becomes the package `src/ciw/instruments/` when a second instrument lands; terminal panels go under `src/ciw/tui/`; protocol codecs for binary transport go under `src/ciw/protocol/`; reference instruments used by conformance tests go under `examples/`.
 
 | Component | Directory |
 |---|---|
 | Record holder, in-process instrument API, operations | `src/ciw/instruments.py` → `src/ciw/instruments/` |
 | Selection sequencer, result ledger, persistence, workspace reopen | `src/ciw/session.py` |
-| Gateway (v1); Instrument Supervisor, reducer, recorder, journal (extensions) | `src/ciw/server.py` and new modules under `src/ciw/` |
-| Terminal client: CLI, command grammar, scripts, `assert` | `src/ciw/cli.py` |
+| Gateway, bind policy, saved shutdown (v1); Instrument Supervisor, reducer, recorder, journal (extensions) | `src/ciw/server.py` and new modules under `src/ciw/` |
+| Terminal client: CLI, service control (`serve`, `health`), headless instrument path, command grammar, scripts, `assert` | `src/ciw/cli.py` |
+| Headless instrument adapter (PLSR): commands, run bundles, runtime pin | `src/ciw/` (`plsr.py`, `plsr_engine.py`) |
 | Terminal panels, tiers, rasterizer, keybindings, layouts | `src/ciw/tui/` |
 | Frame descriptors, binary codecs, manifest schema, `ciw-proto-check` | `src/ciw/protocol/` |
 | Viewport client, scenes, smoke test, capture | `godot/` |
-| Godot bridge check, benchmark runners | `scripts/` |
+| Godot bridge check, container lifecycle and installed-package checks, native deployment controller (`workbench.ps1`), benchmark runners | `scripts/` |
 | Unit, integration, and conformance tests (one module per area, named by identifier) | `tests/`, `tests/conformance/` |
 | Reference instruments (a), (b), (c) with manifests and headless tests | `examples/` |
-| Wire specification, quickstart, decisions | `docs/` |
+| Wire specification, quickstart, instrument catalogue, PLSR operating guide, decisions | `docs/` |
+| Container backend image and Compose service | `Dockerfile`, `compose.yaml` |
+| Deployment guides (native controller, container backend) | `deploy/` |
+| Native deployment data directory (recordings, results, `workspace.json`, logs, `service.json`) | `.ciw/` (ignored by git) |
 
 ## 16. Quality attributes, budgets, and conformance
 
@@ -988,11 +1043,11 @@ Budgets are measured on a profile: 4 physical cores at 2.5 GHz or better, 16 GiB
 
 ### 16.2 Budgets
 
-`CIW-PERF-002` (v1 stated; benchmark M1) Cursor propagation from the service's `selection.changed` broadcast to the terminal client's next output line and to the viewport's next frame MUST be ≤ 50 ms at p95 and ≤ 120 ms at p99.9 on loopback with the reference panes.
+`CIW-PERF-002` (v1 stated; benchmark M1) Cursor propagation from the service's `selection.changed` broadcast to the terminal client's next output line and to the viewport's next frame MUST be ≤ 50 ms at p95 and ≤ 120 ms at p99.9 on loopback for the v1 event-line client and the viewport; for terminal panels rendered under `CIW-PERF-003` the p95 budget is one tick period plus the render budget (75 ms at the 20 Hz default) and the p99.9 budget 120 ms; measured with no stalled client; v1 does not meet it while a client is stalled (5.3).
 
 `CIW-PERF-003` (extension, M1) Panels MUST render on a tick capped at 20 Hz by default (5–30 Hz), MUST skip rather than queue when the previous render has not completed, MUST report skipped ticks, and MUST complete a four-pane render at reference conditions in ≤ 25 ms on the event loop.
 
-`CIW-PERF-004` (extension, M5) Ingest MUST sustain 1,000,000 scalar float64 samples per second across local subprocess instruments with recording on, using ≤ 30 % of one core for ingest and recording, for 10 minutes without credit starvation; live latency from an instrument's send to the reduced frame at a local client MUST be ≤ 150 ms at p95 under that load.
+`CIW-PERF-004` (extension, M5) Ingest MUST sustain 1,000,000 scalar float64 samples per second across local subprocess instruments with recording on, using ≤ 30 % of one core for ingest and recording, for 10 minutes without credit starvation. Load definition: four subprocess instruments at 250,000 samples/s each in frames of 4,096 samples (about 61 frames/s per instrument); smaller frames are outside the budget; the CPU share is the ingest and recorder threads' CPU time divided by wall time. Live latency from an instrument's send to the reduced frame at a local client MUST be ≤ 150 ms at p95 under that load.
 
 `CIW-PERF-005` (extension, M5) Resident memory MUST stay within `memory_budget_bytes` (default 2 GiB) plus 256 MiB of interpreter overhead for one hour under `CIW-PERF-004`; eviction order is mapped chunks least recently subscribed, then reducer cache, then unreferenced resources; unsealed ring data MUST never be evicted.
 
@@ -1008,12 +1063,14 @@ Budgets are measured on a profile: 4 physical cores at 2.5 GHz or better, 16 GiB
 
 `CIW-PERF-011` (v1) Every component MUST have a headless driver: the session in-process without a socket (`ciw analyze`, protocol tests), the gateway via a script client (`ciw send`), the viewport headless (`--headless --script res://tests/protocol_smoke.gd`) with a query mode reporting the records it shows (M4), and each reference instrument with headless reference tests.
 
+`CIW-PERF-013` (v1) The package MUST build as a wheel and the CLI MUST run from the installed wheel outside the checkout; the container backend MUST pass the lifecycle check (start, mutate, SIGTERM, restart, identities preserved) in CI.
+
 ### 16.3 Verification methods and the prototype column
 
 | Method | Meaning |
 |---|---|
 | unit | test under `tests/` (from M1 `tests/conformance/`, one module per area, test names carrying the identifier) |
-| integration | multi-process check: service plus clients, subprocess or remote instruments, headless scripts, the Godot bridge check |
+| integration | multi-process check: service plus clients, subprocess or remote instruments, headless scripts, the Godot bridge check, the container lifecycle check, and the installed-package check |
 | golden | raster comparison against stored text or PNG at fixed size and tier |
 | benchmark | run against the reference profile with a recorded baseline; CI tolerance 20 % |
 | inspection | manual review against a written checklist, recorded in the milestone report |
@@ -1026,64 +1083,69 @@ Budgets are measured on a profile: 4 physical cores at 2.5 GHz or better, 16 GiB
 |---|---|---|---|
 | CIW-DATA-001 | unit: `validate_run` rejects bad lengths, non-uniform time, non-finite values, wrong units; metadata omits arrays | M0 | satisfied |
 | CIW-DATA-002 | unit: mismatched evidence rejected before any write; digest scope equals the generator's | M0 | satisfied |
-| CIW-DATA-003 | unit: descriptor schema; estimate without form and derived without `derived_from` rejected; integration: estimate-derived labelled in both frontends | M3 | planned |
+| CIW-DATA-003 | unit: descriptor schema; `cursor_policy` defaults to `nearest`; derived without `derived_from` rejected (M1); estimate without form rejected (M3); integration: estimate-derived labelled in both frontends | M1 (descriptor), M3 (mandatory form) | planned |
 | CIW-DATA-004 | unit: cursor bounded by retained timestamps; interval end may equal duration | M0 | satisfied |
-| CIW-DATA-005 | unit: refusal without mapping; 60 s fit; raw timestamps unchanged; integration: two bases show `unmapped` | M5 | planned |
+| CIW-DATA-005 | unit: refusal without mapping; 60 s fit; raw timestamps unchanged; bound conversion and integer membership at a boundary sample; integration: two bases show `unmapped` | M5 | planned |
 | CIW-DATA-006 | unit: `time_order` and `sampling_grid`; equal timestamps preserved | M5 | planned |
-| CIW-DATA-007 | unit: no implicit resample path; σ per method; gap policy; integration: residual provenance | M5 | planned |
+| CIW-DATA-007 | unit: no implicit resample path; spectrum on irregular channel refused with `sampling_irregular`; σ per method; gap policy; integration: residual provenance | M5 | planned |
 | CIW-DATA-008 | unit: UCUM parse, dimension vector, angle and dB sub-dimensions, affine rule, `unknown` refusal, no silent scale conversion | M1 | partial (unit strings validated; no grammar) |
 | CIW-DATA-009 | unit: conversion of σ, interval, covariance; spectral unit derived; integration: declared-unit export equals stored | M1 | partial (spectral unit derived) |
-| CIW-DATA-010 | unit: each form; absent never zero; symmetry; sampled Cholesky; tangent-space quaternion covariance | M3 | planned |
-| CIW-DATA-011 | unit: frame declaration; overlay refusal; missing convention; gaps persisted | M4 | partial (frame names checked) |
+| CIW-DATA-010 | unit: each form; absent never zero; symmetry; sampled Cholesky; tangent-space quaternion covariance; companion naming per form; undeclared column rejected | M3 | planned |
+| CIW-DATA-011 | unit: coordinate-frame declaration; overlay refusal; missing convention; gaps persisted | M4 | partial (frame names checked) |
 | CIW-DATA-012 | unit: `sample_indices` increasing and in range; transform validity; integration: viewport cards equal `sample.get` | M0 | satisfied |
 | CIW-DATA-013 | unit: result fields; identities distinct; `not_verified` with null id; envelope v1.1 validation | M0 (v1), M1 (v1.1) | satisfied (v1) / planned (v1.1) |
 | CIW-DATA-014 | unit: results immutable; capture revision and interval; computed from retained samples; saved-result validation without execution | M0 | satisfied |
 | CIW-DATA-015 | unit: each payload type; reference with inline summary; unresolved reference does not fail | M1 | planned |
-| CIW-DATA-016 | unit: descriptor completeness; byte length equals dtype × shape; integration: subprocess and viewport round trip | M4 | planned |
+| CIW-DATA-016 | unit: descriptor completeness; byte length equals dtype × shape; integration: subprocess and viewport round trip | M1 (subprocess), M4 (viewport) | planned |
 | CIW-DATA-017 | unit: superseding leaves original intact; `t_valid`/`t_avail`; `as_of` selects availability | M3 | planned |
 | CIW-DATA-018 | unit: `propagation` declared; `σ-DROPPED` rendered | M3 | planned |
 | CIW-DATA-019 | unit: version refusal; provenance fields; integration: provenance queryable from journal | M0 (versions), M2 (journal) | satisfied (versions) / planned (journal) |
 | CIW-DATA-020 | unit: property test that reductions preserve extrema and σ extrema and equal raw reduction, including after supersede | M1 | planned |
+| CIW-DATA-021 | unit: `tests/test_plsr.py` domain refusals saved with exit 0; numerical refusal distinct from certificate violation; overflow retained as a refusal | M0 (headless bundles), M1 (session envelope `refused`) | satisfied (PLSR) / planned (session results) |
 | CIW-INST-001 | unit: envelope, error, and broadcast forms; snapshot on connect; integration: smoke correlates by `request_id` | M0 | satisfied |
 | CIW-INST-002 | unit: every command; malformed requests rejected atomically | M0 | satisfied |
-| CIW-INST-003 | unit: version rejection; unknown optional fields ignored (M1) | M0 | partial (rejection only) |
+| CIW-INST-003 | unit: unsupported major rejected; M1: `protocol_minor` reported, declared optional field ignored, undeclared field rejected, client ignores unknown optional fields | M0 (rejection), M1 (minor) | satisfied (rejection) / planned (minor) |
 | CIW-INST-004 | unit: API functions; validation on every call; periodogram normalization (Parseval, Nyquist bin, zero peak) | M0 | satisfied |
 | CIW-INST-005 | unit: manifest schema; refusal on invalid; hash in provenance | M1 | planned |
 | CIW-INST-006 | integration: no undeclared family offered | M1 | planned |
-| CIW-INST-007 | integration: `ciw-proto-check` drives every state; timeouts enforced; transitions journaled | M5 | planned |
-| CIW-INST-008 | integration: bulk never in control records; each family's required fields | M5 | planned |
-| CIW-INST-009 | unit: `seq_gap`; envelope precedes first frame | M5 | planned |
+| CIW-INST-007 | integration: `ciw-proto-check` drives every state; timeouts enforced; transitions journaled | M1 (batch), M5 (stream, cancel) | planned |
+| CIW-INST-008 | integration: bulk never in control records; each family's required fields | M1 (batch), M5 (stream, cancel) | planned |
+| CIW-INST-009 | unit: `seq_gap`; envelope precedes first frame | M1 | planned |
 | CIW-INST-010 | integration: credit exhaustion halts producer; recorder priority | M5 | planned |
 | CIW-INST-011 | integration: each overflow policy; withheld credit yields gaps; deterministic never drops | M5 | planned |
 | CIW-INST-012 | integration: cancel latency; forced termination; partial result status | M5 | planned |
-| CIW-INST-013 | unit: error record; integration: each class's action; NaN-aligned sample on numeric error; restart bound | M5 | planned |
+| CIW-INST-013 | unit: error record; integration: each class's action; NaN-aligned sample on numeric error; restart bound | M1 | planned |
 | CIW-INST-014 | integration: re-execution per reference instrument; random re-framing; digest equality | M1 (a), M3 (b), M4 (c) | planned |
 | CIW-INST-015 | integration: execution versus live scope; new `operation_id` | M3 | planned |
-| CIW-INST-016 | integration: stream and batch outputs; batch over interval records it | M5 | planned |
+| CIW-INST-016 | integration: stream and batch outputs; batch over interval records it | M1 (batch), M5 (stream, cancel) | planned |
 | CIW-INST-017 | unit: interval passed explicitly; result captures `selection_revision`; no selection access in instrument code | M0 | satisfied |
 | CIW-INST-018 | integration: same suite over inprocess, subprocess, `ssh://localhost`; shim wraps in-process instrument | M1 (subprocess), M5 (remote) | planned |
 | CIW-INST-019 | unit: version negotiation; each boundary invariant | M1 | planned |
-| CIW-INST-020 | inspection: PROTOCOL.md covers every INST requirement; integration: harness passes on the SDK echo instrument | M1 | partial (PROTOCOL.md v1 exists; no harness) |
+| CIW-INST-020 | inspection: PROTOCOL.md covers every INST requirement; integration: harness passes attach, run, detach on the SDK echo instrument (M1); credit exhaustion and cancel (M5) | M1, M5 | partial (PROTOCOL.md v1 exists; no harness) |
+| CIW-INST-021 | unit: `tests/test_plsr.py` self-contained bundle; inspect without an engine call; replay new ids with `replay_of` and digest comparison; tampered bundle rejected before write | M0 | satisfied (optional extra; CI `scripts/check_plsr_installed.py`) |
+| CIW-INST-022 | unit: `tests/test_plsr_engine.py` pin rejects changed, missing, and extra source; runtime identity retained in the bundle | M0 | satisfied |
 | CIW-SYNC-001 | unit: only the service mutates; integration: no divergent copy after conflict | M0 | satisfied |
 | CIW-SYNC-002 | unit: selection fields; initial selection | M0 | satisfied |
-| CIW-SYNC-003 | unit: stale revision rejected without mutation; increments once; booleans rejected | M0 | satisfied |
+| CIW-SYNC-003 | unit: stale revision rejected without mutation; increments once; booleans rejected; field-less update rejected | M0 | satisfied |
 | CIW-SYNC-004 | integration: smoke sees the broadcast from a second client; snapshot on connect | M0 | satisfied |
 | CIW-SYNC-005 | unit: cursor update leaves interval and results unchanged; integration: interval unchanged during playback | M0 | satisfied |
 | CIW-SYNC-006 | integration: coalescing, one outstanding, obsolete response discarded, STALE, reconnect at same revision | M0 | satisfied (viewport) / partial (CLI is short-lived) |
 | CIW-SYNC-007 | unit: nearest sample, earlier on tie, boundaries; `at_or_before` (M5) | M0, M5 | satisfied (nearest) |
 | CIW-SYNC-008 | unit: contiguous seq; integration: gap forces resync; coalescing delivers final | M2 | planned |
-| CIW-SYNC-009 | unit: field set and defaults; changes revisioned | M1 (†), M4, M5 | planned (reserved `{}`) |
+| CIW-SYNC-009 | unit: field set and defaults; `view.update` revisioned under the selection lock; `view.changed` broadcast; snapshot carries view settings; `focus` not broadcast | M1 (†), M4, M5 | planned (reserved `{}`) |
 | CIW-SYNC-010 | unit + golden: panes render from injected snapshot only; frame attributable | M1 | planned |
 | CIW-SYNC-011 | unit: arrival leaves revision unchanged with follow off; ≤ 1 update per tick with follow on | M5 | planned |
 | CIW-SYNC-012 | unit: quantization from area; state untouched; two widths show the same records | M1 | planned |
 | CIW-SYNC-013 | golden: coincident edges; same cursor time in every header | M1 | planned |
 | CIW-SYNC-014 | golden: unit change in all panes in one revision | M1 | planned |
-| CIW-SYNC-015 | unit: spectrum from exact interval; explicit interval does not mutate selection; integration: spectrogram axis and hop (M5) | M0, M5 | satisfied (interval rule) |
+| CIW-SYNC-015 | unit: spectrum from exact interval; explicit interval does not mutate selection; integration: spectrogram axis; two pane widths yield the same `result_id` (M5) | M0, M5 | satisfied (interval rule) |
 | CIW-SYNC-016 | unit: result shows revision and interval; stale marker; no auto-recompute | M0 (identity), M1 (marker) | satisfied (identity) / planned (marker) |
 | CIW-SYNC-017 | benchmark: with CIW-PERF-002 | M1 | planned |
 | CIW-SYNC-018 | integration: camera in view settings; clip-space agreement within 1e-6 | M4 | planned |
 | CIW-SYNC-019 | integration: link and unlink axes; one revision per group change | M5 | planned |
 | CIW-SYNC-020 | integration: two time bases, one cursor each | M5 | planned |
+| CIW-SYNC-021 | integration: a client that stops reading does not delay another client's accepted update beyond one tick; overflow and 2 s stall disconnect only that client | M1 | planned (v1 awaits delivery under the lock) |
+| CIW-SYNC-022 | unit: duplicate `channel_id` refused with `channel_conflict`; bare ids resolve for run and result channels | M1 | planned |
 | CIW-VIEW-001 | integration: no undeclared panel offered | M1 | planned |
 | CIW-VIEW-002 | integration: viewport cards equal `sample.get`; code inspection for client computation | M0 | satisfied |
 | CIW-VIEW-003 | golden: styling per family; uncertainty rendered | M1, M3 | planned |
@@ -1117,7 +1179,8 @@ Budgets are measured on a profile: 4 physical cores at 2.5 GHz or better, 16 GiB
 | CIW-SESS-009 | integration: `verify` detects an injected mismatch with first differing row; drift report; exit codes; new session references original | M2, M3 | planned |
 | CIW-SESS-010 | integration: each format round-trips; sidecar present; declared-unit export exact | M0 (json), M2, M4 | satisfied (json) |
 | CIW-SESS-011 | unit: NaN and infinity rejected at write and read | M0 | satisfied |
-| CIW-OPS-001 | integration: each subcommand; `send` exit codes; `inspect` executes nothing | M0 | satisfied |
+| CIW-SESS-012 | unit + integration: `tests/test_deployment.py` (SIGTERM and SIGINT save; restart preserves exact JSON; resume without computation; corrupt workspace fails); `scripts/check_container.py` (identities after SIGTERM and restart without explicit save) | M0 | satisfied |
+| CIW-OPS-001 | integration: each subcommand; `send` exit codes; `inspect` executes nothing; `health` bounded at 3 s and read-only; `--bind` accepts only `127.0.0.1` and `0.0.0.0` | M0 | satisfied |
 | CIW-OPS-002 | unit: grammar cases; each verb mapped to a loop step | M1 | planned |
 | CIW-OPS-003 | unit: result schema; integration: JSON lines headless | M0 (envelope), M1 | satisfied (envelope) |
 | CIW-OPS-004 | unit: concurrent submission ordering | M2 | planned |
@@ -1126,18 +1189,20 @@ Budgets are measured on a profile: 4 physical cores at 2.5 GHz or better, 16 GiB
 | CIW-OPS-007 | unit: bind table resolution; integration: bindings persisted; mouse maps to commands | M1 | planned |
 | CIW-OPS-008 | unit: layout round trip; reflow; status line present | M1 | planned |
 | CIW-OPS-009 | integration: script equals interactive; abort and continue; no TTY | M1 | planned |
-| CIW-OPS-010 | integration: exit codes in a no-TTY CI job | M0 (`send`), M1 | partial |
+| CIW-OPS-010 | integration: exit codes in a no-TTY CI job (`send` 0/2; `plsr` 0/2/3 in `tests/test_plsr.py`) | M0 (`send`, `plsr`), M1 | partial |
 | CIW-OPS-011 | unit: each statistic; `coverage --sigma`; expression form; failure report with values | M1 | planned |
 | CIW-OPS-012 | integration: detach during operation; viewport close leaves service | M0 | satisfied |
+| CIW-OPS-013 | integration: `tests/test_deployment.py` health over a live session, bounded failure on a silent server, invalid snapshots rejected, no result created | M0 | satisfied |
 | CIW-EXT-001 | integration: reference instruments added with zero service diff; discovery order | M1 | planned |
 | CIW-EXT-002 | integration: phase-plot representation plugin | M3 | planned |
 | CIW-EXT-003 | integration: gltf export as plugin | M4 | planned |
 | CIW-EXT-004 | unit: resolver interface; integration: stub resolver replaces file persistence without merging identities | M2 | planned |
 | CIW-EXT-005 | integration: headless reference tests, same-records, reopen versus recompute per instrument | M1, M3, M4 | partial (demo instrument only) |
 | CIW-EXT-006 | inspection: diff report per milestone | M1, M3, M4 | planned |
-| CIW-EXT-007 | inspection: Sections 6–12 name no language or toolkit; extensions declare majors | M0 | satisfied |
+| CIW-EXT-007 | inspection: every contract in Sections 6-12 other than CIW-INST-004 and the `inprocess` binding row depends on no language runtime, toolkit, or renderer (byte formats permitted); extensions declare majors | M0 | satisfied |
+| CIW-EXT-008 | inspection: no numerical code in the operation runner; integration: Welch registered without service change | M1 (rule), M5 (Welch) | partial (v1 computations live in `ciw.instruments`; dispatch is hard-coded) |
 | CIW-PERF-001 | inspection: limits stated in PROTOCOL.md, quickstart, and this document | M0 | satisfied |
-| CIW-PERF-002 | benchmark: broadcast to output line and viewport frame | M1 (terminal), M4 (viewport) | planned |
+| CIW-PERF-002 | benchmark: broadcast to output line (event lines, panels) and viewport frame | M1 (terminal), M4 (viewport) | planned |
 | CIW-PERF-003 | benchmark: tick cap, skip not queue, four-pane render time | M1 | planned |
 | CIW-PERF-004 | benchmark: ingest and live latency | M5 | planned |
 | CIW-PERF-005 | benchmark: RSS sampling; eviction order | M5 | planned |
@@ -1147,6 +1212,8 @@ Budgets are measured on a profile: 4 physical cores at 2.5 GHz or better, 16 GiB
 | CIW-PERF-009 | integration: fault injection under load | M6 | planned |
 | CIW-PERF-010 | integration + benchmark: `host` channels and `ciw stats` | M5 | planned |
 | CIW-PERF-011 | integration: headless drivers for session, gateway, viewport, reference instruments | M0, M4 (viewport query) | satisfied (v1 drivers) |
+| CIW-PERF-012 | unit: bind choices (`tests/test_deployment.py`); integration: `scripts/check_container.py` fresh Compose project on a temporary port and volume | M0 | satisfied |
+| CIW-PERF-013 | integration: `scripts/check_installed.py` runs the CLI from the built wheel; CI builds the `ciw-python-wheel` artifact, runs the container lifecycle on Linux and the native controller lifecycle (`scripts/check_local.ps1`) on Windows | M0 | satisfied |
 
 ## 17. Risks and open questions
 
@@ -1172,7 +1239,7 @@ Budgets are measured on a profile: 4 physical cores at 2.5 GHz or better, 16 GiB
 ### 18.1 Readiness stages
 
 - **Standalone-ready**: the instrument passes its own headless reference tests with declared tolerances and ships a valid manifest; no workbench involved.
-- **Workbench-ready**: the instrument attaches through the contract with an adapter only; both frontends identify the same records; reopening is distinguished from recomputing; its conformance rows pass; the reusability report shows adapter changes above service changes.
+- **Workbench-ready**: the instrument attaches through the contract with an adapter only; both frontends identify the same records; reopening is distinguished from recomputing; its conformance rows pass; the reusability report shows adapter changes above service changes. An instrument is recorded as integrated in [`docs/INSTRUMENTS.md`](INSTRUMENTS.md) only after its workbench entry point, saved evidence, and replay path have been exercised together on a representative input; upstream tests or a published schema alone establish standalone readiness, not workbench integration.
 - **Deployment-ready**: a stated use runs in its declared service class with measured workloads, precision, throughput, recovery, and device access meeting its budgets; the persistence adapter is in place; environments and the optional viewport are packaged.
 
 ### 18.2 Milestones
@@ -1180,10 +1247,10 @@ Budgets are measured on a profile: 4 physical cores at 2.5 GHz or better, 16 GiB
 | Milestone | Delivers | Demonstrable |
 |---|---|---|
 | **M0 — Prototype v0.1** (done) | Synthetic oscillator instrument; headless statistics and periodogram with immutable results and identities; session service over loopback WebSocket; `ciw` CLI; Godot viewport with phase portrait, energy surface, shared cursor, numerical cards; workspace save and reopen; Python matrix and Godot bridge check in CI | Two clients change the shared selection; the same retained sample is inspected in both; the interval survives cursor moves; the viewport reconnects without stopping the service; a workspace reopens without recomputing. |
-| **M1 — Existing-instrument adapter (reference instrument a)** | Manifest and schema; subprocess binding and SDK shim; capability-driven representations; envelope v1.1 with `result.created`; unit grammar; Textual numerical and temporal panels at tiers 0–2; command grammar, `help --json`, keybindings, layouts, scripts, `assert`; reductions; `ciw-proto-check` | An existing NumPy time-series instrument attaches behind an adapter with its calculation and tolerances preserved; over SSH the cursor, interval, and units move both panels in step; the reusability report shows adapter changes above service changes. |
+| **M1 — Existing-instrument adapter (reference instrument a)** | Delivered by the PLSR headless adapter (13.8): existing-instrument adapter with preserved engine and status semantics, runtime pin in provenance, separate identities, inspect versus replay. Remaining: manifest and schema; subprocess binding in batch mode with the lifecycle, message families, ordering, error record, and binary frames with descriptor on the bulk plane; SDK shim; capability-driven representations; session attachment of run bundles; envelope v1.1 with `result.created`; unit grammar; Textual numerical and temporal panels at tiers 0–2; command grammar, `help --json`, keybindings, layouts, scripts, `assert`; reductions; `ciw-proto-check` (attach, run, detach) | Done: a pinned PLSR model and explicit sample evaluate to a stored bundle; `NUMERICAL_INCONCLUSIVE` is stored as a numerical refusal with exit 0 and `not_verified`; `replay` creates new identities and compares digests. Remaining: an existing NumPy time-series instrument attaches behind an adapter with its calculation and tolerances preserved; over SSH the cursor, interval, and units move both panels in step; the reusability report shows adapter changes above service changes. |
 | **M2 — Persistence adapter and journal** | Session directory and journal; total command order; resolver adapter mapping the identities to an external infrastructure without merging; journal replay; `verify` for v1 operations; csv, arrow, npz exports with sidecars | A session reopens by replaying its journal; the same investigation opens through the stub resolver with identities intact; `verify` reproduces every result and detects an injected mismatch. |
-| **M3 — State-estimation instrument (reference instrument b)** | Uncertainty forms and rendering; superseding results, `t_valid`/`t_avail`, `as_of`; residual and comparison views; `xy` plots; execution versus live parameters; `coverage --sigma` | The attitude EKF runs as a subprocess; estimates display dashed with bands and `E`; a fixed-lag revision is visible and scrubbable with `as_of`; two executions with different noise are compared; `verify` matches within tolerance. |
-| **M4 — Spatial instrument (reference instrument c)** | Binary frames with descriptor; viewport resources and updates; coordinate-frame tree; shared camera; software rasterizer and graphics tier; `reduced_of` with `reference`; gltf and png exports | A field reconstruction attaches; a pick in the viewport moves the terminal readouts; a cursor move in the terminal moves the viewport within budget; raster and viewport agree in clip space; closing the viewport leaves the in-terminal raster. |
+| **M3 — State-estimation instrument (reference instrument b)** | Uncertainty forms and rendering; superseding results, `t_valid`/`t_avail`, `as_of`; residual and comparison views; `xy` plots; execution versus live parameters; `coverage --sigma` | The attitude EKF runs as a subprocess in batch mode over the recorded run; estimates display dashed with bands and `E`; a fixed-lag revision is visible and scrubbable with `as_of`; two executions with different noise are compared; `verify` matches within tolerance. |
+| **M4 — Spatial instrument (reference instrument c)** | Binary frames with descriptor on the client link; viewport resources and updates; coordinate-frame tree; shared camera; software rasterizer and graphics tier; `reduced_of` with `reference`; gltf and png exports | A field reconstruction attaches; a pick in the viewport moves the terminal readouts; a cursor move in the terminal moves the viewport within budget; raster and viewport agree in clip space; closing the viewport leaves the in-terminal raster. |
 | **M5 — Spectral and temporal expansion** | Welch and spectrogram operations; frequency cursor and link groups; streaming with separate acquisition, publish, and render rates; credits, cancellation, heartbeats, gaps; time bases and clock sync; remote bindings; bounded history; `host` channels | A live source streams at 1 M samples/s with recording on; a spectrogram aligns under the trace; a cancelled analysis leaves a `cancelled` result; a stale result is marked and never silently recomputed; a remote instrument feeds the same session. |
 | **M6 — Deployment for a stated use** | `observed` adapter; packaging of environments and viewport; measured target workloads; fault-injection suite; native-path evaluation against the M5 benchmarks; decision records for open questions | A stated deployment meets its service-class budgets; recovery and device-access measurements are published; the native-path decision is recorded. |
 
@@ -1193,20 +1260,20 @@ Each milestone closes only when its conformance rows pass and, from M1, when `CI
 
 | # | Decision | Rationale |
 |---|---|---|
-| D1 | Topology: an authoritative session service with the terminal and viewport as independent clients; the terminal works alone; closing the viewport never stops the service. | The v1 baseline and the Jupyter positioning; a rendering stall never delays sequencing. |
+| D1 | Topology: an authoritative session service with the terminal and viewport as independent clients; the terminal works alone; closing the viewport never stops the service. | The v1 baseline and the Jupyter positioning; a client crash never delays sequencing and a stalled client is bounded (CIW-SYNC-021). |
 | D2 | Client transport: loopback WebSocket text JSON without authentication in v1; Unix socket, TCP with token or TLS, and SSH forwarding at M5. | Both clients already speak it; Godot lacks Unix sockets; remote use is tunnelled until authentication exists. |
-| D3 | Bulk encoding: JSON only in v1; from M4 raw NumPy buffers with an explicit descriptor as default, Arrow IPC for tables and export. | The viewport has no Arrow reader; Arrow keeps its value where schema evolution and interchange matter. |
+| D3 | Bulk encoding: JSON only on the client link in v1; from M1 raw NumPy buffers with an explicit descriptor on the instrument bulk plane, from M4 on the client link; Arrow IPC for tables and export. | The viewport has no Arrow reader; Arrow keeps its value where schema evolution and interchange matter. |
 | D4 | Manifest format: JSON `instrument.json`. | One serialization across protocol, workspace, and manifest; embeds in `hello`. |
 | D5 | Kinds `{observation, estimate, derived, reference}`; any producer may emit `derived`, always with `derived_from`. | An innovation is neither measured nor a state; labelling it `observation` is wrong. |
-| D6 | Spectra are service operations producing immutable results; never computed in a view or as a graph instrument. | Clients own no calculation; results carry identities; v1 already works this way. |
+| D6 | Spectra are operations: numerical code supplied by instrument modules, sequenced, wrapped in the envelope, and persisted by the service's Operation runner as immutable results; never computed in a view. | Clients own no calculation; results carry identities; v1 already works this way. |
 | D7 | Cursor separate from interval; cursor moves never recompute; cursor-anchored spectra only as an explicit command creating a new result. | v1 invariant; results stay attributable to a revision. |
-| D8 | Intervals: half-open `[start, end)` float seconds (v1 as built); `int64` ns bases at M5; their wire form is left to `docs/PROTOCOL.md`. | Matches code and tests; nanosecond bases matter only with several clocks. |
+| D8 | Intervals: half-open `[start, end)` float seconds on the wire (v1 as built, kept at M5); `int64` ns timestamps at M5 with the bound conversion and integer membership rule of `CIW-DATA-005`; the wire form of ns fields is left to `docs/PROTOCOL.md`. | Matches code and tests; nanosecond bases matter only with several clocks. |
 | D9 | Revisions: never mutate a result; a superseding result names what it replaces; `t_valid`/`t_avail`; `as_of` in view settings. | Immutable results are a v1 invariant; availability time is what shows estimator latency. |
 | D10 | Camera: viewport-local in v1; shared in view settings from M4 with local prediction. | Needed for clip-space agreement; v1 states camera affects presentation only. |
 | D11 | Covariance: full row-major `[d, d]` default; `packed_lower` and `block_diagonal` declared; quaternion states tangent-space `[3, 3]`. | Simplest in NumPy and GDScript; a 4×4 quaternion covariance is singular. |
 | D12 | Credits: 64 frames / 64 MiB per instrument stream; 8 frames / 8 MiB per client subscription. | Local shared memory tolerates large windows; clients are bounded to keep backlog small. |
 | D13 | Timeouts: hello 5 s, ready 30 s, drain 30 s, cancel within 2 × heartbeat (2 s) with a 200 ms target, heartbeat 1 s, failure after 3 misses. | One set derived from the heartbeat. |
-| D14 | Render cadence 20 Hz default (5–30 Hz); cursor propagation ≤ 50 ms p95; 16 ms figures belong to the native path. | Credible for the Python arrangement. |
+| D14 | Render cadence 20 Hz default (5–30 Hz); cursor propagation ≤ 50 ms p95 for event lines and the viewport, one tick plus 25 ms for panels; 16 ms figures belong to the native path. | Credible for the Python arrangement. |
 | D15 | Subprocess binding: length-prefixed JSON on stdio, bulk in shared memory or inline; `ssh://host//path/exec` reuses it with stdio forwarded. | One binding for local and remote spawn without a daemon. |
 | D16 | Restart: `manual` default; `auto` bounded by `restart.max` (3); every restart is a new execution. | Never hides a failure. |
 | D17 | Determinism: `deterministic` (optional `tolerance`, bitwise otherwise), `seeded`, `nondeterministic`; frame-boundary invariance for the first two. | Matches the prototype's language; tolerance keeps claims honest. |
@@ -1231,6 +1298,7 @@ Decision records:
 | Project name and definition | [ADR-0001](adr/0001-project-name-and-definition.md) |
 | Positioning as a foundational instrumentation runtime; contract-first rule; reusability target | [ADR-0002](adr/0002-foundational-runtime-positioning.md) |
 | Reference implementation arrangement (Python/NumPy engines, terminal frontend, Godot viewport) and the native alternative | [ADR-0003](adr/0003-reference-implementation-arrangement.md) |
+| PLSR integrated through a bounded headless terminal adapter | [ADR-0004](adr/0004-plsr-terminal-adapter.md) |
 
 ## 20. Related documents
 
@@ -1238,4 +1306,8 @@ Decision records:
 - [`docs/PROTOCOL.md`](PROTOCOL.md) — wire-level protocol for version 1: exact encodings, schemas, handshake; must satisfy Sections 6–9.
 - [`docs/quickstart.md`](quickstart.md) — running the prototype from source.
 - [`docs/DEVELOPMENT.md`](DEVELOPMENT.md) — development guide.
+- [`docs/INSTRUMENTS.md`](INSTRUMENTS.md) — catalogue of integrated instruments: entry point, commands, input and output conventions, evidence and replay, verification state, limits.
+- [`docs/PLSR.md`](PLSR.md) — the PLSR headless terminal adapter: commands, run bundle, digests, exit codes.
+- [`deploy/README.md`](../deploy/README.md) — deployment paths: native controller and container backend.
+- [`deploy/CONTAINER.md`](../deploy/CONTAINER.md) — container backend: Compose service, volume, stop and resume, validation status.
 - [`docs/adr/README.md`](adr/README.md) — decision records index.
