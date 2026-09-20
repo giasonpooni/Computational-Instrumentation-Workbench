@@ -43,13 +43,16 @@ The architecture document maps its components to these directories.
 ├── README.md
 ├── AGENTS.md                 Instructions for automated contributors
 ├── pyproject.toml            Python package metadata; installs the `ciw` command
+├── .github/workflows/        Continuous integration: Python matrix, packaging, container, Godot
 ├── compose.yaml              Container backend definition for Docker Compose
 ├── Dockerfile                Container image for the backend service
 ├── src/ciw/                  Runtime service, instruments, and terminal client (Python)
 │   ├── instruments.py        Scientific records and computations of the first instrument
 │   ├── session.py            Authoritative session: selection, immutable results, workspaces
 │   ├── server.py             WebSocket transport, bind policy, and saved shutdown
-│   └── cli.py                Headless analysis, service control, health probe, terminal access
+│   ├── cli.py                Headless analysis, service control, health probe, terminal access
+│   ├── plsr.py               Portable PLSR run bundles: evaluate, inspect, replay
+│   └── plsr_engine.py        Source-pinned bridge to the optional external PLSR runtime
 ├── godot/                    Godot project for the 2D/3D viewport, a client of the session
 ├── deploy/                   Deployment guides: native controller and container backend
 ├── examples/                 Reference inputs for integrated instruments, such as `examples/plsr/`
@@ -59,6 +62,7 @@ The architecture document maps its components to these directories.
     ├── ARCHITECTURE.md       Architecture and normative requirements
     ├── PROTOCOL.md           Wire-level protocol specification
     ├── INSTRUMENTS.md        Catalogue of integrated instruments with their specifications
+    ├── PLSR.md               The PLSR terminal instrument: commands, bundle, digests, limits
     ├── quickstart.md         Running the prototype from source
     ├── coordination.md       Build coordination and integration sequence
     └── DEVELOPMENT.md        This guide
