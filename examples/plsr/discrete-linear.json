@@ -1,0 +1,76 @@
+{
+  "artifact_schema": "model-artifact-v1",
+  "model_id": "plsr-example-discrete-linear",
+  "model_version": "1",
+  "state": {
+    "definition": "Synthetic ordered state x=(x1,x2); both coordinates are dimensionless, with equilibrium x=0.",
+    "coordinates": [
+      {
+        "name": "x1",
+        "unit": "1"
+      },
+      {
+        "name": "x2",
+        "unit": "1"
+      }
+    ]
+  },
+  "time": {
+    "convention": "discrete",
+    "sample_period_s": 0.01
+  },
+  "plant": {
+    "kind": "linear",
+    "A": [
+      [
+        0.8,
+        0.0
+      ],
+      [
+        0.0,
+        0.7
+      ]
+    ]
+  },
+  "certificate": {
+    "kind": "quadratic",
+    "P": [
+      [
+        1.0,
+        0.0
+      ],
+      [
+        0.0,
+        1.0
+      ]
+    ]
+  },
+  "policy": {
+    "required_margin": 0.1,
+    "level": 4.0,
+    "margin_derivation": {
+      "method": "fixture-demonstration-threshold",
+      "description": "Fixed demonstration threshold 0.1 in declared coordinates; no physical uncertainty analysis.",
+      "evidence_digest": null,
+      "quantity": "negative-largest-eigenvalue-of-decrease-matrix"
+    },
+    "numerical_policy": "float64-decrease-v1",
+    "runtime_status_schema": "runtime-status-v1",
+    "claim_codes_schema": "claim-codes-v1"
+  },
+  "estimator": {
+    "identity": "caller-supplied-synthetic-state",
+    "version": "1",
+    "configuration_digest": "660efd125783ba8361f59a7e2c4d0f6aa9b04d7e84bcb76011bd8a101f792bd0",
+    "state_compatibility": "The caller supplies x1 then x2 in dimensionless units; no sensor, calibration, or physical estimator is represented."
+  },
+  "provenance": {
+    "producer": "plsr-synthetic-example",
+    "producer_version": "1",
+    "model_data_digest": "0a487771ce5360d658a0be3ea64a439f3d0a2544bd308de1f33a62cd4d6d7565",
+    "construction_report_digest": "43a529215a492853b337c905bcebd66aab6a5f4e2a2668364d91635c80075e17"
+  },
+  "claim_scope": "computational-integrity-only",
+  "may_authorize": false,
+  "artifact_digest": "c86e2e761cfbebbe25604d8c7bbb9177e6dc4ed89c841a264032844159a8dc11"
+}

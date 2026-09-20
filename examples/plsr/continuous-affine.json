@@ -1,0 +1,122 @@
+{
+  "artifact_schema": "model-artifact-v1",
+  "model_id": "plsr-example-continuous-affine",
+  "model_version": "1",
+  "state": {
+    "definition": "Synthetic ordered state x=(x1,x2); both coordinates are dimensionless, with equilibrium x=0.",
+    "coordinates": [
+      {
+        "name": "x1",
+        "unit": "1"
+      },
+      {
+        "name": "x2",
+        "unit": "1"
+      }
+    ]
+  },
+  "time": {
+    "convention": "continuous",
+    "sample_period_s": null
+  },
+  "plant": {
+    "kind": "affine",
+    "A0": [
+      [
+        -2.0,
+        0.0
+      ],
+      [
+        0.0,
+        -3.0
+      ]
+    ],
+    "terms": [
+      [
+        [
+          0.25,
+          0.0
+        ],
+        [
+          0.0,
+          0.5
+        ]
+      ]
+    ],
+    "parameters": [
+      {
+        "name": "theta",
+        "unit": "1"
+      }
+    ],
+    "parameter_box": {
+      "lower": [
+        -1.0
+      ],
+      "upper": [
+        1.0
+      ]
+    },
+    "rate_box": {
+      "lower": [
+        -0.2
+      ],
+      "upper": [
+        0.2
+      ]
+    }
+  },
+  "certificate": {
+    "kind": "affine",
+    "P0": [
+      [
+        1.0,
+        0.0
+      ],
+      [
+        0.0,
+        1.0
+      ]
+    ],
+    "terms": [
+      [
+        [
+          0.05,
+          0.0
+        ],
+        [
+          0.0,
+          0.05
+        ]
+      ]
+    ]
+  },
+  "policy": {
+    "required_margin": 0.1,
+    "level": 4.0,
+    "margin_derivation": {
+      "method": "fixture-demonstration-threshold",
+      "description": "Fixed demonstration threshold 0.1 in declared coordinates; no physical uncertainty analysis.",
+      "evidence_digest": null,
+      "quantity": "negative-largest-eigenvalue-of-decrease-matrix"
+    },
+    "numerical_policy": "float64-decrease-v1",
+    "runtime_status_schema": "runtime-status-v1",
+    "claim_codes_schema": "claim-codes-v1"
+  },
+  "estimator": {
+    "identity": "caller-supplied-synthetic-state",
+    "version": "1",
+    "configuration_digest": "660efd125783ba8361f59a7e2c4d0f6aa9b04d7e84bcb76011bd8a101f792bd0",
+    "state_compatibility": "The caller supplies x1 then x2 in dimensionless units; no sensor, calibration, or physical estimator is represented."
+  },
+  "provenance": {
+    "producer": "plsr-synthetic-example",
+    "producer_version": "1",
+    "model_data_digest": "db912aca3109a3dc5fa17fca033c448b0c31788b81a66d49c34eb96478e1149e",
+    "construction_report_digest": "e7e5e90d8f3f2cbcccfd029806aff091f5ff890242b1db8cd43dd90d30f49d63"
+  },
+  "claim_scope": "computational-integrity-only",
+  "may_authorize": false,
+  "artifact_digest": "46254ea6f964076dab2f944177e06eff920c3d1a6c07fc5cc92f5358ebe11efd"
+}

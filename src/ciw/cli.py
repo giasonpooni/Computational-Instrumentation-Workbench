@@ -148,6 +148,20 @@ def parser() -> argparse.ArgumentParser:
     watch.add_argument("--url", default="ws://127.0.0.1:8765")
     inspect = commands.add_parser("inspect", help="Inspect a saved result/workspace without executing it")
     inspect.add_argument("path", type=Path)
+    plsr = commands.add_parser("plsr", help="Import, evaluate, inspect and replay pinned Lyapunov artifacts")
+    actions = plsr.add_subparsers(dest="plsr_command", required=True)
+    import_model = actions.add_parser("import", help="Validate and retain a sealed model artifact")
+    import_model.add_argument("model", type=Path)
+    import_model.add_argument("--output", type=Path, required=True)
+    evaluate = actions.add_parser("evaluate", help="Evaluate explicit JSON sample inputs and save evidence")
+    evaluate.add_argument("--model", type=Path, required=True)
+    evaluate.add_argument("--sample", type=Path, required=True)
+    evaluate.add_argument("--output-dir", type=Path, required=True)
+    inspect_plsr = actions.add_parser("inspect", help="Validate a saved PLSR run without reevaluating it")
+    inspect_plsr.add_argument("path", type=Path)
+    replay = actions.add_parser("replay", help="Reevaluate saved inputs; retain new evidence and comparison")
+    replay.add_argument("path", type=Path)
+    replay.add_argument("--output-dir", type=Path, required=True)
     return root
 
 
@@ -189,6 +203,20 @@ def main(argv: list[str] | None = None) -> int:
             asyncio.run(watch_remote(args.url))
         elif args.command == "inspect":
             print_json(read_json(args.path))
+        elif args.command == "plsr":
+            # The optional engine is loaded only through this terminal boundary.
+            from .plsr import evaluate_run, import_model, inspect_run, replay_run
+            if args.plsr_command == "import":
+                result = import_model(args.model, args.output)
+            elif args.plsr_command == "evaluate":
+                result = evaluate_run(args.model, args.sample, args.output_dir)
+            elif args.plsr_command == "inspect":
+                result = inspect_run(args.path)
+            else:
+                result = replay_run(args.path, args.output_dir)
+            print_json(result)
+            if args.plsr_command == "replay" and not result["bundle"]["replay_of"]["record_digest_matches"]:
+                return 3
         return 0
     except KeyboardInterrupt:
         return 0

@@ -11,6 +11,7 @@ Each ADR records one decision: the context that made it necessary, the decision 
 | [0001](0001-project-name-and-definition.md) | Project name and definition | Accepted |
 | [0002](0002-foundational-runtime-positioning.md) | Position the workbench as a foundational instrumentation runtime | Accepted |
 | [0003](0003-reference-implementation-arrangement.md) | Reference implementation arrangement | Accepted |
+| [0004](0004-plsr-terminal-adapter.md) | Integrate PLSR through a bounded terminal adapter | Accepted |
 
 ## Adding an ADR
 

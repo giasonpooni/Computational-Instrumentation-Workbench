@@ -1,0 +1,27 @@
+{
+  "repository": "https://github.com/giasonpooni/Parameterized-Lyapunov-Stability-Runtime",
+  "commit": "19ea6967060166ba09db6cd4563bd87bd6b3d196",
+  "package_version": "0.1.0rc1",
+  "files": {
+    "__init__.py": "c0d6030af61ea074abd3eca7a92bd96a7e69fbe50e4bf85c22ce593f9701c0ce",
+    "benchmarks.py": "5b11cb2aec0e9c2169572b79fe6426d7ca98cbd2a0d6801e270598627bc6caf5",
+    "certificates.py": "c92bdc3fe617b53bdf2c13e970f5aa3061c108961c1cd218e98b5b27085f4a40",
+    "charts.py": "589c33fb78eb0d00c2a90da40baee9a3718b6381f52978a6390d442fd3ff57de",
+    "checks.py": "eca0b6644e85b58d44bf13f95757d4b054f40173d1e0d1e65a443866dbded965",
+    "claims.py": "75975df703b6e7d8e1bb4011f4b9a3cb04e6e15747bd98b78ae45f9e5d041402",
+    "constitution.py": "b378b0c178d9c9681adbe03bb4efbe001d0973ace68de5689f3efa5a98029bb7",
+    "discrete_guest.py": "5161cb8131c891309edfdd7638525332c7e19d4c28710671f99d9d2e4fa6d9cc",
+    "equation.py": "b74aeaec74b810977328d0e090c06ba4c5ad0f3255b43c11855051326eb8a0a7",
+    "host_callback.py": "7aad9afb77debcd8fb0061a1b098cb6a5cae32187a5de99605f0c9779d2e5ef0",
+    "linalg.py": "485544b229daa1f63691f604a320297d170ae33199b7c337f2c811c4e791b814",
+    "model_artifact.py": "0c430e4cd0534029596679e3427491a63e0a2ba2ba32d9fcc78cf19fe669bc7c",
+    "plants.py": "0161f54d8b2cce386f90fc8b2ede008b19614659371510c1b4c973a6c72083cb",
+    "py.typed": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855",
+    "record.py": "eee92a38b8e7277627db71d9d15547be069bae4b3f1762425ee1b6f5a9ac0f36",
+    "reference_plants.py": "f8bc457f6d27d731cf96d8dc7022e8c5550bbe87200255aba7da59958292bfdf",
+    "reports.py": "fcfc766c53c46707e5e37cb2c7515527454e0f5ff63fd977b6e8274efa72a0a2",
+    "runtime.py": "dfcd5de8b692ed0b9503825b9c065079bb5b94f44248e1e39e3a42db10f26ca5",
+    "schemas/model-artifact-v1.schema.json": "c430c7dd7848b1914f15a511469cfac09f6362b7df8a07c8508cd0bc7081142e",
+    "statuses.py": "908e4061f13707e44f636e167fcac5d8cad381b3e219fe3920790871c051960b"
+  }
+}

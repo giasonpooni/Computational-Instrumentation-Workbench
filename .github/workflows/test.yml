@@ -22,6 +22,28 @@ jobs:
       - run: python -m pip install -e ".[dev]"
       - run: python -m pytest -q
 
+  plsr-terminal:
+    strategy:
+      matrix:
+        os: [ubuntu-latest, windows-latest]
+    runs-on: ${{ matrix.os }}
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-python@v5
+        with:
+          python-version: '3.12'
+      - name: Install pinned optional instrument and run adapter tests
+        run: |
+          python -m pip install -e ".[dev,plsr]"
+          python -m pytest -q tests/test_plsr.py tests/test_plsr_engine.py
+      - name: Build and install the workbench wheel
+        run: |
+          python -m pip wheel --no-deps . --wheel-dir dist
+          python -m pip uninstall -y computational-instrumentation-workbench
+          python -c "import pathlib, subprocess, sys; subprocess.run([sys.executable, '-m', 'pip', 'install', '--no-deps', str(next(pathlib.Path('dist').glob('*.whl')))], check=True)"
+      - name: Exercise retained evidence and replay outside the checkout
+        run: python scripts/check_plsr_installed.py
+
   installed-package:
     runs-on: ubuntu-latest
     steps:

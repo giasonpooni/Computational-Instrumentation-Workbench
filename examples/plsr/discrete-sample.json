@@ -1,0 +1,6 @@
+{
+  "sample_schema": "plsr-sample-v1",
+  "x": [0.25, -0.5],
+  "theta": null,
+  "theta_dot": null
+}

@@ -61,7 +61,7 @@ Instruments connect to the runtime through one contract that fixes the meaning o
 
 ## Status
 
-The first executable prototype is available: a Python/NumPy demonstration instrument, headless terminal analysis, a shared local session that terminal and viewport clients attach to, saved-workspace replay, and an optional Godot 2D/3D viewport. Follow the [quickstart](docs/quickstart.md) to run it from source. The prototype uses a synthetic instrument; adapters for existing instruments and persistence infrastructure, the broader capabilities described above, and packaged releases are future work. The architecture is published in [docs/ARCHITECTURE.md](docs/ARCHITECTURE.md).
+The executable prototype includes a Python/NumPy demonstration instrument, headless terminal analysis, a shared local session that terminal and viewport clients attach to, saved-workspace replay, and an optional Godot 2D/3D viewport. Follow the [quickstart](docs/quickstart.md) to run it from source. PLSR is the first external instrument integrated through the terminal: import a declared model, evaluate an explicit sample, inspect and retain the evidence, then replay it. Its [operating guide](docs/PLSR.md) covers setup and the computational scope. PLSR runs currently use separate saved bundles; they do not attach to the shared session or viewport. Further instrument and persistence adapters, the broader capabilities described above, and packaged releases remain future work. The architecture is published in [docs/ARCHITECTURE.md](docs/ARCHITECTURE.md).
 
 ## Integrated tools
 
@@ -73,11 +73,12 @@ establish physical validation or deployment readiness.
 | Tool | Integration status | Available operations | Instructions and specifications |
 | --- | --- | --- | --- |
 | Synthetic damped oscillator (`analytic-damped-oscillator.v1`) | Integrated prototype; built into CIW | Generate a recording, inspect samples, calculate statistics and periodogram spectra, share a session, save and reopen results | [Tool guide](docs/INSTRUMENTS.md#synthetic-damped-oscillator), [quickstart](docs/quickstart.md), [record and protocol specification](docs/PROTOCOL.md) |
+| Parameterized Lyapunov Stability Runtime (PLSR; `ciw-plsr-adapter-v1`) | Integrated experimental terminal instrument; optional `plsr` extra, Python 3.12+ | Import a declared model, evaluate an explicit sample, inspect a retained run, replay with digest comparison | [Setup, commands and specifications](docs/PLSR.md), [catalogue entry](docs/INSTRUMENTS.md#parameterized-lyapunov-stability-runtime-plsr) |
 
-**Next instrument: PLSR.** The Parameterized Lyapunov Stability Runtime's
-versioned model-artifact interface is published and validated independently.
-Its CIW adapter is pending, so it is not yet listed as successfully integrated.
-See the [integration status and upstream specifications](docs/INSTRUMENTS.md#plsr-integration-pending).
+PLSR is pinned to upstream commit
+[`19ea6967060166ba09db6cd4563bd87bd6b3d196`](https://github.com/giasonpooni/Parameterized-Lyapunov-Stability-Runtime/tree/19ea6967060166ba09db6cd4563bd87bd6b3d196).
+Its verdicts concern the declared computation. Numerical refusals remain distinct
+from violations; physical validation and proof verification are not established.
 
 Every successful tool integration updates this catalogue and its operating guide
 in the same change. See the [documentation requirements](docs/DEVELOPMENT.md#documenting-an-integrated-tool)
@@ -87,6 +88,7 @@ for the required commands, specifications, version pins, and validation evidence
 
 - Quickstart: [`docs/quickstart.md`](docs/quickstart.md)
 - Integrated tool instructions and specifications: [`docs/INSTRUMENTS.md`](docs/INSTRUMENTS.md)
+- PLSR terminal workflow and saved-run specification: [`docs/PLSR.md`](docs/PLSR.md)
 - Architecture: [`docs/ARCHITECTURE.md`](docs/ARCHITECTURE.md)
 - Protocol: [`docs/PROTOCOL.md`](docs/PROTOCOL.md)
 - Design decisions: [`docs/adr/`](docs/adr/README.md)

@@ -8,7 +8,7 @@ have been exercised together.
 | Instrument | Workbench status | Entry point |
 | --- | --- | --- |
 | `analytic-damped-oscillator.v1` | Integrated built-in synthetic instrument | `python -m ciw demo`, `analyze stats`, `analyze spectrum` |
-| Parameterized Lyapunov Stability Runtime (PLSR) | External runtime ready for experimental computational use; workbench adapter pending | No PLSR workbench command yet |
+| Parameterized Lyapunov Stability Runtime (PLSR) | Integrated experimental terminal instrument; Python 3.12+ and optional `plsr` extra | `python -m ciw plsr import`, `evaluate`, `inspect`, `replay` |
 
 ## Synthetic damped oscillator
 
@@ -119,28 +119,47 @@ The delivered input contract is one small uniformly sampled oscillator recording
 per session. It is not a universal instrument format. Data are synthetic; device
 acquisition, uncertainty estimates and physical validation are not supplied.
 
-## PLSR: integration pending
+## Parameterized Lyapunov Stability Runtime (PLSR)
 
 PLSR evaluates quadratic Lyapunov certificates for declared linear and
-affine-parameter models. Its standalone input boundary is implemented at commit
+affine-parameter models. Its terminal adapter uses upstream commit
 [`19ea6967060166ba09db6cd4563bd87bd6b3d196`](https://github.com/giasonpooni/Parameterized-Lyapunov-Stability-Runtime/tree/19ea6967060166ba09db6cd4563bd87bd6b3d196).
-This is the candidate runtime pin for the adapter; CIW does not yet import, invoke
-or save PLSR evaluations through a workbench command.
+The [`ciw-plsr-adapter-v1` operating guide](PLSR.md) contains the complete
+installation, import/evaluate/inspect/replay sequence, exact sample and saved-run
+contracts, numerical status meanings and validation instructions. The adapter
+checks installed source identity, retains the full declaration and explicit
+sample, and writes a self-contained run automatically.
 
-The pinned [model-artifact guide](https://github.com/giasonpooni/Parameterized-Lyapunov-Stability-Runtime/blob/19ea6967060166ba09db6cd4563bd87bd6b3d196/docs/MODEL-ARTIFACT-v1.md)
-and [JSON Schema](https://github.com/giasonpooni/Parameterized-Lyapunov-Stability-Runtime/blob/19ea6967060166ba09db6cd4563bd87bd6b3d196/src/lyapunov/schemas/model-artifact-v1.schema.json)
-define `model-artifact-v1`: supplied matrices and certificate, parameter/rate
-boxes, state ordering and units, time convention and sample period, margin
-derivation, estimator identity and provenance. The standalone
-[consumer instructions](https://github.com/giasonpooni/Parameterized-Lyapunov-Stability-Runtime/blob/19ea6967060166ba09db6cd4563bd87bd6b3d196/consumer/README.md)
-cover explicit sample inputs and emitted companion records.
+From an activated Python 3.12-or-newer environment at the repository root:
 
-The adapter must retain artifact/evidence digests, raw runtime status and all
-three verdict booleans. `NUMERICAL_INCONCLUSIVE` is a numerical refusal;
-`NOT_CERTIFIED` indicates a failed inequality. Exit zero from the standalone
-consumer means a record was emitted, including refusals and violations. Current
-claims remain computational only, with `may_authorize: false` and
-`proof_status: NOT_CHECKED`; the kernel API remains marked `changing`.
+```text
+python -m pip install -e '.[plsr]'
+python -m ciw plsr import examples/plsr/continuous-affine.json --output models/plsr.json
+python -m ciw plsr evaluate --model models/plsr.json --sample examples/plsr/continuous-sample.json --output-dir results/plsr
+```
+
+The evaluation prints `saved_file` and `bundle`. Pass that file to
+`python -m ciw plsr inspect RUNFILE` or
+`python -m ciw plsr replay RUNFILE --output-dir results/plsr-replay`.
+The [worked guide](PLSR.md#first-complete-run) includes copyable PowerShell and
+POSIX shell examples that capture the generated filename.
+
+| Contract | Delivered specification |
+| --- | --- |
+| Model | Upstream `model-artifact-v1`: matrices/certificate, boxes, ordered state and parameter units, time convention/sample period, margin derivation, estimator and provenance |
+| Sample | `plsr-sample-v1`: explicit `x`, `theta`, `theta_dot`; no synthetic defaults |
+| Operation and output | `plsr.verdict.v1`; immutable `ciw-plsr-run-v1` bundle with separate evidence, operation, execution, result and verification identities |
+| Integrity and replay | Model artifact, companion record and bundle digests; replay retains its source binding and compares the companion digest exactly |
+| Status and exit codes | Raw runtime code and all three verdict booleans retained; exit `0` means command success, `2` input/configuration/execution failure, `3` replay mismatch |
+| Views | Headless terminal JSON; no shared WebSocket session or Godot PLSR view in this increment |
+| Verification | `not_verified`; `may_authorize: false`; physical validation `not_started`; `proof_status: NOT_CHECKED` |
+
+`NUMERICAL_INCONCLUSIVE` is a numerical refusal and `NOT_CERTIFIED` is a
+certificate violation; both may be valid saved results with exit code zero.
+One invocation evaluates one explicit sample. Host scripts can repeat it for
+offline sweeps; no real-time loop performance or physical-system validation is
+claimed. See the [guide's validation and limits](PLSR.md#validation-and-limits)
+and [ADR-0004](adr/0004-plsr-terminal-adapter.md) for the bounded integration.
 
 ## Documenting the next integration
 
