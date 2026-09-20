@@ -179,6 +179,19 @@ def parser() -> argparse.ArgumentParser:
                                help="Replace an existing corpus whose expectations differ")
     corpus_record.add_argument("--output-dir", type=Path,
                                help="Also retain one run bundle per recorded case")
+    batch = actions.add_parser("batch", help="Evaluate a declared collection of samples offline")
+    batch_actions = batch.add_subparsers(dest="batch_command", required=True)
+    batch_run = batch_actions.add_parser(
+        "run", help="Evaluate the declared samples, retaining a bundle and a journal entry each")
+    batch_run.add_argument("path", type=Path)
+    batch_run.add_argument("--output-dir", type=Path, required=True)
+    batch_run.add_argument("--resume", action="store_true",
+                           help="Continue a saved journal instead of refusing to append to it")
+    batch_run.add_argument("--limit", type=int,
+                           help="Evaluate at most this many outstanding samples in this run")
+    batch_status = batch_actions.add_parser(
+        "status", help="Read a saved batch index without evaluating anything")
+    batch_status.add_argument("output_dir", type=Path)
     return root
 
 
@@ -229,6 +242,17 @@ def main(argv: list[str] | None = None) -> int:
                 result = evaluate_run(args.model, args.sample, args.output_dir)
             elif args.plsr_command == "inspect":
                 result = inspect_run(args.path)
+            elif args.plsr_command == "batch":
+                from .plsr_batch import read_index, run_batch
+                if args.batch_command == "run":
+                    index = run_batch(args.path, args.output_dir, resume=args.resume,
+                                      limit=args.limit)
+                else:
+                    index = read_index(args.output_dir)
+                print_json(index)
+                if index["outcomes"]["unfinished"]:
+                    return 7
+                return 6 if index["outcomes"]["errored"] else 0
             elif args.plsr_command == "corpus":
                 from .plsr_corpus import check_corpus, record_corpus
                 if args.corpus_command == "check":

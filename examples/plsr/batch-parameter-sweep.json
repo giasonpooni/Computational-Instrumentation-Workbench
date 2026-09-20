@@ -1,0 +1,335 @@
+{
+  "batch_schema": "ciw-plsr-batch-v1",
+  "batch_id": "plsr-example-parameter-sweep",
+  "description": "A bounded offline sweep over the continuous affine fixture: five declared parameter values at three state magnitudes, three probes outside the declared boxes, and four samples on two other declared models. Every outcome the accounting distinguishes except an error appears at least once.",
+  "model_file": "continuous-affine.json",
+  "samples": [
+    {
+      "sample_id": "affine-thetam1p00-near",
+      "sample": {
+        "sample_schema": "plsr-sample-v1",
+        "x": [
+          0.1,
+          0.2
+        ],
+        "theta": [
+          -1.0
+        ],
+        "theta_dot": [
+          0.1
+        ]
+      }
+    },
+    {
+      "sample_id": "affine-thetam1p00-mid",
+      "sample": {
+        "sample_schema": "plsr-sample-v1",
+        "x": [
+          1.0,
+          1.0
+        ],
+        "theta": [
+          -1.0
+        ],
+        "theta_dot": [
+          0.1
+        ]
+      }
+    },
+    {
+      "sample_id": "affine-thetam1p00-far",
+      "sample": {
+        "sample_schema": "plsr-sample-v1",
+        "x": [
+          3.0,
+          0.0
+        ],
+        "theta": [
+          -1.0
+        ],
+        "theta_dot": [
+          0.1
+        ]
+      }
+    },
+    {
+      "sample_id": "affine-thetam0p50-near",
+      "sample": {
+        "sample_schema": "plsr-sample-v1",
+        "x": [
+          0.1,
+          0.2
+        ],
+        "theta": [
+          -0.5
+        ],
+        "theta_dot": [
+          0.1
+        ]
+      }
+    },
+    {
+      "sample_id": "affine-thetam0p50-mid",
+      "sample": {
+        "sample_schema": "plsr-sample-v1",
+        "x": [
+          1.0,
+          1.0
+        ],
+        "theta": [
+          -0.5
+        ],
+        "theta_dot": [
+          0.1
+        ]
+      }
+    },
+    {
+      "sample_id": "affine-thetam0p50-far",
+      "sample": {
+        "sample_schema": "plsr-sample-v1",
+        "x": [
+          3.0,
+          0.0
+        ],
+        "theta": [
+          -0.5
+        ],
+        "theta_dot": [
+          0.1
+        ]
+      }
+    },
+    {
+      "sample_id": "affine-thetap0p00-near",
+      "sample": {
+        "sample_schema": "plsr-sample-v1",
+        "x": [
+          0.1,
+          0.2
+        ],
+        "theta": [
+          0.0
+        ],
+        "theta_dot": [
+          0.1
+        ]
+      }
+    },
+    {
+      "sample_id": "affine-thetap0p00-mid",
+      "sample": {
+        "sample_schema": "plsr-sample-v1",
+        "x": [
+          1.0,
+          1.0
+        ],
+        "theta": [
+          0.0
+        ],
+        "theta_dot": [
+          0.1
+        ]
+      }
+    },
+    {
+      "sample_id": "affine-thetap0p00-far",
+      "sample": {
+        "sample_schema": "plsr-sample-v1",
+        "x": [
+          3.0,
+          0.0
+        ],
+        "theta": [
+          0.0
+        ],
+        "theta_dot": [
+          0.1
+        ]
+      }
+    },
+    {
+      "sample_id": "affine-thetap0p50-near",
+      "sample": {
+        "sample_schema": "plsr-sample-v1",
+        "x": [
+          0.1,
+          0.2
+        ],
+        "theta": [
+          0.5
+        ],
+        "theta_dot": [
+          0.1
+        ]
+      }
+    },
+    {
+      "sample_id": "affine-thetap0p50-mid",
+      "sample": {
+        "sample_schema": "plsr-sample-v1",
+        "x": [
+          1.0,
+          1.0
+        ],
+        "theta": [
+          0.5
+        ],
+        "theta_dot": [
+          0.1
+        ]
+      }
+    },
+    {
+      "sample_id": "affine-thetap0p50-far",
+      "sample": {
+        "sample_schema": "plsr-sample-v1",
+        "x": [
+          3.0,
+          0.0
+        ],
+        "theta": [
+          0.5
+        ],
+        "theta_dot": [
+          0.1
+        ]
+      }
+    },
+    {
+      "sample_id": "affine-thetap1p00-near",
+      "sample": {
+        "sample_schema": "plsr-sample-v1",
+        "x": [
+          0.1,
+          0.2
+        ],
+        "theta": [
+          1.0
+        ],
+        "theta_dot": [
+          0.1
+        ]
+      }
+    },
+    {
+      "sample_id": "affine-thetap1p00-mid",
+      "sample": {
+        "sample_schema": "plsr-sample-v1",
+        "x": [
+          1.0,
+          1.0
+        ],
+        "theta": [
+          1.0
+        ],
+        "theta_dot": [
+          0.1
+        ]
+      }
+    },
+    {
+      "sample_id": "affine-thetap1p00-far",
+      "sample": {
+        "sample_schema": "plsr-sample-v1",
+        "x": [
+          3.0,
+          0.0
+        ],
+        "theta": [
+          1.0
+        ],
+        "theta_dot": [
+          0.1
+        ]
+      }
+    },
+    {
+      "sample_id": "affine-thetam1p25-outside",
+      "sample": {
+        "sample_schema": "plsr-sample-v1",
+        "x": [
+          0.1,
+          0.2
+        ],
+        "theta": [
+          -1.25
+        ],
+        "theta_dot": [
+          0.1
+        ]
+      }
+    },
+    {
+      "sample_id": "affine-thetap1p25-outside",
+      "sample": {
+        "sample_schema": "plsr-sample-v1",
+        "x": [
+          0.1,
+          0.2
+        ],
+        "theta": [
+          1.25
+        ],
+        "theta_dot": [
+          0.1
+        ]
+      }
+    },
+    {
+      "sample_id": "affine-rate-outside",
+      "sample": {
+        "sample_schema": "plsr-sample-v1",
+        "x": [
+          0.1,
+          0.2
+        ],
+        "theta": [
+          0.0
+        ],
+        "theta_dot": [
+          0.5
+        ]
+      }
+    },
+    {
+      "sample_id": "shortfall-near",
+      "model_file": "continuous-shortfall.json",
+      "sample": {
+        "sample_schema": "plsr-sample-v1",
+        "x": [
+          0.1,
+          0.2
+        ],
+        "theta": null,
+        "theta_dot": null
+      }
+    },
+    {
+      "sample_id": "indefinite-violating",
+      "model_file": "continuous-indefinite.json",
+      "sample": {
+        "sample_schema": "plsr-sample-v1",
+        "x": [
+          1.0,
+          0.0
+        ],
+        "theta": null,
+        "theta_dot": null
+      }
+    },
+    {
+      "sample_id": "indefinite-decreasing",
+      "model_file": "continuous-indefinite.json",
+      "sample": {
+        "sample_schema": "plsr-sample-v1",
+        "x": [
+          0.0,
+          1.0
+        ],
+        "theta": null,
+        "theta_dot": null
+      }
+    }
+  ]
+}

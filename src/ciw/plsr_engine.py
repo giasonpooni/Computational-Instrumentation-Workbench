@@ -16,6 +16,7 @@ import math
 from pathlib import Path
 import platform
 import sys
+import time
 from typing import TYPE_CHECKING, Any
 
 if TYPE_CHECKING:
@@ -212,11 +213,19 @@ def _diagnostics(verdict: Any) -> dict[str, Any] | None:
     return result
 
 
-def evaluate(model: ModelArtifact, sample: Mapping[str, Any]) -> dict[str, Any]:
-    """Evaluate once through PLSR and preserve its complete status semantics."""
+def evaluate(model: ModelArtifact, sample: Mapping[str, Any],
+             *, timings: dict[str, float] | None = None) -> dict[str, Any]:
+    """Evaluate once through PLSR and preserve its complete status semantics.
+
+    ``timings`` receives the seconds spent inside the pinned numerical engine
+    under the key ``engine``, so a caller can separate that cost from its own.
+    """
     runtime = _runtime()
     data = validate_sample(model, sample)
+    started = time.perf_counter()
     verdict = model.verdict(data["x"], theta=data["theta"], theta_dot=data["theta_dot"])
+    if timings is not None:
+        timings["engine"] = time.perf_counter() - started
     declaration = model.to_dict()
     body = {
         "adapter_schema": EVALUATION_SCHEMA,

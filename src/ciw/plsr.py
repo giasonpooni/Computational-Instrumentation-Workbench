@@ -14,6 +14,7 @@ import os
 from pathlib import Path
 import re
 import tempfile
+import time
 from typing import Any
 import uuid
 
@@ -171,10 +172,19 @@ def import_model(source: Path, output: Path) -> dict:
             "artifact_schema": model.to_dict()["artifact_schema"], "runtime": identity}
 
 
-def _evaluate(model: Any, sample: dict, output_dir: Path, source: dict | None = None) -> dict:
+def _evaluate(model: Any, sample: dict, output_dir: Path, source: dict | None = None,
+              timings: dict[str, float] | None = None) -> dict:
+    """Evaluate and retain one bundle.
+
+    ``timings`` receives ``engine``, ``adapter``, ``evidence`` and ``total``
+    seconds. The engine figure is the pinned numerical call; the adapter figure
+    is everything this boundary does around it, including revalidating the
+    sealed bundle; the evidence figure is the atomic write alone.
+    """
+    started = time.perf_counter()
     sample = engine.validate_sample(model, sample)
     identity = engine.runtime_identity()
-    record = engine.evaluate(model, sample)
+    record = engine.evaluate(model, sample, timings=timings)
     result_suffix = uuid.uuid4().hex
     replay = None
     if source is not None:
@@ -193,8 +203,14 @@ def _evaluate(model: Any, sample: dict, output_dir: Path, source: dict | None = 
     }
     bundle["bundle_digest"] = _bundle_digest(bundle)
     _validate_bundle(bundle)
+    sealed = time.perf_counter()
     path = Path(output_dir) / f"run-{result_suffix}.json"
     _write_immutable(path, bundle)
+    if timings is not None:
+        finished = time.perf_counter()
+        timings["evidence"] = finished - sealed
+        timings["adapter"] = (sealed - started) - timings["engine"]
+        timings["total"] = finished - started
     return {"saved_file": str(path), "bundle": bundle}
 
 
@@ -203,9 +219,10 @@ def evaluate_run(model_path: Path, sample_path: Path, output_dir: Path) -> dict:
     return _evaluate(engine.load_model(model_path), _read(sample_path), output_dir)
 
 
-def evaluate_sample(model: Any, sample: dict, output_dir: Path) -> dict:
+def evaluate_sample(model: Any, sample: dict, output_dir: Path,
+                    timings: dict[str, float] | None = None) -> dict:
     """Evaluate an already loaded model and in-memory sample, retaining a bundle."""
-    return _evaluate(model, sample, output_dir)
+    return _evaluate(model, sample, output_dir, timings=timings)
 
 
 def inspect_run(path: Path) -> dict:

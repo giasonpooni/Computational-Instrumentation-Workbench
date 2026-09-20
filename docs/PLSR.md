@@ -37,6 +37,7 @@ revision as well as the runtime pin when reproducing an investigation.
 | Explicit sample | `plsr-sample-v1` |
 | Saved CIW run | `ciw-plsr-run-v1` |
 | Reference corpus | `ciw-plsr-corpus-v1`, reported as `ciw-plsr-corpus-report-v1` and `ciw-plsr-corpus-record-v1` |
+| Batch collection | `ciw-plsr-batch-v1`, journalled as `ciw-plsr-batch-header-v1` and `ciw-plsr-batch-entry-v1`, summarised as `ciw-plsr-batch-index-v1` |
 | Companion record | `companion-record-v1`, kind `ciw-plsr-evaluation`, adapter schema `ciw-plsr-evaluation-v1` |
 | Runtime status vocabulary | `runtime-status-v1` |
 | Numerical policy | `float64-decrease-v1` |
@@ -186,11 +187,137 @@ evaluations. The adapter does not add a stronger second numerical tier.
 | `3` | Replay completed but the new companion record digest differs from the source |
 | `4` | A corpus case did not reproduce its declared expectation, or a recording was refused |
 | `5` | The corpus was recorded against a runtime identity this installation does not provide |
+| `6` | Every requested batch sample was reached and at least one errored before a verdict |
+| `7` | The batch did not finish; at least one requested sample is unfinished |
 
 Errors are reported on standard error. An invalid declaration or malformed
 sample is an input error, distinct from a valid evaluation returning an
 out-of-box or numerical status. Scripts must inspect the record's code and
 booleans rather than interpreting exit zero as certification.
+
+## Bounded batch evaluation
+
+One evaluation still handles one explicit sample. A batch evaluates a declared
+collection of them through the same adapter, keeps the same
+`ciw-plsr-run-v1` bundle for each result, and adds an index that accounts for
+every sample that was requested — including the ones a run never reached.
+
+```text
+python -m ciw plsr batch run examples/plsr/batch-parameter-sweep.json --output-dir results/sweep
+python -m ciw plsr batch status results/sweep
+```
+
+### The declared collection
+
+A `ciw-plsr-batch-v1` plan names one model and lists the samples to evaluate
+against it. A sample may name its own `model_file` instead. Model paths are
+relative to the plan.
+
+```json
+{
+  "batch_schema": "ciw-plsr-batch-v1",
+  "batch_id": "plsr-example-parameter-sweep",
+  "description": "A bounded offline sweep over the continuous affine fixture.",
+  "model_file": "continuous-affine.json",
+  "samples": [
+    {"sample_id": "affine-theta-p0p50-near", "sample": {"sample_schema": "plsr-sample-v1", "x": [0.1, 0.2], "theta": [0.5], "theta_dot": [0.1]}},
+    {"sample_id": "indefinite-violating", "model_file": "continuous-indefinite.json", "sample": {"sample_schema": "plsr-sample-v1", "x": [1.0, 0.0], "theta": null, "theta_dot": null}}
+  ]
+}
+```
+
+`sample_id` is the author's handle and must be unique. It is not an evidence
+identity: two samples that declare the same model and the same numbers share an
+`evidence_id` and still get their own `result_id` and their own bundle. The
+adapter does not deduplicate a repeated request.
+
+### What a run leaves behind
+
+```text
+results/sweep/
+├── journal.jsonl     One header line, then one line per finished sample
+├── index.json        The derived accounting over every requested sample
+└── runs/             One ciw-plsr-run-v1 bundle per evaluated sample
+```
+
+The journal is the durable record. A complete, newline-terminated entry is
+appended and flushed to disk as each sample finishes, so an interruption loses
+at most the sample that was in flight. The index is derived from the journal
+and is replaced on each run; the journal and the bundles are never replaced.
+
+### The accounting vocabulary
+
+Every requested sample lands in exactly one outcome, and the counts sum to
+`requested`.
+
+| Outcome | Meaning | Runtime codes |
+| --- | --- | --- |
+| `completed` | A verdict was retained and the certificate inequality resolvably held at that sample | `CERTIFIED_WITH_MARGIN`, `MARGIN_LOW` |
+| `violated` | A verdict was retained and the decrease resolvably failed, or the certificate was not positive | `NOT_CERTIFIED`, `DECREASE_NOT_DEFINITE`, `CERTIFICATE_NOT_POSITIVE` |
+| `refused` | A verdict was retained and the runtime declined to answer at that sample | `NUMERICAL_INCONCLUSIVE`, `NUMERICAL_OVERFLOW`, `OUTSIDE_PARAMETER_BOX`, `OUTSIDE_LEVEL_SET` |
+| `errored` | No verdict: the model or the sample was refused before evaluation, or the write failed | none; the entry carries `reason` |
+| `unfinished` | Requested and not recorded: never started, bounded out by `--limit`, or in flight when the run stopped | none |
+
+**`completed` is bookkeeping about a request, not a verdict.** It includes
+`MARGIN_LOW`, where the inequality held and the caller's declared margin did
+not. The index counts runtime codes in `codes` and operationally acceptable
+samples in `operationally_acceptable`, separately and side by side, and every
+entry keeps `code`, `presentation_category` and all three verdict booleans. Read
+those, never the outcome alone. The outcome map is derived from the adapter's
+presentation categories, so the two vocabularies cannot drift apart.
+
+### Bounding, interrupting and resuming
+
+`--limit N` evaluates at most `N` outstanding samples and leaves the rest
+`unfinished`, which is how a long collection is worked through in bounded
+pieces. `--resume` continues a saved journal.
+
+```text
+python -m ciw plsr batch run PLAN --output-dir results/sweep --limit 50
+python -m ciw plsr batch run PLAN --output-dir results/sweep --resume
+```
+
+Without `--resume`, an output directory that already holds a journal is refused,
+so a second run never appends to unrelated work. With it, the saved journal must
+have been written for the same declared collection — the plan's digest — and the
+same runtime identity, or the resume is refused rather than mixing evidence from
+two pins.
+
+Resuming replays the journal instead of the evaluations it records. Samples
+already recorded are skipped, their entries are carried into the new index
+unchanged, and their bundles are not rewritten. A run killed mid-write can leave
+an unterminated final line; the resume discards exactly those bytes, reports the
+count in `discarded_partial_bytes`, and keeps every complete entry before them. A
+line that parses but is not a batch entry is corruption, not a torn write, and
+the resume refuses it.
+
+### Measured cost
+
+`--output-dir` is not free, and neither is the adapter. Each entry records
+`timings_s` with three separate segments and their total, and the index
+aggregates count, total, mean, minimum and maximum for each:
+
+| Segment | What it measures |
+| --- | --- |
+| `engine` | The pinned PLSR verdict call alone |
+| `adapter` | Everything this boundary does around it: sample validation, runtime identity, diagnostics, sealing the companion record, and revalidating the finished bundle |
+| `evidence` | The atomic bundle write alone: temporary file, `fsync`, hard link |
+
+Running the published 21-sample sweep on one Linux Python 3.12 machine measured,
+per sample: engine **0.47 ms** mean, adapter **5.28 ms**, evidence **1.02 ms**.
+The adapter costs about eleven times the numerical work. Timing the individual
+calls at 200 repetitions attributes almost all of it to two checks:
+revalidating the model declaration against its JSON Schema while revalidating
+the sealed bundle (**2.55 ms**), and recomputing the runtime identity
+(**1.09 ms**, mostly installed-distribution version lookups).
+
+No optimization is taken in this increment. Both dominant costs are checks that
+decide what a retained bundle guarantees — that the bundle's embedded model is a
+valid declaration, and that the run was produced by the pinned source — and
+caching or skipping either changes the contract rather than the implementation.
+The numbers are recorded so that a later change to them is a deliberate,
+measured decision. Reproduce them by running the sweep and reading
+`index.json`'s `timings_s`.
 
 ## Saved evidence and replay
 
@@ -359,7 +486,10 @@ samples, runtime pin enforcement, verdict/refusal preservation, retained
 evidence, tamper rejection and replay. The
 [reference-corpus tests](../tests/test_plsr_corpus.py) reproduce every declared
 case, restate each case's intended runtime code independently of the recorded
-one, and pin the staleness, exactness, tolerance and recording rules above.
+one, and pin the staleness, exactness, tolerance and recording rules above. The
+[batch tests](../tests/test_plsr_batch.py) cover the accounting, bounded runs,
+resume, plan and runtime binding, a torn journal line, and a batch process
+killed mid-run whose finished evidence must survive byte for byte.
 The [PLSR CI job](../.github/workflows/test.yml) runs these checks on Windows and
 Linux with Python 3.12, then builds a wheel and runs the
 [installed-package acceptance check](../scripts/check_plsr_installed.py) outside
@@ -369,11 +499,11 @@ validation remains documented in the
 [pinned runtime repository](https://github.com/giasonpooni/Parameterized-Lyapunov-Stability-Runtime/tree/19ea6967060166ba09db6cd4563bd87bd6b3d196);
 it does not substitute for the workbench checks.
 
-This integration supports one explicit sample per evaluation, and the corpus
-check evaluates a declared collection of them in one process. Host scripts may
-repeat calls for parameter sweeps or offline samples, retaining one bundle per
-run. There is no sweep scheduler, state estimator, sensor acquisition, temporal
-freshness check or shared PLSR viewport in this increment. Each CLI evaluation
+One evaluation handles one explicit sample; a declared batch works through a
+bounded collection of them, resumably, retaining one bundle per result. Batches
+are evaluated one sample at a time in one process: there is no parallelism, no
+scheduler, no state estimator, no sensor acquisition, no temporal freshness
+check and no shared PLSR viewport in this increment. Each CLI evaluation
 starts a process; no real-time control-loop performance is claimed.
 
 The runtime remains experimental and its kernel API is marked `changing`;
