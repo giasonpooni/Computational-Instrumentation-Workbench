@@ -20,12 +20,12 @@ Normative statements in `docs/ARCHITECTURE.md` carry a stable identifier and use
 | Area | Covers |
 |---|---|
 | `DATA` | Data model: channels, time bases, units, uncertainty, provenance |
-| `INST` | Instrument contract: manifest, lifecycle, messages, backpressure, errors |
+| `INST` | Instrument contract: manifest and roles, adapters and bindings, operations and executions, lifecycle, messages, backpressure, errors |
 | `SYNC` | Synchronization: shared cursor, selection, units, ordering, latency |
 | `VIEW` | Representation layer: numerical, temporal, spectral, 2D/3D |
-| `SESS` | Sessions, persistence, recording, replay, export |
+| `SESS` | Sessions, persistence (workspace versions 1 and 2), recording, replay, export |
 | `OPS` | Operator interaction: commands, keybindings, layouts, scripting, headless use |
-| `EXT` | Extension model: adding instruments, representations, exports |
+| `EXT` | Extension model: adding instruments, adapters, operations, representations, exports |
 | `CAL` | Calibration contract and the deterministic bench: profiles, corrected data, fixtures, metrics, bench reports |
 | `PERF` | Budgets and quality attributes |
 
@@ -44,29 +44,53 @@ The architecture document maps its components to these directories.
 ├── README.md
 ├── AGENTS.md                 Instructions for automated contributors
 ├── pyproject.toml            Python package metadata; installs the `ciw` command
-├── .github/workflows/        Continuous integration: Python matrix, packaging, container, Godot
+├── .github/workflows/        Continuous integration: Python matrix, packaging, container, Godot, pinned adapter integration
 ├── compose.yaml              Container backend definition for Docker Compose
 ├── Dockerfile                Container image for the backend service
-├── src/ciw/                  Runtime service, instruments, and terminal client (Python)
-│   ├── instruments.py        Scientific records and computations of the first instrument
-│   ├── session.py            Authoritative session: selection, immutable results, workspaces
+├── src/ciw/                  Runtime service, adapters, operations, and terminal client (Python)
+│   ├── core/                 Generic record structure and identities
+│   │   ├── records.py        `run.v1` structural validation: finite values, time order, units, lengths
+│   │   └── identities.py     Content identities (`evidence_id`) and distinct event identities
+│   ├── adapters/             Declarative adapter seam and its bindings
+│   │   ├── protocol.py       Instrument manifest with roles; the refusal envelope
+│   │   ├── registry.py       Explicit adapter registration; record-only reader for retained evidence
+│   │   ├── subprocess.py     Pinned, operator-bound subprocess binding with bounded JSON execution
+│   │   ├── oscillator.py     The analytic oscillator as an ordinary adapter, calculation unchanged
+│   │   ├── oscillator_records.py  Saved-payload schemas of `statistics.v1` and `spectrum.periodogram.v1`
+│   │   └── fsrt_records.py   Saved-payload schema of `fsrt.tank-reconstruct.v1`
+│   ├── operations/           Operations, executions, and results
+│   │   ├── registry.py       Process-local operation registration with declared roles
+│   │   ├── runner.py         Sequences an execution; seals execution and result records; retains refusals
+│   │   └── schemas.py        Trusted saved-payload schemas validated without executing a provider
+│   ├── adapter-runtimes.json Pinned upstream revisions and modules of the subprocess providers
+│   ├── instruments.py        Compatibility facade over the adapter registry for the v1 instrument API
+│   ├── investigation.py      RCI calibration to FSRT estimation through the shared session; inspect and replay
+│   ├── session.py            Authoritative session: selection, immutable results, executions, workspaces
 │   ├── server.py             WebSocket transport, bind policy, and saved shutdown
-│   ├── cli.py                Headless analysis, service control, health probe, terminal access
+│   ├── cli.py                Headless analysis, service control, health probe, terminal access, investigations
 │   ├── calibration.py        Calibration profiles: record shape, validity, and refusal (planned)
 │   ├── bench.py              Deterministic bench: fixtures, tolerance policy, report (planned)
 │   ├── plsr.py               Portable PLSR run bundles: evaluate, inspect, replay
 │   └── plsr_engine.py        Source-pinned bridge to the optional external PLSR runtime
 ├── godot/                    Godot project for the 2D/3D viewport, a client of the session
+│   └── tests/                Headless client checks: protocol smoke, channel generality, adapter boundary, capture view
 ├── deploy/                   Deployment guides: native controller and container backend
 ├── examples/                 Reference inputs for integrated instruments, such as `examples/plsr/`
+│   ├── adapters/             Investigation fixtures for the pinned adapters: `two-reservoir.json`
 │   └── calibration/          Calibration artifacts per instrument: `calibration/<instrument>/` (planned)
-├── scripts/                  Integration checks and the native deployment controller
+├── scripts/                  Integration checks, the pinned-adapter gate, and the native deployment controller
 ├── tests/                    Python test suites; conformance tests go under `tests/conformance/`
+│   ├── test_adapter_seam.py  Generic record, manifest, registry, and identity checks
+│   ├── test_adapter_cli.py   Health probe over generic records; investigation commands and terminal rows
+│   ├── test_investigation.py Calibrated RCI-to-FSRT investigations (skipped without the pinned checkouts)
+│   ├── test_operation_runner.py  Execution and result records, refusals, capacity, reopen without execution
+│   ├── test_subprocess_adapter.py  Pinned subprocess binding: source and interpreter pins, bounded execution
 │   ├── test_calibration.py   Calibration record, profile validity, corrected-data provenance (planned)
 │   └── test_bench_fixtures.py Deterministic fixture set, tolerance policy, bench report (planned)
 └── docs/
     ├── ARCHITECTURE.md       Architecture and normative requirements
     ├── PROTOCOL.md           Wire-level protocol specification
+    ├── ADAPTERS.md           Generic adapter contract; the RCI/FSRT investigation, pins, and offline replay
     ├── INSTRUMENTS.md        Catalogue of integrated instruments with their specifications
     ├── PLSR.md               The PLSR terminal instrument: commands, bundle, digests, limits
     ├── quickstart.md         Running the prototype from source
@@ -76,7 +100,7 @@ The architecture document maps its components to these directories.
 
 `recordings/`, `results/`, and the native deployment's `.ciw/` data directory hold local outputs and are ignored by git.
 
-Planned growth follows the same tree: `src/ciw/instruments.py` becomes the package `src/ciw/instruments/` when a second instrument lands; terminal panels go under `src/ciw/tui/`; protocol codecs for binary transport go under `src/ciw/protocol/`; reference instruments and their fixtures used by conformance tests go under `examples/`.
+Planned growth follows the same tree: adapters go under `src/ciw/adapters/` and operations under `src/ciw/operations/`, `src/ciw/instruments.py` remaining the compatibility facade; terminal panels go under `src/ciw/tui/`; protocol codecs for binary transport go under `src/ciw/protocol/`; reference instruments and their fixtures used by conformance tests go under `examples/`.
 
 ## Conformance tests
 
