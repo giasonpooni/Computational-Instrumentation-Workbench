@@ -57,7 +57,7 @@ The architecture document maps its components to these directories.
 ├── tests/                    Python test suites; conformance tests go under `tests/conformance/`
 └── docs/
     ├── ARCHITECTURE.md       Architecture and normative requirements
-    ├── PROTOCOL.md           Wire-level protocol, owned by the prototype track
+    ├── PROTOCOL.md           Wire-level protocol specification
     ├── INSTRUMENTS.md        Catalogue of integrated instruments with their specifications
     ├── quickstart.md         Running the prototype from source
     ├── coordination.md       Build coordination and integration sequence
