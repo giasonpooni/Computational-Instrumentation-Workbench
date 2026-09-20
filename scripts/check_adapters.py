@@ -1,4 +1,4 @@
-"""Clone declared public source pins and exercise the calibrated investigation gate."""
+"""Clone declared source pins and exercise retained scientific investigations."""
 from __future__ import annotations
 
 import json
@@ -31,7 +31,7 @@ def main():
                 subprocess.run(["git", "-C", str(historic), "checkout", "--detach", previous["revision"]], check=True)
                 environment["CIW_" + name.upper() + "_LEGACY_REPO"] = str(historic)
         subprocess.run([sys.executable, "-m", "pytest", "-q", "tests/test_investigation.py",
-                        "tests/test_adapter_cli.py", "tests/test_covariance_integration.py"], cwd=ROOT, env=environment, check=True)
+                        "tests/test_adapter_cli.py", "tests/test_covariance_integration.py", "tests/test_geodesic.py"], cwd=ROOT, env=environment, check=True)
 
 
 if __name__ == "__main__":

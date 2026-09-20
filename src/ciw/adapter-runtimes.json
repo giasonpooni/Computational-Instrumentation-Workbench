@@ -25,5 +25,10 @@
     "repository": "https://github.com/giasonpooni/Jacobian-Sensitivity-Propagation-Testbed",
     "revision": "d910f5a1d7f6dd5f2dd87dfca66990f714f97b18",
     "module": "sensitivity.ciw_adapter"
+  },
+  "gte": {
+    "repository": "https://github.com/giasonpooni/Geometric-Telemetry-Engine",
+    "revision": "e55b8be2b3ba05f7e6c6a31807c77b3e42700f07",
+    "module": "geodesic_telemetry.ciw_adapter"
   }
 }

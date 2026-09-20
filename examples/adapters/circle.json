@@ -1,0 +1,84 @@
+{
+  "schema": "gte.circle-request.v1",
+  "observations": {
+    "source_id": "synthetic-circle-fixture",
+    "observation_ids": [
+      "sample-0",
+      "sample-1"
+    ],
+    "time_origin": "2026-01-15T12:00:00Z",
+    "time_s": [
+      0.0,
+      1.0
+    ],
+    "points_m": [
+      [
+        1.01,
+        0.0
+      ],
+      [
+        0.0,
+        0.99
+      ]
+    ],
+    "coordinate_frame": "bench-plane",
+    "quantity_order": [
+      "x",
+      "y"
+    ],
+    "unit": "m",
+    "covariance": {
+      "matrix": [
+        [
+          0.0001,
+          0,
+          0,
+          3e-05
+        ],
+        [
+          0,
+          0.0001,
+          3e-05,
+          0
+        ],
+        [
+          0,
+          3e-05,
+          0.0001,
+          0
+        ],
+        [
+          3e-05,
+          0,
+          0,
+          0.0001
+        ]
+      ],
+      "ordering": "sample-major:x,y",
+      "unit": "m^2",
+      "meaning": "joint_observation_covariance",
+      "source": "synthetic full covariance with cross-sample correlations"
+    }
+  },
+  "constraint": {
+    "constraint_id": "reference-circle",
+    "version": "1",
+    "kind": "circle",
+    "metric": "euclidean",
+    "coordinate_frame": "bench-plane",
+    "center_m": [
+      0.0,
+      0.0
+    ],
+    "radius_m": 1.0,
+    "valid_time_s": [
+      0.0,
+      2.0
+    ],
+    "geometry_uncertainty": "fixed_exact"
+  },
+  "policy": {
+    "max_correction_m": 0.05,
+    "max_linearization_ratio": 0.1
+  }
+}

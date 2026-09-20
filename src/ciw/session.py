@@ -116,6 +116,9 @@ def _validate_evidence(run: dict) -> None:
     if run["instrument"] == "org.notationsystems.rci":
         from .investigation import _validate_source
         _validate_source(run)
+    elif run["instrument"] == "org.notationsystems.gte":
+        from .geodesic import validate_source
+        validate_source(run)
 
 
 def _recording_file(run: dict) -> str:

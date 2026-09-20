@@ -217,6 +217,8 @@ def parser() -> argparse.ArgumentParser:
                         help="Explicit trusted checkout for pinned FSRT operations")
     server.add_argument("--jspt-repo", type=Path,
                         help="Explicit trusted checkout for pinned JSPT covariance operations")
+    server.add_argument("--gte-repo", type=Path,
+                        help="Explicit trusted checkout for pinned GTE circle projection")
     server.add_argument("--python", dest="python_executable", type=Path,
                         help="Python for external adapters; defaults to this interpreter")
     health = commands.add_parser("health", help="Check a live session with a bounded read-only request")
@@ -277,6 +279,21 @@ def parser() -> argparse.ArgumentParser:
         action.add_argument("--output-dir", type=Path, required=True)
         action.add_argument("--adapter-python", "--python", dest="python_executable", type=Path)
         action.add_argument("--json", action="store_true")
+    geodesic = commands.add_parser(
+        "geodesic", help="Project declared circle telemetry and retain a shared investigation")
+    geodesic_actions = geodesic.add_subparsers(dest="geodesic_command", required=True)
+    geodesic_create = geodesic_actions.add_parser("create", help="Retain exact request bytes and execute GTE")
+    geodesic_create.add_argument("--inputs", type=Path, required=True)
+    geodesic_inspect = geodesic_actions.add_parser("inspect", help="Inspect retained GTE evidence without executing code")
+    geodesic_inspect.add_argument("path", type=Path)
+    geodesic_replay = geodesic_actions.add_parser("replay", help="Replay retained GTE inputs with fresh result identities")
+    geodesic_replay.add_argument("path", type=Path)
+    for action in (geodesic_create, geodesic_replay):
+        action.add_argument("--gte-repo", type=Path, required=True)
+        action.add_argument("--output-dir", type=Path, required=True)
+        action.add_argument("--python", dest="python_executable", type=Path)
+    for action in (geodesic_create, geodesic_inspect, geodesic_replay):
+        action.add_argument("--json", action="store_true", help="Print covariance, identities and complete provenance")
     return root
 
 
@@ -311,6 +328,9 @@ def main(argv: list[str] | None = None) -> int:
             if args.jspt_repo is not None:
                 from .covariance_workflow import bind_jspt
                 bind_jspt(session, args.jspt_repo, python_executable=args.python_executable)
+            if args.gte_repo is not None:
+                from .geodesic import bind_gte
+                bind_gte(session, args.gte_repo, python_executable=args.python_executable)
             asyncio.run(run_server(session, args.port, args.bind))
         elif args.command == "health":
             print_json(asyncio.run(health_remote(args.url)))
@@ -355,6 +375,21 @@ def main(argv: list[str] | None = None) -> int:
                 result = execute_covariance(args.path, parameters=parameters, **arguments)
             else:
                 result = replay_covariance(args.path, **arguments)
+            if args.json:
+                print_json(result)
+            else:
+                print_investigation(result)
+        elif args.command == "geodesic":
+            from .geodesic import create_investigation, inspect_investigation, replay_investigation
+            if args.geodesic_command == "inspect":
+                result = inspect_investigation(args.path)
+            else:
+                arguments = {"gte_repo": args.gte_repo, "output_dir": args.output_dir,
+                             "python_executable": args.python_executable}
+                if args.geodesic_command == "create":
+                    result = create_investigation(args.inputs, **arguments)
+                else:
+                    result = replay_investigation(args.path, **arguments)
             if args.json:
                 print_json(result)
             else:

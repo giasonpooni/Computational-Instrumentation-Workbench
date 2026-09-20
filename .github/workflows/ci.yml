@@ -20,5 +20,5 @@ jobs:
         with:
           python-version: '3.12'
       - run: python -m pip install -e ".[dev]"
-      - name: Exercise pinned RCI and FSRT with offline replay and refusal gates
+      - name: Exercise pinned RCI, FSRT and GTE with offline replay and refusal gates
         run: python scripts/check_adapters.py
