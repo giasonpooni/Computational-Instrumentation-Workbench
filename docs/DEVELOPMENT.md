@@ -50,14 +50,17 @@ The architecture document maps its components to these directories.
 ├── src/ciw/                  Runtime service, adapters, operations, and terminal client (Python)
 │   ├── core/                 Generic record structure and identities
 │   │   ├── records.py        `run.v1` structural validation: finite values, time order, units, lengths
-│   │   └── identities.py     Content identities (`evidence_id`) and distinct event identities
+│   │   ├── identities.py     Content identities (`evidence_id`) and distinct event identities
+│   │   └── covariance.py     `covariance-artifact.v1`: ordered quantities and units, full matrix, content identity; validated, never computed
 │   ├── adapters/             Declarative adapter seam and its bindings
 │   │   ├── protocol.py       Instrument manifest with roles; the refusal envelope
 │   │   ├── registry.py       Explicit adapter registration; record-only reader for retained evidence
 │   │   ├── subprocess.py     Pinned, operator-bound subprocess binding with bounded JSON execution
 │   │   ├── oscillator.py     The analytic oscillator as an ordinary adapter, calculation unchanged
 │   │   ├── oscillator_records.py  Saved-payload schemas of `statistics.v1` and `spectrum.periodogram.v1`
-│   │   └── fsrt_records.py   Saved-payload schema of `fsrt.tank-reconstruct.v1`
+│   │   ├── fsrt_records.py   Saved-payload schema of `fsrt.tank-reconstruct.v1`
+│   │   ├── rci_records.py    Offline provenance checks of the `ciw.rci-source.v2` measurement record; no provider executed
+│   │   └── covariance_records.py  Saved-payload schemas of `fsrt.tank-reconstruct.v2` and `jspt.covariance-propagate.v1`; result dependency checks on reopen
 │   ├── operations/           Operations, executions, and results
 │   │   ├── registry.py       Process-local operation registration with declared roles
 │   │   ├── runner.py         Sequences an execution; seals execution and result records; retains refusals
@@ -65,32 +68,43 @@ The architecture document maps its components to these directories.
 │   ├── adapter-runtimes.json Pinned upstream revisions and modules of the subprocess providers
 │   ├── instruments.py        Compatibility facade over the adapter registry for the v1 instrument API
 │   ├── investigation.py      RCI calibration to FSRT estimation through the shared session; inspect and replay
+│   ├── covariance_workflow.py JSPT covariance operations over a saved investigation: bind, execute, replay
+│   ├── calibration_status.py Serving-time calibration applicability at one explicit `evaluated_at`; never hashed into evidence
 │   ├── session.py            Authoritative session: selection, immutable results, executions, workspaces
 │   ├── server.py             WebSocket transport, bind policy, and saved shutdown
-│   ├── cli.py                Headless analysis, service control, health probe, terminal access, investigations
+│   ├── cli.py                Headless analysis, service control, health probe, terminal access, investigations, covariance operations
 │   ├── calibration.py        Calibration profiles: record shape, validity, and refusal (planned)
 │   ├── bench.py              Deterministic bench: fixtures, tolerance policy, report (planned)
+│   ├── plsr-runtime.json     Pinned source manifest of the optional PLSR runtime: commit, package version, file digests
 │   ├── plsr.py               Portable PLSR run bundles: evaluate, inspect, replay
 │   └── plsr_engine.py        Source-pinned bridge to the optional external PLSR runtime
 ├── godot/                    Godot project for the 2D/3D viewport, a client of the session
 │   └── tests/                Headless client checks: protocol smoke, channel generality, adapter boundary, capture view
 ├── deploy/                   Deployment guides: native controller and container backend
 ├── examples/                 Reference inputs for integrated instruments, such as `examples/plsr/`
-│   ├── adapters/             Investigation fixtures for the pinned adapters: `two-reservoir.json`
+│   ├── adapters/             Investigation fixtures for the pinned adapters: `two-reservoir.json`, `two-reservoir-covariance.json`, `tank-covariance-map.json`
 │   └── calibration/          Calibration artifacts per instrument: `calibration/<instrument>/` (planned)
-├── scripts/                  Integration checks, the pinned-adapter gate, and the native deployment controller
+├── scripts/                  Integration checks, the pinned-adapter gate over current and historical checkouts, and the native deployment controller
 ├── tests/                    Python test suites; conformance tests go under `tests/conformance/`
 │   ├── test_adapter_seam.py  Generic record, manifest, registry, and identity checks
 │   ├── test_adapter_cli.py   Health probe over generic records; investigation commands and terminal rows
 │   ├── test_investigation.py Calibrated RCI-to-FSRT investigations (skipped without the pinned checkouts)
 │   ├── test_operation_runner.py  Execution and result records, refusals, capacity, reopen without execution
 │   ├── test_subprocess_adapter.py  Pinned subprocess binding: source and interpreter pins, bounded execution
+│   ├── test_calibration_status.py  Serving-time calibration status on `session.get`, `result.list`, `result.get`; `evaluated_at` validation
+│   ├── test_covariance_artifacts.py  `covariance-artifact.v1` validation: symmetry, semidefiniteness, units, content identity
+│   ├── test_covariance_records.py  Saved-payload schemas of the v2 estimation and covariance operations; dependency and cycle refusals
+│   ├── test_covariance_integration.py  Calibrated v2 estimation, JSPT propagation, offline replay, historical pins (skipped without the pinned checkouts)
+│   ├── test_covariance_replay_refusal.py  Replay refused when the retained attempt had no bound runtime
+│   ├── test_rci_records.py   Offline provenance checks of the v2 measurement record
 │   ├── test_calibration.py   Calibration record, profile validity, corrected-data provenance (planned)
 │   └── test_bench_fixtures.py Deterministic fixture set, tolerance policy, bench report (planned)
 └── docs/
     ├── ARCHITECTURE.md       Architecture and normative requirements
     ├── PROTOCOL.md           Wire-level protocol specification
     ├── ADAPTERS.md           Generic adapter contract; the RCI/FSRT investigation, pins, and offline replay
+    ├── COVARIANCE.md         Covariance artifacts, the RCI v2 to FSRT v2 to JSPT path, serving-time calibration status, offline replay, historical pins
+    ├── COVARIANCE_HANDOFF.md Delivered boundaries and exercised checks of the covariance increment
     ├── INSTRUMENTS.md        Catalogue of integrated instruments with their specifications
     ├── PLSR.md               The PLSR terminal instrument: commands, bundle, digests, limits
     ├── quickstart.md         Running the prototype from source
