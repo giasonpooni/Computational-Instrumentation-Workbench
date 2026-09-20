@@ -45,7 +45,7 @@ Spectrum data: `{sample_count, method:"periodogram", window:"hann", detrend:"con
 
 `RESULT_SUMMARY` includes result/operation/execution IDs, channel, interval, creation time and verification status, without numerical arrays. Snapshots and `result.list` expose these so fresh clients can discover analyses restored from a workspace. New analyses do not yet produce an event; refresh the list to discover results created by another client.
 
-Future binary arrays must declare meaning, shape, dtype, byte order, order, units, frame, time reference, and execution/result identity. Binary transport, occupancy operations, live acquisition and spectrograms are later work. The additive adapter and covariance sections below specify the delivered external-provider operations.
+Binary transport, occupancy operations, live acquisition and spectrograms are not implemented. The additive adapter and covariance sections below specify the delivered external-provider JSON operations.
 
 ## Workspace replay
 
@@ -95,8 +95,8 @@ preserves identities and results; explicit replay invokes trusted local bindings
 and appends fresh execution/result identities. See [ADAPTERS.md](ADAPTERS.md) for
 the exact pinned single-snapshot scope, raw-byte retention, covariance mapping,
 terminal commands and offline replay setup. This additive slice does not claim
-the architecture's complete streaming, binary transport, multi-run journal or
-physical-validation milestones.
+streaming acquisition, binary transport, a multi-run journal or physical
+validation.
 
 ## Additive covariance and calibration-serving contract
 

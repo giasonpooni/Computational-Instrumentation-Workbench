@@ -14,3 +14,12 @@ work/
 *.log
 docs/adr/
 .decisions/
+
+# Non-public working material
+/AGENTS.md
+/CLAUDE.md
+/HANDOFF.md
+/docs/*_HANDOFF.md
+/docs/coordination.md
+/.internal/
+/docs/internal/

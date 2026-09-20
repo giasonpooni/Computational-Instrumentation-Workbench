@@ -290,6 +290,19 @@ This increment does not establish empirical covariance calibration, innovation
 or estimation consistency through NIS/NEES, interval coverage, or physical
 traceability. The JSPT boundary does not derive Jacobians or run Monte Carlo
 comparisons. Time-correlated calibration errors, general fluid topologies,
-cross-assembly dependence and a physical calibration campaign require further
-domain work. The full PSD record is retained so those later operations can be
-added without discarding the existing uncertainty evidence.
+cross-assembly dependence and physical calibration qualification are not supplied
+by this integration. The full covariance record and its assumptions remain
+available for inspection and explicit downstream operations.
+
+## Recorded compatibility limitation
+
+The FSRT Windows/Python 3.13 workflow at its pinned covariance-adapter revision
+reported a failure in `tests/test_real_noaa_month.py::test_the_report_reproduces`,
+where the tide-month profile log-likelihood exceeded the existing cross-build
+reproduction tolerance. The
+[adapter-revision workflow](https://github.com/giasonpooni/Fluid-State-Reconstruction-Testbed/actions/runs/35536619209)
+and [previous-revision workflow](https://github.com/giasonpooni/Fluid-State-Reconstruction-Testbed/actions/runs/35533956823)
+record the same test failure before and after that increment. This integration
+does not change the NOAA model, fit, report or reproduction tolerance. Its
+adapter tests do not establish cross-platform numerical equivalence of the
+complete upstream NOAA workflow.

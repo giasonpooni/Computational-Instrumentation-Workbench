@@ -125,21 +125,11 @@ actual physical path. Antipodal ambiguity is explicit. No uncertain geometry,
 streaming telemetry, automatic frame conversion, hardware backend, or physical
 validation is delivered by this integration.
 
-## Next shared-covariance integration gate
-
-GTE currently retains its native `gte.circle-result.v1` covariance arrays with
-explicit tangent bases, reference points, source observation IDs, ordering,
-frame and acquisition time. These arrays have not yet been promoted into the
-workbench's shared `covariance-artifact.v1` contract or made selectable by the
-JSPT covariance workflow introduced in [COVARIANCE.md](COVARIANCE.md).
-
-The next extension must reuse that existing artifact and operation substrate,
-preserve the intrinsic **N-dimensional tangent representation** and its per-sample
-reference bases and source identities, and retain ambient covariance as a
-separate singular diagnostic. It must not relabel either as a calibrated
-posterior, silently change the native result schema, or introduce a parallel
-covariance framework. A typed GTE-to-JSPT source binding and end-to-end replay
-fixture are required before claiming that additional workflow is integrated.
+GTE's native covariance arrays are not selectable by the shared
+`covariance-artifact.v1` / JSPT workflow. They retain tangent bases, reference
+points, source observation IDs, ordering, frame and acquisition time in the
+native result. The ambient covariance remains a separate singular diagnostic;
+neither representation is a calibrated posterior.
 
 ## Validation
 

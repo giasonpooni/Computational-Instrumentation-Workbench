@@ -1,69 +1,31 @@
 # Computational Instrumentation Workbench
 
-**Integrated Measurement, State Estimation, and Visualization Workbench**
+**Notation Systems Workbench** — a terminal-first Python workbench for retained
+scientific observations, explicit operations, and reproducible investigations.
 
-A **Notation Systems** workbench. Short product name: **Notation Systems Workbench**.
+The executable prototype includes a synthetic damped oscillator, numerical
+statistics and periodogram analysis, a shared local session, saved-workspace
+inspection and replay, and an optional Godot oscillator viewport. External
+scientific operations use explicitly bound, source-pinned runtimes; the table
+below identifies the integrations currently implemented.
 
-> A terminal-first workbench that connects computational instruments to synchronized numerical, temporal, spectral, and 2D/3D representations of physical-system observations and estimated states.
+## Run and inspect
 
-## Overview
+Follow the [quickstart](docs/quickstart.md) for installation, terminal commands,
+and the optional viewport. The [deployment guide](deploy/README.md) covers the
+native service and container backend. Each integrated tool has its own exact
+inputs, source pins, operating examples, validation and limitations.
 
-The Computational Instrumentation Workbench (CIW) is an environment for investigating physical systems through measurements, models, and diagnostics. It brings computational instruments into one workspace: state estimators, field reconstructions, model integrators, signal-processing stages, and sources of recorded or live measurements. Their outputs are inspected side by side in synchronized views, compared across runs, and recorded so that any investigation can be reopened or replayed.
+Python retains and calculates from full-resolution scientific records. The
+viewport displays backend-provided representations. Evidence, operation,
+execution, result and verification identities remain distinct. Reopening a
+workspace validates retained records without silently recomputing them;
+explicit replay creates new execution/result identities.
 
-CIW is built for people who work with physical data and the models that explain it: experimentalists, estimation and control engineers, simulation users, and analysts who need to move between numbers, time series, spectra, and geometry without losing track of what produced each result.
-
-## What you can do with it
-
-- **Attach a source.** Recorded telemetry, a live data stream, or a simulation.
-- **Select what to look at.** The quantities of interest and the time window or spatial region.
-- **Run an operation.** Estimate a state, reconstruct a field, integrate a model, or analyze a spectrum.
-- **Inspect the result.** Numerical, temporal, spectral, and 2D/3D views that share one time cursor, one selection, and one set of units.
-- **Compare.** Runs, scenarios, and parameter choices side by side, with residuals where a reference exists.
-- **Save and replay.** Every investigation is stored with its full provenance and can be reopened or re-executed.
-
-## Capabilities
-
-- **Synchronized representations.** Numerical readouts and tables, time-domain traces, spectral views, and 2D/3D views of fields, trajectories, and states are linked. Moving the cursor, changing the selection, or switching units in one view is reflected in all of them.
-- **Computational instruments, not just readouts.** Estimation, reconstruction, integration, and signal processing are first-class instruments, alongside direct measurement sources.
-- **Observations and estimates kept distinct.** Measured data and estimated states are separate kinds of data. Each carries its units, time base, coordinate frame, and available uncertainty, so an estimate is never mistaken for a measurement.
-- **Terminal-first.** Full control from a terminal, over SSH, and in headless or scripted runs. Spatial results open in a companion 2D/3D viewport that stays in step with the terminal.
-- **Provenance built in.** Every result records which instrument produced it, with which parameters and inputs, and which checks support it.
-- **Extensible by design.** A new instrument is an adapter plus its domain-specific computation and checks. The workbench supplies the operating environment; the instrument supplies the scientific meaning. Views appear only where an instrument's output makes them meaningful.
-
-## Example applications
-
-| Application | What the workbench provides | What the domain brings |
-|---|---|---|
-| Fluid-state reconstruction | Channel inspection, time selection, residual plots, scenario comparison | Flow model, observation equations, boundary conditions, validation cases |
-| Construction-state estimation from building models | Entity selection, observation history, spatial overlays, saved investigations | Building semantics, admissibility constraints, interpretation of evidence |
-| Polymer and process experiments | Batch comparison, temperature and pressure traces, parameter fitting, numerical export | Material models, experimental protocols, calibration |
-| GNSS and odometry instrumentation | Timestamped trajectories, coordinate-frame inspection, uncertainty display, replay | Positioning algorithms, reference systems, correction handling, receiver integration |
-| Dynamical-system and observer experiments | Parameter controls, numerical states, phase portraits, comparative runs | Dynamics, estimators, stability conditions, verification procedures |
-
-## How it works
-
-```mermaid
-flowchart LR
-    subgraph Sources and instruments
-        S[Measurement sources]
-        E[Estimators and reconstructions]
-        M[Model integrators and signal processing]
-    end
-    R[Workbench runtime<br/>sessions, synchronization, provenance]
-    T[Terminal frontend<br/>numerical, temporal, spectral views]
-    V[2D/3D viewport<br/>fields, trajectories, states]
-    S --> R
-    E --> R
-    M --> R
-    R --> T
-    R --> V
-```
-
-Instruments connect to the runtime through one contract that fixes the meaning of every result: what it is, which quantities it holds, what its coordinates and timestamps mean, how it was produced, and which evidence supports it. The terminal frontend and the 2D/3D viewport are both clients of the runtime. They present the same records and share the same cursor, selection, and units; neither performs calculations of its own.
-
-## Status
-
-The executable prototype includes an ordinary oscillator adapter, headless terminal analysis, a shared local session, saved-workspace replay, and an optional Godot 2D/3D viewport. Follow the [quickstart](docs/quickstart.md) to run it from source. The [RCI-to-FSRT integration](docs/ADAPTERS.md) adds a generic adapter boundary, declared calibration of two independent synthetic mass observations, one pinned FSRT estimation operation, and offline investigation replay. Domain calculations remain in their authoritative repositories. PLSR's [terminal verification workflow](docs/PLSR.md) retains its separate saved bundles; it does not yet attach to the shared session or viewport. Further adapters, the broader capabilities described above, and packaged releases remain future work. The architecture is published in [docs/ARCHITECTURE.md](docs/ARCHITECTURE.md).
+The built-in examples are synthetic. Successful computation, content integrity
+and matching replay digests do not establish physical validity or calibration
+traceability. Domain-specific viewport support is limited to the oscillator;
+external integrations expose terminal and JSON records as described below.
 
 ## Integrated tools
 
@@ -105,18 +67,18 @@ the following repositories retain distinct engineering responsibilities.
 
 | Component | Responsibility | CIW status |
 | --- | --- | --- |
-| [Provenance-Preserving Data Acquisition](https://github.com/giasonpooni/Provenance-Preserving-Data-Acquisition) | Source acquisition, observations, and durable artifact/history retention with source identity, extraction lineage, and explicit missingness | Adapter not yet integrated |
-| [Evidence and State Management](https://github.com/giasonpooni/Evidence-and-State-Management) | Evidence, versioned state, admission, review, and release management across scientific and physical-economy domains | Persistence/governance adapter not yet integrated |
-| [Scientific Computation Runtime](https://github.com/giasonpooni/Scientific-Computation-Runtime) | Versioned scientific state, declared computational workloads, and provenance-bearing execution | Runtime adapter not yet integrated |
+| [Provenance-Preserving Data Acquisition](https://github.com/giasonpooni/Provenance-Preserving-Data-Acquisition) | Source acquisition, observations, and durable artifact/history retention with source identity, extraction lineage, and explicit missingness | No CIW adapter |
+| [Evidence and State Management](https://github.com/giasonpooni/Evidence-and-State-Management) | Evidence, versioned state, admission, review, and release management across scientific and physical-economy domains | No CIW persistence/governance adapter |
+| [Scientific Computation Runtime](https://github.com/giasonpooni/Scientific-Computation-Runtime) | Versioned scientific state, declared computational workloads, and provenance-bearing execution | No CIW runtime adapter |
 | [Geospatial State Visualization](https://github.com/giasonpooni/Geospatial-State-Visualization) | Read-only inspection of geographic entities, routes, flows, and temporal states | Separate visualization client; no CIW connection |
 | [State Estimation Evaluation Testbed](https://github.com/giasonpooni/State-Estimation-Evaluation-Testbed) | Evaluation of state reconstruction under noise, missingness, latency, and degradation | Early executable contract slice; no evaluation runner or CIW adapter |
-| [Constraint-Based State Reconciliation](https://github.com/giasonpooni/Constraint-Based-State-Reconciliation) | Reconciliation of estimated states against declared constraints | Specification-stage component; no executable adapter |
+| [Constraint-Based State Reconciliation](https://github.com/giasonpooni/Constraint-Based-State-Reconciliation) | Reconciliation of estimated states against declared constraints | No executable adapter |
 
-These roles extend the existing substrate. A repository rename does not change
+A repository rename does not change
 operation IDs, schemas, retained evidence, execution/result/verification identities,
 or historical runtime pins. The integrated catalogue above remains the record of
 exercised CIW paths; a related repository is not an integration by itself.
-See the [adapter ownership boundaries](docs/ADAPTERS.md#extension-roles).
+See the [adapter ownership boundaries](docs/ADAPTERS.md#related-component-boundaries).
 
 ## Documentation
 

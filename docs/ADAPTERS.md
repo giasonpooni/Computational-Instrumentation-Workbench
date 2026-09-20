@@ -204,12 +204,9 @@ uncertainty retention, offline reopening/replay and terminal representations.
 The complete checked-out-repository path is also exercised using the fixture
 and CLI commands above.
 
-The covariance extension below integrates JSPT propagation operations. Intrinsic
-Surface Geodesics, Curved Surface Runtime, CSE, SRA, YWIR, GAT and the acquisition
-and evidence-management components listed below remain
-planned integrations with separate roles.
-PLSR's existing terminal bundle path remains available; attaching its
-verification results to shared investigations is a subsequent integration.
+The covariance extension below integrates JSPT propagation operations.
+PLSR's terminal bundle path is available separately; its results are not
+attached to shared investigations.
 The generic seam does not establish arbitrary event-stream resampling,
 hardware acquisition, real-time guarantees, cross-sensor calibration correlation,
 or physical qualification.
@@ -238,44 +235,26 @@ both v1 and v2. The covariance guide adds the JSPT checkout for propagation. His
 an explicitly supplied local checkout. JSPT is an operation provider; it is not
 a measurement source, an automatic derivative verifier or a physical certificate.
 
-The small manifest/batch protocol implemented here is an additive executable
-slice, not completion of the architecture's broader M1/M3 contracts. The
-architecture's affine-displacement bench, named held-out calibration trials,
-path-state estimator, multi-run journal, and calibrated Godot representations
-remain separate development gates. Current acquisition applicability and shared
-parameter covariance implement only the stated RCI-to-FSRT snapshot path.
+Current acquisition applicability and shared parameter covariance apply to
+this documented RCI-to-FSRT snapshot path. A physical calibration bench,
+multi-run journal and calibrated external-instrument viewport are not supplied.
 
-## Extension roles
+## Related component boundaries
 
-Future integrations extend the same substrate and preserve these ownership boundaries:
+The [related stack catalogue](../README.md#related-stack-components) records
+canonical repository names separately from the integrated tools. These
+components have no registered CIW adapter:
 
-| Repository/tool | Workbench role | Boundary |
-| --- | --- | --- |
-| RCI | Measurement-chain/calibration adapter | Original observations to declared calibrated evidence |
-| FSRT | Physical state-estimation instrument | Declared model and evidence to estimates, residuals, covariance or refusal |
-| JSPT | Sensitivity/covariance operation provider | Jacobians, covariance propagation, coordinate transforms, Monte Carlo comparison |
-| Intrinsic Surface Geodesics | Geometry/path artifact provider | Mesh/path to versioned path geometry |
-| Curved Surface Runtime | Domain-specific path-sensitivity instrument | Path artifact and observations to sensitivity envelope |
-| PLSR / GAT | Verification operations | Separate certificate/check identities attached to retained results |
-| CSE | Evidence-to-decision instrument | Fail-closed disposition with separate decision identity |
-| SRA | Typed execution-plan compiler | Eligible operation graph; no execution authority |
-| YWIR | Compute/admission control | Admission/refusal before CIW invokes a provider |
-| [Provenance-Preserving Data Acquisition](https://github.com/giasonpooni/Provenance-Preserving-Data-Acquisition) | Source acquisition, observations, and durable artifact/history provider | Preserve source identity, extraction lineage, missingness, and append-only artifact/observation history through an identity-preserving adapter |
-| [Scientific Computation Runtime](https://github.com/giasonpooni/Scientific-Computation-Runtime) | Declared scientific workload execution | Specify, dispatch, and record computations; numerical implementations remain distinct from execution machinery |
-| ASSAY / SCL | Existing measurement and numerical components | Retain their own contracts behind adapters |
-| [Evidence and State Management](https://github.com/giasonpooni/Evidence-and-State-Management) | Evidence, versioned state, admission, and release management | Persistence/governance adapter preserves source identities and CIW's separate execution/result records |
-| [Geospatial State Visualization](https://github.com/giasonpooni/Geospatial-State-Visualization) | Geographic and temporal inspection client | Read-only projection; neither the evidence authority nor CIW's Godot viewport |
-| [State Estimation Evaluation Testbed](https://github.com/giasonpooni/State-Estimation-Evaluation-Testbed) | State-reconstruction evaluation | Early executable contract slice; no estimator, evaluation runner, or CIW adapter |
-| [Constraint-Based State Reconciliation](https://github.com/giasonpooni/Constraint-Based-State-Reconciliation) | Constraint-based correction of estimated states | Specification-stage; declared constraints, corrections, and uncertainty remain distinct from verification |
+| Repository | Responsibility and boundary |
+| --- | --- |
+| [Provenance-Preserving Data Acquisition](https://github.com/giasonpooni/Provenance-Preserving-Data-Acquisition) | Source acquisition and artifact/observation history retain source identity, extraction lineage and explicit missingness |
+| [Scientific Computation Runtime](https://github.com/giasonpooni/Scientific-Computation-Runtime) | Declared scientific workloads and execution records remain distinct from numerical implementations |
+| [Evidence and State Management](https://github.com/giasonpooni/Evidence-and-State-Management) | Evidence, versioned state, admission and release management retain their own identities and authority |
+| [Geospatial State Visualization](https://github.com/giasonpooni/Geospatial-State-Visualization) | Read-only geographic and temporal inspection; separate from CIW's Godot viewport and evidence authority |
+| [State Estimation Evaluation Testbed](https://github.com/giasonpooni/State-Estimation-Evaluation-Testbed) | Early executable state-reconstruction contract slice; no estimator, evaluation runner, or CIW adapter |
+| [Constraint-Based State Reconciliation](https://github.com/giasonpooni/Constraint-Based-State-Reconciliation) | Constraint-based state reconciliation scope; no executable adapter; corrections and uncertainty do not confer verification |
 
-The six descriptively named repositories above are related components, not
-integrated CIW tools. Historical `STE` and `DAF` labels may remain in retained
-records and package names. The repository names do not create new operation IDs,
-rewrite schemas or runtime pins, or transfer scientific authority to CIW.
-
-The next integrated physical workflow is calibrated metrology plus retained path
-geometry and a domain-owned path-sensitivity model. Ontology/graph projections
-can represent the resulting evidence, calibration, run, operation, execution,
-result, verification and decision links after the executable boundaries are
-established. No certificate or disposition silently converts a result into
-physical truth.
+Historical `STE` and `DAF` labels may remain in retained records and package
+names. Repository renames do not change operation IDs, schemas, runtime pins,
+or separate evidence, execution, result and verification identities. Related
+repositories do not transfer their scientific authority to CIW.
