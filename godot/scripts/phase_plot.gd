@@ -10,6 +10,8 @@ var _screen: PackedVector2Array = []
 var _selected := -1
 var _stale := true
 var _limits := Rect2(-1, -1, 2, 2)
+var _axis_x := ""
+var _axis_y := ""
 
 
 func _ready() -> void:
@@ -21,9 +23,21 @@ func _ready() -> void:
 func set_run(run: Dictionary) -> void:
 	_times = run.get("time_s", [])
 	_positions.clear()
+	## The portrait plots the run's first declared channel against its second;
+	## which quantities those are is the record's business, not this view's.
 	var channels: Dictionary = run.get("channels", {})
-	var q: Array = channels.get("q", {}).get("values", [])
-	var v: Array = channels.get("v", {}).get("values", [])
+	var names: Array = channels.keys()
+	var q: Array = []
+	var v: Array = []
+	_axis_x = ""
+	_axis_y = ""
+	if names.size() >= 2:
+		var first: Dictionary = channels.get(names[0], {})
+		var second: Dictionary = channels.get(names[1], {})
+		q = first.get("values", [])
+		v = second.get("values", [])
+		_axis_x = "%s (%s)" % [str(names[0]), str(first.get("unit", ""))]
+		_axis_y = "%s (%s)" % [str(names[1]), str(second.get("unit", ""))]
 	var low := Vector2(INF, INF)
 	var high := Vector2(-INF, -INF)
 	for index in range(mini(q.size(), v.size())):
@@ -72,8 +86,8 @@ func _draw() -> void:
 		draw_line(Vector2(area.position.x, y), Vector2(area.end.x, y), Color("233043"))
 		draw_string(font, Vector2(x - 15, area.end.y + 21), "%.2f" % (_limits.position.x + _limits.size.x * fraction), HORIZONTAL_ALIGNMENT_LEFT, -1, 11, MUTED)
 		draw_string(font, Vector2(7, y + 4), "%.2f" % (_limits.end.y - _limits.size.y * fraction), HORIZONTAL_ALIGNMENT_LEFT, -1, 11, MUTED)
-	draw_string(font, Vector2(area.position.x, 21), "v (m/s)", HORIZONTAL_ALIGNMENT_LEFT, -1, 12, MUTED)
-	draw_string(font, Vector2(area.end.x - 36, size.y - 8), "q (m)", HORIZONTAL_ALIGNMENT_LEFT, -1, 12, MUTED)
+	draw_string(font, Vector2(area.position.x, 21), _axis_y, HORIZONTAL_ALIGNMENT_LEFT, -1, 12, MUTED)
+	draw_string(font, Vector2(area.end.x - 36, size.y - 8), _axis_x, HORIZONTAL_ALIGNMENT_LEFT, -1, 12, MUTED)
 	_screen.clear()
 	for point in _positions:
 		_screen.append(_project(point))

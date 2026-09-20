@@ -115,6 +115,9 @@ def run_godot(executable: str, label: str, arguments: list[str], timeout: int) -
     return output
 
 
+GENERALITY_PASS = "PASS: the viewport builds channels"
+
+
 def check(executable: str) -> None:
     require_unused_port()
     environment = os.environ.copy()
@@ -144,12 +147,19 @@ def check(executable: str) -> None:
                     raise CheckError("Live protocol smoke exited without its PASS sentinel")
                 if process.poll() is not None:
                     raise CheckError("Temporary CIW service stopped during the live protocol check")
+                generality = run_godot(
+                    executable, "channel generality",
+                    ["--script", "res://tests/channel_generality.gd"], timeout=60,
+                )
+                if not any(line.startswith(GENERALITY_PASS) for line in generality.splitlines()):
+                    raise CheckError("Channel generality check exited without its PASS sentinel")
                 failed = False
             finally:
                 stop_service(process)
                 if failed:
                     show_output("temporary service diagnostics", log_path.read_text(encoding="utf-8", errors="replace"))
-    print("PASS: Godot import and live protocol check; temporary service stopped.", flush=True)
+    print("PASS: Godot import, live protocol and channel generality checks; temporary service stopped.",
+          flush=True)
 
 
 def main(argv: list[str] | None = None) -> int:

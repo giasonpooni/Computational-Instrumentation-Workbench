@@ -121,7 +121,7 @@ func set_run(run: Dictionary) -> void:
 		sphere.radius = _base_radius * 0.007
 		sphere.height = sphere.radius * 2
 		_marker.mesh = sphere
-		_build_axes(low, high, render.get("axis_labels", ["q (m)", "energy (J)", "v (m/s)"]))
+		_build_axes(low, high, render.get("axis_labels", ["", "", ""]))
 		_update_camera()
 
 

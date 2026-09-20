@@ -27,6 +27,8 @@ var _apply_interval: Button
 var _play: Button
 var _view_state: Label
 var _value_labels: Dictionary = {}
+var _channel_names: Array = []
+var _samples_row: HBoxContainer
 var _playing := false
 var _play_time := 0.0
 var _duration := 0.0
@@ -162,8 +164,7 @@ func _build_ui() -> void:
 	context_rows.add_child(controls)
 	controls.add_child(_label("CHANNEL", 11, MUTED))
 	_channel = OptionButton.new()
-	for channel in ["q", "v", "energy"]:
-		_channel.add_item(channel)
+	## Items come from the run's declared channels, never a compiled-in list.
 	_channel.item_selected.connect(func(index: int):
 		if not _synchronizing:
 			_client.update_selection({"channel": _channel.get_item_text(index)})
@@ -229,21 +230,10 @@ func _build_ui() -> void:
 	_slider.step = 0.001
 	_slider.value_changed.connect(_slider_changed)
 	timeline_column.add_child(_slider)
-	var samples := HBoxContainer.new()
-	samples.add_theme_constant_override("separation", 12)
-	column.add_child(samples)
-	for name in ["q", "v", "energy"]:
-		var sample_card := _panel()
-		sample_card.size_flags_horizontal = Control.SIZE_EXPAND_FILL
-		samples.add_child(sample_card)
-		var contents := HBoxContainer.new()
-		sample_card.add_child(contents)
-		contents.add_child(_label(str(name).to_upper(), 12, MUTED))
-		var value := _label("—", 23)
-		value.size_flags_horizontal = Control.SIZE_EXPAND_FILL
-		value.horizontal_alignment = HORIZONTAL_ALIGNMENT_RIGHT
-		_value_labels[name] = value
-		contents.add_child(value)
+	_samples_row = HBoxContainer.new()
+	_samples_row.add_theme_constant_override("separation", 12)
+	column.add_child(_samples_row)
+	## One card per declared channel; built when a snapshot names them.
 	_sample_label = _label("SAMPLE INSPECTION  /  awaiting backend values", 12, MUTED)
 	column.add_child(_sample_label)
 	var footer := HBoxContainer.new()
@@ -253,6 +243,33 @@ func _build_ui() -> void:
 	footer.add_child(authority)
 	footer.add_child(_label("VERIFICATION  /  NOT CLAIMED", 10, AMBER))
 	_set_interaction(false)
+
+
+func _rebuild_channels(names: Array) -> void:
+	## The record decides which channels exist. Rebuild the selector and the
+	## readout cards from it rather than assuming any particular instrument.
+	if names == _channel_names:
+		return
+	_channel_names = names.duplicate()
+	_channel.clear()
+	for name in _channel_names:
+		_channel.add_item(str(name))
+	for child in _samples_row.get_children():
+		_samples_row.remove_child(child)
+		child.queue_free()
+	_value_labels.clear()
+	for name in _channel_names:
+		var sample_card := _panel()
+		sample_card.size_flags_horizontal = Control.SIZE_EXPAND_FILL
+		_samples_row.add_child(sample_card)
+		var contents := HBoxContainer.new()
+		sample_card.add_child(contents)
+		contents.add_child(_label(str(name).to_upper(), 12, MUTED))
+		var value := _label("—", 23)
+		value.size_flags_horizontal = Control.SIZE_EXPAND_FILL
+		value.horizontal_alignment = HORIZONTAL_ALIGNMENT_RIGHT
+		_value_labels[name] = value
+		contents.add_child(value)
 
 
 func _set_interaction(enabled: bool) -> void:
@@ -284,6 +301,7 @@ func _on_status(state: String, detail: String) -> void:
 func _on_snapshot(snapshot: Dictionary) -> void:
 	var run: Dictionary = snapshot.run
 	var metadata: Dictionary = run.metadata
+	_rebuild_channels(Dictionary(run.get("channels", {})).keys())
 	var previous_run := _identity_run
 	_identity_run = str(run.run_id)
 	_duration = float(metadata.duration_s)
@@ -316,14 +334,18 @@ func _on_selection(selection: Dictionary) -> void:
 	_interval_label.text = "Analysis interval [%.3f, %.3f) s" % [float(interval[0]), float(interval[1])]
 	_interval_start.set_value_no_signal(float(interval[0]))
 	_interval_end.set_value_no_signal(float(interval[1]))
-	var channels := ["q", "v", "energy"]
-	_channel.select(channels.find(str(selection.channel)))
+	_channel.select(_channel_names.find(str(selection.channel)))
 	_synchronizing = false
 
 
 func _on_sample(sample: Dictionary) -> void:
+	var values: Dictionary = sample.values
+	var units: Dictionary = sample.units
 	for channel in _value_labels:
-		_value_labels[channel].text = "%.6f %s" % [float(sample.values[channel]), str(sample.units[channel])]
+		if values.has(channel):
+			_value_labels[channel].text = "%.6f %s" % [float(values[channel]), str(units.get(channel, ""))]
+		else:
+			_value_labels[channel].text = "—"
 	_sample_label.text = "BACKEND SAMPLE  %s   /   nearest retained time %.6f s   /   numerical values from the record" % [int(sample.sample_index), float(sample.time_s)]
 	_phase.set_sample(int(sample.sample_index))
 	_energy.set_sample(int(sample.sample_index))
