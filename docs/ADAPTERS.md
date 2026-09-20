@@ -265,7 +265,7 @@ Future integrations extend the same substrate and preserve these ownership bound
 | ASSAY / SCL | Existing measurement and numerical components | Retain their own contracts behind adapters |
 | [Evidence and State Management](https://github.com/giasonpooni/Evidence-and-State-Management) | Evidence, versioned state, admission, and release management | Persistence/governance adapter preserves source identities and CIW's separate execution/result records |
 | [Geospatial State Visualization](https://github.com/giasonpooni/Geospatial-State-Visualization) | Geographic and temporal inspection client | Read-only projection; neither the evidence authority nor CIW's Godot viewport |
-| [State Estimation Evaluation Testbed](https://github.com/giasonpooni/State-Estimation-Evaluation-Testbed) | State-reconstruction evaluation | Specification-stage; no estimator or evaluation adapter implemented here |
+| [State Estimation Evaluation Testbed](https://github.com/giasonpooni/State-Estimation-Evaluation-Testbed) | State-reconstruction evaluation | Early executable contract slice; no estimator, evaluation runner, or CIW adapter |
 | [Constraint-Based State Reconciliation](https://github.com/giasonpooni/Constraint-Based-State-Reconciliation) | Constraint-based correction of estimated states | Specification-stage; declared constraints, corrections, and uncertainty remain distinct from verification |
 
 The six descriptively named repositories above are related components, not

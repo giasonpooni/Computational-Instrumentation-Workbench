@@ -257,7 +257,8 @@ current technical names and responsibilities of Scientific Computation Runtime,
 Provenance-Preserving Data Acquisition, Geospatial State Visualization, State
 Estimation Evaluation Testbed, Evidence and State Management, and Constraint-Based
 State Reconciliation. None is registered as an integrated CIW tool in this
-catalogue. The evaluation and reconciliation repositories remain specifications.
+catalogue. The evaluation repository has an early executable contract slice but
+no evaluation runner; the reconciliation repository remains a specification.
 Their [adapter boundaries](ADAPTERS.md#extension-roles) preserve existing evidence,
 operation, execution, result, verification, and runtime identities.
 
