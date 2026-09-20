@@ -11,7 +11,7 @@ Development proceeds in two tracks that hand off through this repository.
 | Documentation | `README.md`, `docs/ARCHITECTURE.md` | The contracts, data model, synchronization semantics, and quality budgets, each stated as a numbered requirement |
 | Prototype | `src/ciw/`, `godot/`, `scripts/`, `tests/`, `docs/PROTOCOL.md`, `docs/quickstart.md`, `docs/coordination.md`, continuous integration | An implementation of the contracts, the wire-level protocol specification, and the evidence that the implementation conforms |
 
-The hand-off rule is: the architecture defines contracts; the prototype implements them; tests and integration checks verify conformance against requirement identifiers; decisions raised by either track are recorded as ADRs.
+The hand-off rule is: the architecture defines contracts; the prototype implements them; tests and integration checks verify conformance against requirement identifiers; decisions raised by either track are recorded in the architecture document's Decisions table (Section 19), which is the published record.
 
 ## Requirement identifiers
 
@@ -26,6 +26,7 @@ Normative statements in `docs/ARCHITECTURE.md` carry a stable identifier and use
 | `SESS` | Sessions, persistence, recording, replay, export |
 | `OPS` | Operator interaction: commands, keybindings, layouts, scripting, headless use |
 | `EXT` | Extension model: adding instruments, representations, exports |
+| `CAL` | Calibration contract and the deterministic bench: profiles, corrected data, fixtures, metrics, bench reports |
 | `PERF` | Budgets and quality attributes |
 
 Tests and integration checks cite the identifier they verify. The conformance table in the architecture document maps every identifier to its verification method and the milestone by which it must pass.
@@ -51,13 +52,18 @@ The architecture document maps its components to these directories.
 │   ├── session.py            Authoritative session: selection, immutable results, workspaces
 │   ├── server.py             WebSocket transport, bind policy, and saved shutdown
 │   ├── cli.py                Headless analysis, service control, health probe, terminal access
+│   ├── calibration.py        Calibration profiles: record shape, validity, and refusal (planned)
+│   ├── bench.py              Deterministic bench: fixtures, tolerance policy, report (planned)
 │   ├── plsr.py               Portable PLSR run bundles: evaluate, inspect, replay
 │   └── plsr_engine.py        Source-pinned bridge to the optional external PLSR runtime
 ├── godot/                    Godot project for the 2D/3D viewport, a client of the session
 ├── deploy/                   Deployment guides: native controller and container backend
 ├── examples/                 Reference inputs for integrated instruments, such as `examples/plsr/`
+│   └── calibration/          Calibration artifacts per instrument: `calibration/<instrument>/` (planned)
 ├── scripts/                  Integration checks and the native deployment controller
 ├── tests/                    Python test suites; conformance tests go under `tests/conformance/`
+│   ├── test_calibration.py   Calibration record, profile validity, corrected-data provenance (planned)
+│   └── test_bench_fixtures.py Deterministic fixture set, tolerance policy, bench report (planned)
 └── docs/
     ├── ARCHITECTURE.md       Architecture and normative requirements
     ├── PROTOCOL.md           Wire-level protocol specification
