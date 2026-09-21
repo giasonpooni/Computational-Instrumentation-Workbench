@@ -11,9 +11,16 @@ flowchart TD
     Inputs["Source observations and declarations"] --> Choice{"Supported CIW workflow"}
     Choice -->|Retained scalar samples| Telemetry["PPDA, STFE, GSIE and SET"]
     Choice -->|Measurement chain| Measurement["RCI and FSRT"]
+    Choice -->|Calibrated process| Process["FSRT, TBRT, MCUR, OIT, GSIE, CBSR and FDIR"]
     Choice -->|Declared geometry| Geometry["GTE circle investigation"]
     Choice -->|Declared stability model| Stability["PLSR terminal bundle"]
     Telemetry --> Separate["Telemetry session container"]
+    Process --> Calibrated["Calibrated observable session"]
+    Calibrated --> Check["SET replay and ICRH conformance"]
+    Separate --> Check
+    Calibrated --> Decision["SIDT, OIT, GSIE, EDSPT and YWIR"]
+    Decision --> Advisory["Retained next-observation decision"]
+    Advisory --> Check
     Measurement --> Shared["Shared investigation"]
     Geometry --> Shared
     Shared -->|Explicit covariance operation| JSPT["JSPT propagation"]
@@ -23,40 +30,43 @@ flowchart TD
 
 This map groups implemented external numerical workflows by their retained
 container; it is not an interchange bus. The built-in oscillator and read-only
-exchange inspector are listed below. The six new standalone foundations retain
-their own APIs and exports. Start with the [diagram atlas](DIAGRAMS.md) for
-mechanism diagrams and links to all 28 repositories.
+exchange inspector are listed below. The numerical foundations retain their
+own APIs and exports while explicit paths bind selected operations. The
+[integration coverage matrix](INTEGRATION_COVERAGE.md) tracks executable
+connections and profile gaps across the 29 public components. Start with the
+[diagram atlas](DIAGRAMS.md) for mechanism diagrams.
 
 ## Component map
 
-This is the public repository inventory reviewed on 2026-09-20. “Executable” describes code present in the component; it does not mean production-qualified, physically validated or integrated with every other component. “Pinned” describes the CIW binding, which can differ from a provider's default branch. Local READMEs and versioned contracts specify exact supported behavior.
+This is the public repository inventory reviewed on 2026-09-21. “Executable” describes code present in the component; it does not mean production-qualified, physically validated or integrated with every other component. “Pinned” describes the CIW binding, which can differ from a provider's default branch. Local READMEs and versioned contracts specify exact supported behavior.
 
 | Component | Responsibility | Present scope | CIW connection |
 | --- | --- | --- | --- |
-| [Computational Instrumentation Workbench](https://github.com/giasonpooni/Computational-Instrumentation-Workbench) | Operation, inspection and replay | Executable prototype | Host; oscillator, five external tool workflows, retained scalar telemetry and read-only exchange inspection |
+| [Computational Instrumentation Workbench](https://github.com/giasonpooni/Computational-Instrumentation-Workbench) | Operation, inspection and replay | Executable prototype | Host; retained telemetry, calibrated process, identified observation decision, measurement/covariance, geometry, Lyapunov and read-only exchange paths |
 | [Provenance Preserving Data Acquisition](https://github.com/giasonpooni/Provenance-Preserving-Data-Acquisition) | Source acquisition and observation lineage | Executable acquisition, storage and source adapters | Exchange inspection and pinned retained-telemetry projection |
 | [Streaming Telemetry Feature Extraction](https://github.com/giasonpooni/Streaming-Telemetry-Feature-Extraction) | Signal conditioning and stream-quality diagnostics | Executable bounded regular-grid causal scalar window mean | Pinned telemetry script and numerical replay |
-| [Geometric State Inference Engine](https://github.com/giasonpooni/Geometric-State-Inference-Engine) | Declared geometric state estimation | Executable linear prediction/update and bounded geometry; not a universal inference authority | Pinned telemetry script with full prior/model/observation retention |
+| [Geometric State Inference Engine](https://github.com/giasonpooni/Geometric-State-Inference-Engine) | Declared geometric state estimation | Executable linear prediction/update and bounded geometry; not a universal inference authority | Pinned telemetry and calibrated process paths with full prior/model/observation retention and explicit OIT gate in the latter |
 | [Evidence and State Management](https://github.com/giasonpooni/Evidence-and-State-Management) | Evidence retention, state admission and release | Executable local rails and bounded domain implementations; demonstration corpora | Native telemetry replay review and optional candidate-evidence capture; no canonical-state persistence |
 | [Scientific Computation Runtime](https://github.com/giasonpooni/Scientific-Computation-Runtime) | Scientific workload execution and verification records | Executable runtime and state/evidence packages; backend-specific prerequisites | Read-only exchange inspection; no execution adapter |
 | [Retrofitted Computational Instrumentation](https://github.com/giasonpooni/Retrofitted-Computational-Instrumentation) | Measurement-chain records and declared calibration | Executable host-side software with simulated examples | Pinned RCI calibration provider used by CIW |
-| [Fluid State Reconstruction Testbed](https://github.com/giasonpooni/Fluid-State-Reconstruction-Testbed) | Fluid-state estimation and balance reconciliation | Executable experimental fluid toolkit | Pinned two-reservoir snapshot and covariance workflows |
+| [Fluid State Reconstruction Testbed](https://github.com/giasonpooni/Fluid-State-Reconstruction-Testbed) | Fluid-state estimation and balance reconciliation | Executable experimental fluid toolkit | Pinned snapshot/covariance workflows and calibrated two-channel process declaration |
 | [Jacobian Sensitivity Propagation Testbed](https://github.com/giasonpooni/Jacobian-Sensitivity-Propagation-Testbed) | Local derivatives, sensitivity and covariance transport | Executable numerical testbed | Pinned covariance propagation provider |
 | [Geometric Telemetry Engine](https://github.com/giasonpooni/Geometric-Telemetry-Engine) | Geometric reconciliation and tangent uncertainty | Executable experimental circle operation | Pinned circle investigation and replay |
 | [Parameterized Lyapunov Stability Runtime](https://github.com/giasonpooni/Parameterized-Lyapunov-Stability-Runtime) | Quadratic Lyapunov evaluation | Executable runtime in development | Terminal workflow; separate bundles, outside shared session/viewport |
 | [Construction State Estimator for BIM](https://github.com/giasonpooni/Construction-State-Estimator-for-BIM) | BIM evidence-to-decision computation | Executable experimental BIM runtime | Standalone; companion commitment and numerical adapters |
 | [Schematics Retrieval Agent](https://github.com/giasonpooni/Schematics-Retrieval-Agent) | Typed schematic retrieval and kernel eligibility | Executable graph and optional companion adapters | Standalone; no CIW adapter |
-| [Yield Weighted Inference Runtime](https://github.com/giasonpooni/Yield-Weighted-Inference-Runtime) | Inference-budget admission and settlement | Executable runtime in development | Standalone; no CIW adapter |
+| [Yield Weighted Inference Runtime](https://github.com/giasonpooni/Yield-Weighted-Inference-Runtime) | Inference-token budget admission and settlement | Executable runtime in development | Pinned advisory token decision in identified-design; token budgets remain distinct from measurement cost and no reservation is created |
 | [Geospatial State Visualization](https://github.com/giasonpooni/Geospatial-State-Visualization) | Geographic and temporal inspection | Executable browser client with synthetic provider | Separate client; no CIW session/replay connection |
 | [Flat Torus Geodesic Reference](https://github.com/giasonpooni/Flat-Torus-Geodesic-Reference) | Exact flat-geometry reference and representation invariants | Executable mathematical reference | Standalone; versioned companion artifact |
 | [Curved Surface Geodesic Sensitivity Runtime](https://github.com/giasonpooni/Curved-Surface-Geodesic-Sensitivity-Runtime) | Curvature-dependent path sensitivity | Executable numerical engine and tolerance experiments | Standalone; flat-reference companion boundary |
-| [State Estimation Evaluation Testbed](https://github.com/giasonpooni/State-Estimation-Evaluation-Testbed) | Instrument-exchange validation, declared-truth evaluation and replay binding | Executable validators, scoped metrics and binding checks; no estimator | Pinned exchange checker and telemetry replay verification |
-| [Constraint Based State Reconciliation](https://github.com/giasonpooni/Constraint-Based-State-Reconciliation) | Reconciliation under declared constraints | Executable bounded affine-exact reconciliation plus invariant corpus | Optional pinned telemetry reconciliation receipt |
+| [State Estimation Evaluation Testbed](https://github.com/giasonpooni/State-Estimation-Evaluation-Testbed) | Instrument-exchange validation, declared-truth evaluation and replay binding | Executable validators, scoped metrics and binding checks; no estimator | Pinned exchange checker, telemetry and calibrated process replay verification |
+| [Constraint Based State Reconciliation](https://github.com/giasonpooni/Constraint-Based-State-Reconciliation) | Reconciliation under declared constraints | Executable bounded affine-exact reconciliation plus invariant corpus | Optional telemetry reconciliation and calibrated process conservation receipt |
+| [Instrument Conformance and Replay Harness](https://github.com/giasonpooni/Instrument-Conformance-and-Replay-Harness) | Cross-repository conformance and replay | Executable independent inspectors, compiled profiles, retained fixtures and trusted pinned runners | Telemetry, reconciled telemetry, calibrated observable and [identified budgeted observation](https://github.com/giasonpooni/Instrument-Conformance-and-Replay-Harness/blob/main/profiles/identified-budgeted-observation.v1.json) profiles |
 | [Covariance Geometry and Geodesic Testbed](https://github.com/giasonpooni/Covariance-Geometry-and-Geodesic-Testbed) | Geometry of covariance matrices | Planned scaffold; metadata checks only | No numerical implementation or adapter |
 | [Intrinsic Surface Geodesics Testbed](https://github.com/giasonpooni/Intrinsic-Surface-Geodesics-Testbed) | Intrinsic paths on triangle meshes | Planned scaffold; metadata checks only | No numerical implementation or adapter |
 | [Translation Surface Dynamics Explorer](https://github.com/giasonpooni/Translation-Surface-Dynamics-Explorer) | Trajectory dynamics on translation surfaces | Planned scaffold; metadata checks only | No numerical implementation or adapter |
 
-The oscillator is built into CIW and is not an additional repository. The first table contains 22 repositories: 19 with executable code and three geometry scaffolds. The six standalone foundations below bring the inventory to 28 repositories. A bounded executable does not imply a live acquisition bus, generic sensor fusion or physical validation. Historical operation and runtime pins remain supported.
+The oscillator is built into CIW and is not an additional repository. The first table contains 23 repositories, including three geometry scaffolds. The six numerical foundations below bring the inventory to 29 repositories. A bounded executable does not imply a live acquisition bus, generic sensor fusion or physical validation. Historical operation and runtime pins remain supported.
 
 ## Implemented workbench paths
 
@@ -66,6 +76,8 @@ The oscillator is built into CIW and is not an additional repository. The first 
 | RCI → FSRT through pinned subprocesses | Raw and calibrated evidence, two-reservoir snapshot, residuals and covariance | [Measurement and estimation](ADAPTERS.md) |
 | Retained covariance → JSPT | Explicit mapping/Jacobian, ordered covariance and source/result relationships | [Covariance workflow](COVARIANCE.md) |
 | Retained scalar bytes → PPDA → STFE → GSIE → SET, optional CBSR | Exact original bytes, full temporal covariance, explicit mappings, window, prior/model, operation/runtime pins, distinct identities and numerical replay | [Telemetry operation script](TELEMETRY.md) |
+| FSRT → TBRT → MCUR → OIT → GSIE → CBSR → FDIR → SET | Exact source bytes, raw clock frames, synchronization/calibration evidence, full covariance, observability, held/accepted reconciliation and declared fault isolability | [Calibrated observable process](CALIBRATED_OBSERVABLE.md) |
+| Retained calibrated process → SIDT → OIT → GSIE → EDSPT → YWIR | Freshly replayed upstream evidence, fitted point model, conditional covariance prediction, candidate observability, expected reduction, observation cost and separate advisory token decision | [Identified model and next observation](IDENTIFIED_DESIGN.md) |
 | Declared circle observations → GTE | Original observations, candidate, residuals, tangent uncertainty and replay inputs | [Geometric telemetry](GTE.md) |
 | Declared plant/certificate → PLSR terminal workflow | Model and sample artifacts, verdicts and replay digests in separate bundles | [Lyapunov workflow](PLSR.md) |
 | Acquisition/runtime exchange artifacts → pinned testbed validator → CIW inspector | Read-only conformance report, original parsed artifacts, byte digests and supplied-reference matches; no workspace import | [Exchange inspection](EXCHANGE.md) |
@@ -74,30 +86,33 @@ These are bounded paths. PLSR bundles are outside the shared session and viewpor
 
 Standalone companion relationships also exist: the flat-torus reference exports a versioned geometry artifact; CSE can bind companion commitments; SRA can call optional pinned numerical kernels. A commitment binding records identity and does not by itself compose scientific meaning or validate a measurement.
 
-## Additional standalone numerical foundations
+## Numerical foundations and their integrations
 
-The following six repositories extend the stack with implemented standalone
-numerical foundations, reviewed on 2026-09-21. Each includes a bounded Python
-API, synthetic examples, local tests and an explicit optional exporter for the
-existing `notation.instrument.result-artifact.v1` format. These are additions
-to the component inventory, not additions to the implemented CIW paths above.
+The following six repositories extend the stack with bounded Python APIs,
+synthetic examples, local tests and optional exporters for the existing
+`notation.instrument.result-artifact.v1` format. Four execute in the
+calibrated process path; the identified observation-decision path connects
+the remaining two to the same retained substrate.
 
-| Instrument | Implemented numerical foundation | Role in the existing stack |
+| Instrument | Implemented numerical foundation | CIW integration and boundary |
 | --- | --- | --- |
-| [Time Base Reconciliation Runtime](https://github.com/giasonpooni/Time-Base-Reconciliation-Runtime) | Supplied affine clock mapping and correlated first-order time uncertainty | Derives event-time coordinates while PPDA retains source timestamps; consumers explicitly select the derived coordinate |
-| [Observability and Identifiability Testbed](https://github.com/giasonpooni/Observability-Identifiability-Testbed) | Finite-horizon linear observability and local sensitivity/Fisher diagnostics | Diagnoses declared GSIE models and supplied JSPT sensitivities; owns neither estimation nor independent evaluation |
-| [Metrological Calibration and Uncertainty Runtime](https://github.com/giasonpooni/Metrological-Calibration-Uncertainty-Runtime) | Applicable affine calibration and full correlated first-order uncertainty | Complements the measurement-chain boundary without replacing RCI's existing calibration operation or pins |
-| [System Identification and Dynamics Testbed](https://github.com/giasonpooni/System-Identification-Dynamics-Testbed) | Fully observed discrete linear least squares and one-step evaluation | Produces candidate dynamics; model selection and use by GSIE remain explicit caller decisions |
-| [Fault Detection and Isolation Runtime](https://github.com/giasonpooni/Fault-Detection-Isolation-Runtime) | Innovation NIS/whitening and deterministic CUSUM transitions | Interprets supplied residuals statistically; physical fault isolation and automatic response are not implemented |
-| [Experiment Design and Sensor Placement Testbed](https://github.com/giasonpooni/Experiment-Design-Sensor-Placement-Testbed) | Finite candidate information ranking with D- and A-optimal criteria | Consumes declared sensitivities and noise models; returns advisory rankings without commanding acquisition |
+| [Time Base Reconciliation Runtime](https://github.com/giasonpooni/Time-Base-Reconciliation-Runtime) | Supplied affine clock mapping, evidence and correlated first-order time uncertainty | Pinned calibrated process operation; raw timestamps/frame retained; absent map or synchronization evidence refuses |
+| [Observability and Identifiability Testbed](https://github.com/giasonpooni/Observability-Identifiability-Testbed) | Finite-horizon linear observability, rank/conditioning and local sensitivity/Fisher diagnostics | Pinned calibrated process gate bound to GSIE F/H/model; only `observable` permits the update |
+| [Metrological Calibration and Uncertainty Runtime](https://github.com/giasonpooni/Metrological-Calibration-Uncertainty-Runtime) | Applicable affine calibration and full correlated first-order uncertainty | Pinned calibrated process operation with explicit cross-covariance policy; historical RCI operations remain supported |
+| [System Identification and Dynamics Testbed](https://github.com/giasonpooni/System-Identification-Dynamics-Testbed) | Fully observed discrete linear least squares and one-step evaluation | Pinned declared-identification operation in identified-design; adoption stays explicit and parameter covariance remains unknown |
+| [Fault Detection and Isolation Runtime](https://github.com/giasonpooni/Fault-Detection-Isolation-Runtime) | Innovation NIS/whitening, CUSUM and declared residual-signature isolability | Pinned calibrated process assessment consumes retained GSIE/CBSR outputs and covariance; unknown cross-covariance returns ambiguity |
+| [Experiment Design and Sensor Placement Testbed](https://github.com/giasonpooni/Experiment-Design-Sensor-Placement-Testbed) | Finite candidate information ranking with D- and A-optimal criteria plus cost-budgeted next observation | Pinned uncertainty-reduction ranking conditional on the identified point model; advisory selection does not command acquisition |
 
-The role column describes ownership and compatible inputs, not a live
-cross-instrument execution path. The six example exports have exercised SET's
+The [calibrated guide](CALIBRATED_OBSERVABLE.md),
+[identified-design guide](IDENTIFIED_DESIGN.md) and
+[coverage matrix](INTEGRATION_COVERAGE.md) distinguish exercised paths from
+remaining integration targets. The original six example exports exercised SET's
 existing validator, pinned by their optional `exchange` dependencies to
 [`bd261a765281a95312f7c91a3857233476294c5b`](https://github.com/giasonpooni/State-Estimation-Evaluation-Testbed/tree/bd261a765281a95312f7c91a3857233476294c5b).
-That producer-side conformance does not establish a native CIW execution,
-workspace or session adapter, an end-to-end replay path, or a SET evaluation
-runner. Existing CIW bindings and historical source pins remain unchanged.
+Producer-side conformance alone does not establish execution or replay; the
+calibrated and identified-design paths separately supply their bindings and
+ICRH fixture corpora.
+Historical CIW bindings and source pins remain supported.
 
 Exports retain explicitly mapped inputs and numerical outputs. Evidence,
 operation, caller-supplied execution, result and verification identities remain

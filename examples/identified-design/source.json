@@ -1,0 +1,266 @@
+{
+  "schema": "ciw.identified-design-input.v1",
+  "experiment_id": "experiment:synthetic:two-reservoir-next-observation:1",
+  "claim_scope": "Synthetic conditional interoperability demonstration; declared training evidence is not physical validation.",
+  "identification": {
+    "schema": "sidt.declared-identification-input.v1",
+    "model_id": "model:synthetic:two-reservoir-exchange:1",
+    "state_frame": "reservoir2.mass",
+    "clock_frame": "clock:synthetic:process",
+    "sample_interval": 1,
+    "state_names": [
+      "tank-1.mass",
+      "tank-2.mass"
+    ],
+    "state_units": [
+      "kg",
+      "kg"
+    ],
+    "input_names": [
+      "transfer-command"
+    ],
+    "input_units": [
+      "1"
+    ],
+    "condition_limit": 100000000,
+    "training": {
+      "states": [
+        [
+          60,
+          40
+        ],
+        [
+          58.2,
+          41.8
+        ],
+        [
+          56.410000000000004,
+          43.589999999999996
+        ],
+        [
+          55.22800000000001,
+          44.77199999999999
+        ],
+        [
+          54.43240000000001,
+          45.5676
+        ],
+        [
+          53.34592,
+          46.65408000000001
+        ],
+        [
+          52.726735999999995,
+          47.27326400000001
+        ],
+        [
+          52.0813888,
+          47.91861120000001
+        ],
+        [
+          51.81511104,
+          48.18488896000001
+        ]
+      ],
+      "inputs": [
+        [
+          4
+        ],
+        [
+          -3
+        ],
+        [
+          2
+        ],
+        [
+          5
+        ],
+        [
+          -4
+        ],
+        [
+          1
+        ],
+        [
+          -2
+        ],
+        [
+          3
+        ]
+      ],
+      "sample_times": [
+        -9,
+        -8,
+        -7,
+        -6,
+        -5,
+        -4,
+        -3,
+        -2,
+        -1
+      ],
+      "sample_refs": [
+        "sample:synthetic:identification:0",
+        "sample:synthetic:identification:1",
+        "sample:synthetic:identification:2",
+        "sample:synthetic:identification:3",
+        "sample:synthetic:identification:4",
+        "sample:synthetic:identification:5",
+        "sample:synthetic:identification:6",
+        "sample:synthetic:identification:7",
+        "sample:synthetic:identification:8"
+      ],
+      "evidence_refs": [
+        "evidence:synthetic:training:two-reservoir:1"
+      ]
+    }
+  },
+  "prediction": {
+    "prior_source": "retained_gsie",
+    "uncertainty_scope": "conditional_on_identified_point_model",
+    "process_covariance": [
+      [
+        0.01,
+        0
+      ],
+      [
+        0,
+        0.01
+      ]
+    ],
+    "process_covariance_evidence_refs": [
+      "evidence:synthetic:future-process-noise:1"
+    ],
+    "prior_process_crosscov_policy": "declared_zero",
+    "next_input": [
+      0
+    ]
+  },
+  "design": {
+    "criterion": "a_opt",
+    "budget": 5,
+    "cost_unit": "measurement_credit",
+    "state_scales": [
+      1,
+      1
+    ],
+    "horizon": 2,
+    "condition_limit": 100,
+    "candidates": [
+      {
+        "candidate_id": "sensor:tank-1:standard",
+        "observation_matrix": [
+          [
+            1,
+            0
+          ]
+        ],
+        "noise_covariance": [
+          [
+            0.25
+          ]
+        ],
+        "measurement_units": [
+          "kg"
+        ],
+        "cost": 2,
+        "cost_unit": "measurement_credit",
+        "prior_cross_covariance_policy": "declared_zero",
+        "evidence_refs": [
+          "evidence:synthetic:candidate:tank-1"
+        ]
+      },
+      {
+        "candidate_id": "sensor:tank-2:precise",
+        "observation_matrix": [
+          [
+            0,
+            1
+          ]
+        ],
+        "noise_covariance": [
+          [
+            0.04
+          ]
+        ],
+        "measurement_units": [
+          "kg"
+        ],
+        "cost": 4,
+        "cost_unit": "measurement_credit",
+        "prior_cross_covariance_policy": "declared_zero",
+        "evidence_refs": [
+          "evidence:synthetic:candidate:tank-2"
+        ]
+      },
+      {
+        "candidate_id": "sensor:both:premium",
+        "observation_matrix": [
+          [
+            1,
+            0
+          ],
+          [
+            0,
+            1
+          ]
+        ],
+        "noise_covariance": [
+          [
+            0.01,
+            0
+          ],
+          [
+            0,
+            0.01
+          ]
+        ],
+        "measurement_units": [
+          "kg",
+          "kg"
+        ],
+        "cost": 10,
+        "cost_unit": "measurement_credit",
+        "prior_cross_covariance_policy": "declared_zero",
+        "evidence_refs": [
+          "evidence:synthetic:candidate:both"
+        ]
+      },
+      {
+        "candidate_id": "sensor:sum-only",
+        "observation_matrix": [
+          [
+            1,
+            1
+          ]
+        ],
+        "noise_covariance": [
+          [
+            0.01
+          ]
+        ],
+        "measurement_units": [
+          "kg"
+        ],
+        "cost": 1,
+        "cost_unit": "measurement_credit",
+        "prior_cross_covariance_policy": "declared_zero",
+        "evidence_refs": [
+          "evidence:synthetic:candidate:sum"
+        ]
+      }
+    ]
+  },
+  "token_admission": {
+    "budget_unit": "inference_token",
+    "department": "exploration",
+    "token_budget": 100,
+    "requested_tokens": 16,
+    "yield_claim": {
+      "expected_rank_delta": 0,
+      "expected_new_morphism": false
+    },
+    "eta_hat": 0,
+    "similarity_to_store": 0
+  }
+}

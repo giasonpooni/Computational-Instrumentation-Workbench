@@ -8,6 +8,10 @@ contracts needed to reproduce their results. An external tool is listed as
 integrated only after its workbench entry point, saved evidence and replay path
 have been exercised together.
 
+The [integration coverage matrix](INTEGRATION_COVERAGE.md) records complete
+execution paths, profile coverage and the next concrete connections between
+existing benches.
+
 | Tool and role | Workbench status | Entry point |
 | --- | --- | --- |
 | `analytic-damped-oscillator.v1` | Integrated built-in synthetic instrument | `python -m ciw demo`, `analyze stats`, `analyze spectrum` |
@@ -15,6 +19,41 @@ have been exercised together.
 | FSRT state-estimation operation | Integrated experimental pinned subprocess; one simultaneous two-reservoir snapshot | Same investigation; shared `operation.execute` after explicit runtime binding |
 | Parameterized Lyapunov Stability Runtime (PLSR) verification operation | Integrated experimental terminal operation; Python 3.12+ and optional `plsr` extra | `python -m ciw plsr import`, `evaluate`, `inspect`, `replay` |
 | Retained scalar telemetry script | Pinned PPDA projection, STFE window mean, GSIE predict/update, SET replay verification, optional CBSR receipt | `python -m ciw telemetry create`, `inspect`, `replay`; [contract and guide](TELEMETRY.md) |
+| Calibrated observable process experiment | Pinned FSRT, TBRT, MCUR, OIT, GSIE, CBSR, FDIR and SET; ICRH conformance/replay profile | `python -m ciw calibrated-observable create`, `inspect`, `replay`; [contract and guide](CALIBRATED_OBSERVABLE.md) |
+| Identified model and budgeted next observation | Retained calibrated experiment plus pinned SIDT, OIT, GSIE, EDSPT and YWIR; ICRH `identified-budgeted-observation.v1` | `python3.12 -m ciw identified-design create`, `inspect`, `replay`; [contract and guide](IDENTIFIED_DESIGN.md) |
+| JSPT covariance propagation | Pinned operation over retained RCI/FSRT covariance artifacts | `python -m ciw covariance`, `covariance-replay`; [guide](COVARIANCE.md) |
+| GTE circle investigation | Pinned projection, local covariance, held candidate and replay | `python -m ciw geodesic create`, `inspect`, `replay`; [guide](GTE.md) |
+
+## Identified model and budgeted next observation
+
+The [identified-design guide](IDENTIFIED_DESIGN.md) connects SIDT, OIT, GSIE,
+EDSPT and YWIR to the retained calibrated experiment through eleven exact
+provider pins. Fresh upstream replay checks the prior before fitting a declared
+model, testing candidate observability, predicting one step and ranking expected
+uncertainty reduction under an observation budget. The separate YWIR result is
+an advisory computation-token decision. ICRH's
+[`identified-budgeted-observation.v1` profile](https://github.com/giasonpooni/Instrument-Conformance-and-Replay-Harness/blob/main/profiles/identified-budgeted-observation.v1.json)
+checks the retained graph and original/replay bindings.
+
+The prediction and ranking are conditional on an identified point model;
+parameter uncertainty remains unknown. This operation creates no acquisition
+command, token spending reservation, model-adoption action or ESM admission.
+The [coverage matrix](INTEGRATION_COVERAGE.md#delivered-identified-observation-decision)
+records the executable boundary and remaining connections.
+
+## Calibrated observable process experiment
+
+The [two-channel operating guide](CALIBRATED_OBSERVABLE.md) gives exact commands,
+provider pins, the analytic result and adversarial checks. The pipeline retains
+raw clock frames and timestamps, synchronization evidence, applicable calibration
+and full joint covariance. OIT's rank/conditioning status gates GSIE; CBSR retains
+accepted or held conservation candidates; FDIR consumes the retained residual
+covariance and reports declared isolability or ambiguity. SET verifies a fresh
+numerical replay, and ICRH's `calibrated-observable-telemetry.v1` profile checks
+the retained original/replay/refusal corpus.
+
+This profile uses a synthetic stationary hold. It does not infer dynamic timing
+uncertainty, perform stream feature extraction, or grant ESM admission.
 
 ## Retained scalar telemetry
 
@@ -295,12 +334,12 @@ The [related stack catalogue](../README.md#related-stack-components) records the
 current technical names and responsibilities of Scientific Computation Runtime,
 Provenance-Preserving Data Acquisition, Geospatial State Visualization, State
 Estimation Evaluation Testbed, Evidence and State Management, and Constraint-Based
-State Reconciliation. None is registered as an integrated CIW tool in this
-catalogue as operational instrument adapters. Acquisition/runtime exchange
-records and the evaluation testbed have the read-only conformance path above;
-there is no evaluation runner or reconciliation adapter. Their
-[boundaries](ADAPTERS.md#related-component-boundaries) retain existing evidence,
-operation, execution, result, verification and runtime identities.
+State Reconciliation. PPDA, SET and CBSR participate in the scoped executable
+paths above. SCR has read-only exchange inspection; GSV has no CIW projection
+adapter; ESM remains at separately requested candidate-evidence retention.
+These distinct integration states are recorded in the
+[coverage matrix](INTEGRATION_COVERAGE.md). Their boundaries retain existing
+evidence, operation, execution, result, verification and runtime identities.
 
 ## Catalogue documentation requirements
 

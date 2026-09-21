@@ -264,6 +264,19 @@ def parser() -> argparse.ArgumentParser:
         for role in ("fsrt", "tbrt", "mcur", "oit", "gsie", "cbsr", "fdir", "set"):
             action.add_argument("--" + role + "-repo", type=Path, required=True)
         action.add_argument("--output-dir", type=Path, required=True)
+    identified = commands.add_parser("identified-design", help="Identify dynamics and rank the next budgeted observation")
+    identified_actions = identified.add_subparsers(dest="identified_command", required=True)
+    identified_create = identified_actions.add_parser("create")
+    identified_create.add_argument("--source", type=Path, required=True)
+    identified_create.add_argument("--upstream", type=Path, required=True, help="Retained calibrated-observable session")
+    identified_inspect = identified_actions.add_parser("inspect")
+    identified_inspect.add_argument("path", type=Path)
+    identified_replay = identified_actions.add_parser("replay")
+    identified_replay.add_argument("path", type=Path)
+    for action in (identified_create, identified_replay):
+        for role in ("fsrt", "tbrt", "mcur", "oit", "gsie", "cbsr", "fdir", "set", "sidt", "edspt", "ywir"):
+            action.add_argument("--" + role + "-repo", type=Path, required=True)
+        action.add_argument("--output-dir", type=Path, required=True)
     plsr = commands.add_parser("plsr", help="Import, evaluate, inspect and replay pinned Lyapunov artifacts")
     actions = plsr.add_subparsers(dest="plsr_command", required=True)
     import_model = actions.add_parser("import", help="Validate and retain a sealed model artifact")
@@ -409,6 +422,22 @@ def main(argv: list[str] | None = None) -> int:
                 if args.calibrated_command == "create":
                     from .exchange import _read
                     bundle = create_session(_read(args.source, MAX_BYTES), repositories)
+                    path = save_session(bundle, args.output_dir)
+                    print_json({"session_file": str(path), "inspection": inspect_session(bundle)})
+                else:
+                    result = replay_session(read_session(args.path), repositories)
+                    path = save_session(result["session"], args.output_dir)
+                    print_json({"session_file": str(path), "replay_receipt": result["replay_receipt"]})
+        elif args.command == "identified-design":
+            from .identified_design import (ROLES, MAX_BYTES, create_session, inspect_session,
+                                            replay_session, read_session, save_session)
+            if args.identified_command == "inspect":
+                print_json(inspect_session(read_session(args.path)))
+            else:
+                repositories = {role: getattr(args, role + "_repo") for role in ROLES}
+                if args.identified_command == "create":
+                    from .exchange import _read
+                    bundle = create_session(_read(args.source, MAX_BYTES), read_session(args.upstream), repositories)
                     path = save_session(bundle, args.output_dir)
                     print_json({"session_file": str(path), "inspection": inspect_session(bundle)})
                 else:

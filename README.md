@@ -73,6 +73,12 @@ establish physical validation or deployment readiness.
 | Instrument-exchange inspector (`ciw-exchange-inspector.v1`) | Experimental read-only terminal conformance path; not a measurement or execution adapter | Inspect acquisition/runtime exchange artifacts using the pinned State Estimation Evaluation Testbed validator; preserve full covariance and distinguish supplied links from authenticated provenance | [Setup, commands and limits](docs/EXCHANGE.md), [catalogue entry](docs/INSTRUMENTS.md#instrument-exchange-inspection) |
 | Retained scalar telemetry (`ciw.telemetry-session.v1`) | Pinned PPDA → STFE → GSIE → SET operation script; optional CBSR receipt | Retain exact source bytes, declared full temporal covariance, identity clock/frame mappings and model/prior; compute causal window mean and estimate; reexecute and compare numerical content with fresh identities | [Commands, contracts, pins and limits](docs/TELEMETRY.md) |
 | Calibrated observable process experiment (`ciw.calibrated-observable-session.v1`) | Pinned FSRT, TBR, MCUR, OIT, GSIE, CBSR, FDIR and SET operation graph | Align two raw channels, apply declared calibration, gate estimation on observability, reconcile total mass and assess retained residuals; inspect and replay with fresh occurrence identities | [Commands, analytic result, refusal cases and pins](docs/CALIBRATED_OBSERVABLE.md) |
+| Identified next observation (`ciw.identified-design-session.v1`) | Extends the calibrated session with pinned SIDT, OIT, GSIE, EDSPT and YWIR; SET exchange conformance | Replay the upstream experiment, identify a declared model, gate candidate observability, predict conditional state uncertainty, rank affordable observations and record separate token advice | [Commands, uncertainty scope, analytic oracle and pins](docs/IDENTIFIED_DESIGN.md) |
+
+The [integration coverage matrix](docs/INTEGRATION_COVERAGE.md) distinguishes
+executable paths, conformance coverage, and the next connections between
+existing instruments. Every new path retains original, replay and adversarial
+evidence through an ICRH profile.
 
 PLSR is pinned to upstream commit
 [`19ea6967060166ba09db6cd4563bd87bd6b3d196`](https://github.com/giasonpooni/Parameterized-Lyapunov-Stability-Runtime/tree/19ea6967060166ba09db6cd4563bd87bd6b3d196).
@@ -111,7 +117,7 @@ or historical runtime pins. The integrated catalogue above remains the record of
 exercised CIW paths; a related repository is not an integration by itself.
 See the [adapter ownership boundaries](docs/ADAPTERS.md#related-component-boundaries).
 
-## Additional standalone numerical foundations
+## Numerical instrument providers
 
 These six repositories provide implemented numerical APIs, synthetic examples
 and local tests. Their explicit example exports have exercised SET
@@ -119,8 +125,12 @@ and local tests. Their explicit example exports have exercised SET
 does not establish a native CIW execution path or a SET evaluation runner.
 
 The additive [calibrated observable process experiment](docs/CALIBRATED_OBSERVABLE.md)
-now binds TBR, MCUR, OIT and FDIR in one bounded native CIW path. System
-identification and experiment design remain standalone foundations.
+binds TBR, MCUR, OIT and FDIR in one bounded native CIW path. The
+[identified observation path](docs/IDENTIFIED_DESIGN.md) consumes that retained
+session and connects system identification, observability, state prediction,
+experiment design and token advice. Fitted parameter covariance remains unknown;
+the design's expected uncertainty reduction is conditional on the identified
+point model and declared independent future measurement noise.
 
 | Instrument | Implemented foundation |
 | --- | --- |
@@ -144,6 +154,8 @@ and source pins remain unchanged.
 - Generic adapters and the RCI/FSRT investigation: [`docs/ADAPTERS.md`](docs/ADAPTERS.md)
 - Covariance provenance, propagation and replay: [`docs/COVARIANCE.md`](docs/COVARIANCE.md)
 - Calibrated observable process experiment: [`docs/CALIBRATED_OBSERVABLE.md`](docs/CALIBRATED_OBSERVABLE.md)
+- Identified and budgeted observation selection: [`docs/IDENTIFIED_DESIGN.md`](docs/IDENTIFIED_DESIGN.md)
+- Executable integration coverage and next connections: [`docs/INTEGRATION_COVERAGE.md`](docs/INTEGRATION_COVERAGE.md)
 - Architecture: [`docs/ARCHITECTURE.md`](docs/ARCHITECTURE.md)
 - Implementation status: [`docs/RECONCILIATION.md`](docs/RECONCILIATION.md)
 - Protocol: [`docs/PROTOCOL.md`](docs/PROTOCOL.md)
