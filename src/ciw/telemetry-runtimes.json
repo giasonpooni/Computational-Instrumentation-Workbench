@@ -1,0 +1,7 @@
+{
+  "ppda": {"revision": "209985a8c7482aba037021035c2f0b550c9b1ddc", "module": "instrumentation", "source_root": "bridge", "source_sha256": "d624bcda528165c7692d11846df0bd8a8c1402868f86c1fce407d5e2946963a1"},
+  "stfe": {"revision": "54dd43b657b92d87c2fc263dfd99437c664be353", "module": "stfe", "source_root": "."},
+  "gsie": {"revision": "de38873db1ba98744d395dfa7df1d3b5b7bb3059", "module": "geometric_state_inference.contracts", "source_root": "src"},
+  "set": {"revision": "1467ec5058b3e7ebd6ba4a45f2d9b49148a2560d", "module": "state_estimation_testbed.replay", "source_root": "."},
+  "cbsr": {"revision": "b543969cb80a69a5df1274eee10d22549bcea773", "module": "cbsr", "source_root": "src"}
+}

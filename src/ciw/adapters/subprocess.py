@@ -9,6 +9,7 @@ or authenticate its installed dependency binaries.
 from __future__ import annotations
 
 from collections.abc import Mapping
+from decimal import Decimal
 from hashlib import new as new_hash, sha256
 import json
 import math
@@ -142,6 +143,12 @@ def _json(payload: bytes) -> Any:
     def constant(_: str) -> None:
         raise ValueError("nonfinite JSON number")
 
+    def decimal_float(raw: str) -> float:
+        value = float(raw)
+        if not math.isfinite(value) or (value == 0.0 and Decimal(raw) != 0):
+            raise ValueError("JSON number overflows or loses a nonzero value to underflow")
+        return value
+
     def finite(value: Any) -> None:
         if isinstance(value, float) and not math.isfinite(value):
             raise ValueError("nonfinite JSON number")
@@ -153,7 +160,8 @@ def _json(payload: bytes) -> Any:
                 finite(child)
 
     try:
-        result = json.loads(payload.decode("utf-8"), parse_constant=constant, object_pairs_hook=pairs)
+        result = json.loads(payload.decode("utf-8"), parse_constant=constant,
+                            parse_float=decimal_float, object_pairs_hook=pairs)
         finite(result)
         return result
     except (UnicodeError, ValueError, RecursionError) as exc:

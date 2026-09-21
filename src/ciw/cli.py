@@ -238,6 +238,20 @@ def parser() -> argparse.ArgumentParser:
     exchange_inspect.add_argument("paths", type=Path, nargs="+")
     exchange_inspect.add_argument("--validator-repo", type=Path, required=True,
                                   help="Explicit checkout/export of the pinned testbed validator")
+    telemetry = commands.add_parser("telemetry", help="Retained scalar telemetry operation script and numerical replay")
+    telemetry_actions = telemetry.add_subparsers(dest="telemetry_command", required=True)
+    telemetry_create = telemetry_actions.add_parser("create", help="Execute PPDA, STFE, GSIE and SET with a fresh replay")
+    telemetry_create.add_argument("--source", type=Path, required=True)
+    telemetry_create.add_argument("--configuration", type=Path, required=True)
+    telemetry_inspect = telemetry_actions.add_parser("inspect", help="Inspect content bindings without running engines")
+    telemetry_inspect.add_argument("path", type=Path)
+    telemetry_replay = telemetry_actions.add_parser("replay", help="Recompute retained source and compare numerical outputs")
+    telemetry_replay.add_argument("path", type=Path)
+    for action in (telemetry_create, telemetry_replay):
+        for role in ("ppda", "stfe", "gsie", "set"):
+            action.add_argument("--" + role + "-repo", type=Path, required=True)
+        action.add_argument("--cbsr-repo", type=Path)
+        action.add_argument("--output-dir", type=Path, required=True)
     plsr = commands.add_parser("plsr", help="Import, evaluate, inspect and replay pinned Lyapunov artifacts")
     actions = plsr.add_subparsers(dest="plsr_command", required=True)
     import_model = actions.add_parser("import", help="Validate and retain a sealed model artifact")
@@ -355,6 +369,24 @@ def main(argv: list[str] | None = None) -> int:
         elif args.command == "exchange":
             from .exchange import inspect_exchange
             print_json(inspect_exchange(args.paths, validator_repo=args.validator_repo))
+        elif args.command == "telemetry":
+            from .telemetry import create_session, inspect_session, replay_session, read_session, save_session
+            if args.telemetry_command == "inspect":
+                print_json(inspect_session(read_session(args.path)))
+            else:
+                repositories = {role: getattr(args, role + "_repo") for role in ("ppda", "stfe", "gsie", "set")}
+                if args.cbsr_repo is not None:
+                    repositories["cbsr"] = args.cbsr_repo
+                if args.telemetry_command == "create":
+                    from .exchange import _read
+                    from .telemetry import MAX_BYTES
+                    bundle = create_session(_read(args.source, MAX_BYTES), read_json(args.configuration), repositories)
+                    path = save_session(bundle, args.output_dir)
+                    print_json({"session_file": str(path), "inspection": inspect_session(bundle)})
+                else:
+                    result = replay_session(read_session(args.path), repositories)
+                    path = save_session(result["session"], args.output_dir)
+                    print_json({"session_file": str(path), "replay_receipt": result["replay_receipt"]})
         elif args.command == "investigation":
             from .investigation import create_investigation, inspect_investigation, replay_investigation
             if args.investigation_command == "inspect":

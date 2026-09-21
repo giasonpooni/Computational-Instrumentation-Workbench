@@ -1,0 +1,22 @@
+{
+  "schema": "ciw.telemetry-source.v1",
+  "samples": [
+    {"name": "synthetic:sample-0", "value": 2.0, "unit": "m", "event_time": 0.0, "received_at": 0.0},
+    {"name": "synthetic:sample-1", "value": 4.0, "unit": "m", "event_time": 1.0, "received_at": 1.0}
+  ],
+  "channel_id": "synthetic-scalar",
+  "frame": {"id": "frame:synthetic", "semantics": "feature_space"},
+  "clock_basis": "synthetic-clock",
+  "epoch": "2026-09-20T00:00:00Z",
+  "clock_mapping_ref": "mapping:synthetic-clock-identity",
+  "frame_mapping_ref": "mapping:synthetic-frame-identity",
+  "mappings": {
+    "clock": {"ref": "mapping:synthetic-clock-identity", "kind": "identity", "source": "synthetic-clock", "target": "synthetic-clock", "epoch": "2026-09-20T00:00:00Z"},
+    "frame": {"ref": "mapping:synthetic-frame-identity", "kind": "identity", "source": "frame:synthetic", "target": "frame:synthetic"}
+  },
+  "crosscov_policy": "declared",
+  "covariance_status": "reported",
+  "covariance": [[1.0, 0.25], [0.25, 1.0]],
+  "calibration_refs": [],
+  "admission_ref": "synthetic:fixture-correspondence-not-physical-admission"
+}

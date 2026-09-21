@@ -1,0 +1,13 @@
+{
+  "window": {"start": 0.0, "end": 2.0, "received_by": 2.0, "decision_time": 2.0, "sample_period": 1.0, "max_lateness": 0.0},
+  "gsie": {
+    "prior": {"time": 0.0, "mean": [0.0], "covariance": [[1.0]], "frame_id": "stfe-feature:frame:synthetic", "units": ["m"], "state_id": "synthetic:independent-prior"},
+    "dynamics": {"matrix": [[1.0]], "process_covariance": [[0.0]], "model_id": "synthetic:constant-window-state.v1"},
+    "observation_model": {"matrix": [[1.0]], "model_id": "synthetic:window-mean-direct-observation.v1"},
+    "target_time": 2.0,
+    "variables": ["synthetic-state"],
+    "frame": {"id": "stfe-feature:frame:synthetic", "semantics": "feature_space"},
+    "prior_measurement_crosscov_policy": "declared_zero",
+    "feature_observation_semantics": "window_mean_observes_declared_state_at_window_end"
+  }
+}

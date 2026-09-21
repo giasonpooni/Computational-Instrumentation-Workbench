@@ -14,6 +14,17 @@ have been exercised together.
 | RCI measurement-chain/calibration adapter | Integrated experimental pinned subprocess; synthetic mass fixture | `python -m ciw investigation create`, `inspect`, `replay` |
 | FSRT state-estimation operation | Integrated experimental pinned subprocess; one simultaneous two-reservoir snapshot | Same investigation; shared `operation.execute` after explicit runtime binding |
 | Parameterized Lyapunov Stability Runtime (PLSR) verification operation | Integrated experimental terminal operation; Python 3.12+ and optional `plsr` extra | `python -m ciw plsr import`, `evaluate`, `inspect`, `replay` |
+| Retained scalar telemetry script | Pinned PPDA projection, STFE window mean, GSIE predict/update, SET replay verification, optional CBSR receipt | `python -m ciw telemetry create`, `inspect`, `replay`; [contract and guide](TELEMETRY.md) |
+
+## Retained scalar telemetry
+
+The [telemetry guide](TELEMETRY.md) records exact commands, manifest pins,
+source/configuration schemas, full temporal covariance and prior-feature
+independence declarations, composite prediction/update identity, complete
+result reproduction, fresh numerical replay, limitations and tests. This
+standalone native session is not a live DAQ bus, shared Godot viewport or ESM
+admission adapter. All examples are synthetic, and receipts establish scoped
+computational reproducibility rather than physical truth.
 
 ## Synthetic damped oscillator
 
