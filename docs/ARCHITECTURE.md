@@ -62,6 +62,28 @@ prior results and creates new execution/result identities. JSPT dependencies
 must resolve to a retained result and its exact named covariance; missing,
 mismatched or cyclic references are refused before any destination write.
 
+### Admission and retained outcomes
+
+```mermaid
+flowchart TD
+    Request["Operation request"] --> Gate{"Valid request shape?"}
+    Gate -->|No| Reject["Reject without execution"]
+    Gate -->|Yes| Capture["Capture parameters and selection"]
+    Capture --> Bind{"Supported operation and binding?"}
+    Bind -->|No| Refusal["Retained execution refusal"]
+    Bind -->|Yes| Invoke["Provider outside session lock"]
+    Invoke --> Response{"Valid successful response?"}
+    Response -->|No| Refusal
+    Response -->|Yes| Seal["Seal execution and result"]
+    Seal --> Publish["Publish under session lock"]
+    Refusal --> Publish
+```
+
+The gate labels summarize the operation runner, not a new status vocabulary.
+A refused accepted invocation retains its execution but has no successful
+result. Input capture and result publication bound the provider call; they do
+not turn the session lock into a process sandbox.
+
 ## Selection and clients
 
 The session owns the current channel, playback cursor, half-open analysis
@@ -95,6 +117,28 @@ container publication and native-process controls are documented in
 [deploy/](../deploy/README.md). Public network authentication, a production
 multi-user service, streaming acquisition and general binary transport are not
 implemented.
+
+### Reopen and replay are separate actions
+
+```mermaid
+flowchart TD
+    Saved["Saved investigation"] --> Validate{"Bindings and dependencies valid?"}
+    Validate -->|No| Refuse["Refuse before destination write"]
+    Validate -->|Yes| Mode{"Requested action"}
+    Mode -->|Reopen| Inspect["Inspect retained records and IDs"]
+    Mode -->|Replay| Runtime{"Matching supported runtime?"}
+    Runtime -->|No| Refuse
+    Runtime -->|Yes| Execute["Reexecute retained operations"]
+    Execute --> Fresh["New execution and result IDs"]
+    Fresh --> History["Retain prior and new results"]
+```
+
+Reopening calls no numerical provider. A saved manifest cannot supply an
+executable or extend the trusted allowlist. The separate telemetry container
+adds scoped content and numerical replay checks described in
+[TELEMETRY.md](TELEMETRY.md); its verification receipts are not a property of
+every shared-workspace replay. More stack views are in the
+[diagram atlas](DIAGRAMS.md).
 
 ## Calibration and uncertainty
 

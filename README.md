@@ -13,6 +13,30 @@ inspection and replay, and an optional Godot oscillator viewport. External
 scientific operations use explicitly bound, source-pinned runtimes; the table
 below identifies the integrations currently implemented.
 
+## Workbench at a glance
+
+```mermaid
+flowchart TD
+    Records["Scientific records"] --> Capture["Capture inputs and selection"]
+    Request["Explicit operation request"] --> Capture
+    Capture --> Provider["Bound numerical provider"]
+    Runtime["Trusted runtime binding"] --> Provider
+    Provider --> Outcome{"Successful response?"}
+    Outcome -->|Yes| Result["Execution and result"]
+    Outcome -->|No| Refusal["Execution and refusal"]
+    Result --> Retain["Retained investigation"]
+    Refusal --> Retain
+    Retain --> Terminal["Terminal and JSON inspection"]
+    Retain --> Replay["Explicit replay with fresh IDs"]
+```
+
+This is the shared-investigation operation path after request admission.
+Malformed requests are rejected before an execution exists. PLSR uses separate
+terminal bundles, and the retained-telemetry script has its own container;
+their guides below define those boundaries. The optional Godot view supports
+the oscillator. See the [diagram atlas](docs/DIAGRAMS.md) for workflow,
+covariance and identity diagrams across the stack.
+
 ## Run and inspect
 
 Follow the [quickstart](docs/quickstart.md) for installation, terminal commands,
@@ -108,6 +132,7 @@ and source pins remain unchanged.
 
 ## Documentation
 
+- Stack diagrams and repository navigation: [Diagram atlas](docs/DIAGRAMS.md)
 - Quickstart: [`docs/quickstart.md`](docs/quickstart.md)
 - Integrated tool instructions and specifications: [`docs/INSTRUMENTS.md`](docs/INSTRUMENTS.md)
 - PLSR terminal workflow and saved-run specification: [`docs/PLSR.md`](docs/PLSR.md)

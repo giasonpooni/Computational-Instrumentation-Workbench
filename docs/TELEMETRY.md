@@ -7,6 +7,32 @@ does not replace the estimator output or establish physical constraint truth.
 This is an additive `ciw.telemetry-session.v1` container. Existing `run.v1`,
 operation, exchange and shared-viewport contracts are unchanged.
 
+## Retained data and calculation flow
+
+```mermaid
+flowchart TD
+    Source["Exact scalar source bytes"] --> PPDA["PPDA retained projection"]
+    Mapping["Declared identity mappings"] --> PPDA
+    PPDA --> STFE["STFE causal window mean"]
+    Uncertainty["Full temporal covariance"] --> STFE
+    STFE --> GSIE["GSIE prediction and update"]
+    Model["Prior, dynamics and likelihood"] --> GSIE
+    GSIE --> SET["SET content and replay binding"]
+    GSIE -->|Optional| CBSR["CBSR reconciliation receipt"]
+    Constraints["Declared constraints"] --> CBSR
+    CBSR --> SET
+    SET --> Bundle["Retained telemetry session"]
+    Source -->|Retain original bytes| Bundle
+```
+
+Solid arrows show this implemented, pinned script. The feature variance uses
+the full sample covariance; prior-feature independence is a separate explicit
+declaration. CBSR retains its receipt alongside the estimate, including held
+or refused outcomes. SET's receipt states its checked scope; it does not admit
+state to ESM or authorize a physical action. Inspection reads the bundle;
+explicit replay executes the producers again under the recorded bindings.
+See the [diagram atlas](DIAGRAMS.md) for the wider stack.
+
 ## Implemented scope
 
 The input is one `ciw.telemetry-source.v1` JSON artifact containing 1–32 scalar

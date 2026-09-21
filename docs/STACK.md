@@ -4,13 +4,36 @@ Notation Systems develops computational instrumentation and evidence infrastruct
 
 The public repositories are components of this stack. Their scientific and engineering functions define their names. The existing physical-economy corpus, acquisition, policy and information-delivery capabilities remain part of the architecture; adding instruments does not replace them.
 
+## How to read the stack
+
+```mermaid
+flowchart TD
+    Inputs["Source observations and declarations"] --> Choice{"Supported CIW workflow"}
+    Choice -->|Retained scalar samples| Telemetry["PPDA, STFE, GSIE and SET"]
+    Choice -->|Measurement chain| Measurement["RCI and FSRT"]
+    Choice -->|Declared geometry| Geometry["GTE circle investigation"]
+    Choice -->|Declared stability model| Stability["PLSR terminal bundle"]
+    Telemetry --> Separate["Telemetry session container"]
+    Measurement --> Shared["Shared investigation"]
+    Geometry --> Shared
+    Shared -->|Explicit covariance operation| JSPT["JSPT propagation"]
+    JSPT --> Shared
+    Stability --> Bundle["Separate saved run"]
+```
+
+This map groups implemented external numerical workflows by their retained
+container; it is not an interchange bus. The built-in oscillator and read-only
+exchange inspector are listed below. The six new standalone foundations retain
+their own APIs and exports. Start with the [diagram atlas](DIAGRAMS.md) for
+mechanism diagrams and links to all 28 repositories.
+
 ## Component map
 
 This is the public repository inventory reviewed on 2026-09-20. “Executable” describes code present in the component; it does not mean production-qualified, physically validated or integrated with every other component. “Pinned” describes the CIW binding, which can differ from a provider's default branch. Local READMEs and versioned contracts specify exact supported behavior.
 
 | Component | Responsibility | Present scope | CIW connection |
 | --- | --- | --- | --- |
-| [Computational Instrumentation Workbench](https://github.com/giasonpooni/Computational-Instrumentation-Workbench) | Operation, inspection and replay | Executable prototype | Host; oscillator, five external tool workflows and read-only exchange inspection |
+| [Computational Instrumentation Workbench](https://github.com/giasonpooni/Computational-Instrumentation-Workbench) | Operation, inspection and replay | Executable prototype | Host; oscillator, five external tool workflows, retained scalar telemetry and read-only exchange inspection |
 | [Provenance Preserving Data Acquisition](https://github.com/giasonpooni/Provenance-Preserving-Data-Acquisition) | Source acquisition and observation lineage | Executable acquisition, storage and source adapters | Exchange inspection and pinned retained-telemetry projection |
 | [Streaming Telemetry Feature Extraction](https://github.com/giasonpooni/Streaming-Telemetry-Feature-Extraction) | Signal conditioning and stream-quality diagnostics | Executable bounded regular-grid causal scalar window mean | Pinned telemetry script and numerical replay |
 | [Geometric State Inference Engine](https://github.com/giasonpooni/Geometric-State-Inference-Engine) | Declared geometric state estimation | Executable linear prediction/update and bounded geometry; not a universal inference authority | Pinned telemetry script with full prior/model/observation retention |
@@ -33,7 +56,7 @@ This is the public repository inventory reviewed on 2026-09-20. “Executable”
 | [Intrinsic Surface Geodesics Testbed](https://github.com/giasonpooni/Intrinsic-Surface-Geodesics-Testbed) | Intrinsic paths on triangle meshes | Planned scaffold; metadata checks only | No numerical implementation or adapter |
 | [Translation Surface Dynamics Explorer](https://github.com/giasonpooni/Translation-Surface-Dynamics-Explorer) | Trajectory dynamics on translation surfaces | Planned scaffold; metadata checks only | No numerical implementation or adapter |
 
-The oscillator is built into CIW and is not an additional repository. This map contains 22 repositories: 19 with executable code and three geometry scaffolds. A bounded executable does not imply a live acquisition bus, generic sensor fusion or physical validation. Historical operation and runtime pins remain supported.
+The oscillator is built into CIW and is not an additional repository. The first table contains 22 repositories: 19 with executable code and three geometry scaffolds. The six standalone foundations below bring the inventory to 28 repositories. A bounded executable does not imply a live acquisition bus, generic sensor fusion or physical validation. Historical operation and runtime pins remain supported.
 
 ## Implemented workbench paths
 
@@ -47,7 +70,7 @@ The oscillator is built into CIW and is not an additional repository. This map c
 | Declared plant/certificate → PLSR terminal workflow | Model and sample artifacts, verdicts and replay digests in separate bundles | [Lyapunov workflow](PLSR.md) |
 | Acquisition/runtime exchange artifacts → pinned testbed validator → CIW inspector | Read-only conformance report, original parsed artifacts, byte digests and supplied-reference matches; no workspace import | [Exchange inspection](EXCHANGE.md) |
 
-These are bounded paths. PLSR bundles are outside the shared session and viewport. The Godot client renders oscillator data; other external instruments expose the terminal/JSON paths in their guides. General live acquisition, executable streaming feature extraction, universal sensor fusion, GNSS/RTK processing and automatic equipment control are not capabilities established by these integrations.
+These are bounded paths. PLSR bundles are outside the shared session and viewport. The Godot client renders oscillator data; other external instruments expose the terminal/JSON paths in their guides. General live acquisition, general stream processing, universal sensor fusion, GNSS/RTK processing and automatic equipment control are not capabilities established by these integrations.
 
 Standalone companion relationships also exist: the flat-torus reference exports a versioned geometry artifact; CSE can bind companion commitments; SRA can call optional pinned numerical kernels. A commitment binding records identity and does not by itself compose scientific meaning or validate a measurement.
 
@@ -105,7 +128,7 @@ Evidence, operation, execution, result and verification identities remain distin
 
 The [CIW protocol](PROTOCOL.md), [covariance contract](COVARIANCE.md) and each provider's operation contract remain authoritative for implemented fields. The separate [State Estimation Evaluation Testbed](https://github.com/giasonpooni/State-Estimation-Evaluation-Testbed) validates `notation.instrument.*` exchange artifacts; those schemas are not automatically interchangeable with CIW's `ciw.*` records. CIW now inspects those exchange artifacts through the [read-only conformance path](EXCHANGE.md), without translating them into native workspace or covariance records. A translation requires an explicit mapping and validation. This map does not introduce a new universal wire protocol.
 
-The [Streaming Telemetry Feature Extraction draft contract](https://github.com/giasonpooni/Streaming-Telemetry-Feature-Extraction/blob/main/docs/CONTRACT.md) defines proposed telemetry-window, feature-record and stream-quality companion records. Scalar ordered features may be mapped explicitly to `notation.instrument.result-artifact.v1`; frequency axes, filter state and window policy remain referenced domain information. No executable schema, generic exchange mapping or CIW adapter is currently registered.
+The [Streaming Telemetry Feature Extraction contract](https://github.com/giasonpooni/Streaming-Telemetry-Feature-Extraction/blob/main/docs/CONTRACT.md) defines the implemented bounded regular-grid causal scalar window mean and its retained window, feature and quality records. Its result-artifact projection participates in the explicitly mapped [retained-telemetry path](TELEMETRY.md). This bounded operation does not establish generic frequency-domain exchange, filtering or live-stream processing.
 
 ## Scientific use and qualification
 
