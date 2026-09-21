@@ -28,8 +28,12 @@ calculation, a content digest and a verification receipt answer different questi
 
 This is a responsibility map, not an end-to-end execution graph. A domain
 engine's output needs the receiving subsystem's explicit contract and admission
-rules before it becomes that subsystem's state. CIW currently has no ESM
-persistence adapter, SCR execution adapter or GSV publication connection.
+rules before it becomes that subsystem's state. ESM now offers a separate
+[native telemetry candidate-evidence adapter](https://github.com/giasonpooni/Evidence-and-State-Management/blob/claude/payload-os-frontend-cm3d22/docs/INSTRUMENT_CANDIDATE_EVIDENCE.md): fresh replay and source-policy checks
+permit read-only review or explicitly requested retention as `UNADMITTED`.
+This does not admit canonical state or activate a release. The telemetry command
+itself performs no ESM admission. CIW has no SCR execution adapter or GSV
+publication connection.
 
 ```mermaid
 flowchart TD
