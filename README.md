@@ -72,6 +72,7 @@ establish physical validation or deployment readiness.
 | Geometric Telemetry Engine (GTE; `gte.project-circle.v1`) | Integrated experimental geometric reconciliation operation; pinned subprocess | Retain raw 2D telemetry, project a declared circle candidate, transport full joint covariance to local tangent coordinates, preserve residuals, inspect and replay the shared investigation | [Setup, commands and specifications](docs/GTE.md), [catalogue entry](docs/INSTRUMENTS.md#geometric-telemetry-engine-gte) |
 | Instrument-exchange inspector (`ciw-exchange-inspector.v1`) | Experimental read-only terminal conformance path; not a measurement or execution adapter | Inspect acquisition/runtime exchange artifacts using the pinned State Estimation Evaluation Testbed validator; preserve full covariance and distinguish supplied links from authenticated provenance | [Setup, commands and limits](docs/EXCHANGE.md), [catalogue entry](docs/INSTRUMENTS.md#instrument-exchange-inspection) |
 | Retained scalar telemetry (`ciw.telemetry-session.v1`) | Pinned PPDA → STFE → GSIE → SET operation script; optional CBSR receipt | Retain exact source bytes, declared full temporal covariance, identity clock/frame mappings and model/prior; compute causal window mean and estimate; reexecute and compare numerical content with fresh identities | [Commands, contracts, pins and limits](docs/TELEMETRY.md) |
+| Calibrated observable process experiment (`ciw.calibrated-observable-session.v1`) | Pinned FSRT, TBR, MCUR, OIT, GSIE, CBSR, FDIR and SET operation graph | Align two raw channels, apply declared calibration, gate estimation on observability, reconcile total mass and assess retained residuals; inspect and replay with fresh occurrence identities | [Commands, analytic result, refusal cases and pins](docs/CALIBRATED_OBSERVABLE.md) |
 
 PLSR is pinned to upstream commit
 [`19ea6967060166ba09db6cd4563bd87bd6b3d196`](https://github.com/giasonpooni/Parameterized-Lyapunov-Stability-Runtime/tree/19ea6967060166ba09db6cd4563bd87bd6b3d196).
@@ -114,8 +115,12 @@ See the [adapter ownership boundaries](docs/ADAPTERS.md#related-component-bounda
 
 These six repositories provide implemented numerical APIs, synthetic examples
 and local tests. Their explicit example exports have exercised SET
-`notation.instrument.result-artifact.v1` conformance; they do not add native
-CIW execution commands, workspace/session adapters or a SET evaluation runner.
+`notation.instrument.result-artifact.v1` conformance. The export contract alone
+does not establish a native CIW execution path or a SET evaluation runner.
+
+The additive [calibrated observable process experiment](docs/CALIBRATED_OBSERVABLE.md)
+now binds TBR, MCUR, OIT and FDIR in one bounded native CIW path. System
+identification and experiment design remain standalone foundations.
 
 | Instrument | Implemented foundation |
 | --- | --- |
@@ -138,6 +143,7 @@ and source pins remain unchanged.
 - PLSR terminal workflow and saved-run specification: [`docs/PLSR.md`](docs/PLSR.md)
 - Generic adapters and the RCI/FSRT investigation: [`docs/ADAPTERS.md`](docs/ADAPTERS.md)
 - Covariance provenance, propagation and replay: [`docs/COVARIANCE.md`](docs/COVARIANCE.md)
+- Calibrated observable process experiment: [`docs/CALIBRATED_OBSERVABLE.md`](docs/CALIBRATED_OBSERVABLE.md)
 - Architecture: [`docs/ARCHITECTURE.md`](docs/ARCHITECTURE.md)
 - Implementation status: [`docs/RECONCILIATION.md`](docs/RECONCILIATION.md)
 - Protocol: [`docs/PROTOCOL.md`](docs/PROTOCOL.md)

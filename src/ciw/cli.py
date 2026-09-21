@@ -252,6 +252,18 @@ def parser() -> argparse.ArgumentParser:
             action.add_argument("--" + role + "-repo", type=Path, required=True)
         action.add_argument("--cbsr-repo", type=Path)
         action.add_argument("--output-dir", type=Path, required=True)
+    calibrated = commands.add_parser("calibrated-observable", help="Execute and replay the calibrated two-channel process experiment")
+    calibrated_actions = calibrated.add_subparsers(dest="calibrated_command", required=True)
+    calibrated_create = calibrated_actions.add_parser("create")
+    calibrated_create.add_argument("--source", type=Path, required=True)
+    calibrated_inspect = calibrated_actions.add_parser("inspect")
+    calibrated_inspect.add_argument("path", type=Path)
+    calibrated_replay = calibrated_actions.add_parser("replay")
+    calibrated_replay.add_argument("path", type=Path)
+    for action in (calibrated_create, calibrated_replay):
+        for role in ("fsrt", "tbrt", "mcur", "oit", "gsie", "cbsr", "fdir", "set"):
+            action.add_argument("--" + role + "-repo", type=Path, required=True)
+        action.add_argument("--output-dir", type=Path, required=True)
     plsr = commands.add_parser("plsr", help="Import, evaluate, inspect and replay pinned Lyapunov artifacts")
     actions = plsr.add_subparsers(dest="plsr_command", required=True)
     import_model = actions.add_parser("import", help="Validate and retain a sealed model artifact")
@@ -381,6 +393,22 @@ def main(argv: list[str] | None = None) -> int:
                     from .exchange import _read
                     from .telemetry import MAX_BYTES
                     bundle = create_session(_read(args.source, MAX_BYTES), read_json(args.configuration), repositories)
+                    path = save_session(bundle, args.output_dir)
+                    print_json({"session_file": str(path), "inspection": inspect_session(bundle)})
+                else:
+                    result = replay_session(read_session(args.path), repositories)
+                    path = save_session(result["session"], args.output_dir)
+                    print_json({"session_file": str(path), "replay_receipt": result["replay_receipt"]})
+        elif args.command == "calibrated-observable":
+            from .calibrated_observable import (ROLES, MAX_BYTES, create_session, inspect_session,
+                                               replay_session, read_session, save_session)
+            if args.calibrated_command == "inspect":
+                print_json(inspect_session(read_session(args.path)))
+            else:
+                repositories = {role: getattr(args, role + "_repo") for role in ROLES}
+                if args.calibrated_command == "create":
+                    from .exchange import _read
+                    bundle = create_session(_read(args.source, MAX_BYTES), repositories)
                     path = save_session(bundle, args.output_dir)
                     print_json({"session_file": str(path), "inspection": inspect_session(bundle)})
                 else:

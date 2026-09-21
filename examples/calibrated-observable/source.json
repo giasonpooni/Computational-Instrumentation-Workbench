@@ -1,0 +1,166 @@
+{
+  "schema": "fsrt.calibrated-observable-two-channel.v1",
+  "experiment_id": "fsrt:synthetic:calibrated-observable-two-reservoir:1",
+  "claim_scope": "synthetic computational interoperability only; no physical calibration, validation, or unique causal fault claim",
+  "epoch_utc": "2026-01-01T00:00:00Z",
+  "channels": [
+    {
+      "channel_id": "tank-1.mass",
+      "observation": {
+        "observation_id": "observation:synthetic:tank-1:1",
+        "artifact_id": "artifact:synthetic:raw:tank-1:1",
+        "sensor_id": "sensor:synthetic:tank-1",
+        "quantity_id": "mass",
+        "unit": "kg",
+        "device_time": 1005.0,
+        "clock_frame": {"clock_id": "clock:synthetic:tank-1", "time_scale": "device-monotonic", "unit": "s"},
+        "indicated_value": 51.0,
+        "raw_value": 51000.0
+      },
+      "clock_model": {
+        "model_id": "clock-map:synthetic:tank-1:1",
+        "source_frame": {"clock_id": "clock:synthetic:tank-1", "time_scale": "device-monotonic", "unit": "s"},
+        "reference_frame": {"clock_id": "clock:synthetic:process", "time_scale": "reference-monotonic", "unit": "s"},
+        "device_origin": 1000.0,
+        "reference_origin": 0.0,
+        "skew": 1.0,
+        "offset": 0.0,
+        "valid_device_interval": [1000.0, 1010.0],
+        "synchronization_evidence_ids": ["sync-evidence:synthetic:tank-1:1"]
+      },
+      "clock_joint_covariance": [[0.0001, 0.0, 0.0], [0.0, 0.0, 0.0], [0.0, 0.0, 0.0]],
+      "calibration_profile": {
+        "profile_id": "calibration:synthetic:tank-1:1",
+        "artifact_id": "artifact:synthetic:calibration:tank-1:1",
+        "sensor_id": "sensor:synthetic:tank-1",
+        "quantity_id": "mass",
+        "input_unit": "kg",
+        "output_unit": "kg",
+        "gain": 1.0,
+        "offset": 1.0,
+        "coefficient_covariance": [[0.0, 0.0], [0.0, 0.0]],
+        "valid_from": "2025-12-01T00:00:00Z",
+        "valid_until": "2026-12-01T00:00:00Z",
+        "reference_ids": ["reference:synthetic:mass-standard:1"],
+        "input_range": [0.0, 100.0]
+      },
+      "calibration_joint_covariance": {
+        "values": [[1.0, 0.0, 0.0], [0.0, 0.0, 0.0], [0.0, 0.0, 0.0]],
+        "cross_covariance_policy": "declared_zero",
+        "evidence_ids": ["independence:synthetic:tank-1:calibration:1"]
+      }
+    },
+    {
+      "channel_id": "tank-2.mass",
+      "observation": {
+        "observation_id": "observation:synthetic:tank-2:1",
+        "artifact_id": "artifact:synthetic:raw:tank-2:1",
+        "sensor_id": "sensor:synthetic:tank-2",
+        "quantity_id": "mass",
+        "unit": "kg",
+        "device_time": 2004.0,
+        "clock_frame": {"clock_id": "clock:synthetic:tank-2", "time_scale": "device-monotonic", "unit": "s"},
+        "indicated_value": 45.0,
+        "raw_value": 45000.0
+      },
+      "clock_model": {
+        "model_id": "clock-map:synthetic:tank-2:1",
+        "source_frame": {"clock_id": "clock:synthetic:tank-2", "time_scale": "device-monotonic", "unit": "s"},
+        "reference_frame": {"clock_id": "clock:synthetic:process", "time_scale": "reference-monotonic", "unit": "s"},
+        "device_origin": 2000.0,
+        "reference_origin": 0.0,
+        "skew": 1.25,
+        "offset": 0.0,
+        "valid_device_interval": [2000.0, 2010.0],
+        "synchronization_evidence_ids": ["sync-evidence:synthetic:tank-2:1"]
+      },
+      "clock_joint_covariance": [[0.000064, 0.0, 0.0], [0.0, 0.0, 0.0], [0.0, 0.0, 0.0]],
+      "calibration_profile": {
+        "profile_id": "calibration:synthetic:tank-2:1",
+        "artifact_id": "artifact:synthetic:calibration:tank-2:1",
+        "sensor_id": "sensor:synthetic:tank-2",
+        "quantity_id": "mass",
+        "input_unit": "kg",
+        "output_unit": "kg",
+        "gain": 1.0,
+        "offset": 1.0,
+        "coefficient_covariance": [[0.0, 0.0], [0.0, 0.0]],
+        "valid_from": "2025-12-01T00:00:00Z",
+        "valid_until": "2026-12-01T00:00:00Z",
+        "reference_ids": ["reference:synthetic:mass-standard:1"],
+        "input_range": [0.0, 100.0]
+      },
+      "calibration_joint_covariance": {
+        "values": [[1.0, 0.0, 0.0], [0.0, 0.0, 0.0], [0.0, 0.0, 0.0]],
+        "cross_covariance_policy": "declared_zero",
+        "evidence_ids": ["independence:synthetic:tank-2:calibration:1"]
+      }
+    }
+  ],
+  "calibrated_covariance": {
+    "matrix": [[1.0, 0.25], [0.25, 1.0]],
+    "cross_covariance_policy": "declared",
+    "evidence_ids": ["covariance:synthetic:shared-mass-reference:1"]
+  },
+  "configuration": {
+    "alignment": {
+      "maximum_nominal_separation_s": 0.001,
+      "measurement_time_policy": "nominal_alignment_with_retained_time_uncertainty"
+    },
+    "observability": {
+      "model_id": "model:two-reservoir-direct-observation.v1",
+      "transition": [[1.0, 0.0], [0.0, 1.0]],
+      "observation": [[1.0, 0.0], [0.0, 1.0]],
+      "horizon": 2,
+      "state_names": ["tank-1.mass", "tank-2.mass"],
+      "state_scales": [1.0, 1.0],
+      "condition_limit": 100000000.0
+    },
+    "gsie": {
+      "prior_measurement_crosscov_policy": "declared_zero",
+      "prior": {
+        "time": 0.0,
+        "mean": [50.0, 50.0],
+        "covariance": [[0.25, 0.0], [0.0, 0.25]],
+        "frame_id": "reservoir2.mass",
+        "units": ["kg", "kg"],
+        "state_id": "state:synthetic:two-reservoir:prior"
+      },
+      "dynamics": {
+        "matrix": [[1.0, 0.0], [0.0, 1.0]],
+        "process_covariance": [[0.0, 0.0], [0.0, 0.0]],
+        "model_id": "model:two-reservoir-hold.v1"
+      },
+      "observation_model": {
+        "matrix": [[1.0, 0.0], [0.0, 1.0]],
+        "model_id": "model:two-reservoir-direct-observation.v1",
+        "measurement_units": ["kg", "kg"],
+        "measurement_frame_id": "reservoir2.mass"
+      }
+    },
+    "cbsr": {
+      "state_labels": ["tank-1.mass", "tank-2.mass"],
+      "state_units": ["kg", "kg"],
+      "frame_ref": "reservoir2.mass",
+      "constraints": {
+        "constraint_id": "constraint:synthetic:two-reservoir-total:100kg",
+        "coefficients": [[1.0, 1.0]],
+        "rhs": [100.0],
+        "row_units": ["kg"],
+        "coefficient_policy": "declared_exact"
+      },
+      "crosscov_policy": "declared",
+      "max_normalized_residual": 4.0
+    },
+    "fdir": {
+      "detection_threshold": 9.21,
+      "variable_order": ["tank-1.mass", "tank-2.mass"],
+      "fault_signatures": {
+        "sensor:tank-1:bias": [1.0, 0.0],
+        "sensor:tank-2:bias": [0.0, -1.0]
+      },
+      "max_unexplained_nis": 4.0,
+      "cross_covariance_policy": "declared"
+    }
+  }
+}
