@@ -49,6 +49,39 @@ These are bounded paths. PLSR bundles are outside the shared session and viewpor
 
 Standalone companion relationships also exist: the flat-torus reference exports a versioned geometry artifact; CSE can bind companion commitments; SRA can call optional pinned numerical kernels. A commitment binding records identity and does not by itself compose scientific meaning or validate a measurement.
 
+## Additional standalone numerical foundations
+
+The following six repositories extend the stack with implemented standalone
+numerical foundations, reviewed on 2026-09-21. Each includes a bounded Python
+API, synthetic examples, local tests and an explicit optional exporter for the
+existing `notation.instrument.result-artifact.v1` format. These are additions
+to the component inventory, not additions to the implemented CIW paths above.
+
+| Instrument | Implemented numerical foundation | Role in the existing stack |
+| --- | --- | --- |
+| [Time Base Reconciliation Runtime](https://github.com/giasonpooni/Time-Base-Reconciliation-Runtime) | Supplied affine clock mapping and correlated first-order time uncertainty | Derives event-time coordinates while PPDA retains source timestamps; consumers explicitly select the derived coordinate |
+| [Observability and Identifiability Testbed](https://github.com/giasonpooni/Observability-Identifiability-Testbed) | Finite-horizon linear observability and local sensitivity/Fisher diagnostics | Diagnoses declared GSIE models and supplied JSPT sensitivities; owns neither estimation nor independent evaluation |
+| [Metrological Calibration and Uncertainty Runtime](https://github.com/giasonpooni/Metrological-Calibration-Uncertainty-Runtime) | Applicable affine calibration and full correlated first-order uncertainty | Complements the measurement-chain boundary without replacing RCI's existing calibration operation or pins |
+| [System Identification and Dynamics Testbed](https://github.com/giasonpooni/System-Identification-Dynamics-Testbed) | Fully observed discrete linear least squares and one-step evaluation | Produces candidate dynamics; model selection and use by GSIE remain explicit caller decisions |
+| [Fault Detection and Isolation Runtime](https://github.com/giasonpooni/Fault-Detection-Isolation-Runtime) | Innovation NIS/whitening and deterministic CUSUM transitions | Interprets supplied residuals statistically; physical fault isolation and automatic response are not implemented |
+| [Experiment Design and Sensor Placement Testbed](https://github.com/giasonpooni/Experiment-Design-Sensor-Placement-Testbed) | Finite candidate information ranking with D- and A-optimal criteria | Consumes declared sensitivities and noise models; returns advisory rankings without commanding acquisition |
+
+The role column describes ownership and compatible inputs, not a live
+cross-instrument execution path. The six example exports have exercised SET's
+existing validator, pinned by their optional `exchange` dependencies to
+[`bd261a765281a95312f7c91a3857233476294c5b`](https://github.com/giasonpooni/State-Estimation-Evaluation-Testbed/tree/bd261a765281a95312f7c91a3857233476294c5b).
+That producer-side conformance does not establish a native CIW execution,
+workspace or session adapter, an end-to-end replay path, or a SET evaluation
+runner. Existing CIW bindings and historical source pins remain unchanged.
+
+Exports retain explicitly mapped inputs and numerical outputs. Evidence,
+operation, caller-supplied execution, result and verification identities remain
+separate; supplied source revisions are labelled unattested and verification
+references start empty. Neither export conformance nor successful numerical
+execution establishes independent verification, physical validity, calibrated
+measurement truth, evidence admission or actuation authority. Each repository's
+numerical contract owns its exact assumptions and refusal conditions.
+
 ## Responsibility and authority
 
 | Boundary | Owner and rule |

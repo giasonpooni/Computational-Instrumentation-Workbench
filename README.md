@@ -85,6 +85,26 @@ or historical runtime pins. The integrated catalogue above remains the record of
 exercised CIW paths; a related repository is not an integration by itself.
 See the [adapter ownership boundaries](docs/ADAPTERS.md#related-component-boundaries).
 
+## Additional standalone numerical foundations
+
+These six repositories provide implemented numerical APIs, synthetic examples
+and local tests. Their explicit example exports have exercised SET
+`notation.instrument.result-artifact.v1` conformance; they do not add native
+CIW execution commands, workspace/session adapters or a SET evaluation runner.
+
+| Instrument | Implemented foundation |
+| --- | --- |
+| [Time Base Reconciliation Runtime](https://github.com/giasonpooni/Time-Base-Reconciliation-Runtime) | Supplied affine clock mapping and correlated first-order time uncertainty |
+| [Observability and Identifiability Testbed](https://github.com/giasonpooni/Observability-Identifiability-Testbed) | Finite-horizon linear observability and local sensitivity/Fisher diagnostics |
+| [Metrological Calibration and Uncertainty Runtime](https://github.com/giasonpooni/Metrological-Calibration-Uncertainty-Runtime) | Applicable affine calibration and full correlated first-order uncertainty |
+| [System Identification and Dynamics Testbed](https://github.com/giasonpooni/System-Identification-Dynamics-Testbed) | Fully observed discrete linear least squares and one-step evaluation |
+| [Fault Detection and Isolation Runtime](https://github.com/giasonpooni/Fault-Detection-Isolation-Runtime) | Innovation NIS/whitening and deterministic CUSUM transitions; no physical fault isolation |
+| [Experiment Design and Sensor Placement Testbed](https://github.com/giasonpooni/Experiment-Design-Sensor-Placement-Testbed) | Finite candidate information ranking with D- and A-optimal criteria |
+
+See the [standalone-foundation boundaries](docs/STACK.md#additional-standalone-numerical-foundations)
+for their roles, export binding and integration limits. Existing CIW operations
+and source pins remain unchanged.
+
 ## Documentation
 
 - Quickstart: [`docs/quickstart.md`](docs/quickstart.md)
