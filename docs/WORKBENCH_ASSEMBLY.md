@@ -3,6 +3,8 @@
 GSIE, CBSR, FDIR and ESM now have an explicit shared-session handoff. See
 [state, diagnostics and candidate evidence](STATE_DIAGNOSTICS_EVIDENCE.md) for
 native instrument views, fresh candidate inspection and optional ESM retention.
+PPDA/STFE scalar telemetry now shares that session too; see
+[retained acquisition and window features](SHARED_TELEMETRY.md).
 
 CIW is the common place to bring in observations, operate compatible instruments,
 inspect candidate state and uncertainty, and retain executions and replay evidence.
@@ -19,7 +21,7 @@ profiles; assembly connects them to the workbench session.
 
 ## Operate the shared session
 
-The live session exposes the calibrated-process and identified-observation
+The live session exposes telemetry, calibrated-process and identified-observation
 workflows through `operation.list` and `operation.execute`, alongside existing
 session operations. Its common source, bundle, result and execution interfaces
 keep the native records available. `fusion.list` projects the retained contexts
@@ -115,8 +117,9 @@ state or run a second independent fusion of the same observations.
 | `session.get` | Read the snapshot, including its `workbench` state. |
 | `workspace.save` | Persist the assembled workspace in format 3. |
 
-This first registry accepts the two source kinds above. It does not yet import
-arbitrary saved workflow bundles, telemetry bundles or PLSR bundles. Existing
+The registry also accepts `telemetry`, with an explicit window/model configuration
+at `operation.execute`. It does not import arbitrary saved workflow bundles or
+PLSR bundles. Existing
 standalone commands remain available while those artifact families gain shared
 session mappings. Execution publishes a bundle only after the existing
 workflow's complete validation and verification succeed.
@@ -137,7 +140,7 @@ normal server shutdown also saves them. A workflow that refuses before producing
 a bundle returns an error and leaves its source retained, without publishing a
 partial state. The catalog permits at most 64 sources, 128 completed bundles and
 64 MiB of retained content. Existing protocol frame limits still apply. It
-supports the two declared source kinds above; it is not an arbitrary bundle
+supports the three declared source kinds above; it is not an arbitrary bundle
 importer or a live acquisition service.
 
 ## What shares a workspace
@@ -178,7 +181,7 @@ refuse a connection.
 | Component | Place in the assembled workbench | Current connection and remaining work |
 | --- | --- | --- |
 | CIW | Operator session, source and native-artifact registry, operation routing, result history and inspection | Shared session assembly; existing numerical workflows retain their original contracts. |
-| PPDA and RCI | Acquisition and measurement sources with original evidence, assembly, delivery and missingness | Pinned retained PPDA projection and RCI investigation exist; live acquisition into a shared context is a delivery item. |
+| PPDA and RCI | Acquisition and measurement sources with original evidence, assembly, delivery and missingness | PPDA retained observation projection now executes with STFE in the shared session. RCI investigation exists separately; live sensor acquisition remains a delivery item. |
 | TBRT, MCUR and STFE | Declared clock mapping, calibration and stream-window transforms | Calibrated snapshot and scalar-window paths exist separately; their compatible composition is the manufacturing-cycle item. |
 | OIT and GSIE | Observability gate and state/covariance computation for a declared context | Calibrated process operation already binds the gate to the estimator's exact transition and observation matrices. |
 | CBSR and FDIR | Constraint-conditioned candidates and residual/isolability diagnostics | Consume retained state and declared residual covariance; hold/refusal remains visible alongside the original estimate. |
@@ -190,9 +193,10 @@ refuse a connection.
 | SET and ICRH | Exchange validation, evaluation and replay/conformance evidence | Reuse existing profiles for scientific paths and test session assembly separately; no additional numerical profile is created merely for a registry. |
 | ESM | Candidate-evidence retention and later governed admission | Candidate retention only. Workbench selection, matching replay and a passed receipt do not admit canonical state. |
 
-The existing ESM capture adapter accepts `ciw.telemetry-session.v1` and performs
-fresh replay within that specific boundary. Hosting calibrated or identified
-bundles in CIW does not make them accepted ESM inputs.
+The ESM adapter accepts both `ciw.telemetry-session.v1` and
+`ciw.calibrated-observable-session.v1` through separately pinned operator bindings,
+with fresh replay inside each boundary. Identified-design bundles are not accepted
+ESM inputs. Candidate retention never establishes canonical-state admission.
 
 ## Reuse the existing assembly assets
 
@@ -222,9 +226,9 @@ GSIE estimate.
 
 CIW already exposes Session bindings for FSRT, JSPT and GTE. Calibrated-process
 and observation-design bundles now join the shared session without being
-flattened into oscillator recordings. Its telemetry and PLSR workflows also
-supply retained native artifacts; adding their shared-session mappings remains
-assembly work. Inspection should show their distinct scientific roles and link
+flattened into oscillator recordings. Its telemetry workflow now shares that
+registry. The PLSR workflow supplies retained native artifacts; its shared-session
+mapping remains assembly work. Inspection should show their distinct roles and link
 the result to its exact source and execution.
 
 GTE remains a specialized geometry provider. The curved-surface geodesic runtime

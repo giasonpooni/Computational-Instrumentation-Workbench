@@ -87,14 +87,20 @@ def validate_response(response, action, bundle, raw, parameters, policy):
         raise ValueError("Eligible inspection requires a candidate")
     if candidate is not None:
         steps = {step["runtime_ref"]: step for step in bundle["steps"]}
-        assessment = candidate.get("processAssessment", {})
-        faults = steps["fdir"]["result"]["data"]
+        calibrated = bundle["schema"] == "ciw.calibrated-observable-session.v1"
+        reconciliation = (steps["cbsr"]["result"]["data"] if calibrated else steps["cbsr"]["result"]) if "cbsr" in steps else {"status": "not_run"}
         if (candidate.get("state") != "UNADMITTED" or candidate.get("bundleDigest") != bundle["bundle_digest"] or
                 candidate.get("executionIds") != sorted(step["execution_id"] for step in bundle["steps"]) or
                 candidate.get("verification", {}).get("outcome") != "passed" or
                 candidate.get("verification", {}).get("independent") is not False or
-                candidate.get("reconciliation", {}).get("status") != steps["cbsr"]["result"]["data"]["status"]):
+                candidate.get("reconciliation", {}).get("status") != reconciliation["status"]):
             raise ValueError("ESM candidate does not bind the selected native bundle")
+        if not calibrated:
+            if "processAssessment" in candidate:
+                raise ValueError("Telemetry cannot inherit calibrated observability or fault claims")
+            return
+        assessment = candidate.get("processAssessment", {})
+        faults = steps["fdir"]["result"]["data"]
         expected = {"stateResultId": steps["gsie"]["result_id"], "stateId": steps["gsie"]["result"]["data"]["state_id"],
             "observabilityResultId": steps["oit"]["result_id"], "observabilityStatus": steps["oit"]["result"]["data"]["status"],
             "reconciliationResultId": steps["cbsr"]["result_id"], "faultResultId": steps["fdir"]["result_id"],
@@ -120,11 +126,16 @@ class CandidateAdapter:
         _keys(runtime, {"python", "pythonSha256", "helperPath", "repositories"})
         _path(runtime["python"])
         self.helper = _path(runtime["helperPath"])
-        expected = {role: value["revision"] for role, value in
-                    _json(Path(__file__).with_name("calibrated-observable-runtimes.json").read_bytes()).items()}
+        if not isinstance(runtime["repositories"], dict):
+            raise ValueError("Candidate runtime map must be explicit")
+        self.kind = "telemetry" if "ppda" in runtime["repositories"] else "calibrated-observable"
+        manifest = "telemetry-runtimes.json" if self.kind == "telemetry" else "calibrated-observable-runtimes.json"
+        expected = {role: value["revision"] for role, value in _json(Path(__file__).with_name(manifest).read_bytes()).items()}
+        if self.kind == "telemetry" and "cbsr" not in runtime["repositories"]:
+            expected.pop("cbsr")
         expected["ciw"] = self.pin["replay_ciw_revision"]
         if not isinstance(runtime["repositories"], dict) or set(runtime["repositories"]) != set(expected):
-            raise ValueError("Candidate replay requires exactly the calibrated provider set plus CIW")
+            raise ValueError("Candidate replay requires exactly its native provider set plus CIW")
         for role, revision in expected.items():
             entry = runtime["repositories"][role]
             _keys(entry, {"path", "revision"})
@@ -149,11 +160,17 @@ class CandidateAdapter:
 
     def execute(self, action, parameters, bundle):
         from .telemetry import canonical
+        if bundle["schema"] != "ciw." + self.kind + "-session.v1":
+            raise ValueError("ESM binding cannot execute a different native workflow")
         self._check()
         raw = canonical(bundle)
         payload = {"action": action, "bundleBase64": base64.b64encode(raw).decode("ascii"),
                    "context": deepcopy(self._configuration["review_context"]),
                    "runtime": deepcopy(self._configuration["runtime"])}
+        roles = set(bundle["runtimes"]) | {"ciw"}
+        if not roles <= payload["runtime"]["repositories"].keys():
+            raise AdapterRefusal("operation_unavailable", "ESM binding lacks a provider required by the retained bundle")
+        payload["runtime"]["repositories"] = {role: payload["runtime"]["repositories"][role] for role in sorted(roles)}
         policy = {"review_context": deepcopy(payload["context"])}
         if action == "capture":
             if not self.capture_available:

@@ -1,5 +1,9 @@
 # Retained telemetry operation script
 
+This path also executes inside the shared workbench as `ciw.telemetry.v1`, with
+native PPDA/STFE views and ESM candidate retention. See
+[shared telemetry setup and protocol](SHARED_TELEMETRY.md).
+
 `ciw telemetry` runs a bounded, synthetic-or-retained scalar path:
 PPDA projection → STFE window mean → GSIE prediction/update → SET replay binding.
 Optional CBSR reconciliation retains an accepted, held or refused receipt; it

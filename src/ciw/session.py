@@ -397,7 +397,8 @@ class Session:
                 return self.workbench.execute_candidate(payload["operation_id"], payload.get("parameters", {}))
             if payload["operation_id"] in WORKFLOW_OPERATION_IDS:
                 parameters = copy.deepcopy(payload.get("parameters", {}))
-                _keys(parameters, {"source_id", "upstream_bundle_id"}, {"source_id"})
+                allowed = {"source_id", "configuration"} if payload["operation_id"] == "ciw.telemetry.v1" else {"source_id", "upstream_bundle_id"}
+                _keys(parameters, allowed, {"source_id", "configuration"} if payload["operation_id"] == "ciw.telemetry.v1" else {"source_id"})
                 return self.workbench.execute({"operation_id": payload["operation_id"], **parameters})
             # Reserve bounded capacity and capture the scientific request. A
             # subprocess may wait up to its deadline, so it cannot own the
@@ -439,11 +440,7 @@ class Session:
             return {"status": "completed", "execution": copy.deepcopy(execution), "result": copy.deepcopy(result)}
         if kind == "result.list":
             _keys(payload, {"evaluated_at"})
-            native = self.workbench.native_results()
-            result = {"results": self._result_summaries() + [
-                {key: copy.deepcopy(item[key]) for key in (
-                    "schema", "result_id", "operation_id", "execution_ref", "execution_id"
-                ) if key in item} for item in native]}
+            result = {"results": self._result_summaries() + self.workbench.native_result_summaries()}
             calibration = calibration_status(self.run, _evaluated_at(payload))
             if calibration:
                 result["calibration"] = calibration
@@ -459,9 +456,9 @@ class Session:
                     raise ProtocolError("not_found", "Result not found in this session")
                 if result_id in self.results:
                     return copy.deepcopy(self.results[result_id])
-                for result in self.workbench.native_results():
-                    if result["result_id"] == result_id:
-                        return result
+                native = self.workbench.get_native_result(result_id)
+                if native is not None:
+                    return native
                 raise ProtocolError("not_found", "Result not found in this session")
         if kind == "workspace.save":
             _keys(payload, set())
@@ -553,7 +550,7 @@ class Session:
                     raise ValueError("Operation result is missing its completed execution")
         native_occurrences = {entry["execution_id"] for entry in retained_workbench.native_executions()}
         native_occurrences.update(entry["execution_id"] for entry in retained_workbench.candidate_executions())
-        native_results = {entry["result_id"] for entry in retained_workbench.native_results()}
+        native_results = {entry["result_id"] for entry in retained_workbench.native_result_summaries()}
         if (execution_ids | set(execution_map) | set(result_map)) & (native_occurrences | native_results):
             raise ValueError("Identity collision between recording operations and retained workflows")
         restored = cls(run, output_dir or Path(path).parent)

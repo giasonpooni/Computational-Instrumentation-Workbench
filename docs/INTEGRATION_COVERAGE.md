@@ -16,12 +16,18 @@ operating point.
 
 ## Shared operating session
 
-The live Session now hosts `ciw.calibrated-observable.v1` and
+The live Session now hosts `ciw.telemetry.v1`, `ciw.calibrated-observable.v1` and
 `ciw.identified-design.v1` through the existing `operation.list/execute` surface.
 `source.*`, `bundle.*` and `fusion.list` expose retained inputs, native bundles
 and candidate contexts; result and execution lists include those native records
 alongside existing session operations. Workspace format 3 retains this content,
 and reopening validates it without executing or rebinding a provider.
+
+PPDA batch projection and STFE window/quality/feature receipts now have native
+instrument views. Telemetry and calibrated process bundles can use separate
+ESM bindings in the same session; each undergoes fresh replay/policy checks before
+optional candidate-only retention. Stable observation identity remains separate
+from fresh execution identity. See [shared telemetry](SHARED_TELEMETRY.md).
 
 The [assembly operating guide](WORKBENCH_ASSEMBLY.md#operate-the-shared-session)
 documents startup bindings, request payloads and change events. This increment
@@ -35,7 +41,7 @@ remain unchanged by the registry.
 
 | Path | CIW execution and retained record | Independent harness coverage | Remaining composition gap |
 | --- | --- | --- | --- |
-| PPDA → STFE → GSIE → SET | `ciw telemetry create/inspect/replay`; exact source bytes, full temporal covariance, causal scalar mean and predict/update | ICRH `telemetry-to-state.v1`, original/replay/adversarial fixtures | This scalar path does not yet consume TBRT/MCUR transformations. |
+| PPDA → STFE → GSIE → SET | Shared `ciw.telemetry.v1` operation and existing standalone commands; exact source bytes, full temporal covariance, causal scalar mean, predict/update and ESM candidate handoff | ICRH `telemetry-to-state.v1`, original/replay/adversarial fixtures | This scalar path does not yet consume TBRT/MCUR transformations or evaluate observability. |
 | PPDA → STFE → GSIE → CBSR → SET | Same telemetry session with optional affine-exact reconciliation receipt | ICRH `telemetry-reconciled.v1` | New decisions must preserve accepted/held/refused distinctions. |
 | FSRT → TBRT → MCUR → OIT → GSIE → CBSR → FDIR → SET | `ciw calibrated-observable create/inspect/replay`; two calibrated channels, retained clock uncertainty, observability gate and declared residual covariance | ICRH `calibrated-observable-telemetry.v1`; original, replay, held, ambiguous and refusal fixtures | Synthetic stationary hold; no calibrated stream window or identified dynamics in this profile. |
 | Retained calibrated experiment → SIDT → OIT → GSIE → EDSPT → YWIR | `ciw identified-design create/inspect/replay`; freshly checked upstream prior, identified point model, candidate observability, future conditional covariance, cost-constrained reduction and separate advisory token decision | ICRH [`identified-budgeted-observation.v1`](https://github.com/giasonpooni/Instrument-Conformance-and-Replay-Harness/blob/main/profiles/identified-budgeted-observation.v1.json); retained original/replay/token-denial fixtures | Parameter uncertainty remains unknown; selection is advisory and cannot dispatch acquisition or admit ESM state. |

@@ -21,6 +21,7 @@ SOURCE_SCHEMA = "ciw.workbench-source.v1"
 OPERATIONS = {
     "calibrated-observable": "ciw.calibrated-observable.v1",
     "identified-design": "ciw.identified-design.v1",
+    "telemetry": "ciw.telemetry.v1",
 }
 WORKFLOW_OPERATION_IDS = frozenset(OPERATIONS.values())
 from .candidate_evidence import OPERATIONS as CANDIDATE_OPERATIONS
@@ -39,6 +40,9 @@ def _workflow(kind):
     if kind == "identified-design":
         from . import identified_design
         return identified_design
+    if kind == "telemetry":
+        from . import telemetry
+        return telemetry
     raise ValueError("Unknown workbench source kind")
 
 
@@ -80,7 +84,7 @@ def _source(payload):
         raise ValueError("Source bytes must use canonical base64") from exc
     if len(raw) > workflow.MAX_BYTES or base64.b64encode(raw).decode("ascii") != encoded:
         raise ValueError("Source bytes must use bounded canonical base64")
-    if kind == "calibrated-observable":
+    if kind in {"calibrated-observable", "telemetry"}:
         declaration = workflow._source(raw)
     else:
         # The full design validator needs an explicitly selected retained prior.
@@ -133,7 +137,12 @@ def _claims(record):
         for step in value["steps"]:
             claim(step["operation_id"], "operation", step["operation_id"])
             claim(step["execution_id"], "execution", {"bundle_id": owner, "step": step})
-            claim(step["result_id"], "result", {"bundle_id": owner, "result": step["result"]})
+            if value["schema"] == "ciw.telemetry-session.v1" and step["runtime_ref"] == "ppda":
+                # A replay reprojects the same acquired evidence. Its batch ID
+                # stays stable while every execution occurrence remains fresh.
+                claim(step["result_id"], "observation_batch", step["result"])
+            else:
+                claim(step["result_id"], "result", {"bundle_id": owner, "result": step["result"]})
             claim(step["numerical_result_id"], "numerical_result", step["numerical_result"])
         if "verification" in value:
             verification(value["verification"])
@@ -170,15 +179,15 @@ def _validate_record(record, sources):
     native = record["native"]
     if not isinstance(native, dict):
         raise ValueError("Native bundle must be an object")
-    raw = workflow._validate(native)
+    raw = workflow._validate_retained(native) if record["kind"] == "telemetry" else workflow._validate(native)
     if (native["bundle_digest"] != record["bundle_id"] or
             raw != base64.b64decode(source["bytes_b64"], validate=True)):
         raise ValueError("Bundle differs from its exact retained source bytes")
     if "verification" not in native:
         raise ValueError("A retained workflow must preserve its native verification artifact")
-    if record["kind"] == "calibrated-observable":
+    if record["kind"] != "identified-design":
         if record["upstream_bundle_id"] is not None:
-            raise ValueError("Calibrated workflow has no implicit upstream bundle")
+            raise ValueError("This workflow has no implicit upstream bundle")
     elif record["upstream_bundle_id"] is None:
         raise ValueError("Identified design needs an explicitly selected upstream bundle")
     _validate_receipts(native, record["kind"])
@@ -219,14 +228,21 @@ def _validate_links(record, bundles):
                 original["upstream_bundle_id"] != upstream_id):
             raise ValueError("Replay source must already belong to this workbench")
         old_steps, new_steps = original["native"]["steps"], native["steps"]
+        if (_canonical(original["native"]["configuration"]) != _canonical(native["configuration"]) or
+                [step["operation_id"] for step in old_steps] != [step["operation_id"] for step in new_steps]):
+            raise ValueError("Replay must preserve the original operation graph and configuration")
         if any(old["numerical_result_id"] != new["numerical_result_id"] or
-               old["execution_id"] == new["execution_id"] or old["result_id"] == new["result_id"]
+               old["execution_id"] == new["execution_id"] or
+               (old["result_id"] == new["result_id"] and not
+                (record["kind"] == "telemetry" and old["runtime_ref"] == "ppda" and old["result"] == new["result"]))
                for old, new in zip(old_steps, new_steps)):
             raise ValueError("Replay must preserve numerical identity and create fresh occurrences")
 
 
 def _context(record, sources):
     native = record["native"]
+    if record["kind"] == "telemetry":
+        return _telemetry_context(record, sources)
     calibrated = record["kind"] == "calibrated-observable"
     step = native["steps"][4 if calibrated else 2]
     state = step["result"]["data"]
@@ -281,6 +297,36 @@ def _context(record, sources):
     return common
 
 
+def _telemetry_context(record, sources):
+    native = record["native"]
+    step = native["steps"][2]
+    state = step["result"]["result_artifact"]
+    source = sources[record["source_id"]]
+    declaration = _json(base64.b64decode(source["bytes_b64"], validate=True))
+    configuration = native["configuration"]
+    cbsr = next((s for s in native["steps"] if s["runtime_ref"] == "cbsr"), None)
+    return {"context_id": "context:" + _digest({"bundle_id": record["bundle_id"], "result_id": step["result_id"]}),
+        "bundle_id": record["bundle_id"], "source_id": record["source_id"], "evidence_id": source["evidence_id"],
+        "upstream_bundle_id": None, "owner": "gsie", "state_kind": "window_feature_posterior",
+        "state_id": state["state_id"], "result_id": step["result_id"], "execution_id": step["execution_id"],
+        "event_time": state["observation_binding"]["elapsed_seconds"], "epoch": declaration["epoch"],
+        "mean": [item["value"] for item in state["components"]], "covariance": state["covariance"]["matrix"],
+        "state_names": [item["name"] for item in state["components"]], "units": [item["unit"] for item in state["components"]],
+        "frame_id": state["covariance"]["frame"]["id"], "clock_frame": declaration["clock_basis"],
+        "channel_ids": [declaration["channel_id"]], "observation_batch_id": native["steps"][0]["result_id"],
+        "feature_result_id": native["steps"][1]["result_id"], "window": deepcopy(configuration["window"]),
+        "feature_observation_semantics": configuration["gsie"]["feature_observation_semantics"],
+        "model_id": configuration["gsie"]["observation_model"]["model_id"],
+        "cross_covariance_policy": declaration["crosscov_policy"],
+        "prior_measurement_crosscov_policy": configuration["gsie"]["prior_measurement_crosscov_policy"],
+        "observability": {"status": "unresolved", "reason": "not_evaluated_by_telemetry_profile"}, "calibration_validity": "not_assessed",
+        "reconciliation": {"result_id": cbsr["result_id"], "status": cbsr["result"]["status"]} if cbsr else {"status": "not_run"},
+        "fault_assessment": {"status": "not_run"}, "state_admission": "not_performed",
+        "validation": "content_consistent", "numerical_replay": "not_performed_by_inspection",
+        "verification_id": native["verification"]["verification_id"],
+        "retained_verification_outcome": native["verification"].get("outcome")}
+
+
 class Workbench:
     """Thread-safe append-only shared catalog with explicit trusted bindings."""
 
@@ -289,7 +335,7 @@ class Workbench:
         self._sources = {}
         self._bundles = {}
         self._bindings = {}
-        self._candidate_adapter = None
+        self._candidate_adapters = {}
         self._candidates = {}
         self._identities = {operation: ("operation", _digest(operation)) for operation in WORKFLOW_OPERATION_IDS}
         self._used_bytes = 0
@@ -300,14 +346,18 @@ class Workbench:
     def bind_workflow(self, kind, repositories):
         """Bind host-selected repositories; no saved/client value calls this."""
         workflow = _workflow(kind)
-        if not isinstance(repositories, dict) or set(repositories) != workflow.ROLES:
+        required = workflow.ROLES - {"cbsr"} if kind == "telemetry" else workflow.ROLES
+        if not isinstance(repositories, dict) or not required <= set(repositories) <= workflow.ROLES:
             raise ValueError("Bind exactly the repositories declared by the workflow")
         if any(not isinstance(path, (str, Path)) or not str(path).strip() for path in repositories.values()):
             raise ValueError("Workflow repository bindings must be explicit host paths")
         bindings = {role: Path(path).resolve() for role, path in repositories.items()}
         # Validate trusted provider identities before advertising availability.
         # The workflows check them again at each execution and replay.
-        workflow._adapters(bindings)
+        if kind == "telemetry":
+            workflow._adapters({"cbsr": {}} if "cbsr" in bindings else {}, bindings)
+        else:
+            workflow._adapters(bindings)
         with self._lock:
             self._bindings[kind] = bindings
 
@@ -318,13 +368,14 @@ class Workbench:
 
     def describe_operations(self):
         with self._lock:
-            return [{"operation_id": operation, "role": "state_estimator" if kind == "calibrated-observable" else "decision",
+            return [{"operation_id": operation, "role": "decision" if kind == "identified-design" else "state_estimator",
                      "source_kind": kind, "available": kind in self._bindings,
                      "requires_upstream_bundle": kind == "identified-design"}
                     for kind, operation in OPERATIONS.items()] + [
-                        {"operation_id": operation, "role": "candidate_evidence", "requires_bundle": "calibrated-observable",
-                         "available": self._candidate_adapter is not None and
-                            (action == "inspect" or self._candidate_adapter.capture_available),
+                        {"operation_id": operation, "role": "candidate_evidence", "requires_bundle": "explicit_retained_native_bundle",
+                         "available": any(action == "inspect" or adapter.capture_available for adapter in self._candidate_adapters.values()),
+                         "available_bundle_kinds": sorted(kind for kind, adapter in self._candidate_adapters.items()
+                                                          if action == "inspect" or adapter.capture_available),
                          "canonical_admission": "not_performed"}
                         for operation, action in CANDIDATE_OPERATIONS.items()]
 
@@ -333,7 +384,7 @@ class Workbench:
         from .candidate_evidence import CandidateAdapter
         adapter = CandidateAdapter(configuration)
         with self._lock:
-            self._candidate_adapter = adapter
+            self._candidate_adapters[adapter.kind] = adapter
 
     def instrument_views(self):
         with self._lock:
@@ -342,13 +393,13 @@ class Workbench:
                 "result_id": step["result_id"], "execution_id": step["execution_id"],
                 "view": "retained_native_result", "state_admission": "not_performed"}
                 for record in self._bundles.values() for step in record["native"]["steps"]
-                if step["runtime_ref"] in {"gsie", "cbsr", "fdir"}])
+                if step["runtime_ref"] in {"ppda", "stfe", "gsie", "cbsr", "fdir"}])
 
     def inspect_instrument(self, payload):
         _keys(payload, {"bundle_id", "instrument"})
         _text(payload["bundle_id"], "Bundle identity")
-        if payload["instrument"] not in ("gsie", "cbsr", "fdir"):
-            raise ValueError("Choose gsie, cbsr or fdir")
+        if payload["instrument"] not in ("ppda", "stfe", "gsie", "cbsr", "fdir"):
+            raise ValueError("Choose ppda, stfe, gsie, cbsr or fdir")
         with self._lock:
             native = self.get_bundle(payload["bundle_id"])
             steps = {step["runtime_ref"]: step for step in native["steps"]}
@@ -358,7 +409,7 @@ class Workbench:
             return deepcopy({"bundle_id": record["bundle_id"], "source_id": record["source_id"],
                 "instrument": payload["instrument"], "step": steps[payload["instrument"]],
                 "fusion_context": _context(record, self._sources),
-                "linked_results": {role: steps[role]["result_id"] for role in ("gsie", "cbsr", "fdir", "oit") if role in steps},
+                "linked_results": {role: steps[role]["result_id"] for role in ("ppda", "stfe", "gsie", "cbsr", "fdir", "oit") if role in steps},
                 "numerical_replay": "not_performed_by_inspection", "state_admission": "not_performed"})
 
     def execute_candidate(self, operation_id, parameters):
@@ -372,9 +423,10 @@ class Workbench:
         reserved = MAX_RESPONSE * 2 + 2 * 1024 * 1024
         with self._lock:
             bundle = self.get_bundle(parameters["bundle_id"])
-            if bundle["schema"] != "ciw.calibrated-observable-session.v1":
-                raise ValueError("ESM candidate operations currently require an explicitly selected calibrated bundle")
-            adapter = self._candidate_adapter
+            kind = self._bundles[parameters["bundle_id"]]["kind"]
+            if kind not in {"telemetry", "calibrated-observable"}:
+                raise ValueError("ESM requires an explicitly selected calibrated or telemetry bundle")
+            adapter = self._candidate_adapters.get(kind)
             if adapter is None:
                 raise AdapterRefusal("operation_unavailable", "No operator-bound ESM candidate adapter")
             if (len(self._candidates) + self._pending >= MAX_BUNDLES or
@@ -431,8 +483,8 @@ class Workbench:
         if base64.b64encode(output).decode("ascii") != encoded:
             raise ValueError("Candidate receipt must retain canonical base64 bytes")
         bundle = self.get_bundle(record["parameters"]["bundle_id"])
-        if bundle["schema"] != "ciw.calibrated-observable-session.v1":
-            raise ValueError("Candidate receipt requires a retained calibrated bundle")
+        if bundle["schema"] not in {"ciw.calibrated-observable-session.v1", "ciw.telemetry-session.v1"}:
+            raise ValueError("Candidate receipt requires a retained calibrated or telemetry bundle")
         validate_response(_json(output), action, bundle, _canonical(bundle), record["parameters"], record["operator_policy"])
 
     def list_candidates(self):
@@ -539,12 +591,19 @@ class Workbench:
             return deepcopy(_summary(record))
 
     def execute(self, payload):
-        _keys(payload, {"operation_id", "source_id"}, {"upstream_bundle_id"})
+        _keys(payload, {"operation_id", "source_id"}, {"upstream_bundle_id", "configuration"})
         _text(payload["operation_id"], "Operation identity")
         _text(payload["source_id"], "Source identity")
         kind = next((kind for kind, operation in OPERATIONS.items() if operation == payload["operation_id"]), None)
         if kind is None:
             raise AdapterRefusal("operation_unavailable", "Unknown shared workbench operation")
+        if kind == "telemetry":
+            _keys(payload, {"operation_id", "source_id", "configuration"})
+            if not isinstance(payload["configuration"], dict):
+                raise ValueError("Telemetry requires an explicit window and estimator configuration")
+            configuration = deepcopy(payload["configuration"])
+        elif "configuration" in payload:
+            raise ValueError("Only telemetry accepts a separate operation configuration")
         upstream_id = payload.get("upstream_bundle_id")
         if kind == "identified-design":
             _text(upstream_id, "Explicit upstream bundle identity")
@@ -563,7 +622,13 @@ class Workbench:
         try:
             raw = base64.b64decode(source["bytes_b64"], validate=True)
             workflow = _workflow(kind)
-            native = workflow.create_session(raw, bindings) if upstream is None else workflow.create_session(raw, upstream, bindings)
+            if kind == "telemetry":
+                roles = {"ppda", "stfe", "gsie", "set"} | ({"cbsr"} if "cbsr" in configuration else set())
+                if not roles <= bindings.keys():
+                    raise AdapterRefusal("operation_unavailable", "Telemetry reconciliation needs an explicitly bound CBSR checkout")
+                native = workflow.create_session(raw, configuration, {role: bindings[role] for role in roles})
+            else:
+                native = workflow.create_session(raw, bindings) if upstream is None else workflow.create_session(raw, upstream, bindings)
             return self._retain(kind, source, upstream_id, native)
         finally:
             with self._lock:
@@ -580,6 +645,11 @@ class Workbench:
             source = deepcopy(self._sources[record["source_id"]])
             bindings, reserved = self._reserve(record["kind"])
         try:
+            if record["kind"] == "telemetry":
+                roles = set(record["native"]["runtimes"])
+                if not roles <= bindings.keys():
+                    raise AdapterRefusal("operation_unavailable", "Replay requires the original telemetry provider set")
+                bindings = {role: bindings[role] for role in roles}
             replayed = _workflow(record["kind"]).replay_session(record["native"], bindings)
             native, receipt = replayed["session"], replayed["replay_receipt"]
             if (receipt["source_bundle_digest"] != record["bundle_id"] or
@@ -602,8 +672,8 @@ class Workbench:
 
         def visit(record, native):
             for step in native["steps"]:
-                if step["result_id"] not in seen:
-                    seen.add(step["result_id"])
+                if step["execution_id"] not in seen:
+                    seen.add(step["execution_id"])
                     yield record, native, step
             if "upstream" in native:
                 yield from visit(record, native["upstream"])
@@ -612,15 +682,34 @@ class Workbench:
         # Prefer the explicit catalog owner for original upstream occurrences.
         for record in self._bundles.values():
             for step in record["native"]["steps"]:
-                if step["result_id"] not in seen:
-                    seen.add(step["result_id"])
+                if step["execution_id"] not in seen:
+                    seen.add(step["execution_id"])
                     yield record, record["native"], step
         for record in self._bundles.values():
             yield from visit(record, record["native"])
 
     def native_results(self):
         with self._lock:
-            return deepcopy([step["result"] for _, _, step in self._native_steps()])
+            unique = {step["result_id"]: step["result"] for _, _, step in self._native_steps()}
+            return deepcopy(list(unique.values()))
+
+    def native_result_summaries(self):
+        with self._lock:
+            unique = {}
+            for _, _, step in self._native_steps():
+                if step["result_id"] not in unique:
+                    unique[step["result_id"]] = {
+                        **{key: step["result"][key] for key in ("schema", "execution_ref", "execution_id") if key in step["result"]},
+                        "result_id": step["result_id"], "operation_id": step["operation_id"],
+                        **({"identity_kind": "observation_batch", "batch_id": step["result_id"]} if step["runtime_ref"] == "ppda" else {})}
+            return deepcopy(list(unique.values()))
+
+    def get_native_result(self, result_id):
+        with self._lock:
+            for _, _, step in self._native_steps():
+                if step["result_id"] == result_id:
+                    return deepcopy(step["result"])
+        return None
 
     def native_executions(self):
         with self._lock:

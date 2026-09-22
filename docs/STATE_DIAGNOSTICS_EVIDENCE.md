@@ -17,10 +17,12 @@ calibrated bundle through fresh replay and SET verification.
 | `candidate.list` | `{}` | Historical candidate-action receipts |
 | `candidate.get` | `candidate_id` | Exact ESM response bytes, policy snapshot and receipt |
 
-Instrument inspection is a view, not numerical execution. In identified-design
+Instrument inspection also exposes PPDA and STFE native records in the
+[shared telemetry operation](SHARED_TELEMETRY.md). It is a view, not numerical execution. In identified-design
 bundles GSIE is a conditional prediction; CBSR/FDIR inspection refuses. Select
 the upstream calibrated bundle explicitly instead of attributing prior residual
-tests to a forecast. ESM's first adapter accepts calibrated bundles only.
+tests to a forecast. ESM accepts calibrated and scalar telemetry bundles through
+separate exact provider/policy bindings; identified-design bundles still refuse.
 Canonical bundle bytes, including exact base64 source bytes, form the explicit
 transport commitment; original imported bundle JSON whitespace is not claimed.
 
@@ -56,7 +58,7 @@ Supply a trusted local binding JSON:
 | `node`, `node_sha256` | Absolute Node executable and SHA256 hex |
 | `artifact` | Absolute ESM `.stamp/workbench-candidate.mjs` |
 | `runtime` | ESM `{python, pythonSha256, helperPath, repositories}` |
-| `runtime.repositories` | CIW plus exactly eight calibrated providers, each `{path, revision}` |
+| `runtime.repositories` | CIW plus the eight calibrated providers, or the four telemetry providers with optional CBSR, each `{path, revision}` |
 | `review_context` | ESM `{requestId, authority, purpose, sources, retractions}` |
 | `store_root`, `capture_registration` (optional pair) | Absolute file-store root and separate derived-source registration |
 
