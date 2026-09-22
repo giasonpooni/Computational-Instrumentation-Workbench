@@ -230,6 +230,8 @@ def parser() -> argparse.ArgumentParser:
                         help="Separate trusted ESM configuration at the scalar telemetry provider pins")
     server.add_argument("--telemetry-stack-root", type=Path,
                         help="Bind role-named ppda/stfe/gsie/set/cbsr checkouts alongside the process stack")
+    server.add_argument("--calibrated-window-stack-root", type=Path,
+                        help="Bind tbrt/mcur/stfe/gsie/set for shared calibrated window estimation")
     server.add_argument("--python", dest="python_executable", type=Path,
                         help="Python for FSRT/JSPT/GTE adapters; workbench stacks use this running interpreter")
     health = commands.add_parser("health", help="Check a live session with a bounded read-only request")
@@ -403,6 +405,9 @@ def main(argv: list[str] | None = None) -> int:
             if args.telemetry_stack_root is not None:
                 from .telemetry import ROLES as TELEMETRY_ROLES
                 session.workbench.bind_workflow("telemetry", {role: args.telemetry_stack_root / role for role in TELEMETRY_ROLES})
+            if args.calibrated_window_stack_root is not None:
+                from .calibrated_window import ROLES as WINDOW_ROLES
+                session.workbench.bind_workflow("calibrated-window", {role: args.calibrated_window_stack_root / role for role in WINDOW_ROLES})
             if args.esm_telemetry_binding is not None:
                 configuration = read_json(args.esm_telemetry_binding)
                 if "ppda" not in configuration.get("runtime", {}).get("repositories", {}):

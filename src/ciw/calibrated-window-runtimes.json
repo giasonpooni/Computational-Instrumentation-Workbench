@@ -1,0 +1,27 @@
+{
+  "tbrt": {
+    "revision": "40507060ca7a9126a9d641999b994a757eef3bfd",
+    "module": "tbrt.clock",
+    "source_root": "src"
+  },
+  "mcur": {
+    "revision": "49405ecd623474ddf601989b0a8195be401544e0",
+    "module": "mcur.core",
+    "source_root": "src"
+  },
+  "stfe": {
+    "revision": "54dd43b657b92d87c2fc263dfd99437c664be353",
+    "module": "stfe",
+    "source_root": "."
+  },
+  "gsie": {
+    "revision": "de38873db1ba98744d395dfa7df1d3b5b7bb3059",
+    "module": "geometric_state_inference.contracts",
+    "source_root": "src"
+  },
+  "set": {
+    "revision": "2f838f4e196f453efc3a59045b0b3ec4b5680296",
+    "module": "state_estimation_testbed.replay",
+    "source_root": "."
+  }
+}

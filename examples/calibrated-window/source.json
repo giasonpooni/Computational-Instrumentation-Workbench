@@ -1,0 +1,267 @@
+{
+  "schema": "ciw.calibrated-window-source.v1",
+  "experiment_id": "experiment:calibrated-level-window",
+  "epoch": "2026-09-20T00:00:00Z",
+  "channel_id": "synthetic-scalar",
+  "frame": {
+    "id": "frame:synthetic",
+    "semantics": "feature_space"
+  },
+  "frame_mapping": {
+    "ref": "mapping:level-frame-identity",
+    "kind": "identity",
+    "source": "frame:synthetic",
+    "target": "frame:synthetic"
+  },
+  "device_clock": {
+    "clock_id": "device:reservoir-level",
+    "time_scale": "monotonic",
+    "unit": "s"
+  },
+  "receipt_clock": {
+    "clock_id": "reference:process",
+    "time_scale": "UTC",
+    "unit": "s"
+  },
+  "clock_model": {
+    "model_id": "clock-map:level-to-process",
+    "source_frame": {
+      "clock_id": "device:reservoir-level",
+      "time_scale": "monotonic",
+      "unit": "s"
+    },
+    "reference_frame": {
+      "clock_id": "reference:process",
+      "time_scale": "UTC",
+      "unit": "s"
+    },
+    "device_origin": 10,
+    "reference_origin": 0,
+    "skew": 0.5,
+    "offset": 0,
+    "valid_device_interval": [
+      10,
+      14
+    ],
+    "synchronization_evidence_ids": [
+      "evidence:clock-synchronization"
+    ]
+  },
+  "calibration_profile": {
+    "profile_id": "calibration:level-affine",
+    "artifact_id": "evidence:calibration-record",
+    "sensor_id": "sensor:level",
+    "quantity_id": "level",
+    "input_unit": "count",
+    "output_unit": "m",
+    "gain": 2,
+    "offset": 1,
+    "coefficient_covariance": [
+      [
+        0.25,
+        0
+      ],
+      [
+        0,
+        0.5
+      ]
+    ],
+    "valid_from": "2026-09-20T00:00:00Z",
+    "valid_until": "2026-09-20T00:01:00Z",
+    "reference_ids": [
+      "evidence:reference-standard"
+    ],
+    "input_range": [
+      0,
+      10
+    ]
+  },
+  "samples": [
+    {
+      "observation_id": "sample:0",
+      "artifact_id": "evidence:raw-0",
+      "sensor_id": "sensor:level",
+      "quantity_id": "level",
+      "unit": "count",
+      "indicated_value": 2,
+      "raw_value": 2,
+      "device_time": 10,
+      "received_at": 0
+    },
+    {
+      "observation_id": "sample:1",
+      "artifact_id": "evidence:raw-1",
+      "sensor_id": "sensor:level",
+      "quantity_id": "level",
+      "unit": "count",
+      "indicated_value": 4,
+      "raw_value": 4,
+      "device_time": 12,
+      "received_at": 1
+    }
+  ],
+  "joint_covariance": {
+    "order": [
+      "device_time:sample:0",
+      "device_time:sample:1",
+      "clock_skew",
+      "clock_offset",
+      "indicated_value:sample:0",
+      "indicated_value:sample:1",
+      "calibration_gain",
+      "calibration_offset"
+    ],
+    "matrix": [
+      [
+        0,
+        0,
+        0,
+        0,
+        0,
+        0,
+        0,
+        0
+      ],
+      [
+        0,
+        0,
+        0,
+        0,
+        0,
+        0,
+        0,
+        0
+      ],
+      [
+        0,
+        0,
+        0.0625,
+        0,
+        0,
+        0,
+        0,
+        0
+      ],
+      [
+        0,
+        0,
+        0,
+        0.25,
+        0,
+        0,
+        0,
+        0.125
+      ],
+      [
+        0,
+        0,
+        0,
+        0,
+        1,
+        0.25,
+        0,
+        0
+      ],
+      [
+        0,
+        0,
+        0,
+        0,
+        0.25,
+        1,
+        0,
+        0
+      ],
+      [
+        0,
+        0,
+        0,
+        0,
+        0,
+        0,
+        0.25,
+        0
+      ],
+      [
+        0,
+        0,
+        0,
+        0.125,
+        0,
+        0,
+        0,
+        0.5
+      ]
+    ],
+    "cross_covariance_policy": "declared",
+    "evidence_ids": [
+      "evidence:joint-uncertainty-budget"
+    ]
+  },
+  "configuration": {
+    "window": {
+      "start": 0,
+      "end": 2,
+      "received_by": 2,
+      "decision_time": 2,
+      "sample_period": 1,
+      "max_lateness": 0
+    },
+    "gsie": {
+      "prior": {
+        "time": 0,
+        "mean": [
+          0
+        ],
+        "covariance": [
+          [
+            1
+          ]
+        ],
+        "frame_id": "stfe-feature:frame:synthetic",
+        "units": [
+          "m"
+        ],
+        "state_id": "synthetic:independent-prior"
+      },
+      "dynamics": {
+        "matrix": [
+          [
+            1
+          ]
+        ],
+        "process_covariance": [
+          [
+            0
+          ]
+        ],
+        "model_id": "synthetic:constant-window-state.v1"
+      },
+      "observation_model": {
+        "matrix": [
+          [
+            1
+          ]
+        ],
+        "model_id": "synthetic:window-mean-direct-observation.v1"
+      },
+      "target_time": 2,
+      "variables": [
+        "synthetic-state"
+      ],
+      "frame": {
+        "id": "stfe-feature:frame:synthetic",
+        "semantics": "feature_space"
+      },
+      "prior_measurement_crosscov_policy": "declared_zero",
+      "feature_observation_semantics": "window_mean_observes_declared_state_at_window_end"
+    },
+    "composition": {
+      "transformation": "affine",
+      "order": "calibrate_then_mean",
+      "calibration_operation_id": "mcur.affine-first-order.v1",
+      "feature_operation_id": "stfe.window-mean.v1",
+      "time_policy": "nominal_grid_with_retained_joint_time_uncertainty"
+    }
+  }
+}

@@ -182,7 +182,7 @@ refuse a connection.
 | --- | --- | --- |
 | CIW | Operator session, source and native-artifact registry, operation routing, result history and inspection | Shared session assembly; existing numerical workflows retain their original contracts. |
 | PPDA and RCI | Acquisition and measurement sources with original evidence, assembly, delivery and missingness | PPDA retained observation projection now executes with STFE in the shared session. RCI investigation exists separately; live sensor acquisition remains a delivery item. |
-| TBRT, MCUR and STFE | Declared clock mapping, calibration and stream-window transforms | Calibrated snapshot and scalar-window paths exist separately; their compatible composition is the manufacturing-cycle item. |
+| TBRT, MCUR and STFE | Declared clock mapping, calibration and stream-window transforms | Shared `ciw.calibrated-window.v1` composes one affine profile and a nominal-grid mean with full joint covariance. Live acquisition and downstream drift assessment remain the manufacturing-cycle work. |
 | OIT and GSIE | Observability gate and state/covariance computation for a declared context | Calibrated process operation already binds the gate to the estimator's exact transition and observation matrices. |
 | CBSR and FDIR | Constraint-conditioned candidates and residual/isolability diagnostics | Consume retained state and declared residual covariance; hold/refusal remains visible alongside the original estimate. |
 | SRA | Authored instrument/model schematic, typed relationships and eligibility | Existing graph and companion calls remain in SRA; a retained CIW graph operation is a delivery item. |

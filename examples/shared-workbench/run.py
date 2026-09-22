@@ -8,7 +8,7 @@ from pathlib import Path
 from ciw.cli import request_remote
 
 
-async def run(url, with_design, with_telemetry=False):
+async def run(url, with_design, with_telemetry=False, with_calibrated_window=False):
     examples = Path(__file__).resolve().parents[1]
 
     async def call(kind, payload=None):
@@ -41,6 +41,10 @@ async def run(url, with_design, with_telemetry=False):
             "source_id": acquired["source_id"],
             "configuration": json.loads((examples / "telemetry/configuration.json").read_text()),
         }})
+    if with_calibrated_window:
+        acquired = await source("calibrated-window", "calibrated-window")
+        await call("operation.execute", {"operation_id": "ciw.calibrated-window.v1",
+            "parameters": {"source_id": acquired["source_id"]}})
     await call("workspace.save")
     print(json.dumps(await call("fusion.list"), indent=2, allow_nan=False))
 
@@ -50,5 +54,6 @@ if __name__ == "__main__":
     parser.add_argument("--url", default="ws://127.0.0.1:8765")
     parser.add_argument("--with-design", action="store_true")
     parser.add_argument("--with-telemetry", action="store_true", help="Also execute the retained PPDA/STFE scalar window in this session")
+    parser.add_argument("--with-calibrated-window", action="store_true", help="Also execute TBRT/MCUR/STFE/GSIE in this session")
     args = parser.parse_args()
-    asyncio.run(run(args.url, args.with_design, args.with_telemetry))
+    asyncio.run(run(args.url, args.with_design, args.with_telemetry, args.with_calibrated_window))

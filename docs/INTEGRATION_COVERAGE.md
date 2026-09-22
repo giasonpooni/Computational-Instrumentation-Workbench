@@ -17,7 +17,7 @@ operating point.
 ## Shared operating session
 
 The live Session now hosts `ciw.telemetry.v1`, `ciw.calibrated-observable.v1` and
-`ciw.identified-design.v1` through the existing `operation.list/execute` surface.
+`ciw.identified-design.v1`, plus `ciw.calibrated-window.v1`, through the existing `operation.list/execute` surface.
 `source.*`, `bundle.*` and `fusion.list` expose retained inputs, native bundles
 and candidate contexts; result and execution lists include those native records
 alongside existing session operations. Workspace format 3 retains this content,
@@ -43,6 +43,7 @@ remain unchanged by the registry.
 | --- | --- | --- | --- |
 | PPDA → STFE → GSIE → SET | Shared `ciw.telemetry.v1` operation and existing standalone commands; exact source bytes, full temporal covariance, causal scalar mean, predict/update and ESM candidate handoff | ICRH `telemetry-to-state.v1`, original/replay/adversarial fixtures | This scalar path does not yet consume TBRT/MCUR transformations or evaluate observability. |
 | PPDA → STFE → GSIE → CBSR → SET | Same telemetry session with optional affine-exact reconciliation receipt | ICRH `telemetry-reconciled.v1` | New decisions must preserve accepted/held/refused distinctions. |
+| TBRT → MCUR → STFE → GSIE → SET | Shared `ciw.calibrated-window.v1`; raw device samples, affine map/profile, full joint time/value/parameter covariance, native compatibility check and window-state context | ICRH `calibrated-window-to-state.v1`; actual original/replay and resealed covariance/validity/compatibility faults | Scalar stationary hold on a nominal grid; live acquisition, window observability, drift assessment and ESM handoff remain separate work. |
 | FSRT → TBRT → MCUR → OIT → GSIE → CBSR → FDIR → SET | `ciw calibrated-observable create/inspect/replay`; two calibrated channels, retained clock uncertainty, observability gate and declared residual covariance | ICRH `calibrated-observable-telemetry.v1`; original, replay, held, ambiguous and refusal fixtures | Synthetic stationary hold; no calibrated stream window or identified dynamics in this profile. |
 | Retained calibrated experiment → SIDT → OIT → GSIE → EDSPT → YWIR | `ciw identified-design create/inspect/replay`; freshly checked upstream prior, identified point model, candidate observability, future conditional covariance, cost-constrained reduction and separate advisory token decision | ICRH [`identified-budgeted-observation.v1`](https://github.com/giasonpooni/Instrument-Conformance-and-Replay-Harness/blob/main/profiles/identified-budgeted-observation.v1.json); retained original/replay/token-denial fixtures | Parameter uncertainty remains unknown; selection is advisory and cannot dispatch acquisition or admit ESM state. |
 | RCI → FSRT → JSPT | `ciw investigation`, `covariance`, `covariance-replay`; shared investigation, full covariance provenance and declared Jacobian | CIW pinned adapter gate; no dedicated ICRH investigation profile | Connect existing typed covariance to a concrete downstream decision without replacing historical records. |
@@ -55,6 +56,7 @@ does not mean an independent physical measurement or independent validation of
 the scientific algorithm. SET's replay receipts retain their declared scope.
 
 The executable sources are [`telemetry.py`](../src/ciw/telemetry.py),
+[`calibrated_window.py`](../src/ciw/calibrated_window.py),
 [`calibrated_observable.py`](../src/ciw/calibrated_observable.py),
 [`identified_design.py`](../src/ciw/identified_design.py),
 [`investigation.py`](../src/ciw/investigation.py),
@@ -105,7 +107,9 @@ an equipment order nor starts a measurement.
 | 5 | CSE, RCI, GTE, JSPT, CBSR | Frame-bound geometry/BIM inspection using measured quantities, local covariance propagation and declared construction constraints | Explicit surveyed/design frames and source authority, units, one supported constraint and analytic oracle; retain held candidate and residuals; a complete CIW operation/profile. |
 | 6 | SIDT or JSPT, GSIE, PLSR | A selected retained model and compatible state passed to the existing Lyapunov evaluator | Bind discrete/continuous convention, sample period, state order, equilibrium, supplied certificate and margin; preserve `NUMERICAL_INCONCLUSIVE`; new ICRH profile. |
 
-These six rows are integration targets, not delivered execution paths. Extend the
+These six rows describe further integration targets. The affine TBRT/MCUR/STFE
+window part of row 1 is delivered through [calibrated windows](CALIBRATED_WINDOW.md);
+its live acquisition and drift consumer remain outstanding. Extend the
 three demonstrations—process balance, manufacturing cycle and geometry/BIM
 inspection—inside the common workspace through these contracts. Each result
 should share source/context selection and retained history with the tools that

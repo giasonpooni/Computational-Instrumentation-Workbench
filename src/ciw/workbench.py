@@ -22,6 +22,7 @@ OPERATIONS = {
     "calibrated-observable": "ciw.calibrated-observable.v1",
     "identified-design": "ciw.identified-design.v1",
     "telemetry": "ciw.telemetry.v1",
+    "calibrated-window": "ciw.calibrated-window.v1",
 }
 WORKFLOW_OPERATION_IDS = frozenset(OPERATIONS.values())
 from .candidate_evidence import OPERATIONS as CANDIDATE_OPERATIONS
@@ -43,6 +44,9 @@ def _workflow(kind):
     if kind == "telemetry":
         from . import telemetry
         return telemetry
+    if kind == "calibrated-window":
+        from . import calibrated_window
+        return calibrated_window
     raise ValueError("Unknown workbench source kind")
 
 
@@ -84,7 +88,7 @@ def _source(payload):
         raise ValueError("Source bytes must use canonical base64") from exc
     if len(raw) > workflow.MAX_BYTES or base64.b64encode(raw).decode("ascii") != encoded:
         raise ValueError("Source bytes must use bounded canonical base64")
-    if kind in {"calibrated-observable", "telemetry"}:
+    if kind in {"calibrated-observable", "telemetry", "calibrated-window"}:
         declaration = workflow._source(raw)
     else:
         # The full design validator needs an explicitly selected retained prior.
@@ -241,7 +245,7 @@ def _validate_links(record, bundles):
 
 def _context(record, sources):
     native = record["native"]
-    if record["kind"] == "telemetry":
+    if record["kind"] in {"telemetry", "calibrated-window"}:
         return _telemetry_context(record, sources)
     calibrated = record["kind"] == "calibrated-observable"
     step = native["steps"][4 if calibrated else 2]
@@ -299,25 +303,26 @@ def _context(record, sources):
 
 def _telemetry_context(record, sources):
     native = record["native"]
-    step = native["steps"][2]
+    window = record["kind"] == "calibrated-window"
+    step = next(s for s in native["steps"] if s["runtime_ref"] == "gsie")
     state = step["result"]["result_artifact"]
     source = sources[record["source_id"]]
     declaration = _json(base64.b64decode(source["bytes_b64"], validate=True))
     configuration = native["configuration"]
     cbsr = next((s for s in native["steps"] if s["runtime_ref"] == "cbsr"), None)
-    return {"context_id": "context:" + _digest({"bundle_id": record["bundle_id"], "result_id": step["result_id"]}),
+    context = {"context_id": "context:" + _digest({"bundle_id": record["bundle_id"], "result_id": step["result_id"]}),
         "bundle_id": record["bundle_id"], "source_id": record["source_id"], "evidence_id": source["evidence_id"],
         "upstream_bundle_id": None, "owner": "gsie", "state_kind": "window_feature_posterior",
         "state_id": state["state_id"], "result_id": step["result_id"], "execution_id": step["execution_id"],
         "event_time": state["observation_binding"]["elapsed_seconds"], "epoch": declaration["epoch"],
         "mean": [item["value"] for item in state["components"]], "covariance": state["covariance"]["matrix"],
         "state_names": [item["name"] for item in state["components"]], "units": [item["unit"] for item in state["components"]],
-        "frame_id": state["covariance"]["frame"]["id"], "clock_frame": declaration["clock_basis"],
-        "channel_ids": [declaration["channel_id"]], "observation_batch_id": native["steps"][0]["result_id"],
-        "feature_result_id": native["steps"][1]["result_id"], "window": deepcopy(configuration["window"]),
+        "frame_id": state["covariance"]["frame"]["id"], "clock_frame": declaration["receipt_clock"]["clock_id"] if window else declaration["clock_basis"],
+        "channel_ids": [declaration["channel_id"]], "observation_batch_id": None if window else native["steps"][0]["result_id"],
+        "feature_result_id": next(s["result_id"] for s in native["steps"] if s["runtime_ref"] == "stfe"), "window": deepcopy(configuration["window"]),
         "feature_observation_semantics": configuration["gsie"]["feature_observation_semantics"],
         "model_id": configuration["gsie"]["observation_model"]["model_id"],
-        "cross_covariance_policy": declaration["crosscov_policy"],
+        "cross_covariance_policy": declaration["joint_covariance"]["cross_covariance_policy"] if window else declaration["crosscov_policy"],
         "prior_measurement_crosscov_policy": configuration["gsie"]["prior_measurement_crosscov_policy"],
         "observability": {"status": "unresolved", "reason": "not_evaluated_by_telemetry_profile"}, "calibration_validity": "not_assessed",
         "reconciliation": {"result_id": cbsr["result_id"], "status": cbsr["result"]["status"]} if cbsr else {"status": "not_run"},
@@ -325,6 +330,15 @@ def _telemetry_context(record, sources):
         "validation": "content_consistent", "numerical_replay": "not_performed_by_inspection",
         "verification_id": native["verification"]["verification_id"],
         "retained_verification_outcome": native["verification"].get("outcome")}
+    if window:
+        context.update(calibration_validity="checked_at_nominal_mapped_event_times",
+            clock_result_id=native["steps"][0]["result_id"], calibration_result_id=native["steps"][1]["result_id"],
+            time_policy=configuration["composition"]["time_policy"],
+            joint_time_value_covariance=deepcopy(native["steps"][1]["result"]["data"]["joint_time_value_covariance"]),
+            uncertainty_scope="first_order_conditional_on_declared_nominal_grid",
+            calibration_feature_compatibility=deepcopy(native["steps"][1]["result"]["data"]["compatibility"]),
+            observability={"status": "unresolved", "reason": "not_evaluated_by_calibrated_window_profile"})
+    return context
 
 
 class Workbench:
@@ -393,13 +407,13 @@ class Workbench:
                 "result_id": step["result_id"], "execution_id": step["execution_id"],
                 "view": "retained_native_result", "state_admission": "not_performed"}
                 for record in self._bundles.values() for step in record["native"]["steps"]
-                if step["runtime_ref"] in {"ppda", "stfe", "gsie", "cbsr", "fdir"}])
+                if step["runtime_ref"] in {"ppda", "tbrt", "mcur", "stfe", "gsie", "cbsr", "fdir", "oit"}])
 
     def inspect_instrument(self, payload):
         _keys(payload, {"bundle_id", "instrument"})
         _text(payload["bundle_id"], "Bundle identity")
-        if payload["instrument"] not in ("ppda", "stfe", "gsie", "cbsr", "fdir"):
-            raise ValueError("Choose ppda, stfe, gsie, cbsr or fdir")
+        if payload["instrument"] not in ("ppda", "tbrt", "mcur", "stfe", "gsie", "cbsr", "fdir", "oit"):
+            raise ValueError("Choose a retained ppda, tbrt, mcur, stfe, gsie, cbsr, fdir or oit result")
         with self._lock:
             native = self.get_bundle(payload["bundle_id"])
             steps = {step["runtime_ref"]: step for step in native["steps"]}
@@ -409,7 +423,7 @@ class Workbench:
             return deepcopy({"bundle_id": record["bundle_id"], "source_id": record["source_id"],
                 "instrument": payload["instrument"], "step": steps[payload["instrument"]],
                 "fusion_context": _context(record, self._sources),
-                "linked_results": {role: steps[role]["result_id"] for role in ("ppda", "stfe", "gsie", "cbsr", "fdir", "oit") if role in steps},
+                "linked_results": {role: steps[role]["result_id"] for role in ("ppda", "tbrt", "mcur", "stfe", "gsie", "cbsr", "fdir", "oit") if role in steps},
                 "numerical_replay": "not_performed_by_inspection", "state_admission": "not_performed"})
 
     def execute_candidate(self, operation_id, parameters):

@@ -86,8 +86,8 @@ def test_native_instruments_share_one_explicit_bundle_without_recomputing(fixtur
         raise AssertionError("Inspection must not execute a provider")
     monkeypatch.setattr("ciw.candidate_evidence._bounded_process", denied)
     listed = response(session, "instrument.list")["instruments"]
-    assert {item["instrument"] for item in listed} == {"gsie", "cbsr", "fdir"}
-    for role in ("gsie", "cbsr", "fdir"):
+    assert {item["instrument"] for item in listed} == {"tbrt", "mcur", "oit", "gsie", "cbsr", "fdir"}
+    for role in ("tbrt", "mcur", "oit", "gsie", "cbsr", "fdir"):
         view = response(session, "instrument.inspect", {"bundle_id": bundle["bundle_digest"], "instrument": role})
         step, = [s for s in bundle["steps"] if s["runtime_ref"] == role]
         assert view["step"] == step

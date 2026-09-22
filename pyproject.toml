@@ -20,7 +20,7 @@ ciw = "ciw.cli:main"
 where = ["src"]
 
 [tool.setuptools.package-data]
-ciw = ["plsr-runtime.json", "adapter-runtimes.json", "exchange-runtime.json", "telemetry-runtimes.json", "calibrated-observable-runtimes.json", "identified-design-runtimes.json", "esm-runtime.json"]
+ciw = ["plsr-runtime.json", "adapter-runtimes.json", "exchange-runtime.json", "telemetry-runtimes.json", "calibrated-observable-runtimes.json", "identified-design-runtimes.json", "esm-runtime.json", "calibrated-window-runtimes.json"]
 
 [tool.pytest.ini_options]
 testpaths = ["tests"]
