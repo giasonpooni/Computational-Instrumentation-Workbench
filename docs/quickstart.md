@@ -2,7 +2,12 @@
 
 Computational Instrumentation Workbench is a terminal-first workbench that connects computational instruments to synchronized numerical, temporal, spectral, and 2D/3D representations of physical-system observations and estimated states.
 
-This first slice is a local prototype with one **synthetic damped-oscillator instrument**. It does not yet acquire physical observations. Python owns the float64 scientific record and all calculations. A terminal can operate alone; the optional Godot window attaches to the same service.
+The built-in example is a **synthetic damped oscillator**. The shared workbench
+also hosts pinned process, calibrated-window, telemetry and observation-design
+workflows; see [live experiment inspection](EXPERIMENT_VIEW.md) to run them in
+one desktop session. Physical acquisition is not implemented. Python owns the
+scientific records and calculations; the optional Godot window attaches to the
+same service as the terminal.
 
 For persistent native service control or the containerized backend, use the [deployment guide](../deploy/README.md).
 
@@ -60,7 +65,7 @@ ciw send workspace.save
 
 Use the current revision from `session.get` in each selection update. A revision conflict means another client changed the selection: fetch the new state before retrying. On shells that alter JSON quoting, write the payload into a JSON file and pass `--payload-file request.json`.
 
-Install or unzip [Godot 4.5.2 Standard](https://godotengine.org/download/archive/4.5.2-stable/), then import `godot/project.godot` and run it. Alternatively, use `godot --path godot` if the binary is on PATH. The client connects to `ws://127.0.0.1:8765` by default. It displays a phase portrait, backend-supplied energy surface/trajectory, shared cursor, channel/interval controls and numerical inspection. Source sample identity remains authoritative. Closing Godot leaves the Python session running.
+Install or unzip [Godot 4.5.2 Standard](https://godotengine.org/download/archive/4.5.2-stable/), then import `godot/project.godot` and run it. Alternatively, use `godot --path godot` if the binary is on PATH. The client connects to `ws://127.0.0.1:8765` by default. Select **Oscillator** for the phase portrait, backend energy surface/trajectory, shared cursor and channel/interval controls. **Experiments** presents shared native bundles when they exist. Source sample identity remains authoritative. Closing Godot leaves the Python session running.
 
 The 3D axes represent state and energy; the surface is a function over state space, not physical terrain. Display scaling is declared separately and must not be read as a physical measurement.
 

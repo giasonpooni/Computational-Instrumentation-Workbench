@@ -680,6 +680,18 @@ class Workbench:
         with self._lock:
             return deepcopy([_context(record, self._sources) for record in self._bundles.values()])
 
+    def inspect_experiment(self, payload):
+        from .experiment_view import project
+        _keys(payload, {"bundle_id"})
+        _text(payload["bundle_id"], "bundle_id")
+        with self._lock:
+            record = self._bundles.get(payload["bundle_id"])
+            if record is None:
+                raise ValueError("Unknown retained workbench bundle")
+            source = self._sources[record["source_id"]]
+            declaration = _json(base64.b64decode(source["bytes_b64"], validate=True))
+            return project(record, source, declaration, _context(record, self._sources), self._revision)
+
     def _native_steps(self):
         """Expose embedded replay occurrences without counting reused upstream twice."""
         seen = set()

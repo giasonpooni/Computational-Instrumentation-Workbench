@@ -110,6 +110,42 @@ def test_source_bytes_and_device_timestamps_survive_shared_session(tmp_path):
     assert response(session, "fusion.list")["contexts"] == []
 
 
+@pytest.mark.parametrize("payload", [{}, {"bundle_id": []}, {"bundle_id": "missing"},
+    {"bundle_id": "missing", "recompute": True}])
+def test_experiment_inspection_refuses_unknown_or_mutating_request(tmp_path, payload):
+    session = Session(make_demo_run(), tmp_path)
+    before = session.workbench.serialize()
+    assert request(session, "experiment.inspect", payload)["type"] == "error"
+    assert session.workbench.serialize() == before
+
+
+def test_process_experiment_projection_uses_retained_residuals(retained_process, tmp_path, monkeypatch):
+    deny_scientific_execution(monkeypatch)
+    session = Session.from_workspace(retained_process["path"], tmp_path)
+    bundle = retained_process["bundle"]
+    before = session.workbench.serialize()
+    view = response(session, "experiment.inspect", {"bundle_id": bundle["bundle_digest"]})
+    panels = {p["panel_id"]: p for p in view["panels"]}
+    assert panels["measurements"]["values"] == [52, 46]
+    assert panels["state"]["values"] == native_data(bundle, "gsie")["mean"]
+    assert panels["innovation"]["values"] == [2, -4]
+    assert panels["innovation"]["covariance"] == [[1.25, .25], [.25, 1.25]]
+    assert panels["posterior-residual"]["covariance"] is None
+    assert panels["reconciled"]["values"] == [50.75, 49.25]
+    assert panels["reconciled"]["covariance"][0][1] < 0
+    assert view["fusion_context"]["fault_assessment"]["isolability"] == native_data(bundle, "fdir")["isolability"]["status"]
+    assert view["verification"] == bundle["verification"]
+    assert session.workbench.serialize() == before
+    # Projection behavior only: a held native candidate must never be plotted
+    # as an accepted reconciled state, even if a candidate vector is present.
+    from ciw.experiment_view import project
+    record = deepcopy(before["bundles"][0])
+    next(s for s in record["native"]["steps"] if s["runtime_ref"] == "cbsr")["result"]["data"]["status"] = "held"
+    source = session.workbench.get_source(view["source_id"])
+    held = project(record, source, json.loads(base64.b64decode(source["bytes_b64"])), view["fusion_context"], before["revision"])
+    assert "reconciled" not in [p["panel_id"] for p in held["panels"]]
+
+
 @pytest.mark.parametrize("mutate", [
     lambda payload: payload.update(kind="unknown-provider"),
     lambda payload: payload.update(kind="identified-design"),
@@ -401,6 +437,10 @@ def test_design_consumes_retained_upstream_bundle_without_an_export_handoff(
     assert prediction["parameter_covariance_status"] == "unknown"
     assert prediction["uncertainty_scope"] == "conditional_on_identified_point_model"
     assert prediction["state_admission"] == "not_performed"
+    view = response(session, "experiment.inspect", {"bundle_id": summary["bundle_id"]})
+    assert view["panels"][0]["context"]["uncertainty_scope"] == "conditional_on_identified_point_model"
+    assert view["fusion_context"]["parameter_covariance_status"] == "unknown"
+    assert view["upstream_bundle_id"] == posterior["bundle_id"]
     for step in bundle["steps"] + bundle["upstream_replay"]["session"]["steps"]:
         assert response(session, "result.get", {"result_id": step["result_id"]}) == step["result"]
     saved = session.save_workspace(tmp_path / "with-design.json")

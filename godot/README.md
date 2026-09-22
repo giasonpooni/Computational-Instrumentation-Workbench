@@ -8,6 +8,13 @@ godot --path godot
 
 The client connects to `ws://127.0.0.1:8765`. The service remains usable if this window closes. No addons, .NET runtime, browser bridge, scientific packages, or imported assets are required in Godot.
 
+The **Experiments** tab is the shared view of retained process, calibrated-window,
+telemetry and identified-design bundles. It follows `workbench.changed`, displays
+native values and full covariance, links instrument dependencies to retained
+results, and marks disconnected data stale. See the [experiment view guide](../docs/EXPERIMENT_VIEW.md)
+for provider setup, protocol, scientific boundaries and testing. The existing
+oscillator viewport is available in the **Oscillator** tab.
+
 The phase view plots retained position and velocity samples. Click within 20 pixels of a trajectory point to move the shared playback cursor to that retained sample time. The timeline and Play button also update this cursor. Channel and half-open `[start,end)` interval are shared with terminal clients; playback never changes the interval or recomputes analyses. The 3D view displays Python-supplied energy-surface and trajectory meshes using the declared visual transform. Drag to orbit and use the mouse wheel to zoom. All three numeric cards are `sample.get` results, never values reconstructed from displayed geometry.
 
 Selection updates carry the observed revision, coalesce at no more than 10 requests per second, and permit only one outstanding update. Responses are matched by request ID. On a revision conflict the client discards pending selection intent and refreshes authoritative state. Sample requests are also coalesced, and an obsolete response cannot replace the latest requested sample. A fresh snapshot is checked every five seconds; unanswered requests time out after eight seconds. Disconnects retain the last view with a visible STALE indication and disable shared interaction. Use Reconnect after restarting the service.

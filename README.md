@@ -12,11 +12,15 @@ declared models, compatible sensor fusion, instrument results and replay
 evidence. Existing scientific providers retain their numerical ownership;
 their records and operations enter that shared context. See
 [shared-workbench assembly](docs/WORKBENCH_ASSEMBLY.md) for the implemented
-session connection, component placement and next delivery work.
+session connection, component placement and next delivery work. The
+[live Experiments tab](docs/EXPERIMENT_VIEW.md) now brings retained process,
+telemetry, calibrated-window and observation-design results into the desktop:
+measurements, state/covariance, residuals, native dependencies and evidence share
+one selected occurrence and update when the session commits new results.
 
 The executable prototype includes a synthetic damped oscillator, numerical
 statistics and periodogram analysis, a shared local session, saved-workspace
-inspection and replay, and an optional Godot oscillator viewport. External
+inspection and replay, and an optional Godot experiment/oscillator viewport. External
 scientific operations use explicitly bound, source-pinned runtimes; the table
 below identifies the integrations currently implemented.
 
@@ -41,7 +45,7 @@ This is the shared-investigation operation path after request admission.
 Malformed requests are rejected before an execution exists. Providers retain
 their native artifacts and runtime bindings when hosted in a shared workspace;
 their guides below define each numerical boundary. The optional Godot view supports
-the oscillator. See the [diagram atlas](docs/DIAGRAMS.md) for workflow,
+retained experiment inspection and oscillator playback. See the [diagram atlas](docs/DIAGRAMS.md) for workflow,
 covariance and identity diagrams across the stack.
 
 ## Run and inspect
@@ -59,8 +63,8 @@ explicit replay creates new execution/result identities.
 
 The built-in examples are synthetic. Successful computation, content integrity
 and matching replay digests do not establish physical validity or calibration
-traceability. Domain-specific viewport support is limited to the oscillator;
-external integrations expose terminal and JSON records as described below.
+traceability. The Experiments tab presents the four shared native workflows;
+other external integrations expose terminal and JSON records as described below.
 
 ## Integrated tools
 
@@ -71,6 +75,7 @@ establish physical validation or deployment readiness.
 
 | Tool | Integration status | Available operations | Instructions and specifications |
 | --- | --- | --- | --- |
+| Shared experiment viewport (`ciw.experiment-view.v1`) | Read-only Godot tab over the existing live session | Select retained occurrences; inspect measurements, full covariance, residuals, native input dependencies and evidence; follow committed updates with replay separation and stale-state handling | [Setup, protocol and scope](docs/EXPERIMENT_VIEW.md) |
 | Synthetic damped oscillator (`analytic-damped-oscillator.v1`) | Integrated prototype; built into CIW | Generate a recording, inspect samples, calculate statistics and periodogram spectra, share a session, save and reopen results | [Tool guide](docs/INSTRUMENTS.md#synthetic-damped-oscillator), [quickstart](docs/quickstart.md), [record and protocol specification](docs/PROTOCOL.md) |
 | Retrofitted Computational Instrumentation (RCI) | Integrated experimental measurement-chain adapter; pinned subprocess | Retain exact raw observations, validate declared calibration, derive distinct calibrated evidence with parameter covariance | [Setup, commands and specifications](docs/ADAPTERS.md), [catalogue entry](docs/INSTRUMENTS.md#rci-calibration-and-fsrt-estimation) |
 | Fluid State Reconstruction Testbed (FSRT) | Integrated experimental state-estimation operation; pinned subprocess | Evaluate one simultaneous two-reservoir snapshot, retain estimate/covariance/residuals and diagnostics, share and replay the investigation | [Setup, commands and specifications](docs/ADAPTERS.md), [catalogue entry](docs/INSTRUMENTS.md#rci-calibration-and-fsrt-estimation) |

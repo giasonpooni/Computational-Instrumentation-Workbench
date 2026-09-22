@@ -8,6 +8,8 @@ signal run_received(run: Dictionary)
 signal selection_received(selection: Dictionary)
 signal sample_received(sample: Dictionary)
 signal request_failed(code: String, detail: String)
+signal experiment_received(view: Dictionary)
+signal artifact_received(artifact: Dictionary)
 
 const ENDPOINT := "ws://127.0.0.1:8765"
 const REQUEST_TIMEOUT_MS := 8000
@@ -35,6 +37,11 @@ var _sample_pending := false
 var _wanted_sample_time := -1.0
 var _sent_sample_time := -1.0
 var _session_id := ""
+var _snapshot_dirty := false
+var _view_pending := false
+var _wanted_bundle := ""
+var _artifact_pending := false
+var _wanted_result := ""
 
 
 func connect_service() -> void:
@@ -50,6 +57,11 @@ func connect_service() -> void:
 	_refresh_pending = false
 	_run_pending = false
 	_sample_pending = false
+	_view_pending = false
+	_artifact_pending = false
+	_wanted_bundle = ""
+	_wanted_result = ""
+	_snapshot_dirty = false
 	_wanted_sample_time = -1.0
 	_sent_sample_time = -1.0
 	_generation += 1
@@ -81,6 +93,20 @@ func update_selection(changes: Dictionary) -> void:
 func inspect(time_s: float) -> void:
 	_wanted_sample_time = time_s
 	_send_sample_if_ready()
+
+
+func inspect_experiment(bundle_id: String) -> void:
+	_wanted_bundle = bundle_id
+	if online and not _view_pending and not bundle_id.is_empty():
+		_view_pending = true
+		_request("experiment.inspect", {"bundle_id": bundle_id})
+
+
+func inspect_artifact(result_id: String) -> void:
+	_wanted_result = result_id
+	if online and not _artifact_pending and not result_id.is_empty():
+		_artifact_pending = true
+		_request("result.get", {"result_id": result_id})
 
 
 func _process(_delta: float) -> void:
@@ -172,6 +198,13 @@ func _receive(message: Dictionary) -> void:
 	if kind == "selection.changed":
 		_apply_selection(payload)
 		return
+	if kind == "workbench.changed":
+		# Coalesce invalidations but remember one received during a read.
+		_snapshot_dirty = true
+		if not _refresh_pending:
+			_snapshot_dirty = false
+			_request_snapshot()
+		return
 	var request_id: Variant = message.get("request_id")
 	if request_id == null or not _pending.has(str(request_id)):
 		return
@@ -186,6 +219,16 @@ func _receive(message: Dictionary) -> void:
 		_run_pending = false
 	if request_type == "sample.get":
 		_sample_pending = false
+	if request_type == "experiment.inspect":
+		_view_pending = false
+		if request.payload.bundle_id != _wanted_bundle:
+			inspect_experiment(_wanted_bundle)
+			return
+	if request_type == "result.get":
+		_artifact_pending = false
+		if request.payload.result_id != _wanted_result:
+			inspect_artifact(_wanted_result)
+			return
 	if kind == "error":
 		var code := str(payload.get("code", "unknown"))
 		var detail := str(payload.get("message", "Request failed"))
@@ -202,6 +245,14 @@ func _receive(message: Dictionary) -> void:
 	match request_type:
 		"session.get":
 			_apply_snapshot(payload)
+			if _snapshot_dirty:
+				_snapshot_dirty = false
+				_request_snapshot()
+		"experiment.inspect":
+			if payload.get("bundle_id", "") == _wanted_bundle:
+				experiment_received.emit(payload)
+		"result.get":
+			artifact_received.emit(payload)
 		"run.get":
 			if payload.get("run_id", "") != snapshot.get("run", {}).get("run_id", ""):
 				_set_status("error", "Run identity changed while loading; reconnect")
@@ -227,6 +278,8 @@ func _apply_snapshot(value: Dictionary) -> void:
 	var new_session := str(value.session_id)
 	var new_run := str(value.run.get("run_id", ""))
 	var changed := new_session != _session_id or new_run != str(selection.get("run_id", ""))
+	if not changed and int(value.get("workbench", {}).get("revision", 0)) < int(snapshot.get("workbench", {}).get("revision", 0)):
+		return
 	if changed:
 		selection.clear()
 		run.clear()

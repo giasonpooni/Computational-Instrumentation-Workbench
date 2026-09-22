@@ -321,6 +321,8 @@ class Session:
         if kind == "fusion.list":
             _keys(payload, set())
             return {"contexts": self.workbench.fusion_contexts()}
+        if kind == "experiment.inspect":
+            return self.workbench.inspect_experiment(payload)
         if kind == "instrument.list":
             _keys(payload, set())
             return {"instruments": self.workbench.instrument_views()}

@@ -68,6 +68,41 @@ def test_operation_joins_existing_session_and_startup(tmp_path):
     assert args.calibrated_window_stack_root == Path("/trusted/window")
 
 
+def test_experiment_projection_preserves_joint_covariance_and_replay_occurrences(retained, monkeypatch):
+    session, source, original, fresh, path, raw = retained
+    def forbidden(*args, **kwargs):
+        raise AssertionError("View must not recompute native science")
+    monkeypatch.setattr(window, "create_session", forbidden)
+    monkeypatch.setattr(window, "replay_session", forbidden)
+    before = session.workbench.serialize()
+    view = call(session, "experiment.inspect", {"bundle_id": original["bundle_digest"]})
+    panels = {p["panel_id"]: p for p in view["panels"]}
+    assert panels["indications"]["values"] == [2, 4]
+    assert panels["indications"]["context"]["event_times"] == [10, 12]
+    assert panels["aligned-time"]["values"] == [0, 1]
+    assert panels["aligned-time"]["covariance"] == [[.25, .25], [.25, .5]]
+    assert panels["measurements"]["values"] == [5, 9]
+    assert panels["measurements"]["covariance"] == [[5.5, 3.5], [3.5, 8.5]]
+    assert panels["measurements"]["context"]["joint_time_value_covariance"][0][2] == .125
+    assert panels["feature"]["values"] == [7]
+    assert panels["feature"]["covariance"] == [[5.25]]
+    assert panels["state"]["values"] == [1.12]
+    assert panels["innovation"]["covariance"] == [[6.25]]
+    assert panels["posterior-residual"]["covariance"] is None
+    assert view["raw_observations"] == json.loads(raw)["samples"]
+    assert [n["input_refs"] for n in view["graph"]["nodes"]] == [s["input_refs"] for s in original["steps"]]
+    assert view["verification"] == original["verification"]
+    assert view["fusion_context"]["observability"]["status"] == "unresolved"
+    replay = call(session, "experiment.inspect", {"bundle_id": fresh["bundle_digest"]})
+    assert replay["bundle_id"] != view["bundle_id"]
+    assert [p["values"] for p in replay["panels"]] == [p["values"] for p in view["panels"]]
+    assert [n["execution_id"] for n in replay["graph"]["nodes"]] != [n["execution_id"] for n in view["graph"]["nodes"]]
+    view["panels"][0]["values"][0] = 999
+    assert session.workbench.serialize() == before
+    restored = Session.from_workspace(path, path.parent / "view-restored")
+    assert call(restored, "experiment.inspect", {"bundle_id": fresh["bundle_digest"]}) == replay
+
+
 @pytest.mark.parametrize("attack", ["unknown", "diagonal_claim", "non_psd", "order", "nonlinear", "missing_map", "coefficient_block", "different_sensor", "moving_state", "lossy_raw", "boolean_gain", "lossy_clock"])
 def test_undeclared_inputs_refuse_before_provider_execution(attack, monkeypatch):
     source = json.loads(SOURCE)

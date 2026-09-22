@@ -160,12 +160,16 @@ def check(executable: str) -> None:
                 )
                 if not any(line.startswith(BOUNDARY_PASS) for line in boundary.splitlines()):
                     raise CheckError("Generic adapter boundary check exited without its PASS sentinel")
+                experiments = run_godot(executable, "experiment view and response races",
+                    ["--script", "res://tests/experiment_view.gd"], timeout=60)
+                if "PASS: experiment selection" not in experiments:
+                    raise CheckError("Experiment view check exited without its PASS sentinel")
                 failed = False
             finally:
                 stop_service(process)
                 if failed:
                     show_output("temporary service diagnostics", log_path.read_text(encoding="utf-8", errors="replace"))
-    print("PASS: Godot import, live protocol, channel generality and adapter boundary checks; temporary service stopped.",
+    print("PASS: Godot import, live protocol, channel generality, adapter and experiment view checks; temporary service stopped.",
           flush=True)
 
 

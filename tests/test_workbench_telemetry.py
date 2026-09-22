@@ -164,6 +164,12 @@ def test_cbsr_consumes_retained_estimate_and_reuses_raw_observations(retained, r
     assert reconciled["result"]["status"] == "accepted"
     assert bundle["steps"][0]["result_id"] == retained["bundle"]["steps"][0]["result_id"]
     assert response(session, "instrument.inspect", {"bundle_id": summary["bundle_id"], "instrument": "cbsr"})["step"] == reconciled
+    view = response(session, "experiment.inspect", {"bundle_id": summary["bundle_id"]})
+    panels = {p["panel_id"]: p for p in view["panels"]}
+    assert panels["measurements"]["covariance"] == [[1, .25], [.25, 1]]
+    assert panels["feature"]["values"] == [3]
+    assert panels["state"]["values"] == [pytest.approx(24/13)]
+    assert view["fusion_context"]["observability"]["status"] == "unresolved"
     # Existing batch identity cannot be reused for different observation bytes.
     changed = deepcopy(session.workbench.serialize()["bundles"][-1])
     changed["native"]["steps"][0]["result"]["components"][0]["value"] = 999

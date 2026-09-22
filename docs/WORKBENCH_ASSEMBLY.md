@@ -1,5 +1,26 @@
 # Assembling the shared workbench
 
+The target is one computational, algebraic, numerical and algebraic-topological
+suite with sensor fusion and streaming visualization. Its common substrate is a
+selected experiment, typed retained objects, declared compatible operations,
+native execution records and replay evidence. Provider repositories keep their
+scientific responsibilities while their operations and artifacts join this suite.
+
+The [Experiments desktop tab](EXPERIMENT_VIEW.md) is now implemented over that
+substrate: it links four retained workflows to measurement/state/covariance and
+residual panels, native input dependencies, evidence inspection and live session
+invalidation. It introduces no additional estimator or parallel result store.
+
+The next assembly steps are typed model/schematic selection through SRA and
+delegated deterministic numerical workloads through SCR, followed by acquisition
+scheduling and compatible spatial views. Algebraic and topological providers
+should enter as declared operations on explicit domains, bases, chain complexes
+or filtrations, with exact versus numerical arithmetic and verification scope
+retained. Topological outputs require an explicit observation model and uncertainty
+before they can enter GSIE fusion. These are delivery targets, not implemented
+algebra/topology APIs. Specialized geodesic runtimes and deferred geometry
+research remain governed by concrete workload needs.
+
 GSIE, CBSR, FDIR and ESM now have an explicit shared-session handoff. See
 [state, diagnostics and candidate evidence](STATE_DIAGNOSTICS_EVIDENCE.md) for
 native instrument views, fresh candidate inspection and optional ESM retention.

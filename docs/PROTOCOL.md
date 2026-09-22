@@ -1,5 +1,18 @@
 # Workbench protocol v1
 
+## Shared experiment projection
+
+`experiment.inspect` accepts exactly `{"bundle_id":"<retained identity>"}` and
+returns `ciw.experiment-view.v1`. It projects one committed native occurrence into
+ordered scientific panels and its recorded input graph, retaining full covariance,
+units, time/frame context, source/evidence/result/execution identities and original
+verification. It does not execute a provider or change selection/retention.
+See [the complete view contract](EXPERIMENT_VIEW.md). Existing `workbench.changed`
+notifications invalidate the catalog; clients fetch authoritative state and keep
+replay occurrences separate from measurement samples.
+
+## Transport
+
 Status: first implementation contract. Python is authoritative; terminal and Godot are independent clients. Local endpoint: `ws://127.0.0.1:8765`. Text JSON only in v1; no terminal scraping.
 
 Request: `{"protocol_version":1,"request_id":"unique-client-id","type":"session.get","payload":{}}`.

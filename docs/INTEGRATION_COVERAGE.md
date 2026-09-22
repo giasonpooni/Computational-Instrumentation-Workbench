@@ -16,6 +16,14 @@ operating point.
 
 ## Shared operating session
 
+The [Experiments desktop tab](EXPERIMENT_VIEW.md) projects all four shared workflow
+kinds through `experiment.inspect`: retained measurements, state/covariance,
+residuals, native dependencies, evidence and verification. It follows committed
+session changes and keeps replay occurrences separate. This read-only display
+adds no estimator or scientific operation; existing SET/ICRH profiles remain the
+numerical conformance boundaries. Physical acquisition and arbitrary algebraic or
+topological workload dispatch remain pending.
+
 The live Session now hosts `ciw.telemetry.v1`, `ciw.calibrated-observable.v1` and
 `ciw.identified-design.v1`, plus `ciw.calibrated-window.v1`, through the existing `operation.list/execute` surface.
 `source.*`, `bundle.*` and `fusion.list` expose retained inputs, native bundles

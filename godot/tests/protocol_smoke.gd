@@ -15,6 +15,8 @@ var _original_cursor := 0.0
 var _restoring := false
 var _reconnecting := false
 var _expected_revision := -1
+var _workbench_requested := false
+var _source_count := 0
 
 
 func _initialize() -> void:
@@ -27,6 +29,7 @@ func _initialize() -> void:
 	_writer.sample_received.connect(_on_sample)
 	_observer.selection_received.connect(_on_observer_selection)
 	_observer.sample_received.connect(_on_reconnected_sample)
+	_observer.snapshot_received.connect(_on_workbench_snapshot)
 	_writer.connect_service()
 	_observer.connect_service()
 
@@ -100,8 +103,20 @@ func _on_reconnected_sample(sample: Dictionary) -> void:
 	if sample.run_id != _observer.run.run_id:
 		_fail("Reconnected inspection must retain correct run identity")
 		return
-	print("PASS: full run, response correlation, cross-client broadcast, backend sample, independent interval, same-revision reconnect; cursor restored")
-	quit(0)
+	if not _workbench_requested:
+		_workbench_requested = true
+		_source_count = _observer.snapshot.workbench.sources.size()
+		var raw := FileAccess.get_file_as_bytes("res://../examples/calibrated-window/source.json")
+		_writer._request("source.add", {"kind": "calibrated-window", "label": "Godot protocol source",
+			"bytes_b64": Marshalls.raw_to_base64(raw)})
+		# Prove the event refreshes immediately, without waiting for the heartbeat.
+		_observer._next_heartbeat = Time.get_ticks_msec() + 60000
+
+
+func _on_workbench_snapshot(value: Dictionary) -> void:
+	if _workbench_requested and value.workbench.sources.size() > _source_count:
+		print("PASS: full run, response correlation, cross-client broadcast, backend sample, independent interval, same-revision reconnect and live workbench invalidation; cursor restored")
+		quit(0)
 
 
 func _fail(message: String) -> void:

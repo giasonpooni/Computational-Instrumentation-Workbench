@@ -18,6 +18,8 @@ func _process(_delta: float) -> bool:
 		push_error("Visual capture timed out waiting for service and rendering")
 		quit(1)
 	if not _capturing and _workbench._client.status == "ready":
+		if not _workbench._client.snapshot.get("workbench", {}).get("bundles", []).is_empty() and _workbench._experiments.view.is_empty():
+			return false
 		_capturing = true
 		_capture.call_deferred()
 	return false

@@ -3,6 +3,7 @@ extends Control
 const Client = preload("res://scripts/ciw_client.gd")
 const PhasePlot = preload("res://scripts/phase_plot.gd")
 const EnergyView = preload("res://scripts/energy_view.gd")
+const ExperimentView = preload("res://scripts/experiment_view.gd")
 const TEXT := Color("dce6f1")
 const MUTED := Color("899cb2")
 const TEAL := Color("60dfcd")
@@ -11,6 +12,8 @@ const AMBER := Color("ffcc80")
 var _client = Client.new()
 var _phase = PhasePlot.new()
 var _energy = EnergyView.new()
+var _experiments = ExperimentView.new()
+var _tabs: TabContainer
 var _status: Label
 var _detail: Label
 var _identity: Label
@@ -43,6 +46,7 @@ func _ready() -> void:
 	_build_theme()
 	_build_ui()
 	add_child(_client)
+	_experiments.attach(_client)
 	_client.status_changed.connect(_on_status)
 	_client.snapshot_received.connect(_on_snapshot)
 	_client.run_received.connect(_on_run)
@@ -133,8 +137,8 @@ func _build_ui() -> void:
 	heading.size_flags_horizontal = Control.SIZE_EXPAND_FILL
 	header.add_child(heading)
 	heading.add_child(_label("CIW   /   COMPUTATIONAL INSTRUMENTATION WORKBENCH", 12, TEAL))
-	heading.add_child(_label("A view into the instrument.", 29))
-	heading.add_child(_label("Recorded model states · numerical authority remains in Python", 14, MUTED))
+	heading.add_child(_label("One workspace for scientific instruments.", 29))
+	heading.add_child(_label("Experiments · sensor fusion · retained evidence · streaming session updates", 14, MUTED))
 	var connection := VBoxContainer.new()
 	header.add_child(connection)
 	_status = _label("●  CONNECTING", 13, AMBER)
@@ -147,6 +151,15 @@ func _build_ui() -> void:
 	_detail = _label("Waiting for the local instrument service", 12, MUTED)
 	_detail.clip_text = true
 	column.add_child(_detail)
+	_tabs = TabContainer.new()
+	_tabs.size_flags_vertical = Control.SIZE_EXPAND_FILL
+	column.add_child(_tabs)
+	_experiments.name = "Experiments"
+	_tabs.add_child(_experiments)
+	var oscillator := VBoxContainer.new()
+	oscillator.name = "Oscillator"
+	_tabs.add_child(oscillator)
+	column = oscillator
 	var context := _panel()
 	column.add_child(context)
 	var context_rows := VBoxContainer.new()

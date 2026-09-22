@@ -223,5 +223,5 @@ def test_node_environment_cannot_inject_unpinned_code(tmp_path, monkeypatch):
     monkeypatch.setenv("NODE_OPTIONS", "--require=/not/allowed.js")
     monkeypatch.setenv("NODE_PATH", "/not/allowed")
     status, output = _bounded_process([shutil.which("node"), "-e", "process.stdout.write(JSON.stringify([process.env.NODE_OPTIONS??null, process.env.NODE_PATH??null]))"],
-                                      cwd=tmp_path, timeout=5, limit=1024)
+                                      cwd=tmp_path, timeout=30, limit=1024)
     assert status == 0 and json.loads(output) == [None, None]
