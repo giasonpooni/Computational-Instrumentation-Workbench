@@ -11,6 +11,7 @@ from websockets.asyncio.server import serve
 from websockets.exceptions import ConnectionClosed
 
 from .session import Session, _reject_constant, envelope
+from .workbench import WORKFLOW_OPERATION_IDS
 
 LOG = logging.getLogger(__name__)
 
@@ -58,7 +59,21 @@ class WorkbenchServer:
                 else:
                     # Numerical operations and disk IO do not block socket polling.
                     response = await asyncio.to_thread(self.session.handle, request)
-                    await self._send(websocket, response)
+                    try:
+                        await self._send(websocket, response)
+                    except ConnectionClosed:
+                        self.clients.discard(websocket)
+                    changed = False
+                    if response["type"] == "response":
+                        changed = (request["type"] in {"source.add", "bundle.replay"}
+                                   or (request["type"] == "operation.execute"
+                                       and request["payload"]["operation_id"] in WORKFLOW_OPERATION_IDS))
+                    if changed:
+                        # An invalidation, not a second mutable state copy.
+                        # Every client reads the same authoritative session.get.
+                        await self._broadcast(envelope("workbench.changed", {
+                            "session_id": self.session.session_id,
+                        }))
         except ConnectionClosed:
             pass
         except Exception:

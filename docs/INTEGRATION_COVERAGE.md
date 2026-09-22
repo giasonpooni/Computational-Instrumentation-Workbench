@@ -1,10 +1,35 @@
 # Executable integration coverage
 
-Reviewed 2026-09-21 against CIW source, its runtime manifests, ICRH profiles,
+Reviewed 2026-09-22 against CIW source, its runtime manifests, ICRH profiles,
 and the public repository catalog. This matrix distinguishes an executable
 handoff from a matching schema, a digest attachment, or a documentation link.
 The public catalog contains 29 repositories including CIW and ICRH. Integration
 coverage is measured by exercised operations and replay paths, not that count.
+
+The active delivery emphasis is assembling these tools into one workbench:
+shared sources and declared contexts, callable operations, retained candidate
+state and covariance, and one execution/result history. The
+[workbench assembly guide](WORKBENCH_ASSEMBLY.md) distinguishes the current
+session connection from the pending acquisition, SRA, SCR, GSV and CSE work.
+An additional standalone pipeline does not by itself provide that common
+operating point.
+
+## Shared operating session
+
+The live Session now hosts `ciw.calibrated-observable.v1` and
+`ciw.identified-design.v1` through the existing `operation.list/execute` surface.
+`source.*`, `bundle.*` and `fusion.list` expose retained inputs, native bundles
+and candidate contexts; result and execution lists include those native records
+alongside existing session operations. Workspace format 3 retains this content,
+and reopening validates it without executing or rebinding a provider.
+
+The [assembly operating guide](WORKBENCH_ASSEMBLY.md#operate-the-shared-session)
+documents startup bindings, request payloads and change events. This increment
+adds the common session boundary. It does not claim a new graphical interface,
+live acquisition, generic continuous fusion, SRA graph execution, SCR dispatch,
+GSV provider connection or CSE mapping. Those existing systems enter through the
+delivery work below. Scientific calculations and their existing ICRH profiles
+remain unchanged by the registry.
 
 ## Existing executable paths
 
@@ -31,7 +56,10 @@ The executable sources are [`telemetry.py`](../src/ciw/telemetry.py),
 [`geodesic.py`](../src/ciw/geodesic.py), [`plsr.py`](../src/ciw/plsr.py), and
 [`exchange.py`](../src/ciw/exchange.py). Exact source revisions belong to their
 checked-in runtime manifests; a provider's current default branch cannot
-silently replace one. ICRH profiles and trusted runners live in
+silently replace one. RCI's default branch at this review does not contain the
+calibration adapter present at its CIW pin; the
+[availability note](WORKBENCH_ASSEMBLY.md#source-and-runtime-availability)
+records the exact revisions. ICRH profiles and trusted runners live in
 [its profiles](https://github.com/giasonpooni/Instrument-Conformance-and-Replay-Harness/tree/main/profiles)
 and [scripts](https://github.com/giasonpooni/Instrument-Conformance-and-Replay-Harness/tree/main/scripts).
 
@@ -60,21 +88,22 @@ unknown; this operation's uncertainty scope is
 not estimate or marginalize parameter uncertainty. The decision neither places
 an equipment order nor starts a measurement.
 
-## Next concrete connections
+## Next connections inside the workbench
 
 | Order | Existing tools to connect | Small executable result | Evidence required before calling it integrated |
 | --- | --- | --- | --- |
-| 1 | TBRT, MCUR, PPDA, STFE, GSIE, FDIR | A calibrated manufacturing-cycle window producing a retained feature, state and drift residual | Explicit window support and time mapping; transformation/window compatibility; full temporal covariance; nonlinear calibration/mean order refusal; stale evidence and drift fixtures. |
-| 2 | SIDT or JSPT, GSIE, PLSR | A retained model and state passed to the existing Lyapunov evaluator | Bind discrete/continuous convention, sample period, state order, equilibrium, supplied certificate and margin; preserve `NUMERICAL_INCONCLUSIVE`; new ICRH profile. |
-| 3 | CSE, RCI, GTE, JSPT, CBSR | A geometry/BIM inspection using measured quantities, local covariance propagation and declared construction constraints | Explicit surveyed/design frames and source authority, units, one supported constraint and analytic oracle; retain held candidate and residuals; a complete CIW operation/profile. |
-| 4 | SCR, SET, CIW | One bounded deterministic heat-diffusion or structural workload invoked from a retained CIW request | Pin the descriptor, native runner, arithmetic and input bytes; separate simulation result from measurement; missing backend, overflow and replay fixtures. |
-| 5 | SRA, JSPT, PLSR, CIW | Retained typed schematic eligibility plus actual companion call records | Bind current Jacobian and declaration before dependent calls; unknown plant remains `UNRESOLVED`; a CIW entry point and ICRH profile. |
-| 6 | GSV, CIW | Read-only projection of one supported retained spatial result into GSV's provider interface | Preserve evidence/result references and frame/time basis; refuse incompatible comparisons; demonstrate that view changes cannot change scientific input. |
+| 1 | PPDA/RCI, TBRT, MCUR, STFE, GSIE, FDIR | Shared acquisition and a calibrated manufacturing-cycle window producing a retained feature, state and drift residual | Explicit window support and time mapping; transformation/window compatibility; full temporal covariance and raw lineage; nonlinear calibration/mean order refusal; stale evidence and drift fixtures. |
+| 2 | SRA, JSPT, PLSR, CIW | Retained typed schematic in the shared workspace, eligibility and actual companion call records | Reuse SRA's graph and routing; bind current Jacobian and declaration before dependent calls; unknown plant remains `UNRESOLVED`; a CIW entry point and ICRH profile. |
+| 3 | SCR, SET, CIW | One bounded deterministic heat-diffusion or structural workload dispatched from a retained workspace request | Pin the descriptor, native runner, arithmetic and input bytes; separate simulation result from measurement; missing backend, overflow and replay fixtures. |
+| 4 | GSV, CIW | Read-only panel projecting one supported retained spatial result and selected context into GSV's provider interface | Preserve evidence/result references and frame/time basis; refuse incompatible comparisons; demonstrate that view changes cannot change scientific input. |
+| 5 | CSE, RCI, GTE, JSPT, CBSR | Frame-bound geometry/BIM inspection using measured quantities, local covariance propagation and declared construction constraints | Explicit surveyed/design frames and source authority, units, one supported constraint and analytic oracle; retain held candidate and residuals; a complete CIW operation/profile. |
+| 6 | SIDT or JSPT, GSIE, PLSR | A selected retained model and compatible state passed to the existing Lyapunov evaluator | Bind discrete/continuous convention, sample period, state order, equilibrium, supplied certificate and margin; preserve `NUMERICAL_INCONCLUSIVE`; new ICRH profile. |
 
 These six rows are integration targets, not delivered execution paths. Extend the
 three demonstrations—process balance, manufacturing cycle and geometry/BIM
-inspection—through these contracts. Avoid adding a new bench solely to create
-another repository or architecture arrow.
+inspection—inside the common workspace through these contracts. Each result
+should share source/context selection and retained history with the tools that
+produced and consume it.
 
 ## Provider capability and remaining composition
 

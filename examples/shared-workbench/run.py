@@ -1,0 +1,47 @@
+"""Operate the existing shared CIW server through its public session protocol."""
+import argparse
+import asyncio
+import base64
+import json
+from pathlib import Path
+
+from ciw.cli import request_remote
+
+
+async def run(url, with_design):
+    examples = Path(__file__).resolve().parents[1]
+
+    async def call(kind, payload=None):
+        response = await request_remote(url, kind, payload or {}, timeout_s=300)
+        if response["type"] != "response":
+            raise RuntimeError(response["payload"])
+        return response["payload"]
+
+    async def source(kind, folder):
+        return await call("source.add", {
+            "kind": kind, "label": "Synthetic " + kind,
+            "bytes_b64": base64.b64encode((examples / folder / "source.json").read_bytes()).decode(),
+        })
+
+    retained = await source("calibrated-observable", "calibrated-observable")
+    process = await call("operation.execute", {
+        "operation_id": "ciw.calibrated-observable.v1",
+        "parameters": {"source_id": retained["source_id"]},
+    })
+    if with_design:
+        declared = await source("identified-design", "identified-design")
+        await call("operation.execute", {
+            "operation_id": "ciw.identified-design.v1", "parameters": {
+                "source_id": declared["source_id"], "upstream_bundle_id": process["bundle_id"],
+            },
+        })
+    await call("workspace.save")
+    print(json.dumps(await call("fusion.list"), indent=2, allow_nan=False))
+
+
+if __name__ == "__main__":
+    parser = argparse.ArgumentParser(description=__doc__)
+    parser.add_argument("--url", default="ws://127.0.0.1:8765")
+    parser.add_argument("--with-design", action="store_true")
+    args = parser.parse_args()
+    asyncio.run(run(args.url, args.with_design))

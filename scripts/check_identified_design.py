@@ -79,22 +79,26 @@ def main() -> int:
 
         work = temporary / "installed-check"
         (work / "tests").mkdir(parents=True)
-        shutil.copyfile(root / "tests/test_identified_design.py", work / "tests/test_identified_design.py")
+        for name in ("test_identified_design.py", "test_workbench_session.py", "test_workbench_transport.py"):
+            shutil.copyfile(root / "tests" / name, work / "tests" / name)
         shutil.copytree(root / "examples", work / "examples")
         environment = dict(os.environ)
         environment.pop("PYTHONPATH", None)
         environment["CIW_IDENTIFIED_DESIGN_STACK_ROOT"] = str(providers)
+        environment["CIW_CALIBRATED_STACK_ROOT"] = str(providers)
         location = call([str(interpreter), "-I", "-c", "import ciw; print(ciw.__file__)"],
                         cwd=work, env=environment, capture_output=True, text=True)
         if not Path(location.stdout.strip()).resolve().is_relative_to(environment_path.resolve()):
             raise AssertionError("Integration must import the isolated installed wheel")
         report = temporary / "tests.xml"
         call([str(interpreter), "-I", "-m", "pytest", "-q", "tests/test_identified_design.py",
+              "tests/test_workbench_session.py",
+              "tests/test_workbench_transport.py",
               "--junitxml", str(report)], cwd=work, env=environment, timeout=1800)
         suites = ET.parse(report).getroot().iter("testsuite")
         if any(int(suite.attrib.get("skipped", 0)) for suite in suites):
             raise AssertionError("Pinned installed integration cannot pass with skipped tests")
-    print("PASS: installed identified-design wheel, eleven source pins, advisory ranking and fresh replay")
+    print("PASS: installed wheel, shared workbench, eleven source pins, advisory ranking and fresh replay")
     return 0
 
 

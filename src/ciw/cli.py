@@ -219,8 +219,13 @@ def parser() -> argparse.ArgumentParser:
                         help="Explicit trusted checkout for pinned JSPT covariance operations")
     server.add_argument("--gte-repo", type=Path,
                         help="Explicit trusted checkout for pinned GTE circle projection")
+    stack = server.add_mutually_exclusive_group()
+    stack.add_argument("--calibrated-stack-root", type=Path,
+                       help="Bind eight role-named pinned checkouts to the shared process workbench")
+    stack.add_argument("--identified-stack-root", type=Path,
+                       help="Bind eleven pinned checkouts for shared process fusion and observation design")
     server.add_argument("--python", dest="python_executable", type=Path,
-                        help="Python for external adapters; defaults to this interpreter")
+                        help="Python for FSRT/JSPT/GTE adapters; workbench stacks use this running interpreter")
     health = commands.add_parser("health", help="Check a live session with a bounded read-only request")
     health.add_argument("--url", default="ws://127.0.0.1:8765")
     send = commands.add_parser("send", help="Send a structured request to a running session")
@@ -228,7 +233,9 @@ def parser() -> argparse.ArgumentParser:
     send.add_argument("--payload", default="{}", help="JSON object (or use --payload-file)")
     send.add_argument("--payload-file", type=Path)
     send.add_argument("--url", default="ws://127.0.0.1:8765")
-    watch = commands.add_parser("watch", help="Print live selection events as JSON lines")
+    send.add_argument("--timeout", type=float, default=15,
+                      help="Request deadline in seconds; allow longer for pinned provider workflows")
+    watch = commands.add_parser("watch", help="Print shared selection and workbench change events as JSON lines")
     watch.add_argument("--url", default="ws://127.0.0.1:8765")
     inspect = commands.add_parser("inspect", help="Inspect a saved result/workspace without executing it")
     inspect.add_argument("path", type=Path)
@@ -376,6 +383,15 @@ def main(argv: list[str] | None = None) -> int:
             if args.gte_repo is not None:
                 from .geodesic import bind_gte
                 bind_gte(session, args.gte_repo, python_executable=args.python_executable)
+            if args.calibrated_stack_root is not None or args.identified_stack_root is not None:
+                from .calibrated_observable import ROLES
+                stack_root = args.calibrated_stack_root or args.identified_stack_root
+                session.workbench.bind_workflow("calibrated-observable", {
+                    role: stack_root / role for role in ROLES})
+                if args.identified_stack_root is not None:
+                    from .identified_design import ROLES as DESIGN_ROLES
+                    session.workbench.bind_workflow("identified-design", {
+                        role: stack_root / role for role in DESIGN_ROLES})
             asyncio.run(run_server(session, args.port, args.bind))
         elif args.command == "health":
             print_json(asyncio.run(health_remote(args.url)))
@@ -384,7 +400,9 @@ def main(argv: list[str] | None = None) -> int:
                        json.loads(args.payload, parse_constant=_reject_constant))
             if not isinstance(payload, dict):
                 raise ValueError("payload must be a JSON object")
-            response = asyncio.run(request_remote(args.url, args.type, payload))
+            if not math.isfinite(args.timeout) or not 0 < args.timeout <= 3600:
+                raise ValueError("timeout must be finite, positive and at most 3600 seconds")
+            response = asyncio.run(request_remote(args.url, args.type, payload, timeout_s=args.timeout))
             print_json(response)
             return 0 if response["type"] == "response" else 2
         elif args.command == "watch":

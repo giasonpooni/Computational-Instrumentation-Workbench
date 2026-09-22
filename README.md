@@ -7,6 +7,13 @@ Part of **Notation Systems' computational instrumentation and evidence infrastru
 **Notation Systems Workbench** — a terminal-first Python workbench for retained
 scientific observations, explicit operations, and reproducible investigations.
 
+The workbench is being assembled as one operating workspace for sources,
+declared models, compatible sensor fusion, instrument results and replay
+evidence. Existing scientific providers retain their numerical ownership;
+their records and operations enter that shared context. See
+[shared-workbench assembly](docs/WORKBENCH_ASSEMBLY.md) for the implemented
+session connection, component placement and next delivery work.
+
 The executable prototype includes a synthetic damped oscillator, numerical
 statistics and periodogram analysis, a shared local session, saved-workspace
 inspection and replay, and an optional Godot oscillator viewport. External
@@ -31,9 +38,9 @@ flowchart TD
 ```
 
 This is the shared-investigation operation path after request admission.
-Malformed requests are rejected before an execution exists. PLSR uses separate
-terminal bundles, and the retained-telemetry script has its own container;
-their guides below define those boundaries. The optional Godot view supports
+Malformed requests are rejected before an execution exists. Providers retain
+their native artifacts and runtime bindings when hosted in a shared workspace;
+their guides below define each numerical boundary. The optional Godot view supports
 the oscillator. See the [diagram atlas](docs/DIAGRAMS.md) for workflow,
 covariance and identity diagrams across the stack.
 
@@ -77,8 +84,9 @@ establish physical validation or deployment readiness.
 
 The [integration coverage matrix](docs/INTEGRATION_COVERAGE.md) distinguishes
 executable paths, conformance coverage, and the next connections between
-existing instruments. Every new path retains original, replay and adversarial
-evidence through an ICRH profile.
+existing instruments. The immediate assembly work connects those paths to a
+common source, operation and result history. New scientific paths retain
+original, replay and adversarial evidence through an ICRH profile.
 
 PLSR is pinned to upstream commit
 [`19ea6967060166ba09db6cd4563bd87bd6b3d196`](https://github.com/giasonpooni/Parameterized-Lyapunov-Stability-Runtime/tree/19ea6967060166ba09db6cd4563bd87bd6b3d196).
@@ -105,6 +113,9 @@ the following repositories retain distinct engineering responsibilities.
 | Component | Responsibility | CIW status |
 | --- | --- | --- |
 | [Provenance-Preserving Data Acquisition](https://github.com/giasonpooni/Provenance-Preserving-Data-Acquisition) | Source acquisition, observations, and durable artifact/history retention with source identity, extraction lineage, and explicit missingness | Exchange inspection and pinned retained-telemetry projection; no live measurement acquisition |
+| [Geometric State Inference Engine](https://github.com/giasonpooni/Geometric-State-Inference-Engine) | State and covariance estimation within a declared model, time and frame context | Existing telemetry and calibrated-process calculations; shared-session state inspection preserves their native results |
+| [Schematics Retrieval Agent](https://github.com/giasonpooni/Schematics-Retrieval-Agent) | Typed instrument/model graph, eligibility and bound companion call records | Existing routing is an assembly target; no live CIW graph operation yet |
+| [Construction State Estimator for BIM](https://github.com/giasonpooni/Construction-State-Estimator-for-BIM) | Native BIM context, execution ledger and domain workbench projections | Existing domain session/views are assembly targets; frame-bound CIW inspection remains pending |
 | [Evidence and State Management](https://github.com/giasonpooni/Evidence-and-State-Management) | Evidence, versioned state, admission, review, and release management across scientific and physical-economy domains | Native telemetry candidate review and optional ESM evidence retention; no canonical-state admission |
 | [Scientific Computation Runtime](https://github.com/giasonpooni/Scientific-Computation-Runtime) | Versioned scientific state, declared computational workloads, and provenance-bearing execution | Read-only exchange inspection; no execution adapter |
 | [Geospatial State Visualization](https://github.com/giasonpooni/Geospatial-State-Visualization) | Read-only inspection of geographic entities, routes, flows, and temporal states | Separate visualization client; no CIW connection |
@@ -147,6 +158,7 @@ and source pins remain unchanged.
 
 ## Documentation
 
+- Shared workspace, component placement and delivery work: [Workbench assembly](docs/WORKBENCH_ASSEMBLY.md)
 - Stack diagrams and repository navigation: [Diagram atlas](docs/DIAGRAMS.md)
 - Quickstart: [`docs/quickstart.md`](docs/quickstart.md)
 - Integrated tool instructions and specifications: [`docs/INSTRUMENTS.md`](docs/INSTRUMENTS.md)

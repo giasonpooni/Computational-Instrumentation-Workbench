@@ -229,6 +229,10 @@ class Session:
         self.results: dict[str, dict] = {}
         self.executions: dict[str, dict] = {}
         self.operations = operations if operations is not None else default_operations()
+        # Native workflow artifacts share this operator session without being
+        # coerced into the legacy single-recording analysis schema.
+        from .workbench import Workbench
+        self.workbench = Workbench()
         self._lock = threading.RLock()
         self._pending_operations = 0
         self.recording_file = _recording_file(self.run)
@@ -237,7 +241,8 @@ class Session:
     def snapshot(self, evaluated_at: str | None = None) -> dict:
         with self._lock:
             snapshot = {"session_id": self.session_id, "run": run_metadata(self.run),
-                        "selection": copy.deepcopy(self.selection), "results": self._result_summaries()}
+                        "selection": copy.deepcopy(self.selection), "results": self._result_summaries(),
+                        "workbench": self.workbench.snapshot()}
             calibration = calibration_status(self.run, evaluated_at)
             if calibration:
                 snapshot["calibration"] = calibration
@@ -276,7 +281,7 @@ class Session:
                 raise ProtocolError("invalid_request", "type must be a string and payload an object")
             result = self._dispatch(kind, payload)
             response = envelope("response", result, request_id)
-            if kind == "result.get":
+            if kind == "result.get" and payload["result_id"] in self.results:
                 # The payload remains the exact retained result, including its
                 # seal. Serving-time metadata belongs outside that artifact.
                 calibration = calibration_status(self.run, _evaluated_at(payload))
@@ -297,6 +302,25 @@ class Session:
         if kind == "run.get":
             _keys(payload, set())
             return copy.deepcopy(self.run)
+        if kind == "source.add":
+            return self.workbench.add_source(payload)
+        if kind == "source.list":
+            _keys(payload, set())
+            return {"sources": self.workbench.list_sources()}
+        if kind == "source.get":
+            _keys(payload, {"source_id"}, {"source_id"})
+            return self.workbench.get_source(payload["source_id"])
+        if kind == "bundle.list":
+            _keys(payload, set())
+            return {"bundles": self.workbench.list_bundles()}
+        if kind == "bundle.get":
+            _keys(payload, {"bundle_id"}, {"bundle_id"})
+            return self.workbench.get_bundle(payload["bundle_id"])
+        if kind == "bundle.replay":
+            return self.workbench.replay(payload)
+        if kind == "fusion.list":
+            _keys(payload, set())
+            return {"contexts": self.workbench.fusion_contexts()}
         if kind == "selection.update":
             _keys(payload, {"expected_revision", "channel", "interval_s", "cursor_s"}, {"expected_revision"})
             with self._lock:
@@ -346,16 +370,22 @@ class Session:
             return copy.deepcopy(result)
         if kind == "operation.list":
             _keys(payload, set())
-            return {"operations": self.operations.describe()}
+            return {"operations": self.operations.describe() + self.workbench.describe_operations()}
         if kind == "execution.list":
             _keys(payload, set())
             with self._lock:
-                return {"executions": copy.deepcopy(list(self.executions.values()))}
+                return {"executions": copy.deepcopy(list(self.executions.values()))
+                        + self.workbench.native_executions()}
         if kind == "operation.execute":
             _keys(payload, {"operation_id", "parameters"}, {"operation_id"})
             if (not valid_operation_id(payload["operation_id"])
                     or not isinstance(payload.get("parameters", {}), dict)):
                 raise ProtocolError("invalid_payload", "operation_id must be versioned and parameters must be an object")
+            from .workbench import WORKFLOW_OPERATION_IDS
+            if payload["operation_id"] in WORKFLOW_OPERATION_IDS:
+                parameters = copy.deepcopy(payload.get("parameters", {}))
+                _keys(parameters, {"source_id", "upstream_bundle_id"}, {"source_id"})
+                return self.workbench.execute({"operation_id": payload["operation_id"], **parameters})
             # Reserve bounded capacity and capture the scientific request. A
             # subprocess may wait up to its deadline, so it cannot own the
             # shared selection/publication lock while it calculates.
@@ -396,18 +426,30 @@ class Session:
             return {"status": "completed", "execution": copy.deepcopy(execution), "result": copy.deepcopy(result)}
         if kind == "result.list":
             _keys(payload, {"evaluated_at"})
-            result = {"results": self._result_summaries()}
+            native = self.workbench.native_results()
+            result = {"results": self._result_summaries() + [
+                {key: copy.deepcopy(item[key]) for key in (
+                    "schema", "result_id", "operation_id", "execution_ref", "execution_id"
+                ) if key in item} for item in native]}
             calibration = calibration_status(self.run, _evaluated_at(payload))
             if calibration:
                 result["calibration"] = calibration
+                result["calibration_scope"] = {
+                    "run_id": self.run["run_id"], "result_ids": list(self.results),
+                }
             return result
         if kind == "result.get":
             _keys(payload, {"result_id", "evaluated_at"}, {"result_id"})
             result_id = payload["result_id"]
             with self._lock:
-                if not isinstance(result_id, str) or result_id not in self.results:
+                if not isinstance(result_id, str):
                     raise ProtocolError("not_found", "Result not found in this session")
-                return copy.deepcopy(self.results[result_id])
+                if result_id in self.results:
+                    return copy.deepcopy(self.results[result_id])
+                for result in self.workbench.native_results():
+                    if result["result_id"] == result_id:
+                        return result
+                raise ProtocolError("not_found", "Result not found in this session")
         if kind == "workspace.save":
             _keys(payload, set())
             path = self.save_workspace(self.output_dir / "workspace.json")
@@ -422,14 +464,25 @@ class Session:
             if self.executions:
                 workspace["workspace_version"] = 2
                 workspace["executions"] = list(self.executions.values())
+            retained = self.workbench.serialize()
+            if retained["sources"] or retained["bundles"]:
+                workspace["workspace_version"] = 3
+                workspace["workbench"] = retained
             return write_json(path, workspace)
 
     @classmethod
     def from_workspace(cls, path: Path, output_dir: Path | None = None) -> Session:
         """Reopen stored evidence/results without executing an analysis."""
         workspace = read_json(path)
-        if not isinstance(workspace, dict) or type(workspace.get("workspace_version")) is not int or workspace["workspace_version"] not in (1, 2):
+        if not isinstance(workspace, dict) or type(workspace.get("workspace_version")) is not int or workspace["workspace_version"] not in (1, 2, 3):
             raise ValueError("Unsupported workspace format")
+        from .workbench import Workbench
+        if workspace["workspace_version"] == 3:
+            retained_workbench = Workbench.restore(workspace.get("workbench"))
+        else:
+            if "workbench" in workspace:
+                raise ValueError("Retained workbench sources require workspace version 3")
+            retained_workbench = Workbench()
         run = workspace.get("run")
         _validate_evidence(run)
         selection = workspace.get("selection")
@@ -485,10 +538,15 @@ class Session:
                 if (execution is None or execution["status"] != "completed"
                         or execution["result_id"] != result["result_id"]):
                     raise ValueError("Operation result is missing its completed execution")
+        native_occurrences = {entry["execution_id"] for entry in retained_workbench.native_executions()}
+        native_results = {entry["result_id"] for entry in retained_workbench.native_results()}
+        if (execution_ids | set(execution_map) | set(result_map)) & (native_occurrences | native_results):
+            raise ValueError("Identity collision between recording operations and retained workflows")
         restored = cls(run, output_dir or Path(path).parent)
         restored.selection = copy.deepcopy(selection)
         restored.results = copy.deepcopy(result_map)
         restored.executions = copy.deepcopy(execution_map)
+        restored.workbench = retained_workbench
         for result in restored.results.values():
             write_json(restored.output_dir / (result["result_id"] + ".json"), result)
         for execution in restored.executions.values():
