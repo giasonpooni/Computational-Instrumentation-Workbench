@@ -224,6 +224,8 @@ def parser() -> argparse.ArgumentParser:
                        help="Bind eight role-named pinned checkouts to the shared process workbench")
     stack.add_argument("--identified-stack-root", type=Path,
                        help="Bind eleven pinned checkouts for shared process fusion and observation design")
+    server.add_argument("--esm-binding", type=Path,
+                        help="Trusted local ESM executable, replay, policy and optional candidate-store configuration")
     server.add_argument("--python", dest="python_executable", type=Path,
                         help="Python for FSRT/JSPT/GTE adapters; workbench stacks use this running interpreter")
     health = commands.add_parser("health", help="Check a live session with a bounded read-only request")
@@ -392,6 +394,8 @@ def main(argv: list[str] | None = None) -> int:
                     from .identified_design import ROLES as DESIGN_ROLES
                     session.workbench.bind_workflow("identified-design", {
                         role: stack_root / role for role in DESIGN_ROLES})
+            if args.esm_binding is not None:
+                session.workbench.bind_candidate_adapter(read_json(args.esm_binding))
             asyncio.run(run_server(session, args.port, args.bind))
         elif args.command == "health":
             print_json(asyncio.run(health_remote(args.url)))

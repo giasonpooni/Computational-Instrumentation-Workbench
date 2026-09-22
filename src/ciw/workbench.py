@@ -23,6 +23,8 @@ OPERATIONS = {
     "identified-design": "ciw.identified-design.v1",
 }
 WORKFLOW_OPERATION_IDS = frozenset(OPERATIONS.values())
+from .candidate_evidence import OPERATIONS as CANDIDATE_OPERATIONS
+WORKBENCH_OPERATION_IDS = WORKFLOW_OPERATION_IDS | CANDIDATE_OPERATIONS.keys()
 MAX_SOURCES = 64
 MAX_BUNDLES = 128
 MAX_BYTES = 64 * 1024 * 1024
@@ -287,6 +289,8 @@ class Workbench:
         self._sources = {}
         self._bundles = {}
         self._bindings = {}
+        self._candidate_adapter = None
+        self._candidates = {}
         self._identities = {operation: ("operation", _digest(operation)) for operation in WORKFLOW_OPERATION_IDS}
         self._used_bytes = 0
         self._pending = 0
@@ -317,7 +321,144 @@ class Workbench:
             return [{"operation_id": operation, "role": "state_estimator" if kind == "calibrated-observable" else "decision",
                      "source_kind": kind, "available": kind in self._bindings,
                      "requires_upstream_bundle": kind == "identified-design"}
-                    for kind, operation in OPERATIONS.items()]
+                    for kind, operation in OPERATIONS.items()] + [
+                        {"operation_id": operation, "role": "candidate_evidence", "requires_bundle": "calibrated-observable",
+                         "available": self._candidate_adapter is not None and
+                            (action == "inspect" or self._candidate_adapter.capture_available),
+                         "canonical_admission": "not_performed"}
+                        for operation, action in CANDIDATE_OPERATIONS.items()]
+
+    def bind_candidate_adapter(self, configuration):
+        """Trusted host binding only; never recovered from workspace records."""
+        from .candidate_evidence import CandidateAdapter
+        adapter = CandidateAdapter(configuration)
+        with self._lock:
+            self._candidate_adapter = adapter
+
+    def instrument_views(self):
+        with self._lock:
+            return deepcopy([{ "bundle_id": record["bundle_id"], "source_id": record["source_id"],
+                "instrument": step["runtime_ref"], "operation_id": step["operation_id"],
+                "result_id": step["result_id"], "execution_id": step["execution_id"],
+                "view": "retained_native_result", "state_admission": "not_performed"}
+                for record in self._bundles.values() for step in record["native"]["steps"]
+                if step["runtime_ref"] in {"gsie", "cbsr", "fdir"}])
+
+    def inspect_instrument(self, payload):
+        _keys(payload, {"bundle_id", "instrument"})
+        _text(payload["bundle_id"], "Bundle identity")
+        if payload["instrument"] not in ("gsie", "cbsr", "fdir"):
+            raise ValueError("Choose gsie, cbsr or fdir")
+        with self._lock:
+            native = self.get_bundle(payload["bundle_id"])
+            steps = {step["runtime_ref"]: step for step in native["steps"]}
+            if payload["instrument"] not in steps:
+                raise ValueError("Instrument did not execute in this bundle; explicitly select its upstream bundle")
+            record = self._bundles[payload["bundle_id"]]
+            return deepcopy({"bundle_id": record["bundle_id"], "source_id": record["source_id"],
+                "instrument": payload["instrument"], "step": steps[payload["instrument"]],
+                "fusion_context": _context(record, self._sources),
+                "linked_results": {role: steps[role]["result_id"] for role in ("gsie", "cbsr", "fdir", "oit") if role in steps},
+                "numerical_replay": "not_performed_by_inspection", "state_admission": "not_performed"})
+
+    def execute_candidate(self, operation_id, parameters):
+        from .candidate_evidence import MAX_RESPONSE
+        action = CANDIDATE_OPERATIONS[operation_id]
+        required = {"bundle_id", "inspected_at"} if action == "inspect" else {"bundle_id", "evidence_id", "workflow_id", "retained_at"}
+        _keys(parameters, required)
+        for key in required:
+            _text(parameters[key], key)
+        parameters = deepcopy(parameters)
+        reserved = MAX_RESPONSE * 2 + 2 * 1024 * 1024
+        with self._lock:
+            bundle = self.get_bundle(parameters["bundle_id"])
+            if bundle["schema"] != "ciw.calibrated-observable-session.v1":
+                raise ValueError("ESM candidate operations currently require an explicitly selected calibrated bundle")
+            adapter = self._candidate_adapter
+            if adapter is None:
+                raise AdapterRefusal("operation_unavailable", "No operator-bound ESM candidate adapter")
+            if (len(self._candidates) + self._pending >= MAX_BUNDLES or
+                    self._used_bytes + self._reserved_bytes + reserved + _OVERHEAD > MAX_BYTES):
+                raise AdapterRefusal("workbench_capacity", "Candidate receipt capacity exceeded")
+            self._pending += 1
+            self._reserved_bytes += reserved
+        try:
+            from uuid import uuid4
+            evidence = adapter.execute(action, parameters, bundle)
+            record = {"schema": "ciw.candidate-action.v1", "execution_id": "candidate-execution:" + str(uuid4()),
+                      "operation_id": operation_id, "parameters": parameters, **evidence}
+            record["candidate_id"] = "candidate:" + _digest(record)
+            self._validate_candidate(record)
+            size = len(_canonical(record))
+            with self._lock:
+                if size > reserved:
+                    raise AdapterRefusal("workbench_capacity", "Candidate receipt exceeds reservation; capture may have retained bytes")
+                self._candidates[record["candidate_id"]] = record
+                self._used_bytes += size
+                self._revision += 1
+            return self.get_candidate(record["candidate_id"])
+        finally:
+            with self._lock:
+                self._pending -= 1
+                self._reserved_bytes -= reserved
+
+    def _validate_candidate(self, record):
+        from .candidate_evidence import MAX_RESPONSE, validate_response
+        _keys(record, {"schema", "candidate_id", "execution_id", "operation_id", "parameters", "response_bytes_b64", "operator_policy", "adapter_identity"})
+        if record["schema"] != "ciw.candidate-action.v1" or record["operation_id"] not in CANDIDATE_OPERATIONS:
+            raise ValueError("Unsupported candidate action record")
+        _text(record["execution_id"], "Candidate execution identity")
+        if record["candidate_id"] != "candidate:" + _digest({k: v for k, v in record.items() if k != "candidate_id"}):
+            raise ValueError("Candidate receipt content mismatch")
+        action = CANDIDATE_OPERATIONS[record["operation_id"]]
+        _keys(record["operator_policy"], {"review_context"} | ({"capture_registration"} if action == "capture" else set()))
+        if any(not isinstance(value, dict) for value in record["operator_policy"].values()):
+            raise ValueError("Candidate receipt needs explicit operator policy records")
+        _keys(record["adapter_identity"], {"repository", "revision", "artifact_sha256", "helper_sha256", "replay_ciw_revision", "node_sha256"})
+        from re import fullmatch
+        if (record["adapter_identity"]["repository"] != "giasonpooni/Evidence-and-State-Management" or
+                any(not isinstance(value, str) or not fullmatch("[a-f0-9]{40}" if key.endswith("revision") else "[a-f0-9]{64}", value)
+                    for key, value in record["adapter_identity"].items() if key != "repository")):
+            raise ValueError("Candidate adapter identity is malformed")
+        _keys(record["parameters"], {"bundle_id", "inspected_at"} if action == "inspect" else
+              {"bundle_id", "evidence_id", "workflow_id", "retained_at"})
+        for key, value in record["parameters"].items():
+            _text(value, key)
+        encoded = record["response_bytes_b64"]
+        if not isinstance(encoded, str) or len(encoded) > 4 * ((MAX_RESPONSE + 2) // 3):
+            raise ValueError("Candidate receipt byte limit")
+        output = base64.b64decode(encoded, validate=True)
+        if base64.b64encode(output).decode("ascii") != encoded:
+            raise ValueError("Candidate receipt must retain canonical base64 bytes")
+        bundle = self.get_bundle(record["parameters"]["bundle_id"])
+        if bundle["schema"] != "ciw.calibrated-observable-session.v1":
+            raise ValueError("Candidate receipt requires a retained calibrated bundle")
+        validate_response(_json(output), action, bundle, _canonical(bundle), record["parameters"], record["operator_policy"])
+
+    def list_candidates(self):
+        with self._lock:
+            return [{"candidate_id": record["candidate_id"], "bundle_id": record["parameters"]["bundle_id"],
+                     "operation_id": record["operation_id"], "execution_id": record["execution_id"],
+                     "state": _json(base64.b64decode(record["response_bytes_b64"]))["state"],
+                     "eligibility": "historical_receipt_only", "state_admission": "not_performed"}
+                    for record in self._candidates.values()]
+
+    def get_candidate(self, candidate_id):
+        _text(candidate_id, "Candidate action identity")
+        with self._lock:
+            if candidate_id not in self._candidates:
+                raise ValueError("Unknown candidate action")
+            record = deepcopy(self._candidates[candidate_id])
+            return {**record, "native_response": _json(base64.b64decode(record["response_bytes_b64"])),
+                    "eligibility": "historical_receipt_only", "state_admission": "not_performed"}
+
+    def candidate_executions(self):
+        with self._lock:
+            return [{"execution_id": record["execution_id"], "operation_id": record["operation_id"],
+                     "runtime_ref": "esm", "bundle_id": record["parameters"]["bundle_id"],
+                     "candidate_id": record["candidate_id"], "status": "completed",
+                     "outcome": _json(base64.b64decode(record["response_bytes_b64"]))["state"],
+                     "state_admission": "not_performed"} for record in self._candidates.values()]
 
     def _check_claims(self, claims):
         for identity, claim in claims.items():
@@ -494,12 +635,14 @@ class Workbench:
         with self._lock:
             return {"schema": SCHEMA, "revision": self._revision, "sources": self.list_sources(),
                 "bundles": self.list_bundles(), "fusion_contexts": self.fusion_contexts(),
+                "instruments": self.instrument_views(), "candidates": self.list_candidates(),
                 "operations": self.describe_operations()}
 
     def serialize(self):
         with self._lock:
-            return deepcopy({"schema": SCHEMA, "revision": self._revision,
-                "sources": list(self._sources.values()), "bundles": list(self._bundles.values())})
+            return deepcopy({"schema": "ciw.retained-workbench.v2" if self._candidates else SCHEMA, "revision": self._revision,
+                "sources": list(self._sources.values()), "bundles": list(self._bundles.values()),
+                **({"candidates": list(self._candidates.values())} if self._candidates else {})})
 
     @classmethod
     def restore(cls, value):
@@ -508,11 +651,15 @@ class Workbench:
             if len(_canonical(value)) > MAX_BYTES:
                 raise ValueError("Retained workbench exceeds the byte budget")
             value = deepcopy(value)
-            _keys(value, {"schema", "revision", "sources", "bundles"})
-            if (value["schema"] != SCHEMA or type(value["revision"]) is not int or
+            new = value.get("schema") == "ciw.retained-workbench.v2"
+            _keys(value, {"schema", "revision", "sources", "bundles"} | ({"candidates"} if new else set()))
+            candidates = value.get("candidates", [])
+            if not isinstance(candidates, list) or len(candidates) > MAX_BUNDLES:
+                raise ValueError("Malformed candidate receipt catalog")
+            if (value["schema"] not in {SCHEMA, "ciw.retained-workbench.v2"} or type(value["revision"]) is not int or
                     not isinstance(value["sources"], list) or not isinstance(value["bundles"], list) or
                     len(value["sources"]) > MAX_SOURCES or len(value["bundles"]) > MAX_BUNDLES or
-                    value["revision"] != len(value["sources"]) + len(value["bundles"])):
+                    value["revision"] != len(value["sources"]) + len(value["bundles"]) + len(candidates)):
                 raise ValueError("Malformed retained workbench catalog")
             restored = cls()
             for retained in value["sources"]:
@@ -535,6 +682,14 @@ class Workbench:
                 restored._used_bytes += len(_canonical(record))
             for record in restored._bundles.values():
                 _validate_links(record, restored._bundles)
+            occurrences = {entry["execution_id"] for entry in restored.native_executions()}
+            for record in candidates:
+                restored._validate_candidate(record)
+                if record["candidate_id"] in restored._candidates or record["execution_id"] in occurrences:
+                    raise ValueError("Duplicate candidate action identity")
+                occurrences.add(record["execution_id"])
+                restored._candidates[record["candidate_id"]] = record
+                restored._used_bytes += len(_canonical(record))
             if restored._used_bytes + _OVERHEAD > MAX_BYTES:
                 raise ValueError("Retained workbench exceeds the storage byte budget")
             restored._revision = value["revision"]

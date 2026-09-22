@@ -321,6 +321,17 @@ class Session:
         if kind == "fusion.list":
             _keys(payload, set())
             return {"contexts": self.workbench.fusion_contexts()}
+        if kind == "instrument.list":
+            _keys(payload, set())
+            return {"instruments": self.workbench.instrument_views()}
+        if kind == "instrument.inspect":
+            return self.workbench.inspect_instrument(payload)
+        if kind == "candidate.list":
+            _keys(payload, set())
+            return {"candidates": self.workbench.list_candidates()}
+        if kind == "candidate.get":
+            _keys(payload, {"candidate_id"}, {"candidate_id"})
+            return self.workbench.get_candidate(payload["candidate_id"])
         if kind == "selection.update":
             _keys(payload, {"expected_revision", "channel", "interval_s", "cursor_s"}, {"expected_revision"})
             with self._lock:
@@ -375,13 +386,15 @@ class Session:
             _keys(payload, set())
             with self._lock:
                 return {"executions": copy.deepcopy(list(self.executions.values()))
-                        + self.workbench.native_executions()}
+                        + self.workbench.native_executions() + self.workbench.candidate_executions()}
         if kind == "operation.execute":
             _keys(payload, {"operation_id", "parameters"}, {"operation_id"})
             if (not valid_operation_id(payload["operation_id"])
                     or not isinstance(payload.get("parameters", {}), dict)):
                 raise ProtocolError("invalid_payload", "operation_id must be versioned and parameters must be an object")
-            from .workbench import WORKFLOW_OPERATION_IDS
+            from .workbench import WORKFLOW_OPERATION_IDS, CANDIDATE_OPERATIONS
+            if payload["operation_id"] in CANDIDATE_OPERATIONS:
+                return self.workbench.execute_candidate(payload["operation_id"], payload.get("parameters", {}))
             if payload["operation_id"] in WORKFLOW_OPERATION_IDS:
                 parameters = copy.deepcopy(payload.get("parameters", {}))
                 _keys(parameters, {"source_id", "upstream_bundle_id"}, {"source_id"})
@@ -539,6 +552,7 @@ class Session:
                         or execution["result_id"] != result["result_id"]):
                     raise ValueError("Operation result is missing its completed execution")
         native_occurrences = {entry["execution_id"] for entry in retained_workbench.native_executions()}
+        native_occurrences.update(entry["execution_id"] for entry in retained_workbench.candidate_executions())
         native_results = {entry["result_id"] for entry in retained_workbench.native_results()}
         if (execution_ids | set(execution_map) | set(result_map)) & (native_occurrences | native_results):
             raise ValueError("Identity collision between recording operations and retained workflows")

@@ -74,6 +74,8 @@ def _bounded_process(
     environment = dict(os.environ)
     environment.pop("PYTHONPATH", None)
     environment.pop("PYTHONHOME", None)
+    environment.pop("NODE_OPTIONS", None)
+    environment.pop("NODE_PATH", None)
     with tempfile.TemporaryFile() as request:
         request.write(stdin)
         request.seek(0)

@@ -1,0 +1,21 @@
+name: Shared workbench candidate evidence
+on:
+  push:
+  pull_request:
+permissions:
+  contents: read
+jobs:
+  candidate-workbench:
+    runs-on: ubuntu-latest
+    timeout-minutes: 25
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-python@v5
+        with:
+          python-version: '3.12'
+      - uses: actions/setup-node@v4
+        with:
+          node-version: '22.13'
+      - run: python -m pip install 'setuptools>=77' wheel numpy==2.4.3 websockets==16.0
+      - name: Installed wheel, live shared session and real pinned ESM capture
+        run: python scripts/check_workbench_candidates.py

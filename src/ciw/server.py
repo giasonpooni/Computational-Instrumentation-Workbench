@@ -11,7 +11,7 @@ from websockets.asyncio.server import serve
 from websockets.exceptions import ConnectionClosed
 
 from .session import Session, _reject_constant, envelope
-from .workbench import WORKFLOW_OPERATION_IDS
+from .workbench import WORKBENCH_OPERATION_IDS
 
 LOG = logging.getLogger(__name__)
 
@@ -67,7 +67,7 @@ class WorkbenchServer:
                     if response["type"] == "response":
                         changed = (request["type"] in {"source.add", "bundle.replay"}
                                    or (request["type"] == "operation.execute"
-                                       and request["payload"]["operation_id"] in WORKFLOW_OPERATION_IDS))
+                                       and request["payload"]["operation_id"] in WORKBENCH_OPERATION_IDS))
                     if changed:
                         # An invalidation, not a second mutable state copy.
                         # Every client reads the same authoritative session.get.

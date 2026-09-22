@@ -1,5 +1,9 @@
 # Assembling the shared workbench
 
+GSIE, CBSR, FDIR and ESM now have an explicit shared-session handoff. See
+[state, diagnostics and candidate evidence](STATE_DIAGNOSTICS_EVIDENCE.md) for
+native instrument views, fresh candidate inspection and optional ESM retention.
+
 CIW is the common place to bring in observations, operate compatible instruments,
 inspect candidate state and uncertainty, and retain executions and replay evidence.
 Separate provider repositories supply the scientific operations. Their outputs
