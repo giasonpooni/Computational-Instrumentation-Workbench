@@ -1,6 +1,6 @@
 # Live experiment inspection
 
-The Godot **Experiments** tab displays the same retained workbench used by the
+The Godot **Workbench** tab displays the same retained workbench used by the
 terminal. Selecting one bundle drives measurement, state, uncertainty and
 residual panels, the native instrument dependency tree, and evidence inspection.
 The **Oscillator** tab keeps its existing playback and analysis controls.
@@ -47,6 +47,13 @@ local presentation state and does not alter the scientific or oscillator selecti
 | Calibrated window | Device indications, TBRT aligned event times, MCUR calibrated samples with full temporal/time-value covariance, STFE mean, GSIE state and residuals |
 | Legacy retained telemetry | PPDA measurements, STFE mean, GSIE state and residuals; optional accepted CBSR candidate |
 | Identified observation design | GSIE conditional prediction; model, candidate assessment and budget decisions remain available in native results and context |
+| SRA schematic assessment | Declared node/edge tree; native eligibility, stale certificates and retrieval in object context |
+| SCR integer diffusion | Initial and final integer fields, unit `1`, null covariance, native specification and execution commitments |
+
+The [declared workloads guide](DECLARED_WORKLOADS.md) provides SRA/SCR startup
+bindings and examples. These objects have `fusion_context: null`, a typed
+`object_context`, and `raw_declaration` rather than fabricated observations.
+They use the same live invalidation and occurrence selection controls.
 
 Every panel carries source/evidence and, where applicable, result/execution IDs.
 The dependency tree uses native `input_refs`, with external references explicitly

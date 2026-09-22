@@ -1,0 +1,133 @@
+{
+  "schema": "ciw.schematic-assessment-source.v1",
+  "experiment_id": "demo-schematic-assessment",
+  "configuration": {
+    "companion_execution": "not_performed",
+    "certificate_authentication": "not_performed",
+    "observability": "not_evaluated",
+    "retrieval": "declared_two_hop_neighborhood"
+  },
+  "schematic": {
+    "schema": "NsObservabilitySchematic@0.1",
+    "meta": {
+      "id": "quadratic_drag.v0",
+      "schema": "NsObservabilitySchematic@0.1"
+    },
+    "nodes": [
+      {
+        "id": "u",
+        "kind": "variable",
+        "attrs": {
+          "role": "input",
+          "units": "N"
+        }
+      },
+      {
+        "id": "x",
+        "kind": "variable",
+        "attrs": {
+          "role": "state",
+          "units": "m/s"
+        }
+      },
+      {
+        "id": "xdot",
+        "kind": "variable",
+        "attrs": {
+          "role": "state_dot",
+          "units": "m/s^2"
+        }
+      },
+      {
+        "id": "y",
+        "kind": "variable",
+        "attrs": {
+          "role": "output",
+          "units": "m/s"
+        }
+      },
+      {
+        "id": "f",
+        "kind": "function",
+        "attrs": {
+          "class": "nonlinear",
+          "model_ref": "jspt.reference.quadratic_drag",
+          "x_star": [
+            1.0
+          ],
+          "c": 0.5,
+          "law": "xdot = u - c * x * abs(x); y = x",
+          "chart": "identity",
+          "units": "SI"
+        }
+      },
+      {
+        "id": "ySensor",
+        "kind": "measurement",
+        "attrs": {
+          "quality": "undeclared"
+        }
+      },
+      {
+        "id": "observer",
+        "kind": "observer",
+        "attrs": {
+          "status": "UNRESOLVED"
+        }
+      }
+    ],
+    "edges": [
+      {
+        "kind": "input",
+        "src": "u",
+        "dst": "f",
+        "attrs": {}
+      },
+      {
+        "kind": "input",
+        "src": "x",
+        "dst": "f",
+        "attrs": {}
+      },
+      {
+        "kind": "output",
+        "src": "f",
+        "dst": "xdot",
+        "attrs": {}
+      },
+      {
+        "kind": "output",
+        "src": "f",
+        "dst": "y",
+        "attrs": {}
+      },
+      {
+        "kind": "actuates",
+        "src": "u",
+        "dst": "f",
+        "attrs": {}
+      },
+      {
+        "kind": "measures",
+        "src": "ySensor",
+        "dst": "y",
+        "attrs": {}
+      },
+      {
+        "kind": "observes",
+        "src": "observer",
+        "dst": "f",
+        "attrs": {}
+      },
+      {
+        "kind": "senses",
+        "src": "observer",
+        "dst": "ySensor",
+        "attrs": {}
+      }
+    ]
+  },
+  "queries": [
+    "x"
+  ]
+}

@@ -10,13 +10,14 @@ The active delivery emphasis is assembling these tools into one workbench:
 shared sources and declared contexts, callable operations, retained candidate
 state and covariance, and one execution/result history. The
 [workbench assembly guide](WORKBENCH_ASSEMBLY.md) distinguishes the current
-session connection from the pending acquisition, SRA, SCR, GSV and CSE work.
+session connection, SRA assessment and SCR integer dispatch from the pending
+acquisition, companion-call, GSV and CSE work.
 An additional standalone pipeline does not by itself provide that common
 operating point.
 
 ## Shared operating session
 
-The [Experiments desktop tab](EXPERIMENT_VIEW.md) projects all four shared workflow
+The [Workbench desktop tab](EXPERIMENT_VIEW.md) projects all six shared workflow
 kinds through `experiment.inspect`: retained measurements, state/covariance,
 residuals, native dependencies, evidence and verification. It follows committed
 session changes and keeps replay occurrences separate. This read-only display
@@ -25,7 +26,8 @@ numerical conformance boundaries. Physical acquisition and arbitrary algebraic o
 topological workload dispatch remain pending.
 
 The live Session now hosts `ciw.telemetry.v1`, `ciw.calibrated-observable.v1` and
-`ciw.identified-design.v1`, plus `ciw.calibrated-window.v1`, through the existing `operation.list/execute` surface.
+`ciw.identified-design.v1`, plus `ciw.calibrated-window.v1`,
+`ciw.schematic-assessment.v1` and `ciw.numerical-heat.v1`, through the existing `operation.list/execute` surface.
 `source.*`, `bundle.*` and `fusion.list` expose retained inputs, native bundles
 and candidate contexts; result and execution lists include those native records
 alongside existing session operations. Workspace format 3 retains this content,
@@ -38,12 +40,11 @@ optional candidate-only retention. Stable observation identity remains separate
 from fresh execution identity. See [shared telemetry](SHARED_TELEMETRY.md).
 
 The [assembly operating guide](WORKBENCH_ASSEMBLY.md#operate-the-shared-session)
-documents startup bindings, request payloads and change events. This increment
-adds the common session boundary. It does not claim a new graphical interface,
-live acquisition, generic continuous fusion, SRA graph execution, SCR dispatch,
-GSV provider connection or CSE mapping. Those existing systems enter through the
-delivery work below. Scientific calculations and their existing ICRH profiles
-remain unchanged by the registry.
+documents startup bindings, request payloads and change events. Shared desktop
+inspection, SRA assessment and SCR integer dispatch are implemented. Live
+acquisition, generic continuous fusion, SRA companion execution, a GSV provider
+connection and CSE mapping remain delivery work below. Scientific calculations
+keep their native owners and individual ICRH contracts.
 
 ## Existing executable paths
 
@@ -117,7 +118,10 @@ an equipment order nor starts a measurement.
 
 These six rows describe further integration targets. The affine TBRT/MCUR/STFE
 window part of row 1 is delivered through [calibrated windows](CALIBRATED_WINDOW.md);
-its live acquisition and drift consumer remain outstanding. Extend the
+its live acquisition and drift consumer remain outstanding. The typed assessment
+portion of row 2 and native integer heat workload in row 3 are delivered through
+[shared SRA/SCR workloads](DECLARED_WORKLOADS.md), with two ICRH profiles. SRA
+companion execution and SET support for these schemas remain outstanding. Extend the
 three demonstrations—process balance, manufacturing cycle and geometry/BIM
 inspection—inside the common workspace through these contracts. Each result
 should share source/context selection and retained history with the tools that
@@ -131,8 +135,8 @@ produced and consume it.
 | [EDSPT](https://github.com/giasonpooni/Experiment-Design-Sensor-Placement-Testbed) | Finite candidate Fisher information, D-/A-optimal ranking, coordinate checks and cost-budgeted next observation | Identified-design now binds the point model, state, reduction baseline and observation budget; multi-observation portfolio optimization is outside this operation. |
 | [YWIR](https://github.com/giasonpooni/Yield-Weighted-Inference-Runtime) | Advisory decisions, one-use reserve/settle/cancel operations and bound observation-design token adapter | Identified-design retains an advisory token receipt; it cannot certify the experiment or stand in for measurement cost, and creates no spending reservation. |
 | [CSE](https://github.com/giasonpooni/Construction-State-Estimator-for-BIM) | Experimental BIM calculations and a companion experiment harness | Its harness attaches digests to a project-space bundle; that alone does not transfer a measured physical quantity or execute the cited provider. |
-| [SRA](https://github.com/giasonpooni/Schematics-Retrieval-Agent) | Typed schematic queries, eligibility and optional pinned companion calls, including JSPT-to-PLSR | Existing companion execution should enter CIW through its retained call records rather than be duplicated. |
-| [SCR](https://github.com/giasonpooni/Scientific-Computation-Runtime) | Explicit execution specifications, native dispatch, scientific workloads and exchange exports | CIW currently inspects exports but does not invoke these workloads. Backend prerequisites remain part of the contract. |
+| [SRA](https://github.com/giasonpooni/Schematics-Retrieval-Agent) | Typed schematic queries, eligibility and optional pinned companion calls, including JSPT-to-PLSR | Typed assessment and retrieval now run in CIW. Existing companion execution still needs a compatible explicit retained-call handoff. |
+| [SCR](https://github.com/giasonpooni/Scientific-Computation-Runtime) | Explicit execution specifications, native dispatch, scientific workloads and exchange exports | CIW now invokes native integer diffusion with exact commitments and a host-bound executable. Additional descriptors and physical-model semantics need separate contracts. |
 | [GSV](https://github.com/giasonpooni/Geospatial-State-Visualization) | Browser provider interface, geographic/temporal inspection and comparison checks | A read-only CIW projection needs an explicit mapping; a synthetic provider does not establish this link. |
 
 No research/dependency fork is counted as an instrument merely because it is in

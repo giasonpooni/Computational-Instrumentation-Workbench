@@ -93,6 +93,21 @@ func _run() -> void:
 	view.apply_view(projection("first"))
 	check("panel refuses obsolete projection", view.view.is_empty())
 	view.apply_view(projection("third"))
+	var schematic := projection("third")
+	schematic.fusion_context = null
+	schematic.object_context = {"object_kind": "declared_schematic", "next_step": "declare sensor quality"}
+	schematic.panels = []
+	schematic.schematic = {"nodes": [{"id": "sensor", "kind": "measurement", "attrs": {}}], "edges": []}
+	view.apply_view(schematic)
+	check("schematic view clears prior state plot", view._plot.panel.is_empty() and view._numbers.text.is_empty())
+	check("schematic remains a typed object", view._summary.text.contains("declared_schematic") and view._graph.get_root().get_child(0).get_text(0) == "sensor · measurement")
+	var numerical := projection("third")
+	numerical.fusion_context = null
+	numerical.object_context = {"object_kind": "integer_numerical_field"}
+	numerical.panels[0].covariance = null
+	numerical.panels[0].marginal_standard_deviation = null
+	view.apply_view(numerical)
+	check("numerical field has no fabricated uncertainty", view._plot.panel.covariance == null and view._summary.text.contains("integer_numerical_field"))
 	reader.status_changed.emit("disconnected", "gone")
 	check("disconnect marks retained view stale", view._status.text.begins_with("STALE") and not view.view.is_empty())
 	var replacement := snapshot(0, [])

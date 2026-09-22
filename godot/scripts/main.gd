@@ -154,7 +154,7 @@ func _build_ui() -> void:
 	_tabs = TabContainer.new()
 	_tabs.size_flags_vertical = Control.SIZE_EXPAND_FILL
 	column.add_child(_tabs)
-	_experiments.name = "Experiments"
+	_experiments.name = "Workbench"
 	_tabs.add_child(_experiments)
 	var oscillator := VBoxContainer.new()
 	oscillator.name = "Oscillator"

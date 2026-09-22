@@ -15,6 +15,7 @@ from threading import RLock
 
 from .adapters.protocol import AdapterRefusal
 from .adapters.subprocess import _json
+DECLARED_KINDS = frozenset({"schematic-assessment", "numerical-heat"})
 
 SCHEMA = "ciw.retained-workbench.v1"
 SOURCE_SCHEMA = "ciw.workbench-source.v1"
@@ -23,6 +24,8 @@ OPERATIONS = {
     "identified-design": "ciw.identified-design.v1",
     "telemetry": "ciw.telemetry.v1",
     "calibrated-window": "ciw.calibrated-window.v1",
+    "schematic-assessment": "ciw.schematic-assessment.v1",
+    "numerical-heat": "ciw.numerical-heat.v1",
 }
 WORKFLOW_OPERATION_IDS = frozenset(OPERATIONS.values())
 from .candidate_evidence import OPERATIONS as CANDIDATE_OPERATIONS
@@ -35,6 +38,9 @@ _OVERHEAD = 4096
 
 def _workflow(kind):
     # Lazy imports avoid the existing workflows' Session persistence dependency.
+    if kind in DECLARED_KINDS:
+        from .declared_workload import DeclaredWorkflow
+        return DeclaredWorkflow(kind)
     if kind == "calibrated-observable":
         from . import calibrated_observable
         return calibrated_observable
@@ -88,7 +94,7 @@ def _source(payload):
         raise ValueError("Source bytes must use canonical base64") from exc
     if len(raw) > workflow.MAX_BYTES or base64.b64encode(raw).decode("ascii") != encoded:
         raise ValueError("Source bytes must use bounded canonical base64")
-    if kind in {"calibrated-observable", "telemetry", "calibrated-window"}:
+    if kind in {"calibrated-observable", "telemetry", "calibrated-window"} | DECLARED_KINDS:
         declaration = workflow._source(raw)
     else:
         # The full design validator needs an explicitly selected retained prior.
@@ -130,6 +136,11 @@ def _claims(record):
 
     def verification(value):
         claim(value["verification_id"], "verification", value)
+        if value.get("schema") == "ciw.declared-workload-verification.v1":
+            step = value["reproduction"]
+            claim(step["execution_id"], "execution", {"step": step})
+            claim(step["result_id"], "result", {"result": step["result"]})
+            claim(step["numerical_result_id"], "numerical_result", step["numerical_result"])
 
     def bundle(value):
         owner = value["bundle_digest"]
@@ -140,13 +151,14 @@ def _claims(record):
             claim(evidence["artifact_ref"], "evidence", evidence["bytes_b64"])
         for step in value["steps"]:
             claim(step["operation_id"], "operation", step["operation_id"])
-            claim(step["execution_id"], "execution", {"bundle_id": owner, "step": step})
+            declared = step["runtime_ref"] in {"sra", "scr"}
+            claim(step["execution_id"], "execution", {"step": step} if declared else {"bundle_id": owner, "step": step})
             if value["schema"] == "ciw.telemetry-session.v1" and step["runtime_ref"] == "ppda":
                 # A replay reprojects the same acquired evidence. Its batch ID
                 # stays stable while every execution occurrence remains fresh.
                 claim(step["result_id"], "observation_batch", step["result"])
             else:
-                claim(step["result_id"], "result", {"bundle_id": owner, "result": step["result"]})
+                claim(step["result_id"], "result", {"result": step["result"]} if declared else {"bundle_id": owner, "result": step["result"]})
             claim(step["numerical_result_id"], "numerical_result", step["numerical_result"])
         if "verification" in value:
             verification(value["verification"])
@@ -219,6 +231,16 @@ def _validate_receipts(native, kind):
 
 def _validate_links(record, bundles):
     native = record["native"]
+    if record["kind"] in DECLARED_KINDS:
+        occurrences = {native["steps"][0]["execution_id"], native["verification"]["reproduction"]["execution_id"]}
+        for other in bundles.values():
+            if other["bundle_id"] == record["bundle_id"]:
+                continue
+            used = {s["execution_id"] for s in other["native"]["steps"]}
+            if other["kind"] in DECLARED_KINDS:
+                used.add(other["native"]["verification"]["reproduction"]["execution_id"])
+            if not occurrences.isdisjoint(used):
+                raise ValueError("Declared workload bundles must have distinct execution and reproduction occurrences")
     upstream_id = record["upstream_bundle_id"]
     if upstream_id is not None:
         upstream = bundles.get(upstream_id)
@@ -232,6 +254,19 @@ def _validate_links(record, bundles):
                 original["upstream_bundle_id"] != upstream_id):
             raise ValueError("Replay source must already belong to this workbench")
         old_steps, new_steps = original["native"]["steps"], native["steps"]
+        if record["kind"] in DECLARED_KINDS:
+            workflow = _workflow(record["kind"])
+            raw = workflow._validate(original["native"])
+            workflow._check_verification(original["native"], receipt["verification"], workflow._source(raw),
+                                         original["native"]["source"]["evidence"][0]["artifact_ref"])
+            if receipt["verification"]["reproduction"] != new_steps[0]:
+                raise ValueError("Declared replay verification must bind the exact fresh step")
+            if workflow._runtime_projection(native["runtimes"][workflow.role]) != workflow._runtime_projection(original["native"]["runtimes"][workflow.role]):
+                raise ValueError("Declared replay runtime identity mismatch")
+            old_occurrences = {old_steps[0]["execution_id"], original["native"]["verification"]["reproduction"]["execution_id"]}
+            new_occurrences = {new_steps[0]["execution_id"], native["verification"]["reproduction"]["execution_id"]}
+            if not old_occurrences.isdisjoint(new_occurrences):
+                raise ValueError("Replay cannot reuse a prior reproduction occurrence")
         if (_canonical(original["native"]["configuration"]) != _canonical(native["configuration"]) or
                 [step["operation_id"] for step in old_steps] != [step["operation_id"] for step in new_steps]):
             raise ValueError("Replay must preserve the original operation graph and configuration")
@@ -382,7 +417,7 @@ class Workbench:
 
     def describe_operations(self):
         with self._lock:
-            return [{"operation_id": operation, "role": "decision" if kind == "identified-design" else "state_estimator",
+            return [{"operation_id": operation, "role": {"identified-design": "decision", "schematic-assessment": "schematic_assessment", "numerical-heat": "numerical_execution"}.get(kind, "state_estimator"),
                      "source_kind": kind, "available": kind in self._bindings,
                      "requires_upstream_bundle": kind == "identified-design"}
                     for kind, operation in OPERATIONS.items()] + [
@@ -407,13 +442,13 @@ class Workbench:
                 "result_id": step["result_id"], "execution_id": step["execution_id"],
                 "view": "retained_native_result", "state_admission": "not_performed"}
                 for record in self._bundles.values() for step in record["native"]["steps"]
-                if step["runtime_ref"] in {"ppda", "tbrt", "mcur", "stfe", "gsie", "cbsr", "fdir", "oit"}])
+                if step["runtime_ref"] in {"ppda", "tbrt", "mcur", "stfe", "gsie", "cbsr", "fdir", "oit", "sra", "scr"}])
 
     def inspect_instrument(self, payload):
         _keys(payload, {"bundle_id", "instrument"})
         _text(payload["bundle_id"], "Bundle identity")
-        if payload["instrument"] not in ("ppda", "tbrt", "mcur", "stfe", "gsie", "cbsr", "fdir", "oit"):
-            raise ValueError("Choose a retained ppda, tbrt, mcur, stfe, gsie, cbsr, fdir or oit result")
+        if payload["instrument"] not in ("ppda", "tbrt", "mcur", "stfe", "gsie", "cbsr", "fdir", "oit", "sra", "scr"):
+            raise ValueError("Choose a retained instrument result")
         with self._lock:
             native = self.get_bundle(payload["bundle_id"])
             steps = {step["runtime_ref"]: step for step in native["steps"]}
@@ -422,8 +457,8 @@ class Workbench:
             record = self._bundles[payload["bundle_id"]]
             return deepcopy({"bundle_id": record["bundle_id"], "source_id": record["source_id"],
                 "instrument": payload["instrument"], "step": steps[payload["instrument"]],
-                "fusion_context": _context(record, self._sources),
-                "linked_results": {role: steps[role]["result_id"] for role in ("ppda", "tbrt", "mcur", "stfe", "gsie", "cbsr", "fdir", "oit") if role in steps},
+                "fusion_context": None if record["kind"] in DECLARED_KINDS else _context(record, self._sources),
+                "linked_results": {role: step["result_id"] for role, step in steps.items()},
                 "numerical_replay": "not_performed_by_inspection", "state_admission": "not_performed"})
 
     def execute_candidate(self, operation_id, parameters):
@@ -678,7 +713,7 @@ class Workbench:
 
     def fusion_contexts(self):
         with self._lock:
-            return deepcopy([_context(record, self._sources) for record in self._bundles.values()])
+            return deepcopy([_context(record, self._sources) for record in self._bundles.values() if record["kind"] not in DECLARED_KINDS])
 
     def inspect_experiment(self, payload):
         from .experiment_view import project
@@ -690,6 +725,9 @@ class Workbench:
                 raise ValueError("Unknown retained workbench bundle")
             source = self._sources[record["source_id"]]
             declaration = _json(base64.b64decode(source["bytes_b64"], validate=True))
+            if record["kind"] in DECLARED_KINDS:
+                from .workload_view import project as project_workload
+                return project_workload(record, source, declaration, self._revision)
             return project(record, source, declaration, _context(record, self._sources), self._revision)
 
     def _native_steps(self):

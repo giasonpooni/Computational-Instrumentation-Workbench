@@ -1,0 +1,19 @@
+{
+  "schema": "ciw.numerical-heat-source.v1",
+  "experiment_id": "demo-numerical-heat",
+  "configuration": {
+    "unit": "1",
+    "arithmetic": "signed_integer_truncation_toward_zero",
+    "boundary": "fixed_endpoints",
+    "alpha": "1/4",
+    "covariance_status": "not_applicable"
+  },
+  "initial_values": [
+    0,
+    0,
+    64,
+    0,
+    0
+  ],
+  "steps": 2
+}

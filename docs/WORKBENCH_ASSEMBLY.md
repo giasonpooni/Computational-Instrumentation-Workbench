@@ -6,14 +6,15 @@ selected experiment, typed retained objects, declared compatible operations,
 native execution records and replay evidence. Provider repositories keep their
 scientific responsibilities while their operations and artifacts join this suite.
 
-The [Experiments desktop tab](EXPERIMENT_VIEW.md) is now implemented over that
-substrate: it links four retained workflows to measurement/state/covariance and
+The [Workbench desktop tab](EXPERIMENT_VIEW.md) is now implemented over that
+substrate: it links six retained workflows to measurement/state/covariance and
 residual panels, native input dependencies, evidence inspection and live session
 invalidation. It introduces no additional estimator or parallel result store.
 
-The next assembly steps are typed model/schematic selection through SRA and
-delegated deterministic numerical workloads through SCR, followed by acquisition
-scheduling and compatible spatial views. Algebraic and topological providers
+The [SRA/SCR assembly](DECLARED_WORKLOADS.md) now adds typed schematic assessment
+and native deterministic integer numerical execution to that same catalog,
+inspection view and replay history. Actual SRA companion calls, acquisition
+scheduling and compatible spatial views are next. Algebraic and topological providers
 should enter as declared operations on explicit domains, bases, chain complexes
 or filtrations, with exact versus numerical arithmetic and verification scope
 retained. Topological outputs require an explicit observation model and uncertainty
@@ -206,9 +207,9 @@ refuse a connection.
 | TBRT, MCUR and STFE | Declared clock mapping, calibration and stream-window transforms | Shared `ciw.calibrated-window.v1` composes one affine profile and a nominal-grid mean with full joint covariance. Live acquisition and downstream drift assessment remain the manufacturing-cycle work. |
 | OIT and GSIE | Observability gate and state/covariance computation for a declared context | Calibrated process operation already binds the gate to the estimator's exact transition and observation matrices. |
 | CBSR and FDIR | Constraint-conditioned candidates and residual/isolability diagnostics | Consume retained state and declared residual covariance; hold/refusal remains visible alongside the original estimate. |
-| SRA | Authored instrument/model schematic, typed relationships and eligibility | Existing graph and companion calls remain in SRA; a retained CIW graph operation is a delivery item. |
+| SRA | Authored instrument/model schematic, typed relationships and eligibility | Native assessment and retrieval now run in CIW; actual companion calls require a further explicit retained-call handoff. |
 | JSPT and PLSR | Local sensitivity/covariance propagation and declared-model certificate assessment | Existing CIW operations are reusable; selecting a compatible retained state/model for PLSR still requires an explicit mapping. |
-| SCR | Delegated scientific computation with declared workload and execution records | CIW currently inspects exchange exports. Native workload dispatch from CIW remains a delivery item. |
+| SCR | Delegated scientific computation with declared workload and execution records | Native integer diffusion now executes through the shared session with byte commitments, host-bound engine identity and ICRH oracle. |
 | CSE | BIM/project context, construction intent and domain dispositions | Frame-bound measurement/constraint inspection remains a delivery item; attached digests alone do not establish a physical correspondence. |
 | GSV | Read-only spatial and temporal panels consuming selected retained context | Its existing provider boundary needs a CIW projection; no new GSV connection or browser view is claimed here. |
 | SET and ICRH | Exchange validation, evaluation and replay/conformance evidence | Reuse existing profiles for scientific paths and test session assembly separately; no additional numerical profile is created merely for a registry. |
@@ -225,8 +226,8 @@ SRA already has a typed function/factor graph with variable, function,
 measurement, prior, constraint, certificate, observer and evidence nodes. It
 records eligibility decisions and actual optional JSPT-to-PLSR companion calls.
 Stale or ambiguous Jacobian records cannot open dependent calculations. CIW
-should retain and expose that graph and its call records through a provider
-operation, rather than invent another schematic model. SRA graph eligibility
+now retains and exposes that native graph and its assessment through a provider
+operation; actual companion call records remain the next connection. SRA graph eligibility
 does not itself supply sensor time alignment or state-estimation authority.
 
 CSE already supplies a native `GatSession`, execution ledger and domain
@@ -271,6 +272,10 @@ manufacturing-cycle or geometry/BIM demonstrations.
 | 3 | SCR delegated dispatch | Select one declared deterministic heat or structural workload; bind input bytes, descriptor, backend and arithmetic; retain its native execution/result records and reproduce them; refuse unavailable backend or unsupported input. |
 | 4 | GSV view of shared context | Project one supported retained spatial result with evidence/result references and frame/time basis; preserve selected-context identity; incompatible comparisons are refused and view changes cannot alter scientific input. |
 | 5 | CSE frame-bound inspection | Bind measured quantity to explicit surveyed/design frame authority and construction context; operate one declared constraint using existing GTE/JSPT/CBSR capabilities; retain original candidate, uncertainty, disagreement and held outcome. |
+
+Row 2's typed graph, assessment and retrieval are now implemented; companion
+calls remain pending. Row 3's bounded integer heat dispatch is implemented with
+native replay and an independent ICRH oracle. See [declared workloads](DECLARED_WORKLOADS.md).
 
 A later PLSR connection consumes a specifically selected compatible model and
 state, including state order, equilibrium, continuous/discrete convention,

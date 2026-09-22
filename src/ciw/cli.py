@@ -232,6 +232,9 @@ def parser() -> argparse.ArgumentParser:
                         help="Bind role-named ppda/stfe/gsie/set/cbsr checkouts alongside the process stack")
     server.add_argument("--calibrated-window-stack-root", type=Path,
                         help="Bind tbrt/mcur/stfe/gsie/set for shared calibrated window estimation")
+    server.add_argument("--schematic-repo", type=Path, help="Bind pinned SRA declared schematic assessment")
+    server.add_argument("--computation-repo", type=Path, help="Bind pinned SCR numerical execution")
+    server.add_argument("--computation-engine", type=Path, help="Host-built SCR execution-cli (required with --computation-repo)")
     server.add_argument("--python", dest="python_executable", type=Path,
                         help="Python for FSRT/JSPT/GTE adapters; workbench stacks use this running interpreter")
     health = commands.add_parser("health", help="Check a live session with a bounded read-only request")
@@ -408,6 +411,12 @@ def main(argv: list[str] | None = None) -> int:
             if args.calibrated_window_stack_root is not None:
                 from .calibrated_window import ROLES as WINDOW_ROLES
                 session.workbench.bind_workflow("calibrated-window", {role: args.calibrated_window_stack_root / role for role in WINDOW_ROLES})
+            if args.schematic_repo is not None:
+                session.workbench.bind_workflow("schematic-assessment", {"sra": args.schematic_repo})
+            if (args.computation_repo is None) != (args.computation_engine is None):
+                raise ValueError("--computation-repo and --computation-engine must be supplied together")
+            if args.computation_repo is not None:
+                session.workbench.bind_workflow("numerical-heat", {"scr": args.computation_repo, "engine": args.computation_engine})
             if args.esm_telemetry_binding is not None:
                 configuration = read_json(args.esm_telemetry_binding)
                 if "ppda" not in configuration.get("runtime", {}).get("repositories", {}):

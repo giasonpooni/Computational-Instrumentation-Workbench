@@ -13,10 +13,12 @@ evidence. Existing scientific providers retain their numerical ownership;
 their records and operations enter that shared context. See
 [shared-workbench assembly](docs/WORKBENCH_ASSEMBLY.md) for the implemented
 session connection, component placement and next delivery work. The
-[live Experiments tab](docs/EXPERIMENT_VIEW.md) now brings retained process,
+[live Workbench tab](docs/EXPERIMENT_VIEW.md) now brings retained process,
 telemetry, calibrated-window and observation-design results into the desktop:
 measurements, state/covariance, residuals, native dependencies and evidence share
 one selected occurrence and update when the session commits new results.
+SRA [typed schematics and SCR native numerical execution](docs/DECLARED_WORKLOADS.md)
+now join that same catalog, desktop and replay path as explicitly typed objects.
 
 The executable prototype includes a synthetic damped oscillator, numerical
 statistics and periodogram analysis, a shared local session, saved-workspace
@@ -63,7 +65,7 @@ explicit replay creates new execution/result identities.
 
 The built-in examples are synthetic. Successful computation, content integrity
 and matching replay digests do not establish physical validity or calibration
-traceability. The Experiments tab presents the four shared native workflows;
+traceability. The Workbench tab presents six shared native workflows;
 other external integrations expose terminal and JSON records as described below.
 
 ## Integrated tools
@@ -89,6 +91,8 @@ establish physical validation or deployment readiness.
 | Shared GSIE/CBSR/FDIR and ESM candidate evidence | Native linked instrument views plus pinned ESM inspect/capture operations in the same session | Inspect one fused state, reconciliation and declared residual assessment; replay-check and explicitly retain UNADMITTED evidence; restore historical receipts without executable bindings | [Protocol, operator setup and verification](docs/STATE_DIAGNOSTICS_EVIDENCE.md) |
 | Shared PPDA/STFE telemetry (`ciw.telemetry.v1`) | Retained observation projection, causal window features, GSIE state and optional CBSR in the same session | Preserve full temporal covariance and stable batch identity across fresh executions; inspect native acquisition/window records and explicitly hand evidence to ESM | [Shared telemetry, bindings and scope](docs/SHARED_TELEMETRY.md) |
 | Shared calibrated window (`ciw.calibrated-window.v1`) | TBRT → MCUR → STFE → GSIE with SET replay in the same session | Preserve raw device samples and full joint clock/calibration covariance; gate affine/window compatibility; retain nominal-grid features and state with fresh replay | [Calibrated window contract and operation](docs/CALIBRATED_WINDOW.md) |
+| SRA schematic assessment (`ciw.schematic-assessment.v1`) | Native typed schematic in the shared catalog and desktop | Assess declared eligibility, retain stale certificates, retrieve two-hop neighborhoods and replay; companion execution remains explicit future work | [Setup and contract](docs/DECLARED_WORKLOADS.md) |
+| SCR numerical execution (`ciw.numerical-heat.v1`) | Native Rust integer diffusion in the same catalog and desktop | Execute a bounded declared field, retain byte commitments and host-bound engine identity, replay and independently check integer results with ICRH | [Setup and contract](docs/DECLARED_WORKLOADS.md) |
 
 The [integration coverage matrix](docs/INTEGRATION_COVERAGE.md) distinguishes
 executable paths, conformance coverage, and the next connections between

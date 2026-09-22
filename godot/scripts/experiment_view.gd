@@ -25,7 +25,7 @@ func _ready() -> void:
 	var heading := HBoxContainer.new()
 	add_child(heading)
 	var title := Label.new()
-	title.text = "EXPERIMENTS  /  shared sources, fusion and evidence"
+	title.text = "WORKBENCH  /  experiments, schematics and computation"
 	title.size_flags_horizontal = Control.SIZE_EXPAND_FILL
 	heading.add_child(title)
 	_follow = CheckBox.new()
@@ -91,7 +91,12 @@ func _ready() -> void:
 		button.pressed.connect(func():
 			selected_result = ""
 			client.inspect_artifact("")
-			_show_json(view.get(field, {})))
+			if field == "fusion_context" and view.get("fusion_context") == null:
+				_show_json(view.get("object_context", {}))
+			elif field == "raw_observations" and view.has("raw_declaration"):
+				_show_json(view.raw_declaration)
+			else:
+				_show_json(view.get(field, {})))
 		actions.add_child(button)
 	_inspector = _text_box()
 	_inspector.size_flags_vertical = Control.SIZE_EXPAND_FILL
@@ -193,13 +198,18 @@ func apply_view(value: Dictionary) -> void:
 	if value.get("schema", "") != "ciw.experiment-view.v1" or value.get("bundle_id", "") != selected_bundle:
 		return
 	view = value
-	var context: Dictionary = view.fusion_context
-	_summary.text = "%s\n%s · observability: %s · reconciliation: %s · detection: %s · declared isolability: %s\n%s" % [view.label,
-		context.state_kind, context.get("observability", {}).get("status", "unresolved"),
-		context.get("reconciliation", {}).get("status", "not_run"),
-		context.get("fault_assessment", {}).get("detection", context.get("fault_assessment", {}).get("status", "not_run")),
-		context.get("fault_assessment", {}).get("isolability", "not_run"),
-		view.bundle_id]
+	var context: Dictionary = view.get("object_context", {}) if view.get("fusion_context") == null else view.fusion_context
+	if view.get("fusion_context") == null:
+		_summary.text = "%s\n%s · %s · fusion: not performed\n%s" % [view.label,
+			context.object_kind, context.get("next_step", "native integer execution; dimensionless values"), view.bundle_id]
+	else:
+		_summary.text = "%s\n%s · observability: %s · reconciliation: %s · detection: %s · declared isolability: %s\n%s" % [view.label,
+			context.state_kind, context.get("observability", {}).get("status", "unresolved"),
+			context.get("reconciliation", {}).get("status", "not_run"),
+			context.get("fault_assessment", {}).get("detection", context.get("fault_assessment", {}).get("status", "not_run")),
+			context.get("fault_assessment", {}).get("isolability", "not_run"), view.bundle_id]
+	_plot.set_panel({})
+	_numbers.text = ""
 	_panels.clear()
 	for panel in view.panels:
 		_panels.add_item(panel.title)
@@ -221,6 +231,18 @@ func apply_view(value: Dictionary) -> void:
 			dependency.set_tooltip_text(0, reference)
 			dependency.set_selectable(0, false)
 		item.collapsed = true
+	if view.get("schematic") != null:
+		for node in view.schematic.nodes:
+			var item := _graph.create_item(root)
+			item.set_text(0, node.id + " · " + node.kind)
+			item.set_tooltip_text(0, JSON.stringify(node.attrs))
+			item.set_selectable(0, false)
+			for edge in view.schematic.edges:
+				if edge.src == node.id:
+					var link := _graph.create_item(item)
+					link.set_text(0, edge.kind + " → " + edge.dst)
+					link.set_selectable(0, false)
+			item.collapsed = true
 	_show_json(context)
 
 
