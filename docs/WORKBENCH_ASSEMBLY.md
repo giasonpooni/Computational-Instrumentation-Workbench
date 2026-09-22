@@ -7,14 +7,16 @@ native execution records and replay evidence. Provider repositories keep their
 scientific responsibilities while their operations and artifacts join this suite.
 
 The [Workbench desktop tab](EXPERIMENT_VIEW.md) is now implemented over that
-substrate: it links six retained workflows to measurement/state/covariance and
+substrate: it links nine retained workflows to measurement/state/covariance and
 residual panels, native input dependencies, evidence inspection and live session
 invalidation. It introduces no additional estimator or parallel result store.
 
 The [SRA/SCR assembly](DECLARED_WORKLOADS.md) now adds typed schematic assessment
 and native deterministic integer numerical execution to that same catalog,
-inspection view and replay history. Actual SRA companion calls, acquisition
-scheduling and compatible spatial views are next. Algebraic and topological providers
+inspection view and replay history. [Native module integration](INTEGRATED_MODULES.md)
+adds actual SRA/JSPT/PLSR calls, PPDA incremental acquisition, CSE quantity
+conditioning and GSV geographic inspection. Hardware acquisition scheduling and
+calibrated-stream composition remain next. Algebraic and topological providers
 should enter as declared operations on explicit domains, bases, chain complexes
 or filtrations, with exact versus numerical arithmetic and verification scope
 retained. Topological outputs require an explicit observation model and uncertainty
@@ -148,8 +150,8 @@ workflow's complete validation and verification succeed.
 
 `ciw watch` emits `workbench.changed` invalidation events when shared content
 changes; clients refresh `session.get` to obtain the current snapshot. This is
-a shared session protocol, not a new graphical client. The existing Godot view
-remains an oscillator view.
+a shared session protocol used by the Godot Workbench tab. Geographic clients
+receive restricted invalidations through the read-only `/spatial` endpoint.
 
 Reopen `results/shared-workbench/workspace.json` using `ciw serve --workspace`
 to inspect retained content without executing providers. Bind the appropriate
@@ -162,7 +164,7 @@ normal server shutdown also saves them. A workflow that refuses before producing
 a bundle returns an error and leaves its source retained, without publishing a
 partial state. The catalog permits at most 64 sources, 128 completed bundles and
 64 MiB of retained content. Existing protocol frame limits still apply. It
-supports the three declared source kinds above; it is not an arbitrary bundle
+supports nine executable source kinds and source-only geography; it is not an arbitrary bundle
 importer or a live acquisition service.
 
 ## What shares a workspace
@@ -207,11 +209,11 @@ refuse a connection.
 | TBRT, MCUR and STFE | Declared clock mapping, calibration and stream-window transforms | Shared `ciw.calibrated-window.v1` composes one affine profile and a nominal-grid mean with full joint covariance. Live acquisition and downstream drift assessment remain the manufacturing-cycle work. |
 | OIT and GSIE | Observability gate and state/covariance computation for a declared context | Calibrated process operation already binds the gate to the estimator's exact transition and observation matrices. |
 | CBSR and FDIR | Constraint-conditioned candidates and residual/isolability diagnostics | Consume retained state and declared residual covariance; hold/refusal remains visible alongside the original estimate. |
-| SRA | Authored instrument/model schematic, typed relationships and eligibility | Native assessment and retrieval now run in CIW; actual companion calls require a further explicit retained-call handoff. |
+| SRA | Authored instrument/model schematic, typed relationships and eligibility | Native assessment and selected JSPT/PLSR companion execution share retained upstream graph/result bindings. |
 | JSPT and PLSR | Local sensitivity/covariance propagation and declared-model certificate assessment | Existing CIW operations are reusable; selecting a compatible retained state/model for PLSR still requires an explicit mapping. |
 | SCR | Delegated scientific computation with declared workload and execution records | Native integer diffusion now executes through the shared session with byte commitments, host-bound engine identity and ICRH oracle. |
-| CSE | BIM/project context, construction intent and domain dispositions | Frame-bound measurement/constraint inspection remains a delivery item; attached digests alone do not establish a physical correspondence. |
-| GSV | Read-only spatial and temporal panels consuming selected retained context | Its existing provider boundary needs a CIW projection; no new GSV connection or browser view is claimed here. |
+| CSE | BIM/project context, construction intent and domain dispositions | Native quantity conditioning and ledger replay are integrated; surveyed-frame geometry inspection remains a delivery item. |
+| GSV | Read-only spatial and temporal panels consuming selected retained context | CIW geographic sources enter its native provider and WorldStore; explicit CRS84 authority is required. |
 | SET and ICRH | Exchange validation, evaluation and replay/conformance evidence | Reuse existing profiles for scientific paths and test session assembly separately; no additional numerical profile is created merely for a registry. |
 | ESM | Candidate-evidence retention and later governed admission | Candidate retention only. Workbench selection, matching replay and a passed receipt do not admit canonical state. |
 
@@ -227,15 +229,14 @@ measurement, prior, constraint, certificate, observer and evidence nodes. It
 records eligibility decisions and actual optional JSPT-to-PLSR companion calls.
 Stale or ambiguous Jacobian records cannot open dependent calculations. CIW
 now retains and exposes that native graph and its assessment through a provider
-operation; actual companion call records remain the next connection. SRA graph eligibility
+operation; selected native companion calls now retain that assessment as upstream. SRA graph eligibility
 does not itself supply sensor time alignment or state-estimation authority.
 
 CSE already supplies a native `GatSession`, execution ledger and domain
 workbench projections for BIM structure, graph and state. Its project world
-remains CSE-owned. A CIW connection should host its retained context and expose
-those existing projections. GSV already supplies `SpatialDataProvider` and
-`WorldStore`; its application currently selects a synthetic provider. Connecting
-a supported CIW context at that seam is preferable to rebuilding a globe. A
+remains CSE-owned. CIW now hosts quantity conditioning and its native ledger.
+GSV supplies `SpatialDataProvider` and `WorldStore`; its application can select
+the explicit CIW read-only provider while retaining synthetic-demo mode. A
 process experiment without geographic coordinates does not acquire a geographic
 frame through display.
 
@@ -273,9 +274,12 @@ manufacturing-cycle or geometry/BIM demonstrations.
 | 4 | GSV view of shared context | Project one supported retained spatial result with evidence/result references and frame/time basis; preserve selected-context identity; incompatible comparisons are refused and view changes cannot alter scientific input. |
 | 5 | CSE frame-bound inspection | Bind measured quantity to explicit surveyed/design frame authority and construction context; operate one declared constraint using existing GTE/JSPT/CBSR capabilities; retain original candidate, uncertainty, disagreement and held outcome. |
 
-Row 2's typed graph, assessment and retrieval are now implemented; companion
-calls remain pending. Row 3's bounded integer heat dispatch is implemented with
-native replay and an independent ICRH oracle. See [declared workloads](DECLARED_WORKLOADS.md).
+Row 2 now includes selected native companion calls. Row 3's bounded integer
+heat dispatch is implemented with native replay and an ICRH oracle. Row 4 has
+an explicit source-only geographic view. Row 1 has bounded PPDA acquisition;
+its calibrated-stream handoff remains pending. Row 5 has native CSE quantity
+conditioning; surveyed-frame geometry composition remains pending. See
+[declared workloads](DECLARED_WORKLOADS.md) and [new modules](INTEGRATED_MODULES.md).
 
 A later PLSR connection consumes a specifically selected compatible model and
 state, including state order, equilibrium, continuous/discrete convention,

@@ -7,18 +7,49 @@ def project(record, source, declaration, revision):
     native = record["native"]
     step, = native["steps"]
     data = step["result"]["data"]
-    schematic = record["kind"] == "schematic-assessment"
-    context = {"object_kind": "declared_schematic" if schematic else "integer_numerical_field",
+    kind = record["kind"]
+    schematic = kind in {"schematic-assessment", "schematic-companions"}
+    object_kinds = {"schematic-assessment": "declared_schematic", "schematic-companions": "local_model_analysis",
+                    "numerical-heat": "integer_numerical_field", "bim-quantity": "construction_quantity",
+                    "acquired-dataset": "acquired_evidence"}
+    context = {"object_kind": object_kinds[kind],
                "owner": step["runtime_ref"], "configuration": native["configuration"],
                "covariance_status": "not_applicable", "sensor_fusion": "not_performed",
                "state_admission": "not_performed"}
     panels = []
-    if schematic:
+    provenance = {"source_id": source["source_id"], "evidence_id": source["evidence_id"],
+                  "result_id": step["result_id"], "execution_id": step["execution_id"]}
+    if kind == "schematic-assessment":
         context.update(decisions=data["decisions"], neighborhoods=data["neighborhoods"], next_step=data["next_step"])
-    else:
+    elif kind == "schematic-companions":
+        context.update(summary="Selected native Jacobian, local structure, covariance and linear Lyapunov sample",
+                       events=data["events"], scope=data["scope"], function_id=data["function_id"],
+                       covariance_status="declared_input_only_first_order",
+                       decisions_before=data["decisions_before"], decisions_after=data["decisions_after"])
+    elif kind == "bim-quantity":
+        context.update(summary="Native quantity conditioning: " + data["status"], status=data["status"],
+                       reason=data["reason"], geometry_authority=data["geometry_authority"],
+                       ledger=data["ledger"], ledger_replay=data["ledger_replay"], invariants=data["invariants"],
+                       covariance_status="native_declared_quantity_covariance")
+        for name in ("prior", "posterior"):
+            state = data[name]
+            if state is not None:
+                labels = [q["quantity"] + " / " + q["global_id"] for q in state["quantities"]]
+                panels.append(_panel(name, "CSE " + name + " quantities", labels, state["mean"],
+                                     [q["unit"] for q in state["quantities"]], state["covariance"], provenance,
+                                     model_frame=declaration["model_frame"], geometry_authority=data["geometry_authority"],
+                                     quantities=state["quantities"], status=data["status"]))
+    elif kind == "acquired-dataset":
+        counts = {key: len(value) for key, value in data["evidence"].items()}
+        context.update(summary="Native incremental acquisition with retained checkpoints",
+                       evidence_counts=counts, runs=data["runs"], checkpoint=data["checkpoint"],
+                       restored_pool_fingerprint=data["restored_pool_fingerprint"], scope=data["scope"])
+        panels.append(_panel("evidence-counts", "PPDA retained evidence", list(counts), list(counts.values()),
+                             ["count"] * len(counts), None, provenance, temporal_order="not_inferred"))
+    elif kind == "numerical-heat":
         labels = ["cell " + str(i) for i in range(len(data["values"]))]
         context.update(steps=declaration["steps"], specification_identity=data["specification_identity"],
-                       computation_identity=data["computation_identity"])
+                       computation_identity=data["computation_identity"], summary="Native integer execution; dimensionless values")
         provenance = {"source_id": source["source_id"], "evidence_id": source["evidence_id"]}
         panels.append(_panel("initial", "Declared integer field", labels, declaration["initial_values"],
                              ["1"] * len(labels), None, provenance, **context))
@@ -26,7 +57,7 @@ def project(record, source, declaration, revision):
                              {**provenance, "result_id": step["result_id"], "execution_id": step["execution_id"]}, **context))
     return deepcopy({"schema": SCHEMA, "catalog_revision": revision, "bundle_id": record["bundle_id"],
         "kind": record["kind"], "label": source["label"], "source_id": source["source_id"], "evidence_id": source["evidence_id"],
-        "upstream_bundle_id": None, "replay_source_bundle_ids": [r["source_bundle_digest"] for r in native.get("replay_receipts", [])],
+        "upstream_bundle_id": record["upstream_bundle_id"], "replay_source_bundle_ids": [r["source_bundle_digest"] for r in native.get("replay_receipts", [])],
         "experiment_id": declaration["experiment_id"], "fusion_context": None, "object_context": context,
         "panels": panels, "schematic": data["schematic"] if schematic else None,
         "graph": {"nodes": [{"role": step["runtime_ref"], **{k: step[k] for k in ("operation_id", "result_id", "execution_id", "numerical_result_id", "input_refs")}}]},

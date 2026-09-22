@@ -1,0 +1,31 @@
+{
+  "schema": "ciw.acquired-dataset-source.v1",
+  "experiment_id": "offline-two-channel-acquisition",
+  "source": {
+    "source_id": "retained-process-stream",
+    "name": "Synthetic two-channel process export",
+    "domain": "offline_fixture"
+  },
+  "plan_id": "process-playback",
+  "snapshots": [
+    {
+      "requested_at": "2026-09-22T00:00:10Z",
+      "bytes_b64": "WwogIHsic2VxdWVuY2UiOjEsImNoYW5uZWxfaWQiOiJsZXZlbC1hIiwicmF3X3ZhbHVlIjoyLjAsInJhd191bml0IjoiViIsImRldmljZV90aW1lIjoxMC4wLCJyZWNlaXZlZF9hdCI6IjIwMjYtMDktMjJUMDA6MDA6MDFaIiwiY2xvY2tfYmFzaXMiOiJkZXZpY2UtYSIsImNsb2NrX21hcHBpbmdfcmVmIjpudWxsLCJjYWxpYnJhdGlvbl9yZWYiOm51bGwsImNyb3NzY292X3BvbGljeSI6InVua25vd24ifSwKICB7InNlcXVlbmNlIjoyLCJjaGFubmVsX2lkIjoibGV2ZWwtYiIsInJhd192YWx1ZSI6bnVsbCwidmFsdWVfYWJzZW5jZSI6Im5vdF9yZXBvcnRlZCIsInJhd191bml0IjoiViIsImRldmljZV90aW1lIjo5LjAsInJlY2VpdmVkX2F0IjoiMjAyNi0wOS0yMlQwMDowMDowMloiLCJjbG9ja19iYXNpcyI6ImRldmljZS1iIiwiY2xvY2tfbWFwcGluZ19yZWYiOm51bGwsImNhbGlicmF0aW9uX3JlZiI6bnVsbCwiY3Jvc3Njb3ZfcG9saWN5IjoidW5rbm93biJ9Cl0K"
+    },
+    {
+      "requested_at": "2026-09-22T00:00:20Z",
+      "bytes_b64": "WwogIHsic2VxdWVuY2UiOjEsImNoYW5uZWxfaWQiOiJsZXZlbC1hIiwicmF3X3ZhbHVlIjoyLjAsInJhd191bml0IjoiViIsImRldmljZV90aW1lIjoxMC4wLCJyZWNlaXZlZF9hdCI6IjIwMjYtMDktMjJUMDA6MDA6MDFaIiwiY2xvY2tfYmFzaXMiOiJkZXZpY2UtYSIsImNsb2NrX21hcHBpbmdfcmVmIjpudWxsLCJjYWxpYnJhdGlvbl9yZWYiOm51bGwsImNyb3NzY292X3BvbGljeSI6InVua25vd24ifSwKICB7InNlcXVlbmNlIjoyLCJjaGFubmVsX2lkIjoibGV2ZWwtYiIsInJhd192YWx1ZSI6bnVsbCwidmFsdWVfYWJzZW5jZSI6Im5vdF9yZXBvcnRlZCIsInJhd191bml0IjoiViIsImRldmljZV90aW1lIjo5LjAsInJlY2VpdmVkX2F0IjoiMjAyNi0wOS0yMlQwMDowMDowMloiLCJjbG9ja19iYXNpcyI6ImRldmljZS1iIiwiY2xvY2tfbWFwcGluZ19yZWYiOm51bGwsImNhbGlicmF0aW9uX3JlZiI6bnVsbCwiY3Jvc3Njb3ZfcG9saWN5IjoidW5rbm93biJ9CiwKICB7InNlcXVlbmNlIjozLCJjaGFubmVsX2lkIjoibGV2ZWwtYSIsInJhd192YWx1ZSI6NC4wLCJyYXdfdW5pdCI6IlYiLCJkZXZpY2VfdGltZSI6MTIuMCwicmVjZWl2ZWRfYXQiOiIyMDI2LTA5LTIyVDAwOjAwOjAzWiIsImNsb2NrX2Jhc2lzIjoiZGV2aWNlLWEiLCJjbG9ja19tYXBwaW5nX3JlZiI6bnVsbCwiY2FsaWJyYXRpb25fcmVmIjpudWxsLCJjcm9zc2Nvdl9wb2xpY3kiOiJ1bmtub3duIn0KXQo="
+    },
+    {
+      "requested_at": "2026-09-22T00:00:30Z",
+      "bytes_b64": "WwogIHsic2VxdWVuY2UiOjEsImNoYW5uZWxfaWQiOiJsZXZlbC1hIiwicmF3X3ZhbHVlIjoyLjAsInJhd191bml0IjoiViIsImRldmljZV90aW1lIjoxMC4wLCJyZWNlaXZlZF9hdCI6IjIwMjYtMDktMjJUMDA6MDA6MDFaIiwiY2xvY2tfYmFzaXMiOiJkZXZpY2UtYSIsImNsb2NrX21hcHBpbmdfcmVmIjpudWxsLCJjYWxpYnJhdGlvbl9yZWYiOm51bGwsImNyb3NzY292X3BvbGljeSI6InVua25vd24ifSwKICB7InNlcXVlbmNlIjoyLCJjaGFubmVsX2lkIjoibGV2ZWwtYiIsInJhd192YWx1ZSI6bnVsbCwidmFsdWVfYWJzZW5jZSI6Im5vdF9yZXBvcnRlZCIsInJhd191bml0IjoiViIsImRldmljZV90aW1lIjo5LjAsInJlY2VpdmVkX2F0IjoiMjAyNi0wOS0yMlQwMDowMDowMloiLCJjbG9ja19iYXNpcyI6ImRldmljZS1iIiwiY2xvY2tfbWFwcGluZ19yZWYiOm51bGwsImNhbGlicmF0aW9uX3JlZiI6bnVsbCwiY3Jvc3Njb3ZfcG9saWN5IjoidW5rbm93biJ9CiwKICB7InNlcXVlbmNlIjozLCJjaGFubmVsX2lkIjoibGV2ZWwtYSIsInJhd192YWx1ZSI6NC4wLCJyYXdfdW5pdCI6IlYiLCJkZXZpY2VfdGltZSI6MTIuMCwicmVjZWl2ZWRfYXQiOiIyMDI2LTA5LTIyVDAwOjAwOjAzWiIsImNsb2NrX2Jhc2lzIjoiZGV2aWNlLWEiLCJjbG9ja19tYXBwaW5nX3JlZiI6bnVsbCwiY2FsaWJyYXRpb25fcmVmIjpudWxsLCJjcm9zc2Nvdl9wb2xpY3kiOiJ1bmtub3duIn0KXQo="
+    }
+  ],
+  "configuration": {
+    "mode": "incremental",
+    "source_format": "json_records_with_declared_sequence",
+    "replay_scope": "isolated_offline_reacquisition",
+    "event_time_order": "not_inferred",
+    "sensor_fusion": "not_performed"
+  }
+}

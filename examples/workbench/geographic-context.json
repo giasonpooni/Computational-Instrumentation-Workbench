@@ -1,0 +1,62 @@
+{
+  "schema": "ciw.geographic-context.v1",
+  "coordinate_frame": {
+    "id": "OGC:CRS84",
+    "axes": ["longitude", "latitude"],
+    "unit": "deg",
+    "authority_ref": "synthetic:declared-crs84-fixture"
+  },
+  "state_policy": "declared_constant_over_inclusive_time_range",
+  "snapshot": {
+    "nodes": [
+      {
+        "id": "fixture:plant-a",
+        "kind": "chemical_plant",
+        "name": "Synthetic polymer pilot plant",
+        "geometry": {"type": "Point", "coordinates": [-79.7, 43.65]},
+        "status": "active",
+        "importance": 0.85,
+        "country": "CA",
+        "provenance": {
+          "source": "synthetic:ciw-geographic-fixture",
+          "knownAt": "2026-09-22T09:00:00Z",
+          "validFrom": "2026-09-22T00:00:00Z",
+          "validTo": "2026-09-24T00:00:00Z",
+          "evidence": ["synthetic:declared-crs84-fixture"]
+        }
+      },
+      {
+        "id": "fixture:inspection-lab",
+        "kind": "processing_facility",
+        "name": "Synthetic inspection laboratory",
+        "geometry": {"type": "Point", "coordinates": [-73.57, 45.5]},
+        "status": "planned",
+        "importance": 0.7,
+        "country": "CA",
+        "provenance": {
+          "source": "synthetic:ciw-geographic-fixture",
+          "knownAt": "2026-09-22T09:00:00Z",
+          "validFrom": "2026-09-22T00:00:00Z",
+          "validTo": "2026-09-24T00:00:00Z",
+          "evidence": ["synthetic:declared-crs84-fixture"]
+        }
+      }
+    ],
+    "routes": [], "flows": [], "commodities": [], "events": [],
+    "constraints": [], "assertions": [], "observations": [], "cityLights": [],
+    "timeRange": {
+      "start": "2026-09-22T00:00:00Z",
+      "end": "2026-09-23T00:00:00Z",
+      "now": "2026-09-22T12:00:00Z"
+    },
+    "meta": {
+      "label": "CIW synthetic manufacturing geography",
+      "disclaimer": "SYNTHETIC DECLARATION: invented facility points and constant states; no real plant, production or sensor-fusion claims.",
+      "generatedAt": "2026-09-22T12:00:00Z"
+    }
+  },
+  "states": [
+    {"entityId": "fixture:plant-a", "t": "2026-09-22T12:00:00Z", "utilization": 0.4, "congestion": 0.2, "status": "active", "activeEventIds": []},
+    {"entityId": "fixture:inspection-lab", "t": "2026-09-22T12:00:00Z", "utilization": 0.1, "congestion": 0.05, "status": "planned", "activeEventIds": []}
+  ]
+}

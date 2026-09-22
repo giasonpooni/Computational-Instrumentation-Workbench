@@ -207,6 +207,9 @@ class WorkbenchIntegrationTests(unittest.IsolatedAsyncioTestCase):
     async def test_committed_selection_reaches_peers_if_sender_disconnects_before_reply(self):
         class DisconnectingSender:
             def __init__(self):
+                from websockets.datastructures import Headers
+                from websockets.http11 import Request
+                self.request = Request(path="/", headers=Headers())
                 self.sent = 0
 
             async def send(self, message):

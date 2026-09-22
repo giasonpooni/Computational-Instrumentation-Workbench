@@ -307,6 +307,11 @@ class Session:
         if kind == "source.list":
             _keys(payload, set())
             return {"sources": self.workbench.list_sources()}
+        if kind == "spatial.list":
+            _keys(payload, set())
+            return {"sources": self.workbench.spatial_sources()}
+        if kind == "spatial.inspect":
+            return self.workbench.inspect_spatial(payload)
         if kind == "source.get":
             _keys(payload, {"source_id"}, {"source_id"})
             return self.workbench.get_source(payload["source_id"])

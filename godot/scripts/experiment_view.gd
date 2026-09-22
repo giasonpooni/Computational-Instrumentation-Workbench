@@ -201,7 +201,7 @@ func apply_view(value: Dictionary) -> void:
 	var context: Dictionary = view.get("object_context", {}) if view.get("fusion_context") == null else view.fusion_context
 	if view.get("fusion_context") == null:
 		_summary.text = "%s\n%s · %s · fusion: not performed\n%s" % [view.label,
-			context.object_kind, context.get("next_step", "native integer execution; dimensionless values"), view.bundle_id]
+			context.object_kind, context.get("next_step", context.get("summary", "retained native result")), view.bundle_id]
 	else:
 		_summary.text = "%s\n%s · observability: %s · reconciliation: %s · detection: %s · declared isolability: %s\n%s" % [view.label,
 			context.state_kind, context.get("observability", {}).get("status", "unresolved"),

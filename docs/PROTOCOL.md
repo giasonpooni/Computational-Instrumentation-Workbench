@@ -19,7 +19,15 @@ Request: `{"protocol_version":1,"request_id":"unique-client-id","type":"session.
 Success: `{"protocol_version":1,"request_id":"...","type":"response","payload":{...}}`.
 Failure: same envelope with `type: "error"` and `payload: {"code":"...","message":"..."}`.
 Broadcast after selection mutation: `{"protocol_version":1,"request_id":null,"type":"selection.changed","payload":SELECTION}`.
-The service sends a `session.snapshot` event on connection with the same payload as `session.get`. Responses and broadcasts can interleave; correlate by request_id. Clients may reconnect and request a fresh snapshot.
+The native endpoint sends a `session.snapshot` event on connection with the same payload as `session.get`. Responses and broadcasts can interleave; correlate by request_id. Clients may reconnect and request a fresh snapshot.
+
+The additive `/spatial` endpoint sends `spatial.ready` with session identity and
+read-only capabilities. It accepts only `spatial.list` (`{}`) and
+`spatial.inspect` (`{source_id}`), returning geographic source descriptors and
+a `ciw.spatial-view.v1` packet respectively. Its only broadcast is
+`workbench.changed`. Browser origins require exact host configuration via
+`--spatial-view-origin` and are rejected on other paths. No-Origin access to
+`/spatial` remains read-only. See [module contracts](INTEGRATED_MODULES.md).
 
 ## Commands
 
@@ -66,7 +74,7 @@ The saved JSON contains `workspace_version: 1`, the complete scientific `run`, `
 
 The demo evidence ID is SHA256 over canonical JSON of instrument, metadata, timestamps and channels. The complete recording, including render data, has a separate content-derived filename. Replay checks both bindings and validates result semantics before writing. These hashes detect inconsistent content; they do not establish source authenticity or scientific verification.
 
-Native local connections have no Origin header. The launcher binds `127.0.0.1` by default and rejects browser-origin connections. The container explicitly binds `0.0.0.0` inside its network namespace, with Compose publishing only on the host's `127.0.0.1`. Remote execution/authentication are outside this prototype. Cursor requests are bounded by the first and last retained sample timestamp; interval end may equal recording duration. Integer-valued revisions are compared numerically; Python envelopes reject boolean revisions and protocol versions.
+Native local connections have no Origin header. The launcher binds `127.0.0.1` by default. Browser origins require explicit permission on the read-only spatial endpoint. The container explicitly binds `0.0.0.0` inside its network namespace, with Compose publishing only on the host's `127.0.0.1`. Remote execution/authentication are outside this prototype. Cursor requests are bounded by the first and last retained sample timestamp; interval end may equal recording duration. Integer-valued revisions are compared numerically; Python envelopes reject boolean revisions and protocol versions.
 
 The service drains connections and saves its workspace on graceful shutdown. Windows process termination is immediate; the native controller sends `workspace.save` and verifies the response before stopping its owned process. Forced termination and power loss are not covered by an autosave guarantee.
 

@@ -19,6 +19,8 @@ measurements, state/covariance, residuals, native dependencies and evidence shar
 one selected occurrence and update when the session commits new results.
 SRA [typed schematics and SCR native numerical execution](docs/DECLARED_WORKLOADS.md)
 now join that same catalog, desktop and replay path as explicitly typed objects.
+[Native companion calls, BIM quantities, acquisition and geographic views](docs/INTEGRATED_MODULES.md)
+connect SRA/JSPT/PLSR, CSE, PPDA/SCOUT and GSV to the same operating session.
 
 The executable prototype includes a synthetic damped oscillator, numerical
 statistics and periodogram analysis, a shared local session, saved-workspace
@@ -65,7 +67,7 @@ explicit replay creates new execution/result identities.
 
 The built-in examples are synthetic. Successful computation, content integrity
 and matching replay digests do not establish physical validity or calibration
-traceability. The Workbench tab presents six shared native workflows;
+traceability. The Workbench tab presents nine shared native workflows;
 other external integrations expose terminal and JSON records as described below.
 
 ## Integrated tools

@@ -1,0 +1,26 @@
+name: Shared native companions, BIM, acquisition and geographic views
+
+on:
+  push:
+  pull_request:
+
+permissions:
+  contents: read
+
+jobs:
+  integrated-modules:
+    runs-on: ubuntu-latest
+    timeout-minutes: 25
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-python@v5
+        with:
+          python-version: '3.12'
+      - run: python -m pip install 'setuptools>=77' wheel
+      - name: Exercise installed workbench with exact native providers
+        run: python scripts/check_integrated_modules.py --output-dir results/integrated-modules
+      - uses: actions/upload-artifact@v4
+        if: success()
+        with:
+          name: integrated-module-native-replay
+          path: results/integrated-modules

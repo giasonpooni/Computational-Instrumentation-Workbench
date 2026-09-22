@@ -15,7 +15,8 @@ from threading import RLock
 
 from .adapters.protocol import AdapterRefusal
 from .adapters.subprocess import _json
-DECLARED_KINDS = frozenset({"schematic-assessment", "numerical-heat"})
+DECLARED_KINDS = frozenset({"schematic-assessment", "numerical-heat", "schematic-companions", "bim-quantity", "acquired-dataset"})
+UPSTREAM_KINDS = {"identified-design": "calibrated-observable", "schematic-companions": "schematic-assessment"}
 
 SCHEMA = "ciw.retained-workbench.v1"
 SOURCE_SCHEMA = "ciw.workbench-source.v1"
@@ -26,6 +27,9 @@ OPERATIONS = {
     "calibrated-window": "ciw.calibrated-window.v1",
     "schematic-assessment": "ciw.schematic-assessment.v1",
     "numerical-heat": "ciw.numerical-heat.v1",
+    "schematic-companions": "ciw.schematic-companions.v1",
+    "bim-quantity": "ciw.bim-quantity.v1",
+    "acquired-dataset": "ciw.acquired-dataset.v1",
 }
 WORKFLOW_OPERATION_IDS = frozenset(OPERATIONS.values())
 from .candidate_evidence import OPERATIONS as CANDIDATE_OPERATIONS
@@ -38,9 +42,21 @@ _OVERHEAD = 4096
 
 def _workflow(kind):
     # Lazy imports avoid the existing workflows' Session persistence dependency.
-    if kind in DECLARED_KINDS:
+    if kind in {"schematic-assessment", "numerical-heat"}:
         from .declared_workload import DeclaredWorkflow
         return DeclaredWorkflow(kind)
+    if kind == "schematic-companions":
+        from .schematic_companions import SchematicCompanionWorkflow
+        return SchematicCompanionWorkflow()
+    if kind == "bim-quantity":
+        from .bim_quantity import workflow
+        return workflow
+    if kind == "acquired-dataset":
+        from .acquired_dataset import workflow
+        return workflow
+    if kind == "geographic-context":
+        from . import spatial_view
+        return spatial_view
     if kind == "calibrated-observable":
         from . import calibrated_observable
         return calibrated_observable
@@ -94,7 +110,7 @@ def _source(payload):
         raise ValueError("Source bytes must use canonical base64") from exc
     if len(raw) > workflow.MAX_BYTES or base64.b64encode(raw).decode("ascii") != encoded:
         raise ValueError("Source bytes must use bounded canonical base64")
-    if kind in {"calibrated-observable", "telemetry", "calibrated-window"} | DECLARED_KINDS:
+    if kind != "identified-design":
         declaration = workflow._source(raw)
     else:
         # The full design validator needs an explicitly selected retained prior.
@@ -151,7 +167,7 @@ def _claims(record):
             claim(evidence["artifact_ref"], "evidence", evidence["bytes_b64"])
         for step in value["steps"]:
             claim(step["operation_id"], "operation", step["operation_id"])
-            declared = step["runtime_ref"] in {"sra", "scr"}
+            declared = value["schema"] in {"ciw." + kind + "-session.v1" for kind in DECLARED_KINDS}
             claim(step["execution_id"], "execution", {"step": step} if declared else {"bundle_id": owner, "step": step})
             if value["schema"] == "ciw.telemetry-session.v1" and step["runtime_ref"] == "ppda":
                 # A replay reprojects the same acquired evidence. Its batch ID
@@ -184,6 +200,8 @@ def _source_claims(source):
 def _validate_record(record, sources):
     _keys(record, {"kind", "source_id", "upstream_bundle_id", "bundle_id", "native"})
     _text(record["kind"], "Bundle kind")
+    if record["kind"] not in OPERATIONS:
+        raise ValueError("Source-only contexts cannot declare an execution bundle")
     _text(record["source_id"], "Source identity")
     _text(record["bundle_id"], "Bundle identity")
     if record["upstream_bundle_id"] is not None:
@@ -201,11 +219,11 @@ def _validate_record(record, sources):
         raise ValueError("Bundle differs from its exact retained source bytes")
     if "verification" not in native:
         raise ValueError("A retained workflow must preserve its native verification artifact")
-    if record["kind"] != "identified-design":
+    if record["kind"] not in UPSTREAM_KINDS:
         if record["upstream_bundle_id"] is not None:
             raise ValueError("This workflow has no implicit upstream bundle")
     elif record["upstream_bundle_id"] is None:
-        raise ValueError("Identified design needs an explicitly selected upstream bundle")
+        raise ValueError("This workflow needs an explicitly selected upstream bundle")
     _validate_receipts(native, record["kind"])
     return _claims(record)
 
@@ -231,6 +249,13 @@ def _validate_receipts(native, kind):
 
 def _validate_links(record, bundles):
     native = record["native"]
+    if record["kind"] == "schematic-companions":
+        from .schematic_companions import native_occurrences
+        occurrences = native_occurrences(native)
+        for other in bundles.values():
+            if (other["bundle_id"] != record["bundle_id"] and other["kind"] == "schematic-companions"
+                    and not occurrences.isdisjoint(native_occurrences(other["native"]))):
+                raise ValueError("Companion bundles must retain fresh native execution occurrences")
     if record["kind"] in DECLARED_KINDS:
         occurrences = {native["steps"][0]["execution_id"], native["verification"]["reproduction"]["execution_id"]}
         for other in bundles.values():
@@ -244,8 +269,12 @@ def _validate_links(record, bundles):
     upstream_id = record["upstream_bundle_id"]
     if upstream_id is not None:
         upstream = bundles.get(upstream_id)
-        if (upstream is None or upstream["kind"] != "calibrated-observable" or
-                _canonical(native["upstream"]) != _canonical(upstream["native"])):
+        if upstream is None or upstream["kind"] != UPSTREAM_KINDS.get(record["kind"]):
+            raise ValueError("Upstream must name a retained bundle of the declared kind")
+        if record["kind"] == "schematic-companions":
+            from .schematic_companions import validate_upstream
+            validate_upstream(native, upstream["native"])
+        elif _canonical(native["upstream"]) != _canonical(upstream["native"]):
             raise ValueError("Design upstream must exactly match a retained calibrated bundle")
     for receipt in native.get("replay_receipts", []):
         original = bundles.get(receipt["source_bundle_digest"])
@@ -394,6 +423,8 @@ class Workbench:
 
     def bind_workflow(self, kind, repositories):
         """Bind host-selected repositories; no saved/client value calls this."""
+        if kind not in OPERATIONS:
+            raise ValueError("This source kind has no executable operation")
         workflow = _workflow(kind)
         required = workflow.ROLES - {"cbsr"} if kind == "telemetry" else workflow.ROLES
         if not isinstance(repositories, dict) or not required <= set(repositories) <= workflow.ROLES:
@@ -417,9 +448,9 @@ class Workbench:
 
     def describe_operations(self):
         with self._lock:
-            return [{"operation_id": operation, "role": {"identified-design": "decision", "schematic-assessment": "schematic_assessment", "numerical-heat": "numerical_execution"}.get(kind, "state_estimator"),
+            return [{"operation_id": operation, "role": {"identified-design": "decision", "schematic-assessment": "schematic_assessment", "numerical-heat": "numerical_execution", "schematic-companions": "local_model_analysis", "bim-quantity": "construction_quantity", "acquired-dataset": "evidence_acquisition"}.get(kind, "state_estimator"),
                      "source_kind": kind, "available": kind in self._bindings,
-                     "requires_upstream_bundle": kind == "identified-design"}
+                     "requires_upstream_bundle": kind in UPSTREAM_KINDS}
                     for kind, operation in OPERATIONS.items()] + [
                         {"operation_id": operation, "role": "candidate_evidence", "requires_bundle": "explicit_retained_native_bundle",
                          "available": any(action == "inspect" or adapter.capture_available for adapter in self._candidate_adapters.values()),
@@ -442,12 +473,12 @@ class Workbench:
                 "result_id": step["result_id"], "execution_id": step["execution_id"],
                 "view": "retained_native_result", "state_admission": "not_performed"}
                 for record in self._bundles.values() for step in record["native"]["steps"]
-                if step["runtime_ref"] in {"ppda", "tbrt", "mcur", "stfe", "gsie", "cbsr", "fdir", "oit", "sra", "scr"}])
+                if step["runtime_ref"] in {"ppda", "tbrt", "mcur", "stfe", "gsie", "cbsr", "fdir", "oit", "sra", "scr", "cse"}])
 
     def inspect_instrument(self, payload):
         _keys(payload, {"bundle_id", "instrument"})
         _text(payload["bundle_id"], "Bundle identity")
-        if payload["instrument"] not in ("ppda", "tbrt", "mcur", "stfe", "gsie", "cbsr", "fdir", "oit", "sra", "scr"):
+        if payload["instrument"] not in ("ppda", "tbrt", "mcur", "stfe", "gsie", "cbsr", "fdir", "oit", "sra", "scr", "cse"):
             raise ValueError("Choose a retained instrument result")
         with self._lock:
             native = self.get_bundle(payload["bundle_id"])
@@ -654,18 +685,18 @@ class Workbench:
         elif "configuration" in payload:
             raise ValueError("Only telemetry accepts a separate operation configuration")
         upstream_id = payload.get("upstream_bundle_id")
-        if kind == "identified-design":
+        if kind in UPSTREAM_KINDS:
             _text(upstream_id, "Explicit upstream bundle identity")
         elif upstream_id is not None:
-            raise ValueError("Calibrated workflow does not accept an upstream bundle")
+            raise ValueError("This workflow does not accept an upstream bundle")
         with self._lock:
             source = self.get_source(payload["source_id"])
             if source["kind"] != kind:
                 raise ValueError("Operation source kind mismatch")
             upstream = None
             if upstream_id is not None:
-                if upstream_id not in self._bundles or self._bundles[upstream_id]["kind"] != "calibrated-observable":
-                    raise ValueError("Select a calibrated bundle already retained in this workbench")
+                if upstream_id not in self._bundles or self._bundles[upstream_id]["kind"] != UPSTREAM_KINDS[kind]:
+                    raise ValueError("Select a retained upstream bundle of the declared kind")
                 upstream = deepcopy(self._bundles[upstream_id]["native"])
             bindings, reserved = self._reserve(kind)
         try:
@@ -714,6 +745,21 @@ class Workbench:
     def fusion_contexts(self):
         with self._lock:
             return deepcopy([_context(record, self._sources) for record in self._bundles.values() if record["kind"] not in DECLARED_KINDS])
+
+    def spatial_sources(self):
+        with self._lock:
+            return deepcopy([_descriptor(source) for source in self._sources.values()
+                             if source["kind"] == "geographic-context"])
+
+    def inspect_spatial(self, payload):
+        from .spatial_view import project
+        _keys(payload, {"source_id"})
+        _text(payload["source_id"], "Source identity")
+        with self._lock:
+            source = self.get_source(payload["source_id"])
+            if source["kind"] != "geographic-context":
+                raise ValueError("Select an explicitly declared geographic context")
+            return project(source)
 
     def inspect_experiment(self, payload):
         from .experiment_view import project

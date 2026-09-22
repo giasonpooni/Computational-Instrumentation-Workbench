@@ -1,0 +1,144 @@
+{
+  "configuration": {
+    "certificate_authentication": "not_performed",
+    "companion_execution": "selected_function_only",
+    "coordinate_metric": "declared_SI_scalar",
+    "rank_absolute_tolerance": 1e-10,
+    "covariance": "declared_input_only_first_order",
+    "cross_covariance": "not_applicable_single_declared_input",
+    "equilibrium_status": "not_established",
+    "lyapunov_probe": "native_x_star_argument_in_linear_surrogate",
+    "model_parameter_uncertainty": "declared_exact",
+    "model_semantics": "continuous_scalar_state_derivative",
+    "observability": "not_evaluated",
+    "stability_scope": "continuous_linear_surrogate_e_dot_equals_J_e"
+  },
+  "experiment_id": "selected-drag-companions",
+  "function_id": "f",
+  "schema": "ciw.schematic-companions-source.v1",
+  "schematic": {
+    "edges": [
+      {
+        "attrs": {},
+        "dst": "f",
+        "kind": "input",
+        "src": "u"
+      },
+      {
+        "attrs": {},
+        "dst": "f",
+        "kind": "input",
+        "src": "x"
+      },
+      {
+        "attrs": {},
+        "dst": "xdot",
+        "kind": "output",
+        "src": "f"
+      },
+      {
+        "attrs": {},
+        "dst": "y",
+        "kind": "output",
+        "src": "f"
+      },
+      {
+        "attrs": {},
+        "dst": "f",
+        "kind": "actuates",
+        "src": "u"
+      },
+      {
+        "attrs": {},
+        "dst": "y",
+        "kind": "measures",
+        "src": "ySensor"
+      },
+      {
+        "attrs": {},
+        "dst": "f",
+        "kind": "observes",
+        "src": "observer"
+      },
+      {
+        "attrs": {},
+        "dst": "ySensor",
+        "kind": "senses",
+        "src": "observer"
+      }
+    ],
+    "meta": {
+      "id": "quadratic_drag.v0",
+      "schema": "NsObservabilitySchematic@0.1"
+    },
+    "nodes": [
+      {
+        "attrs": {
+          "role": "input",
+          "units": "N"
+        },
+        "id": "u",
+        "kind": "variable"
+      },
+      {
+        "attrs": {
+          "role": "state",
+          "units": "m/s"
+        },
+        "id": "x",
+        "kind": "variable"
+      },
+      {
+        "attrs": {
+          "role": "state_dot",
+          "units": "m/s^2"
+        },
+        "id": "xdot",
+        "kind": "variable"
+      },
+      {
+        "attrs": {
+          "role": "output",
+          "units": "m/s"
+        },
+        "id": "y",
+        "kind": "variable"
+      },
+      {
+        "attrs": {
+          "c": 0.5,
+          "chart": "identity",
+          "class": "nonlinear",
+          "law": "xdot = u - c * x * abs(x); y = x",
+          "model_ref": "jspt.reference.quadratic_drag",
+          "sigma_x": [
+            [
+              0.04
+            ]
+          ],
+          "units": "SI",
+          "x_star": [
+            1.0
+          ]
+        },
+        "id": "f",
+        "kind": "function"
+      },
+      {
+        "attrs": {
+          "quality": "undeclared"
+        },
+        "id": "ySensor",
+        "kind": "measurement"
+      },
+      {
+        "attrs": {
+          "status": "UNRESOLVED"
+        },
+        "id": "observer",
+        "kind": "observer"
+      }
+    ],
+    "schema": "NsObservabilitySchematic@0.1"
+  }
+}

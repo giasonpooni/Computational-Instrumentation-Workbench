@@ -233,6 +233,10 @@ def parser() -> argparse.ArgumentParser:
     server.add_argument("--calibrated-window-stack-root", type=Path,
                         help="Bind tbrt/mcur/stfe/gsie/set for shared calibrated window estimation")
     server.add_argument("--schematic-repo", type=Path, help="Bind pinned SRA declared schematic assessment")
+    server.add_argument("--schematic-companions-root", type=Path, help="Bind pinned sra/jspt/plsr directories for selected schematic companion calls")
+    server.add_argument("--construction-repo", type=Path, help="Bind pinned CSE quantity conditioning and ledger replay")
+    server.add_argument("--acquisition-repo", type=Path, help="Bind pinned PPDA and its scout gitlink for retained dataset acquisition")
+    server.add_argument("--spatial-view-origin", action="append", default=[], help="Exact browser http(s) origin allowed on the read-only /spatial endpoint; repeat to allow more")
     server.add_argument("--computation-repo", type=Path, help="Bind pinned SCR numerical execution")
     server.add_argument("--computation-engine", type=Path, help="Host-built SCR execution-cli (required with --computation-repo)")
     server.add_argument("--python", dest="python_executable", type=Path,
@@ -413,6 +417,14 @@ def main(argv: list[str] | None = None) -> int:
                 session.workbench.bind_workflow("calibrated-window", {role: args.calibrated_window_stack_root / role for role in WINDOW_ROLES})
             if args.schematic_repo is not None:
                 session.workbench.bind_workflow("schematic-assessment", {"sra": args.schematic_repo})
+            if args.schematic_companions_root is not None:
+                root = args.schematic_companions_root
+                session.workbench.bind_workflow("schematic-assessment", {"sra": root / "sra"})
+                session.workbench.bind_workflow("schematic-companions", {role: root / role for role in ("sra", "jspt", "plsr")})
+            if args.construction_repo is not None:
+                session.workbench.bind_workflow("bim-quantity", {"cse": args.construction_repo})
+            if args.acquisition_repo is not None:
+                session.workbench.bind_workflow("acquired-dataset", {"ppda": args.acquisition_repo})
             if (args.computation_repo is None) != (args.computation_engine is None):
                 raise ValueError("--computation-repo and --computation-engine must be supplied together")
             if args.computation_repo is not None:
@@ -422,7 +434,7 @@ def main(argv: list[str] | None = None) -> int:
                 if "ppda" not in configuration.get("runtime", {}).get("repositories", {}):
                     raise ValueError("--esm-telemetry-binding must declare the telemetry provider set")
                 session.workbench.bind_candidate_adapter(configuration)
-            asyncio.run(run_server(session, args.port, args.bind))
+            asyncio.run(run_server(session, args.port, args.bind, spatial_view_origins=args.spatial_view_origin))
         elif args.command == "health":
             print_json(asyncio.run(health_remote(args.url)))
         elif args.command == "send":

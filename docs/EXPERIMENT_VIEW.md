@@ -49,11 +49,16 @@ local presentation state and does not alter the scientific or oscillator selecti
 | Identified observation design | GSIE conditional prediction; model, candidate assessment and budget decisions remain available in native results and context |
 | SRA schematic assessment | Declared node/edge tree; native eligibility, stale certificates and retrieval in object context |
 | SCR integer diffusion | Initial and final integer fields, unit `1`, null covariance, native specification and execution commitments |
+| SRA/JSPT/PLSR companions | Selected graph, native call events, before/after eligibility and local model scope |
+| CSE BIM quantity | Full prior/posterior quantities and covariance, held/refused status, invariants and replayed ledger |
+| PPDA acquired dataset | Native evidence counts, checkpoint transitions, acquisition outcomes and durable-pool identity |
 
 The [declared workloads guide](DECLARED_WORKLOADS.md) provides SRA/SCR startup
 bindings and examples. These objects have `fusion_context: null`, a typed
 `object_context`, and `raw_declaration` rather than fabricated observations.
 They use the same live invalidation and occurrence selection controls.
+See [new module bindings](INTEGRATED_MODULES.md). Source-only geographic context
+is inspected through GSV's read-only `/spatial` endpoint in the same session.
 
 Every panel carries source/evidence and, where applicable, result/execution IDs.
 The dependency tree uses native `input_refs`, with external references explicitly
