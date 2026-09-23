@@ -12,11 +12,13 @@ from importlib import import_module, resources
 import json
 from typing import Callable
 
-# Section modules are imported in queue order. A missing module leaves its
-# tasks deferred rather than failing the whole queue.
+# Section modules are imported in queue order; a section may span several
+# modules sharing its prefix. A missing or failing module leaves its tasks
+# deferred with the recorded reason rather than failing the whole queue.
 SECTION_MODULES = (
-    "geodesic_jacobi", "flat_torus_topology", "surfaces_discrete", "observation", "sensor_fusion",
-    "exchange_provenance", "lyapunov", "energy_gpu", "manufacturing", "implementation_targets",
+    "geodesic_jacobi", "geodesic_jacobi_limits", "flat_torus_topology", "surfaces_discrete",
+    "surfaces_discrete_mesh", "observation", "sensor_fusion", "exchange_provenance",
+    "exchange_provenance_bundles", "lyapunov", "energy_gpu", "manufacturing", "implementation_targets",
     "research_portfolio",
 )
 
@@ -72,6 +74,8 @@ def load_implementations() -> tuple[dict, dict]:
                 errors[name] = "section module not implemented"
             else:
                 errors[name] = f"missing dependency: {exc.name}"
+        except Exception as exc:  # retained as the deferral reason
+            errors[name] = f"section module failed to import: {type(exc).__name__}: {exc}"
     queue_ids = {item["id"] for item in load_queue()["tasks"]}
     stray = set(_REGISTRY) - queue_ids
     if stray:

@@ -247,7 +247,9 @@ def run_queue(output_dir, task_ids=None, providers=None, junit_path=None) -> dic
         artifact_dir = output_dir / "artifacts" / item["id"]
         if artifact_dir.exists():
             shutil.rmtree(artifact_dir)
-        error = errors.get(section_modules[item["section"]].replace("-", "_"))
+        prefix = section_modules[item["section"]].replace("-", "_")
+        error = "; ".join(f"{name}: {message}" for name, message in sorted(errors.items())
+                          if name.startswith(prefix)) or None
         report = run_task(item, implementations.get(item["id"]), ctx, junit, error)
         (output_dir / "reports" / f"{item['id']}.json").write_text(dumps(report), encoding="utf-8")
         reports.append(report)
