@@ -29,4 +29,4 @@ def test_dashboard_is_deterministic_escaped_and_labels_everything(tmp_path, caps
     assert page.count("<script>") == 1 and "http" not in page.replace("http://www.w3.org/2000/svg", "")
     output = tmp_path / "out" / "index.html"
     assert cli.main(["lab", "dashboard", "--retained", str(tmp_path), "--output", str(output)]) == 0
-    assert json.loads(capsys.readouterr().out)["dashboard"] == str(output) and output.read_text() == page
+    assert json.loads(capsys.readouterr().out)["dashboard"] == str(output) and output.read_text(encoding="utf-8") == page

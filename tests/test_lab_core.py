@@ -113,7 +113,7 @@ def test_completed_task_cannot_hide_an_unestablished_computational_finding():
 def test_unimplemented_and_blocked_tasks_still_report(tmp_path):
     summary = runner.run_queue(tmp_path, task_ids=["T116"])
     assert summary["tasks"] == 1
-    saved = json.loads((tmp_path / "reports" / "T116.json").read_text())
+    saved = json.loads((tmp_path / "reports" / "T116.json").read_text(encoding="utf-8"))
     assert saved["state"] in ("deferred", "blocked", "completed", "partial")
     assert saved["physical_validation_status"]["status"] == "not_established"
     report.validate_report(saved)

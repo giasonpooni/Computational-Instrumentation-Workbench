@@ -97,7 +97,7 @@ def test_t092_unbound_replay_and_execution_are_refused(tmp_path):
     assert primary["evidence_status"] == "numerically_verified"
     assert primary["value"]["requests"] == primary["value"]["refused_as_expected"] == 13
     assert "operation_unavailable" in primary["value"]["codes"]
-    cases = json.loads((tmp_path / "artifacts" / "T092" / "refusals.json").read_text())
+    cases = json.loads((tmp_path / "artifacts" / "T092" / "refusals.json").read_text(encoding="utf-8"))
     assert cases["provider_paths_reached"] == [] and cases["reopen_attempts"] == []
     assert claim(report, "A content-consistent")["evidence_status"] == "not_established"
 
@@ -179,7 +179,7 @@ def test_t095_malformed_fixtures_are_refused_with_retained_text(tmp_path):
     primary = report["findings"][0]
     assert primary["evidence_status"] == "numerically_verified"
     assert primary["value"] == {"fixtures": 19, "refused": 19}
-    retained = json.loads((tmp_path / "artifacts" / "T095" / "malformed-refusals.json").read_text())
+    retained = json.loads((tmp_path / "artifacts" / "T095" / "malformed-refusals.json").read_text(encoding="utf-8"))
     assert retained["fixtures"]["duplicate-key.json"]["session_read_json"]["message"] == "Duplicate JSON key: schema"
     assert retained["fixtures"]["nan.json"]["exchange_inspect"]["message"] == "nonfinite JSON number: NaN"
     overflow = claim(report, "session.read_json accepts an overflowing number")
@@ -245,7 +245,7 @@ def test_t097_scr_numerical_heat_integration(tmp_path):
 def test_t098_provider_identities(tmp_path):
     blocked = run("T098", tmp_path / "none")
     assert blocked["state"] == "blocked" and blocked["findings"] == []
-    table = json.loads((tmp_path / "none" / "artifacts" / "T098" / "provider-identities.json").read_text())
+    table = json.loads((tmp_path / "none" / "artifacts" / "T098" / "provider-identities.json").read_text(encoding="utf-8"))
     assert {pin["revision"] for pin in table["ciw_pins"]["scr"]} == {"a59aba283b0304faeeb3e5d305087e7709e171ca"}
     if not os.environ.get("CIW_LAB_SCR_REPO"):
         pytest.skip("set CIW_LAB_SCR_REPO for provider identities")

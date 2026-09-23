@@ -49,7 +49,7 @@ def reports(tmp_path_factory):
         pytest.skip("PLSR provider interpreter not configured")
     directory = tmp_path_factory.mktemp("lyapunov")
     run_queue(directory, task_ids=PROVIDER_TASKS, providers={PLSR_ROLE: PLSR_PYTHON})
-    return {task_id: validate_report(json.loads((directory / "reports" / f"{task_id}.json").read_text()))
+    return {task_id: validate_report(json.loads((directory / "reports" / f"{task_id}.json").read_text(encoding="utf-8")))
             for task_id in PROVIDER_TASKS}
 
 
@@ -209,7 +209,7 @@ def test_t114_servo_pilot_spec(tmp_path):
     for domain in ("machine_safety", "actuator_authority", "production_acceptance", "industrial_readiness",
                    "physical", "calibration"):
         assert [f["evidence_status"] for f in report["findings"] if f["domain"] == domain] == ["not_established"]
-    spec = json.loads((tmp_path / "artifacts" / "T114" / "servo-pilot-spec.json").read_text())
+    spec = json.loads((tmp_path / "artifacts" / "T114" / "servo-pilot-spec.json").read_text(encoding="utf-8"))
     assert set(X.SERVO_SPEC_SECTIONS) <= set(spec)
     assert spec["authority_and_safety"]["actuator_authority"].startswith("none")
 

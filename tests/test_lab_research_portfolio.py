@@ -51,7 +51,7 @@ def test_textbook_and_contribution_ledger(tmp_path):
     report = _run("T156", tmp_path)
     labels = {f["claim"]: f["evidence_status"] for f in report["findings"]}
     assert labels["Contributions are novel relative to the literature"] == "not_established"
-    ledger = json.loads((tmp_path / "artifacts" / "T156" / "attribution-ledger.json").read_text())
+    ledger = json.loads((tmp_path / "artifacts" / "T156" / "attribution-ledger.json").read_text(encoding="utf-8"))
     assert len(ledger["textbook"]) >= 10 and ledger["contributions"]
 
 
@@ -59,12 +59,12 @@ def test_catalogue_tasks_aggregate_retained_reports(retained):
     catalogue = _run("T157", retained)
     assert catalogue["findings"][0]["value"] == 1
     assert catalogue["findings"][0]["evidence_status"] == "numerically_verified"
-    entries = json.loads((retained / "artifacts" / "T157" / "counterexamples.json").read_text())
+    entries = json.loads((retained / "artifacts" / "T157" / "counterexamples.json").read_text(encoding="utf-8"))
     assert entries[0]["statement"] == "separation grows with length" and entries[0]["task_id"] == "T010"
     budget = _run("T159", retained)
     assert budget["findings"][0]["value"] == 1
     unmeasured = _run("T167", retained)
-    document = json.loads((retained / "artifacts" / "T167" / "unmeasured.json").read_text())
+    document = json.loads((retained / "artifacts" / "T167" / "unmeasured.json").read_text(encoding="utf-8"))
     assert document["not_established_claims"][0]["task_id"] == "T116"
     assert document["blocked_or_deferred_tasks"][0]["state"] == "blocked"
     assert {f["evidence_status"] for f in unmeasured["findings"]} == {"numerically_verified", "not_established"}
@@ -72,7 +72,7 @@ def test_catalogue_tasks_aggregate_retained_reports(retained):
     ledger = _run("T166", retained)
     assert ledger["findings"][0]["value"] == 2
     release = _run("T165", retained)
-    record = json.loads((retained / "artifacts" / "T165" / "release-report.json").read_text())
+    record = json.loads((retained / "artifacts" / "T165" / "release-report.json").read_text(encoding="utf-8"))
     assert record["physical_validation"] == "not_established" and record["tasks"] == 2
     assert release["state"] == "completed"
     portfolio = _run("T163", retained)
@@ -87,7 +87,7 @@ def test_aggregates_block_without_prior_reports(tmp_path):
 def test_paper_drafts_trace_to_reports(retained):
     report = _run("T161", retained)
     assert report["state"] == "partial"
-    text = (retained / "artifacts" / "T161" / "geometry-methods-draft.md").read_text()
+    text = (retained / "artifacts" / "T161" / "geometry-methods-draft.md").read_text(encoding="utf-8")
     assert "Not peer reviewed" in text and "T010" in text
     labels = {f["claim"]: f["evidence_status"] for f in report["findings"]}
     assert labels["Draft has passed external peer review"] == "not_established"
@@ -133,7 +133,7 @@ def test_regression_coverage_is_checked(retained, monkeypatch):
     registry(Implementation("T010", None, regression_tests=(existing,)))
     report = _run("T168", retained)
     assert report["state"] == "completed"
-    rows = json.loads((retained / "artifacts" / "T168" / "regression-coverage.json").read_text())
+    rows = json.loads((retained / "artifacts" / "T168" / "regression-coverage.json").read_text(encoding="utf-8"))
     assert {row["task_id"] for row in rows} == {"T010", "T116"} and all(not row["missing"] for row in rows)
     registry(Implementation("T010", None, regression_tests=("tests/test_lab_core.py::test_does_not_exist",)))
     report = _run("T168", retained)

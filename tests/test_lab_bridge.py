@@ -25,7 +25,7 @@ def workspace(tmp_path_factory):
     session = Session(make_demo_run(), directory / "out")
     _request(session, "operation.execute", {"operation_id": "statistics.v1",
                                             "parameters": {"channel": "v", "interval_s": [1.0, 2.0]}})
-    synthetic = json.loads((ROOT / "examples" / "energy-accuracy" / "baseline.json").read_text())
+    synthetic = json.loads((ROOT / "examples" / "energy-accuracy" / "baseline.json").read_text(encoding="utf-8"))
     physical = dict(synthetic, origin="physical_measurement", run_id="energy-run-" + "2" * 32)
     physical.pop("log_digest")
     for log in (synthetic, energy_records.seal(physical)):
@@ -89,7 +89,7 @@ def test_reopen_recomputes_the_builtin_energy_analysis(workspace, monkeypatch):
 
 
 def test_tampered_workspace_is_refused_before_labelling(workspace, tmp_path):
-    saved = json.loads(workspace.read_text())
+    saved = json.loads(workspace.read_text(encoding="utf-8"))
     saved["run"]["channels"]["v"]["values"][0] += 1.0
     forged = tmp_path / "forged.json"
     forged.write_text(json.dumps(saved))

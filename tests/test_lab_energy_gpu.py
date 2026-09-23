@@ -101,7 +101,7 @@ def test_rapl_path_divides_counter_difference_by_trajectories(tmp_path, monkeypa
     assert energy["value"] == pytest.approx(9.0 / (3 * len(kernels.HEADINGS)))
     assert energy["evidence_status"] == "hardware_measured" and report["state"] == "completed"
     assert energy["basis"]["acquisition"]["calibration"].startswith("not_applied")
-    raw = json.loads((tmp_path / "artifacts" / "T115" / "rapl-raw.json").read_text())
+    raw = json.loads((tmp_path / "artifacts" / "T115" / "rapl-raw.json").read_text(encoding="utf-8"))
     assert raw["after_uj"][0] - raw["before_uj"][0] == 9_000_000
 
 

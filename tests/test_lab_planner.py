@@ -53,10 +53,10 @@ def test_next_without_retained_reports_lists_ready_tasks(fake_registry):
 
 def test_run_log_keeps_timing_out_of_reports(tmp_path):
     summary = runner.run_queue(tmp_path, ["T156"], budget_seconds=0.0)
-    log = json.loads((tmp_path / "run-log.json").read_text())
+    log = json.loads((tmp_path / "run-log.json").read_text(encoding="utf-8"))
     assert log["tasks"][0]["task_id"] == "T156" and log["tasks"][0]["seconds"] >= 0
     assert summary["over_budget"] and summary["slowest"][0]["task_id"] == "T156"
-    assert "seconds" not in (tmp_path / "reports" / "T156.json").read_text()
+    assert "seconds" not in (tmp_path / "reports" / "T156.json").read_text(encoding="utf-8")
 
 
 def test_reports_satisfy_the_structural_schema(tmp_path):

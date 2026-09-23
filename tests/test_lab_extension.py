@@ -42,7 +42,7 @@ def test_extension_tasks_join_the_queue_and_run(extension, tmp_path, capsys):
     assert cli.main(base + ["run", "T169", "T170", "--output-dir", str(out)]) == 0
     summary = json.loads(capsys.readouterr().out)
     assert summary["states"] == {"completed": 1, "partial": 0, "deferred": 1, "blocked": 0}
-    report = json.loads((out / "reports" / "T169.json").read_text())
+    report = json.loads((out / "reports" / "T169.json").read_text(encoding="utf-8"))
     assert report["section"] == "follow-ups" and report["evidence_status"]["primary"] == "numerically_verified"
     assert cli.main(base + ["queue", "--retained", str(out), "--section", "follow-ups"]) == 0
     lines = capsys.readouterr().out.splitlines()
@@ -69,7 +69,7 @@ def test_environment_selects_extensions_for_subprocesses(extension, monkeypatch)
     (lambda d: d["tasks"].reverse(), "must follow"),
 ])
 def test_malformed_extensions_are_refused(extension, mutate, message):
-    data = json.loads(extension.read_text())
+    data = json.loads(extension.read_text(encoding="utf-8"))
     mutate(data)
     extension.write_text(json.dumps(data))
     registry.configure([extension])
