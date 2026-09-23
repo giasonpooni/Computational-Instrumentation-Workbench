@@ -31,7 +31,9 @@ Values have unit `1`. For `[0,100,200,100,0]` and four steps, the final field is
 `[0,65,92,65,0]`. This is no assertion of physical temperature, calibration,
 uncertainty, a continuous PDE solution, or admission to a state estimator.
 The source's `proof_policy: required_before_result` is workbench policy; the
-guest checks its fixed descriptor and input, not an arbitrary policy document.
+guest executes the fixed registered algorithm over its input. Descriptor/ELF
+binding is checked through host registration and the reproducible build recipe;
+the guest does not read an arbitrary policy document.
 
 ## Runtime and build pins
 

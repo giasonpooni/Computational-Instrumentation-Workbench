@@ -12,7 +12,7 @@ from websockets.asyncio.client import connect
 from websockets.asyncio.server import serve
 
 from ciw.adapters.protocol import AdapterRefusal
-from ciw.cli import parser, request_remote
+from ciw.cli import main, parser, request_remote
 from ciw.instruments import make_demo_run
 from ciw.proved_heat import ProvedHeatWorkflow, TRUST_SCOPE, _verification
 from ciw.server import WorkbenchServer
@@ -48,6 +48,44 @@ def test_proof_operation_requires_explicit_host_binding(tmp_path):
          "parameters": {"source_id": source["source_id"]}}, error=True)
     assert call(session, "bundle.list")["bundles"] == []
     assert call(session, "fusion.list")["contexts"] == []
+
+
+@pytest.mark.parametrize("destination_state", ["new", "already_exists", "appears_during_verification"])
+def test_proof_report_publication_preserves_other_occurrences(tmp_path, monkeypatch, destination_state):
+    # A verifier double isolates report publication; it authenticates no proof.
+    from test_proved_heat import fake_bundle
+    bundle = fake_bundle()
+    retained = tmp_path / "retained.json"
+    retained.write_bytes(canonical(bundle))
+    destination = tmp_path / "reports" / "verification.json"
+    existing = b'{"verification_occurrence":"another-writer"}\n'
+    report = {"verification_occurrence": "publication-test-double"}
+    calls = []
+
+    if destination_state == "already_exists":
+        destination.parent.mkdir()
+        destination.write_bytes(existing)
+
+    def verify(self, value, bindings):
+        assert value == bundle
+        calls.append(bindings)
+        if destination_state == "appears_during_verification":
+            destination.parent.mkdir()
+            destination.write_bytes(existing)
+        return report
+
+    monkeypatch.setattr(ProvedHeatWorkflow, "verify_session", verify)
+    code = main(["proof", "verify", str(retained), "--computation-repo", "scr",
+                 "--computation-engine", "engine", "--sp1-prover", "prover",
+                 "--sp1-heat-guest", "guest", "--output", str(destination)])
+    if destination_state == "new":
+        assert code == 0
+        assert json.loads(destination.read_text(encoding="utf-8")) == report
+    else:
+        assert code == 2
+        assert destination.read_bytes() == existing
+    assert len(calls) == (0 if destination_state == "already_exists" else 1)
+    assert not list(destination.parent.glob(".ciw-proof-report-*"))
 
 
 def test_historical_proof_session_restore_and_replay_bindings(tmp_path, monkeypatch):

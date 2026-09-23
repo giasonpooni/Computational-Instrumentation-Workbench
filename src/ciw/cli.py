@@ -6,7 +6,9 @@ import argparse
 import asyncio
 import json
 import math
+import os
 import sys
+import tempfile
 import uuid
 from pathlib import Path
 
@@ -21,6 +23,16 @@ from .session import Session, _reject_constant, read_json, write_json
 
 def print_json(value) -> None:
     print(json.dumps(value, indent=2, allow_nan=False))
+
+
+def _write_new_proof_report(path: Path, report: dict) -> None:
+    """Publish a complete report without replacing a concurrent writer's file."""
+    path.parent.mkdir(parents=True, exist_ok=True)
+    with tempfile.TemporaryDirectory(prefix=".ciw-proof-report-", dir=path.parent) as directory:
+        staged = write_json(Path(directory) / "report.json", report)
+        # Same-filesystem hard-link creation is atomic and fails if the target
+        # exists. The staging link is removed on either success or refusal.
+        os.link(staged, path)
 
 
 def _print_matrix(name: str, matrix: list, order: list | None = None, unit: object = None) -> None:
@@ -508,7 +520,7 @@ def main(argv: list[str] | None = None) -> int:
             report = ProvedHeatWorkflow().verify_session(_json(_read(args.path, MAX_BYTES)), {
                 "scr": args.computation_repo, "engine": args.computation_engine,
                 "prover": args.sp1_prover, "guest": args.sp1_heat_guest})
-            write_json(args.output, report)
+            _write_new_proof_report(args.output, report)
             print_json({"verification_file": str(args.output), "verification": report})
         elif args.command == "exchange":
             from .exchange import inspect_exchange

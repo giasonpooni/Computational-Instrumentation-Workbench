@@ -102,6 +102,49 @@ jobs:
           stack="$RUNNER_TEMP/proved-heat-stack"
           cargo +1.94.0 build --release --locked --offline --manifest-path "$stack/scr/crates/Cargo.toml" --target-dir "$stack/native-target" -p execution-cli
           cargo +1.94.0 build --release --locked --manifest-path "$stack/scr/zk/Cargo.toml" --target-dir "$stack/proof-target" -p sp1-adapter --bin sp1-host
+      - name: Check build source bytes and provision clean SP1 reference
+        run: |
+          python -B - <<'PY'
+          import json, os, pathlib, subprocess, sys
+          stack = pathlib.Path(os.environ['RUNNER_TEMP']) / 'proved-heat-stack'
+          sys.path.insert(0, str(pathlib.Path('scripts').resolve()))
+          from check_proved_heat import SCR_REVISION, SCR_TREE, SP1_REVISION, SP1_TREE, source_identity
+          source_identity(stack / 'scr', SCR_REVISION, SCR_TREE)
+          build = stack / 'notationsystems/SP1-zero-knowledge-virtual-machine'
+          reference = stack / 'sp1-reference'
+          def git(path, *args):
+              return subprocess.run(['git', '--no-replace-objects', '-c', 'core.autocrlf=false',
+                                     '-C', str(path), *args], check=True, capture_output=True).stdout
+          if git(build, 'rev-parse', 'HEAD').decode().strip() != SP1_REVISION or git(build, 'rev-parse', 'HEAD^{tree}').decode().strip() != SP1_TREE:
+              raise SystemExit('SP1 build checkout no longer has the pinned commit and tree')
+          git(build, 'diff', '--exit-code', 'HEAD', '--')
+          # SP1's nested build may write generated files inside its source tree.
+          # Clone committed Git objects, never copy that working tree or clean it.
+          subprocess.run(['git', '-c', 'core.autocrlf=false', 'clone', '--no-checkout', '--no-hardlinks',
+                          str(build), str(reference)], check=True)
+          git(reference, 'checkout', '--detach', SP1_REVISION)
+          source_identity(reference, SP1_REVISION, SP1_TREE)
+          for entry in git(reference, 'ls-tree', '-r', '-z', 'HEAD').split(b'\0'):
+              if not entry:
+                  continue
+              metadata, raw_name = entry.split(b'\t', 1)
+              mode, kind, _ = metadata.decode('ascii').split()
+              if kind == 'commit' and mode == '160000':
+                  continue
+              name = os.fsdecode(raw_name)
+              actual, expected = build / name, reference / name
+              if actual.is_symlink() != expected.is_symlink():
+                  raise SystemExit('SP1 tracked file type changed during build: ' + name)
+              raw = os.fsencode(os.readlink(actual)) if actual.is_symlink() else actual.read_bytes()
+              pinned = os.fsencode(os.readlink(expected)) if expected.is_symlink() else expected.read_bytes()
+              if raw != pinned or (mode != '120000' and bool(actual.stat().st_mode & 0o111) != (mode == '100755')):
+                  raise SystemExit('SP1 tracked source changed during build: ' + name)
+          generated = [os.fsdecode(name) for name in git(build, 'ls-files', '--others', '-z').split(b'\0') if name]
+          report = {'sp1_revision': SP1_REVISION, 'sp1_tree': SP1_TREE,
+                    'tracked_build_source_bytes': 'unchanged', 'runtime_reference': 'separate_clean_checkout',
+                    'generated_build_files_excluded_from_reference': generated}
+          pathlib.Path('results/proved-heat/source-checks.json').write_text(json.dumps(report, indent=2) + '\n')
+          PY
       - name: Save completed pinned hosts before running proof tests
         if: steps.native-build-cache.outputs.cache-hit != 'true'
         uses: actions/cache/save@v4
@@ -119,7 +162,7 @@ jobs:
           stack="$RUNNER_TEMP/proved-heat-stack"
           python scripts/check_proved_heat.py \
             --scr-repo "$stack/scr" \
-            --sp1-repo "$stack/notationsystems/SP1-zero-knowledge-virtual-machine" \
+            --sp1-repo "$stack/sp1-reference" \
             --engine "$stack/native-target/release/execution-cli" \
             --prover "$stack/proof-target/release/sp1-host" \
             --guest "$stack/artifacts/sp1-heat.elf" \

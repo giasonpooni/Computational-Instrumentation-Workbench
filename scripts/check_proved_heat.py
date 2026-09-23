@@ -68,6 +68,21 @@ def check_tests(path):
     return len(cases)
 
 
+def retained_measurements(directory):
+    """Project recorded measurements without executing or estimating anything."""
+    result = {}
+    for name in ("original", "replay"):
+        bundle = json.loads((directory / (name + ".json")).read_bytes())
+        data = bundle["steps"][0]["result"]["data"]
+        timings = data["timings"]
+        result[name] = {
+            "proof_byte_count": data["proof"]["byte_count"],
+            **{key: timings[key] for key in ("native_seconds", "prove_and_verify_seconds", "reverify_seconds")},
+            "memory": timings["memory"],
+        }
+    return result
+
+
 def main(argv=None):
     parser = argparse.ArgumentParser(description=__doc__)
     parser.add_argument("--scr-repo", required=True, type=Path, help="Clean SCR checkout at the exact approved pin")
@@ -137,6 +152,7 @@ def main(argv=None):
         for role, path in bindings.items():
             if file_identity(path, executable=role != "guest")[1] != identities[role]:
                 raise AssertionError("Native artifact changed during the gate")
+        report["measurements"] = retained_measurements(destination)
         report.update(status="passed", execution="real_sp1_proof_fresh_replay_and_verification")
     except Exception as exc:
         report["error"] = f"{type(exc).__name__}: {exc}"
@@ -144,6 +160,8 @@ def main(argv=None):
     finally:
         (destination / "gate.json").write_text(json.dumps(report, indent=2) + "\n", encoding="utf-8")
     print("PASS: installed workbench, real SP1 proof, fresh replay, verification and tamper rejection")
+    for name, measurements in report["measurements"].items():
+        print(f"MEASUREMENTS {name}: " + json.dumps(measurements, sort_keys=True))
 
 
 if __name__ == "__main__":
