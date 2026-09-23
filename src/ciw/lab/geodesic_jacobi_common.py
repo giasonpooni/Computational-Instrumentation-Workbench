@@ -113,8 +113,14 @@ SPECIAL = {
                                     "theta = 0 parallel; K = 1/(r(R+r))"),
     "torus-inner-equator": PathSpec("torus-inner-equator", "torus", (0.0, math.pi), 0.0, 6.5,
                                     "theta = pi parallel; K = -1/(r(R-r))"),
+    "hyperbolic-long": PathSpec("hyperbolic-long", "hyperbolic-plane", (0.0, 1.0), 0.6, 3.0,
+                                "semicircle arc; K = -1"),
     "bump-radial": PathSpec("bump-radial", "gaussian-bump", (0.0, 0.0), 0.0, 3.0,
                             "radial geodesic from the summit: K > 0 first, then K < 0"),
+    "torus-outer-to-inner": PathSpec("torus-outer-to-inner", "torus", (0.0, math.pi / 6), 1.2, 3.0,
+                                     "starts where K > 0 and crosses K < 0 mid-path"),
+    "torus-inner-to-outer": PathSpec("torus-inner-to-outer", "torus", (0.0, 5 * math.pi / 6), -0.8, 3.0,
+                                     "starts where K < 0 and crosses K > 0 mid-path"),
 }
 
 
@@ -381,3 +387,81 @@ def mp_speed_squared(derived: dict, state, dps: int):
         e, f, g = sp.lambdify((u, v), [derived["metric"][0, 0], derived["metric"][0, 1], derived["metric"][1, 1]],
                               modules="mpmath")(state[0], state[1])
         return e * state[2] ** 2 + 2 * f * state[2] * state[3] + g * state[3] ** 2
+
+
+# Pinned constant-curvature Jacobi provider (optional) ---------------------
+CSG_REPOSITORY = "giasonpooni/Curved-Surface-Geodesic-Sensitivity-Runtime"
+CSG_IMPLEMENTATION = "Curved-Surface-Geodesic-Sensitivity-Runtime"
+CSG_ENTRY = "geodesic_testbed.jacobi.integrate_jacobi"
+
+# Runs in a separate interpreter so the provider never shares this process's imports.
+_CSG_BOOTSTRAP = r'''
+import json, sys
+sys.path.insert(0, sys.argv[1])
+import numpy
+from geodesic_testbed.jacobi import integrate_jacobi
+cases = json.loads(sys.stdin.read())
+traces = [integrate_jacobi(case["arclength"], case["gaussian_curvature"]).as_dict() for case in cases]
+print(json.dumps({"python": sys.version.split()[0], "numpy": numpy.__version__, "traces": traces},
+                 sort_keys=True, allow_nan=False))
+'''
+
+
+class ProviderRefusal(ValueError):
+    """A provider checkout or execution does not match its pin."""
+
+    def __init__(self, code: str, message: str):
+        super().__init__(f"{code}: {message}")
+        self.code = code
+
+
+def csg_pin() -> dict:
+    """The pin shared with ciw.geodesic_reference (single source of truth)."""
+    from ..geodesic_reference import PINS
+
+    pin = PINS["curved-path-transfer"]
+    return {"revision": pin["revision"], "source_tree": pin["source_tree"], "source_root": pin["source_root"]}
+
+
+def verify_csg_checkout(checkout) -> dict:
+    """Refuse a checkout that is unreadable, dirty or not at the pinned revision and tree."""
+    from pathlib import Path
+    import subprocess
+
+    from .runner import git_identity
+
+    pin = csg_pin()
+    try:
+        identity = git_identity(Path(checkout))
+    except (OSError, subprocess.CalledProcessError) as exc:
+        raise ProviderRefusal("CSG_CHECKOUT_UNREADABLE", f"Provider checkout is not a readable git repository: {exc}")
+    if identity["revision"] != pin["revision"]:
+        raise ProviderRefusal("CSG_REVISION_MISMATCH",
+                              f"Provider revision {identity['revision']} differs from pin {pin['revision']}")
+    if identity["source_tree"] != pin["source_tree"]:
+        raise ProviderRefusal("CSG_TREE_MISMATCH", "Provider source tree differs from the pinned tree")
+    if identity["dirty"]:
+        raise ProviderRefusal("CSG_CHECKOUT_DIRTY", "Provider checkout has uncommitted tracked changes")
+    return {"repository": CSG_REPOSITORY, "revision": identity["revision"], "source_tree": identity["source_tree"],
+            "dirty": False, "entry": CSG_ENTRY}
+
+
+def run_csg_jacobi(checkout, cases, timeout: float = 120.0) -> dict:
+    """Integrate declared (arclength grid, constant K) cases with the pinned provider in a subprocess."""
+    from pathlib import Path
+    import json
+    import subprocess
+    import sys
+
+    root = Path(checkout) / csg_pin()["source_root"]
+    try:
+        result = subprocess.run([sys.executable, "-c", _CSG_BOOTSTRAP, str(root)], input=json.dumps(cases),
+                                capture_output=True, text=True, timeout=timeout, check=False)
+    except (OSError, subprocess.TimeoutExpired) as exc:
+        raise ProviderRefusal("CSG_EXECUTION_FAILED", f"Provider subprocess did not complete: {exc}")
+    if result.returncode != 0:
+        raise ProviderRefusal("CSG_EXECUTION_FAILED", result.stderr.strip()[-400:] or "provider exited nonzero")
+    data = json.loads(result.stdout)
+    if len(data.get("traces", [])) != len(cases):
+        raise ProviderRefusal("CSG_EXECUTION_FAILED", "Provider returned a different number of traces")
+    return data
