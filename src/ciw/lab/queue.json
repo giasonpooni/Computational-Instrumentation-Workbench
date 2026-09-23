@@ -1,0 +1,1238 @@
+{
+ "schema": "ciw.lab-queue-definition.v1",
+ "sections": [
+  {
+   "section": 1,
+   "key": "geodesic-jacobi",
+   "name": "Geodesic/Jacobi experiments"
+  },
+  {
+   "section": 2,
+   "key": "flat-torus-topology",
+   "name": "Flat torus and topology"
+  },
+  {
+   "section": 3,
+   "key": "surfaces-discrete",
+   "name": "Arbitrary surfaces and discrete geometry"
+  },
+  {
+   "section": 4,
+   "key": "observation",
+   "name": "Instrument observation experiments"
+  },
+  {
+   "section": 5,
+   "key": "sensor-fusion",
+   "name": "Sensor-fusion experiments"
+  },
+  {
+   "section": 6,
+   "key": "exchange-provenance",
+   "name": "CIW exchange and provenance"
+  },
+  {
+   "section": 7,
+   "key": "lyapunov",
+   "name": "Lyapunov runtime experiments"
+  },
+  {
+   "section": 8,
+   "key": "energy-gpu",
+   "name": "Energy and GPU experiments"
+  },
+  {
+   "section": 9,
+   "key": "manufacturing",
+   "name": "Manufacturing and robotic use cases"
+  },
+  {
+   "section": 10,
+   "key": "implementation-targets",
+   "name": "Rust, Python, Julia, C++, GPU, and FPGA"
+  },
+  {
+   "section": 11,
+   "key": "research-portfolio",
+   "name": "Research and portfolio work"
+  }
+ ],
+ "tasks": [
+  {
+   "id": "T001",
+   "number": 1,
+   "section": 1,
+   "section_key": "geodesic-jacobi",
+   "title": "Re-derive the geodesic equation for the plane, sphere, cylinder, saddle, torus, and variable-curvature surfaces."
+  },
+  {
+   "id": "T002",
+   "number": 2,
+   "section": 1,
+   "section_key": "geodesic-jacobi",
+   "title": "Build high-precision reference solutions for each surface."
+  },
+  {
+   "id": "T003",
+   "number": 3,
+   "section": 1,
+   "section_key": "geodesic-jacobi",
+   "title": "Verify Euler, midpoint, RK4, and adaptive integrator orders."
+  },
+  {
+   "id": "T004",
+   "number": 4,
+   "section": 1,
+   "section_key": "geodesic-jacobi",
+   "title": "Measure unit-speed drift without hidden renormalization."
+  },
+  {
+   "id": "T005",
+   "number": 5,
+   "section": 1,
+   "section_key": "geodesic-jacobi",
+   "title": "Verify the Jacobi separation law across positive, zero, and negative curvature."
+  },
+  {
+   "id": "T006",
+   "number": 6,
+   "section": 1,
+   "section_key": "geodesic-jacobi",
+   "title": "Compare integrated Jacobi fields with finite-difference flow perturbations."
+  },
+  {
+   "id": "T007",
+   "number": 7,
+   "section": 1,
+   "section_key": "geodesic-jacobi",
+   "title": "Measure the Wronskian and transfer-matrix determinant."
+  },
+  {
+   "id": "T008",
+   "number": 8,
+   "section": 1,
+   "section_key": "geodesic-jacobi",
+   "title": "Locate conjugate and focal points numerically."
+  },
+  {
+   "id": "T009",
+   "number": 9,
+   "section": 1,
+   "section_key": "geodesic-jacobi",
+   "title": "Compare lateral-displacement and heading-perturbation columns separately."
+  },
+  {
+   "id": "T010",
+   "number": 10,
+   "section": 1,
+   "section_key": "geodesic-jacobi",
+   "title": "Generate near-focus and post-focus counterexamples."
+  },
+  {
+   "id": "T011",
+   "number": 11,
+   "section": 1,
+   "section_key": "geodesic-jacobi",
+   "title": "Test coordinate-change invariance under nonlinear parameterizations."
+  },
+  {
+   "id": "T012",
+   "number": 12,
+   "section": 1,
+   "section_key": "geodesic-jacobi",
+   "title": "Test frame-change invariance under rotations and tangent-basis changes."
+  },
+  {
+   "id": "T013",
+   "number": 13,
+   "section": 1,
+   "section_key": "geodesic-jacobi",
+   "title": "Quantify the flat-cylinder/developable-surface limit."
+  },
+  {
+   "id": "T014",
+   "number": 14,
+   "section": 1,
+   "section_key": "geodesic-jacobi",
+   "title": "Test geodesic reversal and path truncation."
+  },
+  {
+   "id": "T015",
+   "number": 15,
+   "section": 1,
+   "section_key": "geodesic-jacobi",
+   "title": "Explore long-horizon numerical drift."
+  },
+  {
+   "id": "T016",
+   "number": 16,
+   "section": 1,
+   "section_key": "geodesic-jacobi",
+   "title": "Study stiff behavior on strongly negative-curvature surfaces."
+  },
+  {
+   "id": "T017",
+   "number": 17,
+   "section": 1,
+   "section_key": "geodesic-jacobi",
+   "title": "Derive validity domains for the first-order approximation."
+  },
+  {
+   "id": "T018",
+   "number": 18,
+   "section": 1,
+   "section_key": "geodesic-jacobi",
+   "title": "Generate a report comparing intrinsic curvature effects with integrator error."
+  },
+  {
+   "id": "T019",
+   "number": 19,
+   "section": 2,
+   "section_key": "flat-torus-topology",
+   "title": "Enumerate equivalent lattice representatives."
+  },
+  {
+   "id": "T020",
+   "number": 20,
+   "section": 2,
+   "section_key": "flat-torus-topology",
+   "title": "Classify geodesics by winding vector."
+  },
+  {
+   "id": "T021",
+   "number": 21,
+   "section": 2,
+   "section_key": "flat-torus-topology",
+   "title": "Compare shortest path against least-sensitive path."
+  },
+  {
+   "id": "T022",
+   "number": 22,
+   "section": 2,
+   "section_key": "flat-torus-topology",
+   "title": "Detect degenerate shortest representatives."
+  },
+  {
+   "id": "T023",
+   "number": 23,
+   "section": 2,
+   "section_key": "flat-torus-topology",
+   "title": "Compute sensitivity across all starting headings."
+  },
+  {
+   "id": "T024",
+   "number": 24,
+   "section": 2,
+   "section_key": "flat-torus-topology",
+   "title": "Add focus-margin-aware route ranking."
+  },
+  {
+   "id": "T025",
+   "number": 25,
+   "section": 2,
+   "section_key": "flat-torus-topology",
+   "title": "Generate Pareto fronts for length, amplification, and focus margin."
+  },
+  {
+   "id": "T026",
+   "number": 26,
+   "section": 2,
+   "section_key": "flat-torus-topology",
+   "title": "Test modular-reduction invariance."
+  },
+  {
+   "id": "T027",
+   "number": 27,
+   "section": 2,
+   "section_key": "flat-torus-topology",
+   "title": "Build polygonal translation-surface examples."
+  },
+  {
+   "id": "T028",
+   "number": 28,
+   "section": 2,
+   "section_key": "flat-torus-topology",
+   "title": "Trace geodesics across glued edges."
+  },
+  {
+   "id": "T029",
+   "number": 29,
+   "section": 2,
+   "section_key": "flat-torus-topology",
+   "title": "Detect cone singularities."
+  },
+  {
+   "id": "T030",
+   "number": 30,
+   "section": 2,
+   "section_key": "flat-torus-topology",
+   "title": "Compare smooth and discrete geodesic approximations."
+  },
+  {
+   "id": "T031",
+   "number": 31,
+   "section": 2,
+   "section_key": "flat-torus-topology",
+   "title": "Study route changes under small metric perturbations."
+  },
+  {
+   "id": "T032",
+   "number": 32,
+   "section": 2,
+   "section_key": "flat-torus-topology",
+   "title": "Create a counterexample library for “shortest means safest.”"
+  },
+  {
+   "id": "T033",
+   "number": 33,
+   "section": 3,
+   "section_key": "surfaces-discrete",
+   "title": "Implement a reusable metric/Christoffel/curvature surface interface."
+  },
+  {
+   "id": "T034",
+   "number": 34,
+   "section": 3,
+   "section_key": "surfaces-discrete",
+   "title": "Add automatic differentiation or symbolic derivative checks."
+  },
+  {
+   "id": "T035",
+   "number": 35,
+   "section": 3,
+   "section_key": "surfaces-discrete",
+   "title": "Compare analytic and finite-difference metric derivatives."
+  },
+  {
+   "id": "T036",
+   "number": 36,
+   "section": 3,
+   "section_key": "surfaces-discrete",
+   "title": "Add chart-transition support."
+  },
+  {
+   "id": "T037",
+   "number": 37,
+   "section": 3,
+   "section_key": "surfaces-discrete",
+   "title": "Detect coordinate singularities."
+  },
+  {
+   "id": "T038",
+   "number": 38,
+   "section": 3,
+   "section_key": "surfaces-discrete",
+   "title": "Build a triangle-mesh intrinsic geodesic solver."
+  },
+  {
+   "id": "T039",
+   "number": 39,
+   "section": 3,
+   "section_key": "surfaces-discrete",
+   "title": "Measure convergence under mesh refinement."
+  },
+  {
+   "id": "T040",
+   "number": 40,
+   "section": 3,
+   "section_key": "surfaces-discrete",
+   "title": "Compare smooth and mesh Jacobi approximations."
+  },
+  {
+   "id": "T041",
+   "number": 41,
+   "section": 3,
+   "section_key": "surfaces-discrete",
+   "title": "Quantify mesh-quality effects."
+  },
+  {
+   "id": "T042",
+   "number": 42,
+   "section": 3,
+   "section_key": "surfaces-discrete",
+   "title": "Define refusal states for invalid or incomplete surface data."
+  },
+  {
+   "id": "T043",
+   "number": 43,
+   "section": 3,
+   "section_key": "surfaces-discrete",
+   "title": "Add uncertainty on vertices, normals, and curvature."
+  },
+  {
+   "id": "T044",
+   "number": 44,
+   "section": 3,
+   "section_key": "surfaces-discrete",
+   "title": "Test geometry uncertainty separately from sensor uncertainty."
+  },
+  {
+   "id": "T045",
+   "number": 45,
+   "section": 4,
+   "section_key": "observation",
+   "title": "Define typed observation modes: intrinsic geodesic distance; camera chord distance; reconstructed surface distance; encoder displacement; tracker measurement; image residual; IMU orientation."
+  },
+  {
+   "id": "T046",
+   "number": 46,
+   "section": 4,
+   "section_key": "observation",
+   "title": "Derive the chord-versus-geodesic correction."
+  },
+  {
+   "id": "T047",
+   "number": 47,
+   "section": 4,
+   "section_key": "observation",
+   "title": "Validate the cylinder chord coefficient analytically and numerically."
+  },
+  {
+   "id": "T048",
+   "number": 48,
+   "section": 4,
+   "section_key": "observation",
+   "title": "Generate synthetic camera measurements."
+  },
+  {
+   "id": "T049",
+   "number": 49,
+   "section": 4,
+   "section_key": "observation",
+   "title": "Add camera calibration perturbations."
+  },
+  {
+   "id": "T050",
+   "number": 50,
+   "section": 4,
+   "section_key": "observation",
+   "title": "Add perspective and lens-distortion perturbations."
+  },
+  {
+   "id": "T051",
+   "number": 51,
+   "section": 4,
+   "section_key": "observation",
+   "title": "Add quantization and pixel noise."
+  },
+  {
+   "id": "T052",
+   "number": 52,
+   "section": 4,
+   "section_key": "observation",
+   "title": "Add encoder bias, scale, and backlash."
+  },
+  {
+   "id": "T053",
+   "number": 53,
+   "section": 4,
+   "section_key": "observation",
+   "title": "Add IMU drift and orientation noise."
+  },
+  {
+   "id": "T054",
+   "number": 54,
+   "section": 4,
+   "section_key": "observation",
+   "title": "Add asynchronous timestamps."
+  },
+  {
+   "id": "T055",
+   "number": 55,
+   "section": 4,
+   "section_key": "observation",
+   "title": "Add dropped observations."
+  },
+  {
+   "id": "T056",
+   "number": 56,
+   "section": 4,
+   "section_key": "observation",
+   "title": "Add stale-state observations."
+  },
+  {
+   "id": "T057",
+   "number": 57,
+   "section": 4,
+   "section_key": "observation",
+   "title": "Compare raw, filtered, and smoothed measurements."
+  },
+  {
+   "id": "T058",
+   "number": 58,
+   "section": 4,
+   "section_key": "observation",
+   "title": "Track the exact observation frame and clock basis."
+  },
+  {
+   "id": "T059",
+   "number": 59,
+   "section": 4,
+   "section_key": "observation",
+   "title": "Test whether each observation can be retained without being admitted as state."
+  },
+  {
+   "id": "T060",
+   "number": 60,
+   "section": 5,
+   "section_key": "sensor-fusion",
+   "title": "Build a deterministic multi-sensor synthetic bench."
+  },
+  {
+   "id": "T061",
+   "number": 61,
+   "section": 5,
+   "section_key": "sensor-fusion",
+   "title": "Generate known ground truth and known covariance."
+  },
+  {
+   "id": "T062",
+   "number": 62,
+   "section": 5,
+   "section_key": "sensor-fusion",
+   "title": "Test independent-noise and correlated-noise cases."
+  },
+  {
+   "id": "T063",
+   "number": 63,
+   "section": 5,
+   "section_key": "sensor-fusion",
+   "title": "Propagate covariance through frame transforms."
+  },
+  {
+   "id": "T064",
+   "number": 64,
+   "section": 5,
+   "section_key": "sensor-fusion",
+   "title": "Propagate covariance through the Jacobi transfer matrix."
+  },
+  {
+   "id": "T065",
+   "number": 65,
+   "section": 5,
+   "section_key": "sensor-fusion",
+   "title": "Model filter-induced correlation."
+  },
+  {
+   "id": "T066",
+   "number": 66,
+   "section": 5,
+   "section_key": "sensor-fusion",
+   "title": "Verify that filtered residuals use filter covariance, not raw sensor covariance."
+  },
+  {
+   "id": "T067",
+   "number": 67,
+   "section": 5,
+   "section_key": "sensor-fusion",
+   "title": "Add Mahalanobis gating."
+  },
+  {
+   "id": "T068",
+   "number": 68,
+   "section": 5,
+   "section_key": "sensor-fusion",
+   "title": "Add outlier rejection."
+  },
+  {
+   "id": "T069",
+   "number": 69,
+   "section": 5,
+   "section_key": "sensor-fusion",
+   "title": "Add missing-data behavior."
+  },
+  {
+   "id": "T070",
+   "number": 70,
+   "section": 5,
+   "section_key": "sensor-fusion",
+   "title": "Add stale-clock behavior."
+  },
+  {
+   "id": "T071",
+   "number": 71,
+   "section": 5,
+   "section_key": "sensor-fusion",
+   "title": "Add frame mismatch behavior."
+  },
+  {
+   "id": "T072",
+   "number": 72,
+   "section": 5,
+   "section_key": "sensor-fusion",
+   "title": "Add calibration-expiry behavior."
+  },
+  {
+   "id": "T073",
+   "number": 73,
+   "section": 5,
+   "section_key": "sensor-fusion",
+   "title": "Add sensor-track-lost behavior."
+  },
+  {
+   "id": "T074",
+   "number": 74,
+   "section": 5,
+   "section_key": "sensor-fusion",
+   "title": "Compare fused state against analytic ground truth."
+  },
+  {
+   "id": "T075",
+   "number": 75,
+   "section": 5,
+   "section_key": "sensor-fusion",
+   "title": "Keep observation, candidate state, and admitted state as separate objects."
+  },
+  {
+   "id": "T076",
+   "number": 76,
+   "section": 5,
+   "section_key": "sensor-fusion",
+   "title": "Ensure fusion defaults to read-only and `not_performed`."
+  },
+  {
+   "id": "T077",
+   "number": 77,
+   "section": 6,
+   "section_key": "exchange-provenance",
+   "title": "Build an identity matrix for: source evidence; operation; execution; result; numerical result; verification; bundle; replay; external producer IDs."
+  },
+  {
+   "id": "T078",
+   "number": 78,
+   "section": 6,
+   "section_key": "exchange-provenance",
+   "title": "Test exact source-byte retention."
+  },
+  {
+   "id": "T079",
+   "number": 79,
+   "section": 6,
+   "section_key": "exchange-provenance",
+   "title": "Test whitespace-preserving evidence retention."
+  },
+  {
+   "id": "T080",
+   "number": 80,
+   "section": 6,
+   "section_key": "exchange-provenance",
+   "title": "Test operation/execution/result identity separation."
+  },
+  {
+   "id": "T081",
+   "number": 81,
+   "section": 6,
+   "section_key": "exchange-provenance",
+   "title": "Test stable numerical-result identity."
+  },
+  {
+   "id": "T082",
+   "number": 82,
+   "section": 6,
+   "section_key": "exchange-provenance",
+   "title": "Test fresh replay execution and result identities."
+  },
+  {
+   "id": "T083",
+   "number": 83,
+   "section": 6,
+   "section_key": "exchange-provenance",
+   "title": "Test replay receipt binding."
+  },
+  {
+   "id": "T084",
+   "number": 84,
+   "section": 6,
+   "section_key": "exchange-provenance",
+   "title": "Mutate replay receipt source digest."
+  },
+  {
+   "id": "T085",
+   "number": 85,
+   "section": 6,
+   "section_key": "exchange-provenance",
+   "title": "Mutate replay receipt replayed digest."
+  },
+  {
+   "id": "T086",
+   "number": 86,
+   "section": 6,
+   "section_key": "exchange-provenance",
+   "title": "Mutate verification subject."
+  },
+  {
+   "id": "T087",
+   "number": 87,
+   "section": 6,
+   "section_key": "exchange-provenance",
+   "title": "Mutate verification method."
+  },
+  {
+   "id": "T088",
+   "number": 88,
+   "section": 6,
+   "section_key": "exchange-provenance",
+   "title": "Mutate independence flag."
+  },
+  {
+   "id": "T089",
+   "number": 89,
+   "section": 6,
+   "section_key": "exchange-provenance",
+   "title": "Mutate admission status."
+  },
+  {
+   "id": "T090",
+   "number": 90,
+   "section": 6,
+   "section_key": "exchange-provenance",
+   "title": "Mutate provider runtime identity."
+  },
+  {
+   "id": "T091",
+   "number": 91,
+   "section": 6,
+   "section_key": "exchange-provenance",
+   "title": "Test save/reopen without provider access."
+  },
+  {
+   "id": "T092",
+   "number": 92,
+   "section": 6,
+   "section_key": "exchange-provenance",
+   "title": "Test replay refusal without provider binding."
+  },
+  {
+   "id": "T093",
+   "number": 93,
+   "section": 6,
+   "section_key": "exchange-provenance",
+   "title": "Test unchanged workspace after refusal."
+  },
+  {
+   "id": "T094",
+   "number": 94,
+   "section": 6,
+   "section_key": "exchange-provenance",
+   "title": "Add golden retained bundles."
+  },
+  {
+   "id": "T095",
+   "number": 95,
+   "section": 6,
+   "section_key": "exchange-provenance",
+   "title": "Add malformed exchange fixtures."
+  },
+  {
+   "id": "T096",
+   "number": 96,
+   "section": 6,
+   "section_key": "exchange-provenance",
+   "title": "Add provider-free conformance tests."
+  },
+  {
+   "id": "T097",
+   "number": 97,
+   "section": 6,
+   "section_key": "exchange-provenance",
+   "title": "Add exact SET/SCR/PPDA integration tests when checkouts are available."
+  },
+  {
+   "id": "T098",
+   "number": 98,
+   "section": 6,
+   "section_key": "exchange-provenance",
+   "title": "Record provider HEAD, tree, source hash, lockfile, and engine digest."
+  },
+  {
+   "id": "T099",
+   "number": 99,
+   "section": 6,
+   "section_key": "exchange-provenance",
+   "title": "Verify `cargo build --locked`."
+  },
+  {
+   "id": "T100",
+   "number": 100,
+   "section": 6,
+   "section_key": "exchange-provenance",
+   "title": "Keep synthetic, provider-backed, and physical results visibly distinct."
+  },
+  {
+   "id": "T101",
+   "number": 101,
+   "section": 7,
+   "section_key": "lyapunov",
+   "title": "Test the resolution floor over many matrix scales."
+  },
+  {
+   "id": "T102",
+   "number": 102,
+   "section": 7,
+   "section_key": "lyapunov",
+   "title": "Test power-of-two homogeneous scaling."
+  },
+  {
+   "id": "T103",
+   "number": 103,
+   "section": 7,
+   "section_key": "lyapunov",
+   "title": "Test overflow and underflow state evaluation."
+  },
+  {
+   "id": "T104",
+   "number": 104,
+   "section": 7,
+   "section_key": "lyapunov",
+   "title": "Test semidefinite and skew-symmetric edge cases."
+  },
+  {
+   "id": "T105",
+   "number": 105,
+   "section": 7,
+   "section_key": "lyapunov",
+   "title": "Test parameter-box comparisons across unit scales."
+  },
+  {
+   "id": "T106",
+   "number": 106,
+   "section": 7,
+   "section_key": "lyapunov",
+   "title": "Test every runtime status transition."
+  },
+  {
+   "id": "T107",
+   "number": 107,
+   "section": 7,
+   "section_key": "lyapunov",
+   "title": "Verify numerical inconclusive behavior."
+  },
+  {
+   "id": "T108",
+   "number": 108,
+   "section": 7,
+   "section_key": "lyapunov",
+   "title": "Verify required-margin monotonicity."
+  },
+  {
+   "id": "T109",
+   "number": 109,
+   "section": 7,
+   "section_key": "lyapunov",
+   "title": "Add adversarial eigenvalue cases."
+  },
+  {
+   "id": "T110",
+   "number": 110,
+   "section": 7,
+   "section_key": "lyapunov",
+   "title": "Test discrete-time versus continuous-time interpretation."
+  },
+  {
+   "id": "T111",
+   "number": 111,
+   "section": 7,
+   "section_key": "lyapunov",
+   "title": "Compare scalar quadratic and matrix-eigenvalue routes."
+  },
+  {
+   "id": "T112",
+   "number": 112,
+   "section": 7,
+   "section_key": "lyapunov",
+   "title": "Define a separate disturbance-aware/ISS research branch."
+  },
+  {
+   "id": "T113",
+   "number": 113,
+   "section": 7,
+   "section_key": "lyapunov",
+   "title": "Connect filtered residuals without putting sensors inside the kernel."
+  },
+  {
+   "id": "T114",
+   "number": 114,
+   "section": 7,
+   "section_key": "lyapunov",
+   "title": "Prepare a non-production servo-axis pilot specification."
+  },
+  {
+   "id": "T115",
+   "number": 115,
+   "section": 8,
+   "section_key": "energy-gpu",
+   "title": "Measure CPU energy per geodesic trajectory."
+  },
+  {
+   "id": "T116",
+   "number": 116,
+   "section": 8,
+   "section_key": "energy-gpu",
+   "title": "Measure GPU energy per batch."
+  },
+  {
+   "id": "T117",
+   "number": 117,
+   "section": 8,
+   "section_key": "energy-gpu",
+   "title": "Compare Python, Rust, Julia, and GPU implementations."
+  },
+  {
+   "id": "T118",
+   "number": 118,
+   "section": 8,
+   "section_key": "energy-gpu",
+   "title": "Record RTX 2080 utilization, temperature, power, and kernel duration."
+  },
+  {
+   "id": "T119",
+   "number": 119,
+   "section": 8,
+   "section_key": "energy-gpu",
+   "title": "Measure energy per accepted numerical result."
+  },
+  {
+   "id": "T120",
+   "number": 120,
+   "section": 8,
+   "section_key": "energy-gpu",
+   "title": "Compare precision versus energy cost."
+  },
+  {
+   "id": "T121",
+   "number": 121,
+   "section": 8,
+   "section_key": "energy-gpu",
+   "title": "Detect whether GPU reductions alter numerical conclusions."
+  },
+  {
+   "id": "T122",
+   "number": 122,
+   "section": 8,
+   "section_key": "energy-gpu",
+   "title": "Build a bounded free-energy-style computational example."
+  },
+  {
+   "id": "T123",
+   "number": 123,
+   "section": 8,
+   "section_key": "energy-gpu",
+   "title": "Keep numerical free energy distinct from physical energy."
+  },
+  {
+   "id": "T124",
+   "number": 124,
+   "section": 8,
+   "section_key": "energy-gpu",
+   "title": "Retain raw telemetry and device/runtime identity."
+  },
+  {
+   "id": "T125",
+   "number": 125,
+   "section": 8,
+   "section_key": "energy-gpu",
+   "title": "Test replay of energy telemetry reports."
+  },
+  {
+   "id": "T126",
+   "number": 126,
+   "section": 9,
+   "section_key": "manufacturing",
+   "title": "Design a flat-plate control experiment."
+  },
+  {
+   "id": "T127",
+   "number": 127,
+   "section": 9,
+   "section_key": "manufacturing",
+   "title": "Design a rolled-cylinder control experiment."
+  },
+  {
+   "id": "T128",
+   "number": 128,
+   "section": 9,
+   "section_key": "manufacturing",
+   "title": "Design a curved coupon experiment."
+  },
+  {
+   "id": "T129",
+   "number": 129,
+   "section": 9,
+   "section_key": "manufacturing",
+   "title": "Define a surface metrology protocol."
+  },
+  {
+   "id": "T130",
+   "number": 130,
+   "section": 9,
+   "section_key": "manufacturing",
+   "title": "Define calibration artifacts and datum frames."
+  },
+  {
+   "id": "T131",
+   "number": 131,
+   "section": 9,
+   "section_key": "manufacturing",
+   "title": "Define repeatability and Gage R&R procedures."
+  },
+  {
+   "id": "T132",
+   "number": 132,
+   "section": 9,
+   "section_key": "manufacturing",
+   "title": "Model fibre/tape placement path tolerance."
+  },
+  {
+   "id": "T133",
+   "number": 133,
+   "section": 9,
+   "section_key": "manufacturing",
+   "title": "Model winding path sensitivity."
+  },
+  {
+   "id": "T134",
+   "number": 134,
+   "section": 9,
+   "section_key": "manufacturing",
+   "title": "Model coating or welding trajectory sensitivity."
+  },
+  {
+   "id": "T135",
+   "number": 135,
+   "section": 9,
+   "section_key": "manufacturing",
+   "title": "Model robotic inspection scan paths."
+  },
+  {
+   "id": "T136",
+   "number": 136,
+   "section": 9,
+   "section_key": "manufacturing",
+   "title": "Rank paths by calibration tolerance."
+  },
+  {
+   "id": "T137",
+   "number": 137,
+   "section": 9,
+   "section_key": "manufacturing",
+   "title": "Rank paths by focus margin."
+  },
+  {
+   "id": "T138",
+   "number": 138,
+   "section": 9,
+   "section_key": "manufacturing",
+   "title": "Compare predicted and measured path separation."
+  },
+  {
+   "id": "T139",
+   "number": 139,
+   "section": 9,
+   "section_key": "manufacturing",
+   "title": "Retain raw measurements, calibration, and frame metadata."
+  },
+  {
+   "id": "T140",
+   "number": 140,
+   "section": 9,
+   "section_key": "manufacturing",
+   "title": "Report whether uncertainty is instrument-, geometry-, or solver-limited."
+  },
+  {
+   "id": "T141",
+   "number": 141,
+   "section": 9,
+   "section_key": "manufacturing",
+   "title": "Keep production acceptance outside the system until independently validated."
+  },
+  {
+   "id": "T142",
+   "number": 142,
+   "section": 10,
+   "section_key": "implementation-targets",
+   "title": "Identify kernels suitable for Rust."
+  },
+  {
+   "id": "T143",
+   "number": 143,
+   "section": 10,
+   "section_key": "implementation-targets",
+   "title": "Identify interfaces requiring C++ industrial libraries."
+  },
+  {
+   "id": "T144",
+   "number": 144,
+   "section": 10,
+   "section_key": "implementation-targets",
+   "title": "Keep Python as orchestration and evidence layer."
+  },
+  {
+   "id": "T145",
+   "number": 145,
+   "section": 10,
+   "section_key": "implementation-targets",
+   "title": "Use Julia for symbolic, optimization, and exploratory work."
+  },
+  {
+   "id": "T146",
+   "number": 146,
+   "section": 10,
+   "section_key": "implementation-targets",
+   "title": "Define one canonical serialization across languages."
+  },
+  {
+   "id": "T147",
+   "number": 147,
+   "section": 10,
+   "section_key": "implementation-targets",
+   "title": "Compare CPU and GPU outputs."
+  },
+  {
+   "id": "T148",
+   "number": 148,
+   "section": 10,
+   "section_key": "implementation-targets",
+   "title": "Add deterministic reduction policies."
+  },
+  {
+   "id": "T149",
+   "number": 149,
+   "section": 10,
+   "section_key": "implementation-targets",
+   "title": "Define FPGA telemetry-only interfaces."
+  },
+  {
+   "id": "T150",
+   "number": 150,
+   "section": 10,
+   "section_key": "implementation-targets",
+   "title": "Record bitstream identity and toolchain."
+  },
+  {
+   "id": "T151",
+   "number": 151,
+   "section": 10,
+   "section_key": "implementation-targets",
+   "title": "Add FPGA rollback and compatibility metadata."
+  },
+  {
+   "id": "T152",
+   "number": 152,
+   "section": 10,
+   "section_key": "implementation-targets",
+   "title": "Simulate packet loss, latency, and stale telemetry."
+  },
+  {
+   "id": "T153",
+   "number": 153,
+   "section": 10,
+   "section_key": "implementation-targets",
+   "title": "Keep actuator writes disabled by default."
+  },
+  {
+   "id": "T154",
+   "number": 154,
+   "section": 10,
+   "section_key": "implementation-targets",
+   "title": "Treat control outputs as proposals until separately authorized."
+  },
+  {
+   "id": "T155",
+   "number": 155,
+   "section": 11,
+   "section_key": "research-portfolio",
+   "title": "Write formal mathematical specifications."
+  },
+  {
+   "id": "T156",
+   "number": 156,
+   "section": 11,
+   "section_key": "research-portfolio",
+   "title": "Separate textbook results from implementation contributions."
+  },
+  {
+   "id": "T157",
+   "number": 157,
+   "section": 11,
+   "section_key": "research-portfolio",
+   "title": "Maintain a counterexample catalogue."
+  },
+  {
+   "id": "T158",
+   "number": 158,
+   "section": 11,
+   "section_key": "research-portfolio",
+   "title": "Generate reproducible figures."
+  },
+  {
+   "id": "T159",
+   "number": 159,
+   "section": 11,
+   "section_key": "research-portfolio",
+   "title": "Generate uncertainty-budget tables."
+  },
+  {
+   "id": "T160",
+   "number": 160,
+   "section": 11,
+   "section_key": "research-portfolio",
+   "title": "Write an instrument-methods paper."
+  },
+  {
+   "id": "T161",
+   "number": 161,
+   "section": 11,
+   "section_key": "research-portfolio",
+   "title": "Write a geometry-methods paper."
+  },
+  {
+   "id": "T162",
+   "number": 162,
+   "section": 11,
+   "section_key": "research-portfolio",
+   "title": "Write an evidence/provenance methods note."
+  },
+  {
+   "id": "T163",
+   "number": 163,
+   "section": 11,
+   "section_key": "research-portfolio",
+   "title": "Create a masters-portfolio demonstration."
+  },
+  {
+   "id": "T164",
+   "number": 164,
+   "section": 11,
+   "section_key": "research-portfolio",
+   "title": "Produce a one-command clean-room reproduction."
+  },
+  {
+   "id": "T165",
+   "number": 165,
+   "section": 11,
+   "section_key": "research-portfolio",
+   "title": "Generate a release report from machine-readable metadata."
+  },
+  {
+   "id": "T166",
+   "number": 166,
+   "section": 11,
+   "section_key": "research-portfolio",
+   "title": "Record every unresolved assumption."
+  },
+  {
+   "id": "T167",
+   "number": 167,
+   "section": 11,
+   "section_key": "research-portfolio",
+   "title": "Document what remains unmeasured."
+  },
+  {
+   "id": "T168",
+   "number": 168,
+   "section": 11,
+   "section_key": "research-portfolio",
+   "title": "Convert successful experiments into permanent regression tests."
+  }
+ ]
+}

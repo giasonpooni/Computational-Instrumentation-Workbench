@@ -417,6 +417,24 @@ def parser() -> argparse.ArgumentParser:
     energy_replay = energy_actions.add_parser("replay", help="Recompute analysis from raw logs; never acquire new measurements")
     energy_replay.add_argument("path", type=Path)
     energy_replay.add_argument("--output", type=Path)
+    lab = commands.add_parser("lab", help="Computational-experimentalist queue with evidence-labelled reports")
+    lab_actions = lab.add_subparsers(dest="lab_command", required=True)
+    lab_queue = lab_actions.add_parser("queue", help="List queued tasks with retained state and evidence status")
+    lab_queue.add_argument("--retained", type=Path, help="Directory of retained lab reports")
+    lab_run = lab_actions.add_parser("run", help="Execute queued tasks and retain labelled reports; never acquires hardware data")
+    lab_run.add_argument("tasks", nargs="*", help="Task identities such as T003; omit with --all")
+    lab_run.add_argument("--all", action="store_true", help="Run every queued task and rewrite the report index")
+    lab_run.add_argument("--output-dir", type=Path, required=True)
+    lab_run.add_argument("--provider", action="append", default=[], metavar="ROLE=PATH",
+                         help="Bind a pinned provider checkout or interpreter for provider-backed tasks")
+    lab_run.add_argument("--junit", type=Path, help="pytest JUnit XML used to report regression-test outcomes")
+    lab_report = lab_actions.add_parser("report", help="Print one retained task report")
+    lab_report.add_argument("task")
+    lab_report.add_argument("--retained", type=Path, required=True)
+    lab_report.add_argument("--json", action="store_true")
+    lab_verify = lab_actions.add_parser("verify", help="Compare regenerated reports with retained ones")
+    lab_verify.add_argument("--retained", type=Path, required=True)
+    lab_verify.add_argument("--fresh", type=Path, required=True)
     return root
 
 
@@ -675,6 +693,41 @@ def main(argv: list[str] | None = None) -> int:
                 print_json(result)
             else:
                 print_investigation(result)
+        elif args.command == "lab":
+            from .lab import runner
+            if args.lab_command == "queue":
+                from .lab.registry import load_queue
+                reports = ({r["task_id"]: r for r in runner.load_reports(args.retained)}
+                           if args.retained else {})
+                for item in load_queue()["tasks"]:
+                    retained = reports.get(item["id"])
+                    state = retained["state"] if retained else "not_run"
+                    label = retained["evidence_status"]["primary"] if retained else "not_established"
+                    print(f"{item['id']}  {state:<9}  {label:<22}  {item['title']}")
+            elif args.lab_command == "run":
+                if bool(args.all) == bool(args.tasks):
+                    raise ValueError("Name task identities or pass --all, not both")
+                providers = {}
+                for binding in args.provider:
+                    role, separator, path = binding.partition("=")
+                    if not separator or not role or not path:
+                        raise ValueError("Provider bindings use ROLE=PATH")
+                    providers[role] = Path(path)
+                print_json(runner.run_queue(args.output_dir, None if args.all else args.tasks,
+                                            providers, args.junit))
+            elif args.lab_command == "report":
+                path = args.retained / "reports" / f"{args.task}.json"
+                from .lab.report import render_markdown, validate_report
+                report = validate_report(json.loads(path.read_text(encoding="utf-8")))
+                if args.json:
+                    print_json(report)
+                else:
+                    print(render_markdown(report), end="")
+            else:
+                result = runner.compare(args.retained, args.fresh)
+                print_json(result)
+                if not result["passed"]:
+                    return 3
         elif args.command == "plsr":
             # The optional engine is loaded only through this terminal boundary.
             from .plsr import evaluate_run, import_model, inspect_run, replay_run
