@@ -104,12 +104,16 @@ def example_bytes(name: str) -> bytes:
 
 
 def fixture_root(providers: dict | None = None) -> Path | None:
-    """Golden fixture directory: an explicit binding, else the source checkout, else none."""
+    """Golden fixture directory: an explicit binding, else the repository root, else none.
+
+    The repository root honours ``CIW_LAB_REPOSITORY_ROOT`` (the clean-room run points it at copies).
+    """
     bound = (providers or {}).get(FIXTURE_BINDING)
     if bound is not None:
         return Path(bound) if Path(bound).is_dir() else None
-    candidate = Path(__file__).resolve().parents[3] / "tests" / "fixtures" / "lab"
-    return candidate if (candidate / "golden").is_dir() else None
+    from .runner import repository_path
+    candidate = repository_path("tests", "fixtures", "lab")
+    return candidate if candidate is not None and (candidate / "golden").is_dir() else None
 
 
 class Client:
@@ -172,11 +176,13 @@ class ExecutionForbidden(RuntimeError):
 
 
 @contextmanager
-def execution_guard():
-    """Replace execution entry points with refusing recorders; count recomputations.
+def execution_guard(refuse: bool = True):
+    """Intercept execution entry points; count validation recomputations.
 
-    Yields ``{"attempts": [...], "recomputations": {...}}``. Every patched
-    attribute is restored on exit, including after an exception.
+    With ``refuse`` the entry points raise :class:`ExecutionForbidden`;
+    otherwise they are only counted and then run. Yields
+    ``{"attempts": [...], "recomputations": {...}}``. Every patched attribute is
+    restored on exit, including after an exception.
     """
     record = {"attempts": [], "recomputations": {}}
     saved = []
@@ -185,11 +191,13 @@ def execution_guard():
         target = import_module(module)
         return target if qualname is None else getattr(target, qualname)
 
-    def refusing(label):
-        def refuse(*args, **kwargs):
+    def intercept(label, original):
+        def run(*args, **kwargs):
             record["attempts"].append(label)
-            raise ExecutionForbidden(f"Execution path reached while reopening: {label}")
-        return refuse
+            if refuse:
+                raise ExecutionForbidden(f"Execution path reached while guarded: {label}")
+            return original(*args, **kwargs)
+        return run
 
     def counting(label, original):
         def count(*args, **kwargs):
@@ -198,16 +206,13 @@ def execution_guard():
         return count
 
     try:
-        for module, qualname, attribute in EXECUTION_PATHS:
-            target = owner(module, qualname)
-            # Save the owner's own entry: an inherited method is restored by
-            # deleting the shadowing attribute, not by copying it down.
-            saved.append((target, attribute, vars(target).get(attribute, _MISSING)))
-            setattr(target, attribute, refusing(".".join(filter(None, (module, qualname, attribute)))))
-        for module, qualname, attribute in RECOMPUTATION_PATHS:
-            target = owner(module, qualname)
-            saved.append((target, attribute, vars(target).get(attribute, _MISSING)))
-            setattr(target, attribute, counting(".".join(filter(None, (module, qualname, attribute))),
+        for paths, wrap in ((EXECUTION_PATHS, intercept), (RECOMPUTATION_PATHS, counting)):
+            for module, qualname, attribute in paths:
+                target = owner(module, qualname)
+                # Save the owner's own entry: an inherited method is restored by
+                # deleting the shadowing attribute, not by copying it down.
+                saved.append((target, attribute, vars(target).get(attribute, _MISSING)))
+                setattr(target, attribute, wrap(".".join(filter(None, (module, qualname, attribute))),
                                                 getattr(target, attribute)))
         yield record
     finally:

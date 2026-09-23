@@ -513,7 +513,8 @@ def sympy_torus_check(samples: int = 16) -> dict:
                             for j in range(i, 2)}, "gaussian_curvature": str(K), "sympy": sp.__version__}
 
 
-@task("T145", changed_files=(MODULE, DOC), regression_tests=(f"{TESTS}::test_t145_julia_partial_with_plan",))
+@task("T145", changed_files=(MODULE, DOC), regression_tests=(f"{TESTS}::test_t145_julia_partial_with_plan",
+                                                             f"{TESTS}::test_sympy_torus_geometry_matches_core"))
 def julia_role(ctx):
     julia = ctx.available("tool:julia")
     ctx.artifact_json("julia-pin-procedure.json", dict(JULIA_PLAN, julia_on_path=julia))

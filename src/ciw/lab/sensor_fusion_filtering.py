@@ -25,9 +25,9 @@ from . import svg
 from .evidence import finding
 from .registry import task
 from .sensor_fusion_bench import (H_POS, chi2_cdf, chi2_quantile, consistency, cv_model, gain_schedule, generator,
-                                  measure, nees_series, noncentral_chi2_2_cdf, noncentral_chi2_2_cdf_many,
+                                  measure, noncentral_chi2_2_cdf, noncentral_chi2_2_cdf_many,
                                   normal_quantile, quadratic, run_gated, run_shared, simulate_truth)
-from .sensor_fusion_common import (MU0, P0_BENCH, R_CAMERA, TESTS, TOL_EXACT, TOL_MC, TOL_ROUNDOFF, TOL_TINY,
+from .sensor_fusion_common import (MU0, P0_BENCH, R_CAMERA, TESTS, TOL_EXACT, TOL_MC, TOL_TINY,
                                    as_json, bonferroni, check, files, generator_basis, outcome, rate_interval,
                                    run_mean_z, unreal)
 
@@ -625,10 +625,10 @@ def outlier_rejection(ctx):
          ("gated", [0, 1, 2], [clean["rmse_gated"], gross["rmse"]["gated"], subtle["rmse"]["gated"]]),
          ("oracle", [1, 2], [gross["rmse"]["oracle"], subtle["rmse"]["oracle"]]),
          ("gated, lock-out runs removed", [1, 2], [gross["rmse_without_lockout_runs"]["gated"],
-                                                  subtle["rmse_without_lockout_runs"]["gated"]])],
+                                                   subtle["rmse_without_lockout_runs"]["gated"]])],
         title="T068 position RMSE (0 clean, 1 gross 1.5 m, 2 subtle 0.3 m)", xlabel="data set", ylabel="RMSE (m)"))
     z_crit = bonferroni(2)
-    clean_rows = gross["rmse_without_lockout_runs"]
+    kept = gross["rmse_without_lockout_runs"]
     findings = [
         finding("Gross 1.5 m outliers are detected at the rate predicted by the noncentral chi-square(2) law with "
                 "lambda = b^T S^-1 b at each outlier's own prior covariance", "numerical",
@@ -641,12 +641,12 @@ def outlier_rejection(ctx):
                 tolerance=TOL_MC),
         finding("Outside the lock-out runs, gating returns the position RMSE to within 5% of the oracle that knows "
                 "which readings are bad, while fusing every reading is at least 30% worse", "numerical",
-                {"rmse_without_lockout_runs": clean_rows, "rmse_all_runs": gross["rmse"],
+                {"rmse_without_lockout_runs": kept, "rmse_all_runs": gross["rmse"],
                  "lockout_runs_removed": gross["lockout_runs"]},
                 {**generator_basis(seed), "checks": [
-                    check("analytic", "gated / oracle RMSE minus one", clean_rows["gated"] / clean_rows["oracle"] - 1.0,
+                    check("analytic", "gated / oracle RMSE minus one", kept["gated"] / kept["oracle"] - 1.0,
                           0.05),
-                    check("analytic", "ungated / oracle RMSE", clean_rows["ungated"] / clean_rows["oracle"], 1.3,
+                    check("analytic", "ungated / oracle RMSE", kept["ungated"] / kept["oracle"], 1.3,
                           "ge")]},
                 tolerance=TOL_MC),
         finding("Cold-start lock-out: a gross outlier in the first reading passes the gate under the broad prior, "
@@ -723,8 +723,8 @@ def outlier_rejection(ctx):
         "numerical_result": f"gross: detection {gross['detection']['rate']:.3f} (predicted "
                             f"{gross['predicted_detection_rate']:.3f}); RMSE ungated/gated/oracle "
                             f"{gross['rmse']['ungated']:.3f}/{gross['rmse']['gated']:.3f}/{gross['rmse']['oracle']:.3f}"
-                            f" m, without {gross['lockout_runs']} lock-out runs {clean_rows['ungated']:.3f}/"
-                            f"{clean_rows['gated']:.3f}/{clean_rows['oracle']:.3f} m; worst lock-out run RMSE "
+                            f" m, without {gross['lockout_runs']} lock-out runs {kept['ungated']:.3f}/"
+                            f"{kept['gated']:.3f}/{kept['oracle']:.3f} m; worst lock-out run RMSE "
                             f"{gross['worst_run']['rmse_gated']:.2f} m. subtle: detection "
                             f"{subtle['detection']['rate']:.3f} (predicted {subtle['predicted_detection_rate']:.3f}). "
                             f"clean: false alarms {clean['false_alarm']['rate']:.4f}, RMSE {clean['rmse_ungated']:.4f}"

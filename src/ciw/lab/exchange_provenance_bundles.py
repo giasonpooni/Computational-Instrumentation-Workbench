@@ -636,30 +636,56 @@ def _attempt(function):
         return {"refused": False, "error_type": None, "message": None}
     except RecursionError as exc:
         return {"refused": True, "error_type": "RecursionError", "message": str(exc)[:200]}
-    except (ValueError, OSError) as exc:
+    except ValueError as exc:
         return {"refused": True, "error_type": type(exc).__name__, "message": str(exc)[:500]}
 
 
+def _parsed(raw: bytes):
+    try:
+        return json.loads(raw.decode("utf-8"))
+    except (ValueError, RecursionError):
+        return None
+
+
 def _malformed_matrix(directory: Path) -> dict:
-    """Apply CIW's byte-level validators to every malformed fixture."""
+    """Apply every CIW validator a malformed exchange or workspace file can reach.
+
+    ``exchange_inspect`` runs without a SET checkout: a file that passes every
+    parsing check then fails on the missing validator, recorded as not refused.
+    """
     from .. import exchange
     from ..instruments import make_demo_run
     from ..session import Session, read_json
+    from ..workbench import Workbench
     session = Session(make_demo_run(), directory / "session")
     client = Client(session)
     validator_repo = directory / "no-validator"
     validator_repo.mkdir()
+    fields = {exchange.RESULT_SCHEMA: "result_id", exchange.VERIFICATION_SCHEMA: "verification_id"}
     rows = {}
-    for name, raw in sorted(malformed_fixtures().items()):
+    for index, (name, raw) in enumerate(sorted(malformed_fixtures().items())):
         path = directory / name
         path.write_bytes(raw)
         response = client.call("source.add", source_payload("energy-accuracy", raw, name))
+        try:
+            exchange.inspect_exchange([path], validator_repo=validator_repo)
+            inspected = {"refused": False, "error_type": None, "message": None}
+        except OSError:
+            inspected = {"refused": False, "error_type": "validator_unavailable", "message": None}
+        except (ValueError, RecursionError) as exc:
+            inspected = {"refused": True, "error_type": type(exc).__name__, "message": str(exc)[:500]}
+        value = _parsed(raw)
+        field = fields.get(value.get("schema")) if isinstance(value, dict) else None
         rows[name] = {
             "workbench_source_add": {"refused": response["type"] == "error", "error_type": None,
                                      "message": _outcome(response) if response["type"] == "error" else None},
             "session_read_json": _attempt(lambda: read_json(path)),
-            # A missing validator checkout fails only after all parsing checks pass.
-            "exchange_inspect": _attempt(lambda: exchange.inspect_exchange([path], validator_repo=validator_repo)),
+            "exchange_inspect": inspected,
+            "exchange_identity": (_attempt(lambda: exchange._identity(value, field)) if field
+                                  else {"refused": None, "error_type": "not_applicable", "message": None}),
+            "session_from_workspace": _attempt(lambda: Session.from_workspace(path, directory / f"never-{index}")),
+            "workbench_restore": (_attempt(lambda: Workbench.restore(value)) if isinstance(value, dict)
+                                  else {"refused": None, "error_type": "not_applicable", "message": None}),
         }
     return rows
 
@@ -670,7 +696,6 @@ def _runtime_malformed(directory: Path) -> dict:
     from ..energy_workflow import SOURCE_LIMIT
     from ..instruments import make_demo_run
     from ..session import Session
-    from ..workbench import Workbench
     rows = {}
     oversize = directory / "oversize-exchange.json"
     oversize.write_bytes(b" " * (exchange.MAX_ARTIFACT_BYTES + 1))
@@ -688,13 +713,6 @@ def _runtime_malformed(directory: Path) -> dict:
         response = client.call("source.add", payload)
         rows[label] = {"refused": response["type"] == "error", "error_type": None,
                        "message": _outcome(response) if response["type"] == "error" else None}
-    rows["wrong-identity-result (exchange._identity)"] = _attempt(lambda: exchange._identity(
-        json.loads(malformed_fixtures()["wrong-identity-result.json"]), "result_id"))
-    rows["wrong-type-workspace (Session.from_workspace)"] = _attempt(lambda: Session.from_workspace(
-        _write(directory / "wrong-type-workspace.json", malformed_fixtures()["wrong-type-workspace.json"]),
-        directory / "never"))
-    rows["wrong-revision-workbench (Workbench.restore)"] = _attempt(lambda: Workbench.restore(
-        json.loads(malformed_fixtures()["wrong-revision-workbench.json"])))
     saved = session.save_workspace(directory / "valid-workspace.json")
     workspace = json.loads(saved.read_text(encoding="utf-8"))
     typed = deepcopy(workspace)
@@ -717,15 +735,17 @@ def _write(path: Path, raw: bytes) -> Path:
     return path
 
 
-# Exact CIW-generated refusal text expected for each committed fixture.
+MALFORMED_TEXT = "MALFORMED_RESPONSE: The bound runtime did not return finite, unambiguous JSON"
+# The validator each committed fixture targets and its exact CIW-generated text;
+# None where the text comes from Python's json module and varies by version.
 MALFORMED_EXPECTED = {
     "duplicate-key.json": ("exchange_inspect", "duplicate JSON member: schema"),
     "nan.json": ("exchange_inspect", "nonfinite JSON number: NaN"),
     "infinity.json": ("exchange_inspect", "nonfinite JSON number: -Infinity"),
     "overflow.json": ("exchange_inspect", "JSON number overflows float64"),
-    "truncated-energy-log.json": ("workbench_source_add",
-                                  "MALFORMED_RESPONSE: The bound runtime did not return finite, unambiguous JSON"),
+    "truncated-energy-log.json": ("workbench_source_add", MALFORMED_TEXT),
     "invalid-utf8.json": ("exchange_inspect", "exchange input must be bounded UTF-8 JSON"),
+    "deep-nesting.json": ("exchange_inspect", None),
     "wrong-schema-exchange.json": ("exchange_inspect", "unsupported instrument-exchange schema"),
     "wrong-schema-energy-log.json": ("workbench_source_add",
                                      "invalid_payload: Unsupported energy log schema or occurrence identity"),
@@ -733,10 +753,9 @@ MALFORMED_EXPECTED = {
                                    "invalid_payload: Declare actual measurement versus synthetic fixture"),
     "extra-field-energy-log.json": ("workbench_source_add",
                                     "invalid_payload: Require exactly the declared energy-log fields"),
-    "wrong-type-workspace.json": ("exchange_inspect", "unsupported instrument-exchange schema"),
-    "wrong-revision-workbench.json": ("exchange_inspect", "unsupported instrument-exchange schema"),
-    "wrong-identity-result.json": ("workbench_source_add",
-                                   "MALFORMED_RESPONSE: The bound runtime did not return finite, unambiguous JSON"),
+    "wrong-type-workspace.json": ("session_from_workspace", "Unsupported workspace format"),
+    "wrong-revision-workbench.json": ("workbench_restore", "Malformed retained workbench catalog"),
+    "wrong-identity-result.json": ("exchange_identity", "result_id does not match the artifact content"),
 }
 RUNTIME_EXPECTED = {
     "oversize-exchange (1 MiB + 1 byte)": "file exceeds 1048576 bytes: <path>",
@@ -744,9 +763,6 @@ RUNTIME_EXPECTED = {
         "invalid_payload: Energy analysis source must contain 1..4194304 exact retained bytes",
     "non-canonical base64": "invalid_payload: Source bytes must use bounded canonical base64",
     "extra source payload field": "invalid_payload: Unexpected or missing workbench fields",
-    "wrong-identity-result (exchange._identity)": "result_id does not match the artifact content",
-    "wrong-type-workspace (Session.from_workspace)": "Unsupported workspace format",
-    "wrong-revision-workbench (Workbench.restore)": "Malformed retained workbench catalog",
     "wrong-type selection revision (Session.from_workspace)": "Invalid saved selection revision",
 }
 
@@ -766,22 +782,25 @@ def malformed_exchange_fixtures(ctx):
                         for name, raw in malformed_fixtures().items())
     ctx.artifact_json("malformed-refusals.json", {"committed_fixture_mismatches": committed,
                                                   "fixtures": matrix, "runtime": runtime})
-    unrefused = [name for name, row in matrix.items() if not any(item["refused"] for item in row.values())]
-    unrefused += [name for name, row in runtime.items() if not row["refused"]
-                  and not name.startswith("extra top-level")]
+    unrefused = [name for name, (validator, _) in MALFORMED_EXPECTED.items() if not matrix[name][validator]["refused"]]
+    unrefused += [name for name in RUNTIME_EXPECTED if not runtime[name]["refused"]]
     checks = []
     for name, (validator, expected) in sorted(MALFORMED_EXPECTED.items()):
-        checks.append(_refusal(f"{name} via {validator}", expected, matrix[name][validator]["message"]))
+        observed = matrix[name][validator]
+        if expected is None:
+            checks.append(_check(f"{name} not refused by {validator}", int(not observed["refused"])))
+        else:
+            checks.append(_refusal(f"{name} via {validator}", expected, observed["message"]))
     for name, expected in sorted(RUNTIME_EXPECTED.items()):
         checks.append(_refusal(name, expected, runtime[name]["message"]))
     overflow = matrix["overflow.json"]
     deep = matrix["deep-nesting.json"]
     extra = runtime["extra top-level workspace field (Session.from_workspace)"]
-    total = len(matrix) + len(runtime) - 1
+    total = len(MALFORMED_EXPECTED) + len(RUNTIME_EXPECTED)
     findings = [
-        finding("Every malformed exchange fixture is refused by at least one CIW validator with its error text "
+        finding("Every malformed exchange fixture is refused by the CIW validator it targets, with the error text "
                 "retained", "computational_pipeline", {"fixtures": total, "refused": total - len(unrefused)},
-                {"checks": [_check("malformed fixtures accepted by every validator", len(unrefused))] + checks},
+                {"checks": [_check("malformed fixtures accepted by their targeted validator", len(unrefused))] + checks},
                 tolerance=EXACT),
         finding("session.read_json accepts an overflowing number as infinity while the exchange and workbench "
                 "parsers refuse it", "computational_pipeline",
@@ -1182,6 +1201,8 @@ _T097_PLAN = _fields(
     ["provider unavailable"],
     ["The SCR checkout is not bound in this run."],
     "Provision the pinned SCR checkout (scripts/check_lab.py does) and rerun T097.")
+_T097_PLAN["findings"] = [finding("The integer heat field describes physical heat diffusion in a material", "physical",
+                                  "not established: dimensionless integer arithmetic", {})]
 
 
 @task("T097", changed_files=(MODULE, PROVIDERS),
@@ -1191,7 +1212,7 @@ _T097_PLAN = _fields(
 def exact_provider_integrations(ctx):
     identity = _scr_identity(ctx)
     comparison = providers.compare_with_pins("scr", identity, providers.ciw_pins())
-    fields = deepcopy(_T097_PLAN)
+    fields = {k: v for k, v in deepcopy(_T097_PLAN).items() if k != "findings"}
     if not comparison["accepted"]:
         fields.update(numerical_result=f"SCR checkout refused: HEAD {identity['head']} matches {comparison['matched']}",
                       unresolved_assumptions=["The bound SCR checkout is not at a CIW pin or not clean."])
@@ -1530,6 +1551,8 @@ _T099_PLAN = _fields(
     "none", "not quantified", ["provider or toolchain unavailable"],
     ["The SCR checkout or cargo is unavailable in this run."],
     "Install a Rust toolchain, bind the pinned SCR checkout and rerun T099.")
+_T099_PLAN["findings"] = [finding("A successful locked build makes the engine acceptable for production use",
+                                  "production_acceptance", "not decided by the workbench", {})]
 
 
 @task("T099", changed_files=(MODULE, PROVIDERS),
@@ -1538,7 +1561,7 @@ _T099_PLAN = _fields(
 def locked_cargo_build(ctx):
     identity = _scr_identity(ctx)
     comparison = providers.compare_with_pins("scr", identity, providers.ciw_pins())
-    fields = deepcopy(_T099_PLAN)
+    fields = {k: v for k, v in deepcopy(_T099_PLAN).items() if k != "findings"}
     if not comparison["accepted"]:
         fields["numerical_result"] = f"SCR checkout refused: {comparison}"
         return {"state": "blocked", "fields": fields, "findings": []}

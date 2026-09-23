@@ -28,7 +28,7 @@ from .integrators import integrate_fixed
 from .jacobi import constant_curvature, perturbed_start, transfer
 from .registry import task
 from .sensor_fusion_bench import chi2_quantile, factor, generator
-from .sensor_fusion_common import (TESTS, TOL_EXACT, TOL_MC, TOL_RATE, TOL_ROUNDOFF, TOL_TINY, as_json, bonferroni,
+from .sensor_fusion_common import (TESTS, TOL_MC, TOL_ROUNDOFF, TOL_TINY, as_json, bonferroni,
                                    check, covariance_z, files, generator_basis, outcome, rate_interval, unreal)
 from .sensor_fusion_objects import FrameTransform, Observation
 from .surfaces import HyperbolicPlane, Sphere

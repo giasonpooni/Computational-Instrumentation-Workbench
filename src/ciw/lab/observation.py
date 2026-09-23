@@ -680,6 +680,9 @@ def camera_calibration_perturbations(ctx):
                                     - exact_model)))
     sensitivity = {name: _floats(jac[:, j] * (1e-3 if name.endswith("_rad") else 1.0))
                    for j, name in enumerate(PARAMETERS)}
+    longest = {name: abs(values[-1]) for name, values in sensitivity.items()}
+    disparity_ratio = (min(longest["right_cx_px"], longest["right_ry_rad"])
+                       / max(longest["right_cy_px"], longest["right_rx_rad"]))
     ctx.artifact_json("calibration-jacobian.json", {
         "pairs_arc_m": _floats(scene["arcs"][[8, 10, 12, 15]]), "parameters": list(PARAMETERS),
         "sensitivity_m_per_px_or_mrad": sensitivity, "rectified_numeric": jac_rect[:, :2].tolist(),
@@ -705,9 +708,12 @@ def camera_calibration_perturbations(ctx):
                                    declared["relative_residual"], 0.01),
                             _check("log-log slope of the residual against scale minus 2", slope - 2, 0.05)]},
                 tolerance={"abs": 1e-9, "rel": 1e-5}),
-        finding("Chord sensitivity to each calibration parameter (m per px, m per mrad)", "numerical", sensitivity,
+        finding("Chord sensitivity to each calibration parameter (m per px, m per mrad); disparity-changing errors "
+                "dominate", "numerical", sensitivity,
                 {"checks": [_check("Jacobian change when finite-difference steps are halved (relative)", convergence,
-                                   1e-5, kind="self_convergence")]},
+                                   1e-5, kind="self_convergence"),
+                            _check("0.12 m chord: min(|d/d cx|, |d/d yaw|) over max(|d/d cy|, |d/d pitch|)",
+                                   disparity_ratio, 10.0, "ge", kind="invariant")]},
                 tolerance={"abs": 1e-12, "rel": 1e-5}),
         finding("A common focal-length error leaves same-depth chords unchanged and scales only the depth "
                 "component", "numerical", {"ruling_relative_change": changes["ruling"],
@@ -729,7 +735,9 @@ def camera_calibration_perturbations(ctx):
     ]
     fields = _fields(
         hypothesis="Chord errors caused by small calibration errors are linear in the errors, with a Jacobian that "
-                   "matches closed forms where they exist; rotation errors of a fraction of a milliradian dominate.",
+                   "matches closed forms where they exist; errors that change horizontal disparity (right-camera yaw, "
+                   "horizontal principal point) dominate, while vertical principal-point and pitch errors barely move "
+                   "chords.",
         mathematical_model="Pixels from the true rig are triangulated with a believed rig (focal f + df on both "
                            "cameras, right principal point + (dcx, dcy), right rotation exp([w]) about its centre). "
                            "Rectified rig: Z_b = Z f_b/f and X_b = X, so c_b^2 = dX^2 + dY^2 + (dZ f_b/f)^2 and "
@@ -1781,9 +1789,12 @@ def raw_filtered_smoothed(ctx):
         quantile_basis["independent_check"] = dict(
             _check("Wilson-Hilferty NEES bounds against scipy.stats.chi2.ppf (relative)", quantile_gap, 1e-4),
             producer=dict(PRODUCER), checker={"implementation": "scipy.stats", "revision": scipy_version})
-    else:
-        quantile_basis["checks"] = [_check("Wilson-Hilferty lower bound below the upper bound",
-                                           study["nees_bounds"][0] - study["nees_bounds"][1], 0.0, "le", "invariant")]
+    runs = TRACK["runs"]
+    coverage = [sig.chi2_cdf(bound * runs, 2 * runs) for bound in study["nees_bounds"]]
+    quantile_basis["checks"] = [_check("chi-square CDF (incomplete-gamma series) at the lower bound minus 0.025",
+                                       coverage[0] - 0.025, 1e-4, kind="high_precision"),
+                                _check("chi-square CDF (incomplete-gamma series) at the upper bound minus 0.975",
+                                       coverage[1] - 0.975, 1e-4, kind="high_precision")]
     findings = [
         finding("The RTS smoothed covariance never exceeds the filtered covariance in matrix order", "numerical",
                 {"min_eigenvalue_filtered_minus_smoothed": study["min_eigenvalue"],
@@ -1812,7 +1823,8 @@ def raw_filtered_smoothed(ctx):
                 {"steady_state": study["steady_state"], "relative_gap": study["steady_gap"]}, steady_basis,
                 tolerance={"abs": 1e-12, "rel": 1e-9}),
         finding("Wilson-Hilferty chi-square quantiles give the NEES consistency bounds", "numerical",
-                {"bounds_95": study["nees_bounds"]}, quantile_basis, tolerance={"abs": 1e-12, "rel": 1e-9}),
+                {"bounds_95": study["nees_bounds"], "cdf_at_bounds": coverage}, quantile_basis,
+                tolerance={"abs": 1e-12, "rel": 1e-9}),
         finding("Smoothing does not reduce the error of every individual sample", "numerical",
                 {"smoothed_worse_fraction": study["smoothed_worse_fraction"]},
                 {"checks": [_check("fraction of (run, step) samples where |smoothed error| > |filtered error|",
@@ -1853,7 +1865,7 @@ def raw_filtered_smoothed(ctx):
                                "per-sample versus ensemble ordering", "chi-square quantile approximation"],
         unresolved_assumptions=["Model matches the generator exactly (no mismatch)", "Measurements are synchronous "
                                 "and none are dropped"],
-        recommended_next_task="T066: filter consistency under model mismatch (sensor-fusion section)")
+        recommended_next_task="T066: verify that filtered residuals use filter covariance, not raw sensor covariance")
     return {"state": "completed", "fields": fields, "findings": findings}
 
 

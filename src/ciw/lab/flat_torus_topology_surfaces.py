@@ -276,6 +276,10 @@ class PolygonSurface:
         or NEAR_VERTEX_WITHIN_TOLERANCE when a float pass is within ``tol``.
         """
         self.require_translation()
+        poly = self.polygons[polygon]
+        if not all(self._positive(_cross(self.edge(polygon, j), _sub(start, poly[j]))) for j in range(len(poly))):
+            raise FlowTermination("START_NOT_INTERIOR", "start point is not strictly inside its polygon",
+                                  {"polygon": polygon})
         singular = self.cone_points()
         x, current, entry = start, polygon, None
         time, crossings, min_clearance = 0, [], math.inf

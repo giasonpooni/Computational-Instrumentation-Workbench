@@ -9,8 +9,15 @@ correlated, gating rates match their quantiles, gaps, stale clocks, frame
 mismatches, expired calibrations and lost tracks are handled explicitly, the
 recursive estimate equals the exact batch posterior, and observations,
 candidate states and admitted states stay separate with a read-only default.
-Every mismatched-filter counterexample is predicted exactly by
-:func:`ciw.lab.sensor_fusion_bench.mismatch_moments` before it is simulated.
+Where a mismatched filter serves as a counterexample, its NEES/NIS or mean
+innovation is predicted from exact joint moments
+(:func:`ciw.lab.sensor_fusion_bench.mismatch_moments`) or exact mean
+propagation before it is simulated.
+
+This module holds the bench tasks T060-T062 and imports the sibling modules
+that register T063-T064 (``sensor_fusion_geometry``), T065-T068
+(``sensor_fusion_filtering``), T069-T071 (``sensor_fusion_robustness``) and
+T072-T076 (``sensor_fusion_admission``).
 
 Non-claims: all readings are synthetic draws from declared distributions.
 Nothing here measures a real sensor, validates a calibration, certifies a
@@ -93,9 +100,9 @@ def multi_sensor_bench(ctx):
     run0 = {"truth": bench["truth"][0], "readings": {n: {"ticks": bench["readings"][n]["ticks"],
                                                          "values": bench["readings"][n]["values"][0]} for n in names}}
     ctx.artifact_json("bench.json", as_json({"config": config.describe(), "seed": BENCH_SEED, "runs": BENCH_RUNS,
-                                           "retained_run": 0, "run": run0,
-                                           "declared_covariances": {s.name: s.covariance for s in config.sensors},
-                                           "process_noise_Q_per_tick": bench["Q"]}))
+                                             "retained_run": 0, "run": run0,
+                                             "declared_covariances": {s.name: s.covariance for s in config.sensors},
+                                             "process_noise_Q_per_tick": bench["Q"]}))
     ctx.artifact_json("digests.json", {"seed": BENCH_SEED, "digest": bench_digest(bench),
                                        "regenerated_digest": bench_digest(again),
                                        "other_seed_digest": bench_digest(other),
@@ -137,7 +144,7 @@ def multi_sensor_bench(ctx):
                     check("analytic", "smallest eigenvalue of the declared covariances", min_eigen, 1e-6, "ge")]},
                 unit="smallest eigenvalue", tolerance=TOL_ROUNDOFF),
         unreal("The bench's noise levels, rates and motion describe real camera, encoder, IMU or tracker hardware",
-                "sensor_performance", BENCH_SEED, "not established: every stream is a declared synthetic draw"),
+               "sensor_performance", BENCH_SEED, "not established: every stream is a declared synthetic draw"),
     ]
     count_text = ", ".join(f"{name} {row['readings_per_run']}" for name, row in counts.items())
     fields = {
@@ -224,8 +231,8 @@ def known_truth_covariance(ctx):
     detect = {name: row["variance_z_if_declared_10pct_low"] for name, row in table.items() if name != "process_noise"}
     minimal = {name: z_crit * math.sqrt(2.0 / table[name]["samples"]) for name in detect}
     ctx.artifact_json("covariance_moments.json", as_json({"family_size": family, "family_alpha": alpha,
-                                                        "z_critical": z_crit, "per_stream": table,
-                                                        "minimal_detectable_relative_variance_error": minimal}))
+                                                          "z_critical": z_crit, "per_stream": table,
+                                                          "minimal_detectable_relative_variance_error": minimal}))
     ctx.artifact_text("zscores.svg", svg.line_plot(
         [("|z| per moment", list(range(family)), np.abs(z_all)), ("Bonferroni bound", [0, family - 1], [z_crit] * 2)],
         title="T061 standardized moment deviations", xlabel="moment index", ylabel="|z|", markers=True))
@@ -240,9 +247,10 @@ def known_truth_covariance(ctx):
                 "streams but escapes detection for the 2 Hz tracker", "numerical", detect,
                 {**generator_basis(BENCH_SEED), "checks": [
                     check("analytic", "tracker variance z under a 10% understatement (not detected)",
-                           detect["tracker"], z_crit, "le"),
-                    check("analytic", "camera variance z under a 10% understatement (detected)",
-                           detect["camera"], z_crit, "ge")]},
+                          detect["tracker"], z_crit, "le"),
+                    check("analytic", "smallest variance z of the 10-20 Hz streams under a 10% understatement "
+                                      "(detected)", min(detect[name] for name in ("camera", "encoder", "imu")), z_crit,
+                          "ge")]},
                 tolerance=TOL_MC, counterexample={
                     "statement": "A covariance check on one bench run detects a 10% misstatement for every sensor",
                     "witness": {"sensor": "tracker", "samples": table["tracker"]["samples"],
@@ -251,7 +259,7 @@ def known_truth_covariance(ctx):
                 "z_crit * sqrt(2 / N)", "mathematical", minimal,
                 {"derivation": "delta = z_crit sqrt(2/N) from Var(S_ii) = 2 R_ii^2 / N"}, tolerance=TOL_ROUNDOFF),
         unreal("Real sensors' noise covariance equals the covariance declared for this bench", "sensor_performance",
-                BENCH_SEED, "not established: residuals are synthetic draws from the declared covariance"),
+               BENCH_SEED, "not established: residuals are synthetic draws from the declared covariance"),
     ]
     fields = {
         "hypothesis": "The empirical residual and process-noise moments reproduce the declared means (zero) and "
@@ -348,8 +356,8 @@ def correlated_noise(ctx):
     z_crit = normal_quantile(1 - 1e-3 / (2 * family))
     good, bad = results["correct"], results["ignored"]
     ctx.artifact_json("consistency.json", as_json({"seed": seed, "runs": MC_RUNS, "ticks": MC_TICKS,
-                                                 "R_true": R_true, "R_ignored": R_ignored,
-                                                 "whitened_z_critical": z_crit, "results": results}))
+                                                   "R_true": R_true, "R_ignored": R_ignored,
+                                                   "whitened_z_critical": z_crit, "results": results}))
     ctx.artifact_text("anees.svg", svg.line_plot(
         [("correct model", ticks, curves["correct"]), ("ignored correlation", ticks, curves["ignored"]),
          ("99% upper", [1, MC_TICKS], [good["nees"]["interval"][1]] * 2),
@@ -364,18 +372,18 @@ def correlated_noise(ctx):
                               "z_critical": z_crit},
                 {**generator_basis(seed, runs=MC_RUNS, ticks=MC_TICKS), "checks": [
                     check("analytic", "fraction of ticks with ANEES in chi2(4N)/N 99% interval",
-                           good["nees"]["fraction_inside"], 0.9, "ge"),
+                          good["nees"]["fraction_inside"], 0.9, "ge"),
                     check("analytic", "fraction of ticks with ANIS in chi2(4N)/N 99% interval",
-                           good["nis"]["fraction_inside"], 0.9, "ge"),
+                          good["nis"]["fraction_inside"], 0.9, "ge"),
                     check("analytic", "whitened innovation covariance vs I (Bonferroni 99.9%)",
-                           good["whitened_max_z"], z_crit, "le")]},
+                          good["whitened_max_z"], z_crit, "le")]},
                 tolerance=TOL_MC),
         finding("Ignoring the camera-tracker cross-correlation makes the filter overconfident: run-averaged NEES "
                 "exceeds the 99% upper bound at nearly every tick", "numerical",
                 {"nees": bad["nees"], "predicted_mean_nees": bad["predicted_mean_nees"]},
                 {**generator_basis(seed), "checks": [
                     check("analytic", "fraction of ticks with ANEES above the 99% upper bound",
-                           bad["nees"]["fraction_above"], 0.9, "ge")]},
+                          bad["nees"]["fraction_above"], 0.9, "ge")]},
                 tolerance=TOL_MC, counterexample={
                     "statement": "Ignoring correlation between sensor noises is harmless",
                     "witness": {"common_mode_covariance": common, "grand_mean_nees": bad["nees"]["grand_mean"],
@@ -385,9 +393,9 @@ def correlated_noise(ctx):
                 {"nis": bad["nis"], "whitened_max_z": bad["whitened_max_z"], "z_critical": z_crit},
                 {**generator_basis(seed), "checks": [
                     check("analytic", "fraction of ticks with ANIS inside the 99% interval",
-                           bad["nis"]["fraction_inside"], 0.9, "ge"),
+                          bad["nis"]["fraction_inside"], 0.9, "ge"),
                     check("analytic", "whitened innovation covariance deviates from I",
-                           bad["whitened_max_z"], z_crit, "ge")]},
+                          bad["whitened_max_z"], z_crit, "ge")]},
                 tolerance=TOL_MC, counterexample={
                     "statement": "A passing mean-NIS chi-square test shows the measurement noise model is correct",
                     "witness": {"grand_mean_nis": bad["nis"]["grand_mean"],
@@ -402,7 +410,7 @@ def correlated_noise(ctx):
                     check("analytic", "mismatch_moments exact propagation", moments_gap, 4.0, "le")]},
                 tolerance=TOL_MC),
         unreal("Real camera and tracker noises share the common-mode covariance assumed here", "sensor_performance",
-                seed, "not established: the cross-correlation is a declared synthetic parameter"),
+               seed, "not established: the cross-correlation is a declared synthetic parameter"),
     ]
     fields = {
         "hypothesis": "NEES/NIS consistency holds for a filter with the correct cross-correlated R and fails for "

@@ -1120,8 +1120,8 @@ def exact_source_bytes(ctx):
     variants, fixture = _variants(ctx), _fixture(ctx)
     records = variants["records"]
     ctx.artifact_json("source-retention.json", {"records": records, "refusals": variants["refusals"]})
-    mismatches = {key: sum(not record[key] for record in records)
-                  for key in ("live_bytes_equal", "reopened_bytes_equal", "bundle_bytes_equal")}
+    mismatches = {f"{where}_byte_mismatches": sum(not record[f"{where}_bytes_equal"] for record in records)
+                  for where in ("live", "reopened", "bundle")}
     id_mismatch = sum(record["evidence_id"] != record["input_sha256"] for record in records)
     count_mismatch = sum(record["declared_byte_count"] != record["byte_count"] for record in records)
     artifact_mismatch = sum(record["artifact_ref"] != record["evidence_id"] for record in records)
@@ -1138,7 +1138,7 @@ def exact_source_bytes(ctx):
                  "byte_variants": sum(r["kind"] == "byte_variant" for r in records), **mismatches,
                  "evidence_id_mismatches": id_mismatch, "byte_count_mismatches": count_mismatch,
                  "bundle_artifact_ref_mismatches": artifact_mismatch},
-                {"checks": [_exact(f"sources whose {key.replace('_', ' ')} is false", value)
+                {"checks": [_exact(f"sources with {key.replace('_', ' ')}", value)
                             for key, value in mismatches.items()]
                  + [_exact("evidence_id differs from sha256 of the input bytes", id_mismatch),
                     _exact("declared byte_count differs from the input length", count_mismatch),
@@ -1171,9 +1171,10 @@ def exact_source_bytes(ctx):
                     "float-spelling, original under a second label)", "make_demo_run() oscillator recording"],
         experiment=T078_PLAN["experiment"] + " Retained as source-retention.json.",
         numerical_result=f"{len(records)} sources; byte mismatches live/reopened/bundle = "
-                         f"{mismatches['live_bytes_equal']}/{mismatches['reopened_bytes_equal']}/"
-                         f"{mismatches['bundle_bytes_equal']}; evidence_id mismatches {id_mismatch}; "
-                         f"3/3 non-canonical base64 transports refused",
+                         f"{mismatches['live_byte_mismatches']}/{mismatches['reopened_byte_mismatches']}/"
+                         f"{mismatches['bundle_byte_mismatches']}; evidence_id mismatches {id_mismatch}; "
+                         f"{sum(transports[name].get('message') == expected for name, expected in expected_transport.items())}"
+                         f"/{len(expected_transport)} non-canonical base64 transports refused with the predicted message",
         uncertainty="Exact byte equality; no numerical tolerance is involved. The sample is twelve byte strings of "
                     "one schema, not every possible source kind.",
         failure_modes_checked=["byte normalization on retention", "re-encoding on workspace save",

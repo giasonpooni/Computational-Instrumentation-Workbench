@@ -25,7 +25,8 @@ python -m pytest -q tests/test_lab_observation.py
 The section runs in about 6 s and its tests in about 7 s on one core. sympy
 (T046, T047) and scipy (T057) are optional. Without them the derivation
 findings are labelled `analytic` instead of `independently_verified`, and the
-Riccati check is `numerically_verified` instead of `independently_verified`.
+Riccati fixed-point and chi-square-quantile findings of T057 are
+`numerically_verified` instead of `independently_verified`.
 
 ## Observation modes
 
@@ -163,6 +164,9 @@ right-camera rotation about its centre. The central-difference Jacobian is
 compared with closed forms on a rectified rig (∂c/∂f = ΔZ²/(cf) and
 ∂Z/∂c_x = −Z²/(bf)) and checked by step halving. First-order predictions are
 compared with direct recomputation over five scales; the residual slope is 2.
+Errors that change horizontal disparity dominate: for the 0.12 m chord, 1 mrad
+of right-camera yaw moves it by 0.36 mm and 1 px of horizontal principal point
+by 0.15 mm, against about 2 µm for 1 px of vertical principal point.
 Counterexample: a common focal error leaves same-depth chords unchanged (the
 rectified-rig map is X_b = X, Z_b = Z f_b/f), so it is not a uniform scale.
 
@@ -226,8 +230,9 @@ on a seeded 300-run ensemble. P_filt − P_smooth is positive semidefinite at
 every step. It is only rank one at step N − 2, so strict reduction is tested
 on its trace. Position RMSE orders smoothed ≤ filtered ≤ raw, and the
 ensemble-average NEES lies inside the 95 % χ²(2N)/N bounds at about 97 % of
-steps. The bounds use Wilson–Hilferty quantiles, compared with
-`scipy.stats.chi2` when available. The Riccati fixed point is compared with
+steps. The bounds use Wilson–Hilferty quantiles. They are always checked
+against a series evaluation of the chi-square CDF (regularized incomplete
+gamma function), and against `scipy.stats.chi2` when scipy is available. The Riccati fixed point is compared with
 `scipy.linalg.solve_discrete_are`. Counterexample: the smoothed error is larger
 than the filtered error at about 29 % of individual samples. The ordering is
 an ensemble property.
@@ -267,4 +272,5 @@ The next step toward any of these is acquisition. Retain raw bytes with device
 identity, acquisition time and calibration reference, as required for a
 `hardware_measured` finding, then repeat T048–T056 against that data.
 Recommended follow-ups in the queue: T060 (multi-sensor bench) and T066
-(filter consistency under model mismatch).
+(filtered residuals must use the filter covariance, not the raw sensor
+covariance).

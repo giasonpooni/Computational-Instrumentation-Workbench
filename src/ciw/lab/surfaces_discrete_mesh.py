@@ -290,7 +290,7 @@ def mesh_refinement_convergence(ctx):
         "not a single power law. Prism cylinder: development circumference 2nR sin(pi/n), giving error "
         "L cos(alpha) (pi/(n sin(pi/n)) - 1) ~ L cos(alpha) pi^2 / (6 n^2).",
         ["icosphere levels 1-6", "prism cylinder n=8..128, alpha=0.5, L=3", "six declared sphere geodesics, L=2",
-         "distances from vertex 0 on icosphere levels 1-4"],
+         "graph distances from vertex 0 on icosphere levels 1-4; heat-method distances on levels 1-3"],
         "Endpoint angle on the unit sphere after radial projection; helix error on the cylinder surface; relative "
         "distance error against the great-circle distance.",
         "Length defect order 2; cylinder constant L cos(alpha) pi^2/6; graph errors bounded below by a nonzero floor.",
@@ -564,7 +564,8 @@ def mesh_quality_effects(ctx):
                 {"generator": generator("cylinder_mesh", lantern=True, n=lantern["folded"]["n"], q=lantern["folded"]["q"]),
                  "checks": [refusal("validator on the m = n^2 lantern", "folded_face",
                                     lantern["folded"]["issues"][0] if lantern["folded"]["issues"] else None)]}),
-        finding("Straightest geodesics on planar meshes are exact at any triangle quality, graph distances are not",
+        finding("Straightest geodesics on planar meshes are exact at any tested triangle quality, while edge-graph "
+                "distance error changes with the edge directions",
                 "numerical", {"max_trace_error": plane_error, "max_graph_excess": graph_excess,
                               "min_angle_deg": [r["min_angle_deg"] for r in plane["rows"]]},
                 {"generator": generator("plane_mesh", shears=[r["shear"] for r in plane["rows"]]),
@@ -585,7 +586,9 @@ def mesh_quality_effects(ctx):
               f"n={last['n']}): Hausdorff {last['hausdorff_sampled']:.2e}, area ratio {last['area_ratio']:.4f} "
               f"(limit {lantern['limit_area_ratio']:.4f}), traced height {last['traced_height']:.4f}, interior K "
               f"{flat:.1e}. Planar traces exact to {plane_error:.1e} for min angles down to "
-              f"{min(r['min_angle_deg'] for r in plane['rows']):.1f} deg.")
+              f"{min(r['min_angle_deg'] for r in plane['rows']):.1f} deg, while the max edge-graph excess moves from "
+              f"{graph_excess[0]:.3f} (shear 0) to {graph_excess[-1]:.3f} (shear {plane['rows'][-1]['shear']:g}), i.e. "
+              "it follows edge directions rather than the minimum angle.")
     return {"state": "completed", "findings": findings, "fields": fields(
         "At fixed vertex count, worse triangle quality increases curvature error within a mesh family, but quality "
         "metrics do not order errors across families; Hausdorff convergence does not imply convergence of area, "

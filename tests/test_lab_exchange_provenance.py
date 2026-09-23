@@ -98,8 +98,9 @@ def test_exact_source_bytes(lab):
     retained = report["findings"][0]
     assert retained["evidence_status"] == "numerically_verified"
     assert retained["value"]["sources"] == 12
-    assert all(retained["value"][key] == 0 for key in ("live_bytes_equal", "reopened_bytes_equal", "bundle_bytes_equal",
-                                                       "evidence_id_mismatches", "byte_count_mismatches"))
+    assert all(retained["value"][key] == 0 for key in ("live_byte_mismatches", "reopened_byte_mismatches",
+                                                       "bundle_byte_mismatches", "evidence_id_mismatches",
+                                                       "byte_count_mismatches"))
     transports = found["Non-canonical base64 transports are refused rather than normalized into retained bytes"]
     assert transports["value"] == {"base64/line-wrapped": "Source bytes must use canonical base64",
                                    "base64/missing-padding": "Source bytes must use canonical base64",

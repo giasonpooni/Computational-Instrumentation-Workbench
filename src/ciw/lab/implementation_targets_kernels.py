@@ -407,10 +407,11 @@ def ulp_distance(a, b) -> np.ndarray:
                          np.dtype(np.float32): (np.int32, (1 << 31) - 1)}[a.dtype]
 
     def monotone(v):
-        bits = v.view(signed).astype(np.int64)
-        return np.where(bits < 0, -(bits & magnitude), bits).astype(np.float64)
+        bits = v.view(signed).astype(np.int64).ravel().tolist()
+        return [-(x & magnitude) if x < 0 else x for x in bits]
 
-    return np.abs(monotone(a) - monotone(b))
+    # Python integers: the difference of two 64-bit monotone keys can exceed int64.
+    return np.array([float(abs(x - y)) for x, y in zip(monotone(a), monotone(b))]).reshape(a.shape)
 
 
 def compare_outputs(reference, candidate, policy: dict) -> dict:

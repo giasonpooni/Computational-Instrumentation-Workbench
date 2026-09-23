@@ -1009,3 +1009,424 @@ def semidefinite_edges(ctx):
                              "a rounded eigenvalue and may differ between LAPACK builds; the retained value is only "
                              "whether an exactly indefinite P was accepted.")
     return _finish(fields, findings, PROVIDER_FILES, identity)
+
+
+# T105 ------------------------------------------------------------------------
+
+MSD_MASS, MSD_DAMPING, MSD_BOX = 2.0, 3.0, (8.0, 12.0)
+MSD_P = np.array([[6.0, 0.75], [0.75, 1.0]])
+# name: (state scaling T = diag(t), time factor tau, parameter factor c_theta)
+UNIT_SYSTEMS = {
+    "m, s, N/m": ((1.0, 1.0), 1.0, 1.0),
+    "mm, s, N/mm": ((1e3, 1e3), 1.0, 1e-3),
+    "m, ms, N/m": ((1.0, 1e-3), 1e-3, 1.0),
+    "um, ms, N/um": ((1e6, 1e3), 1e-3, 1e-6),
+    "2^-10 m, 2^-7 s, 2^10 N/m": ((2.0 ** 10, 2.0 ** 3), 2.0 ** -7, 2.0 ** -10),
+}
+
+
+def msd_matrices():
+    """SI mass-spring-damper x = (position, velocity): A(k) = A0 + k A1, stiffness k in N/m."""
+    A0 = np.array([[0.0, 1.0], [0.0, -MSD_DAMPING / MSD_MASS]])
+    A1 = np.array([[0.0, 0.0], [-1.0 / MSD_MASS, 0.0]])
+    return A0, A1
+
+
+def light_damping():
+    """k = 10 N/m, c = 1e-8 N s/m with P chosen so the SI decrease form is diag(-kc/m^2, -c/m): margin 5e-9."""
+    k, c, m = 10.0, 1e-8, MSD_MASS
+    b = c / (2.0 * m)
+    A = np.array([[0.0, 1.0], [-k / m, -c / m]])
+    P = np.array([[k / m + c * b / m, b], [b, 1.0]])
+    return A, P
+
+
+def to_units(system, A0=None, A1=None, P=None, x=None, theta=None):
+    """How a host re-expresses the SI declaration: A' = tau T A T^-1, A1' = A1'/c, P' = T^-1 P T^-1, x' = T x."""
+    t, tau, c_theta = UNIT_SYSTEMS[system]
+    T, Ti = np.diag(t), np.diag([1.0 / v for v in t])
+    out = {}
+    if A0 is not None:
+        out["A0"] = tau * (T @ A0 @ Ti)
+    if A1 is not None:
+        out["A1"] = tau * (T @ A1 @ Ti) / c_theta
+    if P is not None:
+        converted = Ti @ P @ Ti
+        out["P"] = 0.5 * converted + 0.5 * converted.T
+    if x is not None:
+        out["x"] = T @ np.asarray(x, dtype=float)
+    if theta is not None:
+        out["theta"] = float(theta) * c_theta
+    return out
+
+
+def conversion_scan(count=2000):
+    """IEEE facts about converting box bounds: collisions of neighbours and formula disagreements.
+
+    A collision is fl(nextafter(b, inf) c) == fl(b c): a sample just above the bound lands on the converted
+    bound. A disagreement is fl(b / (1/c)) != fl(b c) for the same exact quantity.
+    """
+    rng = R.generator(1051)
+    collisions = {1e-3: 0, 1e-6: 0}
+    disagreements = {1e-3: 0, 1e-6: 0}
+    witnesses = {}
+    for _ in range(count):
+        bound = float(10.0 ** rng.uniform(-3.0, 6.0))
+        above = math.nextafter(bound, math.inf)
+        for factor in (1e-3, 1e-6):
+            if above * factor == bound * factor:
+                collisions[factor] += 1
+                witnesses.setdefault(f"collision {factor:g}", bound)
+            divided, multiplied = bound / (1.0 / factor), bound * factor
+            if divided != multiplied:
+                disagreements[factor] += 1
+                witnesses.setdefault(f"formula {factor:g}", bound)
+    return {"draws": count, "neighbour_collisions": {f"{k:g}": v for k, v in collisions.items()},
+            "formula_disagreements": {f"{k:g}": v for k, v in disagreements.items()},
+            "witnesses": {name: {"bound": value, "hex": value.hex()} for name, value in sorted(witnesses.items())}}
+
+
+@task("T105", changed_files=PROVIDER_FILES, regression_tests=(_node("test_t105_unit_scales"),
+                                                                _node("test_conversion_scan")))
+def unit_scales(ctx):
+    fields = _fields(
+        "The same physical parameter box and plant expressed in different units give the same PLSR verdicts: box "
+        "membership is preserved by a monotone conversion and the sign of the decrease form is congruence-invariant.",
+        "Mass-spring-damper m = 2 kg, c = 3 N s/m, stiffness k in [8, 12] N/m: A(k) = A0 + k A1, common P = "
+        "[[6, 0.75], [0.75, 1]] (exactly negative definite decrease at both vertices, hence on the box). A unit "
+        "change is x' = T x, t' = t/tau, k' = c k: A' = tau T A T^-1, P' = T^-1 P T^-1. Inertia is invariant; "
+        "eigenvalues, max|A| and max|P| (hence margin and resolution) are not.",
+        [f"Unit systems (T, tau, c_theta): {UNIT_SYSTEMS}",
+         "Samples: k = 8 and 12 (bounds), nextafter(8, 0) and nextafter(12, inf) (just outside), 8 interior k "
+         "(PCG64 seed 1052), states from a normal draw", "Light-damping twin: k = 10, c = 1e-8, SI margin 5e-9",
+         "Conversion scan: 2000 bounds 10^U(-3, 6) (seed 1051) with factors 1e-3 and 1e-6"],
+        "PLSR code, margin ratio and check_vertices result per unit system; IEEE conversion outcomes.",
+        "Identical codes across unit systems for every sample; identical box decisions for bounds and "
+        "neighbours; check_vertices passes in every unit system.",
+        "Convert the SI declaration into each unit system the way a host would (float arithmetic), evaluate all "
+        "samples with PLSR, compare codes per sample, then search the conversion arithmetic for counterexamples.",
+        "T106: drive every runtime status; propose that hosts declare boxes with an outward-rounded guard band "
+        "and that PLSR document that margin ratios are unit-dependent for non-uniform unit changes.",
+        ["code differs across unit systems", "box decision differs at a bound", "just-outside sample admitted",
+         "bound conversion formulas disagree", "vertex check fails in some units",
+         "near-threshold verdict depends on units"],
+        ["Unit conversion follows one host convention (multiply by the factor); other conventions change which "
+         "boundary samples collide.", "The stiffness box and damping are illustrative values, not identified ones."])
+    A0, A1 = msd_matrices()
+    exact_vertices = [R.exact_class(R.exact_form(A0 + k * A1, MSD_P)) for k in MSD_BOX]
+    scan = conversion_scan()
+    offline = [
+        finding("P = [[6, 0.75], [0.75, 1]] is an exact common quadratic certificate for the SI stiffness box [8, 12]",
+                "mathematical", {"vertex_classes": exact_vertices},
+                {"derivation": "continuous-time decrease form is affine in k, so its largest eigenvalue is convex and "
+                               "maximal at a vertex; both vertices checked in exact rational arithmetic",
+                 "checks": [_check("vertices whose exact decrease form is not negative definite",
+                                   sum(c != "negative_definite" for c in exact_vertices), 0.0)]},
+                tolerance={"abs": 0.0, "rel": 0.0}),
+        finding("Converting box bounds in binary64 collapses neighbours and depends on the formula used", "numerical",
+                {"draws": scan["draws"], "neighbour_collisions": scan["neighbour_collisions"],
+                 "formula_disagreements": scan["formula_disagreements"]},
+                {"generator": {"name": "conversion_scan", "seed": 1051},
+                 "checks": [_check("neighbour collisions under x 1e-3", scan["neighbour_collisions"]["0.001"], 1.0, "ge"),
+                            _check("b / 1000 versus b * 0.001 disagreements", scan["formula_disagreements"]["0.001"],
+                                   1.0, "ge")]},
+                tolerance={"abs": 0.0, "rel": 0.0}),
+        finding("The declared stiffness box contains the stiffness of a real axis", "physical", None, {},
+                expected_not_established=True),
+    ]
+    rng = R.generator(1052)
+    thetas = {"k=8 (bound)": 8.0, "k=12 (bound)": 12.0, "k just below 8": math.nextafter(8.0, 0.0),
+              "k just above 12": math.nextafter(12.0, math.inf)}
+    for i, k in enumerate(rng.uniform(8.0, 12.0, 8)):
+        thetas[f"interior {i}"] = float(k)
+    states = {name: rng.normal(size=2) for name in thetas}
+    cases, keys = [], []
+    for system in UNIT_SYSTEMS:
+        conv = to_units(system, A0=A0, A1=A1, P=MSD_P)
+        box = ([to_units(system, theta=MSD_BOX[0])["theta"]], [to_units(system, theta=MSD_BOX[1])["theta"]])
+        for name, theta in thetas.items():
+            sample = to_units(system, x=states[name], theta=theta)
+            cid = f"{system}|{name}"
+            cases.append(_affine_case(cid, conv["A0"], [conv["A1"]], box, conv["P"], sample["x"], [sample["theta"]]))
+            keys.append((system, name))
+        c_theta = UNIT_SYSTEMS[system][2]
+        for name in ("k=8 (bound)", "k=12 (bound)"):
+            theta = thetas[name] / (1.0 / c_theta)  # a second, mathematically equal conversion formula
+            sample = to_units(system, x=states[name])
+            cases.append(_affine_case(f"{system}|{name}|divided", conv["A0"], [conv["A1"]], box, conv["P"],
+                                      sample["x"], [theta]))
+        cases.append({"id": f"{system}|vertices", "op": "check_vertices",
+                      "plant": {"A0": _mat(conv["A0"]), "terms": [_mat(conv["A1"])], "theta_min": box[0],
+                                "theta_max": box[1], "time": "continuous"}, "certificate": {"P": _mat(conv["P"])}})
+        A_light, P_light = light_damping()
+        light = to_units(system, A0=A_light, P=P_light, x=(1.0, 1.0))
+        cases.append(_verdict_case(f"{system}|light", light["A0"], light["P"], light["x"]))
+    witness_bounds = {name: scan["witnesses"][name]["bound"] for name in ("collision 0.001", "formula 0.001")
+                      if name in scan["witnesses"]}
+    for name, bound in witness_bounds.items():
+        # A parameter that does not enter A isolates the box decision: in-box is certified, outside is refused.
+        if name.startswith("collision"):
+            sample, converted_bound = math.nextafter(bound, math.inf), bound * 1e-3
+            converted_sample = sample * 1e-3
+        else:
+            # Bound converted by the formula that rounds lower, sample (equal to the bound) by the other one.
+            sample = bound
+            converted_bound, converted_sample = sorted((bound * 1e-3, bound / 1000.0))
+        for label, box, theta in (("SI", ([0.0], [bound]), sample),
+                                  ("x1e-3", ([0.0], [converted_bound]), converted_sample)):
+            cases.append(_affine_case(f"{name}|{label}", -np.eye(2), [np.zeros((2, 2))], box, np.eye(2), (1.0, 0.0),
+                                      [theta]))
+    light_exact = {system: R.exact_class(R.exact_form(to_units(system, A0=light_damping()[0])["A0"],
+                                                      to_units(system, P=light_damping()[1])["P"]))
+                   for system in UNIT_SYSTEMS}
+    try:
+        bridge = _bridge(ctx, cases)
+    except _Unavailable as exc:
+        fields["numerical_result"] = (f"Provider-free: exact vertex classes {exact_vertices}; conversion scan "
+                                      f"{scan['neighbour_collisions']} collisions, {scan['formula_disagreements']} "
+                                      "formula disagreements.")
+        fields["uncertainty"] = "IEEE arithmetic and exact rationals; deterministic."
+        return _finish(fields, offline, PROVIDER_FILES, blocked=str(exc))
+    identity, results = bridge["identity"], bridge["results"]
+    base = provider_basis(identity)
+    table = {name: {system: _code(results[f"{system}|{name}"]) for system in UNIT_SYSTEMS} for name in thetas}
+    interior = [name for name in thetas if name.startswith("interior") or "(bound)" in name]
+    interior_mismatch = sum(len(set(table[name].values())) > 1 for name in interior)
+    outside = {name: table[name] for name in ("k just below 8", "k just above 12")}
+    admitted = {name: [s for s, code in codes.items() if code != "OUTSIDE_PARAMETER_BOX"] for name, codes in outside.items()}
+    divided = {f"{system}|{name}": _code(results[f"{system}|{name}|divided"]) for system in UNIT_SYSTEMS
+               for name in ("k=8 (bound)", "k=12 (bound)")}
+    divided_refused = {key: code for key, code in divided.items() if code == "OUTSIDE_PARAMETER_BOX"}
+    vertices = {system: results[f"{system}|vertices"].get("passed") for system in UNIT_SYSTEMS}
+    light = {system: _code(results[f"{system}|light"]) for system in UNIT_SYSTEMS}
+    light_ratio = {system: results[f"{system}|light"].get("margin_ratio") for system in UNIT_SYSTEMS}
+    interior_ratios = [results[f"{system}|interior 0"]["margin_ratio"] for system in UNIT_SYSTEMS]
+    ratio_spread = max(interior_ratios) / min(interior_ratios)
+    ctx.artifact_json("unit-scales.json", R.jsonable({"codes": table, "divided_bounds": divided,
+                                                       "vertices": vertices, "light_damping": light,
+                                                       "light_damping_margin_ratio": light_ratio,
+                                                       "interior0_margin_ratio": dict(zip(UNIT_SYSTEMS, interior_ratios)),
+                                                       "conversion_scan": scan}))
+    findings = [
+        finding("Interior and boundary stiffness samples give the same PLSR code in all five unit systems",
+                "numerical", {"samples": len(interior), "systems": len(UNIT_SYSTEMS), "mismatches": interior_mismatch},
+                {"provider": base, "checks": [_check("samples whose code differs between unit systems",
+                                                     interior_mismatch, 0.0, kind="invariant")]},
+                tolerance={"abs": 0.0, "rel": 0.0}),
+        finding("check_vertices passes for the converted box in every unit system", "numerical", vertices,
+                {"provider": base, "checks": [_check("unit systems whose vertex check fails",
+                                                     sum(v is not True for v in vertices.values()), 0.0,
+                                                     kind="invariant")]}),
+        finding("Margin ratios are not invariant under non-uniform unit changes", "numerical",
+                {"interior0_ratio_spread": ratio_spread},
+                {"provider": base, "checks": [_check("max/min margin ratio across unit systems", ratio_spread, 10.0,
+                                                     "ge", kind="invariant")]},
+                tolerance={"abs": 0.0, "rel": 1e-6}),
+    ]
+    witness_codes = {key: _code(results[key]) for key in (f"{n}|{l}" for n in witness_bounds for l in ("SI", "x1e-3"))}
+    for name in witness_bounds:
+        si, converted = witness_codes[f"{name}|SI"], witness_codes[f"{name}|x1e-3"]
+        if si != converted:
+            statement = ("Converting the box and the sample with the same formula preserves box membership"
+                         if name.startswith("collision") else
+                         "Mathematically equal unit conversions give the same box decision")
+            claim = ("A parameter just above the SI bound is admitted after multiplying bound and sample by 1e-3"
+                     if name.startswith("collision") else
+                     "A parameter exactly on the SI bound is refused when bound and sample are converted by the two "
+                     "mathematically equal formulas k * 0.001 and k / 1000")
+            findings.append(finding(
+                claim, "numerical", {"SI": si, "x1e-3": converted},
+                {"provider": base, "checks": [_check("SI and converted decisions differ (1 if so)", 1.0, 1.0, "ge",
+                                                     kind="invariant")]},
+                counterexample={"statement": statement, "witness": dict(scan["witnesses"][name], codes={
+                    "SI": si, "x1e-3": converted})}))
+    if any(admitted.values()):
+        name = next(n for n, systems in admitted.items() if systems)
+        findings.append(finding(
+            "A stiffness just outside the SI box is admitted after an otherwise consistent unit conversion",
+            "numerical", admitted,
+            {"provider": base, "checks": [_check("unit systems admitting a just-outside sample",
+                                                 sum(len(v) for v in admitted.values()), 1.0, "ge")]},
+            counterexample={"statement": "Converting the box and the sample with the same formula preserves box "
+                                         "membership", "witness": {"sample": name, "theta_hex": thetas[name].hex(),
+                                                                   "codes": table[name]}}))
+    if divided_refused:
+        findings.append(finding(
+            "A stiffness exactly on the bound is refused when the sample is converted as k / (1 / c) and the bound "
+            "as k * c", "numerical", divided_refused,
+            {"provider": base, "checks": [_check("bound samples refused under the second formula", len(divided_refused),
+                                                 1.0, "ge")]},
+            counterexample={"statement": "Mathematically equal unit conversions give the same box decision",
+                            "witness": next(iter(divided_refused))}))
+    if len(set(light.values())) > 1:
+        findings.append(finding(
+            "The light-damping plant's verdict depends on the unit system although its exact decrease form is "
+            "negative definite in all of them", "numerical", light,
+            {"provider": base, "checks": [
+                _check("distinct codes across unit systems", len(set(light.values())), 2.0, "ge"),
+                _check("unit systems whose exact decrease form is not negative definite",
+                       sum(c != "negative_definite" for c in light_exact.values()), 0.0)]},
+            counterexample={"statement": "The same physical plant in different units gets the same PLSR verdict",
+                            "witness": {"codes": light, "margin_ratio": light_ratio}}))
+    findings += offline
+    fields["numerical_result"] = (
+        f"Interior/bound samples: {interior_mismatch} code mismatches across {len(UNIT_SYSTEMS)} unit systems; "
+        f"vertex check {vertices}. Just-outside samples admitted in: {admitted}. Bound samples converted as "
+        f"k/(1/c): {divided}. Interior margin ratio spread {ratio_spread:.3g}x. Light damping codes {light} "
+        f"(ratios { {k: float(f'{v:.3g}') for k, v in light_ratio.items()} }; exact classes {light_exact}). "
+        f"Isolated box witnesses: {witness_codes}. Conversion scan: "
+        f"{scan['neighbour_collisions']} neighbour collisions and {scan['formula_disagreements']} formula "
+        f"disagreements in {scan['draws']} draws.")
+    fields["uncertainty"] = ("Box decisions and conversions are exact IEEE arithmetic (platform-independent). "
+                             "Margin ratios carry float64 rounding of the converted matrices (relative ~1e-15).")
+    return _finish(fields, findings, PROVIDER_FILES, identity)
+
+
+# T106 ------------------------------------------------------------------------
+
+ROTATION = np.array([[0.0, 1.0], [-1.0, 0.0]])
+
+
+def status_paths():
+    """One-parameter paths through the decision order; each step is a declared (A, P, x, options) case."""
+    I2 = np.eye(2)
+    e1 = np.array([1.0, 0.0])
+    paths = {
+        "required_margin (margin 2)": [dict(A=-I2, P=I2, x=e1, required_margin=r) for r in (0.0, 1.0, 1.99, 2.0, 2.01, 3.0)],
+        "level (V = 4)": [dict(A=-I2, P=I2, x=2 * e1, level=v) for v in (5.0, 4.0, 3.99, 0.0, -1.0)],
+        "stability a, A = [[a, 1], [-1, a]]": [dict(A=np.array([[a, 1.0], [-1.0, a]]), P=I2, x=e1)
+                                               for a in (-1.0, -1e-10, -1e-15, 0.0, 1e-15, 1e-10, 1.0)],
+        "direction phi, A = diag(-1, 1)": [dict(A=np.diag([-1.0, 1.0]), P=I2,
+                                                x=np.array([math.cos(math.radians(d)), math.sin(math.radians(d))]))
+                                           for d in (0.0, 30.0, 45.0, 60.0, 90.0)],
+        "matrix scale k, A = -2^k I": [dict(A=-np.ldexp(I2, k), P=I2, x=e1) for k in (0, 1000, 1022, 1023)],
+        "theta, box [-1, 1]": [dict(theta=t) for t in (-1.5, -1.0, 0.0, 1.0, math.nextafter(1.0, math.inf))],
+        "theta_dot, rate box [-0.2, 0.2]": [dict(theta=0.0, theta_dot=r) for r in (-0.3, -0.2, 0.0, 0.2, 0.3)],
+    }
+    return paths
+
+
+def _path_cases(paths, candidates):
+    cases, predictions = [], {}
+    box, rate_box = ([-1.0], [1.0]), ([-0.2], [0.2])
+    for name, steps in paths.items():
+        for j, step in enumerate(steps):
+            cid = f"{name}#{j}"
+            if "theta" in step:
+                theta = step["theta"]
+                rate = step.get("theta_dot")
+                cases.append(_affine_case(cid, -np.eye(2), [ROTATION], box, np.eye(2), (1.0, 0.0), [theta],
+                                          None if rate is None else [rate], rate_box=rate_box))
+                inside = -1.0 <= theta <= 1.0 and (rate is None or -0.2 <= rate <= 0.2)
+                predictions[cid] = R.documented_code(-np.eye(2) + theta * ROTATION, np.eye(2), (1.0, 0.0),
+                                                     in_box=inside)["code"]
+            else:
+                options = {k: step[k] for k in ("level", "required_margin") if k in step}
+                cases.append(_verdict_case(cid, step["A"], step["P"], step["x"], **options))
+                predictions[cid] = R.documented_code(step["A"], step["P"], step["x"], **options)["code"]
+    for i, candidate in enumerate(candidates):
+        cid = f"indefinite P#{i}"
+        cases.append(_verdict_case(cid, -np.eye(2), candidate["P"], candidate["weak"]))
+        predictions[cid] = R.documented_code(-np.eye(2), candidate["P"], candidate["weak"])["code"]
+    return cases, predictions
+
+
+@task("T106", changed_files=PROVIDER_FILES, regression_tests=(_node("test_t106_status_coverage"),
+                                                                _node("test_documented_decision_order")))
+def status_transitions(ctx):
+    fields = _fields(
+        "Each of the nine runtime-status-v1 codes is reachable with declared inputs, codes change along "
+        "one-parameter paths exactly as the documented decision order predicts, and the runtime refuses the five "
+        "host-owned codes.",
+        "Decision order: outside box -> NUMERICAL_OVERFLOW -> CERTIFICATE_NOT_POSITIVE (min eig P <= 0 or V < 0) "
+        "-> OUTSIDE_LEVEL_SET -> NOT_CERTIFIED (x^T M x > res |x|^2) -> CERTIFIED_WITH_MARGIN / MARGIN_LOW "
+        "(margin > res, MARGIN_LOW iff margin <= required margin) -> DECREASE_NOT_DEFINITE (max eig M > res) -> "
+        "NUMERICAL_INCONCLUSIVE.",
+        ["Seven paths: required margin 0..3; level 5..-1; stability a in [-1, 1] for [[a, 1], [-1, a]]; state "
+         "direction 0..90 degrees for diag(-1, 1); matrix scale 2^0..2^1023; theta across [-1, 1]; theta_dot "
+         "across [-0.2, 0.2]", "16 candidate P that NumPy calls positive definite but are exactly indefinite "
+         "(seed 1041) evaluated along their weak direction", "Host-owned codes MODEL_MISMATCH, STALE_STATE, "
+         "INVALID_SENSOR_DATA, CERTIFICATE_EXPIRED, RUNTIME_FAULT"],
+        "PLSR verdict code per step; require_status and Verdict construction outcomes for host-owned codes; the "
+        "runtime's published constants.",
+        "The union of observed codes is the nine-code vocabulary; each observed code equals the CIW re-derivation "
+        "of the documented order; every host-owned code is refused.",
+        "Build each path, evaluate all steps in one PLSR subprocess, recompute each expected code in CIW from A, P "
+        "and x, and tabulate transitions and coverage.",
+        "T107: near-boundary spectra; add an upstream regression that pins one witness per code, including a "
+        "CERTIFICATE_NOT_POSITIVE witness that does not depend on eigvalsh rounding.",
+        ["a code unreachable", "a transition out of documented order", "a host-owned code accepted",
+         "CERTIFICATE_NOT_POSITIVE only reachable through rounding"],
+        ["CERTIFICATE_NOT_POSITIVE is reached only when a P accepted by quadratic() evaluates V < 0, which depends "
+         "on eigvalsh rounding; min eig P <= 0 cannot follow a passed construction check.",
+         "The CIW re-derivation shares the documented specification with the runtime, so it checks implementation "
+         "against specification, not the specification itself."])
+    candidates = indefinite_candidates(keep=16)[0][:16]
+    paths = status_paths()
+    cases, predictions = _path_cases(paths, candidates)
+    predicted_codes = sorted(set(predictions.values()))
+    authority = finding(
+        "A CERTIFIED_WITH_MARGIN verdict (operationally_acceptable) authorizes actuation", "actuator_authority", None,
+        {"derivation": "runtime-status-v1: operationally_acceptable is not an authorization; host statuses and "
+                       "machine-safety functions are outside the evaluator"})
+    offline = [finding("The documented decision order, re-derived in CIW, assigns all nine codes to the constructed "
+                       "inputs", "numerical", {"codes": predicted_codes},
+                       {"generator": {"name": "status_paths + indefinite_candidates", "seed": 1041},
+                        "checks": [_check("distinct runtime codes predicted", len(predicted_codes), 9.0, "ge",
+                                          kind="analytic")]}), authority]
+    for code in R.HOST_OWNED:
+        cases.append({"id": f"require:{code}", "op": "require_status", "code": code})
+        cases.append({"id": f"verdict:{code}", "op": "host_verdict", "code": code})
+    cases.append({"id": "constants", "op": "constants"})
+    try:
+        bridge = _bridge(ctx, cases)
+    except _Unavailable as exc:
+        fields["numerical_result"] = f"Provider-free prediction covers {len(predicted_codes)} codes: {predicted_codes}."
+        fields["uncertainty"] = "Deterministic re-derivation on this platform."
+        return _finish(fields, offline, PROVIDER_FILES, blocked=str(exc))
+    identity, results = bridge["identity"], bridge["results"]
+    base = provider_basis(identity)
+    observed = {cid: _code(results[cid]) for cid in predictions}
+    mismatches = {cid: {"observed": observed[cid], "predicted": predictions[cid]} for cid in predictions
+                  if observed[cid] != predictions[cid]}
+    reached = sorted(set(observed.values()) & set(R.RUNTIME_CODES))
+    transitions = {name: [observed[f"{name}#{j}"] for j in range(len(steps))] for name, steps in paths.items()}
+    host = {code: {"require_status": _code(results[f"require:{code}"]),
+                   "Verdict": _code(results[f"verdict:{code}"])} for code in R.HOST_OWNED}
+    constants = {k: v for k, v in results["constants"].items() if k not in ("ok", "id", "warnings")}
+    coverage = {code: sorted(cid for cid, got in observed.items() if got == code)[:3] for code in R.RUNTIME_CODES}
+    ctx.artifact_json("status-coverage.json", R.jsonable({"coverage_examples": coverage, "transitions": transitions,
+                                                           "observed": observed, "predicted": predictions,
+                                                           "host_owned": host, "constants": constants}))
+    lines = ["| Code | Reached | Example step |", "| --- | --- | --- |"]
+    lines += [f"| {code} | {'yes' if coverage[code] else 'no'} | {coverage[code][0] if coverage[code] else '-'} |"
+              for code in R.RUNTIME_CODES]
+    ctx.artifact_text("status-coverage.md", "\n".join(lines) + "\n")
+    findings = [
+        finding("All nine runtime-status-v1 codes are reached by constructed declared inputs", "numerical",
+                {"codes": reached},
+                {"provider": base, "independent_check": _independent(
+                    _check("steps whose code differs from the CIW re-derivation of the documented order",
+                           len(mismatches), 0.0, kind="analytic"), identity),
+                 "checks": [_check("distinct runtime codes observed", len(reached), 9.0, "ge", kind="invariant")]}),
+        finding("Codes along each one-parameter path follow the documented decision order", "numerical", transitions,
+                {"provider": base, "independent_check": _independent(
+                    _check("path steps differing from the CIW re-derivation", sum(
+                        1 for cid in mismatches if "#" in cid and not cid.startswith("indefinite")), 0.0,
+                           kind="analytic"), identity)}),
+        finding("The runtime refuses to emit the five host-owned status codes", "numerical", host,
+                {"provider": base, "checks": [
+                    _refusal(f"{way} for {code}", "raises ValueError", outcome[way])
+                    for code, outcome in host.items() for way in ("require_status", "Verdict")]}),
+        finding("Pinned runtime constants: resolution factor, numerical policy, status vocabulary", "provenance",
+                constants, {"provider": base}),
+    ] + offline
+    fields["numerical_result"] = (
+        f"Codes reached: {len(reached)}/9 ({reached}). {len(mismatches)} of {len(predictions)} steps differ from the "
+        f"CIW re-derivation. Transitions: {transitions}. Host-owned codes refused: "
+        f"{sum(v['require_status'] == 'raises ValueError' and v['Verdict'] == 'raises ValueError' for v in host.values())}/5. "
+        f"Constants: resolution factor {constants.get('DECREASE_RESOLUTION_FACTOR')}, policy "
+        f"{constants.get('NUMERICAL_POLICY_VERSION')}.")
+    fields["uncertainty"] = ("Path codes are far from thresholds and platform-independent, except the "
+                             "CERTIFICATE_NOT_POSITIVE witnesses, which depend on eigvalsh and dot-product rounding.")
+    return _finish(fields, findings, PROVIDER_FILES, identity)

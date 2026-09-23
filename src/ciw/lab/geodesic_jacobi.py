@@ -884,6 +884,8 @@ def unit_speed_drift(ctx):
 # ---------------------------------------------------------------------------
 CONSTANT_PATHS = ("sphere-great-circle", "plane", "cylinder", "hyperbolic-long", "torus-outer-equator",
                   "torus-inner-equator")
+CSG_REFUSALS = frozenset({"CSG_CHECKOUT_UNREADABLE", "CSG_REVISION_MISMATCH", "CSG_TREE_MISMATCH",
+                          "CSG_CHECKOUT_DIRTY", "CSG_EXECUTION_FAILED", "CSG_CHANGED_DURING_EXECUTION"})
 
 
 def _model_error(tr, k):
@@ -951,7 +953,8 @@ def separation_law(ctx):
             csg_exact = np.asarray(maps["closed_form"]["matrices"])
             a, ap, b, bp = jacobi.constant_curvature(_constant_curvature_of(key), fine.s)
             ciw_exact = np.stack([np.array([[x0, x2], [x1, x3]]) for x0, x1, x2, x3 in zip(a, ap, b, bp)])
-            provider_rows[key] = {"ciw_rk4_vs_csg_rk4": _discrepancy(ciw_phi, csg_numeric),
+            provider_rows[key] = {"ciw_rk4_vs_csg_closed_form": _discrepancy(ciw_phi, csg_exact),
+                                  "ciw_rk4_vs_csg_rk4": _discrepancy(ciw_phi, csg_numeric),
                                   "ciw_closed_form_vs_csg_closed_form": _discrepancy(ciw_exact, csg_exact),
                                   "csg_determinant_drift": float(np.max(np.abs(
                                       np.asarray(maps["numeric"]["determinant"]) - 1.0)))}
@@ -1012,26 +1015,33 @@ def separation_law(ctx):
     notes = ["Paths of constant curvature only; variable curvature is covered by T006-T009"]
     if provider_rows is not None:
         rev = csg["identity"]["revision"]
-        worst = max(r["ciw_rk4_vs_csg_rk4"] for r in provider_rows.values())
         findings.append(finding(
-            "ciw joint geodesic + Jacobi transfer matrices match the pinned CSG provider's Jacobi integration on six "
-            "constant-curvature paths", "numerical", {k: r["ciw_rk4_vs_csg_rk4"] for k, r in provider_rows.items()},
+            "ciw joint geodesic + Jacobi transfer matrices match the pinned CSG provider on six constant-curvature "
+            "paths", "numerical", {k: {name: r[name] for name in ("ciw_rk4_vs_csg_closed_form", "ciw_rk4_vs_csg_rk4")}
+                                   for k, r in provider_rows.items()},
             {"provider": {"repository": gj.CSG_REPOSITORY, "revision": rev,
                           "source_tree": csg["identity"]["source_tree"], "executed": True},
-             "checks": [gj.check("analytic", "CSG constant_curvature_transfer against ciw.lab.jacobi.constant_curvature",
-                                 max(r["ciw_closed_form_vs_csg_closed_form"] for r in provider_rows.values()), 1e-12)],
+             "checks": [
+                 gj.check("analytic", "CSG constant_curvature_transfer against ciw.lab.jacobi.constant_curvature",
+                          max(r["ciw_closed_form_vs_csg_closed_form"] for r in provider_rows.values()), 1e-12),
+                 # Same method (classical RK4) on the same grid in two code bases: agreement of implementations.
+                 gj.check("cross_implementation", "CSG integrate_jacobi RK4 trace against the ciw RK4 transfer on "
+                          "the same grid", max(r["ciw_rk4_vs_csg_rk4"] for r in provider_rows.values()), 1e-9)],
              "independent_check": gj.independent(
-                 gj.check("high_precision", "CSG integrate_jacobi RK4 on the same arclength grid", worst, 1e-9),
+                 gj.check("analytic", "CSG closed-form constant_curvature_transfer at the ciw nodes",
+                          max(r["ciw_rk4_vs_csg_closed_form"] for r in provider_rows.values()), 1e-7),
                  "ciw.lab.jacobi", f"{gj.CSG_IMPLEMENTATION}@{rev}", checker_revision=rev)},
             tolerance=TOL_SMALL))
         identity = _provider_identity(csg)
     elif csg is not None:
         state = "partial"
+        known = csg["refusal"] in CSG_REFUSALS
         findings.append(finding(
-            "A bound CSG provider that does not match its pin is refused rather than compared", "provenance",
-            csg["refusal"], {"checks": [{"reference_kind": "refusal", "reference": "verify_csg_checkout",
-                                         "expected_refusal": csg["refusal"], "observed_refusal": csg["refusal"],
-                                         "passed": True}]}))
+            "A bound CSG provider that fails pin verification or execution is refused rather than compared",
+            "provenance", csg["refusal"], {"checks": [{
+                "reference_kind": "refusal", "reference": "verify_csg_checkout and run_csg_jacobi",
+                "expected_refusal": csg["refusal"] if known else "a known CSG refusal code",
+                "observed_refusal": csg["refusal"], "passed": known}]}))
         notes.append(f"CSG provider refused: {csg['message']}")
     else:
         notes.append("The optional CSG provider comparison did not run (bind --provider csg=<checkout>)")
@@ -1053,7 +1063,9 @@ def separation_law(ctx):
                     "closed forms at h and 2h, and (when bound) with the pinned CSG provider in a subprocess."),
         numerical_result=("Largest model-space error " + _fmt(max(r["max_error"] for r in rows.values()))
                           + "; observed orders " + ", ".join(f"{k} {_fmt(v, 3)}" for k, v in orders.items())
-                          + ("" if provider_rows is None else "; ciw vs CSG "
+                          + ("" if provider_rows is None else "; ciw vs CSG closed form "
+                             + _fmt(max(r["ciw_rk4_vs_csg_closed_form"] for r in provider_rows.values()))
+                             + ", ciw vs CSG RK4 "
                              + _fmt(max(r["ciw_rk4_vs_csg_rk4"] for r in provider_rows.values())))
                           + "."),
         uncertainty="RK4 discretization error (about 1e-8 relative at the fine step), confirmed by step halving.",
@@ -1479,15 +1491,16 @@ def conjugate_focal_points(ctx):
             if key not in ("sphere-great-circle", "torus-outer-equator", "torus-inner-equator", "hyperbolic-long"):
                 continue
             tr = _fine_transfer(ctx, key)
-            events = maps["numeric"]["focus_events"]
-            csg_conj = [e["arc_length"] for e in events["b"]]
-            csg_focal = [e["arc_length"] for e in events["a"]]
-            ours_conj, ours_focal = tr.conjugate_points(), tr.focal_points()
-            same = len(csg_conj) == len(ours_conj) and len(csg_focal) == len(ours_focal)
-            gap = max([abs(a - b) for a, b in zip(csg_conj, ours_conj)]
-                      + [abs(a - b) for a, b in zip(csg_focal, ours_focal)] + [0.0]) if same else float("inf")
-            provider[key] = {"csg_conjugate": csg_conj, "csg_focal": csg_focal, "ciw_conjugate": ours_conj,
-                             "ciw_focal": ours_focal, "counts_match": bool(same), "max_gap": gap}
+            ours = {"b": tr.conjugate_points(), "a": tr.focal_points()}
+            row = {"ciw_conjugate": ours["b"], "ciw_focal": ours["a"]}
+            for source in ("numeric", "closed_form"):
+                events = {c: [e["arc_length"] for e in maps[source]["focus_events"][c]] for c in ("a", "b")}
+                # Gaps over paired zeros; a count mismatch is checked separately and never hidden.
+                row[f"csg_{source}"] = events
+                row[f"{source}_count_mismatch"] = sum(len(events[c]) != len(ours[c]) for c in ("a", "b"))
+                row[f"{source}_gap"] = max([abs(x - y) for c in ("a", "b") for x, y in zip(events[c], ours[c])]
+                                           + [0.0])
+            provider[key] = row
     ctx.artifact_json("conjugate-focal.json", _plain({
         "located": located, "sphere_radius_2": sphere2, "negative_curvature": negative,
         "sturm": {"bounds": bounds, "k_max": {"torus": k_max_torus, "gaussian-bump": k_max_bump}, "paths": sturm},
@@ -1559,14 +1572,21 @@ def conjugate_focal_points(ctx):
     state, notes, identity = "completed", [], None
     if provider is not None:
         rev = csg["identity"]["revision"]
-        gap = max(v["max_gap"] for v in provider.values())
         findings.append(finding(
             "ciw conjugate and focal points match the pinned CSG provider's focus events on constant-curvature paths",
-            "numerical", {k: v["max_gap"] for k, v in provider.items()},
+            "numerical", {k: {"closed_form_gap": v["closed_form_gap"], "numeric_gap": v["numeric_gap"]}
+                          for k, v in provider.items()},
             {"provider": {"repository": gj.CSG_REPOSITORY, "revision": rev,
                           "source_tree": csg["identity"]["source_tree"], "executed": True},
+             "checks": [
+                 gj.check("exact_arithmetic", "zero-count mismatches against CSG (closed form and RK4 trace)",
+                          sum(v["closed_form_count_mismatch"] + v["numeric_count_mismatch"] for v in provider.values()),
+                          0.0),
+                 gj.check("cross_implementation", "CSG focus_events on its RK4 trace (same method, same grid)",
+                          max(v["numeric_gap"] for v in provider.values()), 1e-8)],
              "independent_check": gj.independent(
-                 gj.check("high_precision", "CSG TransferMap.focus_events on its RK4 trace (same grid)", gap, 1e-8),
+                 gj.check("analytic", "CSG focus_events of the closed-form constant_curvature_transfer",
+                          max(v["closed_form_gap"] for v in provider.values()), 1e-7),
                  "ciw.lab.jacobi", f"{gj.CSG_IMPLEMENTATION}@{rev}", checker_revision=rev)},
             tolerance=TOL_SMALL))
         identity = _provider_identity(csg)

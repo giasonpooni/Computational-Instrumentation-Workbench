@@ -27,13 +27,14 @@ import numpy as np
 from . import svg
 from .evidence import finding
 from .registry import task
-from .sensor_fusion_bench import (H_POS, batch_posterior, batch_posterior_banded, chi2_quantile, consistency, cv_model, exact_scalar_filter,
-                                  gain_schedule, generator, measure, nees_series, run_shared, simulate_truth)
-from .sensor_fusion_common import (MU0, P0_BENCH, R_CAMERA, TESTS, TOL_EXACT, TOL_MC, TOL_TINY, as_json, bonferroni,
+from .sensor_fusion_bench import (H_POS, batch_posterior, batch_posterior_banded, chi2_quantile, consistency,
+                                  cv_model, exact_scalar_filter, gain_schedule, generator, measure, nees_series,
+                                  run_shared, simulate_truth)
+from .sensor_fusion_common import (MU0, P0_BENCH, R_CAMERA, TESTS, TOL_EXACT, TOL_MC, as_json, bonferroni,
                                    check, covariance_z, files, generator_basis, outcome, refusal, refusal_code,
                                    run_mean_z, unreal)
 from .sensor_fusion_objects import (ADMISSION_CHECKS, DEFAULT_AUTHORITY, SYNTHETIC_AUTHORITY, AdmittedState,
-                                    CalibrationRecord, CandidateState, FusionRefusal, FusionSession, Observation,
+                                    CalibrationRecord, CandidateState, FusionSession, Observation,
                                     _digest, admission_verdict)
 
 DT, Q_SPECTRAL = 0.1, 0.05
@@ -82,7 +83,7 @@ def calibration_study(seed: int = 72_2026, ticks: int = 100, expiry: int = 60, r
     # Renewal: a new calibration record lets fusion resume; the expired record stays expired.
     session.register_calibration(CalibrationRecord("cam-cal-2", "camera", "world", ticks, ticks + 100))
     renewed = [refusal_code(lambda k=k: session.fuse(Observation("camera", "world", k, tuple(z[k - 1]), R_CAMERA,
-                                                                  "cam-cal-2"))) for k in range(ticks + 1, ticks + 6)]
+                                                                 "cam-cal-2"))) for k in range(ticks + 1, ticks + 6)]
     stale_again = refusal_code(lambda: session.fuse(Observation("camera", "world", ticks + 6, tuple(z[ticks + 5]),
                                                                 R_CAMERA, "cam-cal-1")))
     session.register_calibration(CalibrationRecord("cam-cal-3", "camera", "world", 0, 1_000_000))
@@ -382,8 +383,8 @@ def track_lost(ctx):
                 "radius rule protects against this only if its radius is below the ellipse radius reached by then",
                 "numerical",
                 as_json({k: turn[k] for k in ("omega_rad_s", "speed_m_s", "threshold_chi2_4_99",
-                                             "first_inconsistent_gap_ticks", "radius_at_inconsistency_m",
-                                             "gap_ticks_before_track_loss")}),
+                                              "first_inconsistent_gap_ticks", "radius_at_inconsistency_m",
+                                              "gap_ticks_before_track_loss")}),
                 {"derivation": "E[NEES] = dim + e^T P^-1 e for a deterministic model error e", "checks": [
                     check("analytic", "a finite gap (ticks) after which the coasting track is inconsistent",
                           turn["first_inconsistent_gap_ticks"] or 10_000, 399, "le"),

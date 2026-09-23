@@ -1060,6 +1060,7 @@ def invariance_study(words=60, word_length=10):
                 wrong_rule += lat.quad(H, *naive) != lat.quad(G, m, n)
     # Float: area-one shapes under the same matrices; compare the first 30 lengths.
     float_dev = 0.0
+    float_entry = max(max(abs(x) for row in M for x in row) for M in matrices[::7])
     for tau in FTR_SHAPES:
         base = sorted(math.sqrt(q) for q, _, _ in lat.lattice_vectors(lat.area_one_form(tau), 16.0))[:30]
         for M in matrices[:: 7]:
@@ -1070,7 +1071,7 @@ def invariance_study(words=60, word_length=10):
     mirror = lat.transform_any(generic, ((1, 0), (0, -1)))
     doubled = lat.transform_any(generic, ((2, 0), (0, 1)))
     return {"matrices": len(matrices), "failures": failures, "wrong_rule_mismatches": wrong_rule,
-            "float_max_relative_deviation": float_dev,
+            "float_max_relative_deviation": float_dev, "float_max_matrix_entry": float_entry,
             "mirror": {"gram": [str(x) for x in mirror],
                        "canonical": [str(x) for x in lat.gauss_reduce(mirror)[0]],
                        "same_spectrum": lat.length_spectrum(mirror, SPECTRUM_RADIUS_SQ) == spectra["generic"],
@@ -1107,7 +1108,8 @@ def modular_reduction_invariance(ctx):
         f"relative deviation {study['float_max_relative_deviation']:.2e}; mirror same spectrum "
         f"{mirror['same_spectrum']}, same canonical form {mirror['same_canonical']}; det-2 area ratio "
         f"{sub['area_sq_ratio']}.",
-        "Exact for integer forms; float comparison bounded by 1e-12 relative.",
+        f"Exact for integer forms; the float comparison loses digits with basis skew (entries up to "
+        f"{study['float_max_matrix_entry']}: deviation {study['float_max_relative_deviation']:.1e}, tolerance 1e-8).",
         ["naive winding transport (M instead of M^-1)", "orientation reversal (mirror image)",
          "index-2 sublattice", "skewed bases with large entries (row-scan enumeration)"],
         ["Spectra are compared up to R^2 = 60, not over the whole lattice (a finite truncation)."],
@@ -1119,8 +1121,9 @@ def modular_reduction_invariance(ctx):
                 tolerance=EXACT),
         finding("Area-one float spectra agree to rounding under the same basis changes", "numerical",
                 study["float_max_relative_deviation"],
-                {"checks": [_check("max relative deviation of the first 30 lengths", study["float_max_relative_deviation"],
-                                   1e-12, kind="invariant")]}, tolerance={"abs": 1e-12, "rel": 0}),
+                {"checks": [_check("max relative deviation of the first 30 lengths (bases with entries up to "
+                                   f"{study['float_max_matrix_entry']})", study["float_max_relative_deviation"],
+                                   1e-8, kind="invariant")]}, tolerance={"abs": 1e-8, "rel": 0}),
         finding("Transporting winding labels with M instead of M^-1 breaks length invariance", "mathematical",
                 study["wrong_rule_mismatches"],
                 {"checks": [_check("naive-rule mismatches", study["wrong_rule_mismatches"], 1, "ge")]},
@@ -1298,16 +1301,21 @@ def octagon_flows():
     floated = F.flow(0, (1 / 3, 1 / 5), (3.0, 1 + math.sqrt(2)), max_crossings=200)
     theta = 0.3
     generic = F.flow(0, (1 / 3, 1 / 5), (math.cos(theta), math.sin(theta)), max_crossings=400, stop_on_return=True)
-    # A start one tolerance away from a saddle connection through vertex 0 is refused in float.
-    near_code = _refusal_code(F.flow, 0, (0.5, 1e-12), (-1.0, -1e-12 / 0.5 * 1.0 + 0.0), 10)
+    # From the centre, aim 1e-12 (normal offset) past vertex 0: undecidable in float, refused within tolerance.
+    cx, cy = 0.5, (1 + math.sqrt(2)) / 2
+    norm = math.hypot(cx, cy)
+    aim = (-cx + 1e-12 * cy / norm, -cy - 1e-12 * cx / norm)
+    near_code = _refusal_code(F.flow, 0, (cx, cy), aim, 10)
     exact_code = _refusal_code(O.flow, 0, (S(Fraction(1, 2)), S(Fraction(1, 2))), (S(-1), S(-1)), 10)
+    start_code = _refusal_code(F.flow, 0, (0.5, 1e-12), (1.0, 0.3), 10)
     return {"exact_closed": exact["closed"], "exact_time": exact["time"], "exact_crossings": len(exact["crossings"]),
             "float_closed": floated["closed"], "float_time": floated["time"],
             "same_crossing_sequence": exact["crossings"] == floated["crossings"],
             "time_difference": abs(float(exact["time"]) - floated["time"]),
             "generic_theta": theta, "generic_closed": generic["closed"],
             "generic_crossings": len(generic["crossings"]), "generic_min_clearance": generic["min_vertex_clearance"],
-            "near_vertex_code": near_code, "exact_vertex_code": exact_code, "tolerance": F.tol}
+            "near_vertex_code": near_code, "exact_vertex_code": exact_code, "start_code": start_code,
+            "tolerance": F.tol}
 
 
 @task("T028", changed_files=(MODULE, SURFACES, DOC), regression_tests=(_t("test_t028_glued_edge_flow"),))
@@ -1354,11 +1362,12 @@ def trace_across_glued_edges(ctx):
         finding("Trajectories hitting a cone point are terminated as saddle connections, exactly or within the "
                 "declared float tolerance", "numerical",
                 {"exact_l_shape": saddle, "exact_octagon": oflows["exact_vertex_code"],
-                 "float_octagon": oflows["near_vertex_code"]},
+                 "float_octagon": oflows["near_vertex_code"], "float_start": oflows["start_code"]},
                 {"checks": [_refusal("L-shape (1/2, 1/2) direction (1, 1)", "SADDLE_CONNECTION", saddle),
                             _refusal("octagon exact centre-to-vertex", "SADDLE_CONNECTION", oflows["exact_vertex_code"]),
                             _refusal("octagon float pass 1e-12 from a vertex", "NEAR_VERTEX_WITHIN_TOLERANCE",
-                                     oflows["near_vertex_code"])]}),
+                                     oflows["near_vertex_code"]),
+                            _refusal("float start 1e-12 from an edge", "START_NOT_INTERIOR", oflows["start_code"])]}),
         finding("Float octagon flow reproduces the exact Q(sqrt 2) trajectory (same crossings, closure time)",
                 "numerical", {"time_difference": oflows["time_difference"], "crossings": oflows["exact_crossings"]},
                 {"checks": [_check("crossing sequences differ", 0 if oflows["same_crossing_sequence"] else 1),
@@ -1673,10 +1682,11 @@ def counterexample_library():
         "analytic_shortest_margin": math.pi * math.sqrt(3.0) - 4.5}
     witnesses["torus-tied-shortest"] = {"surface": TORUS.describe(), "p": [0.0, 0.0], "q": [2.2, 0.0],
                                         "routes": tie[:3]}
-    top = [r for r in bump if abs(r["heading"]) < 1e-9 or abs(r["heading"] - 2 * math.pi) < 1e-9]
+    # The straight route over the top has heading 0 by the y -> -y symmetry of the configuration.
+    top = min(bump, key=lambda r: abs(r["heading"]))
     witnesses["bump-amplification-vs-conjugacy"] = {
         "surface": BUMP.describe(), "p": [-2.5, 0.0], "q": [2.5, 0.0], "shortest": bump[0],
-        "alternative": top[0] if top else None, "routes": len(bump)}
+        "alternative": top, "top_heading": top["heading"], "routes": len(bump)}
     delta = 0.05
     witnesses["sphere-near-antipodal"] = {"separation": math.pi - delta, "routes": routes.sphere_route_pair(math.pi - delta),
                                           "transfer": routes.sphere_transfer_check(math.pi - delta)}
@@ -1791,7 +1801,9 @@ def shortest_is_not_safest(ctx):
         "numerical", {"shortest": _brief(bump["shortest"]), "alternative": _brief(bump["alternative"])},
         {"checks": [_check("shortest minus top-route amplification", bump_gap, 0.2, "ge", kind="invariant"),
                     _check("depth of the top route past its conjugate point (-margin)",
-                           -bump["alternative"]["focus_margin"], 1.0, "ge", kind="invariant")]},
+                           -bump["alternative"]["focus_margin"], 1.0, "ge", kind="invariant"),
+                    _check("top-route heading (the symmetric straight route)", bump["top_heading"], 1e-9,
+                           kind="invariant")]},
         counterexample={"statement": "Low heading amplification certifies a robust (locally minimizing) route",
                         "witness": {"surface": "GaussianBump(1.5, 1)", "p": bump["p"], "q": bump["q"],
                                     "shortest": _brief(bump["shortest"]), "alternative": _brief(bump["alternative"])}},
@@ -1811,7 +1823,8 @@ def shortest_is_not_safest(ctx):
                                     "focus_margin": minor["focus_margin"],
                                     "targeting_condition_number": 1 / abs(minor["j_head"])}}, tolerance=FLOAT))
     findings.append(finding(
-        "Search on the saddle (K < 0, simply connected) finds a single route, so no witness exists there",
+        "Search on the saddle (K < 0, simply connected) finds exactly one route, consistent with Cartan-Hadamard "
+        "uniqueness, so this surface admits no witness",
         "numerical", {"routes": len(saddle["routes"])},
         {"derivation": "Cartan-Hadamard: exp is a diffeomorphism on complete simply connected K <= 0 surfaces",
          "checks": [_check("routes found minus 1", len(saddle["routes"]) - 1)]}, tolerance=EXACT))

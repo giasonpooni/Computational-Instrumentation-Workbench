@@ -1068,3 +1068,595 @@ def gage_rr(ctx):
          "Normal random effects; real operator effects may be systematic or drift in time."],
         "T140: feed measured repeatability into the uncertainty budget once a real study exists (retained via T139).")
     return {"state": "completed", "fields": fields, "findings": findings}
+
+
+# T132 fibre/tape placement ----------------------------------------------------------------
+PLACEMENT = {"fibre_angle_deg": 45.0, "course_mm": 500.0, "sigma_lateral_mm": 0.10, "sigma_heading_rad": 5e-4,
+             "sigma_radius_mm": 0.05, "sigma_encoder_rad": 5e-5, "spec_mm": 0.5, "min_steering_radius_mm": 635.0}
+STEERED = {"theta0_deg": 30.0, "theta1_deg": 60.0, "axial_mm": 300.0}
+
+
+def placement_deviation(s, theta, delta, dheading, dradius, dphi, radius=geo.CYLINDER_RADIUS):
+    """Exact lateral deviation (development) of the placed course from the intended geodesic.
+
+    The head places the tow at commanded machine angles on a mandrel of radius
+    R + dR: the course angle becomes atan((1 + dR/R) tan theta) + dheading, the
+    start shifts by (R + dR) dphi circumferentially and by delta laterally.
+    """
+    actual = np.arctan((1.0 + dradius / radius) * np.tan(theta)) + dheading
+    lateral = np.array([math.cos(theta), -math.sin(theta)])
+    start_x = (radius + dradius) * dphi + delta * lateral[0]
+    start_z = delta * lateral[1]
+    x = start_x + s * np.sin(actual)
+    z = start_z + s * np.cos(actual)
+    return x * lateral[0] + z * lateral[1]
+
+
+def placement_rss(s, spec=PLACEMENT, radius=geo.CYLINDER_RADIUS):
+    theta = math.radians(spec["fibre_angle_deg"])
+    fixed = spec["sigma_lateral_mm"] ** 2 + (radius * math.cos(theta) * spec["sigma_encoder_rad"]) ** 2
+    growth = spec["sigma_heading_rad"] ** 2 + (math.sin(theta) * math.cos(theta) * spec["sigma_radius_mm"] / radius) ** 2
+    return math.sqrt(fixed + s ** 2 * growth), fixed, growth
+
+
+def placement_study() -> dict:
+    radius = geo.CYLINDER_RADIUS
+    cyl = geo.CYLINDER
+    theta0, theta1 = math.radians(STEERED["theta0_deg"]), math.radians(STEERED["theta1_deg"])
+    axial = STEERED["axial_mm"]
+    rate = (theta1 - theta0) / axial
+    kg_err = kg3_err = kn_err = 0.0
+    kg_max = 0.0
+    for z in np.linspace(0.0, axial, 61):
+        theta = theta0 + rate * z
+        phi = (math.log(math.cos(theta0)) - math.log(math.cos(theta))) / (rate * radius)
+        u = np.array([phi, z])
+        du = np.array([math.tan(theta) / radius, 1.0])
+        ddu = np.array([rate / (math.cos(theta) ** 2 * radius), 0.0])
+        kg, kn = geo.chart_curvatures(cyl, u, du, ddu)
+        kg3, kn3 = geo.embedded_curvatures(cyl, u, du, ddu)
+        # Heading from the circumferential direction is 90 deg - theta, so kappa_g = -dtheta/ds = -rate cos(theta).
+        kg_err = max(kg_err, abs(kg + rate * math.cos(theta)))
+        kg3_err = max(kg3_err, abs(kg - kg3), abs(kn - kn3))
+        kn_err = max(kn_err, abs(kn + math.sin(theta) ** 2 / radius))
+        kg_max = max(kg_max, abs(kg))
+    helix_kg = max(abs(geo.chart_curvatures(cyl, [0.3, z], [math.tan(theta0) / radius, 1.0], [0.0, 0.0])[0])
+                   for z in (0.0, 100.0, 200.0))
+    # Steered course end versus the geodesic along its initial tangent (development coordinates).
+    end_x = (math.log(math.cos(theta0)) - math.log(math.cos(theta1))) / rate
+    steered_deviation = end_x * math.cos(theta0) - axial * math.sin(theta0)
+    # Flat Jacobi transfer on the mandrel and the exactly perturbed course.
+    theta = math.radians(PLACEMENT["fibre_angle_deg"])
+    course = PLACEMENT["course_mm"]
+    heading = math.pi / 2 - theta
+    transfer = jacobi.transfer(cyl, [0.0, 0.0], heading, course, steps=50)
+    phi_error = float(np.max(np.abs(transfer.matrix() - np.array([[1.0, course], [0.0, 1.0]]))))
+    delta, dpsi = 0.3, 1e-3
+    separation = geo.separation_nonlinear(cyl, [0.0, 0.0], heading, course, 50, delta, dpsi, base=transfer)
+    exact_error = float(np.max(np.abs(separation - (delta + transfer.s * math.sin(dpsi)))))
+    # Tolerance stack: RSS model versus exact deviations under sampled sources.
+    sigma_course, fixed, growth = placement_rss(course)
+    length_max = math.sqrt(max(0.0, (PLACEMENT["spec_mm"] / COVERAGE_K) ** 2 - fixed) / growth)
+    generator = met.rng(SEED + 3)
+    samples = 20000
+    draws = generator.standard_normal((4, samples))
+    deviation = placement_deviation(length_max, theta, PLACEMENT["sigma_lateral_mm"] * draws[0],
+                                    PLACEMENT["sigma_heading_rad"] * draws[1], PLACEMENT["sigma_radius_mm"] * draws[2],
+                                    PLACEMENT["sigma_encoder_rad"] * draws[3])
+    mc_std = float(deviation.std(ddof=1))
+    counter = float(placement_deviation(1000.0, theta, 0.0, 0.0, 0.2, 0.0))
+    stations = np.linspace(0.0, 1000.0, 21)
+    return {"max_kappa_g_per_mm": kg_max, "min_steering_radius_mm": 1.0 / kg_max, "kappa_g_closed_form_error": kg_err,
+            "chart_vs_embedded_error": kg3_err, "kappa_n_error": kn_err, "helix_kappa_g": helix_kg,
+            "steered_end_deviation_mm": steered_deviation, "phi_error": phi_error, "perturbed_exact_error": exact_error,
+            "sigma_at_course_mm": sigma_course, "length_max_mm": length_max, "rss_at_length_max_mm": placement_rss(length_max)[0],
+            "mc_std_mm": mc_std, "mc_samples": samples, "radius_counterexample_mm": counter,
+            "rss_curve": {"s_mm": stations.tolist(), "k_sigma_mm": [COVERAGE_K * placement_rss(s)[0] for s in stations]}}
+
+
+@_task("T132", ("test_placement_curvature_stack_and_radius_counterexample",))
+def placement_tolerance(ctx):
+    study = ctx.memo("mfg.placement", placement_study)
+    f_kg = finding("Geodesic curvature of a 30-to-60 degree variable-angle steered course on the R = 100 mm mandrel",
+                   "numerical", {"max_kappa_g_per_mm": study["max_kappa_g_per_mm"],
+                                 "min_steering_radius_mm": study["min_steering_radius_mm"]},
+                   {"derivation": "development: kappa_g = dtheta/ds = theta'(z) cos theta (docs/lab/MANUFACTURING.md#t132)",
+                    "checks": [_check("analytic", "chart kappa_g vs -theta' cos theta (1/mm)", study["kappa_g_closed_form_error"], 1e-12),
+                               _check("self_convergence", "chart (Christoffel) vs embedded 3D curvatures (1/mm)", study["chart_vs_embedded_error"], 1e-12),
+                               _check("analytic", "kappa_n vs -sin^2 theta / R (1/mm)", study["kappa_n_error"], 1e-12),
+                               _check("analytic", "constant-angle helix kappa_g (1/mm)", study["helix_kappa_g"], 1e-15)]},
+                   tolerance={"abs": 1e-12, "rel": 1e-9})
+    f_flat = finding("Lateral deviation on the mandrel follows e(s) = delta + s sin(dpsi) (flat Jacobi transfer)",
+                     "numerical", {"phi_error": study["phi_error"], "perturbed_exact_error_mm": study["perturbed_exact_error"]},
+                     {"checks": [_check("analytic", "max |Phi(500) - [[1, 500], [0, 1]]|", study["phi_error"], 1e-9),
+                                 _check("analytic", "exactly perturbed course minus delta + s sin(dpsi) (mm)", study["perturbed_exact_error"], 1e-9)]},
+                     tolerance={"abs": 1e-9, "rel": 0})
+    rel = study["mc_std_mm"] / study["rss_at_length_max_mm"] - 1.0
+    f_stack = finding("Tolerance stack of the placed course and the longest course meeting a 0.5 mm lateral spec at k = 2",
+                      "numerical", {"sigma_at_500mm": study["sigma_at_course_mm"], "length_max_mm": study["length_max_mm"]},
+                      {"generator": _generator("placement error sources", sigma=dict(PLACEMENT), samples=study["mc_samples"]),
+                       "checks": [_check("analytic", "exact-model MC std / RSS - 1 at L_max", rel, 4.0 / math.sqrt(2 * study["mc_samples"]) + 0.005)]},
+                      unit="mm", tolerance={"abs": 1e-9, "rel": 1e-9})
+    f_counter = finding("Programming a helix in machine angles transfers mandrel radius error into lateral drift", "numerical",
+                        study["radius_counterexample_mm"],
+                        {"checks": [_check("analytic", "drift at 1 m vs L sin(theta) cos(theta) dR / R (mm)",
+                                           study["radius_counterexample_mm"] - 1000.0 * 0.5 * 0.2 / geo.CYLINDER_RADIUS, 1e-4),
+                                    _check("analytic", "drift exceeds the 0.5 mm spec (mm)", study["radius_counterexample_mm"], 0.5, "ge")]},
+                        unit="mm", tolerance={"abs": 1e-9, "rel": 1e-9},
+                        counterexample={"statement": "A helix programmed in machine coordinates (phi, z) is insensitive to "
+                                                     "mandrel radius error because it is a geodesic on every cylinder",
+                                        "witness": {"radius_mm": geo.CYLINDER_RADIUS, "radius_error_mm": 0.2,
+                                                    "fibre_angle_deg": 45.0, "course_mm": 1000.0}})
+    f_steer = finding("End deviation of the steered course from the geodesic along its initial tangent", "numerical",
+                      study["steered_end_deviation_mm"],
+                      {"derivation": "development closed form x(z) = (ln cos theta0 - ln cos theta(z)) / theta'"},
+                      unit="mm", tolerance={"abs": 1e-9, "rel": 1e-9})
+    curve = study["rss_curve"]
+    ctx.artifact_text("placement-stack.svg", svg.line_plot(
+        [("2 sigma lateral (RSS)", curve["s_mm"], curve["k_sigma_mm"]),
+         ("spec 0.5 mm", [curve["s_mm"][0], curve["s_mm"][-1]], [0.5, 0.5])],
+        title="Tape placement on R = 100 mm: lateral tolerance stack", xlabel="course length (mm)", ylabel="2 sigma (mm)"))
+    ctx.artifact_json("placement.json", _r(dict(study, sources=PLACEMENT, steered=STEERED)))
+    findings = [f_kg, f_flat, f_stack, f_counter, f_steer,
+                _not_measured("Tows placed by a real AFP head follow the programmed course within the stack, with gaps and "
+                              "overlaps inside 0.5 mm"),
+                _not_measured("The declared 635 mm minimum steering radius avoids tow wrinkling for the placed material")]
+    fields = _fields(
+        "On a cylindrical mandrel geodesic placement paths are helices (straight in the development); a steered "
+        "variable-angle course has geodesic curvature theta' cos theta; lateral placement errors grow linearly "
+        "(flat Jacobi transfer) and radius error enters through the machine-angle programming.",
+        "Development (R phi, z); kappa_g = <u'' + Gamma(u', u'), N> / |u'|^2; kappa_n = II(u', u') / I(u', u'); "
+        "e(s) = delta + R cos(theta) dphi + s (dpsi + sin(theta) cos(theta) dR / R); RSS with k = 2.",
+        ["Declared mandrel R = 100 mm; course 500 mm at 45 deg; steered course 30 -> 60 deg over 300 mm axial",
+         "Declared 1 sigma sources: head lateral 0.10 mm, heading 0.5 mrad, radius 0.05 mm, encoder 50 urad",
+         "Declared spec 0.5 mm (k = 2) and minimum steering radius 635 mm"],
+        "No observation: placement is modelled, not executed.",
+        "Helix kappa_g = 0; chart and embedded curvatures agree; Phi = [[1, s], [0, 1]]; MC std of the exact "
+        "deviation model equals the RSS.",
+        "Evaluate curvatures by two routes along the steered course, integrate the transfer and an exactly perturbed "
+        "course, sample the four error sources through the exact development model, and evaluate a radius-error witness.",
+        f"max kappa_g {study['max_kappa_g_per_mm']:.5f} /mm (steering radius {study['min_steering_radius_mm']:.1f} mm); "
+        f"2 sigma at 500 mm = {COVERAGE_K * study['sigma_at_course_mm']:.3f} mm; longest course within 0.5 mm: "
+        f"{study['length_max_mm']:.1f} mm; radius witness drift {study['radius_counterexample_mm']:.3f} mm at 1 m.",
+        "Closed forms; Monte Carlo standard error of the std is about 0.5% with 20000 samples.",
+        ["chart vs embedded curvature", "helix is geodesic", "nonlinear vs linear deviation", "RSS vs exact sampling",
+         "radius error through machine-angle programming"],
+        ["Tow width, compaction and tack are not modelled; tows are curves, not strips.",
+         "Error sources are independent and Gaussian with declared sigmas."],
+        "T133: winding path sensitivity on a torus mandrel, where Gaussian curvature is nonzero.")
+    return {"state": "completed", "fields": fields, "findings": findings}
+
+
+# T133 winding path sensitivity -------------------------------------------------------------
+WINDING = {"length_mm": 1500.0, "steps": 750, "friction_mu": 0.2, "regimes_deg": (50.0, 70.0)}
+
+
+def _peak(s, values):
+    """First interior local maximum refined by a parabola through three samples."""
+    for i in range(1, len(values) - 1):
+        if values[i] >= values[i - 1] and values[i] > values[i + 1]:
+            a, b, c = values[i - 1], values[i], values[i + 1]
+            denominator = a - 2 * b + c
+            offset = 0.5 * (a - c) / denominator if denominator else 0.0
+            return float(b - 0.25 * (a - c) * offset), float(s[i] + offset * (s[1] - s[0]))
+    return float("nan"), float("nan")
+
+
+def winding_study() -> dict:
+    torus = geo.TORUS
+    big, small = geo.TORUS_MAJOR, geo.TORUS_MINOR
+    length, steps = WINDING["length_mm"], WINDING["steps"]
+    regimes = {}
+    for psi_deg in WINDING["regimes_deg"]:
+        psi = math.radians(psi_deg)
+        transfer = jacobi.transfer(torus, [0.0, 0.0], psi, length, steps=steps)
+        clairaut = np.array([torus.clairaut(y[:2], y[2:4]) for y in transfer.states])
+        remainders, perturbed = [], None
+        for size in (1e-3, 5e-4):
+            start = jacobi.perturbed_start(torus, [0.0, 0.0], psi, 0.0, size)
+            _, states = integrators.integrate_fixed(torus.geodesic_rhs, start, length, steps, "rk4")
+            separation = jacobi.normal_separation(torus, transfer.states[:, :4], states)
+            remainders.append(float(np.max(np.abs(separation - size * transfer.states[:, 6]))))
+            perturbed = states if perturbed is None else perturbed
+        c0 = clairaut[0]
+        row = {"heading_from_parallel_deg": psi_deg, "clairaut_mm": c0,
+               "clairaut_drift_rel": float(np.max(np.abs(clairaut - c0)) / abs(c0)),
+               "det_drift": float(np.max(np.abs(transfer.determinant() - 1.0))),
+               "max_abs_j_head_mm": float(np.max(np.abs(transfer.states[:, 6]))),
+               "amplification_vs_cylinder": float(np.max(np.abs(transfer.states[:, 6])) / length),
+               "conjugate_points_mm": transfer.conjugate_points(),
+               "remainder_order": integrators.observed_order([1e-3, 5e-4], remainders),
+               "theta_range_rad": [float(transfer.states[:, 1].min()), float(transfer.states[:, 1].max())]}
+        if abs(c0) > big - small:
+            # Bounded winding: the path turns where rho = |c|.
+            cos_turn = (abs(c0) - big) / small
+            turn = math.acos(cos_turn)
+            numeric, where = _peak(transfer.s, transfer.states[:, 1])
+            perturbed_c = torus.clairaut(perturbed[0, :2], perturbed[0, 2:4])
+            perturbed_turn = math.acos((abs(perturbed_c) - big) / small)
+            numeric_perturbed, _ = _peak(transfer.s, perturbed[:, 1])
+            predicted_shift = (big + small) * math.sin(psi) * 1e-3 / (small * math.sin(turn))
+            row.update(turn_clairaut_rad=turn, turn_numeric_rad=numeric, turn_arclength_mm=where,
+                       turn_shift_numeric_rad=numeric_perturbed - numeric, turn_shift_linear_rad=predicted_shift,
+                       turn_shift_clairaut_rad=perturbed_turn - turn)
+        regimes[f"psi{psi_deg:.0f}"] = row
+        regimes[f"psi{psi_deg:.0f}"]["profile"] = {"s": transfer.s[::5].tolist(), "j_head": transfer.states[::5, 6].tolist()}
+    cylinder = jacobi.transfer(geo.CYLINDER, [0.0, 0.0], math.radians(50.0), length, steps=60)
+    cylinder_error = float(np.max(np.abs(cylinder.states[:, 6] - cylinder.s)))
+    # Constant-angle (loxodrome) winding: slippage tendency |kappa_g / kappa_n|.
+    slippage = {}
+    agreement = 0.0
+    for psi_deg in WINDING["regimes_deg"]:
+        psi = math.radians(psi_deg)
+        ratios, kgs, cs = [], [], []
+        for theta in np.linspace(-math.pi, math.pi, 361)[:-1]:
+            rho = big + small * math.cos(theta)
+            du = np.array([math.cos(psi) / rho, math.sin(psi) / small])
+            ddu = np.array([math.cos(psi) * small * math.sin(theta) / rho ** 2 * du[1], 0.0])
+            u = np.array([0.0, theta])
+            kg, kn = geo.chart_curvatures(torus, u, du, ddu)
+            kg3, kn3 = geo.embedded_curvatures(torus, u, du, ddu)
+            agreement = max(agreement, abs(kg - kg3), abs(kn - kn3))
+            ratios.append(abs(kg) / abs(kn))
+            kgs.append(abs(kg))
+            cs.append(rho * math.cos(psi))
+        ratios = np.array(ratios)
+        slippage[f"psi{psi_deg:.0f}"] = {"max_ratio": float(ratios.max()), "max_abs_kappa_g_per_mm": float(max(kgs)),
+                                         "fraction_above_mu": float(np.mean(ratios > WINDING["friction_mu"])),
+                                         "clairaut_variation_mm": float(max(cs) - min(cs))}
+    return {"regimes": regimes, "cylinder_j_head_error": cylinder_error, "slippage": slippage,
+            "curvature_route_agreement": agreement}
+
+
+@_task("T133", ("test_winding_clairaut_sensitivity_and_slippage",))
+def winding_sensitivity(ctx):
+    study = ctx.memo("mfg.winding", winding_study)
+    bounded, passing = study["regimes"]["psi50"], study["regimes"]["psi70"]
+    f_clairaut = finding("The Clairaut constant is conserved along geodesic windings of the torus mandrel", "numerical",
+                         {k: v["clairaut_mm"] for k, v in study["regimes"].items()},
+                         {"checks": [_check("invariant", f"relative Clairaut drift, {k}", v["clairaut_drift_rel"], 1e-8)
+                                     for k, v in study["regimes"].items()]
+                          + [_check("invariant", f"Wronskian drift, {k}", v["det_drift"], 1e-8) for k, v in study["regimes"].items()]},
+                         unit="mm", tolerance={"abs": 1e-9, "rel": 1e-12})
+    f_amp = finding("Heading-error amplification of the wound path relative to the cylinder (max |j_head| / length)",
+                    "numerical", {"psi50_bounded": bounded["amplification_vs_cylinder"],
+                                  "psi70_passing": passing["amplification_vs_cylinder"], "cylinder": 1.0},
+                    {"checks": [_check("analytic", "cylinder j_head = s (mm)", study["cylinder_j_head_error"], 1e-9)]
+                     + [_check("self_convergence", f"nonlinear remainder order, {k}", v["remainder_order"], 1.8, "ge")
+                        for k, v in study["regimes"].items()]},
+                    tolerance={"abs": 1e-6, "rel": 1e-6})
+    f_turn = finding("Clairaut sensitivity predicts the turnaround-latitude shift of a bounded winding", "numerical",
+                     {"turn_rad": bounded["turn_clairaut_rad"], "shift_per_mrad_rad": bounded["turn_shift_linear_rad"]},
+                     {"checks": [_check("invariant", "integrated turnaround vs Clairaut turnaround (rad)",
+                                        bounded["turn_numeric_rad"] - bounded["turn_clairaut_rad"], 1e-6),
+                                 _check("analytic", "integrated shift vs rho0 sin(psi) dpsi / (r sin theta_turn) (relative)",
+                                        bounded["turn_shift_numeric_rad"] / bounded["turn_shift_linear_rad"] - 1.0, 0.02)]},
+                     tolerance={"abs": 1e-7, "rel": 1e-6})
+    slip = study["slippage"]
+    f_slip = finding("Slippage tendency |kappa_g / kappa_n| of constant-angle winding on the torus mandrel", "numerical",
+                     {k: {"max_ratio": v["max_ratio"], "fraction_above_mu": v["fraction_above_mu"]} for k, v in slip.items()},
+                     {"checks": [_check("self_convergence", "chart vs embedded curvatures (1/mm)", study["curvature_route_agreement"], 1e-12)]},
+                     tolerance={"abs": 1e-9, "rel": 1e-9})
+    f_counter = finding("A constant winding angle is not geodesic on the torus mandrel", "numerical",
+                        slip["psi50"]["max_abs_kappa_g_per_mm"],
+                        {"checks": [_check("analytic", "max |kappa_g| of the 50 deg loxodrome (1/mm)",
+                                           slip["psi50"]["max_abs_kappa_g_per_mm"], 1e-4, "ge"),
+                                    _check("analytic", "Clairaut quantity variation along the loxodrome (mm)",
+                                           slip["psi50"]["clairaut_variation_mm"], 1.0, "ge")]},
+                        unit="1/mm", tolerance={"abs": 1e-12, "rel": 1e-9},
+                        counterexample={"statement": "A constant winding angle (as on a cylinder) is a geodesic, "
+                                                     "slip-free path on every mandrel of revolution",
+                                        "witness": {"mandrel": geo.TORUS.describe(), "heading_from_parallel_deg": 50,
+                                                    "max_slippage_ratio": slip["psi50"]["max_ratio"]}})
+    ctx.artifact_text("winding-heading-sensitivity.svg", svg.line_plot(
+        [("torus psi = 50 deg", bounded["profile"]["s"], bounded["profile"]["j_head"]),
+         ("torus psi = 70 deg", passing["profile"]["s"], passing["profile"]["j_head"]),
+         ("cylinder", [0.0, WINDING["length_mm"]], [0.0, WINDING["length_mm"]])],
+        title="Winding: heading-error Jacobi field j_head", xlabel="arclength (mm)", ylabel="j_head (mm per rad)", markers=False))
+    ctx.artifact_json("winding.json", _r({"regimes": {k: {kk: vv for kk, vv in v.items() if kk != "profile"}
+                                                      for k, v in study["regimes"].items()},
+                                          "slippage": slip, "friction_mu_declared": WINDING["friction_mu"]}))
+    findings = [f_clairaut, f_amp, f_turn, f_slip, f_counter,
+                _not_measured(f"Fibre does not slip on a real mandrel wherever |kappa_g / kappa_n| <= {WINDING['friction_mu']} "
+                              "(the friction coefficient is declared, not measured)")]
+    fields = _fields(
+        "Geodesic winding on a torus conserves the Clairaut constant, so heading errors move the turnaround latitude "
+        "predictably, and the heading-error Jacobi field is bounded (with conjugate points) on outer-region windings "
+        "but grows through the negatively curved inner region; constant-angle winding is not geodesic there and "
+        "needs friction |kappa_g / kappa_n|.",
+        "Torus R = 150 mm, r = 50 mm, K = cos(theta) / (r (R + r cos theta)); Clairaut c = rho^2 dphi/ds; "
+        "theta_turn = acos((|c| - R) / r); d theta_turn = rho0 sin(psi) dpsi / (r sin theta_turn); "
+        "loxodrome dphi/ds = cos(psi)/rho, dtheta/ds = sin(psi)/r.",
+        ["Declared torus mandrel (150, 50) mm and cylinder R = 100 mm", "Windings launched on the outer equator at "
+         "50 and 70 deg from the parallel over 1500 mm", "Declared friction coefficient mu = 0.2"],
+        "No observation: winding is modelled, not executed.",
+        "Clairaut drift and Wronskian drift at rounding level; remainder of the heading linearization O(dpsi^2).",
+        "Integrate geodesic and Jacobi fields, perturb the heading exactly at two sizes, locate turnarounds by "
+        "parabolic refinement, evaluate loxodrome curvature by chart and embedded routes.",
+        f"psi = 50 deg: bounded, turnaround {math.degrees(bounded['turn_clairaut_rad']):.2f} deg, amplification "
+        f"{bounded['amplification_vs_cylinder']:.3f}; psi = 70 deg: passes the inner equator, amplification "
+        f"{passing['amplification_vs_cylinder']:.3f}; loxodrome slippage max {slip['psi50']['max_ratio']:.3f} (50 deg), "
+        f"{slip['psi70']['max_ratio']:.3f} (70 deg) against declared mu = 0.2.",
+        "RK4 at 2 mm steps; Clairaut drift below 1e-8 relative.",
+        ["Clairaut conservation", "turnaround location by two routes", "second-order heading remainder",
+         "chart vs embedded curvature", "cylinder control"],
+        ["Fibre bandwidth, tension and resin are not modelled; the fibre is a curve.",
+         "The friction coefficient is declared; slip also depends on tension and cure state."],
+        "T134: coating or welding trajectory sensitivity on the domed coupon.")
+    return {"state": "completed", "fields": fields, "findings": findings}
+
+
+# T134 coating or welding trajectory ------------------------------------------------------------
+TOOLS = {"welding torch": 15.0, "spray gun": 120.0}
+TRAJECTORY_BOX = {"lateral_mm": 0.3, "heading_rad": 0.002}
+
+
+def _tangent_frame(surface, u, velocity):
+    t = velocity / math.sqrt(surface.speed_squared(u, velocity))
+    return t, surface.normal(u, t)
+
+
+def coating_study() -> dict:
+    surface = geo.COUPON
+    nominal = geo.route_to_edge(surface, geo.STATION, 0.0, geo.COUPON_X[1], name="nominal")
+    length = nominal.length
+    steps = NOMINAL_STATIONS * 26
+    transfer = jacobi.transfer(surface, geo.STATION, 0.0, length, steps=steps)
+    lat, head = TRAJECTORY_BOX["lateral_mm"], TRAJECTORY_BOX["heading_rad"]
+    envelope = lat * np.abs(transfer.states[:, 4]) + head * np.abs(transfer.states[:, 6])
+    vertex_max = 0.0
+    for sign in (1.0, -1.0):
+        separation = geo.separation_nonlinear(surface, geo.STATION, 0.0, length, steps, lat, sign * head, base=transfer)
+        vertex_max = max(vertex_max, float(np.max(np.abs(separation))))
+    # Standoff error and tilt from a lateral offset of the tool, by ray casting and by curvature.
+    standoff_rows, worst_rel = [], 0.0
+    stride = steps // NOMINAL_STATIONS
+    for index in range(0, steps + 1, stride):
+        u, v = transfer.states[index, :2], transfer.states[index, 2:4]
+        t, n = _tangent_frame(surface, u, v)
+        second = geo.second_fundamental_form(surface, u)
+        kappa_lateral = float(n @ second @ n)
+        direction = geo.lateral_direction3(surface, u, t)
+        e = float(envelope[index])
+        exact = geo.standoff_error_exact(surface, u, direction, e, TOOLS["welding torch"])
+        approx = -0.5 * kappa_lateral * e ** 2
+        worst_rel = max(worst_rel, abs(exact - approx) - 0.05 * abs(approx) - 1e-9)
+        standoff_rows.append({"s_mm": float(transfer.s[index]), "lateral_error_mm": e, "kappa_lateral_per_mm": kappa_lateral,
+                              "standoff_error_exact_mm": exact, "standoff_error_series_mm": approx,
+                              "tilt_rad": abs(kappa_lateral) * e})
+    # Tool-centre-point path P = X + H n: speed factor sqrt((1 - H kn)^2 + (H tau_g)^2).
+    tools = {}
+    for name, standoff in TOOLS.items():
+        factors, points, tangents3 = [], [], []
+        for y in transfer.states:
+            u, v = y[:2], y[2:4]
+            t, n = _tangent_frame(surface, u, v)
+            second = geo.second_fundamental_form(surface, u)
+            kn, tau = float(t @ second @ t), float(t @ second @ n)
+            factors.append(math.hypot(1.0 - standoff * kn, standoff * tau))
+            points.append(surface.embedding(u) + standoff * surface.unit_normal3(u))
+            tangents3.append(surface.embedding_jacobian(u) @ t)
+            tools.setdefault("_kn", []).append(kn) if name == "welding torch" else None
+        factors, points, tangents3 = np.array(factors), np.array(points), np.array(tangents3)
+        signed = np.array([1.0 - standoff * kn for kn in tools["_kn"]])
+        steps_along = np.einsum("ij,ij->i", np.diff(points, axis=0), tangents3[:-1])
+        integral = float(np.sum(0.5 * (factors[1:] + factors[:-1]) * np.diff(transfer.s)))
+        tools[name] = {"standoff_mm": standoff, "polyline_length_mm": geo.polyline_length(points),
+                       "integral_length_mm": integral, "speed_factor_min": float(factors.min()),
+                       "speed_factor_max": float(factors.max()),
+                       "sign_changes_of_1_minus_H_kn": int(np.sum(np.diff(np.sign(signed)) != 0)),
+                       "reversed_segments": int(np.sum(steps_along < 0)),
+                       "profile": {"s": transfer.s[::4].tolist(), "factor": factors[::4].tolist()}}
+    kn_all = np.array(tools.pop("_kn"))
+    concave_radius = float(1.0 / kn_all.max())
+    radius = geo.CYLINDER_RADIUS
+    cylinder = {"lateral_mm": 1.0, "exact_mm": radius - math.sqrt(radius ** 2 - 1.0), "series_mm": 1.0 / (2 * radius)}
+    return {"length_mm": length, "envelope_max_mm": float(envelope.max()),
+            "envelope_argmax_mm": float(transfer.s[int(np.argmax(envelope))]), "vertex_max_mm": vertex_max,
+            "standoff": standoff_rows, "standoff_excess": worst_rel, "tools": tools,
+            "min_concave_radius_mm": concave_radius, "cylinder_control": cylinder}
+
+
+@_task("T134", ("test_coating_standoff_and_offset_cusp",))
+def trajectory_sensitivity(ctx):
+    study = ctx.memo("mfg.coating", coating_study)
+    weld, spray = study["tools"]["welding torch"], study["tools"]["spray gun"]
+    f_env = finding("Lateral-error envelope of the coupon trajectory under the declared registration box", "numerical",
+                    {"max_mm": study["envelope_max_mm"], "at_s_mm": study["envelope_argmax_mm"]},
+                    {"derivation": "sup over the box of |delta j_lat + dtheta j_head| = delta |j_lat| + dtheta |j_head|",
+                     "checks": [_check("self_convergence", "max over box vertices of the exactly perturbed separation / linear envelope - 1",
+                                       study["vertex_max_mm"] / study["envelope_max_mm"] - 1.0, 0.02)]},
+                    unit="mm", tolerance={"abs": 1e-8, "rel": 1e-7})
+    worst = max(study["standoff"], key=lambda r: abs(r["standoff_error_exact_mm"]))
+    f_standoff = finding("Standoff error from a lateral tool offset follows -kappa_lateral e^2 / 2", "numerical",
+                         {"max_abs_standoff_error_mm": abs(worst["standoff_error_exact_mm"]),
+                          "max_tilt_rad": max(r["tilt_rad"] for r in study["standoff"]),
+                          "cylinder_exact_mm": study["cylinder_control"]["exact_mm"]},
+                         {"checks": [_check("analytic", "ray-cast standoff error minus series beyond 5% (mm)", study["standoff_excess"], 0.0, "le"),
+                                     _check("analytic", "cylinder: R - sqrt(R^2 - e^2) vs e^2 / 2R (mm)",
+                                            study["cylinder_control"]["exact_mm"] - study["cylinder_control"]["series_mm"], 1e-7)]},
+                         unit="mm", tolerance={"abs": 1e-10, "rel": 1e-7})
+    f_offset = finding("Tool-centre-point path length element is sqrt((1 - H kappa_n)^2 + (H tau_g)^2)", "numerical",
+                       {"welding_speed_factor_range": [weld["speed_factor_min"], weld["speed_factor_max"]],
+                        "spray_speed_factor_range": [spray["speed_factor_min"], spray["speed_factor_max"]]},
+                       {"checks": [_check("analytic", "welding TCP polyline length vs integral (relative)",
+                                          weld["polyline_length_mm"] / weld["integral_length_mm"] - 1.0, 1e-3)]},
+                       tolerance={"abs": 1e-9, "rel": 1e-7})
+    f_cusp = finding("A spray standoff beyond the concave radius of curvature folds the tool-centre-point path", "numerical",
+                     {"spray_standoff_mm": spray["standoff_mm"], "min_concave_radius_mm": study["min_concave_radius_mm"],
+                      "reversed_segments": spray["reversed_segments"]},
+                     {"checks": [_check("analytic", "sign changes of 1 - H kappa_n along the route", spray["sign_changes_of_1_minus_H_kn"], 2, "ge"),
+                                 _check("analytic", "TCP segments running backwards along the route", spray["reversed_segments"], 1, "ge"),
+                                 _check("analytic", "welding torch keeps 1 - H kappa_n > 0 (sign changes)", weld["sign_changes_of_1_minus_H_kn"], 0)]},
+                     tolerance={"abs": 1e-9, "rel": 1e-9},
+                     counterexample={"statement": "The standoff (offset) tool path of a smooth surface path is itself a "
+                                                  "smooth path the robot can follow at constant speed",
+                                     "witness": {"standoff_mm": spray["standoff_mm"],
+                                                 "min_concave_radius_mm": study["min_concave_radius_mm"],
+                                                 "route": "coupon nominal route across the dome rim"}})
+    ctx.artifact_json("trajectory.json", _r({k: v for k, v in study.items() if k != "tools"}
+                                            | {"tools": {n: {k: v for k, v in t.items() if k != "profile"} for n, t in study["tools"].items()}}))
+    ctx.artifact_text("tcp-speed-factor.svg", svg.line_plot(
+        [(f"{name} (H = {tool['standoff_mm']:g} mm)", tool["profile"]["s"], tool["profile"]["factor"])
+         for name, tool in study["tools"].items()],
+        title="Coupon route: TCP speed per surface speed", xlabel="arclength s (mm)", ylabel="|dP/ds|", markers=False))
+    findings = [f_env, f_standoff, f_offset, f_cusp,
+                _not_measured("The torch or gun on a real cell stays within the predicted lateral and standoff band"),
+                finding("The trajectory is safe to execute on a welding or coating robot cell", "machine_safety", None, {})]
+    fields = _fields(
+        "Along a trajectory across the dome, lateral registration errors propagate by the Jacobi transfer, produce "
+        "a second-order standoff error -kappa e^2 / 2 and a first-order tilt kappa e, and the tool-centre-point path "
+        "X + H n has speed factor |1 - H kappa_n| that vanishes where the standoff equals the concave radius.",
+        "e(s) = delta j_lat + dtheta j_head; standoff error by ray casting along the programmed axis; TCP path "
+        "P = X + H n with |P'| = sqrt((1 - H kappa_n)^2 + (H tau_g)^2).",
+        ["Coupon nominal route (T128)", "Declared registration box |delta| <= 0.3 mm, |dtheta| <= 2 mrad",
+         "Declared standoffs: welding torch 15 mm, spray gun 120 mm"],
+        "No observation: trajectories are modelled, not executed.",
+        "Envelope equals the sup over box vertices to second order; standoff series within 5%; TCP length element "
+        "matches the polyline length; no cusp while H < concave radius.",
+        "Integrate the route with Jacobi fields, perturb at the box vertices exactly, ray-cast standoff at nine "
+        "stations, build the TCP path for both tools and count reversals.",
+        f"max lateral error {study['envelope_max_mm']:.3f} mm at s = {study['envelope_argmax_mm']:.1f} mm; max standoff "
+        f"error {abs(worst['standoff_error_exact_mm']):.2e} mm; welding TCP speed factor "
+        f"[{weld['speed_factor_min']:.3f}, {weld['speed_factor_max']:.3f}]; spray path folds ({spray['reversed_segments']} "
+        f"reversed segments; concave radius {study['min_concave_radius_mm']:.1f} mm < 120 mm).",
+        "Linear-envelope accuracy is second order in the box size; ray casting converges to 1e-14.",
+        ["box-vertex nonlinear check", "ray casting vs series", "TCP length element vs polyline",
+         "cusp detection by two routes (sign of 1 - H kappa_n and reversed segments)"],
+        ["Deposition footprint, spray cone and heat input are not modelled; the speed factor is a kinematic proxy.",
+         "Robot joint limits and singularities are not checked."],
+        "T135: generate inspection scan paths over the coupon and measure coverage versus path length.")
+    return {"state": "completed", "fields": fields, "findings": findings}
+
+
+# T135 robotic inspection scan paths -----------------------------------------------------------
+SWATH_MM = 20.0
+SPACING_FACTORS = (1.0, 0.9, 0.8, 0.7, 0.6)
+
+
+def _row_offsets(spacing):
+    count = int(math.ceil((geo.COUPON_Y[1] - geo.COUPON_Y[0]) / spacing - 1e-9))
+    return [round((k - (count - 1) / 2) * spacing, 9) for k in range(count)]
+
+
+def scan_study() -> dict:
+    surface = geo.COUPON
+    span = geo.COUPON_X[1] - geo.COUPON_X[0]
+    grids = {81: geo.area_grid(surface, geo.COUPON_X, geo.COUPON_Y, 81)}
+    cache = {}
+
+    def geodesic_row(offset):
+        # Rows are mirror images across y = 0, so only |offset| is integrated.
+        key = abs(offset)
+        if key not in cache:
+            transfer = jacobi.transfer(surface, [geo.COUPON_X[0], key], 0.0, 1.3 * span, steps=130)
+            points = geo.clip_to_extent(transfer.points)
+            cache[key] = (points, float(np.max(transfer.states[:len(points), 4])))
+        points, jmax = cache[key]
+        return (points if offset >= 0 else points * np.array([1.0, -1.0])), jmax
+
+    def plan(kind, spacing):
+        rows, length, jmax = [], 0.0, 0.0
+        for offset in _row_offsets(spacing):
+            if kind == "geodesic":
+                points, j = geodesic_row(offset)
+                jmax = max(jmax, j)
+            else:
+                points = np.column_stack([np.linspace(*geo.COUPON_X, 101), np.full(101, offset)])
+            rows.append(geo.embed(surface, points))
+        transitions = sum(float(np.linalg.norm(rows[k + 1][-1 if k % 2 == 0 else 0] - rows[k][-1 if k % 2 == 0 else 0]))
+                          for k in range(len(rows) - 1))
+        length = sum(geo.polyline_length(r) for r in rows) + transitions
+        return rows, length, jmax
+
+    plans = {}
+    for kind in ("geodesic", "chart-parallel"):
+        for factor in SPACING_FACTORS:
+            rows, length, jmax = plan(kind, factor * SWATH_MM)
+            plans[f"{kind} x{factor:g}"] = {"kind": kind, "spacing_mm": factor * SWATH_MM, "rows": len(rows),
+                                            "length_mm": length, "coverage": geo.coverage_fraction(grids[81], rows, SWATH_MM),
+                                            "max_j_lat": jmax, "_rows": rows}
+    nominal = plans["geodesic x1"]
+    tightened = SWATH_MM / nominal["max_j_lat"]
+    rows, length, _ = plan("geodesic", tightened)
+    plans["geodesic Jacobi-tightened"] = {"kind": "geodesic", "spacing_mm": tightened, "rows": len(rows), "length_mm": length,
+                                          "coverage": geo.coverage_fraction(grids[81], rows, SWATH_MM), "_rows": rows}
+    fine = geo.area_grid(surface, geo.COUPON_X, geo.COUPON_Y, 161)
+    refinement = geo.coverage_fraction(fine, nominal["_rows"], SWATH_MM) - nominal["coverage"]
+    plate_grid = geo.area_grid(geo.PLATE, geo.COUPON_X, geo.COUPON_Y, 81)
+    plate_rows = [geo.embed(geo.PLATE, np.column_stack([np.linspace(*geo.COUPON_X, 101), np.full(101, y)]))
+                  for y in _row_offsets(SWATH_MM)]
+    plate = {"coverage": geo.coverage_fraction(plate_grid, plate_rows, SWATH_MM),
+             "row_length_error_mm": max(abs(geo.polyline_length(r) - span) for r in plate_rows)}
+    for entry in plans.values():
+        entry.pop("_rows")
+    complete = sorted((p["length_mm"], name) for name, p in plans.items() if p["coverage"] >= 1.0 - 1e-12)
+    return {"plans": plans, "grid_refinement_delta": refinement, "plate_control": plate,
+            "shortest_complete": {"plan": complete[0][1], "length_mm": complete[0][0]} if complete else None,
+            "shorter_incomplete": sorted(name for name, p in plans.items()
+                                         if complete and p["length_mm"] < complete[0][0] and p["coverage"] < 1.0)}
+
+
+@_task("T135", ("test_scan_plans_coverage_and_counterexample",))
+def inspection_scan_paths(ctx):
+    study = ctx.memo("mfg.scan", scan_study)
+    plans, plate = study["plans"], study["plate_control"]
+    f_cov = finding("Coverage and path length of candidate inspection scan plans on the domed coupon", "numerical",
+                    {name: {"coverage": p["coverage"], "length_mm": p["length_mm"], "rows": p["rows"]} for name, p in plans.items()},
+                    {"checks": [_check("exact_arithmetic", "flat-plate control: 1 - coverage at the swath spacing", 1.0 - plate["coverage"], 1e-12),
+                                _check("exact_arithmetic", "flat-plate row length error (mm)", plate["row_length_error_mm"], 1e-9),
+                                _check("self_convergence", "coverage change of the nominal geodesic plan on a 2x finer grid",
+                                       study["grid_refinement_delta"], 0.01)]},
+                    tolerance={"abs": 1e-9, "rel": 1e-7})
+    nominal = plans["geodesic x1"]
+    f_counter = finding("Geodesic rows at the swath spacing leave gaps on the domed coupon", "numerical",
+                        1.0 - nominal["coverage"],
+                        {"checks": [_check("analytic", "uncovered area fraction of the nominal geodesic plan", 1.0 - nominal["coverage"], 0.01, "ge"),
+                                    _check("analytic", "maximum lateral spreading j_lat of its rows", nominal["max_j_lat"], 1.2, "ge")]},
+                        tolerance={"abs": 1e-9, "rel": 1e-7},
+                        counterexample={"statement": "Geodesic scan rows launched at the swath spacing cover a curved coupon "
+                                                     "as completely as they cover a flat plate",
+                                        "witness": {"plan": "geodesic x1", "coverage": nominal["coverage"],
+                                                    "plate_coverage": plate["coverage"], "max_j_lat": nominal["max_j_lat"]}})
+    shortest = study["shortest_complete"]
+    f_short = finding("Shortest evaluated scan plan with complete coverage", "numerical", shortest,
+                      {"checks": [_check("analytic", "1 - coverage of the selected plan", 1.0 - plans[shortest["plan"]]["coverage"], 1e-12)]},
+                      tolerance={"abs": 1e-9, "rel": 1e-7})
+    tight = plans["geodesic Jacobi-tightened"]
+    f_tight = finding("Geodesic rows at spacing swath / max j_lat (first-order Jacobi tightening)", "numerical",
+                      {"spacing_mm": tight["spacing_mm"], "coverage": tight["coverage"], "length_mm": tight["length_mm"]},
+                      {"derivation": "row separation ~ spacing j_lat(s); keep spacing max j_lat <= swath"},
+                      tolerance={"abs": 1e-9, "rel": 1e-7})
+    ctx.artifact_json("scan-plans.json", _r(study))
+    series = []
+    for kind in ("geodesic", "chart-parallel"):
+        chosen = [p for p in plans.values() if p["kind"] == kind and "Jacobi" not in str(p)]
+        chosen = sorted((p["length_mm"], p["coverage"]) for name, p in plans.items() if p["kind"] == kind and "Jacobi" not in name)
+        series.append((f"{kind} rows", [c[0] for c in chosen], [c[1] for c in chosen]))
+    ctx.artifact_text("coverage-vs-length.svg", svg.line_plot(
+        series, title="Domed coupon: scan coverage vs total path length", xlabel="path length (mm)", ylabel="area coverage"))
+    findings = [f_cov, f_counter, f_short, f_tight,
+                _not_measured("The real scanner footprint is a 20 mm swath on this surface at the planned standoff",
+                              "sensor_performance")]
+    fields = _fields(
+        "Positive curvature focuses geodesic scan rows, so rows launched at the swath spacing cross near the dome and "
+        "leave gaps; coverage must be bought with path length, and constant-y (chart-parallel) rows reach full "
+        "coverage sooner on this coupon.",
+        "Rows: geodesics launched along +x from the edge x = -60 mm at offsets k * spacing, or chart lines y = const; "
+        "footprint = points within 10 mm (3D) of a row polyline; coverage = covered area / area, midpoint rule with "
+        "sqrt(det g) weights; path length = rows + edge transitions.",
+        ["Declared domed coupon (T128) and 20 mm scanner swath",
+         f"Spacing factors {list(SPACING_FACTORS)} of the swath; 81 x 81 and 161 x 161 area grids"],
+        "No observation: coverage of modelled footprints on the declared surface.",
+        "Flat-plate coverage = 1 at the swath spacing; grid refinement changes coverage by < 0.01.",
+        "Generate rows for each plan, compute coverage and length, compare with the flat-plate control and with a "
+        "first-order Jacobi-tightened spacing.",
+        f"nominal geodesic plan coverage {nominal['coverage']:.4f} (plate 1.0); shortest complete plan "
+        f"{shortest['plan']} at {shortest['length_mm']:.1f} mm; Jacobi-tightened spacing {tight['spacing_mm']:.2f} mm "
+        f"-> coverage {tight['coverage']:.4f}.",
+        f"Grid discretization {abs(study['grid_refinement_delta']):.4f} in coverage between 81^2 and 161^2 grids.",
+        ["knife-edge coverage ties (midpoint grid)", "grid refinement", "flat-plate control", "row mirror symmetry"],
+        ["The footprint is a 3D distance band; occlusion, incidence limits and scanner depth of field are not modelled.",
+         "Edge transitions are straight 3D chords."],
+        "T136: rank candidate paths by the calibration tolerance they require.")
+    return {"state": "completed", "fields": fields, "findings": findings}

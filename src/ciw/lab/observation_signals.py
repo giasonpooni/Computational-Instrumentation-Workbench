@@ -35,6 +35,20 @@ def chi2_quantile(p: float, dof: float) -> float:
     return dof * (1 - c + z * math.sqrt(c)) ** 3
 
 
+def chi2_cdf(x: float, dof: float, terms: int = 20000) -> float:
+    """Chi-square CDF by the series of the regularized lower incomplete gamma P(dof/2, x/2)."""
+    a, y = dof / 2.0, x / 2.0
+    if y <= 0:
+        return 0.0
+    term = total = 1.0
+    for n in range(1, terms):
+        term *= y / (a + n)
+        total += term
+        if term < 1e-17 * total:
+            break
+    return math.exp(a * math.log(y) - y - math.lgamma(a + 1) + math.log(total))
+
+
 def variance_z(samples, predicted: float) -> dict:
     """Sample variance against a prediction, with a fourth-moment standard error."""
     x = np.asarray(samples, dtype=float).ravel()

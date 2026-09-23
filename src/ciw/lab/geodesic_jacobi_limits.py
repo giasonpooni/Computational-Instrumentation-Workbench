@@ -1412,3 +1412,393 @@ def negative_curvature(ctx):
         recommended_next_task="T017 (validity domains, which shrink like 1/cosh(ks) on the hyperbolic plane) and T018",
     )
     return {"state": "completed", "fields": fields, "findings": findings}
+
+
+# ------------------------------------------------------------------ T017
+T017_NODE_FRACTIONS = (0.25, 0.5, 0.75, 0.9, 0.99, 1.0, 1.01, 1.1, 1.25)
+T017_SPHERE_FRACTIONS = (0.25, 0.5, 0.75, 0.9, 0.99, 0.999, 1.001, 1.01, 1.1, 1.25)
+T017_HYPERBOLIC_S = (0.25, 0.5, 1.0, 1.5, 2.0, 2.5)
+EPS_CAP = 1.0   # validity bounds are reported up to this heading perturbation
+
+
+def remainder_fit(eps, remainder):
+    """Least-squares r(eps) = C2 eps^2 + C3 eps^3 over the declared eps values."""
+    eps = np.asarray(eps, dtype=float)
+    design = np.column_stack([np.ones_like(eps), eps])
+    (c2, c3), *_ = np.linalg.lstsq(design, np.asarray(remainder, dtype=float) / eps ** 2, rcond=None)
+    return float(c2), float(c3)
+
+
+def validity_bound(c2, c3, j, tau=TAU):
+    """Smallest eps > 0 with |C2 eps + C3 eps^2| = tau |j|, capped at EPS_CAP."""
+    target = tau * abs(j)
+    if target == 0.0:
+        return 0.0
+    roots = []
+    for sign in (1.0, -1.0):
+        for root in np.roots([c3, c2, -sign * target]) if c3 != 0.0 else ([sign * target / c2] if c2 else []):
+            if abs(np.imag(root)) < 1e-12 * max(1.0, abs(root)) and np.real(root) > 0:
+                roots.append(float(np.real(root)))
+    return min([EPS_CAP] + roots)
+
+
+def _validity_row(s, j, distances):
+    remainder = [d - e * abs(j) for d, e in zip(distances, EPS)]
+    c2, c3 = remainder_fit(EPS, remainder)
+    exponent = core.loglog_slope(EPS, [abs(r) for r in remainder]) if all(abs(r) > 0 for r in remainder) else None
+    return {"s": float(s), "j": float(j), "C2": c2, "C3": c3, "remainder_exponent": exponent,
+            "eps_max": validity_bound(c2, c3, j)}
+
+
+def validity_study(ctx):
+    sphere = Sphere(1.0)
+    u0, heading = SPHERE_START
+    cases = {}
+    rows = []
+    for f in T017_SPHERE_FRACTIONS:
+        s = f * math.pi
+        distances = [float(core.sphere_separation(sphere, u0, heading, [s], e)["distance"][0]) for e in EPS]
+        row = _validity_row(s, core.sphere_first_order(s), distances)
+        row.update(fraction=f, C3_analytic=-abs(math.sin(s)) * math.cos(s) ** 2 / 24,
+                   eps_max_analytic=min(EPS_CAP, math.sqrt(24 * TAU) / abs(math.cos(s))))
+        rows.append(row)
+    cases["sphere-heading"] = {"singular_s": math.pi, "measure": "great-circle distance (closed form)", "rows": rows}
+    rows = []
+    s0 = 0.75 * math.pi
+    for f in T017_NODE_FRACTIONS:
+        s = f * s0
+        distances = [float(core.sphere_separation(sphere, u0, heading, [s], e, 1.0)["distance"][0]) for e in EPS]
+        row = _validity_row(s, core.sphere_first_order(s, 1.0), distances)
+        row["fraction"] = f
+        rows.append(row)
+    cases["sphere-lateral-heading"] = {"singular_s": s0, "measure": "great-circle distance (closed form)", "rows": rows}
+    rows = []
+    for s in T017_HYPERBOLIC_S:
+        distances = [float(core.hyperbolic_heading_distance(1.0, s, e)) for e in EPS]
+        row = _validity_row(s, math.sinh(s), distances)
+        row.update(C3_analytic=-math.sinh(s) * math.cosh(s) ** 2 / 24,
+                   eps_max_analytic=min(EPS_CAP, math.sqrt(24 * TAU) / math.cosh(s)))
+        rows.append(row)
+    cases["hyperbolic-heading"] = {"singular_s": None, "measure": "hyperbolic distance (closed form)", "rows": rows}
+    for key in ("generic", "equator"):
+        family = torus_family(ctx, key)
+        rows = []
+        for f in T017_NODE_FRACTIONS:
+            i = int(round(f * TORUS_M))
+            row = _validity_row(family["s"][i], family["j"][i], [family["runs"][e]["chord"][i] for e in EPS])
+            row.update(fraction=f, node=i)
+            rows.append(row)
+        cases[f"torus-{key}"] = {"singular_s": float(family["s_star"]), "measure": "embedded chord (RK4)", "rows": rows}
+    # Search for a violation of the predicted boundary at 0.9 s* on the generic torus path.
+    family = torus_family(ctx, "generic")
+    torus = Torus(2.0, 1.0)
+    u0t, heading_t = TORUS_PATHS["generic"]
+    node = int(round(0.9 * TORUS_M))
+    row = next(r for r in cases["torus-generic"]["rows"] if r["fraction"] == 0.9)
+    h = family["length"] / family["steps"]
+    probes = {}
+    for label, factor in (("half", 0.5), ("double", 2.0)):
+        eps = factor * row["eps_max"]
+        start = jacobi.perturbed_start(torus, u0t, heading_t, heading_change=eps)
+        _, states = integrators.integrate_fixed(torus.geodesic_rhs, start, h * node, node, "rk4")
+        chord = float(np.linalg.norm(torus.embedding(states[-1, :2]) - family["points"][node]))
+        probes[label] = {"eps": eps, "relative_error": abs(chord - eps * abs(family["j"][node])) / (eps * abs(family["j"][node]))}
+    return {"tau": TAU, "eps": list(EPS), "cases": cases, "boundary_probe": {"s": float(family["s"][node]), **probes}}
+
+
+@task("T017", changed_files=CHANGED, regression_tests=(f"{TESTS}::test_t017_validity_domains",))
+def validity_domains(ctx):
+    study = ctx.memo("gjl-validity", lambda: validity_study(ctx))
+    ctx.artifact_json("validity-domains.json", core.jsonable(study, 12))
+    series = []
+    for key in ("sphere-heading", "sphere-lateral-heading", "torus-generic", "torus-equator"):
+        case = study["cases"][key]
+        series.append((key, [r["s"] / case["singular_s"] for r in case["rows"]],
+                       [max(r["eps_max"], 1e-12) for r in case["rows"]]))
+    ctx.artifact_text("validity-domains.svg", svg.line_plot(
+        series, title=f"First-order validity bound eps_max (relative tolerance {TAU})",
+        xlabel="s / s0 (first-order zero at 1)", ylabel="eps_max (floored at 1e-12)", logy=True))
+    cases = study["cases"]
+    gen = {r["fraction"]: r for r in cases["torus-generic"]["rows"]}
+    eq = {r["fraction"]: r for r in cases["torus-equator"]["rows"]}
+    mixed = {r["fraction"]: r for r in cases["sphere-lateral-heading"]["rows"]}
+    sph = cases["sphere-heading"]["rows"]
+    hyp = cases["hyperbolic-heading"]["rows"]
+    sph_c2 = max(abs(r["C2"]) / abs(r["j"]) for r in sph)
+    sph_c3 = max(abs(r["C3"] / r["C3_analytic"] - 1) for r in sph if abs(r["C3_analytic"]) > 1e-6)
+    sph_eps = max(abs(r["eps_max"] / r["eps_max_analytic"] - 1) for r in sph)
+    near = {r["fraction"]: r["eps_max"] for r in sph if r["fraction"] in (0.999, 1.001)}
+    hyp_eps = max(abs(r["eps_max"] / r["eps_max_analytic"] - 1) for r in hyp)
+    # Higher-order (eps^5) terms leak into the fitted C2; compare it with the cubic term at the smallest eps.
+    hyp_c2 = max(abs(r["C2"]) / (abs(r["C3"]) * EPS[0]) for r in hyp)
+    eq_c2 = max(abs(r["C2"]) for r in eq.values())
+    probe = study["boundary_probe"]
+    table = {key: [{k: r[k] for k in ("s", "j", "C2", "C3", "eps_max")} for r in case["rows"]]
+             for key, case in cases.items()}
+    findings = [
+        finding("On a generic torus geodesic C2(s*) != 0 and the validity domain shrinks to zero at the conjugate point",
+                "numerical", {"C2_at_s_star": gen[1.0]["C2"], "eps_max_at_s_star": gen[1.0]["eps_max"],
+                              "eps_max_by_fraction": {str(f): r["eps_max"] for f, r in gen.items()}},
+                {"generator": _gen("validity-torus-generic", eps=list(EPS), tau=TAU),
+                 "derivation": _derivation("t017-validity-domains-of-the-first-order-approximation"),
+                 "checks": [core.check("self_convergence", "|C2(s*)|", abs(gen[1.0]["C2"]), 0.1, "ge"),
+                            core.check("invariant", "eps_max at s*", gen[1.0]["eps_max"], 1e-6, "le"),
+                            core.check("invariant", "eps_max at s*/2", gen[0.5]["eps_max"], 0.01, "ge")]},
+                tolerance={"abs": 1e-8, "rel": 1e-3}),
+        finding("The predicted validity boundary holds: half of eps_max is within tolerance, twice eps_max is not",
+                "numerical", probe,
+                {"generator": _gen("validity-probe", s_fraction=0.9, tau=TAU),
+                 "checks": [core.check("invariant", "relative error at eps_max / 2 (must be <= tau)",
+                                       probe["half"]["relative_error"], TAU, "le"),
+                            core.check("invariant", "relative error at 2 eps_max (must be >= tau)",
+                                       probe["double"]["relative_error"], TAU, "ge")]},
+                tolerance={"abs": 1e-8, "rel": 1e-3}),
+        finding("Unit sphere, pure heading: C2 = 0, C3 = -|sin s| cos^2 s / 24, and the domain does not shrink at s = pi",
+                "numerical", {"max_C2_over_j": sph_c2, "max_C3_relative_error": sph_c3,
+                              "max_eps_max_relative_error": sph_eps, "eps_max_near_pi": near},
+                {"generator": _gen("validity-sphere", eps=list(EPS), tau=TAU),
+                 "derivation": _derivation("t017-validity-domains-of-the-first-order-approximation"),
+                 "checks": [core.check("analytic", "max |C2| / |j|", sph_c2, 1e-5),
+                            core.check("analytic", "max |C3 / C3_analytic - 1|", sph_c3, 1e-2),
+                            core.check("analytic", "max |eps_max / (sqrt(24 tau)/|cos s|) - 1|", sph_eps, 2e-2),
+                            core.check("invariant", "min eps_max at s = 0.999 pi and 1.001 pi", min(near.values()),
+                                       0.4, "ge")]},
+                tolerance={"abs": 1e-7, "rel": 1e-3},
+                counterexample={"statement": "The validity domain of the first-order approximation shrinks to zero at "
+                                             "every conjugate point",
+                                "witness": {"surface": "unit sphere", "perturbation": "pure heading", "tau": TAU,
+                                            "eps_max_near_pi": near}}),
+        finding("Hyperbolic plane, pure heading: C2 = 0 and eps_max = sqrt(24 tau)/cosh(s) shrinks exponentially",
+                "numerical", {"max_C2_over_C3_eps_min": hyp_c2, "max_eps_max_relative_error": hyp_eps,
+                              "eps_max": [r["eps_max"] for r in hyp]},
+                {"generator": _gen("validity-hyperbolic", eps=list(EPS), tau=TAU),
+                 "derivation": _derivation("t017-validity-domains-of-the-first-order-approximation"),
+                 "checks": [core.check("analytic", "max |C2| / (|C3| eps_min): quadratic term negligible", hyp_c2, 0.05),
+                            core.check("analytic", "max |eps_max / (sqrt(24 tau)/cosh s) - 1|", hyp_eps, 5e-2)]},
+                tolerance={"abs": 1e-7, "rel": 1e-3}),
+        finding("Sphere lateral+heading perturbation: C2(s0) = 1/2 at the first-order zero s0 = 3pi/4, eps_max -> 0",
+                "numerical", {"C2_at_s0": mixed[1.0]["C2"], "eps_max_at_s0": mixed[1.0]["eps_max"],
+                              "eps_max_at_0.9_s0": mixed[0.9]["eps_max"]},
+                {"generator": _gen("validity-sphere-mixed", eps=list(EPS), tau=TAU),
+                 "derivation": _derivation("t017-validity-domains-of-the-first-order-approximation"),
+                 "checks": [core.check("analytic", "|C2(s0)| - 1/2", abs(mixed[1.0]["C2"]) - 0.5, 1e-2),
+                            core.check("invariant", "eps_max at s0", mixed[1.0]["eps_max"], 1e-6, "le")]},
+                tolerance={"abs": 1e-8, "rel": 1e-3}),
+        finding("Torus outer equator: C2 vanishes along the whole path (reflection symmetry); the remainder is cubic",
+                "numerical", {"max_abs_C2": eq_c2, "remainder_exponent_at_s_star": eq[1.0]["remainder_exponent"],
+                              "eps_max_at_s_star": eq[1.0]["eps_max"]},
+                {"generator": _gen("validity-torus-equator", eps=list(EPS)),
+                 "checks": [core.check("invariant", "max |C2| over the tabulated nodes", eq_c2, 1e-4),
+                            core.check("self_convergence", "remainder exponent at s* minus 3",
+                                       (eq[1.0]["remainder_exponent"] or 0.0) - 3.0, 0.05)]},
+                tolerance={"abs": 1e-6, "rel": 1e-3}),
+        finding("These validity domains certify first-order path corrections as safe on real machines",
+                "machine_safety", None, {}),
+    ]
+    fields = _fields(
+        hypothesis=("The first-order remainder r(eps, s) = d(s) - eps |j(s)| is C2(s) eps^2 + C3(s) eps^3 + ...; the "
+                    "first-order prediction is within relative tolerance tau while |C2 eps + C3 eps^2| <= tau |j|, a "
+                    "domain that shrinks to zero where j vanishes unless the remainder vanishes there too."),
+        mathematical_model=("Unsigned separation d at matched arclength. Unit sphere, pure heading: d = 2 arcsin(|sin s| "
+                            "sin(eps/2)), so C2 = 0, C3 = -|sin s| cos^2 s / 24 and eps_max = sqrt(24 tau)/|cos s| "
+                            "(no collapse at s = pi). Hyperbolic plane: d = 2 asinh(sinh s sin(eps/2)), C2 = 0, "
+                            "eps_max = sqrt(24 tau)/cosh s. Generic paths: C2(s*) != 0 so eps_max ~ tau |j'(s*)| |s - s*| "
+                            "/ |C2(s*)| -> 0; symmetric paths: C2 = 0 and eps_max ~ sqrt(|s - s*|)."),
+        input_data=[f"eps = {list(EPS)}; tau = {TAU}; bounds capped at eps = {EPS_CAP}",
+                    "Closed forms: unit sphere (pure heading; lateral = heading), HyperbolicPlane(1) (pure heading)",
+                    "Numerical: Torus(2, 1) generic and outer-equator families from T010 (RK4 chords at grid nodes)"],
+        observation_model=("Great-circle or hyperbolic distance (closed form) or embedded chord (torus) versus "
+                           "eps |j(s)|; C2 and C3 by least squares over eps; eps_max from the fitted quadratic."),
+        expected_invariant=("C2 = 0 for isotropic/symmetric configurations; eps_max -> 0 at first-order zeros only "
+                            "when the remainder does not vanish there."),
+        experiment=("Tabulate C2, C3 and eps_max over s for five configurations; probe the predicted boundary at "
+                    "0.9 s* on the generic torus path with new integrations at eps_max/2 and 2 eps_max."),
+        numerical_result=(f"Generic torus: C2(s*) = {_g(gen[1.0]['C2'], 4)}, eps_max(s*) = {_g(gen[1.0]['eps_max'], 2)}, "
+                          f"eps_max(s*/2) = {_g(gen[0.5]['eps_max'], 3)}; boundary probe relative errors "
+                          f"{_g(probe['half']['relative_error'], 3)} (eps_max/2) and {_g(probe['double']['relative_error'], 3)} "
+                          f"(2 eps_max) against tau = {TAU}; sphere pure heading eps_max near pi = "
+                          f"{_g(min(near.values()), 4)} (C3 relative error {_g(sph_c3, 2)}); hyperbolic eps_max "
+                          f"{[round(r['eps_max'], 4) for r in hyp]} (max relative deviation {_g(hyp_eps, 2)}); sphere "
+                          f"lateral+heading C2(s0) = {_g(mixed[1.0]['C2'], 4)}; equator max |C2| = {_g(eq_c2, 2)}."),
+        uncertainty=("C2 and C3 absorb higher-order terms from eps up to 0.04 (for the hyperbolic plane at s = 2.5 the "
+                     "eps^5 term changes C3 by about 1-3 percent); eps_max beyond the fitted eps range is an "
+                     "extrapolation of the quadratic model; torus chords carry RK4 errors below 1e-11."),
+        failure_modes_checked=["fitted C2 compared with its analytic zero on isotropic surfaces",
+                               "predicted boundary probed by new integrations on both sides",
+                               "exact first-order zeros handled (eps_max = 0 when j = 0)",
+                               "chord versus intrinsic distance difference is O(eps^3) and cannot change C2"],
+        unresolved_assumptions=["The quadratic remainder model is extrapolated to eps_max up to the cap",
+                                "Heading perturbations (plus one lateral case on the sphere) only",
+                                "Machine-safety use of these domains is outside what the computation establishes"],
+        recommended_next_task="T018 (curvature signal versus integrator error) and a sampled survey of C2(s*) over "
+                              "random torus geodesics",
+    )
+    return {"state": "completed", "fields": fields, "findings": findings}
+
+
+# ------------------------------------------------------------------ T018
+T018_LENGTH = 2.0
+T018_STEPS = (4, 8, 16, 32, 64, 128)
+T018_METHODS = ("euler", "midpoint", "rk4")
+RESOLVED = 10.0   # curvature signal at least ten times the integrator error
+
+
+def _t018_cases():
+    """(key, surface, start, heading, constant curvature along the path or None)."""
+    return (("plane", Plane(), (0.3, -0.2), 0.7, 0.0),
+            ("cylinder", Cylinder(1.0), (0.2, 0.1), 0.6, 0.0),
+            ("sphere R=1", Sphere(1.0), SPHERE_START[0], SPHERE_START[1], 1.0),
+            ("sphere R=10", Sphere(10.0), SPHERE_START[0], SPHERE_START[1], 0.01),
+            ("torus R=2", Torus(2.0, 1.0), (0.0, 0.5), 0.7, None),
+            ("torus R=64 equator", Torus(64.0, 1.0), (0.0, 0.0), 0.0, 1.0 / 65.0),
+            ("saddle c=1", Saddle(1.0), (0.1, -0.2), 0.8, None),
+            ("bump h=0.5", GaussianBump(0.5, 1.0), (-1.2, 0.3), 0.2, None),
+            ("bump h=0.05", GaussianBump(0.05, 1.0), (-1.2, 0.3), 0.2, None),
+            ("hyperbolic k=1", HyperbolicPlane(1.0), (0.0, 1.0), 0.6, -1.0))
+
+
+def _scipy_reference(surface, u0, heading, length):
+    """Optional cross-check with scipy's DOP853 (artifact only; findings never depend on scipy)."""
+    try:
+        from scipy.integrate import solve_ivp
+        import scipy
+    except ImportError:
+        return None
+    f = jacobi.rhs(surface)
+    solution = solve_ivp(lambda _s, y: f(y), (0.0, length), jacobi.initial_state(surface, u0, heading),
+                         method="DOP853", rtol=1e-12, atol=1e-14)
+    return {"implementation": "scipy.integrate.solve_ivp(DOP853)", "revision": scipy.__version__,
+            "j_head": float(solution.y[6, -1])}
+
+
+def resolvability_study():
+    rows = []
+    for key, surface, u0, heading, curvature in _t018_cases():
+        if curvature is not None:
+            reference = float(jacobi.constant_curvature(curvature, [T018_LENGTH])[2][0])
+            spread, kind = 0.0, "analytic"
+        else:
+            fine = jacobi.transfer(surface, u0, heading, T018_LENGTH, rtol=1e-12, atol=1e-14)
+            coarse = jacobi.transfer(surface, u0, heading, T018_LENGTH, rtol=1e-11, atol=1e-13)
+            reference, kind = float(fine.states[-1, 6]), "high_precision"
+            spread = abs(reference - float(coarse.states[-1, 6]))
+        signal = abs(reference - T018_LENGTH)
+        methods = {}
+        for method in T018_METHODS:
+            errors = []
+            for steps in T018_STEPS:
+                run = jacobi.transfer(surface, u0, heading, T018_LENGTH, steps=steps, method=method)
+                errors.append(abs(float(run.states[-1, 6]) - reference))
+            ratios = [None if e == 0.0 else signal / e for e in errors]
+            resolved_from = None
+            for i in range(len(T018_STEPS)):
+                if all(r is None and signal > 0 or (r is not None and r >= RESOLVED) for r in ratios[i:]) and signal > 0:
+                    resolved_from = T018_STEPS[i]
+                    break
+            methods[method] = {"errors": errors, "ratios": ratios, "resolved_from_steps": resolved_from}
+        rows.append({"surface": key, "reference_kind": kind, "reference_j_head": reference, "reference_spread": spread,
+                     "curvature_signal": signal, "flat_prediction_K_L3_over_6": None if curvature is None
+                     else abs(curvature) * T018_LENGTH ** 3 / 6, "methods": methods,
+                     "scipy": _scipy_reference(surface, u0, heading, T018_LENGTH) if curvature is None else None})
+    return rows
+
+
+@task("T018", changed_files=CHANGED, regression_tests=(f"{TESTS}::test_t018_resolvability_report",))
+def curvature_versus_integrator_error(ctx):
+    rows = ctx.memo("gjl-resolvability", resolvability_study)
+    ctx.artifact_json("resolvability.json", core.jsonable(rows, 12))
+    table = ["| surface | signal |j_head(L) - L| | " + " | ".join(f"{m} N for ratio >= {RESOLVED:g}" for m in T018_METHODS)
+             + " |", "| --- | --- | " + " | ".join("---" for _ in T018_METHODS) + " |"]
+    for row in rows:
+        cells = [str(row["methods"][m]["resolved_from_steps"] or ("no signal" if row["curvature_signal"] == 0
+                                                                   else f"> {T018_STEPS[-1]}")) for m in T018_METHODS]
+        table.append(f"| {row['surface']} | {_g(row['curvature_signal'], 4)} | " + " | ".join(cells) + " |")
+    ctx.artifact_text("resolvability.md", "# Curvature signal versus integrator error (L = 2)\n\n" + "\n".join(table) + "\n")
+    curved = [r for r in rows if r["curvature_signal"] > 0]
+    ctx.artifact_text("resolvability-rk4.svg", svg.line_plot(
+        [(r["surface"], list(T018_STEPS), [v if v is not None else float("nan") for v in r["methods"]["rk4"]["ratios"]])
+         for r in curved], title="RK4 resolvability ratio |j_head(L) - L| / error", xlabel="steps N (h = 2/N)",
+        ylabel="signal / error", logx=True, logy=True))
+    ctx.artifact_text("resolvability-euler.svg", svg.line_plot(
+        [(r["surface"], list(T018_STEPS), r["methods"]["euler"]["ratios"]) for r in curved],
+        title="Euler resolvability ratio", xlabel="steps N (h = 2/N)", ylabel="signal / error", logx=True, logy=True))
+    at16 = T018_STEPS.index(16)
+    rk4_min16 = min(r["methods"]["rk4"]["ratios"][at16] for r in curved)
+    weakest = min(curved, key=lambda r: r["curvature_signal"])
+    unresolved = [{"surface": r["surface"], "method": m, "steps": n, "ratio": ratio}
+                  for r in curved for m in T018_METHODS
+                  for n, ratio in zip(T018_STEPS, r["methods"][m]["ratios"]) if ratio is not None and ratio < 1.0]
+    euler_unresolved = [u for u in unresolved if u["method"] == "euler"]
+    witness = min(euler_unresolved, key=lambda u: u["ratio"]) if euler_unresolved else None
+    sphere = next(r for r in rows if r["surface"] == "sphere R=1")
+    orders = {m: -core.loglog_slope(T018_STEPS[2:], sphere["methods"][m]["errors"][2:]) for m in T018_METHODS}
+    flat = [r for r in rows if r["curvature_signal"] == 0.0]
+    flat_error = max(max(r["methods"][m]["errors"]) for r in flat for m in T018_METHODS)
+    spread = max(r["reference_spread"] for r in rows)
+    scipy_rows = [r["scipy"] for r in rows if r["scipy"] is not None]
+    scipy_gap = max((abs(r["scipy"]["j_head"] - r["reference_j_head"]) for r in rows if r["scipy"]), default=None)
+    resolved_from = {r["surface"]: {m: r["methods"][m]["resolved_from_steps"] for m in T018_METHODS} for r in curved}
+    findings = [
+        finding("RK4 resolves the curvature signal on every curved test surface from N = 16 (h = 1/8)", "numerical",
+                {"min_ratio_rk4_N16": rk4_min16, "weakest_signal_surface": weakest["surface"],
+                 "weakest_signal": weakest["curvature_signal"]},
+                {"generator": _gen("resolvability", steps=list(T018_STEPS), length=T018_LENGTH),
+                 "derivation": _derivation("t018-curvature-signal-versus-integrator-error"),
+                 "checks": [core.check("self_convergence", "min over curved surfaces of signal / RK4 error at N = 16",
+                                       rk4_min16, RESOLVED, "ge"),
+                            core.check("high_precision", "max reference spread (rtol 1e-12 vs 1e-11)", spread, 1e-9)]},
+                tolerance={"abs": 1e-9, "rel": 1e-3}),
+        finding("A computed deviation of j_head(L) from L is not by itself a curvature measurement", "numerical",
+                {"unresolved_cases": len(unresolved), "euler_unresolved_cases": len(euler_unresolved),
+                 "worst_euler_ratio": witness["ratio"] if witness else None},
+                {"generator": _gen("resolvability", method="euler"),
+                 "checks": [core.check("invariant", "number of Euler cases with signal / error < 1",
+                                       len(euler_unresolved), 1, "ge")]},
+                tolerance={"abs": 0.0, "rel": 1e-3},
+                counterexample={"statement": "A nonzero computed deviation j_head(L) - L measures the intrinsic "
+                                             "curvature along the path", "witness": witness}),
+        finding("Resolvability ratios improve like h^-p with p = 1, 2, 4 (sphere R = 1)", "numerical", orders,
+                {"generator": _gen("resolvability", surface="sphere R=1"),
+                 "checks": [core.check("analytic", f"{m} order minus {integrators.ORDERS[m]}",
+                                       orders[m] - integrators.ORDERS[m], 0.3) for m in T018_METHODS]},
+                tolerance={"abs": 0.02, "rel": 0.0}),
+        finding("Flat surfaces show no spurious curvature signal for any method or step", "numerical", flat_error,
+                {"generator": _gen("resolvability", surfaces=[r["surface"] for r in flat]),
+                 "checks": [core.check("analytic", "max |j_head(L) - L| on plane and cylinder", flat_error, 1e-13)]},
+                tolerance={"abs": 1e-13, "rel": 0.0}),
+        finding("Curvature signals resolvable here would be resolvable in measured sensor data", "sensor_performance",
+                None, {}),
+    ]
+    fields = _fields(
+        hypothesis=("A curvature effect in a numerical Jacobi field is meaningful only where it exceeds the integrator "
+                    "error: the deviation |j_head(L) - L| ~ |K| L^3/6 must dominate |j_head,h(L) - j_head(L)| ~ C h^p; "
+                    "weak curvature with low-order methods and coarse steps is not resolvable."),
+        mathematical_model=("Signal S = |j_head(L) - L| (zero exactly on flat surfaces; K L^3/6 for small constant K). "
+                            "Error E(h) = |j_head,h(L) - j_head(L)| ~ C_method h^p, p = 1, 2, 4. Resolvability ratio "
+                            f"S / E; resolved when >= {RESOLVED:g}."),
+        input_data=[f"{len(rows)} declared paths of length {T018_LENGTH}: " + ", ".join(r["surface"] for r in rows),
+                    f"Euler, midpoint, RK4 with N = {list(T018_STEPS)}",
+                    "References: closed forms for constant curvature, DP45 rtol 1e-12 otherwise"],
+        observation_model="j_head(L) of the joint geodesic/Jacobi integration; no renormalization.",
+        expected_invariant="Flat surfaces: S = E = 0; curved surfaces: ratio grows like h^-p.",
+        experiment=("Integrate each path with each method and step count, compare j_head(L) with its reference, form "
+                    "ratios and the smallest N from which every finer step keeps the ratio above the threshold."),
+        numerical_result=(f"Min RK4 ratio at N = 16: {_g(rk4_min16, 4)} (weakest signal {weakest['surface']}, "
+                          f"S = {_g(weakest['curvature_signal'], 3)}); {len(unresolved)} (method, N) cases with ratio "
+                          f"< 1, {len(euler_unresolved)} of them Euler, worst {witness['surface'] if witness else None} "
+                          f"N = {witness['steps'] if witness else None} ratio {_g(witness['ratio'], 3) if witness else None}; "
+                          f"orders {', '.join(f'{m} {_g(v, 3)}' for m, v in orders.items())}; flat max |j - L| "
+                          f"{_g(flat_error, 2)}; resolved-from N by surface {resolved_from}; scipy DOP853 cross-check "
+                          + (f"max |j_scipy - j_ref| = {_g(scipy_gap, 2)} over {len(scipy_rows)} references (artifact only)"
+                             if scipy_rows else "not run (scipy unavailable)") + "."),
+        uncertainty=(f"Reference spread up to {_g(spread, 2)}; ratios below about 1e9 are unaffected by it. The "
+                     "threshold 10 is a declared convention, not a derived requirement."),
+        failure_modes_checked=["exact zero errors on flat surfaces kept as 'no signal', not as infinite ratios",
+                               "resolution required to persist for every finer step, not just one lucky step",
+                               "adaptive references checked by tightening rtol"],
+        unresolved_assumptions=["Only j_head(L) is compared; the lateral column and conjugate-point locations are not",
+                                "Measurement noise of any real observation is absent; sensor-level resolvability is "
+                                "not established"],
+        recommended_next_task="T005 (Jacobi separation law) with resolvability-aware step selection, and T046",
+    )
+    return {"state": "completed", "fields": fields, "findings": findings}

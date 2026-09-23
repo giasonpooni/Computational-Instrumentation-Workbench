@@ -198,20 +198,36 @@ def newton_routes(surface, p, q, candidates, steps=600, iterations=12, tol=1e-10
     routes = []
     for i in range(len(theta)):
         if active[i] and residual[i] < 1e-8 and (max_length is None or length[i] <= max_length + 1e-9):
-            routes.append({"heading": float(theta[i] % TWO_PI), "length": float(length[i]),
+            routes.append({"heading": canonical_heading(float(theta[i])), "length": float(length[i]),
                            "lift": [int(v) for v in lifts[i]], "batch_residual": float(residual[i]),
                            "batch_j_head": float(Y[i, 4])})
     return dedupe(routes)
 
 
-def dedupe(routes, heading_tol=1e-6, length_tol=1e-6):
+def canonical_heading(theta: float) -> float:
+    """Heading in [-pi/2, 3 pi/2): symmetric routes (headings 0 and pi) never sit on the wrap point."""
+    return (theta + 0.5 * math.pi) % TWO_PI - 0.5 * math.pi
+
+
+def dedupe(routes, heading_tol=1e-6, length_tol=1e-6, tie_tol=1e-9):
+    """Merge duplicates; order by length, and by heading within groups of lengths tied to ``tie_tol``.
+
+    Mirror-image routes have equal lengths up to rounding, so their order must
+    not depend on the last bit of the length.
+    """
     kept = []
     for route in sorted(routes, key=lambda r: (r["length"], r["heading"])):
         if not any(abs(route["length"] - k["length"]) < length_tol
                    and abs((route["heading"] - k["heading"] + math.pi) % TWO_PI - math.pi) < heading_tol
                    for k in kept):
             kept.append(route)
-    return kept
+    ordered, group = [], []
+    for route in kept:
+        if group and route["length"] - group[-1]["length"] > tie_tol:
+            ordered.extend(sorted(group, key=lambda r: r["heading"]))
+            group = []
+        group.append(route)
+    return ordered + sorted(group, key=lambda r: r["heading"])
 
 
 def verify_route(surface, p, q, route, horizon=8.0, step=0.04):
