@@ -122,6 +122,7 @@ def main():
         (work / "tests").mkdir(parents=True)
         for filename in TEST_FILES:
             shutil.copyfile(root / "tests" / filename, work / "tests" / filename)
+        shutil.copyfile(root / "tests" / "native_operations.py", work / "tests" / "native_operations.py")
         shutil.copytree(root / "examples", work / "examples")
         env = {**os.environ, "CIW_REMAINING_MEASUREMENT_STACK_ROOT": str(measurement_root),
                "CIW_REMAINING_IDENTIFIED_STACK_ROOT": str(identified), "CIW_REMAINING_GTE_REPO": str(gte),

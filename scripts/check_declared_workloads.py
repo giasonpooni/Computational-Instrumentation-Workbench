@@ -49,6 +49,7 @@ def main():
         work = temporary / "installed-check"
         (work / "tests").mkdir(parents=True)
         shutil.copyfile(root / "tests/test_declared_workloads.py", work / "tests/test_declared_workloads.py")
+        shutil.copyfile(root / "tests" / "native_operations.py", work / "tests" / "native_operations.py")
         shutil.copytree(root / "examples/declared-workloads", work / "examples/declared-workloads")
         env = {**os.environ, "CIW_DECLARED_STACK_ROOT": str(providers), "CIW_SCR_ENGINE": str(engine)}
         env.pop("PYTHONPATH", None)

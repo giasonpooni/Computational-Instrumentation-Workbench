@@ -11,6 +11,7 @@ import pytest
 from ciw.instruments import make_demo_run
 from ciw.session import Session
 from ciw.telemetry import canonical
+from native_operations import PROVIDER_FREE_OPERATIONS
 
 ROOT = Path(__file__).resolve().parents[1]
 KINDS = ("schematic-companions", "bim-quantity", "acquired-dataset")
@@ -141,7 +142,7 @@ def test_restore_retains_modules_without_executing_or_binding_providers(retained
     session, bundles, _, geographic, spatial, workspace = retained
     restored = Session.from_workspace(workspace, tmp_path)
     assert restored.workbench.serialize() == session.workbench.serialize()
-    assert {o["operation_id"] for o in restored.workbench.describe_operations() if o["available"]} == {"ciw.energy-accuracy.v1", "ciw.encoder-position.v1", "ciw.thermal-observer.v1"}
+    assert {o["operation_id"] for o in restored.workbench.describe_operations() if o["available"]} == PROVIDER_FREE_OPERATIONS
     assert call(restored, "spatial.inspect", {"source_id": geographic["source_id"]}) == spatial
     for original, _ in bundles.values():
         call(restored, "bundle.replay", {"bundle_id": original["bundle_digest"]}, error=True)

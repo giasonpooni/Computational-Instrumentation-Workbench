@@ -12,6 +12,7 @@ from websockets.exceptions import ConnectionClosed
 from ciw.instruments import make_demo_run
 from ciw.server import WorkbenchServer, spatial_origins
 from ciw.session import Session
+from native_operations import PROVIDER_FREE_OPERATIONS
 
 ORIGIN = "http://127.0.0.1:5173"
 EXAMPLES = Path(__file__).parents[1] / "examples"
@@ -63,7 +64,7 @@ def test_native_mutation_spatial_observation_and_restore(tmp_path):
                 retained = session.workbench.serialize()
                 restored = type(session.workbench).restore(retained)
                 assert restored.inspect_spatial({"source_id": added["source_id"]}) == packet
-                assert {item["operation_id"] for item in restored.describe_operations() if item["available"]} == {"ciw.energy-accuracy.v1", "ciw.encoder-position.v1", "ciw.thermal-observer.v1"}
+                assert {item["operation_id"] for item in restored.describe_operations() if item["available"]} == PROVIDER_FREE_OPERATIONS
     asyncio.run(exercise())
 
 

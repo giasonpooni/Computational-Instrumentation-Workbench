@@ -16,6 +16,7 @@ from ciw.instruments import make_demo_run
 from ciw.server import WorkbenchServer
 from ciw.session import Session
 from ciw.telemetry import canonical
+from native_operations import PROVIDER_FREE_OPERATIONS
 
 ROOT = Path(__file__).resolve().parents[1]
 KINDS = {"flat-torus-reference": "ftr", "curved-path-transfer": "csg"}
@@ -114,4 +115,4 @@ def test_reference_restore_needs_no_provider_and_replay_refuses_without_binding(
         assert call(restored, "experiment.inspect", {"bundle_id": refs["original"]})["kind"] == kind
         call(restored, "bundle.replay", {"bundle_id": refs["original"]}, error=True)
         assert restored.workbench.serialize() == before
-    assert {o["operation_id"] for o in restored.workbench.describe_operations() if o["available"]} == {"ciw.energy-accuracy.v1", "ciw.encoder-position.v1", "ciw.thermal-observer.v1"}
+    assert {o["operation_id"] for o in restored.workbench.describe_operations() if o["available"]} == PROVIDER_FREE_OPERATIONS

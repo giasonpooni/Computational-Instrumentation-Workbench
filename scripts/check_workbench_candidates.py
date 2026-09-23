@@ -73,6 +73,7 @@ def main():
         (work / "tests").mkdir(parents=True)
         for name in ("test_workbench_candidates.py", "test_workbench_telemetry.py"):
             shutil.copyfile(root / "tests" / name, work / "tests" / name)
+        shutil.copyfile(root / "tests" / "native_operations.py", work / "tests" / "native_operations.py")
         shutil.copytree(root / "examples", work / "examples")
         replay_runtime = json.loads((fixture / "runtime.json").read_text())
         environment = {**os.environ, "CIW_ESM_ROOT": str(esm), "CIW_ESM_BUNDLE_FILE": str(fixture / "bundle.json"),

@@ -43,6 +43,7 @@ def main():
             raise AssertionError("Incomplete energy test suite")
         for path in tests:
             shutil.copyfile(path, work / "tests" / path.name)
+        shutil.copyfile(root / "tests" / "native_operations.py", work / "tests" / "native_operations.py")
         shutil.copytree(root / "examples/energy-accuracy", work / "examples/energy-accuracy")
         env = dict(os.environ)
         for name in ("PYTHONPATH", "PYTEST_ADDOPTS", "CIW_TEST_CUDA", "CIW_ENERGY_GPU"):

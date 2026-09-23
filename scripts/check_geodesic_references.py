@@ -92,6 +92,7 @@ def main():
         (work / "tests").mkdir(parents=True)
         for name in TESTS:
             shutil.copyfile(root / "tests" / name, work / "tests" / name)
+        shutil.copyfile(root / "tests" / "native_operations.py", work / "tests" / "native_operations.py")
         shutil.copytree(root / "examples/geodesic-reference", work / "examples/geodesic-reference")
         env = {**os.environ, "CIW_FTR_REPO": str(repositories["ftr"]), "CIW_CSG_REPO": str(repositories["csg"]),
                "CIW_GEODESIC_FIXTURE_DIR": str(destination)}

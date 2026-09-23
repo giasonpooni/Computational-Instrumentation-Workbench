@@ -17,6 +17,7 @@ from ciw.session import Session
 from ciw.telemetry import canonical, digest, byte_digest, _bundle_digest
 from ciw.workbench import Workbench
 from test_energy_records import make_log, reseal
+from native_operations import PROVIDER_FREE_OPERATIONS
 
 
 def source_payload(raw):
@@ -52,7 +53,7 @@ def reseal_bundle(bundle):
 
 def test_builtin_is_available_without_hardware_or_repository_bindings():
     workbench = Workbench()
-    assert {row["operation_id"] for row in workbench.describe_operations() if row["available"]} == {OPERATION, "ciw.encoder-position.v1", "ciw.thermal-observer.v1"}
+    assert {row["operation_id"] for row in workbench.describe_operations() if row["available"]} == PROVIDER_FREE_OPERATIONS
     operation = next(row for row in workbench.describe_operations() if row["operation_id"] == OPERATION)
     assert operation["role"] == "offline_energy_accuracy_analysis"
     workbench.bind_workflow(KIND, {})
@@ -238,7 +239,7 @@ def test_shared_session_live_transport_save_restore_and_reanalysis(retained, tmp
     saved = session.save_workspace(tmp_path / "workspace.json")
     restored = Session.from_workspace(saved, tmp_path / "restored")
     assert restored.workbench.serialize() == session.workbench.serialize()
-    assert {o["operation_id"] for o in restored.workbench.describe_operations() if o["available"]} == {OPERATION, "ciw.encoder-position.v1", "ciw.thermal-observer.v1"}
+    assert {o["operation_id"] for o in restored.workbench.describe_operations() if o["available"]} == PROVIDER_FREE_OPERATIONS
     restored.workbench.replay({"bundle_id": result["bundle_id"]})
     assert len(restored.workbench.serialize()["bundles"]) == 3
     assert restored.workbench.pending_operations == 0

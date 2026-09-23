@@ -77,6 +77,7 @@ def main():
         (work / "tests").mkdir(parents=True)
         for filename in TEST_FILES:
             shutil.copyfile(root / "tests" / filename, work / "tests" / filename)
+        shutil.copyfile(root / "tests" / "native_operations.py", work / "tests" / "native_operations.py")
         shutil.copytree(root / "examples", work / "examples")
         env = {**os.environ, "CIW_INTEGRATED_STACK_ROOT": str(providers),
                "CIW_SCHEMATIC_STACK_ROOT": str(providers), "CIW_CSE_REPO": str(providers / "cse"),

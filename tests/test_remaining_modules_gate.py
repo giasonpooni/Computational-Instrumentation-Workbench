@@ -17,6 +17,7 @@ from ciw.instruments import make_demo_run
 from ciw.server import WorkbenchServer
 from ciw.session import Session
 from ciw.telemetry import canonical
+from native_operations import PROVIDER_FREE_OPERATIONS
 
 
 ROOT = Path(__file__).resolve().parents[1]
@@ -209,7 +210,7 @@ def test_saved_common_bench_restores_without_host_binding_or_execution(retained,
     workspace = original.save_workspace(tmp_path / "workspace.json")
     restored = Session.from_workspace(workspace, tmp_path / "restored")
     assert restored.workbench.serialize() == original.workbench.serialize()
-    assert {o["operation_id"] for o in restored.workbench.describe_operations() if o["available"]} == {"ciw.energy-accuracy.v1", "ciw.encoder-position.v1", "ciw.thermal-observer.v1"}
+    assert {o["operation_id"] for o in restored.workbench.describe_operations() if o["available"]} == PROVIDER_FREE_OPERATIONS
     for kind, bundle in [*retained["originals"].items(), *retained.get("held", {}).items()]:
         assert call(restored, "bundle.get", {"bundle_id": bundle["bundle_digest"]}) == bundle
         view = call(restored, "experiment.inspect", {"bundle_id": bundle["bundle_digest"]})

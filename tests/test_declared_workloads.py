@@ -12,6 +12,7 @@ from ciw.instruments import make_demo_run
 from ciw.session import Session
 from ciw.telemetry import canonical, _bundle_digest
 from ciw.workbench import Workbench
+from native_operations import PROVIDER_FREE_OPERATIONS
 
 ROOT = Path(__file__).resolve().parents[1]
 KINDS = ("schematic-assessment", "numerical-heat")
@@ -122,7 +123,7 @@ def test_shared_catalog_native_results_and_restore(retained, monkeypatch):
     assert session.workbench.serialize() == before
     restored = Session.from_workspace(path, path.parent / "restored")
     assert restored.workbench.serialize() == before
-    assert {o["operation_id"] for o in restored.workbench.describe_operations() if o["available"]} == {"ciw.energy-accuracy.v1", "ciw.encoder-position.v1", "ciw.thermal-observer.v1"}
+    assert {o["operation_id"] for o in restored.workbench.describe_operations() if o["available"]} == PROVIDER_FREE_OPERATIONS
     call(restored, "bundle.replay", {"bundle_id": bundles[KINDS[0]][0]["bundle_digest"]}, error=True)
     assert restored.workbench.pending_operations == 0
 
