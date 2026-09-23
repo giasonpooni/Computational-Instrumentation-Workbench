@@ -6,11 +6,14 @@ and candidate-evidence validators) through its request protocol and saved
 workspaces, entirely offline. No provider checkout, GPU, network or hardware
 is used; the energy-accuracy input is the bundled synthetic fixture log.
 
-A forgery here edits a saved workspace and recomputes only unkeyed SHA-256
-digests with CIW's public canonicalization, which any holder of the file can
-do. A mutation accepted on reopen is a surviving mutant: the retained records
-are content-consistent, not authenticated. Nothing here changes CIW code, and
-nothing here says whether a forged record would mislead a particular reader.
+A forgery here edits a saved workspace (records, or a retained source log whose
+own log_digest is resealed) and recomputes only unkeyed SHA-256 digests with
+CIW's public canonicalization, which any holder of the file can do. A mutation
+accepted on reopen is a surviving mutant: the retained records are
+content-consistent, not authenticated. The ESM validator runs on a synthetic
+telemetry-shaped record that no telemetry workflow validated. Nothing here
+changes CIW code, and nothing here says whether a forged record would mislead
+a particular reader.
 """
 from __future__ import annotations
 
@@ -265,6 +268,39 @@ def reforge(workspace: dict, *, keep_verification=False) -> None:
         natives[native["bundle_digest"]] = native
 
 
+def reforge_source(workspace: dict, source_id: str, edit: Callable) -> dict:
+    """Rewrite one retained source log and every record derived from it, keeping occurrence ids and times.
+
+    The log's unkeyed log_digest is resealed, the workbench source record is
+    rebuilt, each bundle of that source is re-analysed with CIW's own
+    ``analyze`` and all downstream digests are recomputed with :func:`reforge`.
+    """
+    from ..energy_records import analyze
+    from ..energy_workflow import _request
+    from ..telemetry import digest
+    from ..workbench import _source
+    sources = workspace["workbench"]["sources"]
+    index = next(position for position, source in enumerate(sources) if source["source_id"] == source_id)
+    old = sources[index]
+    log = edited_log(base64.b64decode(old["bytes_b64"]), edit, reseal=True)
+    new = _source({"kind": old["kind"], "label": old["label"], "bytes_b64": b64(serialize_log(log))})
+    sources[index] = new
+    evidence, data = new["evidence_id"], analyze(log)
+    for record in workspace["workbench"]["bundles"]:
+        if record["source_id"] != source_id:
+            continue
+        record["source_id"] = new["source_id"]
+        native = record["native"]
+        native["source"] = {"experiment_id": log["run_id"], "experiment_digest": digest(log),
+                            "evidence": [{"artifact_ref": evidence, "sha256": evidence, "bytes_b64": new["bytes_b64"]}]}
+        for step in (native["steps"][0], native["verification"]["reproduction"]):
+            step["input_refs"], step["result"]["input_refs"] = [evidence], [evidence]
+            step["request"] = _request(log, evidence)
+            step["result"]["data"] = deepcopy(data)
+    reforge(workspace)
+    return new
+
+
 def reseal_oscillator(*records: dict) -> None:
     from ..operations.runner import seal
     for record in records:
@@ -310,49 +346,89 @@ class View:
 
 @dataclass(frozen=True)
 class Mutant:
+    """One workspace forgery.
+
+    ``pinned`` is ``accepted`` for a predicted survivor, otherwise the exact
+    refusal message recorded from an observed run. Only the kill/survive
+    outcome is a prediction; the message is a regression pin.
+    """
     name: str
     task: str
     target: str
     recompute: str
     description: str
-    predicted: str
+    pinned: str
     apply: Callable
     witness: Callable | None = None
+
+
+def _outcome(pinned: str, accepted: bool, observed: str, error: str | None) -> dict:
+    """Kill/survive prediction and message pin, reported separately."""
+    predicted = "accepted" if pinned.startswith("accepted") else "killed"
+    outcome = "accepted" if accepted else "killed"
+    return {"predicted_outcome": predicted, "pinned_message": pinned, "observed_outcome": outcome,
+            "observed": observed, "error": error, "killed": not accepted,
+            "outcome_matches_prediction": outcome == predicted, "message_matches_pin": observed == pinned}
 
 
 def run_mutant(mutant: Mutant, fixture: dict, root: Path, labels: dict) -> dict:
     workspace = deepcopy(fixture["workspace"])
     mutant.apply(View(workspace, fixture))
     observed, session = reopen(workspace, root)
-    row = {"name": mutant.name, "task": mutant.task, "target": mutant.target, "recompute": mutant.recompute,
-           "description": mutant.description, "predicted": mutant.predicted,
-           "observed": observed["outcome"] if observed["outcome"] == "accepted" else observed["message"],
-           "error": observed["error"]}
-    row["killed"] = observed["outcome"] == "refused"
-    row["matches_prediction"] = row["observed"] == mutant.predicted
+    accepted = observed["outcome"] == "accepted"
+    row = {"name": mutant.name, "task": mutant.task, "kind": "workspace", "target": mutant.target,
+           "recompute": mutant.recompute, "description": mutant.description,
+           **_outcome(mutant.pinned, accepted, "accepted" if accepted else observed["message"], observed["error"])}
     if session is not None and mutant.witness is not None:
         row["post_reopen"] = relabel(mutant.witness(session, fixture), labels)
     return row
 
 
-def validator_row(name, task, target, description, predicted, call, recompute="none") -> dict:
-    """Outcome of a pure offline validator on a synthetic record (``recompute`` as for workspace mutants)."""
+def validator_row(name, task, target, description, pinned, call, recompute="none", by_design=None) -> dict:
+    """Outcome of a pure offline validator on a synthetic record (``recompute`` as for workspace mutants).
+
+    ``by_design`` names the documented behaviour when the validator does not
+    claim to refuse the edit, so an acceptance is not a surviving mutant.
+    """
     try:
         value = call()
     except Exception as exc:  # the refusal message is the observation
         observed, error = str(exc), type(exc).__name__
     else:
         observed, error = "accepted" if value is None else f"accepted:{value}", None
-    return {"name": name, "task": task, "target": target, "recompute": recompute, "description": description,
-            "predicted": predicted, "observed": observed, "error": error,
-            "killed": error is not None, "matches_prediction": observed == predicted}
+    row = {"name": name, "task": task, "kind": "validator", "target": target, "recompute": recompute,
+           "description": description, **_outcome(pinned, error is None, observed, error)}
+    if by_design is not None:
+        row["accepted_by_design"] = by_design
+    return row
+
+
+def telemetry_shaped_bundle(tag: str) -> dict:
+    """A synthetic record with the telemetry-session fields the ESM response validator reads.
+
+    Workbench._validate_candidate submits only calibrated-observable or
+    telemetry bundles; building a validated telemetry session needs provider
+    checkouts, so this record carries only the schema, a digest and three step
+    occurrences (ppda, stfe, gsie; no cbsr, so reconciliation is not_run).
+    """
+    from ..telemetry import _bundle_digest
+
+    def occurrence(role):
+        return "execution-" + hashlib.sha256(f"ciw-lab {tag} {role}".encode()).hexdigest()[:32]
+    body = {"schema": "ciw.telemetry-session.v1",
+            "session_id": "session-" + hashlib.sha256(f"ciw-lab {tag}".encode()).hexdigest()[:32],
+            "configuration": {}, "steps": [{"runtime_ref": role, "execution_id": occurrence(role)}
+                                           for role in ("ppda", "stfe", "gsie")]}
+    body["bundle_digest"] = _bundle_digest(body)
+    return body
 
 
 def esm_case(native: dict) -> dict:
     """A minimal ESM candidate inspection that the pure validator accepts for ``native``.
 
     Only :func:`ciw.candidate_evidence.validate_response` runs; no ESM process,
-    adapter binding or candidate store is involved.
+    adapter binding or candidate store is involved. ``raw`` is CIW's canonical
+    serialization of the bundle, as Workbench._validate_candidate passes it.
     """
     from ..telemetry import canonical
     raw = canonical(native)
@@ -390,12 +466,48 @@ def exchange_artifact(schema: str, body: dict, field: str) -> dict:
     return artifact
 
 
+# ------------------------------------------------------------------ source-log edits
 def _reverse_keys(value):
     if isinstance(value, dict):
         return {key: _reverse_keys(value[key]) for key in reversed(list(value))}
     if isinstance(value, list):
         return [_reverse_keys(item) for item in value]
     return value
+
+
+def serialize_log(log: dict) -> bytes:
+    """The fixture's own layout (two-space indent, trailing newline), so edits change only the edited tokens."""
+    return (json.dumps(log, indent=2, ensure_ascii=False, allow_nan=False) + "\n").encode("utf-8")
+
+
+def edited_log(raw: bytes, edit: Callable, *, reseal: bool) -> dict:
+    """Apply ``edit`` to a parsed log; with ``reseal`` recompute its unkeyed log_digest as any holder can."""
+    from ..energy_records import seal
+    log = json.loads(raw.decode("utf-8"))
+    unsigned = {key: value for key, value in log.items() if key != "log_digest"}
+    edit(unsigned)
+    return seal(unsigned) if reseal else {**unsigned, "log_digest": log["log_digest"]}
+
+
+def integer_initial_covariance(log: dict) -> None:
+    """Write the unit diagonal of both copies of initial_covariance as JSON integers (1.0 -> 1), consistently."""
+    for matrix in (log["runtime"]["workload"]["solver_settings"]["initial_covariance"],
+                   log["plan"]["solver"]["initial_covariance"]):
+        for row in matrix:
+            for index, value in enumerate(row):
+                if type(value) is float and value == 1.0:
+                    row[index] = 1
+
+
+def rename_sensor(log: dict) -> None:
+    """A metadata-only edit: the sensor name is retained but never analysed."""
+    log["sensor"]["name"] = "renamed fixture device"
+
+
+def measurement_edit(log: dict) -> None:
+    """Lower the first measurement-phase counter sample by 50 mJ (it stays monotone)."""
+    sample = log["phases"][3]["samples"][0]
+    sample["energy_mj"] = str(int(sample["energy_mj"]) - 50)
 
 
 def byte_variants(raw: bytes) -> dict:
@@ -412,55 +524,95 @@ def byte_variants(raw: bytes) -> dict:
             "float-spelling": raw.replace(b"1e-09", b"0.000000001")}
 
 
+def resealed_variants(raw: bytes) -> dict:
+    """Content edits whose unkeyed log_digest is recomputed: accepted as new, distinct evidence."""
+    return {"metadata-renamed": serialize_log(edited_log(raw, rename_sensor, reseal=True)),
+            "int-for-float-consistent": serialize_log(edited_log(raw, integer_initial_covariance, reseal=True))}
+
+
 def refused_variants(raw: bytes) -> dict:
-    """Numerically equal re-encodings that are not canonically equal, or not plain JSON."""
-    return {"int-for-float": raw.replace(b"1.0,", b"1,", 1), "byte-order-mark": b"\xef\xbb\xbf" + raw}
+    """Re-encodings that change canonical content without resealing, or are not plain JSON."""
+    return {"int-for-float-partial": raw.replace(b"1.0,", b"1,", 1),
+            "int-for-float-consistent-unsealed": serialize_log(edited_log(raw, integer_initial_covariance,
+                                                                          reseal=False)),
+            "byte-order-mark": b"\xef\xbb\xbf" + raw}
 
 
-def canonical_content(raw: bytes) -> str:
-    """Type-aware canonical text of parsed JSON (1 and 1.0 differ); a BOM is stripped first."""
-    return json.dumps(json.loads(raw.decode("utf-8-sig")), sort_keys=True, separators=(",", ":"),
-                      ensure_ascii=False, allow_nan=False)
+def canonical_content(raw: bytes) -> bytes:
+    """CIW's own canonical JSON of the parsed bytes (type-aware: 1 and 1.0 differ); a BOM is stripped first."""
+    from ..telemetry import canonical
+    return canonical(json.loads(raw.decode("utf-8-sig")))
 
 
-def build_variant_fixture(root: Path) -> dict:
-    """Retain every fixture log and every baseline byte variant, execute, save and reopen."""
+def _retain_and_reopen(root: Path, tag: str, inputs: list) -> dict:
+    """Retain and execute each (name, label, kind, bytes) in one fresh workbench, save and reopen it."""
     from ..instruments import make_demo_run
     from ..session import Session
 
-    session = Session(make_demo_run(), root / "variants-a")
-    baseline = fixture_bytes("baseline")
-    inputs = [(name, "fixture_log", fixture_bytes(name)) for name in FIXTURE_LOGS]
-    inputs += [(f"baseline/{name}", "byte_variant", raw) for name, raw in byte_variants(baseline).items()]
+    session = Session(make_demo_run(), root / f"{tag}-a")
     rows = []
-    for label, kind, raw in inputs:
+    for name, label, kind, raw in inputs:
         source = energy_source(session, raw, label)
         bundle = energy_execute(session, source["source_id"])
-        rows.append({"label": label, "kind": kind, "raw": raw, "source": source, "bundle_id": bundle["bundle_id"]})
-    live = {row["label"]: request(session, "source.get", {"source_id": row["source"]["source_id"]}) for row in rows}
-    saved = save(session)
-    reopened = Session.from_workspace(saved["path"], root / "variants-b")
-    baseline_content = canonical_content(baseline)
-    records = []
+        rows.append({"name": name, "label": label, "kind": kind, "raw": raw, "source": source,
+                     "bundle_id": bundle["bundle_id"]})
     for row in rows:
-        raw, source = row["raw"], row["source"]
-        restored = request(reopened, "source.get", {"source_id": source["source_id"]})
-        native = reopened.workbench.get_bundle(row["bundle_id"])
+        row["live"] = request(session, "source.get", {"source_id": row["source"]["source_id"]})
+    saved = save(session)
+    reopened = Session.from_workspace(saved["path"], root / f"{tag}-b")
+    for row in rows:
+        row["restored"] = request(reopened, "source.get", {"source_id": row["source"]["source_id"]})
+        row["native"] = reopened.workbench.get_bundle(row["bundle_id"])
+    return {"session": session, "rows": rows, "workspace_bytes": len(saved["bytes"])}
+
+
+def build_variant_fixture(root: Path) -> dict:
+    """Retain every fixture log and the byte variants of baseline in one workbench, each resealed variant in its own.
+
+    The eight byte variants share one label, so any difference in their source
+    identities comes from their bytes. A resealed content variant keeps the
+    log's run_id, and CIW refuses to analyse two logs with one run_id and
+    different log digests in one workbench, so each resealed variant gets a
+    workbench of its own; that refusal is recorded separately.
+    """
+    from ..instruments import make_demo_run
+    from ..session import Session
+    from ..telemetry import canonical
+
+    baseline = fixture_bytes("baseline")
+    inputs = [(name, name, "fixture_log", fixture_bytes(name)) for name in FIXTURE_LOGS]
+    inputs += [(name, "baseline/byte-variant", "byte_variant", raw) for name, raw in byte_variants(baseline).items()]
+    main = _retain_and_reopen(root, "variants", inputs)
+    groups = [main] + [_retain_and_reopen(root, f"resealed-{name}", [(name, f"baseline/resealed-{name}",
+                                                                        "resealed_variant", raw)])
+                       for name, raw in resealed_variants(baseline).items()]
+    baseline_content = canonical_content(baseline)
+    reference = main["rows"][0]["native"]["steps"][0]["result"]["data"]
+    records = []
+    for row in (row for group in groups for row in group["rows"]):
+        raw, source, native = row["raw"], row["source"], row["native"]
         evidence = native["source"]["evidence"][0]
         step = native["steps"][0]
+        data = step["result"]["data"]
         records.append({
-            "label": row["label"], "kind": row["kind"], "byte_count": len(raw),
+            "name": row["name"], "label": row["label"], "kind": row["kind"], "byte_count": len(raw),
             "input_sha256": "sha256:" + hashlib.sha256(raw).hexdigest(),
             "evidence_id": source["evidence_id"], "source_id": source["source_id"],
             "declared_byte_count": source["byte_count"],
-            "live_bytes_equal": base64.b64decode(live[row["label"]]["bytes_b64"]) == raw,
-            "reopened_bytes_equal": base64.b64decode(restored["bytes_b64"]) == raw,
+            "live_bytes_equal": base64.b64decode(row["live"]["bytes_b64"]) == raw,
+            "reopened_bytes_equal": base64.b64decode(row["restored"]["bytes_b64"]) == raw,
             "bundle_bytes_equal": base64.b64decode(evidence["bytes_b64"]) == raw,
-            "artifact_ref": evidence["artifact_ref"], "experiment_digest": native["source"]["experiment_digest"],
-            "log_digest": step["result"]["data"]["log_digest"], "numerical_result_id": step["numerical_result_id"],
+            "artifact_ref": evidence["artifact_ref"], "experiment_id": native["source"]["experiment_id"],
+            "experiment_digest": native["source"]["experiment_digest"],
+            "log_digest": data["log_digest"], "numerical_result_id": step["numerical_result_id"],
+            "data_keys_differing_from_baseline": sorted(key for key in set(data) | set(reference)
+                                                        if canonical(data.get(key)) != canonical(reference.get(key))),
             "canonical_equal_to_baseline": canonical_content(raw) == baseline_content,
             "python_equal_to_baseline": json.loads(raw.decode("utf-8")) == json.loads(baseline.decode("utf-8")),
         })
+    # Refused submissions go to the main live session after its save; none may retain a source.
+    session = main["session"]
+    before = len(request(session, "source.list", {})["sources"])
     refusals = {}
     for name, raw in refused_variants(baseline).items():
         refusals[name] = dict(attempt(session, "source.add", {"kind": KIND, "label": f"baseline/{name}",
@@ -472,4 +624,14 @@ def build_variant_fixture(root: Path) -> dict:
                   "noncanonical-trailing-bits": "QR=="}
     for name, text in transports.items():
         refusals["base64/" + name] = attempt(session, "source.add", {"kind": KIND, "label": "transport", "bytes_b64": text})
-    return {"records": records, "refusals": refusals, "workspace_bytes": len(saved["bytes"])}
+    after = len(request(session, "source.list", {})["sources"])
+    # One workbench, one run_id, two log digests: the resealed metadata variant cannot be analysed beside baseline.
+    shared = Session(make_demo_run(), root / "shared-run-id")
+    energy_execute(shared, energy_source(shared, baseline, "baseline")["source_id"])
+    renamed = energy_source(shared, resealed_variants(baseline)["metadata-renamed"], "baseline/resealed-metadata-renamed")
+    collision = attempt(shared, "operation.execute", {"operation_id": OPERATION,
+                                                      "parameters": {"source_id": renamed["source_id"]}})
+    origins = sorted({json.loads(fixture_bytes(name).decode("utf-8"))["origin"] for name in FIXTURE_LOGS})
+    return {"records": records, "refusals": refusals, "workspace_bytes": main["workspace_bytes"],
+            "sources_before_refusals": before, "sources_after_refusals": after, "fixture_origins": origins,
+            "shared_run_id_execution": {key: collision.get(key) for key in ("outcome", "code", "message")}}

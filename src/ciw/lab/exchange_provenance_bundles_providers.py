@@ -43,18 +43,30 @@ EXCHANGE_WORKFLOW_PINS = {
     "ppda": "a29845e13e55de30b24ae752b896058041d653e6",
     "scr-exchange": "5f0409743e0098a0691a88302a9b3dcdcbcf25fd",
 }
+# Everything .github/workflows/proved-heat.yml provisions before its SP1 build;
+# T099 records these and never attempts the build.
 SP1_REQUIREMENTS = {
+    "source": ".github/workflows/proved-heat.yml",
     "command": ("cargo +1.94.0 build --release --locked --manifest-path <scr>/zk/Cargo.toml "
                 "--target-dir <proof-target> -p sp1-adapter --bin sp1-host"),
     "sp1_checkout": {"repository": "https://github.com/succinctlabs/sp1.git",
                      "revision": "b38b61209e45e969289e70d5cf79dc763460bc41",
                      "tree": "7deca3aced8d8eb84dfcede98285a192c862ea4c",
                      "path": "<scr>/../notationsystems/SP1-zero-knowledge-virtual-machine"},
-    "network": "crates.io and git dependencies (the zk workspace is not --offline)",
-    "system_packages": ["build-essential", "clang", "libclang-dev", "libssl-dev", "pkg-config", "protobuf-compiler"],
-    "toolchain": "rustup toolchain 1.94.0",
-    "resources": {"available_memory_bytes_at_least": 7 * 1024 ** 3, "free_disk_bytes_at_least": 20 * 1024 ** 3},
+    "succinct_compiler_archive": {
+        "url": ("https://github.com/succinctlabs/rust/releases/download/succinct-1.94.0-64bit/"
+                "rust-toolchain-x86_64-unknown-linux-gnu.tar.gz"),
+        "sha256": "12c94435d41bfe4e20131bbcce40b35abd32270ad792befc653af4e3fabc192f",
+        "install": "tar -xzf <archive> -C <dir>; rustup toolchain link succinct <dir>; rustc +succinct -vV"},
+    "guest_recipe": {"path": "zk/recipes/sp1-heat.recipe",
+                     "identity": "6e5d1687bcc55243d712553a2b7768b6c587a76418bb48a7a2c44224470d423d",
+                     "verify": "execution.build.verify_build(recipe, <guest sha256>, repo_root=<scr>)"},
     "guest_sha256": "a14e3750da7e221d31842bd6cf983fcc8c0f530b2811537e2a9a9fe803dacf82",
+    "network": ("crates.io and git dependencies (the zk workspace is not --offline), github.com clones of SCR and "
+                "SP1, and the github.com release download of the Succinct compiler archive"),
+    "system_packages": ["build-essential", "clang", "libclang-dev", "libssl-dev", "pkg-config", "protobuf-compiler"],
+    "toolchain": "rustup toolchain 1.94.0 (minimal profile) plus the linked succinct toolchain",
+    "resources": {"available_memory_bytes_at_least": 7 * 1024 ** 3, "free_disk_bytes_at_least": 20 * 1024 ** 3},
     "gate": "scripts/check_proved_heat.py via .github/workflows/proved-heat.yml",
 }
 _CACHE_DIRS = (".venv", "venv", "__pycache__", ".pytest_cache", ".mypy_cache", ".ruff_cache")
@@ -171,6 +183,18 @@ def checkout_identity(path) -> dict:
             "cargo_locks": locks}
 
 
+def status_entries(path) -> int:
+    """Entries of ``git status`` including ignored and untracked files outside runtime caches.
+
+    A second reader of cleanliness, independent of :func:`checkout_identity`'s
+    byte recomputation (used to corroborate a refusal).
+    """
+    exclusions = [f":(exclude,glob)**/{name}/**" for name in _CACHE_DIRS]
+    output = _git(Path(path).resolve(), "status", "--porcelain=v1", "-z", "--ignored", "--untracked-files=all",
+                  "--", ".", *exclusions)
+    return sum(1 for entry in output.split(b"\0") if entry)
+
+
 def compare_with_pins(role: str, identity: dict, pins: dict) -> dict:
     """Which CIW pins the checkout satisfies; a revision match with a tree mismatch is refused."""
     declared = pins.get(role, [])
@@ -214,14 +238,20 @@ def build_engine(scr, builds: int = 2) -> dict:
               "builds": [], "binary": None}
     for _ in range(builds):
         with tempfile.TemporaryDirectory(prefix="ciw-lab-scr-target-") as target:
-            completed = subprocess.run(command, capture_output=True, text=True, timeout=900,
-                                       env={**os.environ, "CARGO_TARGET_DIR": target})
+            try:
+                completed = subprocess.run(command, capture_output=True, text=True, timeout=900,
+                                           env={**os.environ, "CARGO_TARGET_DIR": target})
+                returncode, log = completed.returncode, completed.stderr.strip().splitlines()[-3:]
+            except subprocess.TimeoutExpired:
+                returncode, log = None, ["cargo build exceeded 900 s and was stopped"]
+            except OSError as exc:
+                returncode, log = None, [f"cargo could not start ({type(exc).__name__})"]
             binary = Path(target) / "release" / engine_name()
-            data = binary.read_bytes() if completed.returncode == 0 and binary.is_file() else None
-            record["builds"].append({"returncode": completed.returncode,
+            data = binary.read_bytes() if returncode == 0 and binary.is_file() else None
+            record["builds"].append({"returncode": returncode,
                                      "binary_sha256": None if data is None else sha256(data).hexdigest(),
                                      "byte_count": None if data is None else len(data),
-                                     "log_tail": completed.stderr.strip().splitlines()[-3:]})
+                                     "log_tail": [line.replace(str(scr), "<scr>") for line in log]})
             if data is not None and record["binary"] is None:
                 record["binary"] = data
     record["cargo_lock_sha256_after"] = sha256(lock.read_bytes()).hexdigest()
@@ -338,7 +368,8 @@ def set_exchange_inspection(set_repo, directory) -> dict:
         exchange.inspect_exchange([path], validator_repo=Path(set_repo))
         indefinite = "not_refused"
     except ValueError as exc:
-        indefinite = type(exc).__name__
+        # The full message: SET raises the same exception class for other contract defects.
+        indefinite = str(exc)
     return {"status": report["status"], "validator": report["validator"],
             "effective_rank": artifact["covariance_validation"]["effective_rank"],
             "identity_status": artifact["identity_status"], "authority": report["authority"],

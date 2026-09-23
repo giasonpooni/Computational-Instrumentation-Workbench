@@ -1,17 +1,21 @@
 """Inputs, guards and retained fixtures for the exchange bundle tasks T091-T100.
 
 Scope: the exact bytes of six small CIW example sources (embedded so the section
-also runs from an installed wheel, where ``examples/`` is absent), a protocol
+also runs from an installed wheel, where ``examples/`` is absent), a reader for
+further ``examples/`` sources when the repository is reachable, a protocol
 client, an execution guard that refuses every CIW execution entry point while a
 retained workspace is reopened, a synthetic numerical-heat bundle whose values
-were never computed by a provider, the malformed exchange fixture catalogue and
-the digest manifest of the golden workspaces under ``tests/fixtures/lab``.
+were never computed by a provider, a canonical JSON encoder written from the
+exchange producer specification (not ``json.dumps``), the malformed exchange
+fixture catalogue, the digest manifest of the golden workspaces under
+``tests/fixtures/lab`` and the platform fingerprint they were written on.
 
 Non-claims: the embedded energy log is a synthetic fixture (its ``origin`` field
 says so). A golden digest establishes byte identity of a retained file, not the
-correctness, authorship or physical validity of its content. The fabricated
-heat bundle exists to measure what reopen validation does not check; it is never
-presented as a provider result.
+correctness, authorship or physical validity of its content, and a retained
+runtime identity is metadata, not proof of which engine computed the values. The
+fabricated heat bundle exists to measure what reopen validation does not check;
+it is never presented as a provider result.
 """
 from __future__ import annotations
 
@@ -89,7 +93,41 @@ GOLDEN_MANIFEST = {
     "golden/numerical-heat-workspace.json": "98ba55e5be14213e6787024576b424cba6d4ba4da0a8cc905ddf652452490fec",
     "golden/oscillator-workspace.json": "68e63248edcb7bb6660734cbf0efe751c53ede53c5029873b4e21fb598a1586d",
 }
+# The SCR engine that produced the golden numerical-heat workspace (a locked
+# offline build of SCR a59aba2 with cargo 1.94.1); T094 compares the retained
+# runtime identity with it.
+GOLDEN_SCR_ENGINE_SHA256 = "sha256:b9f40b3094ecf4b793676c766ffd559dc69abc4fada564c1bde94e79c6f0b201"
+# platform_fingerprint() of the machine that wrote the golden workspaces. Reopen
+# recomputes the energy analysis (LAPACK solves) bit for bit; a platform with a
+# different fingerprint may round differently.
+GOLDEN_PLATFORM = {"system": "Linux", "machine": "x86_64", "numpy": "2.4.3",
+                   "blas": "scipy-openblas 0.3.31.dev", "lapack": "scipy-openblas 0.3.31.dev",
+                   "simd_found": ["AVX512_ICL", "AVX512_SPR", "X86_V3", "X86_V4"]}
 FIXTURE_BINDING = "ciw-fixtures"
+
+
+def platform_fingerprint() -> dict:
+    """Platform facts that can change the last bits of NumPy/LAPACK results (system, NumPy, BLAS, SIMD)."""
+    import platform
+    import numpy as np
+    info = {"system": platform.system(), "machine": platform.machine(), "numpy": np.__version__}
+    try:
+        config = np.show_config(mode="dicts")
+    except (TypeError, ValueError, AttributeError):  # older NumPy without mode="dicts"
+        return info
+    dependencies = config.get("Build Dependencies", {})
+    for name in ("blas", "lapack"):
+        entry = dependencies.get(name, {})
+        info[name] = f"{entry.get('name')} {entry.get('version')}"
+    info["simd_found"] = sorted(config.get("SIMD Extensions", {}).get("found", []))
+    return info
+
+
+def repository_example(name: str) -> bytes | None:
+    """Bytes of ``examples/<name>`` through runner.repository_path; None in an installation without examples/."""
+    from .runner import repository_path
+    path = repository_path("examples", *name.split("/"))
+    return path.read_bytes() if path is not None and path.is_file() else None
 
 
 def example_bytes(name: str) -> bytes:
@@ -371,14 +409,48 @@ def write_golden_fixtures(directory, *, scr=None, engine=None) -> dict:
 
 # ------------------------------------------------------------ malformed fixtures
 
-def _sealed(artifact: dict, field: str) -> dict:
-    """Seal an exchange artifact the way its producers do (schema NUL canonical JSON)."""
+_ESCAPES = {'"': '\\"', "\\": "\\\\", "\b": "\\b", "\f": "\\f", "\n": "\\n", "\r": "\\r", "\t": "\\t"}
+
+
+def canonical_text(value) -> str:
+    """Canonical JSON text written from the exchange producer specification, without json.dumps.
+
+    Members sorted by code point, no whitespace, non-ASCII characters literal,
+    quote, backslash and control characters escaped as JSON requires, floats
+    as their shortest round-trip form; NaN and infinity are refused.
+    """
+    if value is None:
+        return "null"
+    if value is True or value is False:
+        return "true" if value else "false"
+    if isinstance(value, int):
+        return str(value)
+    if isinstance(value, float):
+        if value != value or value in (float("inf"), float("-inf")):
+            raise ValueError("Canonical JSON refuses nonfinite numbers")
+        return repr(value)
+    if isinstance(value, str):
+        return '"' + "".join(_ESCAPES.get(char) or (f"\\u{ord(char):04x}" if ord(char) < 0x20 else char)
+                             for char in value) + '"'
+    if isinstance(value, list):
+        return "[" + ",".join(canonical_text(item) for item in value) + "]"
+    if isinstance(value, dict):
+        if any(not isinstance(key, str) for key in value):
+            raise ValueError("Canonical JSON members need string names")
+        return "{" + ",".join(canonical_text(key) + ":" + canonical_text(value[key]) for key in sorted(value)) + "}"
+    raise ValueError(f"Canonical JSON cannot encode {type(value).__name__}")
+
+
+def seal_independently(artifact: dict, field: str) -> dict:
+    """Seal an exchange artifact as its producers do (schema NUL canonical JSON), using canonical_text."""
     artifact = deepcopy(artifact)
     artifact.pop(field, None)
-    canonical = json.dumps(artifact, sort_keys=True, separators=(",", ":"), ensure_ascii=False,
-                           allow_nan=False).encode("utf-8")
-    artifact[field] = "sha256:" + sha256(artifact["schema"].encode("utf-8") + b"\x00" + canonical).hexdigest()
+    body = canonical_text(artifact).encode("utf-8")
+    artifact[field] = "sha256:" + sha256(artifact["schema"].encode("utf-8") + b"\x00" + body).hexdigest()
     return artifact
+
+
+_sealed = seal_independently
 
 
 def exchange_result_artifact(**changes) -> dict:
@@ -417,7 +489,7 @@ def malformed_fixtures() -> dict:
         "wrong-schema-exchange.json": _dumps(wrong_schema),
         "wrong-schema-energy-log.json": _dumps(dict(log, schema="ciw.energy-accuracy-log.v2")),
         "wrong-type-energy-log.json": _dumps(dict(log, origin=True)),
-        "wrong-type-workspace.json": _dumps({"workspace_version": "3"}),
+        "incomplete-workspace.json": _dumps({"workspace_version": 3}),
         "wrong-revision-workbench.json": _dumps({"schema": "ciw.retained-workbench.v1", "revision": 1,
                                                  "sources": [], "bundles": []}),
         "extra-field-energy-log.json": _dumps(dict(log, calibration_certificate="none supplied")),
