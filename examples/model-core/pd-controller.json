@@ -1,0 +1,192 @@
+{
+  "schema": "ciw.model-spec.v1",
+  "model_id": "filtered-pd-position-controller",
+  "title": "Filtered PD position controller",
+  "independent_variable": {
+    "symbol": "t",
+    "kind": "time",
+    "unit": "s",
+    "origin": "seconds since run start"
+  },
+  "states": [
+    {
+      "symbol": "z",
+      "quantity": "displacement",
+      "unit": "mm",
+      "frame": "oscillator-axis",
+      "description": "first-order filtered position"
+    }
+  ],
+  "inputs": [
+    {
+      "symbol": "y_meas",
+      "quantity": "displacement",
+      "unit": "mm",
+      "frame": "oscillator-axis",
+      "role": "measured",
+      "calibration": {
+        "status": "calibrated",
+        "calibration_id": "cal-displacement-probe-1-2026-09"
+      }
+    }
+  ],
+  "parameters": [
+    {
+      "symbol": "kp",
+      "quantity": "stiffness_gain",
+      "unit": "N/m",
+      "value": 20.0,
+      "latex": "k_p"
+    },
+    {
+      "symbol": "kd",
+      "quantity": "damping_gain",
+      "unit": "N*s/m",
+      "value": 4.0,
+      "latex": "k_d"
+    },
+    {
+      "symbol": "tau_f",
+      "quantity": "time_constant",
+      "unit": "ms",
+      "value": 20.0,
+      "latex": "\\tau_f"
+    },
+    {
+      "symbol": "r",
+      "quantity": "displacement",
+      "unit": "mm",
+      "value": 0.0,
+      "latex": "r"
+    }
+  ],
+  "dynamics": [
+    {
+      "state": "z",
+      "rhs": {
+        "op": "div",
+        "args": [
+          {
+            "op": "sub",
+            "args": [
+              {
+                "sym": "y_meas"
+              },
+              {
+                "sym": "z"
+              }
+            ]
+          },
+          {
+            "sym": "tau_f"
+          }
+        ]
+      }
+    }
+  ],
+  "derived": [
+    {
+      "symbol": "u",
+      "quantity": "force",
+      "unit": "N",
+      "frame": "oscillator-axis",
+      "role": "commanded",
+      "expression": {
+        "op": "sub",
+        "args": [
+          {
+            "op": "mul",
+            "args": [
+              {
+                "sym": "kp"
+              },
+              {
+                "op": "sub",
+                "args": [
+                  {
+                    "sym": "r"
+                  },
+                  {
+                    "sym": "y_meas"
+                  }
+                ]
+              }
+            ]
+          },
+          {
+            "op": "mul",
+            "args": [
+              {
+                "sym": "kd"
+              },
+              {
+                "op": "div",
+                "args": [
+                  {
+                    "op": "sub",
+                    "args": [
+                      {
+                        "sym": "y_meas"
+                      },
+                      {
+                        "sym": "z"
+                      }
+                    ]
+                  },
+                  {
+                    "sym": "tau_f"
+                  }
+                ]
+              }
+            ]
+          }
+        ]
+      }
+    }
+  ],
+  "observations": [],
+  "ports": [
+    {
+      "name": "measurement",
+      "direction": "in",
+      "symbol": "y_meas"
+    },
+    {
+      "name": "command",
+      "direction": "out",
+      "symbol": "u"
+    }
+  ],
+  "uncertainty": {
+    "parameters": null,
+    "initial_state": null,
+    "measurement_noise": null,
+    "process_noise": null,
+    "assumptions": [
+      "no_process_noise",
+      "parameters_constant_over_run",
+      "deterministic_model"
+    ]
+  },
+  "validity_domain": {
+    "independent_variable": null,
+    "bounds": {
+      "y_meas": [
+        -10000.0,
+        10000.0
+      ],
+      "tau_f": [
+        1.0,
+        1000.0
+      ]
+    },
+    "notes": [
+      "Derivative estimated from a first-order filter; no saturation modelled"
+    ]
+  },
+  "provenance": {
+    "kind": "authored",
+    "derived_from": null,
+    "notes": []
+  }
+}

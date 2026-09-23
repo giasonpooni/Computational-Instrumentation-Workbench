@@ -1,0 +1,37 @@
+{
+  "schema": "ciw.julia-model-runtime.v1",
+  "julia_version": "1.10.12",
+  "channel": "LTS",
+  "distribution": {
+    "Linux-x86_64": {
+      "url": "https://julialang-s3.julialang.org/bin/linux/x64/1.10/julia-1.10.12-linux-x86_64.tar.gz",
+      "tarball_sha256": "b0c50dfe349d76ffc8580d24e0c0be623988a6d91ed57ad8b73c0137fd27bc0d"
+    }
+  },
+  "platforms": {
+    "Linux-x86_64": {
+      "julia_executable_sha256": "1c7ea3ba2e49e6c4a96ca8b80e34f984f65c1dbcdc1423f33a63f2bc14a69a5b",
+      "sysimage_sha256": "ea593a4a2c853de1b00d8cb0fcb6a5bbf056efcd9ba6886168adf26a95a384b9",
+      "status": "verified by scripts/check_model_core.py on Linux glibc x86-64"
+    }
+  },
+  "unverified_platforms": {
+    "Windows-x86_64": "Tier 1 for Julia 1.10.12; executable and system-image digests are pending a native Windows gate run"
+  },
+  "packages": {
+    "ControlSystemsBase": "1.22.0",
+    "ForwardDiff": "1.4.6",
+    "HiGHS": "1.25.4",
+    "JuMP": "1.31.2",
+    "OrdinaryDiffEqTsit5": "2.1.4",
+    "SciMLBase": "3.56.0",
+    "Latexify": "0.16.12",
+    "ModelingToolkit": "11.45.1",
+    "Symbolics": "7.41.0"
+  },
+  "profiles": {
+    "core": ["ControlSystemsBase", "ForwardDiff", "HiGHS", "JuMP", "OrdinaryDiffEqTsit5", "SciMLBase"],
+    "symbolic": ["ControlSystemsBase", "ForwardDiff", "HiGHS", "JuMP", "OrdinaryDiffEqTsit5", "SciMLBase",
+                 "Latexify", "ModelingToolkit", "Symbolics"]
+  }
+}

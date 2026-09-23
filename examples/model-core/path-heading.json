@@ -1,0 +1,72 @@
+{
+  "schema": "ciw.model-spec.v1",
+  "model_id": "planar-path-heading",
+  "title": "Planar heading along a constant-curvature path",
+  "independent_variable": {
+    "symbol": "s",
+    "kind": "path_length",
+    "unit": "m",
+    "origin": "arc length from path datum"
+  },
+  "states": [
+    {
+      "symbol": "theta",
+      "quantity": "heading",
+      "unit": "rad",
+      "frame": "site-plan",
+      "latex": "\\theta"
+    }
+  ],
+  "inputs": [],
+  "parameters": [
+    {
+      "symbol": "kappa",
+      "quantity": "curvature",
+      "unit": "m^-1",
+      "value": 0.02,
+      "latex": "\\kappa"
+    }
+  ],
+  "dynamics": [
+    {
+      "state": "theta",
+      "rhs": {
+        "sym": "kappa"
+      }
+    }
+  ],
+  "derived": [],
+  "observations": [],
+  "ports": [
+    {
+      "name": "heading",
+      "direction": "out",
+      "symbol": "theta"
+    }
+  ],
+  "uncertainty": {
+    "parameters": null,
+    "initial_state": null,
+    "measurement_noise": null,
+    "process_noise": null,
+    "assumptions": [
+      "no_process_noise",
+      "deterministic_model"
+    ]
+  },
+  "validity_domain": {
+    "independent_variable": [
+      0.0,
+      500.0
+    ],
+    "bounds": {},
+    "notes": [
+      "Path length, not time, is the independent variable"
+    ]
+  },
+  "provenance": {
+    "kind": "authored",
+    "derived_from": null,
+    "notes": []
+  }
+}

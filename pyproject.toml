@@ -23,7 +23,7 @@ ciw = "ciw.cli:main"
 where = ["src"]
 
 [tool.setuptools.package-data]
-ciw = ["plsr-runtime.json", "adapter-runtimes.json", "exchange-runtime.json", "telemetry-runtimes.json", "calibrated-observable-runtimes.json", "identified-design-runtimes.json", "esm-runtime.json", "calibrated-window-runtimes.json"]
+ciw = ["plsr-runtime.json", "adapter-runtimes.json", "exchange-runtime.json", "telemetry-runtimes.json", "calibrated-observable-runtimes.json", "identified-design-runtimes.json", "esm-runtime.json", "calibrated-window-runtimes.json", "julia-model-runtime.json", "model/julia/Project.toml", "model/julia/Manifest.toml", "model/julia/src/*.jl", "model/julia/bin/*.jl"]
 
 [tool.pytest.ini_options]
 testpaths = ["tests"]

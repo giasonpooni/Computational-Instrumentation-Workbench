@@ -400,6 +400,8 @@ def parser() -> argparse.ArgumentParser:
         action.add_argument("--python", dest="python_executable", type=Path)
     for action in (geodesic_create, geodesic_inspect, geodesic_replay):
         action.add_argument("--json", action="store_true", help="Print covariance, identities and complete provenance")
+    from .model.cli import add_parser as add_model_parser
+    add_model_parser(commands)
     energy = commands.add_parser("energy", help="Capture GPU energy or replay retained energy/accuracy logs")
     energy_actions = energy.add_subparsers(dest="energy_command", required=True)
     energy_probe = energy_actions.add_parser("probe", help="Read an actual NVML counter without running a workload")
@@ -423,6 +425,9 @@ def parser() -> argparse.ArgumentParser:
 def main(argv: list[str] | None = None) -> int:
     args = parser().parse_args(argv)
     try:
+        if args.command == "model":
+            from .model.cli import run as run_model
+            return run_model(args, print_json)
         if args.command == "energy":
             if args.energy_command == "probe":
                 from .energy_bench import probe

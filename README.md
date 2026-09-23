@@ -21,10 +21,15 @@ without an LLM. Increasing expertise should unlock increasing expressive power:
 use an instrument, modify its equations and assumptions, or create a new one.
 
 **Status:** an executable terminal-first Python prototype with an optional
-Godot desktop and the integrations catalogued below. The broader authoring
-workspace and Julia-centred scientific core described here are development
-directions. JuliaControl, JuMP, ModelingToolkit, a general machine-manifest
-compiler, an MCP adapter and FPGA deployment are not yet integrated operations.
+Godot desktop and the integrations catalogued below. The first increment of the
+Julia-centred scientific core is executable: a language-neutral model
+specification and a pinned Julia 1.10.12 worker running Tsit5 simulation,
+ForwardDiff/ControlSystemsBase linearization, JuMP/HiGHS measurement selection
+and a ModelingToolkit symbolic route below the SCR seam
+([model core](docs/MODEL_CORE.md)). The broader authoring workspace remains a
+development direction; observers, identification, controller design and
+ModelPredictiveControl.jl, GPU ensembles, a general machine-manifest compiler,
+an MCP adapter and FPGA deployment are not yet integrated operations.
 
 **License:** GNU Affero General Public License version 3 only
 (`AGPL-3.0-only`). Copyright (c) 2026 Notation Systems. See [LICENSE](LICENSE).
@@ -62,30 +67,31 @@ simulated, installed and validated configurations must remain distinguishable.
 This general dependency-aware authoring model is planned; retained sources,
 linked results and fresh replay already provide part of its foundation.
 
-## Planned Python–Julia scientific core
+## Python–Julia scientific core
 
 The next scientific integrations are **Julia-first**, with existing Python
 kernels retained as independent references and supported providers. There is
 no mandatory chain through C++, Rust, Python and Julia.
 
-| Layer | Intended responsibility |
-| --- | --- |
-| Python and CIW | Project interaction, acquisition, jobs, exact artifacts, operation contracts and replay |
-| Julia / ModelingToolkit | Shared executable dynamics and observation models, symbolic and numerical analysis |
-| JuliaControl | Supported system analysis, observers, identification and controller design |
-| JuMP and selected solvers | Constrained experiment design, measurement selection and decision problems |
-| GPU computation | Suitable ensembles, fields, sensitivities and candidate evaluations; measured execution cost |
-| Specialist providers | Geometry/Jacobi, Lyapunov checks, registered proofs and future CFD, chemistry or CAD adapters |
-| LaTeX views and reports | Equations, assumptions and constraints generated from the structured model |
-| ESM companion | Supported evidence inspection, retention, review and history, outside the per-sample loop |
+| Layer | Intended responsibility | Executable today ([model core](docs/MODEL_CORE.md)) |
+| --- | --- | --- |
+| Python and CIW | Project interaction, acquisition, jobs, exact artifacts, operation contracts and replay | `ciw.model-spec.v1`, rescaling, typed-port composition, RK4 reference, retained `ciw.model-run.v1` with offline inspection and fresh replay |
+| Julia / ModelingToolkit | Shared executable dynamics and observation models, symbolic and numerical analysis | Tsit5 simulation of the lowered model; ModelingToolkit `mtkcompile` and Symbolics Jacobians mapped back to declared state order |
+| JuliaControl | Supported system analysis, observers, identification and controller design | ControlSystemsBase poles, controllability and observability of ForwardDiff linearizations; observers, identification and controller design pending |
+| JuMP and selected solvers | Constrained experiment design, measurement selection and decision problems | HiGHS MILP measurement selection under cost and count budgets, checked by exhaustive enumeration |
+| GPU computation | Suitable ensembles, fields, sensitivities and candidate evaluations; measured execution cost | Not yet |
+| Specialist providers | Geometry/Jacobi, Lyapunov checks, registered proofs and future CFD, chemistry or CAD adapters | Existing pinned integrations below |
+| LaTeX views and reports | Equations, assumptions and constraints generated from the structured model | `ciw.model-latex-view.v1` with run/estimate/uncertainty/evidence binding; escaped exploratory derivations |
+| ESM companion | Supported evidence inspection, retention, review and history, outside the per-sample loop | Existing shared-session candidate evidence |
 
 [ModelPredictiveControl.jl](https://juliacontrol.github.io/ModelPredictiveControl.jl/stable/)
 already combines ControlSystemsBase and JuMP; [JuMP](https://jump.dev/JuMP.jl/stable/)
 provides optimization modelling with selected solver backends. These are
 foundations to integrate and verify, not capabilities acquired by naming a
-dependency. Julia execution should use the existing
+dependency. Julia execution uses the existing
 [CIW → SCR boundary](docs/JULIA_SP1.md) with a pinned environment and exact
-input/output commitments.
+input/output commitments: the worker is an SCR `SpecificationDispatcher.runner`,
+program bytes bind its runtime digest, and CIW recomputes every identity.
 
 The shared model specification must remain language-neutral: state order,
 units, frames, time versus path length, measured versus commanded quantities,
@@ -93,13 +99,19 @@ calibration identity, uncertainty assumptions and validity domain are part of
 its meaning. Typed ports and composition rules should preserve that meaning;
 metres-to-millimetres invariance requires transforming the model and covariance
 consistently. Mathematical abstractions guide the compiler, but their required
-composition and approximation properties must be tested.
+composition and approximation properties must be tested. The model-core tests
+check metres-to-millimetres and seconds-to-milliseconds invariance (including
+solver tolerances and process-noise density), similarity of linearizations,
+associativity of composition, commutation of rescaling with composition and
+refusal of role, frame, calibration, time/path-length and algebraic-loop errors.
 
 LaTeX is the readable mathematical view of that model. Symbolics provides a
 [LaTeX output route](https://docs.sciml.ai/Symbolics/stable/manual/io/); linking a
 symbol to its units, estimate, uncertainty and evidence remains workbench work.
 Arbitrary LaTeX is not an executable model. Handwritten exploratory derivations
-must remain distinguishable from equations bound to a run.
+must remain distinguishable from equations bound to a run: CIW retains them as
+non-executable `ciw.exploratory-derivation.v1` records, rendered only as escaped
+source in their own section, and refuses them wherever a model is required.
 
 ## Distributed instruments and reusable results
 
@@ -224,8 +236,9 @@ analysis, observation design, measurement chains, circle geometry, stability
 evaluation, typed schematics, integer diffusion, BIM quantity conditioning and
 [geodesic reference calculations](docs/GEODESIC_REFERENCES.md). The
 [registered heat proof operation](docs/PROVED_HEAT.md) adds SCR/SP1 computation
-verification; [Julia simulation and finite-field topology](docs/JULIA_SP1.md)
-are the next specified extensions. The three former geometry scaffolds now
+verification. The [model core](docs/MODEL_CORE.md) runs language-neutral
+model specifications on a pinned Julia worker below the SCR seam;
+[finite-field topology](docs/JULIA_SP1.md) is the next specified Julia extension. The three former geometry scaffolds now
 provide [executable mathematical profiles](docs/GEOMETRY_RESEARCH.md).
 The [variational free-energy demonstration](docs/VARIATIONAL_FREE_ENERGY.md)
 combines curved-path sensitivity, Gaussian sensor fusion and a Lyapunov check
@@ -301,10 +314,11 @@ other external integrations expose terminal and JSON records as described below.
 1. **Typed project and machine interfaces.** Define model/measurement artifacts,
    plugin capabilities and execution lifecycle. Bind one machine family from
    evidence and refuse ambiguous signal meanings; keep commissioning read-only.
-2. **One Julia model and estimation experiment.** Pin the Julia environment,
-   exercise the SCR bridge against an independent reference, then share a small
-   plant-and-sensor model across replay, observer comparison and a constrained
-   measurement-selection problem. Keep Python cross-checks.
+2. **One Julia model and estimation experiment.** The Julia environment is
+   pinned and the SCR bridge is exercised against analytic and Python references;
+   one plant-and-sensor model is shared across simulation, linearization,
+   replay and constrained measurement selection ([model core](docs/MODEL_CORE.md)).
+   Observer comparison and the shared live-session view remain.
 3. **A challenged physical claim.** Record a small thermal experiment, withhold
    an independent reference sensor, compare estimators on separate runs, and
    test dropouts and changed cooling. Retain raw data, calibration, uncertainty,
@@ -371,6 +385,7 @@ establish physical validation or deployment readiness.
 
 | Tool | Integration status | Available operations | Instructions and specifications |
 | --- | --- | --- | --- |
+| Language-neutral model core (`ciw.model-spec.v1`, `ciw.model-run.v1`) | Built into CIW with a pinned Julia 1.10.12 worker (`core` and `symbolic` profiles) under the SCR seam; terminal and JSON records | Validate, rescale and compose models; generate bound LaTeX views; Tsit5 simulation, linearization, HiGHS measurement selection and ModelingToolkit Jacobians with Python references; offline inspection and fresh replay | [Specification, commands, measured results and limits](docs/MODEL_CORE.md) |
 | Shared experiment viewport (`ciw.experiment-view.v1`) | Read-only Godot tab over the existing live session | Select retained occurrences; inspect measurements, full covariance, residuals, native input dependencies and evidence; follow committed updates with replay separation and stale-state handling | [Setup, protocol and scope](docs/EXPERIMENT_VIEW.md) |
 | Synthetic damped oscillator (`analytic-damped-oscillator.v1`) | Integrated prototype; built into CIW | Generate a recording, inspect samples, calculate statistics and periodogram spectra, share a session, save and reopen results | [Tool guide](docs/INSTRUMENTS.md#synthetic-damped-oscillator), [quickstart](docs/quickstart.md), [record and protocol specification](docs/PROTOCOL.md) |
 | Retrofitted Computational Instrumentation (RCI) | Integrated experimental measurement-chain adapter; pinned subprocess | Retain exact raw observations, validate declared calibration, derive distinct calibrated evidence with parameter covariance | [Setup, commands and specifications](docs/ADAPTERS.md), [catalogue entry](docs/INSTRUMENTS.md#rci-calibration-and-fsrt-estimation) |
@@ -492,6 +507,7 @@ and source pins remain unchanged.
 - Shared workspace, component placement and delivery work: [Workbench assembly](docs/WORKBENCH_ASSEMBLY.md)
 - Stack diagrams and repository navigation: [Diagram atlas](docs/DIAGRAMS.md)
 - Quickstart: [`docs/quickstart.md`](docs/quickstart.md)
+- Language-neutral model core and pinned Julia worker: [`docs/MODEL_CORE.md`](docs/MODEL_CORE.md)
 - Integrated tool instructions and specifications: [`docs/INSTRUMENTS.md`](docs/INSTRUMENTS.md)
 - PLSR terminal workflow and saved-run specification: [`docs/PLSR.md`](docs/PLSR.md)
 - Generic adapters and the RCI/FSRT investigation: [`docs/ADAPTERS.md`](docs/ADAPTERS.md)

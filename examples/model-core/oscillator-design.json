@@ -1,0 +1,85 @@
+{
+ "schema": "ciw.model-design-request.v1",
+ "spec_digest": "sha256:63ddef21c6208f1c7ffd9259d45e69dd1778bf485c650cf342dccca6767c34fc",
+ "initial_state": [
+  1.0,
+  0.0
+ ],
+ "inputs": {
+  "F": 0.0
+ },
+ "start_time": 0.0,
+ "candidates": [
+  {
+   "observation": "y",
+   "time": 0.5,
+   "cost": 1.0
+  },
+  {
+   "observation": "y",
+   "time": 1.0,
+   "cost": 1.0
+  },
+  {
+   "observation": "y",
+   "time": 1.5,
+   "cost": 1.0
+  },
+  {
+   "observation": "y",
+   "time": 2.0,
+   "cost": 1.0
+  },
+  {
+   "observation": "y",
+   "time": 3.0,
+   "cost": 2.0
+  },
+  {
+   "observation": "y",
+   "time": 4.0,
+   "cost": 2.0
+  },
+  {
+   "observation": "y",
+   "time": 6.0,
+   "cost": 3.0
+  },
+  {
+   "observation": "y",
+   "time": 8.0,
+   "cost": 3.0
+  },
+  {
+   "observation": "y",
+   "time": 10.0,
+   "cost": 4.0
+  },
+  {
+   "observation": "y",
+   "time": 11.5,
+   "cost": 4.0
+  }
+ ],
+ "design_parameters": [
+  "omega_0",
+  "gamma"
+ ],
+ "budget": 6.0,
+ "max_count": 3,
+ "solver": {
+  "reltol": 1e-10,
+  "abstol": [
+   1e-12,
+   1e-12
+  ],
+  "maxiters": 1000000,
+  "time_limit_s": 60.0
+ },
+ "reference": {
+  "substeps": 4,
+  "max_step": 0.015625,
+  "fd_relative_step": 1e-06,
+  "information_rtol": 1e-05
+ }
+}

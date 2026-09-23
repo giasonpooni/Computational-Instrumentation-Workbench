@@ -1,0 +1,314 @@
+{
+  "schema": "ciw.model-spec.v1",
+  "model_id": "damped-oscillator",
+  "title": "Linear damped oscillator with commanded force",
+  "independent_variable": {
+    "symbol": "t",
+    "kind": "time",
+    "unit": "s",
+    "origin": "seconds since run start"
+  },
+  "states": [
+    {
+      "symbol": "q",
+      "quantity": "displacement",
+      "unit": "m",
+      "frame": "oscillator-axis"
+    },
+    {
+      "symbol": "v",
+      "quantity": "velocity",
+      "unit": "m/s",
+      "frame": "oscillator-axis"
+    }
+  ],
+  "inputs": [
+    {
+      "symbol": "F",
+      "quantity": "force",
+      "unit": "N",
+      "frame": "oscillator-axis",
+      "role": "commanded"
+    }
+  ],
+  "parameters": [
+    {
+      "symbol": "omega_0",
+      "quantity": "angular_frequency",
+      "unit": "rad/s",
+      "value": 5.026548245743669,
+      "latex": "\\omega_0"
+    },
+    {
+      "symbol": "gamma",
+      "quantity": "damping_rate",
+      "unit": "s^-1",
+      "value": 0.15
+    },
+    {
+      "symbol": "mass",
+      "quantity": "mass",
+      "unit": "kg",
+      "value": 1.0,
+      "latex": "m"
+    }
+  ],
+  "dynamics": [
+    {
+      "state": "q",
+      "rhs": {
+        "sym": "v"
+      }
+    },
+    {
+      "state": "v",
+      "rhs": {
+        "op": "add",
+        "args": [
+          {
+            "op": "neg",
+            "args": [
+              {
+                "op": "mul",
+                "args": [
+                  {
+                    "num": 2
+                  },
+                  {
+                    "sym": "gamma"
+                  },
+                  {
+                    "sym": "v"
+                  }
+                ]
+              }
+            ]
+          },
+          {
+            "op": "neg",
+            "args": [
+              {
+                "op": "mul",
+                "args": [
+                  {
+                    "op": "pow",
+                    "args": [
+                      {
+                        "sym": "omega_0"
+                      },
+                      {
+                        "num": 2
+                      }
+                    ]
+                  },
+                  {
+                    "sym": "q"
+                  }
+                ]
+              }
+            ]
+          },
+          {
+            "op": "div",
+            "args": [
+              {
+                "sym": "F"
+              },
+              {
+                "sym": "mass"
+              }
+            ]
+          }
+        ]
+      }
+    }
+  ],
+  "derived": [
+    {
+      "symbol": "E",
+      "quantity": "mechanical_energy",
+      "unit": "J",
+      "role": "derived",
+      "expression": {
+        "op": "mul",
+        "args": [
+          {
+            "num": 0.5
+          },
+          {
+            "sym": "mass"
+          },
+          {
+            "op": "add",
+            "args": [
+              {
+                "op": "pow",
+                "args": [
+                  {
+                    "sym": "v"
+                  },
+                  {
+                    "num": 2
+                  }
+                ]
+              },
+              {
+                "op": "mul",
+                "args": [
+                  {
+                    "op": "pow",
+                    "args": [
+                      {
+                        "sym": "omega_0"
+                      },
+                      {
+                        "num": 2
+                      }
+                    ]
+                  },
+                  {
+                    "op": "pow",
+                    "args": [
+                      {
+                        "sym": "q"
+                      },
+                      {
+                        "num": 2
+                      }
+                    ]
+                  }
+                ]
+              }
+            ]
+          }
+        ]
+      }
+    }
+  ],
+  "observations": [
+    {
+      "symbol": "y",
+      "quantity": "displacement",
+      "unit": "m",
+      "frame": "oscillator-axis",
+      "sensor": "displacement-probe-1",
+      "calibration": {
+        "status": "calibrated",
+        "calibration_id": "cal-displacement-probe-1-2026-09"
+      },
+      "expression": {
+        "sym": "q"
+      }
+    }
+  ],
+  "ports": [
+    {
+      "name": "force",
+      "direction": "in",
+      "symbol": "F"
+    },
+    {
+      "name": "position",
+      "direction": "out",
+      "symbol": "y"
+    }
+  ],
+  "uncertainty": {
+    "parameters": {
+      "order": [
+        "omega_0",
+        "gamma"
+      ],
+      "matrix": [
+        [
+          0.0001,
+          0.0
+        ],
+        [
+          0.0,
+          1e-06
+        ]
+      ]
+    },
+    "initial_state": {
+      "order": [
+        "q",
+        "v"
+      ],
+      "matrix": [
+        [
+          1e-06,
+          0.0
+        ],
+        [
+          0.0,
+          1e-06
+        ]
+      ]
+    },
+    "measurement_noise": {
+      "order": [
+        "y"
+      ],
+      "matrix": [
+        [
+          1e-08
+        ]
+      ]
+    },
+    "process_noise": null,
+    "assumptions": [
+      "gaussian_parameters",
+      "gaussian_initial_state",
+      "gaussian_measurement_noise",
+      "white_measurement_noise",
+      "independent_measurement_noise",
+      "no_process_noise",
+      "parameters_constant_over_run",
+      "inputs_constant_over_run"
+    ]
+  },
+  "validity_domain": {
+    "independent_variable": [
+      0.0,
+      12.0
+    ],
+    "bounds": {
+      "q": [
+        -10.0,
+        10.0
+      ],
+      "v": [
+        -100.0,
+        100.0
+      ],
+      "omega_0": [
+        0.001,
+        20.0
+      ],
+      "gamma": [
+        0.0,
+        2.5
+      ],
+      "mass": [
+        0.001,
+        100.0
+      ],
+      "F": [
+        -1000.0,
+        1000.0
+      ]
+    },
+    "notes": [
+      "Linear viscous damping and a linear spring; non-stiff underdamped regime",
+      "Bounds are declared software limits, not physical limits of a device"
+    ]
+  },
+  "provenance": {
+    "kind": "authored",
+    "derived_from": null,
+    "notes": [
+      "Matches the analytical oscillator fixture of ciw.adapters.oscillator"
+    ]
+  }
+}

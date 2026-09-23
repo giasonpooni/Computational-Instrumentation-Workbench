@@ -139,6 +139,15 @@ the current tests assert, what they cover in part, and what is not implemented.
 Documentation-only edits require working links and consistency with the
 implemented interfaces; they do not imply a new numerical validation result.
 
+The [model-core gate](MODEL_CORE.md#provisioning-and-validation) is
+`python scripts/check_model_core.py`. It verifies or downloads the pinned Julia
+1.10.12 distribution, instantiates the committed worker manifest into a fresh
+depot, clones or checks the pinned SCR revision and runs every model-core test
+from an installed wheel with the genuine worker; skipped tests fail it. Offline
+model tests (`tests/test_model_*.py`) run in the ordinary suite; the Julia and
+SCR tests skip unless `CIW_JULIA` and `CIW_SCR_REPO` are set, and the protocol
+double in `tests/fixtures/fake_model_worker.py` covers failure paths only.
+
 The native geodesic-reference gate is `python scripts/check_geodesic_references.py`.
 It runs both pinned providers from an installed CIW wheel, exercises the live
 session and provider-free restore, rejects skips, then independently checks the

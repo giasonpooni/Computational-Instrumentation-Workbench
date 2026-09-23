@@ -15,6 +15,7 @@ existing benches.
 | Tool and role | Workbench status | Entry point |
 | --- | --- | --- |
 | `analytic-damped-oscillator.v1` | Integrated built-in synthetic instrument | `python -m ciw demo`, `analyze stats`, `analyze spectrum` |
+| Language-neutral model core (`ciw.model-spec.v1`) with pinned Julia worker | Built-in specification, rescaling, composition and LaTeX views; Julia 1.10.12 Tsit5, ForwardDiff/ControlSystemsBase, JuMP/HiGHS and ModelingToolkit operations under the SCR seam; Linux x86-64 pinned | `python -m ciw model validate`, `rescale`, `compose`, `latex`, `exploratory`, `run`, `inspect`, `replay`; [contract and guide](MODEL_CORE.md) |
 | RCI measurement-chain/calibration adapter | Integrated experimental pinned subprocess; synthetic mass fixture | `python -m ciw investigation create`, `inspect`, `replay` |
 | FSRT state-estimation operation | Integrated experimental pinned subprocess; one simultaneous two-reservoir snapshot | Same investigation; shared `operation.execute` after explicit runtime binding |
 | Parameterized Lyapunov Stability Runtime (PLSR) verification operation | Integrated experimental terminal operation; Python 3.12+ and optional `plsr` extra | `python -m ciw plsr import`, `evaluate`, `inspect`, `replay` |
@@ -28,6 +29,19 @@ existing benches.
 | SCR/SP1 registered heat computation | Bounded integer execution and proof verification; exact Linux runtime required | `ciw serve --computation-repo ... --computation-engine ... --sp1-prover ... --sp1-heat-guest ...`; [full setup and contract](PROVED_HEAT.md) |
 | Variational free-energy sensor fusion | Synthetic curved-surface inference with native CSG/GSIE/PLSR, exact Gaussian reference and retained model failure cases | `ciw serve --free-energy-stack-root /trusted/free-energy`; [mathematics, setup and six cases](VARIATIONAL_FREE_ENERGY.md) |
 | GPU energy to accuracy | Actual NVML/CUDA host capture; built-in retained-log analysis, shared view and replay | `ciw energy probe`, `record`, `replay`; [contract and operating guide](ENERGY_ACCURACY.md) |
+
+## Language-neutral model core
+
+The [model-core guide](MODEL_CORE.md) specifies `ciw.model-spec.v1`: ordered
+states with units and frames, time or path length, commanded/measured/physical
+roles, calibration identity, covariance assumptions and a validity domain.
+Models are validated with exact dimensional analysis, rescaled consistently
+(values, covariance, bounds, solver tolerances and grids), composed through
+typed ports and rendered as LaTeX bound to retained runs. A pinned Julia worker
+executes simulation, linearization, measurement selection and a ModelingToolkit
+route; each result is compared with an independent Python reference and retained
+as `ciw.model-run.v1` for offline inspection and fresh replay. Physical
+measurements are explicitly `not_acquired` for these simulation-only runs.
 
 ## Identified model and budgeted next observation
 

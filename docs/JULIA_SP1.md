@@ -11,9 +11,15 @@ admission of evidence for a downstream purpose.
 | Increment | Scope | Readiness |
 | --- | --- | --- |
 | 1. Existing SCR proof workload | Expose bounded integer heat diffusion, retained input/output and independently checked SCR proof records in one shared investigation | First implementation increment; a successful native SP1 build/prove/verify gate is required before claiming a working cryptographic path |
-| 2. Julia oscillator | Run numerical integration through SCR and compare with CIW's analytical oscillator reference | Planned; no Julia operation or verified Julia environment is supplied by this document |
+| 2. Julia oscillator | Run numerical integration through SCR and compare with CIW's analytical oscillator reference | Implemented on Linux x86-64 as `ciw.model.simulate.v1` over the language-neutral model specification; see [MODEL_CORE.md](MODEL_CORE.md). Windows runtime digests pending |
 | 3. Exact topology | Compute candidate ordinary Betti numbers over F2 in Julia, then independently recompute them in a registered Rust/SP1 checker | Planned; no topology operation, registered guest or proof is supplied by this document |
 | 4. Measured scaling | Record execution, proving and verification time, peak memory and guest cycles before widening bounds | Required before expanding workloads; no performance capacity is asserted here |
+
+The oscillator increment is implemented by the [model core](MODEL_CORE.md):
+its worker, handshake, framing, CIWB encoding, runtime-bound program bytes,
+refusal/halt semantics and acceptance fixtures follow the contract below. The
+operation integrates the general lowered model rather than a hard-coded
+oscillator, so the damped-oscillator specification is its first fixture.
 
 An unavailable runtime, a protocol fixture and a mock verifier must remain
 distinguishable from a successfully verified cryptographic computation. Installing

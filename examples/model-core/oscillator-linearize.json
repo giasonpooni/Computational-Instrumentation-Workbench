@@ -1,0 +1,18 @@
+{
+ "schema": "ciw.model-linearization-request.v1",
+ "spec_digest": "sha256:63ddef21c6208f1c7ffd9259d45e69dd1778bf485c650cf342dccca6767c34fc",
+ "state": [
+  0.2,
+  -0.1
+ ],
+ "inputs": {
+  "F": 0.0
+ },
+ "time": 0.0,
+ "rank_rtol": 1e-09,
+ "reference": {
+  "fd_relative_step": 1e-06,
+  "jacobian_rtol": 1e-06,
+  "jacobian_atol": 1e-08
+ }
+}

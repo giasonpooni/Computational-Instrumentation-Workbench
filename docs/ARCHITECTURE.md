@@ -14,6 +14,8 @@ and their qualifications are listed in [INSTRUMENTS.md](INSTRUMENTS.md).
 | `src/ciw/core/` | Structural scientific-record validation, content identities and typed covariance artifacts |
 | `src/ciw/adapters/` | Declared manifests, explicit adapter registry, offline payload readers and bounded pinned subprocess execution |
 | `src/ciw/operations/` | Versioned operation registration, captured inputs and selections, retained execution/refusal and result envelopes |
+| `src/ciw/model/` | Language-neutral model specifications, units, rescaling, typed-port composition, LaTeX views, CIWB codec, SCR commitments, the pinned Julia worker host and retained model runs ([MODEL_CORE.md](MODEL_CORE.md)) |
+| `src/ciw/model/julia/` | The Julia worker environment (`Project.toml`, machine-generated `Manifest.toml`) and sources shipped with the wheel |
 | `src/ciw/session.py` | Shared selection, immutable retained results, workspace save/reopen and dependency validation |
 | `src/ciw/server.py` | Local WebSocket transport for the authoritative session |
 | `src/ciw/cli.py` | Terminal commands for analysis, service access and supported investigations |
