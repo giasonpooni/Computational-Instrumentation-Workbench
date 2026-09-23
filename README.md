@@ -298,8 +298,10 @@ inputs, source pins, operating examples, validation and limitations.
 Python retains and calculates from full-resolution scientific records. The
 viewport displays backend-provided representations. Evidence, operation,
 execution, result and verification identities remain distinct. Reopening a
-workspace validates retained records without silently recomputing them;
-explicit replay creates new execution/result identities.
+workspace validates retained records without binding providers or creating
+execution records; a built-in offline validator may recompute a deterministic
+analysis to check a retained result (the energy-accuracy log analysis does),
+without replacing it. Explicit replay creates new execution/result identities.
 
 The checked-in examples are synthetic; the energy capture command records
 actual supported GPU counters. Successful computation, content integrity
