@@ -7,20 +7,24 @@ routes with focus margins on curved surfaces (torus of revolution, Gaussian
 bump, saddle, sphere), polygonal translation surfaces with cone points, grid
 approximations of geodesic distance, and route switching under metric
 perturbation. Exact arithmetic (integers, Fractions, Q(sqrt d)) is used
-wherever the geometry allows; floats carry declared tolerances.
+wherever the geometry allows; floats carry declared tolerances. Independent
+checks come from sympy (canonical forms, thresholds, and a route field derived
+from the embedding for scipy to integrate), mpmath, scipy and the pinned FTR
+provider; the pinned-provider claims are always reported, as not established
+when the provider is unbound or refused.
 
 Non-claims: every surface is a declared mathematical object in normalized
 units. No finding concerns a physical part, vehicle, sensor, tool path or
 workspace; route "safety", sensor closure performance and calibration adequacy
 are recorded as unestablished physical or authority claims. Candidate route
-sets come from a fan search and are not proven complete. Agreement with the
-pinned Flat-Torus-Geodesic-Reference provider is independent implementation
-agreement, not verification by another party.
+sets come from a fan search that is stable under doubling its density but is
+not proven complete. Agreement with the pinned Flat-Torus-Geodesic-Reference
+provider is independent implementation agreement, not verification by another
+party.
 """
 from __future__ import annotations
 
 from fractions import Fraction
-import importlib.util
 import math
 import sys
 
@@ -33,7 +37,7 @@ from . import flat_torus_topology_provider as ftr
 from . import flat_torus_topology_routes as routes
 from . import flat_torus_topology_surfaces as surf
 from . import jacobi, svg
-from .evidence import finding
+from .evidence import finding, holds
 from .registry import task
 from .surfaces import GaussianBump, Plane, Saddle, Torus
 
@@ -61,11 +65,8 @@ def _tests(*names):
 # ---------------------------------------------------------------- shared helpers
 def _check(reference, observed, tolerance=0.0, comparison="abs_le", kind="exact_arithmetic"):
     observed, tolerance = float(observed), float(tolerance)
-    # le bounds a nonnegative magnitude; signed_le / signed_ge compare signed quantities.
-    holds = {"abs_le": abs(observed) <= tolerance, "le": observed <= tolerance, "signed_le": observed <= tolerance,
-             "ge": observed >= tolerance, "signed_ge": observed >= tolerance}[comparison]
     return {"reference_kind": kind, "reference": reference, "observed": observed, "tolerance": tolerance,
-            "comparison": comparison, "passed": holds}
+            "comparison": comparison, "passed": holds(observed, tolerance, comparison)}
 
 
 EXACT_UNC = {"kind": "exact", "value": 0.0, "basis": "integer, Fraction or Q(sqrt d) arithmetic; no rounding"}
@@ -86,8 +87,9 @@ def _independent(check, checker, revision):
                 checker={"implementation": checker, "revision": revision})
 
 
-def _version(module):
-    if importlib.util.find_spec(module) is None:
+def _version(ctx, module):
+    """Version string of an optional module when ``ctx`` reports it available, else None."""
+    if not ctx.available(f"module:{module}"):
         return None
     return str(__import__(module).__version__)
 
@@ -174,34 +176,51 @@ def _provider(ctx):
     return ctx.memo("flat-torus/ftr-provider", compute)
 
 
-def _provider_refused_finding(run):
-    return finding("A bound FTR provider that does not match its pin or cannot execute is refused rather than compared",
-                   "provenance", run["refusal"],
-                   {"checks": [_refusal("flat_torus_topology_provider.run_ftr", run["refusal"], run["refusal"])]},
-                   uncertainty=EXACT_UNC)
+# The provider claims are always emitted so a run's claim set does not depend on whether the
+# provider was bound; unbound or refused, the claim is honestly unestablished.
+FTR_CLAIMS = {
+    "T019": "Float Gauss reduction agrees with the pinned FTR fold_to_fundamental_domain on reduced tau and the "
+            "reducing SL(2,Z) matrix (up to -I)",
+    "T020": "Closed-geodesic lengths |m w1 + n w2|, edge-crossing counts and unit area agree with the pinned FTR "
+            "loop_length, trace_closed_geodesic and normalized_lattice",
+    "T026": "Closed-geodesic lengths before and after the fold agree with the pinned FTR length_pair and its winding "
+            "transport",
+}
+FTR_NOTE = ("The pinned FTR comparison is optional (bind --provider ftr=<checkout> --provider ftr-python=<Python 3.12 "
+            "interpreter>); its finding records whether it ran.")
 
 
-def _provider_note(run, fields, findings, changed_files):
+def _provider_ran(run) -> bool:
+    return run is not None and "refusal" not in run
+
+
+def _provider_placeholder(task_id, run):
+    """The FTR claim when the provider is unbound or refused: recorded, not established."""
+    value = "not bound" if run is None else {"refusal": run["refusal"], "message": run["message"]}
+    return finding(FTR_CLAIMS[task_id], "numerical", value, {}, expected_not_established=True)
+
+
+def _provider_note(run, fields, changed_files):
     """Attach provider identity or the reason it did not run; return the resulting task state."""
+    fields["unresolved_assumptions"].append(FTR_NOTE)
     if run is None:
-        fields["unresolved_assumptions"].append(
-            "The optional pinned FTR comparison did not run (bind --provider ftr=<checkout> "
-            "--provider ftr-python=<Python 3.12 interpreter>)")
         return "completed"
     if "refusal" in run:
-        findings.append(_provider_refused_finding(run))
-        fields["unresolved_assumptions"].append(f"FTR provider refused: {run['message']}")
+        fields["unresolved_assumptions"].append(
+            f"The bound FTR provider was refused ({run['refusal']}), so the provider comparison did not run.")
         return "partial"
     from .runner import builtin_identity
 
-    fields["provider_runtime_identity"] = {"provider": run["identity"], "ciw": builtin_identity(changed_files),
-                                           "producer": PRODUCER}
+    # The built-in identity stays at the top level so regression notes on optional modules remain accurate.
+    fields["provider_runtime_identity"] = dict(builtin_identity(changed_files), provider=run["identity"],
+                                               producer=PRODUCER)
     return "completed"
 
 
 def fold_comparison(run):
     """Compare the provider's folds with float Gauss reduction and exact winding transport."""
     rows, tau_diff, matrix_mismatch, winding_mismatch, length_diff, recovered = [], 0.0, 0, 0, 0.0, 0.0
+    # parse_output guarantees one provider row per requested case.
     for case, data in zip(run["cases"]["folds"], run["data"]["folds"]):
         mine_tau, M = lat.float_reduce(case["tau"])
         a, b, c, d = data["matrix"]
@@ -241,13 +260,21 @@ PREDICTED_REDUCED_BASES = {"generic": 2, "vertical-boundary": 4, "arc-boundary":
                            "hexagonal": 12, "rectangular": 2}
 
 
-def enumeration_study(bound=5, words=200, word_length=12):
+T019_BOUND, T019_WORDS, T019_WORD_LENGTH = 5, 200, 12
+
+
+def t019_words(words=T019_WORDS, word_length=T019_WORD_LENGTH):
+    """The seeded S/T^k words shared by the ciw study and the sympy recomputation."""
+    rng = _rng(19)
+    return [lat.random_word(rng, word_length, 3) for _ in range(words)]
+
+
+def enumeration_study(bound=T019_BOUND, words=T019_WORDS, word_length=T019_WORD_LENGTH):
     matrices = lat.sl2z_matrices(bound)
     identity = ((1, 0), (0, 1))
     per_lattice, failures = {}, {"inverse": 0, "area": 0, "reduction": 0, "reducer": 0, "automorphism": 0}
-    rng = _rng(19)
     word_rows = []
-    sampled = [lat.random_word(rng, word_length, 3) for _ in range(words)]
+    sampled = t019_words(words, word_length)
     for name, G in LATTICES.items():
         canonical, _, _ = lat.gauss_reduce(G)
         for M in matrices:
@@ -283,26 +310,63 @@ def enumeration_study(bound=5, words=200, word_length=12):
             "lattices": per_lattice, "failures": failures, "word_examples": word_rows}
 
 
-def sympy_enumeration_check(bound=2):
-    """sympy recomputes det, integer inverse, M^T G M and the reduced-form conditions."""
+def _sympy_lagrange(G, M):
+    """Canonical form of the basis (columns of M) under the form G, by vector Lagrange reduction in sympy.
+
+    Works on basis vectors u, v with the bilinear form of G in sympy Integers
+    (a different formulation from lat.gauss_reduce, which rewrites Gram
+    entries): v -= round(B(u, v) / Q(u)) u, then (u, v) -> (v, -u) while
+    Q(v) < Q(u); the boundary rule makes b >= 0. Returns ((a, b, c), det[u v]).
+    """
     import sympy
 
-    mismatches, compared = 0, 0
+    g0, g1, g2 = (sympy.Integer(x) for x in G)
+    half = sympy.Rational(1, 2)
+    ux, uy, vx, vy = (sympy.Integer(x) for x in (M[0][0], M[1][0], M[0][1], M[1][1]))
+
+    def bil(x0, x1, y0, y1):
+        return g0 * x0 * y0 + g1 * (x0 * y1 + x1 * y0) + g2 * x1 * y1
+
+    while True:
+        mu = sympy.floor(bil(ux, uy, vx, vy) / bil(ux, uy, ux, uy) + half)
+        vx, vy = vx - mu * ux, vy - mu * uy
+        if bil(vx, vy, vx, vy) < bil(ux, uy, ux, uy):
+            ux, uy, vx, vy = vx, vy, -ux, -uy
+            continue
+        break
+    a, b = bil(ux, uy, ux, uy), bil(ux, uy, vx, vy)
+    if 2 * b == -a:
+        vx, vy = vx + ux, vy + uy
+    a, b, c = bil(ux, uy, ux, uy), bil(ux, uy, vx, vy), bil(vx, vy, vx, vy)
+    if a == c and b < 0:
+        ux, uy, vx, vy = vx, vy, -ux, -uy
+    form = (bil(ux, uy, ux, uy), bil(ux, uy, vx, vy), bil(vx, vy, vx, vy))
+    return form, sympy.Matrix([[ux, vx], [uy, vy]]).det()
+
+
+def sympy_reduction_check(bound=T019_BOUND):
+    """sympy recomputes the canonical form of every enumerated basis and word; compares with ciw.
+
+    A case fails unless the sympy form of the basis equals the sympy form of
+    the identity basis (canonical(G)), equals ciw's reduced form of M^T G M,
+    satisfies |2b| <= a <= c with b >= 0 on the boundary, and the reduced
+    basis has det 1.
+    """
+    import sympy
+
+    identity = ((1, 0), (0, 1))
+    matrices = lat.sl2z_matrices(bound) + [M for M, _ in t019_words()]
+    compared = mismatches = 0
     for G in LATTICES.values():
-        Gs = sympy.Matrix([[G[0], G[1]], [G[1], G[2]]])
-        for M in lat.sl2z_matrices(bound):
+        reference, _ = _sympy_lagrange(G, identity)
+        for M in matrices:
             compared += 1
-            Ms = sympy.Matrix(M)
-            inv = Ms.inv()
-            H = Ms.T * Gs * Ms
-            reduced, R, _ = lat.gauss_reduce(lat.transform(G, M))
-            Rs = sympy.Matrix(R)
-            C = Rs.T * H * Rs
-            ok = (Ms.det() == 1 and all(x.is_integer for x in inv)
-                  and (H[0, 0], H[0, 1], H[1, 1]) == lat.transform(G, M)
-                  and (C[0, 0], C[0, 1], C[1, 1]) == reduced
-                  and abs(2 * C[0, 1]) <= C[0, 0] <= C[1, 1])
-            mismatches += 0 if ok else 1
+            form, det = _sympy_lagrange(G, M)
+            a, b, c = form
+            canonical = abs(2 * b) <= a <= c and (b >= 0 or (abs(2 * b) < a and a < c))
+            ciw_form = lat.gauss_reduce(lat.transform(G, M))[0]
+            mismatches += not (form == reference and form == ciw_form and canonical and det == 1
+                               and sympy.Matrix(M).det() == 1)
     return {"compared": compared, "mismatches": mismatches}
 
 
@@ -350,12 +414,13 @@ def enumerate_lattice_representatives(ctx):
     findings = []
     basis = {"checks": [_check("exact reduction failures (inverse, area, canonical form, reducer, automorphism)",
                                total_failures)]}
-    sympy_version = _version("sympy")
+    sympy_version = _version(ctx, "sympy")
     if sympy_version:
-        check = sympy_enumeration_check()
+        check = sympy_reduction_check()
         basis["independent_check"] = _independent(
-            _check(f"sympy det/inverse/M^T G M/reduced conditions over {check['compared']} cases",
-                   check["mismatches"]), "sympy.Matrix", sympy_version)
+            _check(f"sympy vector-form Lagrange reduction of all {check['compared']} bases and words: canonical "
+                   "form, equality with canonical(G) and ciw's form, boundary rule, det 1", check["mismatches"]),
+            "sympy", sympy_version)
     findings.append(finding(
         "Every enumerated SL(2,Z) basis and every random word reduces exactly to the same canonical Gram form",
         "mathematical", {"failures": failures, "reductions": len(LATTICES) * (study["matrices"] + study["words"])},
@@ -382,13 +447,12 @@ def enumerate_lattice_representatives(ctx):
                                     "canonical": [str(x) for x in lat.gauss_reduce(generic)[0]]}},
         uncertainty=EXACT_UNC, tolerance=EXACT))
     run = _provider(ctx)
-    if run is not None and "refusal" not in run:
+    if _provider_ran(run):
         cmp = fold_comparison(run)
         ctx.artifact_json("ftr-folds.json", cmp)
         identity = run["identity"]
         findings.append(finding(
-            "Float Gauss reduction agrees with the pinned FTR fold_to_fundamental_domain on reduced tau and the "
-            "reducing SL(2,Z) matrix (up to -I)", "numerical",
+            FTR_CLAIMS["T019"], "numerical",
             {"max_tau_difference": cmp["max_tau_difference"], "matrix_mismatches": cmp["matrix_mismatches"],
              "cases": len(cmp["rows"])},
             {"provider": ftr.provider_basis(identity),
@@ -401,7 +465,9 @@ def enumerate_lattice_representatives(ctx):
             uncertainty=_unc("roundoff", cmp["max_tau_difference"],
                              "binary64 Mobius images of seeded words reduced by two float implementations"),
             tolerance={"abs": 1e-9, "rel": 0}))
-    state = _provider_note(run, fields, findings, (MODULE, LATTICE, PROVIDER))
+    else:
+        findings.append(_provider_placeholder("T019", run))
+    state = _provider_note(run, fields, (MODULE, LATTICE, PROVIDER))
     return {"state": state, "fields": fields, "findings": findings}
 
 
@@ -421,13 +487,17 @@ def winding_study(span=6, radius=20):
             flow = lat.trace_lattice_flow(m, n, WINDING_START)
             g = info["gcd"]
             pm, pn = info["primitive_class"]
-            ok = (flow["returned"] and flow["period"] == Fraction(1, g)
-                  and flow["crossings"] == (abs(m) + abs(n)) // g
-                  and lat.quad(WINDING_FORM, m, n) == g * g * lat.quad(WINDING_FORM, pm, pn))
+            first = flow["first_return"]
+            # Observed from the flow: first return time, displacement there, returns by t = 1, crossings.
+            ok = (first is not None and first == Fraction(1, g) and flow["returns"] == g
+                  and flow["displacement_at_first_return"] == (pm, pn)
+                  and first * first * lat.quad(WINDING_FORM, m, n) == lat.quad(WINDING_FORM, pm, pn)
+                  and flow["crossings"] == (abs(m) + abs(n)) // g)
             failures += 0 if ok else 1
             rows.append({"winding": [m, n], "gcd": g, "primitive": info["primitive"],
-                         "length_sq": lat.quad(WINDING_FORM, m, n), "first_return_time": _frac(flow["period"]),
-                         "crossings_per_period": flow["crossings"]})
+                         "length_sq": lat.quad(WINDING_FORM, m, n),
+                         "first_return_time": None if first is None else _frac(first),
+                         "returns_by_t_1": flow["returns"], "crossings_before_first_return": flow["crossings"]})
     primitive = [(m, n) for m in range(0, 4) for n in range(-3, 4) if math.gcd(m, n) == 1 and (m > 0 or n > 0)]
     intersections, wrong = [], 0
     for i, v in enumerate(primitive):
@@ -436,22 +506,27 @@ def winding_study(span=6, radius=20):
             expected = abs(v[0] * w[1] - v[1] * w[0])
             wrong += count != expected
             intersections.append({"a": list(v), "b": list(w), "count": count, "det": expected})
-    # Lattice-point count in a disk against the cell-covering bound pi (2 R D + D^2) / A.
+    # Lattice points in the disk Q <= R^2: row scan (Fincke-Pohst) against a brute-force box count.
     vectors = lat.lattice_vectors(WINDING_FORM, radius * radius)
-    area = math.sqrt(lat.det_form(WINDING_FORM))
-    diameter = math.sqrt(max(lat.quad(WINDING_FORM, 1, 1), lat.quad(WINDING_FORM, 1, -1)))
     total = len(vectors) + 1
     prim = sum(1 for _, m, n in vectors if math.gcd(m, n) == 1)
+    box_total, box_primitive = lat.box_lattice_count(WINDING_FORM, radius * radius)
+    area = math.sqrt(lat.det_form(WINDING_FORM))
     count = {"radius": radius, "lattice_points_with_origin": total, "primitive": prim,
+             "box_count_with_origin": box_total, "box_primitive": box_primitive,
              "gauss_estimate": math.pi * radius ** 2 / area,
-             "bound": math.pi * (2 * radius * diameter + diameter ** 2) / area,
              "primitive_fraction": prim / (total - 1), "six_over_pi_sq": 6 / math.pi ** 2}
-    return {"rows": rows, "failures": failures, "intersections": intersections, "intersection_failures": wrong,
-            "count": count}
+    return {"rows": rows, "failures": failures, "primitive_classes": len(primitive), "intersections": intersections,
+            "intersection_failures": wrong, "count": count}
 
 
 def golden_returns(k_max=22):
-    """Gaps ||F_k phi|| at Fibonacci returns (float), against phi^-k (Binet) and mpmath."""
+    """Gaps ||F_k phi|| at Fibonacci returns (binary64) against phi^-k (Binet), with a rounding bound.
+
+    fl(q phi) differs from q phi by at most q 2^-53 + ulp(q phi)/2 and the
+    subtraction of round(q phi) is exact, so ``gap_bound`` bounds the binary64
+    gap error; ``limit_residual`` = |q gap - 1/sqrt 5| is exactly phi^-2k/sqrt 5.
+    """
     fib = [0, 1]
     while len(fib) <= k_max + 1:
         fib.append(fib[-1] + fib[-2])
@@ -460,7 +535,9 @@ def golden_returns(k_max=22):
         q = fib[k]
         x = q * PHI
         gap = abs(x - round(x))
-        rows.append({"k": k, "q": q, "gap": gap, "analytic": PHI ** (-k), "q_times_gap": q * gap})
+        rows.append({"k": k, "q": q, "gap": gap, "analytic": PHI ** (-k), "q_times_gap": q * gap,
+                     "gap_bound": q * 2.0 ** -53 + math.ulp(x) / 2,
+                     "limit_residual": PHI ** (-2 * k) / math.sqrt(5)})
     return rows
 
 
@@ -474,6 +551,7 @@ def mpmath_gaps(rows, dps=50):
 
 def length_comparison(run):
     worst, rows = 0.0, []
+    # parse_output guarantees one provider row per requested case.
     for (tau, m, n), theirs in zip(run["cases"]["lengths"], run["data"]["lengths"]):
         mine = math.sqrt(lat.quad(lat.area_one_form(tau), m, n))
         worst = max(worst, abs(mine - theirs) / mine)
@@ -502,7 +580,13 @@ def classify_by_winding(ctx):
         logx=True, logy=True))
     count = study["count"]
     float_rel = max(abs(r["gap"] - r["analytic"]) / r["analytic"] for r in gaps)
-    limit = abs(gaps[-1]["q_times_gap"] - 1 / math.sqrt(5))
+    min_ratio = min(r["gap"] / r["analytic"] for r in gaps)
+    # |q gap - 1/sqrt 5| minus its exact value phi^-2k / sqrt 5 and the binary64 bound q * gap_bound (+ 2^-52 for
+    # the last roundings): nonpositive when the float data agree with q gap -> 1/sqrt 5 at the proven rate.
+    limit_slack = max(abs(r["q_times_gap"] - 1 / math.sqrt(5)) - r["limit_residual"] - r["q"] * r["gap_bound"]
+                      - 2.0 ** -52 for r in gaps)
+    last = gaps[-1]
+    float_limit = abs(last["q_times_gap"] - 1 / math.sqrt(5))
     phi_fraction = Fraction(PHI)
     d = phi_fraction.denominator
     power_of_two = d & (d - 1) == 0 and d <= 2 ** 52
@@ -512,50 +596,70 @@ def classify_by_winding(ctx):
         "(m, n) gives a closed geodesic traversed once with length |m w1 + n w2|, (k m', k n') its k-fold cover, and "
         "irrational directions never close although their return gaps shrink.",
         "Lattice-coordinate flow alpha = alpha0 + m t, beta = beta0 + n t on R^2 / Z^2 with metric Q(m, n) = "
-        "a m^2 + 2 b m n + c n^2; first return at t = 1/gcd(m, n); intersection number |det(v, w)|; "
-        "Binet: ||F_k phi|| = phi^-k.",
+        "a m^2 + 2 b m n + c n^2; predicted first return at t = 1/gcd(m, n) with displacement the primitive vector; "
+        "Q(g m', g n') = g^2 Q(m', n'); intersection number |det(v, w)|; Binet: ||F_k phi|| = phi^-k and "
+        "|F_k phi^-k - 1/sqrt 5| = phi^-2k / sqrt 5.",
         [f"Gram form {WINDING_FORM} (area sqrt 31)", f"start (alpha0, beta0) = {tuple(map(str, WINDING_START))}",
          "all windings with |m|, |n| <= 6", "golden slope phi in lattice coordinates, Fibonacci returns k <= 22"],
         NO_PHYSICAL,
-        "Closure time 1/gcd, crossings (|m| + |n|)/gcd per period, length scaling k * l(primitive), and "
-        "intersection count |det| hold exactly for every tested class.",
-        "Exact event-driven flow per winding; exact intersection counting for primitive pairs; lattice-point "
-        "count against the covering bound; binary64 and 50-digit golden return gaps.",
+        "Measured first return 1/gcd with the primitive displacement, gcd returns by t = 1, (|m| + |n|)/gcd crossings "
+        "before the first return, and intersection count |det| for every tested class.",
+        "Exact segment-by-segment flow per winding, detecting returns by an exact solve on each segment; exact "
+        "intersection counting for primitive pairs; lattice-point count by row scan against a brute-force box; "
+        "binary64 and 50-digit golden return gaps with a rounding bound.",
         f"{study['failures']} winding failures over {len(study['rows'])} classes; {study['intersection_failures']} "
         f"intersection failures over {len(study['intersections'])} pairs; {count['lattice_points_with_origin']} "
-        f"lattice points within R = {count['radius']} (Gauss estimate {count['gauss_estimate']:.2f}); primitive "
-        f"fraction {count['primitive_fraction']:.4f} (asymptotic 6/pi^2 = {count['six_over_pi_sq']:.4f}); golden "
-        f"q * gap -> 1/sqrt 5 within {limit:.2e}.",
+        f"lattice points within R = {count['radius']} (box count {count['box_count_with_origin']}, Gauss estimate "
+        f"{count['gauss_estimate']:.2f}); primitive fraction {count['primitive_fraction']:.4f} (asymptotic 6/pi^2 = "
+        f"{count['six_over_pi_sq']:.4f}); golden gaps / phi^-k >= {min_ratio:.6f}; at k = {last['k']} the exact "
+        f"residual |q gap - 1/sqrt 5| is {last['limit_residual']:.2e}, while the binary64 value deviates by "
+        f"{float_limit:.2e} (float cancellation, within its rounding bound).",
         "Winding results exact. Golden gaps: binary64 relative error <= 1e-6 for q <= 17711 (cancellation grows "
-        "like q * eps / phi^-k).",
-        ["non-primitive windings (multiple covers)", "zero winding refused", "corner passes counted on both axes",
-         "binary64 cancellation in ||q phi||", "binary64 slopes are rational (never truly irrational)"],
+        "like q * eps / phi^-k); the deviation of binary64 q * gap from 1/sqrt 5 is float error, not a measurement "
+        "of the convergence rate, which is exact (Binet).",
+        ["non-primitive windings (multiple covers)", "zero winding refused", "start on a cell wall refused",
+         "corner passes counted on both axes", "binary64 cancellation in ||q phi||",
+         "binary64 slopes are rational (never truly irrational)"],
         ["Non-closure of irrational directions is a theorem (irrationality), not something a finite computation "
          "establishes; the numerical gaps only illustrate it.",
          "Primitive fraction approaches 6/pi^2 only asymptotically; no rate is claimed."],
         "T023: compute heading sensitivity of closure across all starting headings")
     findings = [
-        finding("Every winding with |m|, |n| <= 6 closes at t = 1/gcd after (|m| + |n|)/gcd edge crossings, with "
-                "length gcd times that of its primitive class",
+        finding("Every winding with |m|, |n| <= 6 first returns to its start at t = 1/gcd, displaced by its primitive "
+                "vector after (|m| + |n|)/gcd edge crossings, and returns gcd times by t = 1 (a gcd-fold cover of the "
+                "primitive loop)",
                 "mathematical", {"classes": len(study["rows"]), "failures": study["failures"]},
-                {"checks": [_check("closure time, crossings and length scaling mismatches", study["failures"])]},
+                {"derivation": "Q(g m', g n') = g^2 Q(m', n'), so the (m, n) curve has gcd times the primitive length",
+                 "checks": [_check("measured first-return time, displacement, return count and crossings against "
+                                   "prediction (mismatching classes)", study["failures"])]},
                 uncertainty=EXACT_UNC, tolerance=EXACT),
-        finding("For 120 pairs of primitive classes the transverse intersections number |det(v, w)|", "mathematical",
+        finding(f"For all {len(study['intersections'])} pairs of the {study['primitive_classes']} primitive classes "
+                "with 0 <= m <= 3, |n| <= 3 the transverse intersections number |det(v, w)|", "mathematical",
                 {"pairs": len(study["intersections"]), "failures": study["intersection_failures"]},
                 {"checks": [_check("intersection count mismatches (exact rational solve)",
-                                   study["intersection_failures"])]}, uncertainty=EXACT_UNC, tolerance=EXACT),
-        finding("Closed-geodesic count within radius R obeys the lattice covering bound |N - pi R^2 / A| <= "
-                "pi (2 R D + D^2) / A", "mathematical",
+                                   study["intersection_failures"]),
+                            _check("pairs enumerated minus C(classes, 2)", len(study["intersections"])
+                                   - study["primitive_classes"] * (study["primitive_classes"] - 1) // 2)]},
+                uncertainty=EXACT_UNC, tolerance=EXACT),
+        finding("The lattice-point count within radius R (including the origin, and its primitive part) equals a "
+                "brute-force count over a box proven to contain the disk", "mathematical",
                 {k: count[k] for k in ("radius", "lattice_points_with_origin", "primitive")},
-                {"checks": [_check("|N - pi R^2 / A| against the covering bound pi (2 R D + D^2) / A",
-                                   abs(count["lattice_points_with_origin"] - count["gauss_estimate"]), count["bound"],
-                                   "le", kind="invariant")]}, uncertainty=EXACT_UNC, tolerance=EXACT),
+                {"derivation": "Q = ((c n + b m)^2 + det m^2) / c >= det m^2 / c bounds |m| (and |n| symmetrically); "
+                               "the count is pi R^2 / A up to the cell-covering bound pi (2 R D + D^2) / A",
+                 "checks": [_check("row-scan minus box count (all points)",
+                                   count["lattice_points_with_origin"] - count["box_count_with_origin"]),
+                            _check("row-scan minus box count (primitive points)",
+                                   count["primitive"] - count["box_primitive"])]},
+                uncertainty=EXACT_UNC, tolerance=TIGHT),
     ]
-    golden_basis = {"derivation": "Binet: F_{k+1} - phi F_k = (-1/phi)^k, so ||F_k phi|| = phi^-k for k >= 2",
+    golden_basis = {"derivation": "Binet: F_{k+1} - phi F_k = (-1/phi)^k, so ||F_k phi|| = phi^-k for k >= 2 and "
+                                  "|F_k phi^-k - 1/sqrt 5| = phi^-2k / sqrt 5",
                     "checks": [_check("binary64 gap relative to phi^-k", float_rel, 1e-6, kind="analytic"),
-                               _check("smallest gap is positive (no closure observed)",
-                                      min(r["gap"] for r in gaps), 0.0, "ge", kind="invariant")]}
-    mp_version = _version("mpmath")
+                               _check("smallest gap / phi^-k (a closure would give 0)", min_ratio, 0.5, "ge",
+                                      kind="analytic"),
+                               _check("|q gap - 1/sqrt 5| minus (phi^-2k / sqrt 5 + binary64 rounding bound)",
+                                      limit_slack, 0.0, "signed_le", kind="analytic")]}
+    mp_version = _version(ctx, "mpmath")
     if mp_version:
         mp = mpmath_gaps(gaps)
         golden_basis["independent_check"] = _independent(
@@ -578,13 +682,12 @@ def classify_by_winding(ctx):
                                     "closes_after_alpha_turns": phi_fraction.denominator}},
         uncertainty=EXACT_UNC, tolerance=EXACT))
     run = _provider(ctx)
-    if run is not None and "refusal" not in run:
+    if _provider_ran(run):
         cmp = length_comparison(run)
         ctx.artifact_json("ftr-lengths.json", cmp)
         identity = run["identity"]
         findings.append(finding(
-            "Closed-geodesic lengths |m w1 + n w2|, edge-crossing counts and unit area agree with the pinned FTR "
-            "loop_length, trace_closed_geodesic and normalized_lattice", "numerical",
+            FTR_CLAIMS["T020"], "numerical",
             {"lengths": len(cmp["rows"]), "max_relative_difference": cmp["max_relative_difference"],
              "crossing_mismatches": cmp["crossing_mismatches"]},
             {"provider": ftr.provider_basis(identity),
@@ -596,7 +699,9 @@ def classify_by_winding(ctx):
             uncertainty=_unc("roundoff", cmp["max_relative_difference"],
                              "relative difference of two binary64 length evaluations"),
             tolerance={"abs": 1e-12, "rel": 0}))
-    state = _provider_note(run, fields, findings, (MODULE, LATTICE, PROVIDER))
+    else:
+        findings.append(_provider_placeholder("T020", run))
+    state = _provider_note(run, fields, (MODULE, LATTICE, PROVIDER))
     return {"state": state, "fields": fields, "findings": findings}
 
 
@@ -606,7 +711,7 @@ FLAT_P = (Fraction(1, 10), Fraction(1, 5))
 FLAT_Q = (Fraction(7, 10), Fraction(11, 20))
 
 
-def flat_translates(max_length=2.6):
+def flat_translates(max_length=Fraction(13, 5)):
     """Exact translates q - p + lambda (lattice coordinates) with their Euclidean vectors."""
     (w1x, w1y), (w2x, w2y) = FLAT_BASIS
     form = lat.gram_of_basis(*FLAT_BASIS)
@@ -618,7 +723,7 @@ def flat_translates(max_length=2.6):
         for n in range(-4, 5):
             c = (z[0] + m, z[1] + n)
             q2 = lat.quad(form, *c)
-            if q2 <= Fraction(max_length) ** 2 * 1:
+            if q2 <= max_length ** 2:
                 vx, vy = c[0] * w1x + c[1] * w2x, c[0] * w1y + c[1] * w2y
                 rows.append({"lambda": [m, n], "length_sq": q2, "vector": (float(vx), float(vy))})
     rows.sort(key=lambda r: (r["length_sq"], r["lambda"]))
@@ -667,7 +772,7 @@ def shortest_versus_least_sensitive(ctx):
         "Geodesics p -> q on C / Lambda lift to segments p -> q + lambda; with K = 0 the Jacobi equation j'' = 0 "
         "gives j_head(s) = s and j_lat(s) = 1 along every route.",
         [f"basis w1 = (1, 0), w2 = (3/10, 11/10); p = {tuple(map(str, FLAT_P))}, q = {tuple(map(str, FLAT_Q))}",
-         f"{len(rs)} lattice translates with length <= 2.6"],
+         f"{len(rs)} lattice translates with length <= 13/5"],
         NO_PHYSICAL,
         "j_head(L) = L and j_lat(L) = 1 for every route; the length order and the amplification order coincide.",
         "Enumerate translates exactly; integrate each route with ciw.lab.jacobi.transfer on the plane chart; "
@@ -677,7 +782,9 @@ def shortest_versus_least_sensitive(ctx):
         "RK4 is exact for the linear flat system up to rounding (<= 1e-12 relative).",
         ["ties in exact length excluded from the discordance count", "endpoint reached (lift consistency)",
          "lateral column constant (j_lat = 1)"],
-        ["The equivalence is special to zero curvature; T032 records curved-surface counterexamples."],
+        ["The equivalence needs j_head(L) to be one strictly increasing function of L for every route (constant "
+         "K <= 0, e.g. flat or closed hyperbolic surfaces); it can fail where K > 0 somewhere or where curvature "
+         "differs between routes. T032 records curved-surface counterexamples."],
         "T022: detect degenerate (tied) shortest representatives")
     findings = [
         finding("On the test flat torus every route's heading amplification equals its length (ciw.lab.jacobi), so "
@@ -698,10 +805,14 @@ def shortest_versus_least_sensitive(ctx):
                 {"derivation": "j_head(s) = s is strictly increasing, so ordering routes by |j_head(L)| equals "
                                "ordering by L (ties included)"},
                 uncertainty={"kind": "exact", "value": 0.0, "basis": "closed-form derivation"}, tolerance=EXACT),
-        finding("With nonzero curvature the amplification |j_head(s)| is not monotone in s (e.g. sin s on the unit "
-                "sphere), so the equivalence can fail", "mathematical", True,
-                {"derivation": "Constant K > 0: j_head(s) = sin(sqrt K s)/sqrt K; K < 0: sinh(sqrt(-K) s)/sqrt(-K) "
-                               "(ciw.lab.jacobi.constant_curvature); witnesses in T032"},
+        finding("Shortest equals least heading-sensitive whenever j_head(L) is one strictly increasing function of "
+                "L for all routes (constant K <= 0); with K > 0 somewhere, or curvature that differs between routes, "
+                "the equivalence can fail", "mathematical", True,
+                {"derivation": "Constant K < 0: j_head(s) = sinh(sqrt(-K) s)/sqrt(-K), strictly increasing, so the "
+                               "orders coincide; constant K > 0: j_head(s) = sin(sqrt K s)/sqrt K is not monotone "
+                               "(sin s on the unit sphere); variable K: routes of different lengths follow different "
+                               "Jacobi equations, so |j_head(L)| need not order like L (T032 torus witnesses) "
+                               "(ciw.lab.jacobi.constant_curvature)"},
                 uncertainty={"kind": "exact", "value": 0.0, "basis": "closed-form derivation"}, tolerance=EXACT),
         finding("The shortest route on a physical flat workpiece is the safest route to execute", "machine_safety",
                 None, {}),
@@ -723,28 +834,39 @@ def degeneracy_study(n_grid=12, rel_tol=1e-9):
         for j in range(n_grid):
             k = len(lat.nearest_translates(SQUARE, (Fraction(i, n_grid), Fraction(j, n_grid)))[1])
             census[k] = census.get(k, 0) + 1
-    vertices = {}
+    vertices, located = {}, {}
     for name, G in LATTICES.items():
-        v = lat.cut_locus_vertices(G)
+        v = located[name] = lat.cut_locus_vertices(G)
         vertices[name] = {"vertices": [[_frac(z[0]), _frac(z[1]), k] for z, k in v],
                           "sum_k_minus_2": sum(k - 2 for _, k in v)}
     tiny = Fraction(1, 2 ** 60)
     z = (Fraction(1, 2) + tiny, Fraction(1, 4))
     exact_mult = len(lat.nearest_translates(SQUARE, z)[1])
     float_mult = lat.float_multiplicity(SQUARE, z, rel_tol=0.0)
+    rounded = (Fraction(float(z[0])), Fraction(float(z[1])))
+    rounded_mult = len(lat.nearest_translates(SQUARE, rounded)[1])
     band = []
-    false_unique = 0
     for eps in (Fraction(1, 10 ** 6), Fraction(1, 10 ** 8), Fraction(1, 10 ** 10), Fraction(1, 10 ** 12), tiny, 0):
         zz = (Fraction(1, 2) + eps, Fraction(1, 4))
         e = len(lat.nearest_translates(SQUARE, zz)[1])
         f = lat.float_multiplicity(SQUARE, zz, rel_tol=rel_tol)
-        false_unique += e > 1 and f == 1
         band.append({"epsilon": float(eps), "exact_multiplicity": e, "tolerance_multiplicity": f,
                      "verdict": "tie" if e > 1 else ("ambiguous within tolerance" if f > 1 else "unique")})
+    # Exact ties whose targets binary64 cannot represent: every cut-locus vertex with a non-dyadic coordinate.
+    ties = []
+    for name, G in LATTICES.items():
+        for vertex, k in located[name]:
+            if any(x.denominator & (x.denominator - 1) for x in vertex):
+                ties.append({"lattice": name, "target": [_frac(vertex[0]), _frac(vertex[1])], "exact": k,
+                             "binary64": lat.float_multiplicity(G, vertex, rel_tol=0.0),
+                             "tolerance": lat.float_multiplicity(G, vertex, rel_tol=rel_tol)})
     return {"half_periods": half, "census": {str(k): v for k, v in sorted(census.items())}, "grid": n_grid,
             "cut_locus": vertices, "float_counterexample": {"epsilon": "2^-60", "exact": exact_mult,
-                                                            "binary64": float_mult},
-            "tolerance_band": band, "rel_tol": rel_tol, "false_unique": false_unique}
+                                                            "binary64": float_mult,
+                                                            "exact_of_rounded_target": rounded_mult},
+            "tolerance_band": band, "rel_tol": rel_tol, "non_representable_ties": ties,
+            "binary64_undercounts": sum(t["binary64"] < t["exact"] for t in ties),
+            "tolerance_undercounts": sum(t["tolerance"] < t["exact"] for t in ties)}
 
 
 @task("T022", changed_files=(MODULE, LATTICE, DOC),
@@ -758,24 +880,31 @@ def degenerate_shortest_representatives(ctx):
     census_mismatch = sum(abs(study["census"].get(k, 0) - v) for k, v in predicted_census.items())
     vertex_mismatch = sum(v["sum_k_minus_2"] != 2 for v in study["cut_locus"].values())
     fc = study["float_counterexample"]
+    ties = study["non_representable_ties"]
     fields = _fields(
         "Shortest representatives are tied exactly on the cut locus (the Voronoi boundary of the lattice): "
         "multiplicity 2 on edges and 3 or 4 at vertices, with sum over vertices of (k - 2) = 2 for every flat "
-        "torus; float comparison cannot decide ties below its resolution.",
+        "torus; binary64 cannot decide ties below its resolution, and a declared relative tolerance is needed "
+        "so that exact ties at non-representable targets are not reported as unique.",
         "Squared lengths Q(z + lambda) are exact rationals for rational z and integer G; the cut locus of a point "
         "is a graph with V vertices of multiplicity k_v and E = sum k_v / 2 edges, and V - E + 1 = chi = 0.",
         [f"square torus G = {SQUARE}; lattices {LATTICES}", f"{n} x {n} rational grid of targets",
-         "near-tie target (1/2 + eps, 1/4), eps down to 2^-60"],
+         "near-tie target (1/2 + eps, 1/4), eps down to 2^-60",
+         f"{len(ties)} cut-locus vertices with non-dyadic coordinates (exact ties binary64 cannot represent)"],
         NO_PHYSICAL,
         "Multiplicities 2 (half periods), 4 (square centre), sum (k_v - 2) = 2 on every tested lattice.",
         "Exact nearest-translate search, grid census, exact circumcenter enumeration of cut-locus vertices, and "
         "binary64 detection with and without a declared relative tolerance.",
         f"half periods {study['half_periods']}; census {study['census']} (predicted {predicted_census}); "
         f"cut-locus vertices {{name: sum(k-2)}} = { {k: v['sum_k_minus_2'] for k, v in study['cut_locus'].items()} }; "
-        f"eps = 2^-60: exact multiplicity {fc['exact']}, binary64 {fc['binary64']}.",
-        "Exact for rational inputs; the tolerance-aware float detector is conservative by construction.",
+        f"eps = 2^-60: exact multiplicity {fc['exact']}, binary64 {fc['binary64']} (the rounded target is an exact "
+        f"tie of multiplicity {fc['exact_of_rounded_target']}); non-representable exact ties undercounted by raw "
+        f"binary64 comparison: {study['binary64_undercounts']} of {len(ties)}, with relative tolerance "
+        f"{study['rel_tol']:g}: {study['tolerance_undercounts']}.",
+        "Exact for rational inputs; the tolerance-aware float detector over-reports near ties by design "
+        "('ambiguous within tolerance').",
         ["exact ties at half periods", "Voronoi vertices of generic, boundary, square, hexagonal and rectangular "
-         "lattices", "binary64 tie at eps below resolution", "tolerance detector never reports a false unique"],
+         "lattices", "binary64 rounding of the target itself", "exact ties at targets binary64 cannot represent"],
         ["Targets with irrational coordinates are only handled in float with a declared tolerance."],
         "T031: study route changes under small metric perturbations near these ties")
     findings = [
@@ -793,14 +922,27 @@ def degenerate_shortest_representatives(ctx):
                 {"derivation": "E = sum k_v / 2 and V - E + F = 0 with F = 1 give sum (k_v - 2) = 2",
                  "checks": [_check("lattices violating the identity", vertex_mismatch)]},
                 uncertainty=EXACT_UNC, tolerance=EXACT),
-        finding("Binary64 comparison reports a tie where exact arithmetic finds a unique shortest representative",
-                "numerical", fc,
+        finding("Rounding the target to binary64 changes its shortest-representative multiplicity (exact 1, "
+                "binary64 2)", "numerical", fc,
                 {"checks": [_check("binary64 multiplicity minus exact multiplicity (expect 1)",
                                    fc["binary64"] - fc["exact"] - 1),
-                            _check("tolerance detector false-unique verdicts", study["false_unique"])]},
-                counterexample={"statement": "Floating-point distance comparison decides the shortest representative",
+                            _check("exact multiplicity of the rounded target minus the binary64 multiplicity",
+                                   fc["exact_of_rounded_target"] - fc["binary64"])]},
+                counterexample={"statement": "Converting a target to binary64 preserves its shortest-representative "
+                                            "multiplicity",
                                 "witness": {"target": "(1/2 + 2^-60, 1/4)", "exact_multiplicity": fc["exact"],
+                                            "binary64_target": [float(Fraction(1, 2) + Fraction(1, 2 ** 60)), 0.25],
                                             "binary64_multiplicity": fc["binary64"]}},
+                uncertainty=EXACT_UNC, tolerance=EXACT),
+        finding("At exact cut-locus ties that binary64 cannot represent, raw float comparison undercounts some "
+                "multiplicities while a relative tolerance of 1e-9 recovers all of them", "numerical",
+                {"ties": len(ties), "binary64_undercounts": study["binary64_undercounts"],
+                 "tolerance_undercounts": study["tolerance_undercounts"]},
+                {"checks": [_check("ties undercounted by raw binary64 comparison", study["binary64_undercounts"], 1,
+                                   "ge"),
+                            _check("ties undercounted with the declared tolerance", study["tolerance_undercounts"])]},
+                counterexample={"statement": "Floating-point distance comparison finds every shortest representative",
+                                "witness": next(t for t in ties if t["binary64"] < t["exact"])},
                 uncertainty=EXACT_UNC, tolerance=EXACT),
     ]
     return {"state": "completed", "fields": fields, "findings": findings}
@@ -851,15 +993,25 @@ def heading_study(epsilon=0.02, delta=1e-4):
         width_error = max(width_error, abs(measured - analytic_width))
         basins.append({"winding": [m, n], "length": z["length"], "theta": z["theta"], "slope": z["length"],
                        "basin_width": analytic_width, "measured_width": measured})
-    basins.sort(key=lambda b: (-b["basin_width"], b["winding"]))
-    discordant = sum(1 for i in range(len(basins)) for j in range(i + 1, len(basins))
-                     if basins[i]["length"] > basins[j]["length"] + 1e-12)
+    basins.sort(key=lambda b: (-b["measured_width"], b["length"], b["winding"]))
+    # Order test on the measured widths: a pair of distinct lengths is discordant when the shorter class has a
+    # narrower measured basin by at least one grid step; equal grid counts are unresolved, not concordant.
+    discordant = unresolved = 0
+    for i, a in enumerate(basins):
+        for b in basins[i + 1:]:
+            if abs(a["length"] - b["length"]) <= 1e-12:
+                continue
+            short, long = (a, b) if a["length"] < b["length"] else (b, a)
+            if long["measured_width"] - short["measured_width"] >= step - 1e-15:
+                discordant += 1
+            elif abs(long["measured_width"] - short["measured_width"]) < step - 1e-15:
+                unresolved += 1
     sample = [{"theta": float(thetas[i]), "return_distance": float(r[i])} for i in range(0, HEADINGS // 2, 10)]
     return {"predicted": sorted([list(v) for v in predicted]), "found": sorted([list(v) for v in zeros]),
             "missing": sorted([list(v) for v in predicted - set(zeros)]),
             "extra": sorted([list(v) for v in set(zeros) - predicted]), "positive_minima": positive,
             "slope_relative_error": slope_error, "basins": basins, "width_error": width_error, "step": step,
-            "epsilon": epsilon, "discordant": discordant, "sample": sample}
+            "epsilon": epsilon, "discordant": discordant, "unresolved": unresolved, "sample": sample}
 
 
 @task("T023", changed_files=(MODULE, LATTICE, DOC),
@@ -883,10 +1035,13 @@ def sensitivity_across_headings(ctx):
         NO_PHYSICAL,
         "Zero set = primitive directions with |v| <= L; V-slope = |v|; basin width decreasing in |v|.",
         "Vectorized closed-form segment-to-lattice distance on the heading grid; grid local minima refined at "
-        "the exact direction arg v; slopes probed at +-1e-4 rad; basins measured on the grid.",
+        "the exact direction arg v; slopes probed at +-1e-4 rad; basins measured on the grid and ordered by "
+        "their measured widths.",
         f"{len(study['found'])} zero minima found, {len(study['predicted'])} predicted, missing {study['missing']}, "
         f"extra {study['extra']}; {study['positive_minima']} positive (near-miss) minima; slope relative error "
-        f"{study['slope_relative_error']:.2e}; widest basins {[b['winding'] for b in top]}.",
+        f"{study['slope_relative_error']:.2e}; widest measured basins {[b['winding'] for b in top]}; "
+        f"{study['discordant']} discordant and {study['unresolved']} unresolved (same grid count) pairs of distinct "
+        f"lengths.",
         f"Grid spacing {study['step']:.2e} rad bounds measured basin widths (max deviation "
         f"{study['width_error']:.2e} rad); refined zeros are exact to rounding.",
         ["near-miss minima (segment endpoints) separated from true closures",
@@ -912,8 +1067,11 @@ def sensitivity_across_headings(ctx):
                                  "relative error of r / sin(delta) against |v| at delta = 1e-4"),
                 tolerance={"abs": 1e-9, "rel": 0}),
         finding("Closure basins are widest for the shortest (lowest-order) primitive classes", "numerical",
-                [{"winding": b["winding"], "length": b["length"], "basin_width": b["basin_width"]} for b in top],
-                {"checks": [_check("discordant (width, length) pairs", study["discordant"]),
+                {"widest": [{"winding": b["winding"], "length": b["length"], "measured_width": b["measured_width"],
+                             "basin_width": b["basin_width"]} for b in top],
+                 "discordant_pairs": study["discordant"], "unresolved_pairs": study["unresolved"]},
+                {"checks": [_check("pairs of distinct lengths whose shorter class has a measured basin narrower by at "
+                                   "least one grid step", study["discordant"]),
                             _check("measured minus analytic basin width (rad)", study["width_error"],
                                    2 * study["step"] + 1e-12, kind="analytic")]},
                 uncertainty=_unc("truncation_bound", 2 * study["step"],
@@ -929,49 +1087,71 @@ def sensitivity_across_headings(ctx):
 TORUS = Torus(2.0, 1.0)
 ROUTE_P, ROUTE_Q = (0.0, 0.4), (2.0, -0.3)
 ROUTE_MAX, HORIZON = 11.0, 8.0
+ROUTE_HEADINGS = 1440
 
 
 def torus_routes():
-    found, candidates = routes.find_routes(TORUS, ROUTE_P, ROUTE_Q, ROUTE_MAX, headings=360, horizon=HORIZON)
-    return {"routes": found, "candidates": candidates}
+    found, counts = routes.find_routes(TORUS, ROUTE_P, ROUTE_Q, ROUTE_MAX, headings=ROUTE_HEADINGS, horizon=HORIZON)
+    convergence = routes.fan_convergence(TORUS, ROUTE_P, ROUTE_Q, ROUTE_MAX, found, ROUTE_HEADINGS)
+    return {"routes": found, "counts": counts, "convergence": convergence}
 
 
-def _scipy_route_checks(surface, p, found):
-    version = _version("scipy")
-    if not version:
+def _independent_routes(ctx, surface, p, q, route_list):
+    """scipy DOP853 on the sympy-derived field; None unless both optional modules are available."""
+    scipy_version, sympy_version = _version(ctx, "scipy"), _version(ctx, "sympy")
+    if not (scipy_version and sympy_version):
         return None
-    worst_j, worst_c, rows = 0.0, 0.0, []
-    for r in found:
-        other = routes.scipy_check(surface, p, r, extra=HORIZON)
-        worst_j = max(worst_j, abs(other["j_head"] - r["j_head"]) / max(1.0, abs(r["j_head"])))
-        if (other["first_conjugate"] is None) != (r["first_conjugate"] is None):
-            worst_c = max(worst_c, math.inf)
-        elif r["first_conjugate"] is not None:
-            worst_c = max(worst_c, abs(other["first_conjugate"] - r["first_conjugate"]))
-        rows.append(other)
-    return {"version": version, "j_head": worst_j, "conjugate": worst_c, "rows": rows}
+    result = routes.compare_with_scipy(surface, p, q, route_list, extra=HORIZON)
+    result["revision"] = f"scipy {scipy_version}, sympy {sympy_version}"
+    return result
+
+
+def _attach_independent_routes(basis, sc):
+    """Presence and solver-status mismatches are exact checks; matched quantities feed the independent check."""
+    if sc is None:
+        return
+    basis["checks"] += [
+        _check("routes where exactly one of ciw.lab.jacobi and scipy/sympy finds a conjugate point within the horizon",
+               sc["presence_mismatches"], kind="high_precision"),
+        _check("scipy solve_ivp runs that stopped before L + horizon", sc["failed"], kind="high_precision")]
+    basis["independent_check"] = _independent(
+        _check("scipy DOP853 on a sympy-derived field (metric, Christoffel symbols, K and heading frame from the "
+               "embedding): max of relative j_head(L) difference, conjugate-point difference and endpoint distance "
+               "to the lift of q", max(sc["j_head"], sc["conjugate"], sc["endpoint"]), 1e-5, kind="high_precision"),
+        "scipy.integrate.solve_ivp (sympy-derived field)", sc["revision"])
 
 
 def _route_table(found):
     return [{"length": r["length"], "heading": r["heading"], "lift": r["lift"], "amplification": r["amplification"],
-             "focus_margin": r["focus_margin"], "margin_lower_bound": r["margin_lower_bound"]} for r in found]
+             "targeting_condition": r["targeting_condition"], "focus_margin": r["focus_margin"],
+             "margin_lower_bound": r["margin_lower_bound"],
+             "passes_conjugate_point": r["focus_margin"] is not None and r["focus_margin"] < 0} for r in found]
+
+
+AMPLIFICATION_CAVEAT = ("Small |j_head(L)| is not robustness: the targeting condition number 1/|j_head(L)| grows as "
+                        "q approaches a conjugate point, and a route with negative focus margin is not locally "
+                        "minimizing.")
 
 
 @task("T024", changed_files=(MODULE, ROUTES, DOC),
-      regression_tests=_tests("test_t024_t025_route_ranking_and_front"))
+      regression_tests=_tests("test_t024_t025_route_ranking_and_front", "test_route_helpers"))
 def focus_margin_ranking(ctx):
     data = ctx.memo("flat-torus/t024-routes", torus_routes)
-    found = data["routes"]
+    found, counts, conv = data["routes"], data["counts"], data["convergence"]
     ranks = routes.rankings(found)
-    ctx.artifact_json("torus-routes.json", {"p": ROUTE_P, "q": ROUTE_Q, "max_length": ROUTE_MAX,
-                                            "horizon": HORIZON, "candidates": data["candidates"],
-                                            "routes": found, "rankings": ranks})
+    sc = _independent_routes(ctx, TORUS, ROUTE_P, ROUTE_Q, found)
+    ctx.artifact_json("torus-routes.json", {
+        "p": ROUTE_P, "q": ROUTE_Q, "max_length": ROUTE_MAX, "horizon": HORIZON, "headings": ROUTE_HEADINGS,
+        "newton_counts": counts, "convergence": conv, "routes": found, "rankings": ranks,
+        "scipy_sympy": None if sc is None else {k: v for k, v in sc.items()}})
     residual = max(r["endpoint_residual"] for r in found)
     wronskian = max(r["wronskian_drift"] for r in found)
     clairaut = max(r["clairaut_drift"] for r in found)
     batch = max(r["j_head_batch_vs_transfer"] / max(1.0, r["amplification"]) for r in found)
-    disagreements = sum(a != b for a, b in zip(ranks["by_length"], ranks["by_amplification"])) + \
-        sum(a != b for a, b in zip(ranks["by_length"], ranks["by_focus_margin"]))
+    shortest = ranks["by_length"][0]
+    amp_rank = ranks["by_amplification"].index(shortest)
+    margin_rank = next(i for i, group in enumerate(ranks["by_focus_margin"]) if shortest in group)
+    censored = ranks["by_focus_margin"][0] if found[ranks["by_focus_margin"][0][0]]["focus_margin"] is None else []
     flat = jacobi.transfer(Plane(), [0.0, 0.0], 0.3, 20.0, steps=40)
     flat_min = float(np.min(flat.states[1:, 6] / flat.s[1:]))
     fields = _fields(
@@ -980,48 +1160,68 @@ def focus_margin_ranking(ctx):
         "flat torus there are no conjugate points (infinite margin).",
         "Geodesic + heading Jacobi system on Torus(R=2, r=1), chart (phi, theta); K = cos theta / (r (R + r cos "
         "theta)); focus margin = s_c - L for the first zero s_c > 0 of j_head along the extended geodesic "
-        "(negative: the route passes a conjugate point and is not locally minimizing).",
+        "(negative: the route passes a conjugate point and is not locally minimizing); targeting condition "
+        "1/|j_head(L)|.",
         [f"p = {ROUTE_P}, q = {ROUTE_Q} (chart), routes up to length {ROUTE_MAX}, extension horizon {HORIZON}",
-         "360-heading fan, RK4 batch step 0.025, Newton on (heading, length) with Jacobian [j_head N, v]"],
+         f"{ROUTE_HEADINGS}-heading fan (convergence rerun at {2 * ROUTE_HEADINGS}), RK4 batch step 0.025, Newton on "
+         "(heading, length) with Jacobian [j_head N, v]"],
         NO_PHYSICAL,
         "Endpoint lies on a lift of q; Wronskian det Phi = 1; Clairaut rho^2 phi' conserved; batch and "
-        "ciw.lab.jacobi amplifications agree.",
-        "Fan search for near-passes of every chart lift of q, batch Newton refinement, deduplication, "
-        "re-integration of each route with ciw.lab.jacobi.transfer to L + horizon, conjugate points by Hermite "
-        "zeros; optional scipy DOP853 re-integration.",
-        f"{len(found)} routes from {data['candidates']} fan candidates; order by length {ranks['by_length']}, by "
-        f"amplification {ranks['by_amplification']}, by focus margin {ranks['by_focus_margin']}.",
+        "ciw.lab.jacobi amplifications agree; the route set does not change when the fan density doubles.",
+        "Fan search for near-passes of every chart lift of q, one Newton seed per miss-distance minimum along "
+        "each run of adjacent rays, batch Newton refinement, deduplication, re-integration of each route with "
+        "ciw.lab.jacobi.transfer to L + horizon, conjugate points by Hermite zeros; the search is repeated at "
+        "twice the fan density; optional scipy DOP853 integration of a field derived by sympy from the embedding.",
+        f"{len(found)} routes from {counts['fan_candidates']} fan near-passes and {counts['newton_seeds']} Newton "
+        f"seeds (drops: {counts['singular']} singular, {counts['diverged']} diverged, {counts['residual_fail']} "
+        f"residual, {counts['over_length']} over length; {counts['duplicates_merged']} duplicates merged); at "
+        f"{2 * ROUTE_HEADINGS} headings "
+        f"{conv['routes'][1]} routes, {conv['differences']} differences; order by length {ranks['by_length']}, by "
+        f"amplification {ranks['by_amplification']}, focus-margin groups (best first; censored routes tied) "
+        f"{ranks['by_focus_margin']}.",
         f"Endpoint residual <= {residual:.1e}; Wronskian drift <= {wronskian:.1e}; Clairaut drift <= "
-        f"{clairaut:.1e}; batch-vs-transfer amplification difference <= {batch:.1e} (relative).",
-        ["duplicate routes merged", "routes beyond the length budget discarded", "censored margins (no conjugate "
-         "point within the horizon) ranked as infinite", "Newton divergence (dropped, counted in candidates)"],
-        ["The candidate set is what a 360-heading fan found up to length 11; completeness is not proven.",
+        f"{clairaut:.1e}; batch-vs-transfer amplification difference <= {batch:.1e} (relative)"
+        + ("." if sc is None else f"; scipy/sympy re-integration: j_head {sc['j_head']:.1e} (relative), conjugate "
+                                  f"points {sc['conjugate']:.1e}, endpoint {sc['endpoint']:.1e}."),
+        ["duplicate routes merged (counted)", "routes beyond the length budget discarded (counted)",
+         "censored margins (no conjugate point within the horizon) tied as one group",
+         "Newton divergence or singular Jacobian (counted)", "fan density (route set unchanged at double density)"],
+        ["The candidate set is what the fan found up to length 11 and is stable under doubling the density; "
+         "completeness is not proven.",
          "Focus margin uses conjugate points of p only; conjugate points of q along the reversed route are not "
-         "separately reported."],
+         "separately reported.", AMPLIFICATION_CAVEAT],
         "T025: generate Pareto fronts over these routes")
-    basis = {"checks": [_check("endpoint residual to the lift of q", residual, 1e-6, kind="invariant"),
-                        _check("Wronskian drift", wronskian, 1e-8, kind="invariant"),
-                        _check("Clairaut integral drift", clairaut, 1e-6, kind="invariant"),
-                        _check("batch RK4 vs ciw.lab.jacobi amplification", batch, 1e-4, kind="cross_implementation")]}
-    sc = _scipy_route_checks(TORUS, ROUTE_P, found)
-    if sc:
-        basis["independent_check"] = _independent(
-            _check("scipy DOP853 j_head(L) and first conjugate point (max of both)", max(sc["j_head"], sc["conjugate"]),
-                   1e-5, kind="high_precision"), "scipy.integrate.solve_ivp", sc["version"])
+    basis = {"checks": [_check("endpoint residual to the lift of q", residual, 1e-6, "le", kind="invariant"),
+                        _check("Wronskian drift", wronskian, 1e-8, "le", kind="invariant"),
+                        _check("Clairaut integral drift", clairaut, 1e-6, "le", kind="invariant"),
+                        _check("batch RK4 vs ciw.lab.jacobi amplification", batch, 1e-4, "le",
+                               kind="cross_implementation")]}
+    _attach_independent_routes(basis, sc)
+    table = _route_table(found)
     findings = [
-        finding("Geodesic routes p -> q on the torus with amplification and focus margin", "numerical",
-                _route_table(found), basis,
+        finding("Every fan-search route p -> q on Torus(2, 1) ends on a lift of q with the Wronskian and the "
+                "Clairaut integral conserved to tolerance", "numerical", table, basis,
                 uncertainty=_unc("reference_error", max(batch, sc["j_head"] if sc else 0.0),
-                                 "max relative amplification difference against the batch RK4 search (and scipy "
-                                 "DOP853 when available); RK4 step about 0.04 in ciw.lab.jacobi"),
+                                 "max relative amplification difference against the batch RK4 search (and the "
+                                 "scipy/sympy integration when available); RK4 step about 0.04 in ciw.lab.jacobi"),
                 tolerance=ROUTE),
-        finding("Rankings by length, amplification and focus margin disagree", "numerical", ranks,
-                {"checks": [_check("rank positions that differ from the length order", disagreements, 1.0, "ge"),
-                            _check("routes found", len(found), 3, "ge")]},
+        finding(f"The torus route set is unchanged when the fan density doubles ({ROUTE_HEADINGS} to "
+                f"{2 * ROUTE_HEADINGS} headings)", "numerical",
+                {"headings": conv["headings"], "routes": conv["routes"], "differences": conv["differences"]},
+                {"checks": [_check("routes found at only one of the two densities", conv["differences"],
+                                   kind="self_convergence")]},
+                uncertainty={"kind": "truncation_bound", "value": 0.0,
+                             "basis": "route sets compared by length and heading to 1e-6"},
+                tolerance=EXACT),
+        finding("Rankings by length, amplification and focus margin disagree: the shortest route is neither the "
+                "least amplifying nor in the best focus-margin group", "numerical", ranks,
+                {"checks": [_check("rank of the shortest route by amplification (0 = least amplifying)", amp_rank,
+                                   1, "ge"),
+                            _check("focus-margin group of the shortest route (0 = best group)", margin_rank, 1, "ge")]},
                 counterexample={"statement": "The shortest route also minimizes amplification and maximizes focus margin",
-                                "witness": {"shortest": _route_table(found)[ranks["by_length"][0]],
-                                            "least_amplification": _route_table(found)[ranks["by_amplification"][0]],
-                                            "largest_margin": _route_table(found)[ranks["by_focus_margin"][0]]}},
+                                "witness": {"shortest": table[shortest],
+                                            "least_amplification": table[ranks["by_amplification"][0]],
+                                            "best_margin_group": [table[i] for i in ranks["by_focus_margin"][0]]}},
                 uncertainty={"kind": "exact", "value": 0.0, "basis": "orderings of the route values; adjacent values "
                                                                      "differ far more than their uncertainty"},
                 tolerance=EXACT),
@@ -1034,11 +1234,14 @@ def focus_margin_ranking(ctx):
         finding("Ranking routes by focus margin selects a route that is safe to execute on a physical part",
                 "machine_safety", None, {}),
     ]
+    if censored:
+        fields["numerical_result"] += (f" Routes {censored} have no conjugate point within the horizon (margins "
+                                       f"only known to exceed about {HORIZON:g}), so their margins are tied.")
     return {"state": "completed", "fields": fields, "findings": findings}
 
 
 @task("T025", changed_files=(MODULE, ROUTES, DOC),
-      regression_tests=_tests("test_t024_t025_route_ranking_and_front"))
+      regression_tests=_tests("test_t024_t025_route_ranking_and_front", "test_route_helpers"))
 def pareto_fronts(ctx):
     data = ctx.memo("flat-torus/t024-routes", torus_routes)
     found = data["routes"]
@@ -1055,7 +1258,9 @@ def pareto_fronts(ctx):
         pairs[name] = [i for i, k in enumerate(keys)
                        if not any(all(x <= y for x, y in zip(o, k)) and o != k for o in keys)]
     table = _route_table(found)
-    ctx.artifact_json("pareto.json", {"front": front, "fronts_2d": pairs, "routes": table})
+    past = [i for i in front if table[i]["passes_conjugate_point"]]
+    ctx.artifact_json("pareto.json", {"front": front, "fronts_2d": pairs, "front_members_past_conjugate_point": past,
+                                      "routes": table})
     order = sorted(range(len(found)), key=lambda i: found[i]["length"])
     fsorted = sorted(pairs["length_amplification"], key=lambda i: found[i]["length"])
     ctx.artifact_text("pareto-length-amplification.svg", svg.line_plot(
@@ -1064,28 +1269,34 @@ def pareto_fronts(ctx):
           [found[i]["amplification"] for i in fsorted])],
         title="Torus routes: length vs heading amplification", xlabel="route length L",
         ylabel="|j_head(L)|", logy=True))
-    shortest = min(range(len(found)), key=lambda i: found[i]["length"])
     fields = _fields(
         "Length, amplification and focus margin conflict, so the three-objective Pareto front of the torus "
-        "routes has several members, always including the shortest route.",
+        "routes has several members.",
         "Minimize (L, |j_head(L)|, -margin) with censored margins treated as +infinity; a dominates b when no "
-        "worse in every objective and better in one.",
+        "worse in every objective and better in one. The shortest route is on the front by definition (nothing "
+        "is shorter), so its membership is not a test.",
         ["T024 routes (same run, shared memo)"], NO_PHYSICAL,
         "Front members are mutually non-dominated; every non-member is dominated by a front member.",
         "Exhaustive pairwise dominance on the T024 route set; two-objective fronts for length/amplification and "
         "length/margin; retained JSON and SVG.",
-        f"3-objective front {front} of {len(found)} routes; length/amplification front "
-        f"{pairs['length_amplification']}; length/margin front {pairs['length_margin']}.",
+        f"3-objective front {front} of {len(found)} routes (members past a conjugate point: {past}); "
+        f"length/amplification front {pairs['length_amplification']}; length/margin front {pairs['length_margin']}; "
+        f"targeting condition 1/|j_head| of front members "
+        f"{[round(table[i]['targeting_condition'], 3) for i in front]}.",
         "Inherits T024 route uncertainty (<= 1e-5 relative); front membership is exact given the values.",
-        ["ties in objectives", "censored margins", "dominance violations counted exhaustively"],
-        ["Objectives are unweighted; a decision needs weights or constraints that the workbench does not set."],
+        ["ties in objectives", "censored margins", "dominance violations counted exhaustively",
+         "front members past a conjugate point flagged"],
+        ["Objectives are unweighted; a decision needs weights or constraints that the workbench does not set.",
+         AMPLIFICATION_CAVEAT],
         "T032: build the counterexample library for 'shortest means safest'")
     findings = [
-        finding("Three-objective Pareto front over the torus routes", "numerical",
-                {"front": front, "fronts_2d": pairs, "routes": len(found)},
-                {"checks": [_check("dominance violations (members dominated or non-members undominated)", violations),
-                            _check("front size", len(front), 2, "ge"),
-                            _check("shortest route missing from the front", 0 if shortest in front else 1)]},
+        finding("The three-objective front has several members, and every route off the front is dominated by a "
+                "front member", "numerical",
+                {"front": front, "fronts_2d": pairs, "routes": len(found), "front_members_past_conjugate_point": past},
+                {"derivation": "The shortest route is always on the front: no route is strictly shorter, so none "
+                               "dominates it (exact length ties aside)",
+                 "checks": [_check("dominance violations (members dominated or non-members undominated)", violations),
+                            _check("front size", len(front), 2, "ge")]},
                 uncertainty={"kind": "exact", "value": 0.0, "basis": "exhaustive dominance on the T024 values (which "
                                                                      "carry their own uncertainty)"},
                 tolerance=EXACT),
@@ -1211,14 +1422,14 @@ def modular_reduction_invariance(ctx):
                 uncertainty=EXACT_UNC, tolerance=EXACT),
     ]
     run = _provider(ctx)
-    if run is not None and "refusal" not in run:
+    if _provider_ran(run):
         cmp = fold_comparison(run)
+        ctx.artifact_json("ftr-fold-lengths.json", cmp)
         identity = run["identity"]
         invariance = max(abs(r["ftr_length_pair"][0] - r["ftr_length_pair"][1]) / r["ftr_length_pair"][0]
                          for r in cmp["rows"])
         findings.append(finding(
-            "Closed-geodesic lengths before and after the fold agree with the pinned FTR length_pair and its winding "
-            "transport", "numerical",
+            FTR_CLAIMS["T026"], "numerical",
             {"cases": len(cmp["rows"]), "max_relative_difference": cmp["max_length_relative_difference"],
              "winding_mismatches": cmp["winding_mismatches"]},
             {"provider": ftr.provider_basis(identity),
@@ -1230,7 +1441,9 @@ def modular_reduction_invariance(ctx):
             uncertainty=_unc("roundoff", cmp["max_length_relative_difference"],
                              "relative difference of binary64 lengths before and after the fold"),
             tolerance={"abs": 1e-9, "rel": 0}))
-    state = _provider_note(run, fields, findings, (MODULE, LATTICE, PROVIDER))
+    else:
+        findings.append(_provider_placeholder("T026", run))
+    state = _provider_note(run, fields, (MODULE, LATTICE, PROVIDER))
     return {"state": state, "fields": fields, "findings": findings}
 
 
@@ -1316,6 +1529,8 @@ def translation_surface_examples(ctx):
         finding("L-shape and regular octagon are genus-2 translation surfaces with one vertex class", "mathematical",
                 records,
                 {"checks": [_check("genus mismatches (L 2, octagon 2, square torus 1, hexagon 1)", 0 if genus_ok else 1),
+                            _check("vertex classes of the L-shape and the octagon that differ from 1",
+                                   (records["L-shape"]["vertices"] != 1) + (records["octagon"]["vertices"] != 1)),
                             _check("octagon area minus 2 + 2 sqrt 2 (exact)", 0 if area_error.sign() == 0 else 1)]},
                 uncertainty=EXACT_UNC, tolerance=EXACT),
         finding("Horizontal cylinders: L-shape circumferences equal the r-cycle lengths, octagon strips have "
@@ -1404,6 +1619,8 @@ def trace_across_glued_edges(ctx):
         k: (_surd_json(v) if isinstance(v, surf.Surd) else v) for k, v in oflows.items()}})
     closed = sum(r["outcome"] == "closed" for r in lflows["rows"])
     saddles = sum(r["outcome"] == "SADDLE_CONNECTION" for r in lflows["rows"])
+    traced = len(lflows["rows"])
+    directions = sum(1 for p in range(-3, 4) for q in range(-3, 4) if (p, q) != (0, 0) and math.gcd(p, q) == 1)
     fields = _fields(
         "Straight-line flow crosses glued edges by the edge translations: on the square-tiled L every rational "
         "direction is completely periodic or ends in a saddle connection (exactly decided), and on the octagon a "
@@ -1431,12 +1648,15 @@ def trace_across_glued_edges(ctx):
         ["A generic float direction is never certified non-periodic; only its first 400 crossings are traced."],
         "T029: detect cone singularities")
     findings = [
-        finding("All 96 tested rational trajectories on the L-shape close (multiplier 1-3) or end in a saddle "
-                "connection",
+        finding(f"All {traced} tested rational trajectories on the L-shape close (multiplier 1-3) or end in a "
+                "saddle connection",
                 "mathematical", {"closed": closed, "saddle_connections": saddles, "undecided": lflows["undecided"]},
                 {"derivation": "Veech dichotomy for square-tiled surfaces: rational directions are completely periodic",
                  "checks": [_check("undecided trajectories", lflows["undecided"]),
-                            _check("closure multipliers outside {1, 2, 3}", lflows["bad_multiplier"])]},
+                            _check("closure multipliers outside {1, 2, 3}", lflows["bad_multiplier"]),
+                            _check("closed plus saddle connections minus trajectories traced", closed + saddles - traced),
+                            _check("trajectories traced minus primitive directions x starts",
+                                   traced - directions * len(L_STARTS))]},
                 uncertainty=EXACT_UNC, tolerance=EXACT),
         finding("Trajectories hitting a cone point are terminated as saddle connections, exactly or within the "
                 "declared float tolerance", "numerical",
@@ -1467,24 +1687,39 @@ def trace_across_glued_edges(ctx):
     return {"state": "completed", "fields": fields, "findings": findings}
 
 
+# Euler characteristics known independently of the vertex classes: the declared topology of each polygon
+# gluing, and for origamis Riemann-Hurwitz over the torus, chi = -sum (c - 1) over commutator cycles.
+DECLARED_CHI = {"square torus": 0, "L-shape": -2, "H(1,1) origami": -2, "octagon": -2, "hexagon": 0,
+                "pillowcase": 2}
+
+
 @task("T029", changed_files=(MODULE, SURFACES, DOC),
       regression_tests=_tests("test_t027_t029_surfaces_and_cones", "test_regeneration_is_within_tolerance"))
 def detect_cone_singularities(ctx):
     examples = example_surfaces()
-    rows, defects, commutator_mismatch = {}, 0, 0
+    rows, defects, chi_mismatch, identity_defects, commutator_mismatch = {}, 0, 0, 0, 0
     for name, s in examples.items():
         t = s.topology()
         angles = sorted(c["cone_angle_over_pi"] for c in t["cones"])
-        rows[name] = {"cone_angles_over_pi": [_frac(a) for a in angles], "singular": [_frac(a) for a in angles if a != 2],
-                      "euler_characteristic": t["euler_characteristic"],
-                      "gauss_bonnet_defect_over_pi": _frac(t["gauss_bonnet_defect_over_pi"]),
-                      "angle_recognition_residual": t["angle_recognition_residual"], "gluing": t["gluing"]}
-        defects += t["gauss_bonnet_defect_over_pi"] != 0
+        chi = DECLARED_CHI[name]
         perms = getattr(s, "permutations", None)
         if perms:
-            predicted = sorted(Fraction(2 * c) for c in surf.commutator_cycles(perms["r"], perms["u"]))
-            rows[name]["commutator_prediction_over_pi"] = [_frac(a) for a in predicted]
+            cycles = surf.commutator_cycles(perms["r"], perms["u"])
+            chi = -sum(c - 1 for c in cycles)  # Riemann-Hurwitz; also equals the declared value (checked below)
+            predicted = sorted(Fraction(2 * c) for c in cycles)
             commutator_mismatch += predicted != angles
+        # Gauss-Bonnet against the independent chi: sum (2 pi - theta_v) / pi - 2 chi.
+        defect = sum(2 - a for a in angles) - 2 * chi
+        rows[name] = {"cone_angles_over_pi": [_frac(a) for a in angles], "singular": [_frac(a) for a in angles if a != 2],
+                      "vertex_classes": t["vertices"], "euler_characteristic_v_e_f": t["euler_characteristic"],
+                      "euler_characteristic_independent": chi, "declared_euler_characteristic": DECLARED_CHI[name],
+                      "gauss_bonnet_defect_over_pi": _frac(defect),
+                      "angle_recognition_residual": t["angle_recognition_residual"], "gluing": t["gluing"]}
+        if perms:
+            rows[name]["commutator_prediction_over_pi"] = [_frac(a) for a in predicted]
+        defects += defect != 0
+        chi_mismatch += (t["euler_characteristic"] != chi) + (chi != DECLARED_CHI[name])
+        identity_defects += t["gauss_bonnet_defect_over_pi"] != 0
     residual = max(r["angle_recognition_residual"] for r in rows.values())
     ctx.artifact_json("cone-angles.json", rows)
     expected = {"square torus": ["2"], "L-shape": ["6"], "H(1,1) origami": ["4", "4"], "octagon": ["6"],
@@ -1492,18 +1727,25 @@ def detect_cone_singularities(ctx):
     mismatch = sum(rows[k]["cone_angles_over_pi"] != v for k, v in expected.items())
     fields = _fields(
         "Vertex classes after gluing carry cone angles that sum corner angles; translation surfaces have angles "
-        "2 pi (k + 1); the octagon has one 6 pi point; Gauss-Bonnet sum (2 pi - theta_v) = 2 pi chi holds.",
-        "Union-find on corners (b ~ a', a ~ b' per glued pair), corner angles as exact rational multiples of pi, "
-        "chi = V - E + F; origami cone points = cycles of the commutator r u r^-1 u^-1 (angle 2 pi times length).",
-        [f"surfaces {list(examples)}"], NO_PHYSICAL,
-        "Gauss-Bonnet defect 0 for every surface; commutator prediction equals union-find angles for origamis.",
-        "Compute vertex classes and cone angles, compare with predictions and the commutator cycle type, and "
-        "check Gauss-Bonnet exactly.",
-        f"{ {k: v['cone_angles_over_pi'] for k, v in rows.items()} } (units of pi); Gauss-Bonnet defects {defects}; "
-        f"commutator mismatches {commutator_mismatch}.",
+        "2 pi (k + 1); the octagon has one 6 pi point; Gauss-Bonnet sum (2 pi - theta_v) = 2 pi chi holds with chi "
+        "known independently of the vertex classes.",
+        "Union-find on corners (b ~ a', a ~ b' per glued pair), corner angles as exact rational multiples of pi; "
+        "origami cone points = cycles of the commutator r u r^-1 u^-1 (angle 2 pi times length) and chi = "
+        "-sum (c - 1) (Riemann-Hurwitz); declared chi for the polygon gluings (genus-2 octagon, tori, sphere). "
+        "With chi = V - E + F from the same union-find, Gauss-Bonnet holds for every partition of the corners "
+        "(sum theta_v = pi sum_f (n_f - 2)), so only the comparison with an independent chi tests the classes.",
+        [f"surfaces {list(examples)}", f"declared Euler characteristics {DECLARED_CHI}"], NO_PHYSICAL,
+        "Gauss-Bonnet defect 0 against the independent chi; V - E + F equals it; commutator prediction equals "
+        "union-find angles for origamis.",
+        "Compute vertex classes and cone angles, compare with predictions, the commutator cycle type and the "
+        "independent chi, and check Gauss-Bonnet exactly.",
+        f"{ {k: v['cone_angles_over_pi'] for k, v in rows.items()} } (units of pi); Gauss-Bonnet defects against "
+        f"the independent chi {defects}; V - E + F mismatches {chi_mismatch}; commutator mismatches "
+        f"{commutator_mismatch}.",
         f"Exact after angle recognition (float residual <= {residual:.1e} against multiples of pi/24).",
         ["regular vertices (angle 2 pi) not reported as singular", "half-translation cone angle pi",
-         "two cone points (H(1,1)) versus one (L-shape)"],
+         "two cone points (H(1,1)) versus one (L-shape)",
+         "Gauss-Bonnet tautology avoided (chi independent of the vertex classes)"],
         ["Angle recognition assumes corner angles are multiples of pi/24, true for every declared polygon."],
         "T030: compare smooth and discrete geodesic approximations")
     findings = [
@@ -1516,15 +1758,24 @@ def detect_cone_singularities(ctx):
                                  "float residual of corner-angle recognition before exact rounding to multiples of "
                                  "pi/24"),
                 tolerance=EXACT),
-        finding("Gauss-Bonnet sum (2 pi - theta_v) = 2 pi chi holds exactly on every surface", "mathematical",
-                {k: v["gauss_bonnet_defect_over_pi"] for k, v in rows.items()},
-                {"checks": [_check("surfaces with nonzero defect", defects)]}, uncertainty=EXACT_UNC, tolerance=EXACT),
+        finding("Gauss-Bonnet sum (2 pi - theta_v) = 2 pi chi holds exactly on every surface with chi known "
+                "independently of the vertex classes (declared topology; Riemann-Hurwitz for origamis)",
+                "mathematical", {k: {"defect_over_pi": v["gauss_bonnet_defect_over_pi"],
+                                     "chi": v["euler_characteristic_independent"]} for k, v in rows.items()},
+                {"derivation": "With chi = V - E + F from the same vertex classes the identity holds for any "
+                               "partition of the corners, so the test uses an independent chi",
+                 "checks": [_check("surfaces with nonzero defect against the independent chi", defects),
+                            _check("V - E + F or Riemann-Hurwitz chi differing from the declared chi", chi_mismatch),
+                            _check("surfaces violating the V - E + F identity (consistency only)", identity_defects,
+                                   kind="invariant")]},
+                uncertainty=EXACT_UNC, tolerance=EXACT),
         finding("Polygon vertices need not be cone singularities: the glued hexagon's vertices are regular points",
                 "mathematical", rows["hexagon"]["cone_angles_over_pi"],
                 {"checks": [_check("singular vertex classes on the hexagon torus", len(rows["hexagon"]["singular"]))]},
                 counterexample={"statement": "Every polygon vertex of a glued surface is a cone singularity",
                                 "witness": {"surface": "regular hexagon, opposite sides glued",
-                                            "vertex_classes": 2, "cone_angles": ["2 pi", "2 pi"]}},
+                                            "vertex_classes": rows["hexagon"]["vertex_classes"],
+                                            "cone_angles_over_pi": rows["hexagon"]["cone_angles_over_pi"]}},
                 uncertainty=EXACT_UNC, tolerance=EXACT),
     ]
     return {"state": "completed", "fields": fields, "findings": findings}
@@ -1534,7 +1785,7 @@ def detect_cone_singularities(ctx):
 @task("T030", changed_files=(MODULE, DISCRETE, DOC),
       regression_tests=_tests("test_t030_grid_metrication"))
 def smooth_versus_discrete(ctx):
-    scipy_version = _version("scipy")
+    scipy_version = _version(ctx, "scipy")
     rows = grid.refinement_study(with_scipy=bool(scipy_version))
     angles = np.linspace(0.0, math.pi / 2, 36001)
     worst = {k: max((grid.metrication_ratio(a, k), a) for a in angles) for k in (4, 8)}
@@ -1553,13 +1804,19 @@ def smooth_versus_discrete(ctx):
     diag = [r for r in rows if r["direction"] == "45 deg"]
     tilt = [r for r in rows if r["direction"].startswith("22.62")]
     worst_dense_error = max(abs(worst[k][0] - closed_form[k][0]) for k in (4, 8))
+    # Two linear-axis figures: the graph errors are flat in N, the fast-marching error falls towards 0.
     series = [(f"{k}-neighbour, 45 deg" if k == 4 else f"{k}-neighbour, 22.6 deg",
                [r["grid"] for r in (diag if k == 4 else tilt)], [r[f"ratio{k}"] - 1 for r in (diag if k == 4 else tilt)])
               for k in (4, 8)]
     series.append(("fast marching, 45 deg", [r["grid"] for r in diag], [abs(r["fmm_rel_error"]) for r in diag]))
     ctx.artifact_text("metrication.svg", svg.line_plot(series, title="Relative length error under grid refinement",
-                                                       xlabel="grid points per period N", ylabel="relative error",
-                                                       logx=True, logy=True))
+                                                       xlabel="grid points per period N", ylabel="relative error"))
+    fmm_series = [(f"fast marching, {name}", [1.0 / r["grid"] for r in rows if r["direction"] == name],
+                   [abs(r["fmm_rel_error"]) for r in rows if r["direction"] == name])
+                  for name in dict.fromkeys(r["direction"] for r in rows)]
+    ctx.artifact_text("fast-marching-error.svg", svg.line_plot(
+        fmm_series, title="Fast-marching relative error against grid spacing", xlabel="grid spacing h = 1/N",
+        ylabel="relative length error"))
     fields = _fields(
         "Grid graph shortest paths do not converge to the Euclidean geodesic length under refinement: the relative "
         "error is set by direction (sqrt 2 - 1 = 41.4% at 45 deg for 4 neighbours, sqrt(4 - 2 sqrt 2) - 1 = 8.24% "
@@ -1607,8 +1864,10 @@ def smooth_versus_discrete(ctx):
                 tolerance={"abs": 1e-8, "rel": 0}),
         finding("Fast marching converges to Euclidean length under refinement", "numerical",
                 {"max_relative_error": {str(n): v for n, v in fmm.items()}, "observed_order": order},
-                {"checks": [_check("errors decrease with N (0 = monotone)", 0 if monotone else 1),
-                            _check("observed order", order, 0.5, "ge", kind="self_convergence")]},
+                {"checks": [_check("errors against Euclidean length decrease with N (0 = monotone)",
+                                   0 if monotone else 1, kind="analytic"),
+                            _check("observed order of the error against Euclidean length", order, 0.5, "ge",
+                                   kind="analytic")]},
                 uncertainty=_unc("truncation_bound", fmm[grid.REFINEMENTS[-1]],
                                  "first-order discretization error on the finest grid (N = 120)"),
                 tolerance={"abs": 1e-9, "rel": 1e-6}),
@@ -1683,6 +1942,9 @@ def perturbation_study():
     after = [s for s in sweep if s["eps"] > float(eps_star)][0]
     return {"scaling": rows, "delta": _frac(delta), "eps_star": _frac(eps_star), "float_eps_star": 0.5 * (lo + hi),
             "tie_at_eps_star": [list(t) for t in at_star], "switches": switches, "sweep": sweep,
+            "bracket": {"eps_before": before["eps"], "eps_after": after["eps"],
+                        "translates_before": before["translates"], "translates_after": after["translates"],
+                        "heading_before_deg": before["heading_deg"], "heading_after_deg": after["heading_deg"]},
             "heading_jump_deg": abs(after["heading_deg"] - before["heading_deg"]),
             "length_jump": abs(after["length"] - before["length"])}
 
@@ -1732,9 +1994,9 @@ def metric_perturbation_routes(ctx):
     basis = {"checks": [_check("eps*/delta - 4 mismatches over four deltas", scaling_error),
                         _check("switches in the sweep minus 1", study["switches"] - 1),
                         _check("float bisection minus exact eps*", study["float_eps_star"] - float(eps_star), 1e-15,
-                               kind="exact_arithmetic"),
+                               kind="analytic"),
                         _check("tie multiplicity at eps* minus 2", len(study["tie_at_eps_star"]) - 2)]}
-    sympy_version = _version("sympy")
+    sympy_version = _version(ctx, "sympy")
     if sympy_version:
         other = sympy_threshold(Fraction(study["delta"]))
         basis["independent_check"] = _independent(_check("sympy.solve eps* - exact eps*", other - eps_star),
@@ -1750,8 +2012,9 @@ def metric_perturbation_routes(ctx):
                             _check("length change across the switch", study["length_jump"], 1e-3, "le",
                                    kind="invariant")]},
                 counterexample={"statement": "A small metric perturbation changes the shortest route only slightly",
-                                "witness": {"delta": study["delta"], "eps": "1/200 > eps* = 1/250",
-                                            "heading_jump_deg": study["heading_jump_deg"]}},
+                                "witness": dict(study["bracket"], delta=study["delta"], eps_star=study["eps_star"],
+                                                heading_jump_deg=study["heading_jump_deg"],
+                                                length_jump=study["length_jump"])},
                 uncertainty=_unc("truncation_bound", 1e-4,
                                  "sweep step in eps; the jump is measured between sweep points bracketing eps*"),
                 tolerance=FLOAT),
@@ -1764,74 +2027,83 @@ def metric_perturbation_routes(ctx):
 # ================================================================ T032
 BUMP = GaussianBump(1.5, 1.0)
 SADDLE = Saddle(1.0)
+LIBRARY_HEADINGS = 720
+LIBRARY_CONFIGS = {
+    "torus-inner": (TORUS, (0.0, math.pi), (2.5, math.pi), 9.0),
+    "torus-outer": (TORUS, (0.0, 0.0), (1.5, 0.0), 9.0),
+    "torus-tie": (TORUS, (0.0, 0.0), (2.2, 0.0), 9.0),
+    "bump": (BUMP, (-2.5, 0.0), (2.5, 0.0), 9.0),
+    "saddle": (SADDLE, (-1.5, -0.5), (1.5, 0.8), 8.0),
+}
+SPHERE_DELTAS = (0.1, 0.01, 0.001)
+
+
+def library_searches():
+    """Route search per configuration, with the drop counts and a double-density convergence rerun."""
+    out = {}
+    for key, (surface, p, q, max_length) in LIBRARY_CONFIGS.items():
+        found, counts = routes.find_routes(surface, p, q, max_length, headings=LIBRARY_HEADINGS)
+        conv = routes.fan_convergence(surface, p, q, max_length, found, LIBRARY_HEADINGS)
+        out[key] = {"surface": surface.describe(), "p": list(p), "q": list(q), "max_length": max_length,
+                    "routes": found, "newton_counts": counts, "convergence": conv}
+    return out
 
 
 def counterexample_library():
+    searches = library_searches()
+    inner, outer = searches["torus-inner"]["routes"], searches["torus-outer"]["routes"]
+    tie, bump = searches["torus-tie"]["routes"], searches["bump"]["routes"]
     witnesses = {}
-    inner, _ = routes.find_routes(TORUS, (0.0, math.pi), (2.5, math.pi), 9.0)
-    outer, _ = routes.find_routes(TORUS, (0.0, 0.0), (1.5, 0.0), 9.0)
-    tie, _ = routes.find_routes(TORUS, (0.0, 0.0), (2.2, 0.0), 9.0)
-    bump, _ = routes.find_routes(BUMP, (-2.5, 0.0), (2.5, 0.0), 9.0)
-    saddle, _ = routes.find_routes(SADDLE, (-1.5, -0.5), (1.5, 0.8), 8.0)
     witnesses["torus-inner-amplification"] = {
-        "surface": TORUS.describe(), "p": [0.0, math.pi], "q": [2.5, math.pi], "shortest": inner[0],
+        "shortest": inner[0],
         "alternative": min((r for r in inner[1:] if r["amplification"] < inner[0]["amplification"]),
                            key=lambda r: r["length"]),
         "analytic_shortest_amplification": math.sinh(2.5)}
     alt = [r for r in outer[1:] if routes.margin_value(r) > routes.margin_value(outer[0])]
     witnesses["torus-outer-focus-margin"] = {
-        "surface": TORUS.describe(), "p": [0.0, 0.0], "q": [1.5, 0.0], "shortest": outer[0],
-        "alternative": min(alt, key=lambda r: r["length"]),
+        "shortest": outer[0], "alternative": min(alt, key=lambda r: r["length"]),
         "analytic_shortest_margin": math.pi * math.sqrt(3.0) - 4.5}
-    witnesses["torus-tied-shortest"] = {"surface": TORUS.describe(), "p": [0.0, 0.0], "q": [2.2, 0.0],
-                                        "routes": tie[:3]}
+    witnesses["torus-tied-shortest"] = {"routes": tie[:3]}
     # The straight route over the top has heading 0 by the y -> -y symmetry of the configuration.
     top = min(bump, key=lambda r: abs(r["heading"]))
-    witnesses["bump-amplification-vs-conjugacy"] = {
-        "surface": BUMP.describe(), "p": [-2.5, 0.0], "q": [2.5, 0.0], "shortest": bump[0],
-        "alternative": top, "top_heading": top["heading"], "routes": len(bump)}
-    delta = 0.05
-    witnesses["sphere-near-antipodal"] = {"separation": math.pi - delta,
-                                          "routes": routes.sphere_route_pair(math.pi - delta),
-                                          "transfer": routes.sphere_transfer_check(math.pi - delta)}
-    witnesses["saddle-unique-route"] = {"surface": SADDLE.describe(), "p": [-1.5, -0.5], "q": [1.5, 0.8],
-                                        "routes": saddle}
-    return witnesses
-
-
-def _scipy_witness_check(lib):
-    version = _version("scipy")
-    if not version:
-        return None
-    worst = 0.0
-    for key, surface, p in (("torus-inner-amplification", TORUS, (0.0, math.pi)),
-                            ("torus-outer-focus-margin", TORUS, (0.0, 0.0)),
-                            ("bump-amplification-vs-conjugacy", BUMP, (-2.5, 0.0))):
-        w = lib[key]
-        for route in (w["shortest"], w["alternative"]):
-            other = routes.scipy_check(surface, p, route, extra=HORIZON)
-            worst = max(worst, abs(other["j_head"] - route["j_head"]) / max(1.0, abs(route["j_head"])))
-            if route["first_conjugate"] is not None and other["first_conjugate"] is not None:
-                worst = max(worst, abs(other["first_conjugate"] - route["first_conjugate"]))
-            elif (route["first_conjugate"] is None) != (other["first_conjugate"] is None):
-                worst = math.inf
-    return {"version": version, "worst": worst}
+    witnesses["bump-amplification-vs-conjugacy"] = {"shortest": bump[0], "alternative": top,
+                                                    "top_heading": top["heading"]}
+    witnesses["sphere-near-antipodal"] = [
+        {"delta": delta, "separation": math.pi - delta, "closed_form": routes.sphere_route_pair(math.pi - delta),
+         "transfer": routes.sphere_transfer_check(math.pi - delta)} for delta in SPHERE_DELTAS]
+    for w in witnesses["sphere-near-antipodal"]:
+        w["measured_margin"] = w["transfer"]["first_conjugate"] - w["separation"]
+        w["targeting_condition"] = 1.0 / abs(w["transfer"]["j_head"])
+    return {"searches": searches, "witnesses": witnesses}
 
 
 def _brief(route):
     return {"length": route["length"], "heading": route["heading"], "amplification": route["amplification"],
-            "focus_margin": route["focus_margin"], "margin_lower_bound": route["margin_lower_bound"]}
+            "targeting_condition": route["targeting_condition"], "focus_margin": route["focus_margin"],
+            "margin_lower_bound": route["margin_lower_bound"]}
+
+
+def _witness(key, lib, pair):
+    search = lib["searches"][key]
+    return {"surface": search["surface"], "p": search["p"], "q": search["q"],
+            **{name: _brief(route) for name, route in pair.items()}}
 
 
 @task("T032", changed_files=(MODULE, ROUTES, DOC),
-      regression_tests=_tests("test_t032_counterexample_library"))
+      regression_tests=_tests("test_t032_counterexample_library", "test_route_helpers"))
 def shortest_is_not_safest(ctx):
     lib = counterexample_library()
-    ctx.artifact_json("counterexample-library.json", lib)
-    inner, outer = lib["torus-inner-amplification"], lib["torus-outer-focus-margin"]
-    tie, bump = lib["torus-tied-shortest"], lib["bump-amplification-vs-conjugacy"]
-    sphere, saddle = lib["sphere-near-antipodal"], lib["saddle-unique-route"]
-    sc = _scipy_witness_check(lib)
+    w = lib["witnesses"]
+    inner, outer = w["torus-inner-amplification"], w["torus-outer-focus-margin"]
+    tie, bump, sphere = w["torus-tied-shortest"], w["bump-amplification-vs-conjugacy"], w["sphere-near-antipodal"]
+    saddle = lib["searches"]["saddle"]["routes"]
+    independent = {}
+    for key, witness in (("torus-inner", inner), ("torus-outer", outer), ("bump", bump)):
+        surface, p, q, _ = LIBRARY_CONFIGS[key]
+        independent[key] = _independent_routes(ctx, surface, p, q, [witness["shortest"], witness["alternative"]])
+    ctx.artifact_json("counterexample-library.json", dict(lib, scipy_sympy=independent))
+    conv = {k: v["convergence"] for k, v in lib["searches"].items()}
+    counts = {k: v["newton_counts"] for k, v in lib["searches"].items()}
     inner_gap = inner["shortest"]["amplification"] - inner["alternative"]["amplification"]
     inner_anchor = abs(inner["shortest"]["amplification"] - inner["analytic_shortest_amplification"]) / math.sinh(2.5)
     outer_alt_margin = routes.margin_value(outer["alternative"])
@@ -1840,111 +2112,140 @@ def shortest_is_not_safest(ctx):
     outer_anchor = abs(outer["shortest"]["focus_margin"] - outer["analytic_shortest_margin"])
     t0, t1 = tie["routes"][0], tie["routes"][1]
     bump_gap = bump["shortest"]["amplification"] - bump["alternative"]["amplification"]
-    minor = sphere["routes"][0]
+    margin_error = max(abs(s["measured_margin"] - s["delta"]) / s["delta"] for s in sphere)
+    j_error = max(abs(s["transfer"]["j_head"] - math.sin(s["delta"])) for s in sphere)
     fields = _fields(
         "'Shortest means safest' fails on curved surfaces: a shortest geodesic can have larger heading "
         "amplification, a smaller focus margin, a tie with another route, or a near-conjugate endpoint, while "
         "the flat torus (T021) and simply connected negatively curved surfaces admit no such witness.",
-        "Heading amplification |j_head(L)| and focus margin s_c - L from j'' + K j = 0 along each route; exact "
-        "anchors: inner equator K = -1 (j_head = sinh s), outer equator K = 1/3 (conjugate at pi sqrt 3), unit "
-        "sphere (j_head = sin s, conjugate at pi).",
+        "Heading amplification |j_head(L)|, targeting condition 1/|j_head(L)| and focus margin s_c - L from "
+        "j'' + K j = 0 along each route; exact anchors: inner equator K = -1 (j_head = sinh s), outer equator "
+        "K = 1/3 (conjugate at pi sqrt 3), unit sphere (j_head = sin s, conjugate at pi).",
         ["Torus(2, 1): inner-equator pair (0, pi) -> (2.5, pi); outer-equator pair (0, 0) -> (1.5, 0); (0, 0) -> "
          "(2.2, 0)", "GaussianBump(h = 1.5, sigma = 1): (-2.5, 0) -> (2.5, 0)",
-         "unit sphere, separation pi - 0.05", "Saddle(c = 1): (-1.5, -0.5) -> (1.5, 0.8)"],
+         f"unit sphere, separations pi - delta for delta in {list(SPHERE_DELTAS)}",
+         "Saddle(c = 1): (-1.5, -0.5) -> (1.5, 0.8)",
+         f"{LIBRARY_HEADINGS}-heading fans (convergence reruns at {2 * LIBRARY_HEADINGS})"],
         NO_PHYSICAL,
         "Each witness violates the refuted statement by a margin far above numerical error; analytic anchors "
-        "reproduce closed forms.",
-        "Fan search + Newton + ciw.lab.jacobi verification per configuration (as T024); closed-form sphere pair "
-        "checked with ciw.lab.jacobi; optional scipy DOP853 re-integration of the witness routes.",
+        "reproduce closed forms; route sets do not change when the fan density doubles.",
+        "Fan search + Newton + ciw.lab.jacobi verification per configuration (as T024), repeated at double fan "
+        "density; sphere margins from ciw.lab.jacobi for a sequence of separations; optional scipy DOP853 "
+        "integration of the witness routes on a field derived by sympy from the embedding.",
         f"inner: shortest L = {inner['shortest']['length']:.4f} amp {inner['shortest']['amplification']:.4f} vs L = "
         f"{inner['alternative']['length']:.4f} amp {inner['alternative']['amplification']:.4f}; outer: shortest margin "
         f"{outer['shortest']['focus_margin']:.4f} vs alternative >= {outer_alt_margin:.4f}; tie: lengths "
         f"{t0['length']:.10f} and {t1['length']:.10f}; bump: shortest amp {bump['shortest']['amplification']:.4f} vs "
-        f"top route amp {bump['alternative']['amplification']:.4f} with margin {bump['alternative']['focus_margin']:.4f}; "
-        f"sphere minor-arc margin {minor['focus_margin']:.4f}; saddle routes found {len(saddle['routes'])}.",
-        "Route quantities to about 1e-6 relative (RK4 step 0.04, scipy agreement); witness gaps are O(0.1-4).",
-        ["analytic anchors (sinh 2.5, pi sqrt 3 - 4.5, sin 0.05)", "censored margins use the horizon lower bound",
-         "negative margins (route past a conjugate point) kept, not discarded", "symmetric duplicate routes"],
+        f"top route amp {bump['alternative']['amplification']:.4f} with margin {bump['alternative']['focus_margin']:.4f} "
+        f"(targeting condition {bump['alternative']['targeting_condition']:.3f}); sphere minor-arc margins "
+        f"{[round(s['measured_margin'], 6) for s in sphere]} for delta {list(SPHERE_DELTAS)} (targeting condition "
+        f"up to {max(s['targeting_condition'] for s in sphere):.0f}); saddle routes found {len(saddle)}; route "
+        f"counts at base/double density { {k: v['routes'] for k, v in conv.items()} }; Newton drops (singular, "
+        f"diverged, residual, over length) "
+        f"{ {k: [c['singular'], c['diverged'], c['residual_fail'], c['over_length']] for k, c in counts.items()} }.",
+        "Route quantities to about 1e-6 relative (RK4 step 0.04; scipy/sympy agreement when available); witness "
+        "gaps are O(0.1-4); sphere margins to 1e-6 absolute.",
+        ["analytic anchors (sinh 2.5, pi sqrt 3 - 4.5, sin delta)", "censored margins use the horizon lower bound",
+         "negative margins (route past a conjugate point) kept, not discarded", "symmetric duplicate routes",
+         "fan density (route sets unchanged at double density)"],
         ["Witnesses show the statements are false in general; they do not rank routes for any application.",
-         "Route sets are fan-search results and may be incomplete (the saddle's uniqueness is the Cartan-Hadamard "
-         "theorem, not the search)."],
+         "Route sets are fan-search results, stable under doubling the density but not proven complete (the "
+         "saddle's uniqueness is the Cartan-Hadamard theorem, not the search).", AMPLIFICATION_CAVEAT],
         "Extend the library to variable-curvature meshes (surfaces-discrete section) and to manufacturing paths")
-    findings = []
-    inner_basis = {"checks": [_check("shortest minus alternative amplification", inner_gap, 1.0, "ge", kind="invariant"),
-                              _check("shortest amplification vs sinh 2.5 (relative)", inner_anchor, 1e-6, kind="analytic")]}
-    if sc:
-        inner_basis["independent_check"] = _independent(
-            _check("scipy DOP853 witness routes (j_head relative, conjugate absolute)", sc["worst"], 1e-5,
-                   kind="high_precision"), "scipy.integrate.solve_ivp", sc["version"])
-    findings.append(finding(
-        "Torus inner equator: the shortest route has larger heading amplification than a longer route", "numerical",
-        {"shortest": _brief(inner["shortest"]), "alternative": _brief(inner["alternative"])}, inner_basis,
-        counterexample={"statement": "The shortest geodesic between two points has the least heading amplification",
-                        "witness": {"surface": "Torus(2, 1)", "p": inner["p"], "q": inner["q"],
-                                    "shortest": _brief(inner["shortest"]), "alternative": _brief(inner["alternative"])}},
-        uncertainty=_unc("reference_error", inner_anchor,
-                         "relative deviation of the shortest amplification from sinh 2.5 (RK4 step about 0.04)"),
-        tolerance=ROUTE))
-    findings.append(finding(
-        "Torus outer equator: the shortest route has a smaller focus margin than a longer route", "numerical",
-        {"shortest": _brief(outer["shortest"]), "alternative": _brief(outer["alternative"])},
-        {"checks": [_check("alternative minus shortest focus margin", outer_gap, 1.0, "ge", kind="invariant"),
-                    _check("shortest margin vs pi sqrt 3 - 4.5", outer_anchor, 1e-6, kind="analytic")]},
-        counterexample={"statement": "The shortest geodesic has the largest focus margin (farthest from conjugate points)",
-                        "witness": {"surface": "Torus(2, 1)", "p": outer["p"], "q": outer["q"],
-                                    "shortest": _brief(outer["shortest"]), "alternative": _brief(outer["alternative"])}},
-        uncertainty=_unc("reference_error", outer_anchor,
-                         "deviation of the shortest focus margin from pi sqrt 3 - 4.5"),
-        tolerance=ROUTE))
-    findings.append(finding(
-        "Torus (0, 0) -> (2.2, 0): two mirror-image shortest routes tie, so 'the' shortest route is not unique",
-        "numerical", {"lengths": [t0["length"], t1["length"]], "headings": [t0["heading"], t1["heading"]]},
-        {"checks": [_check("length difference of the two shortest routes", t0["length"] - t1["length"], 1e-9,
-                           kind="invariant"),
-                    _check("heading separation (rad)", abs(t0["heading"] - t1["heading"]), 0.1, "ge", kind="invariant")]},
-        counterexample={"statement": "The shortest route between two points is unique",
-                        "witness": {"surface": "Torus(2, 1)", "p": tie["p"], "q": tie["q"],
-                                    "routes": [_brief(t0), _brief(t1)]}},
-        uncertainty=_unc("roundoff", abs(t0["length"] - t1["length"]), "length difference of the mirror-image routes"),
-        tolerance=ROUTE))
-    findings.append(finding(
-        "Gaussian bump: a longer route over the top has smaller amplification but passes a conjugate point",
-        "numerical", {"shortest": _brief(bump["shortest"]), "alternative": _brief(bump["alternative"])},
-        {"checks": [_check("shortest minus top-route amplification", bump_gap, 0.2, "ge", kind="invariant"),
-                    _check("depth of the top route past its conjugate point (-margin)",
-                           -bump["alternative"]["focus_margin"], 1.0, "ge", kind="invariant"),
-                    _check("top-route heading (the symmetric straight route)", bump["top_heading"], 1e-9,
-                           kind="invariant")]},
-        counterexample={"statement": "Low heading amplification certifies a robust (locally minimizing) route",
-                        "witness": {"surface": "GaussianBump(1.5, 1)", "p": bump["p"], "q": bump["q"],
-                                    "shortest": _brief(bump["shortest"]), "alternative": _brief(bump["alternative"])}},
-        uncertainty=_unc("reference_error", sc["worst"] if sc else 1e-6,
-                         "scipy DOP853 agreement of witness routes when available, else the RK4 step estimate"),
-        tolerance=ROUTE))
-    findings.append(finding(
-        "Unit sphere, separation pi - 0.05: the minimizing arc ends 0.05 before its conjugate point", "numerical",
-        {"focus_margin": minor["focus_margin"], "j_head": sphere["transfer"]["j_head"],
-         "conjugate": sphere["transfer"]["first_conjugate"]},
-        {"derivation": "j_head = sin s on the unit sphere; conjugate point at pi",
-         "checks": [_check("focus margin of the minimizing arc", minor["focus_margin"], 0.1, "le", kind="analytic"),
-                    _check("ciw.lab.jacobi j_head(L) - sin 0.05", sphere["transfer"]["j_head"] - math.sin(0.05), 1e-8,
-                           kind="analytic"),
-                    _check("ciw.lab.jacobi conjugate point - pi", sphere["transfer"]["first_conjugate"] - math.pi, 1e-6,
-                           kind="analytic")]},
-        counterexample={"statement": "A shortest geodesic stays well away from conjugate points",
-                        "witness": {"surface": "unit sphere", "separation": sphere["separation"],
-                                    "focus_margin": minor["focus_margin"],
-                                    "targeting_condition_number": 1 / abs(minor["j_head"])}},
-        uncertainty=_unc("reference_error", abs(sphere["transfer"]["j_head"] - math.sin(0.05)),
-                         "ciw.lab.jacobi j_head(L) against sin 0.05"),
-        tolerance=FLOAT))
-    findings.append(finding(
-        "Search on the saddle (K < 0, simply connected) finds exactly one route, consistent with Cartan-Hadamard "
-        "uniqueness, so this surface admits no witness",
-        "numerical", {"routes": len(saddle["routes"])},
-        {"derivation": "Cartan-Hadamard: exp is a diffeomorphism on complete simply connected K <= 0 surfaces",
-         "checks": [_check("routes found minus 1", len(saddle["routes"]) - 1)]},
-        uncertainty=EXACT_UNC, tolerance=EXACT))
-    findings.append(finding("A route from this library is safe (or unsafe) to execute on a physical part or vehicle",
-                            "machine_safety", None, {}))
+
+    def basis_with(checks, key):
+        basis = {"checks": checks}
+        _attach_independent_routes(basis, independent[key])
+        return basis
+
+    findings = [
+        finding("Torus inner equator: the shortest route has larger heading amplification than a longer route",
+                "numerical", {"shortest": _brief(inner["shortest"]), "alternative": _brief(inner["alternative"])},
+                basis_with([_check("shortest minus alternative amplification", inner_gap, 1.0, "signed_ge",
+                                   kind="invariant"),
+                            _check("shortest amplification vs sinh 2.5 (relative)", inner_anchor, 1e-6,
+                                   kind="analytic")], "torus-inner"),
+                counterexample={"statement": "The shortest geodesic between two points has the least heading "
+                                             "amplification",
+                                "witness": _witness("torus-inner", lib, {"shortest": inner["shortest"],
+                                                                         "alternative": inner["alternative"]})},
+                uncertainty=_unc("reference_error", inner_anchor,
+                                 "relative deviation of the shortest amplification from sinh 2.5 (RK4 step about 0.04)"),
+                tolerance=ROUTE),
+        finding("Torus outer equator: the shortest route has a smaller focus margin than a longer route", "numerical",
+                {"shortest": _brief(outer["shortest"]), "alternative": _brief(outer["alternative"])},
+                basis_with([_check("alternative minus shortest focus margin", outer_gap, 1.0, "signed_ge",
+                                   kind="invariant"),
+                            _check("shortest margin vs pi sqrt 3 - 4.5", outer_anchor, 1e-6, kind="analytic")],
+                           "torus-outer"),
+                counterexample={"statement": "The shortest geodesic has the largest focus margin (farthest from "
+                                             "conjugate points)",
+                                "witness": _witness("torus-outer", lib, {"shortest": outer["shortest"],
+                                                                         "alternative": outer["alternative"]})},
+                uncertainty=_unc("reference_error", outer_anchor,
+                                 "deviation of the shortest focus margin from pi sqrt 3 - 4.5"),
+                tolerance=ROUTE),
+        finding("Torus (0, 0) -> (2.2, 0): two mirror-image shortest routes tie, so 'the' shortest route is not "
+                "unique", "numerical",
+                {"lengths": [t0["length"], t1["length"]], "headings": [t0["heading"], t1["heading"]]},
+                {"checks": [_check("length difference of the two shortest routes", t0["length"] - t1["length"], 1e-9,
+                                   kind="invariant"),
+                            _check("heading separation (rad)", abs(t0["heading"] - t1["heading"]), 0.1, "ge",
+                                   kind="invariant")]},
+                counterexample={"statement": "The shortest route between two points is unique",
+                                "witness": _witness("torus-tie", lib, {"first": t0, "second": t1})},
+                uncertainty=_unc("roundoff", abs(t0["length"] - t1["length"]),
+                                 "length difference of the mirror-image routes"),
+                tolerance=ROUTE),
+        finding("Gaussian bump: a longer route over the top has smaller amplification but passes a conjugate point",
+                "numerical", {"shortest": _brief(bump["shortest"]), "alternative": _brief(bump["alternative"])},
+                basis_with([_check("shortest minus top-route amplification", bump_gap, 0.2, "signed_ge",
+                                   kind="invariant"),
+                            _check("depth of the top route past its conjugate point (-margin)",
+                                   -bump["alternative"]["focus_margin"], 1.0, "signed_ge", kind="invariant"),
+                            _check("top-route heading (the symmetric straight route)", bump["top_heading"], 1e-9,
+                                   kind="invariant")], "bump"),
+                counterexample={"statement": "Low heading amplification certifies a robust (locally minimizing) route",
+                                "witness": _witness("bump", lib, {"shortest": bump["shortest"],
+                                                                  "alternative": bump["alternative"]})},
+                uncertainty=_unc("reference_error", 1e-6,
+                                 "RK4 step estimate for ciw.lab.jacobi route quantities (step about 0.04)"),
+                tolerance=ROUTE),
+        finding("On the unit sphere the minimizing arc between points at separation pi - delta ends delta before "
+                "its conjugate point, so minimizing geodesics have no positive lower bound on focus margin",
+                "numerical", {"delta": list(SPHERE_DELTAS), "focus_margin": [s["measured_margin"] for s in sphere],
+                              "j_head": [s["transfer"]["j_head"] for s in sphere],
+                              "targeting_condition": [s["targeting_condition"] for s in sphere]},
+                {"derivation": "j_head = sin s on the unit sphere; the first conjugate point is at pi, so the "
+                               "minor arc of length pi - delta has margin delta and targeting condition 1/sin delta",
+                 "checks": [_check("ciw.lab.jacobi focus margin relative to delta (max over delta)", margin_error,
+                                   1e-3, "le", kind="analytic"),
+                            _check("ciw.lab.jacobi j_head(L) - sin delta (max over delta)", j_error, 1e-8, "le",
+                                   kind="analytic")]},
+                counterexample={"statement": "Minimizing geodesics on the unit sphere have focus margin bounded below "
+                                            "by a positive constant",
+                                "witness": {"surface": "unit sphere", "kind": "near-conjugate conditioning",
+                                            "delta": list(SPHERE_DELTAS),
+                                            "focus_margin": [s["measured_margin"] for s in sphere],
+                                            "targeting_condition": [s["targeting_condition"] for s in sphere]}},
+                uncertainty=_unc("reference_error", max(abs(s["measured_margin"] - s["delta"]) for s in sphere),
+                                 "absolute deviation of the ciw.lab.jacobi margin from delta (Hermite zero location)"),
+                tolerance={"abs": 1e-6, "rel": 1e-6}),
+        finding("Search on the saddle (K < 0, simply connected) finds exactly one route, consistent with "
+                "Cartan-Hadamard uniqueness, so this surface admits no witness",
+                "numerical", {"routes": len(saddle)},
+                {"derivation": "Cartan-Hadamard: exp is a diffeomorphism on complete simply connected K <= 0 surfaces",
+                 "checks": [_check("routes found minus 1", len(saddle) - 1)]},
+                uncertainty=EXACT_UNC, tolerance=EXACT),
+        finding(f"Every T032 route search gives the same route set at twice the fan density ({LIBRARY_HEADINGS} to "
+                f"{2 * LIBRARY_HEADINGS} headings)", "numerical",
+                {k: {"routes": v["routes"], "differences": v["differences"]} for k, v in conv.items()},
+                {"checks": [_check("routes found at only one of the two densities (all configurations)",
+                                   sum(v["differences"] for v in conv.values()), kind="self_convergence")]},
+                uncertainty={"kind": "truncation_bound", "value": 0.0,
+                             "basis": "route sets compared by length and heading to 1e-6"},
+                tolerance=EXACT),
+        finding("A route from this library is safe (or unsafe) to execute on a physical part or vehicle",
+                "machine_safety", None, {}),
+    ]
     return {"state": "completed", "fields": fields, "findings": findings}

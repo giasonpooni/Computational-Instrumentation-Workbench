@@ -359,59 +359,100 @@ def classify_winding(m: int, n: int) -> dict:
             "primitive_class": [m // g, n // g]}
 
 
-def trace_lattice_flow(m: int, n: int, start, max_time=Fraction(1)):
-    """Exact straight-line flow in lattice coordinates with direction (m, n).
+def trace_lattice_flow(m: int, n: int, start, max_time=Fraction(1), max_segments: int = 100000):
+    """Exact straight-line flow on R^2 / Z^2 in lattice coordinates, walked segment by segment.
 
-    Events are integer crossings of alpha or beta; a simultaneous crossing (a
-    lattice corner, a regular point of the torus) counts both. Returns the first
-    return time to the start point and the crossing counts up to it.
+    The start (strictly inside the unit cell) moves with velocity (m, n); each
+    segment runs to the next cell wall, where the coordinate wraps. A corner
+    pass counts as two crossings (both walls). A return is observed when the
+    start point lies on the current segment, found by an exact solve, so the
+    return times are measured from the flow rather than assumed. Returns every
+    return time in (0, max_time] and the crossings before the first return.
     """
     classify_winding(m, n)
-    a0, b0 = (exact(x) for x in start)
-    events = []
-    for coefficient, origin, axis in ((m, a0, "alpha"), (n, b0, "beta")):
-        if coefficient == 0:
-            continue
-        step = 1 if coefficient > 0 else -1
-        k = math.floor(origin) + 1 if step > 0 else math.ceil(origin) - 1
-        while True:
-            t = Fraction(k - origin) / coefficient
-            if t > max_time:
-                break
-            if t > 0:
-                events.append((t, axis))
-            k += step
-    events.sort()
-    g = math.gcd(m, n)
-    period = Fraction(1, g)
-    before = [e for e in events if e[0] <= period]
-    # Return to the start: m t and n t integral simultaneously, first at t = 1/gcd.
-    returned = all(((m * period).denominator == 1, (n * period).denominator == 1))
-    return {"period": period, "returned": returned, "crossings": len(before),
+    s = tuple(exact(x) for x in start)
+    s = (s[0] - math.floor(s[0]), s[1] - math.floor(s[1]))
+    if s[0] == 0 or s[1] == 0:
+        raise LatticeRefusal("START_ON_CELL_WALL", "Flow start must lie strictly inside the unit cell")
+    x, y = s
+    t = Fraction(0)
+    returns, events = [], []
+    for _ in range(max_segments):
+        if t >= max_time:
+            break
+        wall_a = (1 - x) / m if m > 0 else (x / -m if m < 0 else None)
+        wall_b = (1 - y) / n if n > 0 else (y / -n if n < 0 else None)
+        dt = min(w for w in (wall_a, wall_b) if w is not None)
+        # Does the segment pass through the start point? Solve along a coordinate that moves.
+        tau = (s[0] - x) / m if m else (s[1] - y) / n
+        if 0 < tau <= dt and x + m * tau == s[0] and y + n * tau == s[1] and t + tau <= max_time:
+            returns.append(t + tau)
+        x, y, t = x + m * dt, y + n * dt, t + dt
+        if wall_a == dt:
+            events.append((t, "alpha"))
+            x = Fraction(0) if m > 0 else Fraction(1)
+        if wall_b == dt:
+            events.append((t, "beta"))
+            y = Fraction(0) if n > 0 else Fraction(1)
+    else:
+        raise LatticeRefusal("FLOW_SEGMENT_LIMIT", "Flow exceeded its segment limit before max_time")
+    first = returns[0] if returns else None
+    before = [e for e in events if first is not None and e[0] < first]
+    return {"first_return": first, "return_times": returns, "returns": len(returns), "crossings": len(before),
             "alpha_crossings": sum(1 for e in before if e[1] == "alpha"),
-            "beta_crossings": sum(1 for e in before if e[1] == "beta")}
+            "beta_crossings": sum(1 for e in before if e[1] == "beta"),
+            "displacement_at_first_return": None if first is None else (m * first, n * first)}
 
 
 def intersection_count(v1, v2, p1=(Fraction(1, 7), Fraction(2, 11)), p2=(Fraction(3, 13), Fraction(5, 17))):
     """Exact count of transverse intersections of two closed geodesics (lattice coordinates).
 
-    Solves p1 + t v1 = p2 + s v2 + k for integer k with t, s in [0, 1).
+    Counts the solutions of p1 + t v1 = p2 + s v2 + k with integer k and
+    t, s in [0, 1): with r = p2 - p1 + k, t v1 - s v2 = r gives
+    t = (r_x v2_y - r_y v2_x) / det and s = (r_x v1_y - r_y v1_x) / det.
     """
+    solutions = intersection_solutions(v1, v2, p1, p2)
+    return len(solutions)
+
+
+def intersection_solutions(v1, v2, p1=(Fraction(1, 7), Fraction(2, 11)), p2=(Fraction(3, 13), Fraction(5, 17))):
+    """The (t, s, k) solutions counted by :func:`intersection_count`."""
     det = v1[0] * v2[1] - v1[1] * v2[0]
     if det == 0:
-        return 0
-    count = 0
+        return []
+    out = []
     span = abs(v1[0]) + abs(v1[1]) + abs(v2[0]) + abs(v2[1]) + 2
     dx, dy = p2[0] - p1[0], p2[1] - p1[1]
     for kx in range(-span, span + 1):
         for ky in range(-span, span + 1):
             rx, ry = dx + kx, dy + ky
-            # t v1 - s v2 = r
-            t = Fraction(rx * (-v2[1]) - ry * (-v2[0]), det)
-            s = Fraction(v1[0] * ry - v1[1] * rx, det)
+            t = Fraction(rx * v2[1] - ry * v2[0], det)
+            s = Fraction(rx * v1[1] - ry * v1[0], det)
             if 0 <= t < 1 and 0 <= s < 1:
-                count += 1
-    return count
+                out.append((t, s, (kx, ky)))
+    return out
+
+
+def box_lattice_count(form, radius_sq):
+    """Brute-force count of (m, n) with Q(m, n) <= radius_sq over a box proven to contain them.
+
+    Q = ((c n + b m)^2 + det m^2) / c >= det m^2 / c, and symmetrically
+    Q >= det n^2 / a, so |m| <= sqrt(R^2 c / det) and |n| <= sqrt(R^2 a / det).
+    Integer forms and radii only. Returns (all points including the origin,
+    primitive points).
+    """
+    a, b, c = form
+    d = det_form(form)
+    if not all(isinstance(x, int) for x in (a, b, c, radius_sq)):
+        raise LatticeRefusal("BOX_COUNT_NOT_INTEGER", "Box count needs an integer form and radius")
+    mmax, nmax = math.isqrt(radius_sq * c // d), math.isqrt(radius_sq * a // d)
+    total = primitive = 0
+    for m in range(-mmax, mmax + 1):
+        for n in range(-nmax, nmax + 1):
+            if a * m * m + 2 * b * m * n + c * n * n <= radius_sq:
+                total += 1
+                primitive += math.gcd(m, n) == 1
+    return total, primitive
 
 
 def return_distance(tau: complex, headings, length: float, s_min: float = 0.05):

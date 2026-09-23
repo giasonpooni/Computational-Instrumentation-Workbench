@@ -73,7 +73,8 @@ def verify_checkout(checkout) -> dict:
     try:
         identity = git_identity(Path(checkout))
     except (OSError, subprocess.CalledProcessError) as exc:
-        raise ProviderRefusal("FTR_CHECKOUT_UNREADABLE", f"Provider checkout is not a readable git repository: {exc}")
+        raise ProviderRefusal("FTR_CHECKOUT_UNREADABLE",
+                              f"Provider checkout is not a readable git repository: {exc}") from None
     if identity["revision"] != pin["revision"]:
         raise ProviderRefusal("FTR_REVISION_MISMATCH",
                               f"Provider revision {identity['revision']} differs from pin {pin['revision']}")
@@ -85,6 +86,48 @@ def verify_checkout(checkout) -> dict:
             "dirty": False}
 
 
+def _number(x) -> bool:
+    return type(x) in (int, float)
+
+
+def _integers(x, n) -> bool:
+    return isinstance(x, list) and len(x) == n and all(type(v) is int for v in x)
+
+
+def _numbers(x, n) -> bool:
+    return isinstance(x, list) and len(x) == n and all(_number(v) for v in x)
+
+
+def parse_output(stdout: str, request: dict) -> dict:
+    """Provider JSON with one well-formed row per requested case, or a refusal.
+
+    FTR_OUTPUT_UNREADABLE: not JSON, or a missing or mistyped field.
+    FTR_OUTPUT_INCOMPLETE: a different number of rows than were requested.
+    """
+    try:
+        data = json.loads(stdout)
+        str(data["python"]), str(data["numpy"])
+        rows = {key: data[key] for key in ("folds", "lengths", "traces", "areas")}
+        if not all(isinstance(value, list) for value in rows.values()):
+            raise TypeError("result sections must be lists")
+    except (ValueError, KeyError, TypeError) as exc:
+        raise ProviderRefusal("FTR_OUTPUT_UNREADABLE", f"Provider output is not the expected JSON: {exc}") from None
+    for key, value in rows.items():
+        if len(value) != len(request[key]):
+            raise ProviderRefusal("FTR_OUTPUT_INCOMPLETE",
+                                  f"Provider returned {len(value)} {key} for {len(request[key])} requested")
+    well_formed = (
+        all(isinstance(f, dict) and _integers(f.get("matrix"), 4) and _numbers(f.get("reduced"), 2)
+            and _integers(f.get("reduced_winding"), 2) and _numbers(f.get("length_pair"), 2)
+            and isinstance(f.get("word"), list) for f in rows["folds"])
+        and all(_number(x) for x in rows["lengths"]) and all(_number(x) for x in rows["areas"])
+        and all(isinstance(t, dict) and type(t.get("crossings")) is int and isinstance(t.get("closed"), bool)
+                for t in rows["traces"]))
+    if not well_formed:
+        raise ProviderRefusal("FTR_OUTPUT_UNREADABLE", "Provider output rows are missing fields or mistyped")
+    return data
+
+
 def run_ftr(checkout, interpreter, request: dict, timeout: float = 120.0) -> dict:
     """Execute the pinned provider on one request; returns its data and runtime identity."""
     identity = verify_checkout(checkout)
@@ -93,13 +136,16 @@ def run_ftr(checkout, interpreter, request: dict, timeout: float = 120.0) -> dic
         raise ProviderRefusal("FTR_INTERPRETER_MISSING", f"Provider interpreter {interpreter} does not exist")
     root = Path(checkout) / ftr_pin()["source_root"]
     try:
+        # -I ignores PYTHONUTF8, so the pipe encoding is fixed here.
         result = subprocess.run([str(interpreter), "-I", "-c", _BOOTSTRAP, str(root)], input=json.dumps(request),
-                                capture_output=True, text=True, timeout=timeout, check=False)
+                                capture_output=True, text=True, encoding="utf-8", errors="replace",
+                                timeout=timeout, check=False)
     except (OSError, subprocess.TimeoutExpired) as exc:
-        raise ProviderRefusal("FTR_EXECUTION_FAILED", f"Provider subprocess did not complete: {exc}")
+        raise ProviderRefusal("FTR_EXECUTION_FAILED", f"Provider subprocess did not complete: {exc}") from None
     if result.returncode != 0:
-        raise ProviderRefusal("FTR_EXECUTION_FAILED", result.stderr.strip()[-400:] or "provider exited nonzero")
-    data = json.loads(result.stdout)
+        raise ProviderRefusal("FTR_EXECUTION_FAILED",
+                              result.stderr.strip()[-400:] or "Provider exited with a nonzero status")
+    data = parse_output(result.stdout, request)
     after = verify_checkout(checkout)
     if after != identity:
         raise ProviderRefusal("FTR_CHANGED_DURING_EXECUTION", "Provider checkout changed during execution")
