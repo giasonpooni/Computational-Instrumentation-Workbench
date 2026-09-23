@@ -68,7 +68,12 @@ Rules that are never relaxed:
    artifacts or in the finding's value when they are stable.
 4. A finding that honestly records an unestablished computational claim in a
    completed task sets `expected_not_established=True`.
-5. Give every numerical finding a `tolerance={"abs": a, "rel": r}` for the
+5. Give every numerical finding an `uncertainty`: a number with a stated
+   meaning or an object such as `{"kind": "truncation_bound" |
+   "monte_carlo_95ci" | "roundoff" | "reference_error", "value": ...,
+   "basis": "..."}`. The report-level `uncertainty` answer summarizes; the
+   per-finding values feed the uncertainty-budget table (T159).
+6. Give every numerical finding a `tolerance={"abs": a, "rel": r}` for the
    regression gate. Values must be JSON (floats, lists, dicts, strings, bools).
    Choose tolerances that survive Linux/Windows and NumPy BLAS differences
    (typically `rel` 1e-6 for converged quantities; looser for orders/rates).

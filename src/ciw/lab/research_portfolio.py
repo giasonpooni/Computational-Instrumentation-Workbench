@@ -310,23 +310,29 @@ def uncertainty_budgets(ctx):
         return _no_prior(fields)
     rows = []
     for report in prior:
+        task_level = report["uncertainty"] if isinstance(report["uncertainty"], str) else json.dumps(report["uncertainty"])
         for record in report["findings"]:
             if isinstance(record["value"], (int, float)) and not isinstance(record["value"], bool):
+                declared = record.get("uncertainty")
                 rows.append({"task_id": report["task_id"], "claim": record["claim"], "value": record["value"],
-                             "unit": record.get("unit"), "uncertainty": record.get("uncertainty"),
-                             "evidence_status": record["evidence_status"]})
-    declared = sum(row["uncertainty"] is not None for row in rows)
+                             "unit": record.get("unit"), "uncertainty": declared,
+                             "source": "finding" if declared is not None else "task_statement_only",
+                             "task_uncertainty": task_level, "evidence_status": record["evidence_status"]})
+    declared = sum(row["source"] == "finding" for row in rows)
     _, retained = _recomputed(ctx, "uncertainty-budget.json", rows)
-    lines = ["| Task | Claim | Value | Unit | Uncertainty | Evidence |", "| --- | --- | --- | --- | --- | --- |"]
+    lines = ["| Task | Claim | Value | Unit | Uncertainty | Source | Evidence |", "| --- | --- | --- | --- | --- | --- | --- |"]
     for row in rows:
+        shown = row["uncertainty"] if row["source"] == "finding" else row["task_uncertainty"]
         lines.append(f"| {row['task_id']} | {row['claim']} | {row['value']:.6g} | {row['unit'] or ''} | "
-                     f"{json.dumps(row['uncertainty'])[:120] if row['uncertainty'] is not None else 'not declared'} | "
-                     f"`{row['evidence_status']}` |")
+                     f"{json.dumps(shown)[:120]} | {row['source']} | `{row['evidence_status']}` |")
     ctx.artifact_text("uncertainty-budget.md", "\n".join(lines) + "\n")
-    fields["numerical_result"] = f"{len(rows)} scalar numerical findings; {declared} declare an uncertainty, {len(rows) - declared} do not."
-    fields["uncertainty"] = "Exact aggregation of declared values; undeclared uncertainty is reported, not imputed."
-    findings = [finding("Scalar numerical findings with a declared uncertainty", "computational_pipeline", declared,
-                        {"checks": [retained]}, unit="findings", tolerance={"abs": 0, "rel": 0})]
+    fields["numerical_result"] = (f"{len(rows)} scalar numerical findings; {declared} declare a per-finding uncertainty, "
+                                  f"{len(rows) - declared} rely on their task's uncertainty statement only.")
+    fields["uncertainty"] = "Exact aggregation of declared values; undeclared per-finding uncertainty is reported, not imputed."
+    if rows and declared < len(rows):
+        fields["unresolved_assumptions"] = [f"{len(rows) - declared} scalar findings carry no per-finding uncertainty."]
+    findings = [finding("Scalar numerical findings with a declared per-finding uncertainty", "computational_pipeline",
+                        declared, {"checks": [retained]}, unit="findings", tolerance={"abs": 0, "rel": 0})]
     return {"state": "completed", "fields": fields, "findings": findings}
 
 
