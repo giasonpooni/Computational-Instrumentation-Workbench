@@ -331,7 +331,14 @@ The testbed is source-pinned in [`exchange-runtime.json`](../src/ciw/exchange-ru
 This bounded path has been exercised with actual acquisition/runtime builders
 and synthetic native-byte execution commitments. It is not a native observation
 adapter, an execution backend, independent verification, physical validation,
-a new covariance representation, or a session/viewport integration.
+a new covariance representation, or a session/viewport integration. The
+companion `ciw.instrument-exchange.v1` adapter accepts the typed source envelope
+after an exact SET binding, retains its bytes and producer artifact identities,
+and creates a native CIW session result with distinct operation, execution,
+result and numerical-result identities. It can save, reopen and replay through
+the shared session API; replay creates fresh execution/result identities and
+records `admission: not_performed`. This adapter remains read-only and does not
+authorize equipment or admit a physical claim.
 
 ## Bounded mathematical geometry
 

@@ -1,7 +1,7 @@
 # Computational Instrumentation Workbench in the instrumentation stack
 
 Notation Systems develops computational instrumentation and evidence infrastructure for industrial and cyber-physical systems.
-This component owns **operation, inspection and replay**. The [stack map](https://github.com/giasonpooni/Computational-Instrumentation-Workbench/blob/main/docs/STACK.md) locates all public components and distinguishes implemented paths from specifications and scaffolds.
+This component owns **operation, inspection and replay**. The [stack map](https://github.com/giasonpooni/Notation-Systems-Workbench/blob/main/docs/STACK.md) locates all public components and distinguishes implemented paths from specifications and scaffolds.
 
 ## Current boundary
 
@@ -34,7 +34,7 @@ Private customer state, deployment configuration and calibration knowledge are o
 
 ## Read-only exchange path
 
-CIW's [instrument-exchange inspector](https://github.com/giasonpooni/Computational-Instrumentation-Workbench/blob/main/docs/EXCHANGE.md)
+CIW's [instrument-exchange inspector](https://github.com/giasonpooni/Notation-Systems-Workbench/blob/main/docs/EXCHANGE.md)
 checks supported `notation.instrument.*.v1` acquisition/runtime artifacts with
 an explicitly pinned State Estimation Evaluation Testbed validator. It retains
 full or explicitly unknown covariance and reports content/reference checks.

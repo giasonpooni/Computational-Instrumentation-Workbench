@@ -38,6 +38,7 @@ jobs:
       - name: Exercise producers, pinned validator and read-only CLI
         env:
           CIW_SET_REPO: ${{ github.workspace }}/.exchange/set
+          CIW_SET_PINNED_REPO: ${{ github.workspace }}/.exchange/set
           CIW_ACQUISITION_REPO: ${{ github.workspace }}/.exchange/acquisition
           CIW_RUNTIME_REPO: ${{ github.workspace }}/.exchange/runtime
-        run: python -m pytest -q tests/test_exchange.py tests/test_exchange_integration.py
+        run: python -m pytest -q tests/test_exchange.py tests/test_exchange_integration.py tests/test_exchange_adapter.py

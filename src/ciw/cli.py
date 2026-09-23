@@ -248,6 +248,8 @@ def parser() -> argparse.ArgumentParser:
     server.add_argument("--schematic-companions-root", type=Path, help="Bind pinned sra/jspt/plsr directories for selected schematic companion calls")
     server.add_argument("--construction-repo", type=Path, help="Bind pinned CSE quantity conditioning and ledger replay")
     server.add_argument("--acquisition-repo", type=Path, help="Bind pinned PPDA and its scout gitlink for retained dataset acquisition")
+    server.add_argument("--exchange-set-repo", type=Path,
+                        help="Bind the exact State Estimation Evaluation Testbed checkout for typed exchange adaptation")
     server.add_argument("--acquired-stream-stack-root", type=Path,
                         help="Bind pinned ppda/tbrt/mcur/stfe/gsie/set/oit/fdir for acquired calibrated windows and residual monitoring")
     server.add_argument("--measurement-chain-stack-root", type=Path,
@@ -504,6 +506,8 @@ def main(argv: list[str] | None = None) -> int:
                 session.workbench.bind_workflow("bim-quantity", {"cse": args.construction_repo})
             if args.acquisition_repo is not None:
                 session.workbench.bind_workflow("acquired-dataset", {"ppda": args.acquisition_repo})
+            if args.exchange_set_repo is not None:
+                session.workbench.bind_workflow("instrument-exchange", {"set": args.exchange_set_repo})
             if args.acquired_stream_stack_root is not None:
                 root = args.acquired_stream_stack_root
                 from .calibrated_window import ROLES as WINDOW_ROLES

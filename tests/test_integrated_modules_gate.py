@@ -141,7 +141,7 @@ def test_restore_retains_modules_without_executing_or_binding_providers(retained
     session, bundles, _, geographic, spatial, workspace = retained
     restored = Session.from_workspace(workspace, tmp_path)
     assert restored.workbench.serialize() == session.workbench.serialize()
-    assert {o["operation_id"] for o in restored.workbench.describe_operations() if o["available"]} == {"ciw.energy-accuracy.v1"}
+    assert {o["operation_id"] for o in restored.workbench.describe_operations() if o["available"]} == {"ciw.energy-accuracy.v1", "ciw.encoder-position.v1", "ciw.thermal-observer.v1"}
     assert call(restored, "spatial.inspect", {"source_id": geographic["source_id"]}) == spatial
     for original, _ in bundles.values():
         call(restored, "bundle.replay", {"bundle_id": original["bundle_digest"]}, error=True)

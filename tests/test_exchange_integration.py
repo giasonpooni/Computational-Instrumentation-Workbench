@@ -14,6 +14,8 @@ import sys
 
 import pytest
 
+from ciw import exchange_adapter
+
 
 ROOT = Path(__file__).resolve().parents[1]
 PRODUCE = r'''
@@ -107,6 +109,22 @@ def test_actual_producer_cli_roundtrip_preserves_claim_boundaries(tmp_path, cova
     for item in report["artifacts"][:2]:
         assert item["artifact"]["covariance"]["status"] == covariance_status
         assert item["covariance_validation"]["effective_rank"] == (None if covariance_status == "unknown" else 2)
+    # The same typed producer envelope must cross the native CIW adapter
+    # without changing producer identities or upgrading its claim boundary.
+    typed_source = exchange_adapter.canonical({
+        "schema": exchange_adapter.SOURCE_SCHEMA,
+        "producer": {"name": "ppda-scr-fixture", "revision": "ci-fixture-1",
+                      "operation_ids": ["bridge.instrumentation.observation_batch_v1",
+                                         "execution.instrumentation"]},
+        "artifacts": artifacts,
+    })
+    native = exchange_adapter.create_session(typed_source, {"set": environment["CIW_SET_REPO"]})
+    assert exchange_adapter._validate(native) == typed_source
+    assert native["authority"] == {"may_authorize": False, "state_admission": "not_performed",
+                                    "physical_validation": "not_established"}
+    assert native["steps"][0]["result"]["producer_artifact_ids"] == [
+        artifact["batch_id"] if index == 0 else artifact["result_id"] if index == 1 else artifact["verification_id"]
+        for index, artifact in enumerate(artifacts)]
     assert sorted(tmp_path.iterdir()) == sorted(paths)
     # A changed interpretation cannot retain the previous result content ID.
     artifacts[1]["components"][0]["value"] += 1

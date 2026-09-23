@@ -2,7 +2,7 @@
 
 Part of **Notation Systems' computational instrumentation and evidence infrastructure** for industrial and cyber-physical systems.
 
-[Stack map](https://github.com/giasonpooni/Computational-Instrumentation-Workbench/blob/main/docs/STACK.md) · [Component role and interfaces](docs/STACK_ROLE.md)
+[Stack map](https://github.com/giasonpooni/Notation-Systems-Workbench/blob/main/docs/STACK.md) · [Component role and interfaces](docs/STACK_ROLE.md)
 
 **Notation Systems Workbench** — a programmable scientific authoring and
 execution environment, with live instrumentation, for engineers and
@@ -23,8 +23,13 @@ use an instrument, modify its equations and assumptions, or create a new one.
 **Status:** an executable terminal-first Python prototype with an optional
 Godot desktop and the integrations catalogued below. The broader authoring
 workspace and Julia-centred scientific core described here are development
-directions. JuliaControl, JuMP, ModelingToolkit, a general machine-manifest
+directions. JuliaControl, JuMP, ModelingToolkit, a general project-graph
 compiler, an MCP adapter and FPGA deployment are not yet integrated operations.
+The provider-free [contract foundations](docs/CONTRACT_FOUNDATIONS.md) cover
+typed machine manifests, project dependency history and an independent thermal
+observer reference. The thermal observer and evidence-bound machine manifest are
+now registered as provider-free CIW operations; the project graph remains
+outside the shared operation/execution/result path until its adapter is defined.
 
 **License:** GNU Affero General Public License version 3 only
 (`AGPL-3.0-only`). Copyright (c) 2026 Notation Systems. See [LICENSE](LICENSE).
@@ -210,7 +215,7 @@ separate decisions.
 
 ## What runs today
 
-Twenty-two scientific workflow kinds share one local session for sources,
+Twenty-four scientific workflow kinds share one local session for sources,
 declared models, compatible sensor fusion, instrument results and replay
 evidence. Each scientific provider retains ownership of its calculations.
 The workbench supplies a common catalog, explicit operation requests, retained
@@ -293,18 +298,19 @@ explicit replay creates new execution/result identities.
 The checked-in examples are synthetic; the energy capture command records
 actual supported GPU counters. Successful computation, content integrity
 and matching replay digests do not establish physical validity or calibration
-traceability. The Workbench tab presents twenty-two shared scientific workflows;
+traceability. The Workbench tab presents twenty-five shared scientific workflows;
 other external integrations expose terminal and JSON records as described below.
 
 ## Next integrated milestones
 
-1. **Typed project and machine interfaces.** Define model/measurement artifacts,
-   plugin capabilities and execution lifecycle. Bind one machine family from
-   evidence and refuse ambiguous signal meanings; keep commissioning read-only.
-2. **One Julia model and estimation experiment.** Pin the Julia environment,
-   exercise the SCR bridge against an independent reference, then share a small
-   plant-and-sensor model across replay, observer comparison and a constrained
-   measurement-selection problem. Keep Python cross-checks.
+1. **Bind the project graph.** Register the language-neutral project model
+   through shared operation/execution/result records with save/reopen/replay and
+   dependency-invalidation tests. The machine-manifest operation already binds
+   one evidence-backed encoder family and keeps commissioning read-only.
+2. **Cross-check the thermal operation in Julia.** Instantiate and pin the Julia
+   environment, exercise the worker against the independent Python reference,
+   and retain explicit provider identity, refusal and replay records. Keep the
+   provider-free operation available when Julia is absent.
 3. **A challenged physical claim.** Record a small thermal experiment, withhold
    an independent reference sensor, compare estimators on separate runs, and
    test dropouts and changed cooling. Retain raw data, calibration, uncertainty,
@@ -352,7 +358,7 @@ an installed-wheel replay/contract gate and an explicit CUDA/NVML hardware gate;
 synthetic CPU CI is never reported as physical measurement. Local hardware,
 live-session replay, offline restore and Godot projections were exercised for
 the energy increment on **2026-09-23**.
-[CI results](https://github.com/giasonpooni/Computational-Instrumentation-Workbench/actions)
+[CI results](https://github.com/giasonpooni/Notation-Systems-Workbench/actions)
 also cover installed packages, native Windows and container deployment,
 Godot synchronization and the existing scientific integrations.
 
@@ -378,7 +384,7 @@ establish physical validation or deployment readiness.
 | Jacobian Sensitivity Propagation Testbed (JSPT) | Integrated experimental covariance operation provider; pinned subprocess | Propagate a retained joint covariance through an explicitly declared Jacobian, aggregation, or coordinate map; retain source links and replay the operation | [Covariance setup and contract](docs/COVARIANCE.md), [catalogue entry](docs/INSTRUMENTS.md#covariance-provenance-and-jspt-operations) |
 | Parameterized Lyapunov Stability Runtime (PLSR; `ciw-plsr-adapter-v1`) | Integrated experimental terminal verification operation; optional `plsr` extra, Python 3.12+ | Import a declared model, evaluate an explicit sample, inspect a retained run, replay with digest comparison | [Setup, commands and specifications](docs/PLSR.md), [catalogue entry](docs/INSTRUMENTS.md#parameterized-lyapunov-stability-runtime-plsr) |
 | Geometric Telemetry Engine (GTE; `gte.project-circle.v1`) | Integrated experimental geometric reconciliation operation; pinned subprocess | Retain raw 2D telemetry, project a declared circle candidate, transport full joint covariance to local tangent coordinates, preserve residuals, inspect and replay the shared investigation | [Setup, commands and specifications](docs/GTE.md), [catalogue entry](docs/INSTRUMENTS.md#geometric-telemetry-engine-gte) |
-| Instrument-exchange inspector (`ciw-exchange-inspector.v1`) | Experimental read-only terminal conformance path; not a measurement or execution adapter | Inspect acquisition/runtime exchange artifacts using the pinned State Estimation Evaluation Testbed validator; preserve full covariance and distinguish supplied links from authenticated provenance | [Setup, commands and limits](docs/EXCHANGE.md), [catalogue entry](docs/INSTRUMENTS.md#instrument-exchange-inspection) |
+| Instrument exchange inspector and typed adapter (`ciw-exchange-inspector.v1`, `ciw.instrument-exchange.v1`) | Read-only exchange conformance plus a bounded native CIW session adapter; no admission, physical validation or authorization | Inspect producer artifacts with the pinned State Estimation Evaluation Testbed validator, retain the exact typed source envelope, assign separate operation/execution/result identities, and save/reopen/replay with a stable numerical projection | [Setup, commands, replay contract and limits](docs/EXCHANGE.md), [catalogue entry](docs/INSTRUMENTS.md#instrument-exchange-inspection) |
 | Retained scalar telemetry (`ciw.telemetry-session.v1`) | Pinned PPDA → STFE → GSIE → SET operation script; optional CBSR receipt | Retain exact source bytes, declared full temporal covariance, identity clock/frame mappings and model/prior; compute causal window mean and estimate; reexecute and compare numerical content with fresh identities | [Commands, contracts, pins and limits](docs/TELEMETRY.md) |
 | Calibrated observable process experiment (`ciw.calibrated-observable-session.v1`) | Pinned FSRT, TBR, MCUR, OIT, GSIE, CBSR, FDIR and SET operation graph | Align two raw channels, apply declared calibration, gate estimation on observability, reconcile total mass and assess retained residuals; inspect and replay with fresh occurrence identities | [Commands, analytic result, refusal cases and pins](docs/CALIBRATED_OBSERVABLE.md) |
 | Identified next observation (`ciw.identified-design-session.v1`) | Extends the calibrated session with pinned SIDT, OIT, GSIE, EDSPT and YWIR; SET exchange conformance | Replay the upstream experiment, identify a declared model, gate candidate observability, predict conditional state uncertainty, rank affordable observations and record separate token advice | [Commands, uncertainty scope, analytic oracle and pins](docs/IDENTIFIED_DESIGN.md) |
@@ -397,13 +403,15 @@ establish physical validation or deployment readiness.
 | SCR/SP1 registered heat proof (`ciw.proved-heat.v1`) | Bounded proof operation; requires the pinned Linux host and registered guest | Native integer computation, real proof production, full-ELF verification, retained proof bytes, fresh replay and explicit retained-proof reverification | [Setup, claim and native gate](docs/PROVED_HEAT.md) |
 | Geometry providers (`ciw.covariance-geometry.v1`, `ciw.mesh-path.v1`, `ciw.translation-flow.v1`) | Bounded native SPD geometry, mesh-edge paths and square-tiled dynamics | Exact native requests/results, numerical evidence, fresh replay, explicit partial-flow states and provider-free inspection | [Profiles and shared session](docs/GEOMETRY_RESEARCH.md) |
 | Variational free-energy sensor fusion (`ciw.variational-free-energy.v1`) | Synthetic CSG → GSIE → PLSR composition with a bounded Gaussian variational kernel | Exact posterior comparison, mean/covariance iteration, normalized KL gap, held-out prediction, empirical coverage, stable/unstable iteration assessment and fresh replay | [Mathematics, six cases and operating guide](docs/VARIATIONAL_FREE_ENERGY.md) |
+| Thermal observer reference (`ciw.thermal-observer.v1`) | Provider-free two-capacity Python reference with explicit state/input/sensor ordering and dropout handling | Bounded observer and sensor selection, full result/provenance identities, read-only authority, save/reopen and fresh replay; Julia parity remains pending | [Contract foundations and lifecycle](docs/CONTRACT_FOUNDATIONS.md) |
+| Evidence-bound machine manifest (`ciw.encoder-position.v1`) | Provider-free encoder/gearbox/leadscrew reference compiled from a retained evidence bundle and challenge report | Deterministic position and covariance evaluation with separate operation, execution, result and numerical identities; save/reopen and fresh replay; physical calibration, state admission and actuation remain unperformed | [Contract foundations and lifecycle](docs/CONTRACT_FOUNDATIONS.md) |
 | GPU energy to accuracy (`ciw.energy-accuracy.v1`) | Actual NVML counter capture and bounded CUDA Gaussian iteration; built-in offline analysis | Raw timestamped readings, independent posterior accuracy, separate startup/warmed phases, background-inclusive GPU joules, retained replay | [Measurement boundary and operating guide](docs/ENERGY_ACCURACY.md) |
 | Flat Torus Geodesic Reference (`ciw.flat-torus-reference.v1`) | Pinned native flat-lattice reference in the shared session | Retain winding, normalized trajectory, geometry digest, replay and independent analytic checks | [Setup and scope](docs/GEODESIC_REFERENCES.md) |
 | Curved Surface Geodesic Sensitivity (`ciw.curved-path-transfer.v1`) | Pinned native constant-curvature Jacobi transfer in the shared session | Retain transfer samples, separation, declared covariance and independent reference checks | [Setup and scope](docs/GEODESIC_REFERENCES.md) |
 
 The [integration coverage matrix](docs/INTEGRATION_COVERAGE.md) distinguishes
 executable paths, conformance coverage, and the next connections between
-existing instruments. The shared session connects the twenty-two workflow kinds
+existing instruments. The shared session connects the twenty-five workflow kinds
 to a common source, operation and result history. New scientific paths retain
 original, replay and adversarial evidence. The matrix distinguishes independent
 ICRH profiles from CIW-only checks and pending conformance work.
