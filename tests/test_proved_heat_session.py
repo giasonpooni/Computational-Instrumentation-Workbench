@@ -165,6 +165,10 @@ def test_native_proved_heat_shared_session(native_retained, tmp_path, monkeypatc
         assert data["native"]["values"] == [0, 65, 92, 65, 0]
         assert data["verifier"]["outcome"] == "verified"
         assert data["verifier"]["backend"] == "sp1-cpu v6.1.0"
+        memory = data["timings"]["memory"]
+        assert memory["scope"] == "max_waited_child_peak_rss" and memory["unit"] == "byte"
+        if os.sys.platform == "linux":
+            assert memory["status"] == "measured" and memory["bytes"] > 0
         assert bundle["verification"]["trust_scope"] == TRUST_SCOPE
     assert original["steps"][0]["numerical_result_id"] == fresh["steps"][0]["numerical_result_id"]
     assert original["steps"][0]["execution_id"] != fresh["steps"][0]["execution_id"]
@@ -226,6 +230,9 @@ def test_native_retained_proof_can_be_reverified_without_reexecution(native_reta
     assert main(command) == 2  # Previous verification occurrence cannot be overwritten.
     assert report["subject_ref"] == original["bundle_digest"]
     assert report["proof_identity"] == original["verification"]["proof_identity"]
+    assert report["verifier_runtime_digest"] == digest(report["verifier_runtimes"])
+    if os.sys.platform == "linux":
+        assert report["memory"]["status"] == "measured" and report["memory"]["bytes"] > 0
     assert report["verification_operation_id"] != original["verification"]["verification_operation_id"]
     destination = os.environ.get("CIW_PROVED_HEAT_FIXTURE_DIR")
     if destination:

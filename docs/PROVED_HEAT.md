@@ -114,9 +114,12 @@ python -m ciw proof verify results/original.json \
   --output results/fresh-verification.json
 ```
 
-This requires the retained runtime identities, derives the verifier from the
-registered ELF, and writes a separately identified report linked to the original
-bundle. Existing output files are refused. No supplied verification-key artifact
+This binds a trusted verifier host with the same pinned SCR source, registered
+guest and backend contract, derives its key from that ELF, and writes a separately
+identified report linked to the original bundle. Its actual `verifier_runtimes`
+and `verifier_runtime_digest` are recorded separately from the producer's runtime;
+another compatible host can verify the proof. Replay still requires the original
+runtime identities. Existing output files are refused. No supplied verification-key artifact
 is accepted. A successful command exits zero; malformed source, changed pins,
 missing artifacts, mismatched commitments and failed verification exit two.
 
@@ -140,6 +143,11 @@ explicit synthetic proof bytes only for structural/refusal tests; those fixtures
 are not cryptographic evidence. ICRH has no separate proved-heat profile yet.
 
 Stage durations distinguish native execution, SCR's combined prove-and-verify
-call, and additional verification. Peak memory is `not_measured`; runner memory
-availability is not a peak-prover measurement. Separate proving/verification
-timing and peak RSS measurement are required before increasing workload bounds.
+call, and additional verification. On Linux, `memory` records the largest waited
+child process's peak RSS in bytes (`scope: max_waited_child_peak_rss`), measured
+after the final verifier exits. It is not the aggregate process-tree peak or a
+prover-only measurement. Other platforms or unavailable measurements retain
+`status: not_measured` and `bytes: null`. This follows the Linux
+[`getrusage` definition](https://man7.org/linux/man-pages/man2/getrusage.2.html).
+Runner memory availability is recorded separately. Isolated proving time and
+aggregate peak memory still need characterization before increasing workload bounds.

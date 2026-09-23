@@ -7,6 +7,8 @@ import base64
 from copy import deepcopy
 from pathlib import Path
 import struct
+import sys
+from types import SimpleNamespace
 
 import pytest
 
@@ -58,7 +60,8 @@ def fake_data(value=None):
     return {"native": native, "proof": proof,
         "verifier": {"command": "verify", "outcome": "verified", "coverage": "program=true input=true output=true exit_code=true",
             "proof_identity": proof["identity"], "backend": module.BACKEND, "statement_program": native["program_identity"]},
-        "timings": {"native_seconds": 0.1, "prove_and_verify_seconds": 0.2, "reverify_seconds": 0.3, "memory": "not_measured"}}
+        "timings": {"native_seconds": 0.1, "prove_and_verify_seconds": 0.2, "reverify_seconds": 0.3,
+            "memory": deepcopy(module.UNMEASURED_MEMORY)}}
 
 
 def fake_bundle(raw=None):
@@ -210,12 +213,57 @@ def test_fresh_verification_dispatches_only_verify(monkeypatch):
     monkeypatch.setattr(workflow, "_adapters", lambda *_a: (None, fake_runtime(), {}))
     def invoke(value, bound, retained):
         calls.append(retained)
-        return {"verifier": retained["verifier"], "seconds": 0.4, "memory": "not_measured"}
+        return {"verifier": retained["verifier"], "seconds": 0.4, "memory": deepcopy(module.UNMEASURED_MEMORY)}
     monkeypatch.setattr(workflow, "_invoke", invoke)
     report = workflow.verify_session(bundle, {})
     assert calls == [bundle["steps"][0]["result"]["data"]]
     assert report["verification_operation_id"] != bundle["verification"]["verification_operation_id"]
     assert report["proof_identity"] == bundle["verification"]["proof_identity"]
+
+
+def test_fresh_verification_accepts_another_compatible_host_and_records_it(monkeypatch):
+    # A transport double tests binding policy only, not cryptographic acceptance.
+    bundle = fake_bundle()
+    original = deepcopy(bundle)
+    runtime = fake_runtime()
+    runtime.update(repository_root="/other-host/scr", python_executable="/other-host/python",
+                   python_sha256="d" * 64, python_version="3.13.1")
+    runtime["engine"]["sha256"] = "sha256:" + "e" * 64
+    runtime["prover"]["sha256"] = "sha256:" + "f" * 64
+    workflow = ProvedHeatWorkflow()
+    workflow._check_runtime(runtime)
+    calls = []
+    def bind(repositories, expected=None):
+        calls.append((repositories, expected))
+        assert expected is None, "Fresh verification must not require producer host equivalence"
+        return None, runtime, {}
+    def verify(value, bound, retained):
+        assert bound[1] == runtime
+        return {"verifier": retained["verifier"], "seconds": 0.4, "memory": deepcopy(module.UNMEASURED_MEMORY)}
+    monkeypatch.setattr(workflow, "_adapters", bind)
+    monkeypatch.setattr(workflow, "_invoke", verify)
+    report = workflow.verify_session(bundle, {"trusted_host": "other"})
+    assert calls == [({"trusted_host": "other"}, None)]
+    assert report["runtime_digest"] == digest(original["runtimes"])
+    assert report["verifier_runtimes"] == {"scr": runtime}
+    assert report["verifier_runtime_digest"] == digest({"scr": runtime})
+    assert report["verifier_runtime_digest"] != report["runtime_digest"]
+    assert report["subject_ref"] == original["bundle_digest"]
+    assert bundle == original
+    runtime["engine"]["sha256"] = "sha256:" + "0" * 64
+    assert report["verifier_runtime_digest"] == digest(report["verifier_runtimes"])
+
+
+def test_fresh_verification_still_refuses_an_unregistered_guest(tmp_path, monkeypatch):
+    paths = {"scr": tmp_path}
+    for role in module.BINARY_LIMITS:
+        path = tmp_path / role
+        path.write_bytes(b"NOT THE REGISTERED GUEST")
+        paths[role] = path
+    workflow = ProvedHeatWorkflow()
+    monkeypatch.setattr(workflow, "_invoke", lambda *_a, **_k: pytest.fail("Unregistered guest reached verification"))
+    with pytest.raises(ValueError, match="registered"):
+        workflow.verify_session(fake_bundle(), paths)
 
 
 def fake_replay(monkeypatch, original=None):
@@ -313,7 +361,89 @@ def test_fresh_verification_refuses_incomplete_or_detached_verifier_reports(monk
     def refuse(*_args, **_kwargs):
         verifier = deepcopy(bundle["steps"][0]["result"]["data"]["verifier"])
         verifier[field] = value
-        return {"verifier": verifier, "seconds": 0.4, "memory": "not_measured"}
+        return {"verifier": verifier, "seconds": 0.4, "memory": deepcopy(module.UNMEASURED_MEMORY)}
     monkeypatch.setattr(workflow, "_invoke", refuse)
     with pytest.raises(ValueError, match="Verifier"):
         workflow.verify_session(bundle, {})
+
+
+@pytest.mark.parametrize("field,value", [("status", "estimated"), ("unit", "KiB"), ("unit", "MB"),
+    ("scope", "prover_only"), ("scope", "concurrent_process_tree_peak"),
+    ("bytes", True), ("bytes", 0), ("bytes", -1024), ("bytes", 1.5),
+    ("bytes", 2**53), ("bytes", 1234), ("bytes", None)])
+def test_resealed_memory_cannot_change_scope_units_or_invent_measurements(field, value):
+    bundle = fake_bundle()
+    memory = {"status": "measured", "unit": "byte", "bytes": 8192, "scope": module.MEMORY_SCOPE}
+    memory[field] = value
+    bundle["steps"][0]["result"]["data"]["timings"]["memory"] = memory
+    reseal(bundle)
+    with pytest.raises(ValueError):
+        ProvedHeatWorkflow()._validate(bundle)
+
+
+def test_unmeasured_memory_must_not_have_a_byte_count():
+    with pytest.raises(ValueError, match="fabricated"):
+        module._memory({**module.UNMEASURED_MEMORY, "bytes": 8192})
+
+
+@pytest.mark.parametrize("count", [1024, 8192, (2**53 - 1) // 1024 * 1024])
+def test_valid_measured_memory_does_not_change_numerical_identity(count):
+    bundle = fake_bundle()
+    numerical = bundle["steps"][0]["numerical_result_id"]
+    bundle["steps"][0]["result"]["data"]["timings"]["memory"] = {
+        "status": "measured", "unit": "byte", "bytes": count, "scope": module.MEMORY_SCOPE}
+    reseal(bundle)
+    ProvedHeatWorkflow()._validate(bundle)
+    assert bundle["steps"][0]["numerical_result_id"] == numerical
+
+
+def test_linux_probe_reads_waited_children_and_converts_kib_to_bytes(monkeypatch):
+    # Exercise the exact standalone collector with a syscall double. This tests
+    # unit/scope conversion, not a claimed measurement of the native SP1 prover.
+    namespace, observed = {}, []
+    exec(module._MEMORY_PROBE, namespace)
+    def usage(who):
+        observed.append(who)
+        return SimpleNamespace(ru_maxrss=7168)
+    resource_double = SimpleNamespace(RUSAGE_CHILDREN=-1, getrusage=usage)
+    with monkeypatch.context() as patch:
+        patch.setattr(sys, "platform", "linux")
+        patch.setitem(sys.modules, "resource", resource_double)
+        result = namespace["child_memory"]()
+    assert observed == [-1]
+    assert result == {"status": "measured", "unit": "byte", "bytes": 7168 * 1024, "scope": module.MEMORY_SCOPE}
+    module._memory(result)
+
+
+@pytest.mark.parametrize("platform,peak,error", [("win32", 100, None), ("darwin", 100, None),
+    ("linux", 0, None), ("linux", -1, None), ("linux", True, None),
+    ("linux", 1.5, None), ("linux", 2**53, None), ("linux", None, OSError),
+    ("linux", None, AttributeError)])
+def test_memory_probe_marks_unavailable_or_inapplicable_measurement(monkeypatch, platform, peak, error):
+    namespace = {}
+    exec(module._MEMORY_PROBE, namespace)
+    def usage(_who):
+        if platform != "linux":
+            pytest.fail("Linux measurement must not be applied to another platform's units")
+        if error:
+            raise error("unavailable")
+        return SimpleNamespace(ru_maxrss=peak)
+    with monkeypatch.context() as patch:
+        patch.setattr(sys, "platform", platform)
+        patch.setitem(sys.modules, "resource", SimpleNamespace(RUSAGE_CHILDREN=-1, getrusage=usage))
+        result = namespace["child_memory"]()
+    assert result == module.UNMEASURED_MEMORY
+    module._memory(result)
+
+
+def test_fresh_verification_retains_its_own_memory_measurement(monkeypatch):
+    bundle = fake_bundle()
+    workflow = ProvedHeatWorkflow()
+    measured = {"status": "measured", "unit": "byte", "bytes": 2048, "scope": module.MEMORY_SCOPE}
+    monkeypatch.setattr(workflow, "_adapters", lambda *_a: (None, fake_runtime(), {}))
+    def verify(_value, _bound, retained):
+        return {"verifier": retained["verifier"], "seconds": 0.4, "memory": measured}
+    monkeypatch.setattr(workflow, "_invoke", verify)
+    report = workflow.verify_session(bundle, {})
+    assert report["memory"] == measured
+    assert bundle["steps"][0]["result"]["data"]["timings"]["memory"] == module.UNMEASURED_MEMORY

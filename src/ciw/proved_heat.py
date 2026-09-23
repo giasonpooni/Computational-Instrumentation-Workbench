@@ -38,6 +38,8 @@ POLICY = {**HEAT_POLICY, "proof_policy": "required_before_result"}
 VERIFY_SCHEMA = "ciw.proved-heat-verification.v1"
 REPLAY_VERIFY_SCHEMA = "ciw.proved-heat-replay-verification.v1"
 TRUST_SCOPE = "retained_runtime_report_requires_fresh_verification"
+MEMORY_SCOPE = "max_waited_child_peak_rss"
+UNMEASURED_MEMORY = {"status": "not_measured", "unit": "byte", "bytes": None, "scope": MEMORY_SCOPE}
 _DIGEST = r"sha256:[a-f0-9]{64}"
 
 
@@ -63,7 +65,27 @@ def _source(raw):
     return value
 
 
-_BOOTSTRAP = r'''
+_MEMORY_PROBE = r'''
+def child_memory():
+    # Linux getrusage(2): ru_maxrss for RUSAGE_CHILDREN is the largest
+    # waited-for child's peak RSS in KiB, not simultaneous process-tree RSS.
+    import sys
+    result = {'status':'not_measured', 'unit':'byte', 'bytes':None,
+              'scope':'max_waited_child_peak_rss'}
+    if sys.platform != 'linux':
+        return result
+    try:
+        import resource
+        peak = resource.getrusage(resource.RUSAGE_CHILDREN).ru_maxrss
+    except (ImportError, OSError, ValueError, AttributeError):
+        return result
+    if type(peak) is int and 0 < peak <= (2**53 - 1) // 1024:
+        result.update(status='measured', bytes=peak * 1024)
+    return result
+'''
+
+
+_BOOTSTRAP = _MEMORY_PROBE + r'''
 import base64, dataclasses, hashlib, json, struct, sys, time
 from pathlib import Path
 root, engine, host, guest, proof_path, action = sys.argv[1:7]
@@ -98,6 +120,7 @@ verifier = verify_existing_proof(native, spec, proof_path, host, guest)
 verify_seconds = time.perf_counter() - started
 if verifier.get('outcome') != 'verified':
     raise ValueError('Fresh registered guest verification did not succeed')
+memory = child_memory()
 if action == 'create':
     value = dataclasses.asdict(native)
     value['specification'] = {k:v.hex() for k,v in value['specification'].items()}
@@ -110,9 +133,9 @@ if action == 'create':
         'guest_sha256':'sha256:'+hashlib.sha256(guest.read_bytes()).hexdigest()},
         'verifier':verifier, 'timings':{'native_seconds':native_seconds,
             'prove_and_verify_seconds':prove_seconds, 'reverify_seconds':verify_seconds,
-            'memory':'not_measured'}}
+            'memory':memory}}
 else:
-    result = {'verifier':verifier, 'seconds':verify_seconds, 'memory':'not_measured'}
+    result = {'verifier':verifier, 'seconds':verify_seconds, 'memory':memory}
 print(json.dumps(result, sort_keys=True, separators=(',', ':'), ensure_ascii=False, allow_nan=False))
 '''
 
@@ -148,6 +171,21 @@ def _seconds(value):
         raise ValueError("Invalid measured monotonic stage duration")
 
 
+def _memory(value):
+    _keys(value, {"status", "unit", "bytes", "scope"})
+    if value["unit"] != "byte" or value["scope"] != MEMORY_SCOPE:
+        raise ValueError("Memory must retain the largest waited-child peak RSS scope and byte units")
+    if value["status"] == "not_measured":
+        if value["bytes"] is not None:
+            raise ValueError("Unmeasured memory cannot carry a fabricated byte count")
+    elif value["status"] == "measured":
+        count = value["bytes"]
+        if type(count) is not int or not 1 <= count <= 2**53 - 1 or count % 1024:
+            raise ValueError("Measured Linux peak RSS must be a bounded positive integer number of KiB converted to bytes")
+    else:
+        raise ValueError("Unknown memory measurement status")
+
+
 def _data(source, value):
     _keys(value, {"native", "proof", "verifier", "timings"})
     _check_data("numerical-heat", source, value["native"])
@@ -156,8 +194,7 @@ def _data(source, value):
     _keys(value["timings"], {"native_seconds", "prove_and_verify_seconds", "reverify_seconds", "memory"})
     for key in ("native_seconds", "prove_and_verify_seconds", "reverify_seconds"):
         _seconds(value["timings"][key])
-    if value["timings"]["memory"] != "not_measured":
-        raise ValueError("This bridge does not measure peak memory")
+    _memory(value["timings"]["memory"])
 
 
 def _identify(report):
@@ -350,17 +387,21 @@ class ProvedHeatWorkflow(DeclaredWorkflow):
     def verify_session(self, bundle, repositories):
         """Fresh cryptographic verification of retained bytes; no native rerun or proof production."""
         source = self._source(self._validate(bundle))
-        bound = self._adapters(repositories, bundle["runtimes"])
+        # Verification needs the approved source, guest and backend, but a
+        # compatible verifier need not reproduce the producer's host binaries.
+        # Replay retains the stronger original-runtime equivalence requirement.
+        bound = self._adapters(repositories)
         data = bundle["steps"][0]["result"]["data"]
         answer = self._invoke(source, bound, retained=data)
         _keys(answer, {"verifier", "seconds", "memory"})
         _verifier(answer["verifier"], data["native"], data["proof"])
         _seconds(answer["seconds"])
-        if answer["memory"] != "not_measured":
-            raise ValueError("Fresh verification cannot invent peak memory")
+        _memory(answer["memory"])
         report = _verification(bundle, "verification-" + uuid.uuid4().hex)
         report.pop("verification_id")
         report["seconds"], report["memory"] = answer["seconds"], answer["memory"]
+        report["verifier_runtimes"] = {"scr": deepcopy(bound[1])}
+        report["verifier_runtime_digest"] = digest(report["verifier_runtimes"])
         return _identify(report)
 
     @staticmethod
