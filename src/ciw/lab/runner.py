@@ -16,6 +16,7 @@ from pathlib import Path
 import platform
 import shutil
 import subprocess
+import time
 import traceback
 import xml.etree.ElementTree as ET
 
@@ -227,8 +228,12 @@ def run_task(task, implementation, ctx: Context, junit: dict, import_error: str 
     return validate_report(report)
 
 
-def run_queue(output_dir, task_ids=None, providers=None, junit_path=None) -> dict:
-    """Run selected tasks (default: all) in queue order and retain their reports."""
+def run_queue(output_dir, task_ids=None, providers=None, junit_path=None, budget_seconds=None) -> dict:
+    """Run selected tasks (default: all) in queue order and retain their reports.
+
+    Elapsed times are written to ``run-log.json`` beside the reports, never into
+    them: timing is not reproducible and is not a finding.
+    """
     output_dir = Path(output_dir)
     queue = load_queue()
     implementations, errors = load_implementations()
@@ -238,7 +243,7 @@ def run_queue(output_dir, task_ids=None, providers=None, junit_path=None) -> dic
         raise ValueError(f"Unknown lab task identities: {sorted(unknown)}")
     junit = read_junit(Path(junit_path)) if junit_path else {}
     ctx = Context(output_dir, providers)
-    reports = []
+    reports, timings = [], []
     (output_dir / "reports").mkdir(parents=True, exist_ok=True)
     section_modules = {s["section"]: s["key"] for s in queue["sections"]}
     for item in queue["tasks"]:
@@ -250,14 +255,26 @@ def run_queue(output_dir, task_ids=None, providers=None, junit_path=None) -> dic
         prefix = section_modules[item["section"]].replace("-", "_")
         error = "; ".join(f"{name}: {message}" for name, message in sorted(errors.items())
                           if name.startswith(prefix)) or None
+        started = time.perf_counter()
         report = run_task(item, implementations.get(item["id"]), ctx, junit, error)
+        timings.append({"task_id": item["id"], "state": report["state"],
+                        "seconds": round(time.perf_counter() - started, 3)})
         (output_dir / "reports" / f"{item['id']}.json").write_text(dumps(report), encoding="utf-8")
         reports.append(report)
     if selected is None:
         write_index(output_dir, queue)
-    return {"output_dir": str(output_dir), "tasks": len(reports),
-            "states": {s: sum(r["state"] == s for r in reports) for s in ("completed", "partial", "deferred", "blocked")},
-            "labels": _label_totals(reports)}
+    total = round(sum(t["seconds"] for t in timings), 3)
+    over = [t for t in timings if budget_seconds is not None and t["seconds"] > budget_seconds]
+    (output_dir / "run-log.json").write_text(dumps({
+        "schema": "ciw.lab-run-log.v1", "note": "Elapsed wall-clock seconds; not reproducible and not findings",
+        "total_seconds": total, "budget_seconds": budget_seconds, "tasks": timings}), encoding="utf-8")
+    summary = {"output_dir": str(output_dir), "tasks": len(reports),
+               "states": {s: sum(r["state"] == s for r in reports) for s in ("completed", "partial", "deferred", "blocked")},
+               "labels": _label_totals(reports), "total_seconds": total,
+               "slowest": sorted(timings, key=lambda t: -t["seconds"])[:5]}
+    if budget_seconds is not None:
+        summary["over_budget"] = over
+    return summary
 
 
 def _label_totals(reports):
@@ -346,3 +363,14 @@ def compare(retained_dir, fresh_dir) -> dict:
 
 
 REPORT_QUESTIONS = [label for _, label in FIELDS]
+
+
+def schema_errors(report) -> list:
+    """Structural errors against task-report.schema.json (requires jsonschema)."""
+    from importlib import resources
+    import jsonschema
+
+    schema = json.loads(resources.files("ciw.lab").joinpath("task-report.schema.json").read_text(encoding="utf-8"))
+    validator = jsonschema.Draft202012Validator(schema)
+    return sorted(f"{'/'.join(map(str, error.absolute_path)) or '<root>'}: {error.message}"
+                  for error in validator.iter_errors(report))

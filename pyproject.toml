@@ -14,7 +14,7 @@ dependencies = ["numpy==2.4.3", "websockets==16.0"]
 [project.optional-dependencies]
 dev = ["pytest==9.0.2"]
 bench-models = ["jsonschema==4.26.0"]
-lab = ["scipy==1.16.2", "sympy==1.14.0", "mpmath==1.3.0"]
+lab = ["scipy==1.16.2", "sympy==1.14.0", "mpmath==1.3.0", "jsonschema==4.26.0"]
 plsr = ["parameterized-lyapunov-stability-runtime @ git+https://github.com/giasonpooni/Parameterized-Lyapunov-Stability-Runtime.git@19ea6967060166ba09db6cd4563bd87bd6b3d196"]
 
 [project.scripts]
@@ -25,7 +25,7 @@ where = ["src"]
 
 [tool.setuptools.package-data]
 ciw = ["plsr-runtime.json", "adapter-runtimes.json", "exchange-runtime.json", "telemetry-runtimes.json", "calibrated-observable-runtimes.json", "identified-design-runtimes.json", "esm-runtime.json", "calibrated-window-runtimes.json"]
-"ciw.lab" = ["queue.json"]
+"ciw.lab" = ["queue.json", "task-report.schema.json"]
 
 [tool.pytest.ini_options]
 testpaths = ["tests"]

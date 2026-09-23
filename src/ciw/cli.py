@@ -421,6 +421,8 @@ def parser() -> argparse.ArgumentParser:
     lab_actions = lab.add_subparsers(dest="lab_command", required=True)
     lab_queue = lab_actions.add_parser("queue", help="List queued tasks with retained state and evidence status")
     lab_queue.add_argument("--retained", type=Path, help="Directory of retained lab reports")
+    lab_queue.add_argument("--section", help="Only tasks of this section key, e.g. geodesic-jacobi")
+    lab_queue.add_argument("--state", choices=("completed", "partial", "deferred", "blocked", "not_run"))
     lab_run = lab_actions.add_parser("run", help="Execute queued tasks and retain labelled reports; never acquires hardware data")
     lab_run.add_argument("tasks", nargs="*", help="Task identities such as T003; omit with --all")
     lab_run.add_argument("--all", action="store_true", help="Run every queued task and rewrite the report index")
@@ -428,14 +430,30 @@ def parser() -> argparse.ArgumentParser:
     lab_run.add_argument("--provider", action="append", default=[], metavar="ROLE=PATH",
                          help="Bind a pinned provider checkout or interpreter for provider-backed tasks")
     lab_run.add_argument("--junit", type=Path, help="pytest JUnit XML used to report regression-test outcomes")
+    lab_run.add_argument("--budget-seconds", type=float, help="List tasks whose elapsed time exceeds this budget")
     lab_report = lab_actions.add_parser("report", help="Print one retained task report")
     lab_report.add_argument("task")
     lab_report.add_argument("--retained", type=Path, required=True)
     lab_report.add_argument("--json", action="store_true")
+    lab_report.add_argument("--schema", action="store_true", help="Also check the structural JSON Schema (needs jsonschema)")
+    lab_next = lab_actions.add_parser("next", help="Rank the next experiments from retained state; runs nothing")
+    lab_next.add_argument("--retained", type=Path)
+    lab_next.add_argument("--provider", action="append", default=[], metavar="ROLE=PATH")
+    lab_next.add_argument("--limit", type=int, default=10)
     lab_verify = lab_actions.add_parser("verify", help="Compare regenerated reports with retained ones")
     lab_verify.add_argument("--retained", type=Path, required=True)
     lab_verify.add_argument("--fresh", type=Path, required=True)
     return root
+
+
+def _lab_providers(bindings: list[str]) -> dict:
+    providers = {}
+    for binding in bindings:
+        role, separator, path = binding.partition("=")
+        if not separator or not role or not path:
+            raise ValueError("Provider bindings use ROLE=PATH")
+        providers[role] = Path(path)
+    return providers
 
 
 def main(argv: list[str] | None = None) -> int:
@@ -703,26 +721,29 @@ def main(argv: list[str] | None = None) -> int:
                     retained = reports.get(item["id"])
                     state = retained["state"] if retained else "not_run"
                     label = retained["evidence_status"]["primary"] if retained else "not_established"
+                    if (args.section and item["section_key"] != args.section) or (args.state and state != args.state):
+                        continue
                     print(f"{item['id']}  {state:<9}  {label:<22}  {item['title']}")
             elif args.lab_command == "run":
                 if bool(args.all) == bool(args.tasks):
                     raise ValueError("Name task identities or pass --all, not both")
-                providers = {}
-                for binding in args.provider:
-                    role, separator, path = binding.partition("=")
-                    if not separator or not role or not path:
-                        raise ValueError("Provider bindings use ROLE=PATH")
-                    providers[role] = Path(path)
                 print_json(runner.run_queue(args.output_dir, None if args.all else args.tasks,
-                                            providers, args.junit))
+                                            _lab_providers(args.provider), args.junit, args.budget_seconds))
             elif args.lab_command == "report":
                 path = args.retained / "reports" / f"{args.task}.json"
                 from .lab.report import render_markdown, validate_report
                 report = validate_report(json.loads(path.read_text(encoding="utf-8")))
+                if args.schema:
+                    problems = runner.schema_errors(report)
+                    if problems:
+                        raise ValueError("Report violates task-report.schema.json: " + "; ".join(problems[:5]))
                 if args.json:
                     print_json(report)
                 else:
                     print(render_markdown(report), end="")
+            elif args.lab_command == "next":
+                from .lab.planner import next_tasks
+                print_json(next_tasks(args.retained, _lab_providers(args.provider), args.limit))
             else:
                 result = runner.compare(args.retained, args.fresh)
                 print_json(result)

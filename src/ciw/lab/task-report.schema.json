@@ -1,0 +1,144 @@
+{
+ "$schema": "https://json-schema.org/draft/2020-12/schema",
+ "$id": "https://notationsystems.org/schemas/ciw.lab-task-report.v1.json",
+ "title": "ciw.lab-task-report.v1",
+ "description": "Structural contract for a computational-experimentalist task report. Semantic rules (labels recomputed from bases, derived physical status, report identity) are enforced by ciw.lab.report.validate_report; passing this schema alone does not make a report valid.",
+ "type": "object",
+ "additionalProperties": false,
+ "required": ["schema", "task_id", "number", "section", "title", "state", "hypothesis", "mathematical_model",
+              "input_data", "observation_model", "expected_invariant", "experiment", "changed_files",
+              "generated_artifacts", "numerical_result", "uncertainty", "evidence_status",
+              "provider_runtime_identity", "failure_modes_checked", "tests_passed", "tests_skipped",
+              "physical_validation_status", "unresolved_assumptions", "recommended_next_task", "findings",
+              "report_id"],
+ "properties": {
+  "schema": {"const": "ciw.lab-task-report.v1"},
+  "task_id": {"type": "string", "pattern": "^T[0-9]{3}$"},
+  "number": {"type": "integer", "minimum": 1},
+  "section": {"type": "string", "minLength": 1},
+  "title": {"type": "string", "minLength": 1},
+  "state": {"enum": ["completed", "partial", "deferred", "blocked"]},
+  "hypothesis": true,
+  "mathematical_model": true,
+  "input_data": true,
+  "observation_model": true,
+  "expected_invariant": true,
+  "experiment": true,
+  "changed_files": {"type": "array", "items": {"type": "string"}},
+  "generated_artifacts": {
+   "type": "array",
+   "items": {
+    "type": "object",
+    "additionalProperties": false,
+    "required": ["path", "sha256", "bytes"],
+    "properties": {
+     "path": {"type": "string", "pattern": "^artifacts/T[0-9]{3}/[^/\\\\]+$"},
+     "sha256": {"type": "string", "pattern": "^[0-9a-f]{64}$"},
+     "bytes": {"type": "integer", "minimum": 0}
+    }
+   }
+  },
+  "numerical_result": true,
+  "uncertainty": true,
+  "evidence_status": {
+   "type": "object",
+   "additionalProperties": false,
+   "required": ["primary", "counts"],
+   "properties": {
+    "primary": {"$ref": "#/$defs/label"},
+    "counts": {
+     "type": "object",
+     "additionalProperties": false,
+     "required": ["analytic", "synthetic", "numerically_verified", "provider_backed", "hardware_measured",
+                  "independently_verified", "not_established"],
+     "properties": {
+      "analytic": {"$ref": "#/$defs/count"},
+      "synthetic": {"$ref": "#/$defs/count"},
+      "numerically_verified": {"$ref": "#/$defs/count"},
+      "provider_backed": {"$ref": "#/$defs/count"},
+      "hardware_measured": {"$ref": "#/$defs/count"},
+      "independently_verified": {"$ref": "#/$defs/count"},
+      "not_established": {"$ref": "#/$defs/count"}
+     }
+    }
+   }
+  },
+  "provider_runtime_identity": {"type": "object"},
+  "failure_modes_checked": true,
+  "tests_passed": {"type": "array", "items": {"type": "string"}},
+  "tests_skipped": {"type": "array", "items": {"type": "string"}},
+  "tests_failed": {"type": "array", "items": {"type": "string"}},
+  "physical_validation_status": {
+   "type": "object",
+   "additionalProperties": false,
+   "required": ["status", "statement"],
+   "properties": {
+    "status": {"enum": ["not_established", "hardware_measured"]},
+    "statement": {"type": "string", "minLength": 1}
+   }
+  },
+  "unresolved_assumptions": true,
+  "recommended_next_task": true,
+  "findings": {"type": "array", "items": {"$ref": "#/$defs/finding"}},
+  "report_id": {"type": "string", "pattern": "^sha256:[0-9a-f]{64}$"}
+ },
+ "$defs": {
+  "label": {"enum": ["analytic", "synthetic", "numerically_verified", "provider_backed", "hardware_measured",
+                     "independently_verified", "not_established"]},
+  "count": {"type": "integer", "minimum": 0},
+  "domain": {"enum": ["mathematical", "numerical", "computational_pipeline", "provenance", "physical",
+                      "calibration", "sensor_performance", "machine_safety", "industrial_readiness",
+                      "customer_demand", "actuator_authority", "production_acceptance"]},
+  "finding": {
+   "type": "object",
+   "additionalProperties": false,
+   "required": ["claim", "domain", "value", "unit", "uncertainty", "basis", "evidence_status", "assigned_by"],
+   "properties": {
+    "claim": {"type": "string", "minLength": 1},
+    "domain": {"$ref": "#/$defs/domain"},
+    "value": true,
+    "unit": {"type": ["string", "null"]},
+    "uncertainty": true,
+    "basis": {
+     "type": "object",
+     "additionalProperties": false,
+     "properties": {
+      "derivation": {"type": "string", "minLength": 1},
+      "generator": {"type": "object", "required": ["name"]},
+      "checks": {"type": "array", "items": {"$ref": "#/$defs/check"}},
+      "provider": {"type": "object", "required": ["repository", "revision"]},
+      "independent_check": {
+       "allOf": [{"$ref": "#/$defs/check"},
+                 {"type": "object", "required": ["producer", "checker"]}]
+      },
+      "acquisition": {"type": "object",
+                      "required": ["device", "raw_sha256", "acquired_at", "calibration"]},
+      "inputs": true,
+      "notes": true
+     }
+    },
+    "evidence_status": {"$ref": "#/$defs/label"},
+    "assigned_by": {"const": "ciw.lab.evidence"},
+    "regression_tolerance": {
+     "type": "object",
+     "properties": {"abs": {"type": "number", "minimum": 0}, "rel": {"type": "number", "minimum": 0}}
+    },
+    "counterexample": {"type": "object", "required": ["statement"]},
+    "expected_not_established": {"const": true}
+   }
+  },
+  "check": {
+   "type": "object",
+   "required": ["reference_kind", "reference", "passed"],
+   "properties": {
+    "reference_kind": {"enum": ["analytic", "high_precision", "invariant", "self_convergence",
+                                "exact_arithmetic", "refusal"]},
+    "reference": {"type": "string", "minLength": 1},
+    "observed": true,
+    "tolerance": {"type": "number"},
+    "comparison": {"enum": ["abs_le", "le", "ge"]},
+    "passed": {"type": "boolean"}
+   }
+  }
+ }
+}
