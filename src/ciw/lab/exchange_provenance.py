@@ -172,13 +172,29 @@ def _mutations(ctx) -> dict:
     return ctx.memo("exchange-provenance.mutations", compute)
 
 
-def _blocked(fields: dict) -> dict:
+def _blocked(fields: dict, findings=()) -> dict:
+    """A blocked report still records the physical or authority claims it could never establish."""
     fields = dict(fields)
-    reason = ("Blocked: the bundled energy-accuracy fixture logs (examples/energy-accuracy/*.json) are not present "
-              "next to this source tree, so the offline workbench path cannot be exercised.")
+    reason = ("Blocked: the bundled energy-accuracy fixture logs (examples/energy-accuracy/*.json) are not reachable "
+              "through ciw.lab.runner.repository_path (set CIW_LAB_REPOSITORY_ROOT), so the offline workbench path "
+              "cannot be exercised.")
     fields["experiment"] = reason + " Planned: " + fields.get("experiment", "")
     fields["unresolved_assumptions"] = list(fields.get("unresolved_assumptions", [])) + [reason]
-    return {"state": "blocked", "fields": fields, "findings": []}
+    return {"state": "blocked", "fields": fields, "findings": list(findings)}
+
+
+def _physical_logs() -> dict:
+    return finding("The retained energy logs are real GPU energy measurements", "physical",
+                   {"origins": ["synthetic_fixture"]},
+                   {"notes": "Every bundled log declares origin synthetic_fixture and no device was sampled; byte "
+                             "retention says nothing about the physical truth of a log."}, tolerance=EXACT)
+
+
+def _admission_authority() -> dict:
+    return finding("A retained replay receipt or verification authorizes admission of the replayed result into "
+                   "canonical state", "production_acceptance", {"receipt_admission": "not_performed"},
+                   {"notes": "Admission is an authority decision outside the workbench; receipts record admission "
+                             "not_performed and CIW refuses any other value."}, tolerance=EXACT)
 
 
 def _fields(hypothesis, model, invariant, experiment, result, uncertainty, failures, assumptions, next_task,
@@ -720,7 +736,7 @@ def _validator_rows(fixture: dict) -> list:
         validator_row("exchange.verification-independent", "T088", exchange,
                       "independent true and method independent_reimplementation; verification_id recomputed",
                       "accepted:content_recomputed_not_authenticated",
-                      lambda: _identity(independent, "verification_id")),
+                      lambda: _identity(independent, "verification_id"), recompute="local"),
         validator_row("esm.canonical-admission", "T089", esm, "canonicalAdmission set to ADMITTED",
                       "ESM may retain candidate evidence only",
                       lambda: check_esm(case, lambda c: c["response"].update(canonicalAdmission="ADMITTED"))),
@@ -1100,7 +1116,7 @@ T078_PLAN = _fields(
 @task("T078", changed_files=CHANGED, regression_tests=(_node("test_exact_source_bytes"),), plan=T078_PLAN)
 def exact_source_bytes(ctx):
     if not fixture_available():
-        return _blocked(T078_PLAN)
+        return _blocked(T078_PLAN, [_physical_logs()])
     variants, fixture = _variants(ctx), _fixture(ctx)
     records = variants["records"]
     ctx.artifact_json("source-retention.json", {"records": records, "refusals": variants["refusals"]})
@@ -1146,10 +1162,7 @@ def exact_source_bytes(ctx):
                 {"checks": [_exact("recording file (newlines LF-normalized) differs from the json.dumps(run, indent=2) "
                                    "re-serialization",
                                    0 if recording["is_reserialization"] else 1)]}, tolerance=EXACT),
-        finding("The retained energy logs are real GPU energy measurements", "physical",
-                {"origins": sorted({"synthetic_fixture"})},
-                {"notes": "Every bundled log declares origin synthetic_fixture and no device was sampled; byte "
-                          "retention says nothing about the physical truth of a log."}, tolerance=EXACT),
+        _physical_logs(),
     ]
     fields = dict(T078_PLAN)
     fields.update(
@@ -1324,8 +1337,9 @@ def identity_separation(ctx):
                                    sum(not value for value in energy.values()))]}, tolerance=EXACT),
         _kills(rows, "Aliasing forgeries between operation, execution and result identities are refused on reopen "
                      "with the predicted message", harness),
-        *_survivor_findings(rows, {"revision.gap": "Surviving mutant revision.gap: execution and result claim a "
-                                                   "selection revision that never existed and reopen"}),
+        *_survivor_findings(rows, {"revision.gap": "Surviving mutant revision.gap: a workspace whose selection "
+                                                   "revision jumps to 1000, with records claiming revision 999, "
+                                                   "reopens"}),
         _authentication(rows),
     ]
     fields = dict(T080_PLAN)
@@ -1621,19 +1635,15 @@ def _mutation_task(ctx, task_id: str) -> dict:
     spec = MUTATION_TASKS[task_id]
     plan = _mutation_plan(task_id)
     if not fixture_available():
-        return _blocked(plan)
+        return _blocked(plan, [_admission_authority()] if task_id == "T089" else [])
     matrix = _mutations(ctx)
     rows = [row for row in matrix["rows"] if row["task"] == task_id]
     _retain_rows(ctx, rows, spec["stem"])
     findings = [_kills(rows, f"{spec['subject']} forgeries that leave a digest stale or contradict a recomputed "
-                             "binding are refused on reopen with the predicted message", matrix["harness"])]
+                             "binding are refused with the predicted message", matrix["harness"])]
     findings += _survivor_findings(rows, spec["survivors"])
     if task_id == "T089":
-        findings.append(finding(
-            "A retained replay receipt or verification authorizes admission of the replayed result into canonical "
-            "state", "production_acceptance", {"receipt_admission": "not_performed"},
-            {"notes": "Admission is an authority decision outside the workbench; receipts record admission "
-                      "not_performed and CIW refuses any other value."}, tolerance=EXACT))
+        findings.append(_admission_authority())
     if task_id == "T090":
         witness = _row(rows, "energy-runtime.all-bundles").get("post_reopen", {})
         replay = witness.get("replay_after_reopen", {})

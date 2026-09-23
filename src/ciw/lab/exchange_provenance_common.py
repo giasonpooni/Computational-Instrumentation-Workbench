@@ -24,8 +24,6 @@ import re
 import tempfile
 from typing import Callable
 
-REPO_ROOT = Path(__file__).resolve().parents[3]
-ENERGY_DIR = REPO_ROOT / "examples" / "energy-accuracy"
 FIXTURE_LOGS = ("baseline", "reset", "missing", "under-target")
 KIND = "energy-accuracy"
 OPERATION = "ciw.energy-accuracy.v1"
@@ -43,12 +41,22 @@ FRESH_PATTERNS = {"execution": r"execution-[0-9a-f]{32}", "result": r"result-[0-
 CONSTANTS = {FORGED_DIGEST: "sha256:<forged-constant>", FORGED_SESSION: "session:<forged-constant>"}
 
 
+def energy_dir() -> Path | None:
+    """The bundled synthetic energy logs, resolved like every lab repository input."""
+    from .runner import repository_path
+    return repository_path("examples", "energy-accuracy")
+
+
 def fixture_available() -> bool:
-    return all((ENERGY_DIR / f"{name}.json").is_file() for name in FIXTURE_LOGS)
+    directory = energy_dir()
+    return directory is not None and all((directory / f"{name}.json").is_file() for name in FIXTURE_LOGS)
 
 
 def fixture_bytes(name: str) -> bytes:
-    return (ENERGY_DIR / f"{name}.json").read_bytes()
+    directory = energy_dir()
+    if directory is None:
+        raise FileNotFoundError("No repository examples are reachable for the energy-accuracy fixture logs")
+    return (directory / f"{name}.json").read_bytes()
 
 
 def b64(raw: bytes) -> str:
@@ -326,15 +334,15 @@ def run_mutant(mutant: Mutant, fixture: dict, root: Path, labels: dict) -> dict:
     return row
 
 
-def validator_row(name, task, target, description, predicted, call) -> dict:
-    """Outcome of a pure offline validator on a synthetic, locally recomputed record."""
+def validator_row(name, task, target, description, predicted, call, recompute="none") -> dict:
+    """Outcome of a pure offline validator on a synthetic record (``recompute`` as for workspace mutants)."""
     try:
         value = call()
     except Exception as exc:  # the refusal message is the observation
         observed, error = str(exc), type(exc).__name__
     else:
         observed, error = "accepted" if value is None else f"accepted:{value}", None
-    return {"name": name, "task": task, "target": target, "recompute": "local", "description": description,
+    return {"name": name, "task": task, "target": target, "recompute": recompute, "description": description,
             "predicted": predicted, "observed": observed, "error": error,
             "killed": error is not None, "matches_prediction": observed == predicted}
 

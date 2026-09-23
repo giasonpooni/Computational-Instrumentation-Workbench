@@ -165,7 +165,7 @@ def intrinsic_curvature(surf, u, delta=1e-4) -> float:
         d_gamma[m] = (surf.christoffel(u + e) - surf.christoffel(u - e)) / (2 * delta)
     s, m, n = 1, 0, 1
     upper = np.array([d_gamma[m][r, n, s] - d_gamma[n][r, m, s]
-                      + sum(gamma[r, m, l] * gamma[l, n, s] - gamma[r, n, l] * gamma[l, m, s] for l in range(2))
+                      + sum(gamma[r, m, q] * gamma[q, n, s] - gamma[r, n, q] * gamma[q, m, s] for q in range(2))
                       for r in range(2)])
     return float(g[0] @ upper / np.linalg.det(g))
 
@@ -1541,7 +1541,8 @@ def conjugate_focal_points(ctx):
         tolerance=TOL_VALUE))
     findings.append(finding(
         "Sturm comparison bound holds: no conjugate point before pi/sqrt(max K) on seeded torus and bump geodesics",
-        "numerical", {"bounds": bounds, "first_conjugate_points": firsts, "margin": margin},
+        "numerical", {"bounds": bounds, "first_conjugate_points": firsts, "margin": margin,
+                      "paths_with_conjugate_point": {n: len(v) for n, v in firsts.items()}},
         {"generator": {"name": "seeded geodesics", "seed": gj.SEED + 8, "torus": STURM_TORUS, "bump": STURM_BUMP},
          "checks": [gj.check("invariant", "min first conjugate point minus pi/sqrt(K_max)", margin, 0.0, "ge")]},
         tolerance={"abs": 1e-6, "rel": 1e-6}))
@@ -1588,8 +1589,11 @@ def conjugate_focal_points(ctx):
                     "Sturm bound on seeded variable-curvature geodesics, and compare with CSG when bound."),
         numerical_result=(f"Sphere location error {_fmt(sphere['entries'][-1]['max_error'])} (order "
                           f"{_fmt(sphere['order'], 3)}); outer equator {_fmt(outer['entries'][-1]['max_error'])} "
-                          f"(order {_fmt(outer['order'], 3)}); Sturm margin {_fmt(margin)}; witness focal "
-                          f"{_fmt(witness['focal'][0], 5)} vs conjugate/2 {_fmt(witness['conjugate'][0] / 2, 5)}."),
+                          f"(order {_fmt(outer['order'], 3)}); Sturm margin {_fmt(margin)} with "
+                          f"{len(firsts['torus'])} of {STURM_TORUS} torus and {len(firsts['gaussian-bump'])} of "
+                          f"{STURM_BUMP} bump geodesics reaching a conjugate point (the bump bound is vacuous when "
+                          f"none does); witness focal {_fmt(witness['focal'][0], 5)} vs conjugate/2 "
+                          f"{_fmt(witness['conjugate'][0] / 2, 5)}."),
         uncertainty="Location error below 1e-7 at the finest steps; adaptive seeded runs use rtol 1e-9.",
         failure_modes_checked=["trivial zero of j_head at s = 0 excluded", "zero counts, not only locations",
                                "negative curvature (no zeros) and Sturm lower bounds",

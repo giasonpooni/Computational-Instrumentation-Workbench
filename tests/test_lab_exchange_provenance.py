@@ -222,10 +222,13 @@ def test_admission_and_runtime_mutations(lab):
 
 
 def test_tasks_block_without_the_fixture_logs(tmp_path, monkeypatch):
-    monkeypatch.setattr(common, "ENERGY_DIR", tmp_path / "absent")
+    monkeypatch.setenv("CIW_LAB_REPOSITORY_ROOT", str(tmp_path / "absent"))
     queue = {item["id"]: item for item in load_queue()["tasks"]}
     ctx = runner.Context(tmp_path / "out")
-    for task_id in ("T077", "T084"):
+    for task_id in ("T077", "T078", "T084", "T089"):
         report = validate_report(runner.run_task(queue[task_id], _REGISTRY[task_id], ctx, {}))
-        assert report["state"] == "blocked" and report["findings"] == []
+        assert report["state"] == "blocked"
         assert report["experiment"].startswith("Blocked: the bundled energy-accuracy fixture logs")
+        assert all(record["evidence_status"] == "not_established" for record in report["findings"])
+        assert {record["domain"] for record in report["findings"]} <= {"physical", "production_acceptance"}
+    assert report["findings"][0]["domain"] == "production_acceptance"

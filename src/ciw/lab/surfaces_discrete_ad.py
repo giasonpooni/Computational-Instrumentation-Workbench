@@ -249,8 +249,8 @@ class DualSurface:
         return _floats([partial(self._metric, list(u), k) for k in range(2)])
 
     def metric_second_derivatives(self, u):
-        return _floats([[partial(lambda w, k=k: partial(self._metric, w, k), list(u), l) for k in range(2)]
-                        for l in range(2)])
+        return _floats([[partial(lambda w, k=k: partial(self._metric, w, k), list(u), m) for k in range(2)]
+                        for m in range(2)])
 
     def metric_third_derivative(self, u, k):
         """d_k^3 g_ij along one coordinate direction."""
@@ -304,7 +304,7 @@ def symbolic_reference(kind, formula):
     dg = [[[sp.diff(g[i][j], coords[k]) for j in range(2)] for i in range(2)] for k in range(2)]
     det = g[0][0] * g[1][1] - g[0][1] * g[1][0]
     ginv = [[g[1][1] / det, -g[0][1] / det], [-g[1][0] / det, g[0][0] / det]]
-    gamma = [[[sum(ginv[k][l] * (dg[i][j][l] + dg[j][i][l] - dg[l][i][j]) for l in range(2)) / 2
+    gamma = [[[sum(ginv[k][m] * (dg[i][j][m] + dg[j][i][m] - dg[m][i][j]) for m in range(2)) / 2
                for j in range(2)] for i in range(2)] for k in range(2)]
 
     def riemann_up(m):  # R^m_{101}

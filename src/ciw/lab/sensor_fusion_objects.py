@@ -313,12 +313,19 @@ class FusionSession:
         eigen = float(np.linalg.eigvalsh(self.P[:2, :2]).max())
         return math.sqrt(eigen * chi2_quantile(self.track_probability, 2))
 
-    def _advance(self, tick: int) -> None:
-        # Tick-by-tick prediction keeps the arithmetic identical to the batch schedule.
+    def _advance(self, tick: int, update_follows: bool = False) -> None:
+        """Predict tick by tick (identical arithmetic to the batch schedule) and apply the track-loss rule.
+
+        The rule is evaluated on every prediction-only tick; when a reading is
+        about to update the final tick, that tick is judged after the update,
+        not on the prior the reading corrects.
+        """
         while self.tick < tick:
             self.x = self.F @ self.x
             self.P = self.F @ self.P @ self.F.T + self.Q
             self.tick += 1
+            if update_follows and self.tick == tick:
+                break
             if self.track_radius is not None and self.position_radius() > self.track_radius:
                 self.track_status = "lost"
 
@@ -361,7 +368,7 @@ class FusionSession:
             self._refuse(entry, "not_initialized", "The session has no state to update; reacquire explicitly")
         if observation.tick < self.tick:
             self._refuse(entry, "out_of_order", "Observation is older than the session state")
-        self._advance(observation.tick)
+        self._advance(observation.tick, update_follows=True)
         if self.track_status != "tracking":
             self._refuse(entry, "track_lost_requires_reacquisition",
                          "The track is lost; fusion resumes only after explicit reacquisition")

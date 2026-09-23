@@ -1,0 +1,257 @@
+# Geodesic and Jacobi-field experiments (T001–T009)
+
+Section 1, part 1 of the computational-experimentalist queue. Implementation:
+`src/ciw/lab/geodesic_jacobi.py` (tasks) and `src/ciw/lab/geodesic_jacobi_common.py`
+(declared paths, closed forms, sympy derivations, mpmath references, the pinned
+provider bridge). Tests: `tests/test_lab_geodesic_jacobi.py`.
+
+Run and read:
+
+```
+python -m ciw lab run T001 T002 T003 T004 T005 T006 T007 T008 T009 --output-dir out \
+    [--provider csg=<Curved-Surface-Geodesic-Sensitivity-Runtime checkout>]
+python -m ciw lab report T007 --retained out
+```
+
+**Scope and non-claims.** Every surface, path, length and curvature here is a
+declared mathematical object in normalized units. The tasks establish agreement
+between implementations, convergence rates and invariants of *computations*.
+They do not measure, calibrate or certify any physical surface, tool path,
+vehicle or sensor. Where a task invites a physical conclusion (T005, T009) that
+conclusion is retained as a `physical`-domain finding with no admissible basis,
+so its label is `not_established`.
+
+## Surfaces, charts and declared paths
+
+The catalogue (`ciw.lab.surfaces.catalogue()`): plane, unit sphere (polar chart
+θ, φ), unit cylinder (φ, z), saddle z = (x² − y²)/2, torus R = 2, r = 1
+(φ, θ), gaussian bump z = ½ exp(−(x² + y²)/2), and the upper half-plane with
+g = I/y² (K = −1). Two extra charts, `plane-polar` and `cylinder-polar`, view
+the flat surfaces through the polar map (r, t) ↦ (r cos t, r sin t), which
+gives flat geometry nonzero Christoffel symbols. For R = 1 the cylinder's
+development is isometric to the plane, so the two polar charts carry the same
+metric and their integrations coincide; they differ only in the embedding used
+to measure distances.
+
+Standard paths (`STANDARD`) and constant-curvature paths (`SPECIAL`) are listed
+in `geodesic_jacobi_common.py` with start point, heading (from the first
+coordinate direction, in the metric's orthonormal frame) and length. Every
+integration starts from the same binary64 state `start_state(key)`.
+
+## T001 — the geodesic equation, derived
+
+For a chart u = (u¹, u²) with metric g_ij, the first variation of length (or
+energy) gives
+
+    u''^k = −Γ^k_ij u'^i u'^j,   Γ^k_ij = ½ g^kl (∂_i g_jl + ∂_j g_il − ∂_l g_ij).
+
+For an embedding X(u), g_ij = X_i·X_j and ∂_k g_ij = X_ki·X_j + X_i·X_kj.
+Gaussian curvature follows either from the second fundamental form,
+K = (LN − M²)/(EG − F²), or intrinsically (Brioschi, or R_1212/det g from the
+Riemann tensor); their agreement is the Theorema Egregium. By hand:
+
+| Chart | Metric | Nonzero Γ | K |
+| --- | --- | --- | --- |
+| plane (x, y) | I | none | 0 |
+| sphere (θ, φ), radius R | diag(R², R² sin²θ) | Γ^θ_φφ = −sin θ cos θ, Γ^φ_θφ = cot θ | 1/R² |
+| cylinder (φ, z), radius R | diag(R², 1) | none | 0 |
+| Monge z = f(x, y) | δ_ij + f_i f_j | Γ^k_ij = f_k f_ij / W², W² = 1 + f_x² + f_y² | (f_xx f_yy − f_xy²)/W⁴ |
+| saddle, f = c(x² − y²)/2 | as Monge | Γ^x_xx = c²x/W², Γ^y_yy = c²y/W², Γ^x_yy = −c²x/W², Γ^y_xx = −c²y/W² | −c²/(1 + c²(x² + y²))² |
+| gaussian bump, f = h e^(−ρ²/2σ²) | as Monge | as Monge | h² e^(−ρ²/σ²)(1 − ρ²/σ²)/(σ⁴ W⁴) |
+| torus (φ, θ) | diag((R + r cos θ)², r²) | Γ^φ_φθ = −r sin θ/(R + r cos θ), Γ^θ_φφ = (R + r cos θ) sin θ / r | cos θ / (r (R + r cos θ)) |
+| upper half-plane (x, y) | I/(k² y²) | Γ^x_xy = −1/y, Γ^y_xx = 1/y, Γ^y_yy = −1/y | −k² |
+| polar (r, t) of the plane | diag(1, r²) | Γ^r_tt = −r, Γ^t_rt = 1/r | 0 |
+
+The geodesic equations are the rows read through u''^k = −Γ^k_ij u'^i u'^j,
+for example on the torus φ'' = 2 r sin θ φ'θ'/(R + r cos θ) and
+θ'' = −(R + r cos θ) sin θ φ'²/r; on the half-plane x'' = 2x'y'/y and
+y'' = (y'² − x'²)/y. The bump curvature is positive for ρ < σ and negative
+outside, with maximum h²/σ⁴ = 0.25 at the summit.
+
+**Experiment.** With sympy installed, `derive(key)` rebuilds metric,
+Christoffel symbols, geodesic accelerations and Brioschi curvature symbolically
+from each embedding (or intrinsic metric); they are lambdified and compared with
+`ciw.lab.surfaces` at 8 seeded points per chart (independent check, checker
+`sympy`). Independently of sympy, ciw's own Christoffel symbols are checked for
+symmetry, metric compatibility ∇g = 0, exact metric derivatives against central
+differences, and intrinsic curvature from finite-differenced Christoffel
+symbols against the extrinsic curvature. `derivations.txt` and
+`derivations.tex` retain the symbolic output.
+
+**Result.** Largest sympy/ciw discrepancy 3.2e-16 (relative), largest
+intrinsic-curvature discrepancy 5.5e-8 (finite-difference truncation).
+Counterexamples: the polar charts have |Γ| up to 2.4 with K ≡ 0 (Christoffel
+symbols do not imply curvature), and the cylinder has Γ ≡ 0 in (φ, z) with
+normal curvature 1 (bending in space does not imply nonzero Γ). Without sympy
+the task is `partial`: the symbolic comparison is replaced by the hand
+derivation above plus the ciw-only checks.
+
+## T002 — reference solutions
+
+* **Closed forms** (all constant curvature, so the transfer matrix is also
+  closed form): great circle X(s) = cos(s/R) X₀ + R sin(s/R) T₀; straight lines
+  in the flat (φ, z) and polar developments; half-plane semicircles
+  x = c + ρ tanh t, y = ρ / cosh t with t advancing at rate k; transfer matrix
+  [[cn_K, sn_K], [−K sn_K, cn_K]].
+* **Arbitrary precision** (saddle, torus, gaussian bump): the sympy-derived
+  geodesic + Jacobi system (8 states, Brioschi K) is lambdified with
+  `modules="mpmath"` and integrated at 34 digits by Gragg–Bulirsch–Stoer
+  (modified midpoint, step sequence 2, 4, …, 16, full polynomial
+  extrapolation) with 10 and 20 macro-steps; the difference is the retained
+  error estimate. The start is the binary64 ciw start converted exactly, so the
+  reference differs from the ciw integration only in the integrator and in the
+  independently derived equations.
+* Compared against it: ciw `richardson_rk4` (200/400 steps) and scipy
+  `solve_ivp(DOP853, rtol=1e-13, atol=1e-15)` on the ciw right-hand side.
+
+**Result.** mpmath self-estimates 1.4e-24 (saddle), 4.4e-23 (torus), 6.4e-22
+(bump); largest ciw-vs-reference gap 6.4e-14; torus Clairaut drift
+|ρ²φ' − C₀| is 6.8e-14 for the ciw end state and below 1e-20 for the reference.
+Fallbacks: without sympy/mpmath the variable references come from scipy (still
+an independent check); without scipy as well, from a finer ciw Richardson run
+(self-convergence only), and the task is `partial`.
+
+## T003 — integrator orders
+
+Endpoint error against the T002 reference (embedded distance; chart distance
+on the half-plane). Steps: Euler 64–512, midpoint 32–256, RK4 24–192, adaptive
+Dormand–Prince rtol = atol ∈ {1e-8, …, 1e-12}.
+
+| Method | Fitted orders on the seven curved charts |
+| --- | --- |
+| Euler | 1.001–1.008 |
+| midpoint | 1.982–2.039 |
+| RK4 | 3.888–4.023 (bump slightly pre-asymptotic; pairwise slopes retained) |
+| DP5(4) vs evaluations | 4.61–5.86, median 5.39 |
+| DP5(4) vs tolerance | error ∝ rtol^0.87…0.99 |
+
+Loose tolerances (1e-6, 1e-7) were excluded from the adaptive fit: the
+controller's start-step ramp dominates the evaluation count there and biased
+the fitted order to about 6.5. Counterexample: on the flat Cartesian charts
+(plane, cylinder) Γ ≡ 0, every method reproduces u₀ + s v₀, and no order is
+observable (errors ≤ 2.1e-14).
+
+## T004 — unit-speed drift, no renormalization
+
+g(v, v) is a first integral; its drift is measured, never corrected. Fitted
+drift orders: Euler 0.98–1.02, midpoint 1.98–2.03, RK4 3.91–4.02. Evidence that
+nothing renormalizes: a speed-1.3 start keeps g = 1.69 to 2.1e-8 (RK4, 128
+steps); an AST scan of every state-update function (`integrators.step_*`,
+`integrate_fixed`, `richardson_rk4`, `integrate_adaptive`, `jacobi.rhs`,
+`jacobi.transfer`, `Surface.geodesic_rhs`, `Surface.christoffel`) finds no
+normalizing call or division by a computed magnitude; y' = y grows to e²|y₀|.
+Counterexample: Euler renormalized to unit speed after every step keeps
+|g − 1| ≤ 4.4e-16 but still misses the great-circle endpoint by 1.4e-2 — unit
+speed does not certify accuracy. The initial state is normalized by design
+(`unit_tangent`); that is initial data, not a hidden correction.
+
+## T005 — the Jacobi separation law
+
+Along a unit-speed geodesic a normal Jacobi field J = jN obeys j'' + K j = 0.
+For constant K the heading column (j(0) = 0, j'(0) = 1) is
+sn_K(s) = sin(√K s)/√K, s, sinh(√−K s)/√−K and the lateral column
+(j(0) = 1, j'(0) = 0) is cn_K. On the torus both equators are geodesics
+(θ'' ∝ sin θ = 0) with K = 1/(r(R + r)) = 1/3 (outer) and
+K = −1/(r(R − r)) = −1 (inner).
+
+Paths: sphere great circle (L = 7), plane, cylinder, half-plane (L = 3), torus
+outer equator (L = 11.5), inner equator (L = 6.5); fixed RK4 with step ≤ 0.015
+and at twice the step. Largest relative error of Φ against the model law
+2.7e-9; step-halving orders 3.98–4.00; K stays constant to rounding along both
+equators.
+
+**Provider comparison (optional).** With `--provider csg=<checkout>`, the
+checkout is verified with `ciw.lab.runner.git_identity` against the pin shared
+with `ciw.geodesic_reference.PINS['curved-path-transfer']` (revision
+`bbc535af29c30997e56fd120320c570830676462`, tree
+`181b6eb73288d001f45c39bb149b1a80a431f34b`, clean) before and after execution;
+a mismatch is refused (`CSG_REVISION_MISMATCH`, `CSG_TREE_MISMATCH`,
+`CSG_CHECKOUT_DIRTY`, `CSG_CHECKOUT_UNREADABLE`) and the task is `partial`.
+The provider runs in a subprocess (`sys.executable -c <bootstrap> <checkout>/src`)
+and returns `integrate_jacobi` traces plus `TransferMap` matrices, determinants
+and focus events for the same arclength grids. ciw and CSG agree to 4.1e-15
+(independent check, checker `Curved-Surface-Geodesic-Sensitivity-Runtime@bbc535a…`).
+Both integrate with classical RK4 on the same grid, so the agreement tests the
+implementations (the ciw side integrates the geodesic jointly on the actual
+surface; the CSG side integrates the scalar equation for the declared K), not
+two different methods.
+
+## T006 — Jacobi columns against finite differences
+
+Perturbed starts are exact geometric operations (`jacobi.perturbed_start`):
+lateral offset along the normal geodesic with the tangent parallel transported,
+or heading rotation. Separation is g(δu, N) at matched nodes. On the sphere,
+torus and bump (RK4, 160 steps, ε = 0.08 … 0.01): central differences converge
+at order 1.99–2.00, one-sided at 0.95–1.03. Counterexample: for the one-sided
+heading difference the error is smallest near ε = 1e-7 (1.3e-8) and grows to
+1.1e-4 at ε = 1e-11 (cancellation) — a smaller step is not always better.
+
+## T007 — Wronskian and transfer-matrix determinant
+
+Φ' = AΦ with A = [[0, 1], [−K, 0]], tr A = 0, so det Φ ≡ 1 (Liouville). One
+step of each method on the linear part:
+
+* Euler: [[1, h], [−hK_n, 1]], det = 1 + h²K_n **exactly**. Euler is not
+  area-preserving where K ≠ 0 (growth for K > 0, shrinkage for K < 0); verified
+  per step to 4.8e-16 on every path. For constant K, det Φ_n = (1 + h²K)ⁿ.
+* Midpoint: det = 1 + h²(K_mid − K_n)/2 + h⁴K_nK_mid/4. Summing, the O(h²)
+  part telescopes: det Φ(L) − 1 = (h²/4)(K(L) − K(0)) + O(h³). Verified: ratio
+  to the prediction 0.957–1.003 at N = 200, the gap halving with h; order 2 on
+  variable curvature and order 3 when K(L) = K(0) (constant K:
+  (1 + h⁴K²/4)ⁿ).
+* RK4: det − 1 = −h⁶K³/72 + h⁸K⁴/576 for constant K. For smooth K(s) (stage
+  offsets e₂h², e₃h² included) sympy gives no h¹…h⁵ terms and the h⁶
+  coefficient −(4k₀³ − k₀k₂ + 2k₁² + 4k₀(e₂ + e₃))/288. Hence the determinant
+  drifts at **O(h⁵)** globally, one order above RK4's O(h⁴) error — measured
+  4.99–5.02 on all nine curved paths. This refutes the naive expectation that
+  the determinant drifts at the method's global order (recorded as a
+  counterexample).
+* Adaptive DP5(4): drift decreases like rtol^0.98…1.33.
+* K = 0 (plane, cylinder): every method keeps det Φ = 1 exactly.
+
+## T008 — conjugate and focal points
+
+Conjugate points are zeros of j_head after s = 0; focal points of the initial
+normal geodesic are zeros of j_lat; both located by cubic-Hermite root finding
+on (j, j'). Sphere: π R, 2π R and π R/2, 3π R/2 for R = 1 and R = 2 (error
+1.2e-8 at 320 steps, order 4.00). Torus outer equator: π√(r(R + r)) = π√3,
+2π√3 and half-way points (error 1.7e-8, order 4.00). None on the inner equator
+or the half-plane, where Sturm comparison gives j_head ≥ s and j_lat ≥ 1
+(verified). Sturm upper-curvature bound: with K ≤ K_max = 1/3 on the torus, no
+conjugate point occurs before π√3; on six seeded torus geodesics (L = 12) two
+reach a conjugate point, the first at 7.79 (margin 2.34). On four seeded bump
+geodesics none reaches one, so the bump bound (2π) is not exercised.
+Counterexample: on variable curvature the first focal point is not half the
+first conjugate distance (3.47 against 3.89). With the provider bound, ciw zeros
+match CSG `focus_events` to 2.2e-16.
+
+## T009 — lateral and heading columns separately
+
+Endpoint normal displacement = j_lat(L) δ⊥ + j_head(L) δα. The lateral column
+starts at 1 and feels curvature early; the heading column starts like s and
+feels curvature late. Model spaces: j_head/j_lat = tan(√K L)/√K, L,
+tanh(√−K L)/√−K (verified; on the half-plane both columns approach e^L/2).
+Over 16 declared paths the two rankings have Kendall τ = 0.23 (43 discordant
+pairs of 120). Witness at equal length (L = 3, same torus): `torus-outer-to-inner`
+(K > 0 first) has |j_lat| 0.857 and |j_head| 3.907, `torus-inner-to-outer`
+(K < 0 first) has 1.803 and 2.846 — lateral error ranks the second path
+worse, heading error ranks the first worse. Central differences (ε = 1e-3)
+confirm the endpoint sensitivities to 1.9e-6.
+
+## Limits and open questions
+
+* Agreement with sympy, mpmath, scipy or the CSG provider is independent
+  *implementation* agreement on declared equations; it is not physical
+  validation and not review by another party.
+* The mpmath reference is an extrapolated integration whose error estimate is
+  empirical (macro-step halving), not a proof.
+* Orders are least-squares fits over four halvings; tolerances were set to
+  cover the observed pre-asymptotic spread and are declared in each check.
+* The RK4 O(h⁶) per-step determinant defect assumes smooth K along the stage
+  points; curvature discontinuities (meshes, CAD patches) were not tested.
+* Deferred research question: characterize the leading RK4 determinant
+  coefficient −(4k₀³ − k₀k₂ + 2k₁²)/288 along whole paths, and whether a
+  Wronskian-preserving (symplectic) integrator for the Jacobi block changes
+  conjugate-point accuracy near foci (T010–T011).
+* Physical claims (T005 separation of real trajectories, T009 which error
+  dominates a real tool or vehicle path) are recorded as `not_established`.

@@ -97,8 +97,8 @@ def _floats(values) -> list:
     return [float(v) for v in np.asarray(values, dtype=float).ravel()]
 
 
-def _independent(reference, observed, tolerance, checker, revision) -> dict:
-    return dict(_check(reference, observed, tolerance, kind="exact_arithmetic"), producer=dict(PRODUCER),
+def _independent(reference, observed, tolerance, checker, revision, kind="exact_arithmetic") -> dict:
+    return dict(_check(reference, observed, tolerance, kind=kind), producer=dict(PRODUCER),
                 checker={"implementation": checker, "revision": revision})
 
 
@@ -370,7 +370,8 @@ def cylinder_chord_coefficient(ctx):
         observed = symbolic["max_abs_difference"] if symbolic["symbolic_zero"] else 1.0
         basis["independent_check"] = _independent(
             "sympy series of sqrt((2R sin(s cos(a)/2R))^2 + (s sin(a))^2) against the closed-form c3 and c5 "
-            "(symbolic residual zero; evaluated at 7 angles)", observed, 1e-14, "sympy", symbolic["sympy"])
+            "(symbolic residual zero; 30-digit evaluation at 7 angles)", observed, 1e-14, "sympy", symbolic["sympy"],
+            kind="high_precision")
         ctx.artifact_json("sympy-cylinder-series.json", symbolic)
     fits = chord.cylinder_fit(ANGLES_DEG, 1.0) + chord.cylinder_fit(ANGLES_DEG, 0.1)
     integrated = chord.cylinder_integrated(ANGLES_DEG, 1.0) + chord.cylinder_integrated(ANGLES_DEG, 0.1)
@@ -884,7 +885,8 @@ def lens_distortion_perturbations(ctx):
                                    kind="invariant")]},
                 tolerance={"abs": 1e-12, "rel": 1e-6}),
         finding("Undistorting with the true Brown-Conrady model (radial and tangential) removes the chord bias",
-                "numerical", {"uncorrected_bias_m": study["uncorrected_bias_m"], "corrected_error_m": study["corrected_error_m"]},
+                "numerical",
+                {"uncorrected_bias_m": study["uncorrected_bias_m"], "corrected_error_m": study["corrected_error_m"]},
                 {"checks": [_check("chord error after undistortion with the generating model (m)",
                                    study["corrected_error_m"], 1e-12)]},
                 tolerance={"abs": 1e-12, "rel": 1e-6}),
@@ -915,7 +917,8 @@ def lens_distortion_perturbations(ctx):
                            "for r < 1/sqrt(-3 k1) when k1 < 0.",
         input_data=_scene_inputs(ctx.memo("observation:camera-scene", camera_scene))
         + [f"Shifts {[list(s) for s in DISTORTION_SHIFTS]} m",
-                                                    f"k1 in {list(DISTORTION_K1)}", f"Tangential model {study['tangential_model']}",
+                                                    f"k1 in {list(DISTORTION_K1)}",
+                                                    f"Tangential model {study['tangential_model']}",
                                                     "Fold search at k1 = -1.2"],
         observation_model="Noise-free synthetic pixels from distorted cameras triangulated as if undistorted "
                           "(uncorrected) or after fixed-point undistortion with the true model.",
@@ -952,7 +955,8 @@ def quantization_study(seed=51, samples=200_000) -> dict:
             "aligned_prediction": 0.01 + 1 / 12, "seed": seed, "samples": samples}
 
 
-@task("T051", changed_files=(MODULE, CAMERA_FILE, SIGNALS_FILE), regression_tests=_tests("test_t051_quantization_noise"))
+@task("T051", changed_files=(MODULE, CAMERA_FILE, SIGNALS_FILE),
+      regression_tests=_tests("test_t051_quantization_noise"))
 def quantization_and_pixel_noise(ctx):
     study = quantization_study()
     scene = ctx.memo("observation:camera-scene", camera_scene)
@@ -1073,7 +1077,8 @@ def encoder_study(seed=52) -> dict:
             "engaged_fraction": float(engaged.mean()), "falling_fraction": float(np.mean(labels == -1)),
             "estimates": _floats(fit["coefficients"]), "truth": _floats(truth), "standard_errors": _floats(sd),
             "z": _floats((fit["coefficients"] - truth) / sd), "residual_sigma_m": fit["residual_sigma"],
-            "naive_estimates": _floats(naive["coefficients"]), "naive_z": _floats((naive["coefficients"] - truth[:2]) / naive_sd),
+            "naive_estimates": _floats(naive["coefficients"]),
+            "naive_z": _floats((naive["coefficients"] - truth[:2]) / naive_sd),
             "naive_bias_error_over_backlash": float((naive["coefficients"][1] - truth[1]) / width),
             "trace": {"time_s": _floats(time[:1200:6]), "error_m": _floats(error[:1200:6])}}
 
@@ -1337,7 +1342,8 @@ def _encoder_record(value, clock, epoch, time_s, sequence):
                       raw_ref=f"raw:{clock}:{sequence}")
 
 
-@task("T054", changed_files=(MODULE, SIGNALS_FILE, MODES_FILE), regression_tests=_tests("test_t054_asynchronous_timestamps"))
+@task("T054", changed_files=(MODULE, SIGNALS_FILE, MODES_FILE),
+      regression_tests=_tests("test_t054_asynchronous_timestamps"))
 def asynchronous_timestamps(ctx):
     study = timing_study()
     offset = TIMING["offset_s"]
@@ -1486,7 +1492,8 @@ def drop_study(seed=55) -> dict:
             "hold": hold, "seed": seed}
 
 
-@task("T055", changed_files=(MODULE, MODES_FILE, SIGNALS_FILE), regression_tests=_tests("test_t055_dropped_observations"))
+@task("T055", changed_files=(MODULE, MODES_FILE, SIGNALS_FILE),
+      regression_tests=_tests("test_t055_dropped_observations"))
 def dropped_observations(ctx):
     study = drop_study()
     stream, mean, hold = study["stream"], study["mean"], study["hold"]
@@ -1763,7 +1770,8 @@ def raw_filtered_smoothed(ctx):
         title="Ensemble-average NEES (2 dof)", xlabel="step", ylabel="NEES", markers=False))
     steady_basis = {"checks": [_check("filter final predicted covariance against the Riccati fixed point (relative)",
                                       study["steady_gap"], 1e-10, kind="self_convergence")]}
-    quantile_basis = {"derivation": f"{DOC}#t057-raw-filtered-and-smoothed-estimates (Wilson-Hilferty chi-square quantile)"}
+    quantile_basis = {"derivation": f"{DOC}#t057-raw-filtered-and-smoothed-estimates "
+                                    "(Wilson-Hilferty chi-square quantile)"}
     scipy_version = None
     if ctx.available("module:scipy"):
         dare_gap, quantile_gap, scipy_version = _scipy_checks(study)

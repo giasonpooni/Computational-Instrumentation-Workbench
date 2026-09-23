@@ -175,8 +175,9 @@ class TelemetryReceiver:
         self.clock_offset_ns, self.stale_after_ns = int(clock_offset_ns), int(stale_after_ns)
         self.highest = None
         self.first = None
+        self.received: set = set()  # unbounded here; a deployed receiver would keep a sliding bitmap
         self.pending: set = set()
-        self.reordered = self.duplicates = self.accepted = 0
+        self.reordered = self.duplicates = self.before_start = self.accepted = 0
         self.refused: dict = {}
         self.stale: list = []
         self.ages: list = []
@@ -189,9 +190,13 @@ class TelemetryReceiver:
             return None
         self.accepted += 1
         sequence = record["sequence"]
-        if self.highest is None:
+        if sequence in self.received:
+            self.duplicates += 1
+        elif self.highest is None:
+            self.received.add(sequence)
             self.highest = self.first = sequence
         else:
+            self.received.add(sequence)
             delta = (sequence - self.highest + 2 ** 31) % SEQUENCE_MODULUS - 2 ** 31
             if delta > 0:
                 for step in range(1, delta):
@@ -201,7 +206,7 @@ class TelemetryReceiver:
                 self.pending.discard(sequence)
                 self.reordered += 1
             else:
-                self.duplicates += 1
+                self.before_start += 1  # older than the first frame received
         age = received_ns - (record["timestamp_ns"] + self.clock_offset_ns)
         self.ages.append(age)
         if age > self.stale_after_ns:

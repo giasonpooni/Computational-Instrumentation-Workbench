@@ -466,7 +466,7 @@ def mesh_quality_effects(ctx):
     height_gap = max(abs(r["traced_height"] - r["height_closed_form"]) for r in lrows)
     flat = max(r["max_interior_curvature"] for r in lrows)
     plane_error = max(r["max_trace_error"] for r in plane["rows"])
-    graph_excess = [r["diagonal_graph_excess"] for r in plane["rows"]]
+    graph_excess = [r["max_graph_excess"] for r in plane["rows"]]
     ctx.artifact_json("quality.json", jsonable({"quality": quality, "seed_averaged": averaged,
                                                 "spearman_min_angle": correlations, "plane": plane}))
     ctx.artifact_json("schwarz-lantern.json", jsonable(lantern))
@@ -565,12 +565,12 @@ def mesh_quality_effects(ctx):
                  "checks": [refusal("validator on the m = n^2 lantern", "folded_face",
                                     lantern["folded"]["issues"][0] if lantern["folded"]["issues"] else None)]}),
         finding("Straightest geodesics on planar meshes are exact at any triangle quality, graph distances are not",
-                "numerical", {"max_trace_error": plane_error, "diagonal_graph_excess": graph_excess,
+                "numerical", {"max_trace_error": plane_error, "max_graph_excess": graph_excess,
                               "min_angle_deg": [r["min_angle_deg"] for r in plane["rows"]]},
                 {"generator": generator("plane_mesh", shears=[r["shear"] for r in plane["rows"]]),
                  "checks": [check("max trace error over all shears", plane_error, 1e-12),
-                            check("spread of diagonal graph excess across shears", max(graph_excess) - min(graph_excess),
-                                  0.01, "ge")]},
+                            check("spread of max relative graph excess across shears",
+                                  max(graph_excess) - min(graph_excess), 0.01, "ge")]},
                 tolerance={"abs": 1e-12, "rel": 1e-6}),
         _physical("A minimum-angle or radius-ratio threshold certifies a scanned mesh for production metrology",
                   "production_acceptance"),
@@ -704,6 +704,8 @@ def mesh_vertex_uncertainty(ctx):
     curvature_dev = max(abs(r["ratio"] - 1) for r in small)
     breakdown = min(r["ratio"] for r in large)
     invalid = {str(r["sigma"]): r["invalid_fraction"] for r in distance["rows"]}
+    corridor_small = max(r["invalid_fraction"] for r in distance["rows"] if r["sigma"] <= 1e-3)
+    corridor_large = min(r["invalid_fraction"] for r in distance["rows"] if r["sigma"] >= 1e-2)
     slopes = scaling["slopes"]
     slope_k = [v for k, v in slopes.items() if k.startswith("angle-defect")]
     slope_n = [v for k, v in slopes.items() if k.startswith("vertex normal")]
@@ -717,13 +719,23 @@ def mesh_vertex_uncertainty(ctx):
         title="Monte Carlo / linearized variance", xlabel="vertex noise sigma", ylabel="ratio", logx=True))
     h2 = study["h_squared"]
     findings = [
-        finding("Linearized vertex-noise propagation matches Monte Carlo for the marker geodesic distance",
-                "numerical", {"ratios": [r["ratio"] for r in distance["rows"]], "sigmas": [r["sigma"] for r in distance["rows"]],
-                              "gradient_norm": distance["gradient_norm"], "strip_invalid_fraction": invalid},
+        finding("Linearized vertex-noise propagation matches Monte Carlo for the marker distance along a fixed "
+                "face corridor", "numerical",
+                {"ratios": [r["ratio"] for r in distance["rows"]], "sigmas": [r["sigma"] for r in distance["rows"]],
+                 "gradient_norm": distance["gradient_norm"]},
                 {"generator": generator("icosphere", level=study["level"], samples=study["samples"], seed=S.SEED),
                  "checks": [check("max |MC / linear variance - 1| for sigma <= 1e-2", distance_dev, 0.1,
                                   kind="self_convergence")]},
                 tolerance=TIGHT),
+        finding("The unfolded marker segment leaves its unperturbed face corridor once sigma reaches 3e-3",
+                "numerical", {"left_fraction_by_sigma": invalid, "vertex_margin": study["strip"]["vertex_margin"]},
+                {"generator": generator("icosphere", level=study["level"], samples=study["samples"], seed=S.SEED),
+                 "checks": [check("largest left fraction for sigma <= 1e-3", corridor_small, 0.0, kind="invariant"),
+                            check("left fraction at sigma = 1e-2", corridor_large, 0.1, "ge")]},
+                tolerance=TIGHT,
+                counterexample={"statement": "A fixed face corridor (fixed mesh combinatorics) represents the "
+                                             "perturbed marker geodesic at every tested vertex-noise level",
+                                "witness": {"sigma": 1e-2, "left_fraction": corridor_large}}),
         finding("Linearized vertex-noise propagation matches Monte Carlo for vertex normals at every tested sigma",
                 "numerical", {o["observable"]: [r["ratio"] for r in o["rows"]] for o in normals},
                 {"generator": generator("icosphere", level=study["level"], samples=study["samples"], seed=S.SEED),
@@ -768,9 +780,10 @@ def mesh_vertex_uncertainty(ctx):
         _physical("Isotropic Gaussian vertex noise of the tested sigma describes the error of a real scanner",
                   "calibration"),
     ]
-    result = (f"Icosphere-{study['level']} (h={study['h']:.4f}), {study['samples']} samples per sigma: distance "
-              f"variance ratio within {distance_dev:.3f} of 1 (sigma<=1e-2; strip left in "
-              + ", ".join(f"{float(v):.3f}@{k}" for k, v in invalid.items()) + " of samples); normal ratio within "
+    result = (f"Icosphere-{study['level']} (h={study['h']:.4f}), {study['samples']} samples per sigma: fixed-corridor "
+              f"distance variance ratio within {distance_dev:.3f} of 1 (sigma<=1e-2), but the segment leaves the "
+              "corridor in " + ", ".join(f"{float(v):.3f}@{k}" for k, v in invalid.items())
+              + " of samples; normal ratio within "
               f"{normal_dev:.3f}; curvature ratio within {curvature_dev:.3f} for sigma<=1e-3 but >= {breakdown:.2f} at "
               f"sigma=1e-2 (sigma/h^2={1e-2 / h2:.2f}). Sensitivity slopes: " + ", ".join(
                   f"{k}: {v:.2f}" for k, v in slopes.items()) + ". Total curvature RMS error at sigma="
@@ -796,7 +809,9 @@ def mesh_vertex_uncertainty(ctx):
         ["strip validity under noise", "finite-difference step size", "valence-5 versus valence-6 vertices",
          "nonlinear bias of curvature", "normal sign flips (none at tested sigma)"],
         ["Noise is isotropic and independent per vertex; real scanners have correlated, anisotropic errors.",
-         "Markers are attached barycentrically to faces, so marker placement error is part of the geometry noise."],
+         "Markers are attached barycentrically to faces, so marker placement error is part of the geometry noise.",
+         "Beyond sigma ~ 1e-3 the perturbed geodesic can switch corridors; its distance is then a minimum over "
+         "corridors and is not described by the fixed-corridor linearization (re-tracing per sample is not done)."],
         "T044: separate geometry uncertainty from sensor noise for a marker-distance observation.")}
 
 
@@ -809,6 +824,7 @@ def geometry_versus_sensor_uncertainty(ctx):
     scenarios = study["scenarios"]
     outer, inner, fresh = study["outer"], study["inner"], study["fresh"]
     anova = max(abs(s["anova_residual"]) for s in scenarios)
+    corridor_left = max(s["corridor_left_fraction"] for s in scenarios)
     z_fresh, z_within, z_between = [], [], []
     for s in scenarios:
         total = s["predicted_total"]
@@ -840,11 +856,13 @@ def geometry_versus_sensor_uncertainty(ctx):
                                          kind="invariant")]},
                 tolerance={"abs": 1e-10, "rel": 0.0}),
         finding("Residual variance equals geometry variance plus sensor variance in every scenario", "numerical",
-                {"fresh_ratio": [s["fresh_ratio"] for s in scenarios], "z": z_fresh},
+                {"fresh_ratio": [s["fresh_ratio"] for s in scenarios], "z": z_fresh, "corridor_left_fraction": corridor_left},
                 {"derivation": "Law of total variance: Var(r) = E[Var(r | eta)] + Var(E[r | eta]) = sigma_s^2 + "
                                "Var_eta(d)",
                  "checks": [check("max |z| of fresh total variance against sigma_s^2 + sigma_g^2 |grad d|^2",
-                                  max(abs(z) for z in z_fresh), 4.0, kind="self_convergence")]},
+                                  max(abs(z) for z in z_fresh), 4.0, kind="self_convergence"),
+                            check("largest fraction of samples leaving the fixed corridor", corridor_left, 0.001, "le",
+                                  "invariant")]},
                 tolerance=TIGHT),
         finding("Nested components recover the declared sensor variance and the linearized geometry variance",
                 "numerical", {"within_ratio": [s["within_ratio"] for s in scenarios],

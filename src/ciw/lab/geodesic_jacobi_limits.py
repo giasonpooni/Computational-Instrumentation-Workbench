@@ -211,7 +211,7 @@ def near_focus_counterexamples(ctx):
                                        eq["first_order_at_s_star"], 1e-9),
                             core.check("self_convergence", "fitted chord exponent minus 3 (reflection symmetry)",
                                        eq["chord_exponent"] - 3.0, 0.05)]},
-                tolerance={"abs": 1e-3, "rel": 1e-5},
+                tolerance={"abs": 1e-10, "rel": 1e-4},
                 counterexample={"statement": "The separation at a conjugate point is of exact order eps^2",
                                 "witness": {"surface": "Torus(2, 1)", "path": "outer equator, heading 0",
                                             "s_star": eq["s_star"], "eps": list(EPS),
@@ -484,19 +484,19 @@ def coordinate_change_invariance(ctx):
         finding("A geometry-preserving near-fold chart multiplies the fixed-step error by a large factor",
                 "numerical", {"error_factor_mu_0.1_at_N_256": {k: factors[k]["near-fold mu=0.1"] for k in factors},
                               "error_factor_mu_0.2_at_N_256": {k: factors[k]["near-fold mu=0.2"] for k in factors},
-                              "smooth_chart_factor_range": [min(smooth), max(smooth)],
-                              "adaptive_step_ratio_mu_0.1": steps_fold},
+                              "smooth_chart_factor_range": [min(smooth), max(smooth)]},
                 {"generator": _gen("chart-study", steps=T011_STEPS[-1]),
                  "checks": [core.check("self_convergence", "min over sphere and torus of error(fold 0.1)/error(base)",
                                        fold_factor, 100.0, "ge")]},
-                tolerance={"abs": 1e-6, "rel": 1e-3},
+                tolerance={"abs": 1e-6, "rel": 0.02},
                 counterexample={"statement": "A change of chart that preserves the geometry leaves the fixed-step "
                                              "integration error unchanged",
                                 "witness": {"chart": "u_axis = c + mu a + a^3/3, mu = 0.1 (det J >= 0.1)",
                                             "steps": T011_STEPS[-1], "factor_sphere": factors["sphere"]["near-fold mu=0.1"],
                                             "factor_torus": factors["torus"]["near-fold mu=0.1"],
                                             "plane_error_base": plane["base"]["fixed_errors"][-1],
-                                            "plane_error_fold": plane["near-fold mu=0.1"]["fixed_errors"][-1]}}),
+                                            "plane_error_fold": plane["near-fold mu=0.1"]["fixed_errors"][-1],
+                                            "adaptive_step_ratio": steps_fold}}),
         finding("The identity chart reproduces the base-chart integration bit for bit", "computational_pipeline",
                 identity, {"checks": [core.check("exact_arithmetic", "max |identity-chart state - base state|",
                                                  identity, 0.0)]},
@@ -1009,5 +1009,406 @@ def reversal_and_truncation(ctx):
                                 "chart singularities",
                                 "Adaptive step sequences are platform-sensitive at the last-bit level"],
         recommended_next_task="T015 (long-horizon drift) and a symmetric integrator (implicit midpoint) for exact reversal",
+    )
+    return {"state": "completed", "fields": fields, "findings": findings}
+
+
+# ------------------------------------------------------------------ T015
+T015_H = 0.125                     # dyadic, so every checkpoint is a node
+T015_CHECKPOINTS = (10.0, 20.0, 40.0, 80.0, 160.0, 320.0)
+T015_METHODS = ("euler", "midpoint", "rk4", "adaptive")
+T015_RTOL = 1e-6
+
+
+def _t015_case(key):
+    if key == "torus":
+        return Torus(2.0, 1.0), (0.0, 0.5), 0.7
+    return Sphere(1.0), SPHERE_START[0], SPHERE_START[1]
+
+
+def drift_run(key: str, method: str) -> dict:
+    """One long run; drift envelopes max_{s' <= L} |I(s') - I(0)| at the checkpoints the run reached."""
+    surface, u0, heading = _t015_case(key)
+    u0 = np.asarray(u0, dtype=float)
+    y0 = np.concatenate([u0, surface.unit_tangent(u0, heading)])
+    horizon = T015_CHECKPOINTS[-1]
+    failed, stats = None, {}
+    if method == "adaptive":
+        s, states, stats = integrators.integrate_adaptive(surface.geodesic_rhs, y0, horizon, rtol=T015_RTOL,
+                                                          atol=T015_RTOL * 1e-3)
+    else:
+        # The polar chart of the sphere ends at the poles; stop there instead of integrating through them.
+        stop = (lambda y: not 1e-6 < y[0] < math.pi - 1e-6) if key == "sphere" else None
+        s, states, failed = core.fixed_march(surface.geodesic_rhs, y0, T015_H, int(horizon / T015_H), method, stop)
+    series = {"energy": np.array([abs(surface.speed_squared(y[:2], y[2:4]) - 1.0) for y in states])}
+    extra = {}
+    if key == "torus":
+        clairaut = np.array([surface.clairaut(y[:2], y[2:4]) for y in states])
+        series["clairaut"] = np.abs(clairaut - clairaut[0])
+        turning = math.acos((clairaut[0] - surface.major) / surface.minor)
+        extra = {"theta_turning": turning, "theta_max_abs": float(np.max(np.abs(states[:, 1]))),
+                 "clairaut_initial": float(clairaut[0])}
+    else:
+        points = np.array([surface.embedding(y[:2]) for y in states])
+        velocity = np.array([surface.embedding_jacobian(y[:2]) @ y[2:4] for y in states])
+        moment = np.cross(points, velocity)
+        series["angular_momentum"] = np.linalg.norm(moment - moment[0], axis=1)
+        exact = surface.exact_embedded_geodesic(u0, surface.unit_tangent(u0, heading), s)
+        series["position"] = np.linalg.norm(points - exact, axis=1)
+    envelopes, exponents = {}, {}
+    for name, values in series.items():
+        running = np.maximum.accumulate(values)
+        reached = [c for c in T015_CHECKPOINTS if c <= s[-1] + 1e-9]
+        envelopes[name] = [float(running[np.searchsorted(s, c - 1e-9)]) for c in reached]
+        exponents[name] = core.loglog_slope(reached, envelopes[name]) if len(reached) >= 3 else None
+    return {"surface": key, "method": method, "failed_at": failed, "reached": float(s[-1]),
+            "envelopes": envelopes, "exponents": exponents, "max_energy_error": float(np.max(series["energy"])),
+            "accepted_steps": stats.get("accepted_steps"), **extra}
+
+
+def drift_study():
+    return {f"{key}:{method}": drift_run(key, method) for key in ("torus", "sphere") for method in T015_METHODS}
+
+
+@task("T015", changed_files=CHANGED, regression_tests=(f"{TESTS}::test_t015_long_horizon_drift",))
+def long_horizon_drift(ctx):
+    study = ctx.memo("gjl-drift", drift_study)
+    ctx.artifact_json("drift.json", core.jsonable(study, 12))
+    series = []
+    for label, row in study.items():
+        values = row["envelopes"]["energy"]
+        series.append((label, list(T015_CHECKPOINTS[:len(values)]), values))
+    ctx.artifact_text("energy-drift.svg", svg.line_plot(series, title="Energy-error envelope |g(v, v) - 1|",
+                                                        xlabel="length L", ylabel="max error up to L",
+                                                        logx=True, logy=True))
+    ctx.artifact_text("sphere-position-drift.svg", svg.line_plot(
+        [(m, list(T015_CHECKPOINTS[:len(study[f"sphere:{m}"]["envelopes"]["position"])]),
+          study[f"sphere:{m}"]["envelopes"]["position"]) for m in T015_METHODS],
+        title="Sphere: distance to the exact great circle", xlabel="length L", ylabel="max error up to L",
+        logx=True, logy=True))
+    exps = {label: row["exponents"] for label, row in study.items()}
+    adaptive_energy = {k: study[f"{k}:adaptive"]["exponents"]["energy"] for k in ("torus", "sphere")}
+    rk4_energy = {k: study[f"{k}:rk4"]["exponents"]["energy"] for k in ("torus", "sphere")}
+    rk4_growth = {k: study[f"{k}:rk4"]["envelopes"]["energy"][-1] / study[f"{k}:rk4"]["envelopes"]["energy"][0]
+                  for k in ("torus", "sphere")}
+    pos = {m: study[f"sphere:{m}"]["exponents"]["position"] for m in ("rk4", "adaptive")}
+    clair = {m: study[f"torus:{m}"]["exponents"]["clairaut"] for m in T015_METHODS}
+    euler_t, euler_s = study["torus:euler"], study["sphere:euler"]
+    findings = [
+        finding("Adaptive DP45 energy error grows linearly with length on the torus and the sphere", "numerical",
+                adaptive_energy,
+                {"generator": _gen("drift", rtol=T015_RTOL, checkpoints=list(T015_CHECKPOINTS)),
+                 "derivation": _derivation("t015-long-horizon-drift"),
+                 "checks": [core.check("self_convergence", f"{k} energy-envelope exponent minus 1", v - 1.0, 0.2)
+                            for k, v in adaptive_energy.items()]},
+                tolerance={"abs": 0.02, "rel": 0.0}),
+        finding("Sphere position error grows like L for fixed-step RK4 and like L^2 for adaptive DP45", "numerical",
+                pos,
+                {"generator": _gen("drift", h=T015_H),
+                 "derivation": _derivation("t015-long-horizon-drift"),
+                 "checks": [core.check("analytic", "RK4 position exponent minus 1", pos["rk4"] - 1.0, 0.2),
+                            core.check("analytic", "adaptive position exponent minus 2", pos["adaptive"] - 2.0, 0.2)]},
+                tolerance={"abs": 0.02, "rel": 0.0}),
+        finding("Fixed-step RK4 energy error stays oscillation-dominated over lengths 10-320 (envelope exponent < 0.5)",
+                "numerical", {"exponents": rk4_energy, "envelope_growth_factor_10_to_320": rk4_growth},
+                {"generator": _gen("drift", h=T015_H),
+                 "checks": [core.check("invariant", f"{k} RK4 energy-envelope exponent", v, 0.5, "le")
+                            for k, v in rk4_energy.items()]},
+                tolerance={"abs": 0.02, "rel": 0.01},
+                counterexample={"statement": "The energy error of a non-symplectic fixed-step integrator grows "
+                                             "linearly with length at every horizon",
+                                "witness": {"method": "rk4", "h": T015_H, "lengths": [10.0, 320.0],
+                                            "exponents": rk4_energy, "growth_factors": rk4_growth}}),
+        finding("Torus Clairaut drift: adaptive grows linearly; drift exponents by method", "numerical", clair,
+                {"generator": _gen("drift"),
+                 "checks": [core.check("self_convergence", "adaptive Clairaut exponent minus 1",
+                                       clair["adaptive"] - 1.0, 0.2)]},
+                tolerance={"abs": 0.02, "rel": 0.0}),
+        finding("Euler on the torus keeps a bounded energy error but changes the orbit type (Clairaut drift)",
+                "numerical", {"max_energy_error": euler_t["max_energy_error"],
+                              "clairaut_drift_at_320": euler_t["envelopes"]["clairaut"][-1],
+                              "clairaut_initial": euler_t["clairaut_initial"], "theta_max_abs": euler_t["theta_max_abs"],
+                              "theta_turning": euler_t["theta_turning"]},
+                {"generator": _gen("drift", method="euler", h=T015_H),
+                 "checks": [core.check("invariant", "max energy error of the Euler run", euler_t["max_energy_error"],
+                                       0.1, "le"),
+                            core.check("invariant", "max |theta| minus exact turning latitude",
+                                       euler_t["theta_max_abs"] - euler_t["theta_turning"], 1.0, "ge")]},
+                tolerance={"abs": 1e-6, "rel": 1e-2},
+                counterexample={"statement": "A bounded energy (speed) error implies a qualitatively correct "
+                                             "long-horizon geodesic",
+                                "witness": {"surface": "Torus(2, 1)", "method": "euler", "h": T015_H,
+                                            "max_energy_error": euler_t["max_energy_error"],
+                                            "theta_turning": euler_t["theta_turning"],
+                                            "theta_max_abs": euler_t["theta_max_abs"]}}),
+        finding("Euler on the sphere leaves the polar chart before the horizon", "numerical",
+                euler_s["failed_at"] if euler_s["failed_at"] is not None else euler_s["reached"],
+                {"generator": _gen("drift", method="euler", h=T015_H),
+                 "checks": [core.check("invariant", "arclength at which the Euler run was stopped",
+                                       euler_s["failed_at"] if euler_s["failed_at"] is not None else 1e9,
+                                       T015_CHECKPOINTS[-1], "le")]},
+                unit="arclength", tolerance={"abs": T015_H, "rel": 0.0}),
+    ]
+    fields = _fields(
+        hypothesis=("Non-symplectic integrators drift in the first integrals of the geodesic flow (speed, Clairaut "
+                    "constant, angular momentum); adaptive local-error control accumulates a linear secular drift, "
+                    "while a fixed step on these closed or quasi-periodic orbits can keep the drift bounded over "
+                    "long stretches; bounded speed error does not guarantee the right orbit."),
+        mathematical_model=("Energy g(v, v) = 1, torus Clairaut rho^2 phi' and sphere angular momentum X x X' are exact "
+                            "first integrals. A constant speed error gives a constant frequency error on the sphere, hence "
+                            "position error ~ L; a speed error growing ~ L gives position error ~ L^2. On Torus(2, 1) "
+                            "the orbit oscillates between |theta| <= arccos((c - R)/r); a Clairaut drift across the "
+                            "separatrix changes it into an orbit winding around the tube."),
+        input_data=["Torus(2, 1) start (0, 0.5) heading 0.7 (bounded oscillation about the outer equator)",
+                    "Unit sphere start (pi/2, 0) heading 1.0 (great circle)",
+                    f"Fixed step h = {T015_H} for Euler, midpoint, RK4; DP45 rtol {T015_RTOL}, atol {T015_RTOL * 1e-3}; "
+                    f"checkpoints {list(T015_CHECKPOINTS)}"],
+        observation_model=("Running maxima (envelopes) of |I(s) - I(0)| at checkpoints; exponents are log-log slopes "
+                           "over the reached checkpoints; no renormalization at any step."),
+        expected_invariant="Adaptive drift exponent 1; sphere position exponent 1 (fixed RK4) and 2 (adaptive).",
+        experiment=("One run per surface and method to L = 320 (fixed steps stop at a nonfinite state or at the "
+                    "sphere chart's poles); envelopes and fits of energy, Clairaut, angular momentum and position error."),
+        numerical_result=(f"Energy exponents: adaptive {', '.join(f'{k} {_g(v, 3)}' for k, v in adaptive_energy.items())}; "
+                          f"RK4 {', '.join(f'{k} {_g(v, 3)}' for k, v in rk4_energy.items())}; sphere position exponent "
+                          f"RK4 {_g(pos['rk4'], 3)}, adaptive {_g(pos['adaptive'], 3)}; torus Clairaut exponents "
+                          f"{', '.join(f'{m} {_g(v, 3)}' for m, v in clair.items() if v is not None)}; torus Euler max "
+                          f"energy error {_g(euler_t['max_energy_error'], 3)} but max |theta| "
+                          f"{_g(euler_t['theta_max_abs'], 4)} versus turning latitude {_g(euler_t['theta_turning'], 4)}; "
+                          f"sphere Euler stopped at s = {euler_s['failed_at']}."),
+        uncertainty=("Envelope exponents mix oscillatory and secular parts; a late secular RK4 component is visible on "
+                     "the torus after L ~ 100 and may dominate beyond L = 320. Fits use six checkpoints."),
+        failure_modes_checked=["no hidden renormalization of speed", "chart exit at the sphere poles detected and "
+                               "reported instead of integrating through the singularity",
+                               "nonfinite states stop the run", "dyadic step so every checkpoint is a node"],
+        unresolved_assumptions=["Two geodesics only; resonant or chaotic geodesics are not sampled",
+                                "Horizon 320 is limited by the run budget; asymptotic drift laws are not established",
+                                "Symplectic or symmetric integrators are not in the core and are not compared"],
+        recommended_next_task="T016 (negative curvature) and a symmetric-integrator comparison on the same horizons",
+    )
+    return {"state": "completed", "fields": fields, "findings": findings}
+
+
+# ------------------------------------------------------------------ T016
+T016_K = (1.0, 2.0, 4.0, 8.0)
+T016_LENGTH, T016_STEPS, T016_TAU = 2.0, 128, 1e-6
+T016_SADDLE_C = (1.0, 4.0, 16.0, 64.0, 256.0)
+RK4_STABILITY = 2.785293563405282   # |R(-x)| <= 1 for the classical RK4 polynomial exactly when x <= this
+
+
+def _saddle_start(c):
+    """x0 < 0 with arclength 1 from (x0, 0) to the saddle point along the ridge geodesic y = 0."""
+    def arclength(x):
+        return 0.5 * x * math.sqrt(1 + (c * x) ** 2) + math.asinh(c * x) / (2 * c)
+    low, high = 0.0, 2.0
+    for _ in range(200):
+        mid = 0.5 * (low + high)
+        low, high = (mid, high) if arclength(mid) < 1.0 else (low, mid)
+    return -0.5 * (low + high)
+
+
+def negative_curvature_study():
+    u0, heading, length = (0.0, 1.0), 0.6, T016_LENGTH
+    rows = []
+    for k in T016_K:
+        plane = HyperbolicPlane(k)
+        exact = math.sinh(k * length) / k
+        adaptive = jacobi.transfer(plane, u0, heading, length, rtol=1e-10, atol=1e-13)
+        fixed = jacobi.transfer(plane, u0, heading, length, steps=T016_STEPS)
+        h = length / T016_STEPS
+        start = np.asarray(u0, dtype=float)
+        end_exact = plane.exact_geodesic(start, plane.unit_tangent(start, heading), [length])[0]
+        linear = core.constant_curvature_transfer("rk4", -k * k, length, T016_STEPS)
+
+        def rk4_error(n, k=k, exact=exact):
+            return abs(core.constant_curvature_transfer("rk4", -k * k, length, n)[0, 1] - exact) / exact
+
+        def midpoint_error(n, k=k, exact=exact):
+            return abs(core.constant_curvature_transfer("implicit-midpoint", -k * k, length, n)[0, 1] - exact) / exact
+
+        predicted_n = length * (length * k ** 5 / (120 * T016_TAU)) ** 0.25
+        rows.append({
+            "k": k, "exact_j_head": exact, "adaptive_relative_error": abs(adaptive.states[-1, 6] - exact) / exact,
+            "adaptive_accepted_steps": adaptive.stats["accepted_steps"],
+            "rk4_relative_error": abs(fixed.states[-1, 6] - exact) / exact,
+            "rk4_predicted_relative_error": length * k ** 5 * h ** 4 / 120,
+            "linear_system_matches_full_system": abs(linear[0, 1] - fixed.states[-1, 6]) / exact,
+            "geodesic_endpoint_distance_error": core.hyperbolic_distance(k, fixed.states[-1, :2], end_exact),
+            "rk4_steps_required": core.minimal_steps(rk4_error, T016_TAU),
+            "rk4_steps_predicted": predicted_n,
+            "implicit_midpoint_steps_required": core.minimal_steps(midpoint_error, T016_TAU),
+            "rk4_stability_steps": math.ceil(k * length / RK4_STABILITY)})
+    # Implicit midpoint beyond its pole kh = 2: the growing mode's factor turns negative.
+    k, steps = 8.0, 7
+    h = T016_LENGTH / steps
+    trajectory = [np.eye(2)[:, 1]]
+    trajectory_rk4 = [np.eye(2)[:, 1]]
+    for _ in range(steps):
+        trajectory.append(core.step_matrix("implicit-midpoint", -k * k, h) @ trajectory[-1])
+        trajectory_rk4.append(core.step_matrix("rk4", -k * k, h) @ trajectory_rk4[-1])
+    j_im = [float(v[0]) for v in trajectory]
+    j_rk4 = [float(v[0]) for v in trajectory_rk4]
+    sign_changes = sum(1 for a, b in zip(j_im[1:], j_im[2:]) if a * b < 0)
+    beyond_pole = {"k": k, "h": h, "kh": k * h, "j_implicit_midpoint": j_im, "j_rk4": j_rk4,
+                   "j_exact": [math.sinh(k * h * n) / k for n in range(steps + 1)],
+                   "implicit_midpoint_sign_changes": sign_changes}
+    saddle = []
+    for c in T016_SADDLE_C:
+        surface = Saddle(c)
+        x0 = _saddle_start(c)
+        run = jacobi.transfer(surface, (x0, 0.0), 0.0, 2.0, rtol=1e-9, atol=1e-12)
+        tight = jacobi.transfer(surface, (x0, 0.0), 0.0, 2.0, rtol=1e-11, atol=1e-14)
+        saddle.append({"c": c, "x0": x0, "peak_abs_curvature": c * c, "j_head": float(run.states[-1, 6]),
+                       "self_convergence": abs(run.states[-1, 6] - tight.states[-1, 6]) / abs(tight.states[-1, 6]),
+                       "accepted_steps": run.stats["accepted_steps"],
+                       "max_abs_y": float(np.max(np.abs(run.states[:, 1]))),
+                       "end_symmetry": abs(run.states[-1, 0] + x0)})
+    return {"hyperbolic": rows, "beyond_pole": beyond_pole, "saddle": saddle}
+
+
+@task("T016", changed_files=CHANGED, regression_tests=(f"{TESTS}::test_t016_negative_curvature_is_not_stiffness",))
+def negative_curvature(ctx):
+    study = ctx.memo("gjl-negative-curvature", negative_curvature_study)
+    ctx.artifact_json("negative-curvature.json", core.jsonable(study, 12))
+    rows, saddle = study["hyperbolic"], study["saddle"]
+    ks = [r["k"] for r in rows]
+    ctx.artifact_text("steps-versus-k.svg", svg.line_plot(
+        [("RK4 steps for rel. error 1e-6", ks, [r["rk4_steps_required"] for r in rows]),
+         ("implicit midpoint steps", ks, [r["implicit_midpoint_steps_required"] for r in rows]),
+         ("DP45 accepted steps (rtol 1e-10)", ks, [r["adaptive_accepted_steps"] for r in rows]),
+         ("RK4 stability limit", ks, [r["rk4_stability_steps"] for r in rows])],
+        title="HyperbolicPlane(k), L = 2: steps versus k", xlabel="k (K = -k^2)", ylabel="steps", logx=True, logy=True))
+    cs = [r["c"] for r in saddle]
+    ctx.artifact_text("saddle-growth.svg", svg.line_plot(
+        [("j_head(L)", cs, [r["j_head"] for r in saddle]), ("peak |K| = c^2", cs, [r["peak_abs_curvature"] for r in saddle]),
+         ("DP45 accepted steps", cs, [r["accepted_steps"] for r in saddle])],
+        title="Saddle(c): ridge geodesic crossing the saddle point", xlabel="c", ylabel="value", logx=True, logy=True))
+    growth = core.loglog_slope([k * T016_LENGTH for k in ks], [math.log(r["exact_j_head"] * r["k"] * 2) for r in rows])
+    rk4_exp = core.loglog_slope(ks, [r["rk4_relative_error"] for r in rows])
+    ratio_pred = [r["rk4_relative_error"] / r["rk4_predicted_relative_error"] for r in rows]
+    steps_exp = core.loglog_slope(ks, [r["rk4_steps_required"] for r in rows])
+    im_exp = core.loglog_slope(ks, [r["implicit_midpoint_steps_required"] for r in rows])
+    adaptive_exp = core.loglog_slope(ks, [r["adaptive_accepted_steps"] for r in rows])
+    stiffness = [r["rk4_steps_required"] / r["rk4_stability_steps"] for r in rows]
+    im_over_rk4 = [r["implicit_midpoint_steps_required"] / r["rk4_steps_required"] for r in rows]
+    geo_err = [r["geodesic_endpoint_distance_error"] for r in rows]
+    large = [r for r in saddle if r["c"] >= 16.0]
+    saddle_exp = core.loglog_slope([r["c"] for r in large], [r["j_head"] for r in large])
+    increments = [b["accepted_steps"] - a["accepted_steps"] for a, b in zip(saddle, saddle[1:])]
+    beyond = study["beyond_pole"]
+    findings = [
+        finding("Jacobi fields on HyperbolicPlane(k) grow like sinh(kL)/k and adaptive integration resolves them",
+                "numerical", {"max_adaptive_relative_error": max(r["adaptive_relative_error"] for r in rows),
+                              "j_head_at_k_8": rows[-1]["exact_j_head"]},
+                {"generator": _gen("hyperbolic-k", k=list(T016_K), length=T016_LENGTH, rtol=1e-10),
+                 "derivation": _derivation("t016-strongly-negative-curvature"),
+                 "checks": [core.check("analytic", "max relative error of j_head(L) against sinh(kL)/k",
+                                       max(r["adaptive_relative_error"] for r in rows), 1e-8)]},
+                tolerance={"abs": 1e-8, "rel": 1e-9}),
+        finding("Fixed-step RK4 relative error grows like k^5 and matches L k^5 h^4 / 120", "numerical",
+                {"exponent": rk4_exp, "ratio_to_prediction": ratio_pred},
+                {"generator": _gen("hyperbolic-k", steps=T016_STEPS),
+                 "derivation": _derivation("t016-strongly-negative-curvature"),
+                 "checks": [core.check("analytic", "fitted exponent minus 5", rk4_exp - 5.0, 0.2),
+                            core.check("analytic", "max |measured / predicted - 1|",
+                                       max(abs(v - 1.0) for v in ratio_pred), 0.2)]},
+                tolerance={"abs": 1e-3, "rel": 1e-4}),
+        finding("RK4 steps for relative accuracy 1e-6 grow like k^(5/4); DP45 accepted steps grow about linearly in k",
+                "numerical", {"rk4_exponent": steps_exp, "adaptive_exponent": adaptive_exp,
+                              "rk4_required_over_predicted": [r["rk4_steps_required"] / r["rk4_steps_predicted"]
+                                                              for r in rows]},
+                {"generator": _gen("hyperbolic-k", tau=T016_TAU),
+                 "derivation": _derivation("t016-strongly-negative-curvature"),
+                 "checks": [core.check("analytic", "RK4 step exponent minus 5/4", steps_exp - 1.25, 0.1),
+                            core.check("analytic", "max |required / predicted - 1|",
+                                       max(abs(r["rk4_steps_required"] / r["rk4_steps_predicted"] - 1) for r in rows),
+                                       0.2),
+                            core.check("self_convergence", "DP45 step exponent minus 1", adaptive_exp - 1.0, 0.2)]},
+                tolerance={"abs": 0.03, "rel": 0.0}),
+        finding("This is intrinsic exponential instability, not stiffness: accuracy, not stability, sets the step",
+                "numerical", {"steps_required_over_stability_limit": stiffness,
+                              "jacobian_eigenvalues": "+k and -k (ratio 1)",
+                              "geodesic_endpoint_distance_error": geo_err, "log_growth_slope_in_kL": growth},
+                {"generator": _gen("hyperbolic-k"),
+                 "derivation": _derivation("t016-strongly-negative-curvature"),
+                 "checks": [core.check("invariant", "min over k of accuracy steps / RK4 stability steps", min(stiffness),
+                                       5.0, "ge"),
+                            core.check("analytic", "d log(2k j_head) / d(kL) minus 1", growth - 1.0, 0.01)]},
+                tolerance={"abs": 1e-8, "rel": 0.05}),
+        finding("Implicit midpoint does not remove the cost and is qualitatively wrong beyond kh = 2", "numerical",
+                {"implicit_over_rk4_steps": im_over_rk4, "implicit_step_exponent": im_exp,
+                 "sign_changes_at_kh": [beyond["kh"], beyond["implicit_midpoint_sign_changes"]]},
+                {"generator": _gen("implicit-midpoint", k=beyond["k"], steps=7),
+                 "derivation": _derivation("t016-strongly-negative-curvature"),
+                 "checks": [core.check("invariant", "min over k of implicit-midpoint / RK4 required steps",
+                                       min(im_over_rk4), 1.0, "ge"),
+                            core.check("analytic", "implicit-midpoint step exponent minus 3/2", im_exp - 1.5, 0.15),
+                            core.check("invariant", "sign changes of the implicit-midpoint j at kh > 2",
+                                       beyond["implicit_midpoint_sign_changes"], 1, "ge")]},
+                tolerance={"abs": 0.0, "rel": 0.05},
+                counterexample={"statement": "An implicit (A-stable) integrator removes the step restriction on "
+                                             "strongly negatively curved surfaces",
+                                "witness": {"k": beyond["k"], "kh": beyond["kh"],
+                                            "j_implicit_midpoint": beyond["j_implicit_midpoint"],
+                                            "j_exact": beyond["j_exact"],
+                                            "implicit_over_rk4_steps": im_over_rk4}}),
+        finding("Saddle(c): peak |K| = c^2 but Jacobi growth is polynomial, j_head(L) ~ c^sqrt(2)", "numerical",
+                {"exponent_c_16_to_256": saddle_exp, "j_head": [r["j_head"] for r in saddle]},
+                {"generator": _gen("saddle-ridge", c=list(T016_SADDLE_C), rtol=1e-9),
+                 "derivation": _derivation("t016-strongly-negative-curvature"),
+                 "checks": [core.check("self_convergence", "max relative change rtol 1e-9 -> 1e-11",
+                                       max(r["self_convergence"] for r in saddle), 1e-6),
+                            core.check("invariant", "max |y| on the ridge geodesic (symmetry)",
+                                       max(r["max_abs_y"] for r in saddle), 1e-12),
+                            core.check("analytic", "fitted exponent minus sqrt(2) (far-field K ~ -1/(4 s^2))",
+                                       saddle_exp - math.sqrt(2.0), 0.1)]},
+                tolerance={"abs": 0.0, "rel": 1e-4},
+                counterexample={"statement": "Jacobi growth is exponential in sqrt(peak |K|) times the length",
+                                "witness": {"c": saddle[-1]["c"], "peak_abs_curvature": saddle[-1]["peak_abs_curvature"],
+                                            "log_j_head": math.log(saddle[-1]["j_head"]),
+                                            "sqrt_peak_times_L": 2.0 * saddle[-1]["c"]}}),
+    ]
+    fields = _fields(
+        hypothesis=("On K = -k^2 the Jacobi fields grow like e^(kL), so absolute errors are amplified by e^(kL) and a "
+                    "fixed relative accuracy needs steps growing with k; this is intrinsic instability of the flow "
+                    "(eigenvalues +k and -k of the Jacobi linearization), not classical stiffness, so implicit methods "
+                    "do not remove it. Concentrated negative curvature (Saddle with large c) does not produce "
+                    "exponential growth."),
+        mathematical_model=("j'' = k^2 j, j_head = sinh(kL)/k. RK4 on the growing mode: R(z) = e^z (1 - z^5/120 + ...), "
+                            "relative error ~ L k^5 h^4 / 120, so N(tau) = L (L k^5 / (120 tau))^(1/4) ~ k^(5/4). Implicit "
+                            "midpoint: R(z) = (1 + z/2)/(1 - z/2) = e^z (1 + z^3/12 + ...), N ~ k^(3/2), pole at z = 2, "
+                            "negative factor beyond. RK4 stability for the decaying mode needs kh <= 2.785. Saddle ridge "
+                            "y = 0: K = -c^2/(1 + c^2 x^2)^2 ~ -1/(4 s^2) away from the saddle point, so j grows like "
+                            "s^((1 + sqrt(2))/2) after a kick ~ c at the saddle point; heuristic total ~ c^sqrt(2)."),
+        input_data=[f"HyperbolicPlane(k), k in {list(T016_K)}, start (0, 1), heading 0.6, L = {T016_LENGTH}",
+                    f"RK4 N = {T016_STEPS}; DP45 rtol 1e-10; relative accuracy target {T016_TAU}",
+                    f"Saddle(c), c in {list(T016_SADDLE_C)}, ridge geodesic y = 0 from arclength 1 before the saddle "
+                    "point, L = 2, DP45 rtol 1e-9 (checked at 1e-11)"],
+        observation_model=("Relative error of j_head(L); required steps by doubling and bisection on the exact RK4 and "
+                           "implicit-midpoint transfer matrices (matrix powers, verified equal to the full integration); "
+                           "hyperbolic distance of the geodesic endpoint to the exact semicircle."),
+        expected_invariant="Exponents 5 (error), 5/4 (RK4 steps), 3/2 (implicit midpoint), ~1 (DP45 steps).",
+        experiment=("Integrate the joint geodesic/Jacobi system per k (adaptive and RK4), search the minimal step "
+                    "counts, compare with stability limits, iterate implicit midpoint beyond its pole, and integrate "
+                    "the saddle ridge geodesic for growing c."),
+        numerical_result=(f"RK4 error exponent {_g(rk4_exp, 4)} (measured/predicted {_g(min(ratio_pred), 3)}-"
+                          f"{_g(max(ratio_pred), 3)}); required RK4 steps {[r['rk4_steps_required'] for r in rows]} "
+                          f"(exponent {_g(steps_exp, 3)}), implicit midpoint {[r['implicit_midpoint_steps_required'] for r in rows]} "
+                          f"(exponent {_g(im_exp, 3)}), DP45 {[r['adaptive_accepted_steps'] for r in rows]} (exponent "
+                          f"{_g(adaptive_exp, 3)}); accuracy/stability step ratio {_g(min(stiffness), 3)}-{_g(max(stiffness), 3)}; "
+                          f"RK4 geodesic endpoint error {_g(geo_err[0], 2)} (k = 1) to {_g(geo_err[-1], 3)} (k = 8); implicit "
+                          f"midpoint at kh = {_g(beyond['kh'], 3)} changes sign {beyond['implicit_midpoint_sign_changes']} "
+                          f"times; saddle j_head(L) {[round(r['j_head'], 3) for r in saddle]} (exponent {_g(saddle_exp, 3)}), "
+                          f"DP45 steps grow by {increments} per factor 4 in c."),
+        uncertainty=("Step counts are integers found by bisection assuming monotone error in N; the saddle exponent is "
+                     "a finite-c fit of a heuristic asymptotic law (the local slopes are about 1.43-1.45)."),
+        failure_modes_checked=["linear transfer-matrix search checked against the full geodesic/Jacobi integration",
+                               "implicit-midpoint singular step (kh = 2) refused rather than divided by zero",
+                               "saddle ridge symmetry (y = 0, x(L) = -x0) verified",
+                               "adaptive saddle results checked by tightening rtol"],
+        unresolved_assumptions=["The sqrt(2) saddle exponent is a heuristic far-field argument, not a proof",
+                                "Only the ridge geodesic of the saddle is studied; oblique geodesics sample other K",
+                                "Error amplification of the geodesic in the half-plane chart mixes chart compression near "
+                                "y = 0 with intrinsic instability"],
+        recommended_next_task="T017 (validity domains, which shrink like 1/cosh(ks) on the hyperbolic plane) and T018",
     )
     return {"state": "completed", "fields": fields, "findings": findings}

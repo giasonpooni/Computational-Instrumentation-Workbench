@@ -30,8 +30,8 @@ from . import svg
 from .evidence import finding
 from .registry import task
 from .surfaces import HyperbolicPlane, Plane, Reparametrized, Saddle, Sphere
-from .surfaces_discrete_ad import DualMath, DualSurface, formulas, partial, symbolic_exact_curvature, \
-    symbolic_reference
+from .surfaces_discrete_ad import (DualMath, DualSurface, formulas, partial, symbolic_exact_curvature,
+                                   symbolic_reference)
 from .surfaces_discrete_charts import (SWITCH_THRESHOLD, Approach, SphereAtlas, great_circle, integrate_atlas,
                                        integrate_single, pole_passing_great_circle, refusal_code, require_regular,
                                        scan)
@@ -124,13 +124,15 @@ def surface_interface(ctx):
                                "symmetric in ij; d_k g_ij = Gamma^l_ki g_lj + Gamma^l_kj g_il; d_l d_k g_ij symmetric "
                                "in kl; Brioschi K(E, F, G and their first and second derivatives) = supplied K."),
         "input_data": [f"{len(surfaces)} surfaces (catalogue + plane-polar, gaussian-bump-shear, rotated-torus)",
-                       f"{POINTS} seeded points per surface (PCG64 seed {SEED}) in declared domains (docs/lab/SURFACE_INTERFACE.md)",
+                       f"{POINTS} seeded points per surface (PCG64 seed {SEED}) in declared domains "
+                       "(docs/lab/SURFACE_INTERFACE.md)",
                        f"{len(mutants)} seeded defect mutants"],
         "observation_model": ("Normalized residuals: metric terms by max|g|, derivative terms by max|dg| + max|g|/l, "
                               "Christoffel terms by max|Gamma| + 1/l, curvature by |K| + 1/l^2, with l the local "
                               "length scale (y on the hyperbolic plane, 1 elsewhere). Second metric derivatives come "
                               "from fourth-order central differences (step 1e-3 l) of the exact first derivatives."),
-        "expected_invariant": "Algebraic identities at rounding level; stencil-based identities at <= 1e-8 (dg) and <= 1e-7 (mixed partials, Gauss).",
+        "expected_invariant": ("Algebraic identities at rounding level; stencil-based identities at <= 1e-8 (dg) "
+                               "and <= 1e-7 (mixed partials, Gauss)."),
         "experiment": ("Run the conformance suite on every surface and every mutant; record worst residuals, failed "
                        "identities and whether the core Surface.check refuses any sampled point."),
         "numerical_result": (f"All {len(surfaces)} surfaces conform ({len(nonconforming)} nonconforming). Worst: Gauss "
@@ -169,7 +171,8 @@ def surface_interface(ctx):
                                    THRESHOLDS["min_eigenvalue_ratio"], comparison="ge", kind="invariant"),
                             _check("sampled points refused by core Surface.check", refused, 0, kind="exact_arithmetic")]},
                 tolerance={"abs": 1e-13, "rel": 1e-9}),
-        finding("Christoffel symbols are symmetric in their lower indices at every sampled point", "numerical", worst["christoffel_asymmetry"],
+        finding("Christoffel symbols are symmetric in their lower indices at every sampled point", "numerical",
+                worst["christoffel_asymmetry"],
                 {"checks": [_check("max |Gamma^k_ij - Gamma^k_ji|, normalized", worst["christoffel_asymmetry"],
                                    THRESHOLDS["christoffel_asymmetry"], kind="invariant")]},
                 tolerance={"abs": THRESHOLDS["christoffel_asymmetry"], "rel": 0.0}),
@@ -280,7 +283,7 @@ def dual_self_test() -> dict:
             for name, (got, want) in cases.items()}
 
 
-@task("T034", changed_files=(MODULE, AD, GEOMETRY),
+@task("T034", changed_files=(MODULE, AD, GEOMETRY, DOC),
       regression_tests=(f"{TESTS}::test_dual_numbers_match_closed_forms",
                         f"{TESTS}::test_dual_derivatives_match_surface_interface",
                         f"{TESTS}::test_sympy_references_match_surface_interface",
@@ -398,7 +401,8 @@ def derivative_checks(ctx):
                                "dg; sympy K = R_1212 / det g from the Riemann tensor of its own Christoffel symbols; "
                                "dual-number K from Brioschi with exact second derivatives and from LN - M^2."),
         "input_data": [f"{len(surfaces)} conformance surfaces, {AD_POINTS} points each (PCG64 seed {SEED + 34})",
-                       f"sympy {'available' if have_sympy else 'unavailable'}; closed forms for {len(EXACT_CURVATURE_KEYS)} surfaces"],
+                       f"sympy {'available' if have_sympy else 'unavailable'}; closed forms for "
+                       f"{len(EXACT_CURVATURE_KEYS)} surfaces"],
         "observation_model": "Same normalization as T033; exact symbolic comparison by sympy.simplify(expr - declared) == 0.",
         "expected_invariant": "Residuals at rounding level (<= 1e-12); exact closed forms identical.",
         "experiment": ("Evaluate sympy-lambdified and dual-number quantities at seeded points, compare with the ciw "
@@ -484,7 +488,7 @@ def fd_study(points=12, seed=SEED + 35) -> dict:
     return {"steps": [float(h) for h in hs], "points": points, "seed": seed, "surfaces": out}
 
 
-@task("T035", changed_files=(MODULE, GEOMETRY, AD),
+@task("T035", changed_files=(MODULE, GEOMETRY, AD, DOC),
       regression_tests=(f"{TESTS}::test_finite_difference_error_is_v_shaped", f"{TESTS}::test_t035_report"))
 def finite_difference_derivatives(ctx):
     study = fd_study()
@@ -562,8 +566,10 @@ def finite_difference_derivatives(ctx):
         finding("Smaller finite-difference steps can be far less accurate", "numerical", _sig(math.log10(growth), 3),
                 {"checks": [_check("sphere E(1e-12) / E(h_opt)", growth, 1e3, comparison="ge", kind="analytic")]},
                 unit="log10 error ratio", tolerance={"abs": 1.0, "rel": 0.0},
-                counterexample={"statement": "Decreasing the finite-difference step always improves agreement with the analytic derivative",
-                                "witness": {"surface": "sphere", "h_opt": sphere["h_opt"], "error_at_h_opt": _sig(sphere["min_error"]),
+                counterexample={"statement": ("Decreasing the finite-difference step always improves agreement with "
+                                              "the analytic derivative"),
+                                "witness": {"surface": "sphere", "h_opt": sphere["h_opt"],
+                                            "error_at_h_opt": _sig(sphere["min_error"]),
                                             "error_at_1e-12": _sig(sphere["error_at_1e-12"])}}),
         finding("Quadratic metrics have no truncation branch and a constant metric differences to exactly zero",
                 "numerical", {"quadratic_error_at_1e-2": _sig(control, 2), "plane_max_error": plane_zero},
@@ -794,7 +800,8 @@ def chart_transitions(ctx):
                 counterexample={"statement": ("Fixed-step RK4 in a single polar chart integrates every great circle "
                                               "as accurately as a chart-switching atlas at the same step count"),
                                 "witness": {"delta_failed": [r["delta"] for r in failed],
-                                            "delta_0.1_single_error": _sig(runs[0.1]["single_chart_error"]) if runs[0.1]["single_chart_error"] is not None else None,
+                                            "delta_0.1_single_error": None if runs[0.1]["single_chart_error"] is None
+                                            else _sig(runs[0.1]["single_chart_error"]),
                                             "delta_0.1_atlas_error": _sig(runs[0.1]["atlas_error"])}}),
         finding("Along the exact meridian (v_phi = 0 exactly) chart A alone crosses the pole accurately", "numerical",
                 _sig(single_through, 2),
@@ -898,7 +905,8 @@ def coordinate_singularities(ctx):
                                "apex; radial distance diverging (log) marks an infinite-distance boundary."),
         "input_data": ["sphere pole (chart A), plane in polar chart, cone alpha = pi/6, z = r^(3/2), hyperbolic y -> 0, "
                        "saddle origin, sphere equator", "29 log-spaced distances 1e-1..1e-8"],
-        "observation_model": "Pointwise invariants of the chart; loop length by 64-point trapezoid; radial length by 16-point Gauss-Legendre.",
+        "observation_model": ("Pointwise invariants of the chart; loop length by 64-point trapezoid; radial length "
+                              "by 16-point Gauss-Legendre."),
         "expected_invariant": ("Sphere pole: det ~ r^2, cond ~ r^-2, Gamma ~ r^-1, K ~ r^0; r^(3/2) graph: K ~ r^-1 "
                                "with det g -> 1; cone: ratio sin(alpha) = 1/2."),
         "experiment": "Scan, fit, classify every approach; exercise the pointwise guard and the core check.",
@@ -929,7 +937,8 @@ def coordinate_singularities(ctx):
     }
     findings = [
         finding("The sphere pole in the polar chart is a coordinate singularity: det g -> 0 while K stays 1",
-                "numerical", {"exponents": {k: _sig(v, 6) for k, v in e_pole.items()}, "classification": classes["sphere-north-pole"],
+                "numerical", {"exponents": {k: _sig(v, 6) for k, v in e_pole.items()},
+                              "classification": classes["sphere-north-pole"],
                               "regularity_in_chart_B": _sig(pole_in_b, 6)},
                 {"checks": [_check("|det exponent - 2|", e_pole["det"] - 2, 1e-3, kind="analytic"),
                             _check("|cond exponent + 2|", e_pole["condition"] + 2, 1e-3, kind="analytic"),
@@ -965,7 +974,8 @@ def coordinate_singularities(ctx):
                 counterexample={"statement": "Christoffel-symbol blow-up indicates a curvature singularity",
                                 "witness": {"sphere_pole_max_gamma_at_1e-8": _sig(pole["table"]["christoffel"][-1]),
                                             "sphere_pole_K": 1.0}}),
-        finding("A cone apex and the polar-chart origin share every pointwise exponent; only the circumference ratio separates them",
+        finding("A cone apex and the polar-chart origin share every pointwise exponent; only the circumference ratio "
+                "separates them",
                 "numerical", {"signature_difference": _sig(signature, 3), "cone_ratio": _sig(cone["circumference_ratio"], 8),
                               "polar_ratio": _sig(polar["circumference_ratio"], 8),
                               "angle_deficit": _sig(cone_obj.angle_deficit(), 8)},
@@ -978,7 +988,8 @@ def coordinate_singularities(ctx):
                                 "witness": {"removable": "plane in polar chart at r = 0", "conical": "cone alpha = pi/6 apex",
                                             "angle_deficit": _sig(cone_obj.angle_deficit())}}),
         finding("The hyperbolic chart boundary y -> 0 is at infinite distance, not a singular point", "numerical",
-                {"det_exponent": _sig(boundary["exponents"]["det"], 6), "near_over_far_distance": _sig(boundary["distance_near_over_far"], 6)},
+                {"det_exponent": _sig(boundary["exponents"]["det"], 6),
+                 "near_over_far_distance": _sig(boundary["distance_near_over_far"], 6)},
                 {"checks": [_check("|det exponent + 4|", boundary["exponents"]["det"] + 4, 1e-3, kind="analytic"),
                             _check("radial length of the last two decades / first two decades",
                                    boundary["distance_near_over_far"], 0.9, comparison="ge", kind="analytic")]},

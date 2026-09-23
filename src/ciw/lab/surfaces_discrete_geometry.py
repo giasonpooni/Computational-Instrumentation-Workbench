@@ -335,7 +335,7 @@ def central_difference(function, u, k, h):
 
 def metric_second_derivatives(surface: Surface, u, h: float) -> np.ndarray:
     """d2g[l, k, i, j] = d_l d_k g_ij by fourth-order differences of the exact first derivatives."""
-    return np.stack([stencil_derivative(surface.metric_derivatives, u, l, h) for l in range(2)])
+    return np.stack([stencil_derivative(surface.metric_derivatives, u, m, h) for m in range(2)])
 
 
 def _det3(m) -> float:
@@ -372,7 +372,7 @@ def christoffel_from(g, dg) -> np.ndarray:
     for k in range(2):
         for i in range(2):
             for j in range(2):
-                gamma[k, i, j] = 0.5 * sum(ginv[k][l] * (dg[i][j][l] + dg[j][i][l] - dg[l][i][j]) for l in range(2))
+                gamma[k, i, j] = 0.5 * sum(ginv[k][m] * (dg[i][j][m] + dg[j][i][m] - dg[m][i][j]) for m in range(2))
     return gamma
 
 

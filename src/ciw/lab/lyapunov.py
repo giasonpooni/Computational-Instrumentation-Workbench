@@ -794,3 +794,218 @@ def overflow_underflow(ctx):
     fields["uncertainty"] = ("The level scan and the overflow cases involve only exact powers of two, so they are "
                              "platform-independent; the witness depends on LAPACK's subnormal handling.")
     return _finish(fields, findings, PROVIDER_FILES, identity)
+
+
+# T104 ------------------------------------------------------------------------
+
+def edge_cases():
+    """Skew-symmetric, marginal, defective, semidefinite-Q and orthogonal cases with exact classes."""
+    rng = R.generator(104)
+    cases = []
+
+    def add(name, A, P, x, time="continuous", group=""):
+        exact = R.exact_form(A, P, time)
+        cases.append({"name": name, "group": group, "A": np.asarray(A, dtype=float), "P": np.asarray(P, dtype=float),
+                      "x": np.asarray(x, dtype=float), "time": time, "exact_class": R.exact_class(exact),
+                      "exact_zero": all(v == 0 for row in exact for v in row),
+                      "P_exact_pd": R.positive_definite(R.fractions(P))})
+
+    for n in range(2, 7):
+        G = rng.normal(size=(n, n))
+        S = G - G.T
+        add(f"skew n={n}, P=I", S, np.eye(n), rng.normal(size=n), group="skew P=I")
+        add(f"skew n={n}, P=SPD", S, R.random_spd(rng, n, 10.0), rng.normal(size=n), group="skew P=SPD")
+    add("A = 0", np.zeros((2, 2)), np.eye(2), (1.0, 1.0), group="marginal")
+    add("A = diag(0, -1)", np.diag([0.0, -1.0]), np.eye(2), (1.0, 1.0), group="marginal")
+    add("A = [[0, 1], [0, 0]]", np.array([[0.0, 1.0], [0.0, 0.0]]), np.eye(2), (1.0, 1.0), group="marginal")
+    for lam in (0.25, 0.49, 0.5, 0.51, 1.0, 2.0):
+        add(f"Jordan lambda={lam}, P=I", np.array([[-lam, 1.0], [0.0, -lam]]), np.eye(2), (1.0, 0.0),
+            group="Jordan P=I")
+    for lam in (1e-3, 1e-2, 0.1, 1.0):
+        A = np.array([[-lam, 1.0], [0.0, -lam]])
+        add(f"Jordan lambda={lam}, P=Lyapunov(Q=I)", A, R.kron_lyapunov(A, np.eye(2)), (0.0, 1.0),
+            group="Jordan P=Lyapunov")
+    A_q = np.array([[-1.0, 1.0], [0.0, -2.0]])
+    add("Q = diag(1, 0), P from CIW solve", A_q, R.kron_lyapunov(A_q, np.diag([1.0, 0.0])), (0.0, 1.0),
+        group="semidefinite Q")
+    for angle in (0.3, 1.0, 2.0):
+        c, s = math.cos(angle), math.sin(angle)
+        add(f"rotation {angle} rad, discrete", np.array([[c, -s], [s, c]]), np.eye(2), (1.0, 0.0), "discrete",
+            group="orthogonal discrete")
+    add("diag(1, -1), discrete", np.diag([1.0, -1.0]), np.eye(2), (1.0, 1.0), "discrete", group="orthogonal discrete")
+    return cases
+
+
+def indefinite_candidates(limit=4000, keep=8):
+    """P = R diag(1, 1e-17) R^T, rounded: keep candidates NumPy's eigvalsh calls positive definite.
+
+    Returns up to ``keep`` that are exactly indefinite (negative exact determinant) and ``keep`` exactly
+    positive definite controls, found by a seeded search; PLSR's own acceptance is observed separately.
+    """
+    rng = R.generator(1041)
+    indefinite, definite, searched = [], [], 0
+    for _ in range(limit):
+        if len(indefinite) >= keep and len(definite) >= keep:
+            break
+        searched += 1
+        angle = rng.uniform(0.0, math.pi)
+        rot = np.array([[math.cos(angle), -math.sin(angle)], [math.sin(angle), math.cos(angle)]])
+        P = rot @ np.diag([1.0, 1e-17]) @ rot.T
+        P = 0.5 * P + 0.5 * P.T
+        if float(np.min(np.linalg.eigvalsh(P))) <= 0.0:
+            continue
+        f = R.fractions(P)
+        entry = {"P": P, "weak": rot[:, 1], "exact_det_sign": int(np.sign(R.exact_det(f))),
+                 "exact_pd": R.positive_definite(f)}
+        target = definite if entry["exact_pd"] else indefinite
+        if len(target) < keep:
+            target.append(entry)
+    return indefinite + definite, searched
+
+
+def expected_codes(exact_class, exact_bin):
+    """Codes consistent with the exact class and the exact position of max eig relative to the resolution.
+
+    Beyond two resolutions the sign must be resolved; within two resolutions the verdict may be inconclusive
+    or resolve toward the exact sign, but never against it.
+    """
+    if exact_bin == "below -2 res":
+        return {"CERTIFIED_WITH_MARGIN"}
+    if exact_bin == "at or above 2 res":
+        return {"DECREASE_NOT_DEFINITE", "NOT_CERTIFIED"}
+    allowed = {"NUMERICAL_INCONCLUSIVE"}
+    if exact_class == "negative_definite":
+        allowed.add("CERTIFIED_WITH_MARGIN")
+    if exact_class == "has_positive_eigenvalue":
+        allowed |= {"DECREASE_NOT_DEFINITE", "NOT_CERTIFIED"}
+    return allowed
+
+
+@task("T104", changed_files=PROVIDER_FILES, regression_tests=(_node("test_t104_semidefinite_edges"),
+                                                                _node("test_edge_case_exact_classes")))
+def semidefinite_edges(ctx):
+    fields = _fields(
+        "PLSR never certifies a decrease form that is only semidefinite or indefinite: skew-symmetric plants with "
+        "P = I give an exactly zero form and must be NUMERICAL_INCONCLUSIVE; defective (Jordan) plants are "
+        "certified with P = I exactly when lambda > 1/2; a semidefinite Q is refused by the solver.",
+        "Skew A: A^T + A = 0 exactly; with any P, trace(A^T P + P A) = 0 so the form is never negative definite. "
+        "Jordan A = [[-l, 1], [0, -l]], P = I: M = [[-2l, 1], [1, -2l]] is negative definite iff l > 1/2 and "
+        "singular at l = 1/2. Orthogonal discrete A: A^T A - I = 0 up to rounding.",
+        ["5 skew-symmetric matrices n = 2..6 (PCG64 seed 104) with P = I and with SPD P",
+         "marginal A = 0, diag(0, -1), [[0, 1], [0, 0]]; Jordan blocks with P = I (l in 0.25..2) and with the CIW "
+         "Lyapunov P (l in 1e-3..1); A = [[-1, 1], [0, -2]] with Q = diag(1, 0); discrete rotations and diag(1, -1)",
+         "Candidates P = R diag(1, 1e-17) R^T (seed 1041, up to 4000 draws): 8 that NumPy's eigvalsh calls positive "
+         "definite although they are exactly indefinite, and 8 exactly positive definite controls"],
+        "PLSR code per case; PLSR solve_lyapunov outcome; quadratic() acceptance; exact rational class of each "
+        "declared form and exact positive-definiteness of each declared P.",
+        "Certifying codes only where the exact form is negative definite and the exact P is positive definite; "
+        "exactly semidefinite forms are inconclusive; exactly indefinite forms are DECREASE_NOT_DEFINITE or "
+        "NOT_CERTIFIED.",
+        "Classify every declared form exactly (Sylvester criterion and principal minors on dyadic rationals), "
+        "evaluate it with PLSR, and compare; probe the solver and the certificate constructor with singular data.",
+        "T105: parameter boxes across unit scales; propose that PLSR's QuadraticCertificate check positive "
+        "definiteness with an exact LDL^T (or a resolution-aware eigenvalue floor) instead of the eigvalsh sign.",
+        ["certificate for a semidefinite or indefinite form", "skew form not inconclusive",
+         "Jordan threshold misplaced", "semidefinite Q accepted by the solver", "indefinite P accepted and certified"],
+        ["Exact classes describe the declared binary64 matrices; the intended real matrices may differ by rounding.",
+         "Codes for semidefinite forms depend on the resolution, which is designed to exceed the rounding error."])
+    cases = edge_cases()
+    groups = {}
+    for case in cases:
+        groups.setdefault(case["group"], _counts([])).setdefault(case["exact_class"], 0)
+        groups[case["group"]][case["exact_class"]] += 1
+    skew_zero = sum(c["exact_zero"] for c in cases if c["group"] == "skew P=I")
+    offline = [finding(
+        "Exact rational classes of the declared edge-case decrease forms", "numerical",
+        {"groups": groups, "skew_P_identity_exactly_zero": skew_zero},
+        {"generator": {"name": "edge_cases", "seed": 104},
+         "checks": [_check("skew A with P = I whose exact form is not identically zero",
+                           5 - skew_zero, 0.0, kind="exact_arithmetic"),
+                    _check("skew A with SPD P classified negative definite",
+                           sum(c["exact_class"] == "negative_definite" for c in cases
+                               if c["group"].startswith("skew")), 0.0)]},
+        tolerance={"abs": 0.0, "rel": 0.0})]
+    candidates, searched = indefinite_candidates()
+    bridge_cases = [_verdict_case(f"e{i}", c["A"], c["P"], c["x"], time=c["time"]) for i, c in enumerate(cases)]
+    for lam in (1e-3, 1e-2, 0.1, 1.0):
+        bridge_cases.append({"id": f"solve:{lam}", "op": "solve", "A": [[-lam, 1.0], [0.0, -lam]], "time": "continuous"})
+    bridge_cases.append({"id": "solve:psdQ", "op": "solve", "A": [[-1.0, 1.0], [0.0, -2.0]],
+                         "Q": [[1.0, 0.0], [0.0, 0.0]], "time": "continuous"})
+    bridge_cases.append({"id": "quadratic:psd", "op": "quadratic", "P": [[1.0, 0.0], [0.0, 0.0]]})
+    for i, c in enumerate(candidates):
+        bridge_cases.append({"id": f"q{i}", "op": "quadratic", "P": _mat(c["P"])})
+        bridge_cases.append(_verdict_case(f"q{i}:weak", -np.eye(2), c["P"], c["weak"]))
+        bridge_cases.append(_verdict_case(f"q{i}:e1", -np.eye(2), c["P"], (1.0, 0.0)))
+    try:
+        bridge = _bridge(ctx, bridge_cases)
+    except _Unavailable as exc:
+        fields["numerical_result"] = f"Provider-free exact classes: {groups}."
+        fields["uncertainty"] = "Exact rational arithmetic."
+        return _finish(fields, offline, PROVIDER_FILES, blocked=str(exc))
+    identity, results = bridge["identity"], bridge["results"]
+    base = provider_basis(identity)
+    rows, violations, unexpected = [], 0, 0
+    for i, c in enumerate(cases):
+        code = _code(results[f"e{i}"])
+        certifying = code in R.CERTIFYING
+        violations += certifying and not (c["exact_class"] == "negative_definite" and c["P_exact_pd"])
+        exact_bin = R.resolution_bin(R.exact_form(c["A"], c["P"], c["time"]), R.resolution(c["A"], c["P"], c["time"]))
+        unexpected += code not in expected_codes(c["exact_class"], exact_bin)
+        rows.append({"name": c["name"], "group": c["group"], "time": c["time"], "exact_class": c["exact_class"],
+                     "exact_bin": exact_bin, "code": code, "margin_ratio": results[f"e{i}"].get("margin_ratio")})
+    accepted = [i for i, c in enumerate(candidates) if results[f"q{i}"]["ok"]]
+    indefinite_accepted = [i for i in accepted if not candidates[i]["exact_pd"]]
+    candidate_codes = _counts([_code(results[f"q{i}:{where}"]) for i in accepted for where in ("weak", "e1")])
+    candidate_certified = sum(_code(results[f"q{i}:{where}"]) in R.CERTIFYING for i in indefinite_accepted
+                              for where in ("weak", "e1"))
+    skew_codes = _counts(r["code"] for r in rows if r["group"] == "skew P=I")
+    jordan = {r["name"]: r["code"] for r in rows if r["group"] == "Jordan P=I"}
+    solves = {key: ("P returned" if results[key]["ok"] else _code(results[key]))
+              for key in [f"solve:{lam}" for lam in (1e-3, 1e-2, 0.1, 1.0)] + ["solve:psdQ", "quadratic:psd"]}
+    ctx.artifact_json("edge-cases.json", R.jsonable({"rows": rows, "solves": solves,
+                                                      "indefinite_candidates": {"accepted": len(accepted),
+                                                                                "accepted_exactly_indefinite":
+                                                                                    len(indefinite_accepted),
+                                                                                "codes": candidate_codes}}))
+    findings = [
+        finding("PLSR never certifies a semidefinite or indefinite edge-case decrease form", "numerical",
+                {"cases": len(cases), "violations": violations},
+                {"provider": base, "independent_check": _independent(
+                    _check("exact rational class of each declared form and P", violations, 0.0), identity)},
+                tolerance={"abs": 0.0, "rel": 0.0}),
+        finding("Every edge-case code is consistent with its exact class and exact distance from the resolution "
+                "(resolved beyond two resolutions, never against the exact sign)", "numerical",
+                {"cases": len(cases), "unexpected_codes": unexpected, "skew_P_identity": skew_codes, "jordan": jordan},
+                {"provider": base, "checks": [_check("codes outside the set expected for the exact class",
+                                                     unexpected, 0.0)]},
+                tolerance={"abs": 0.0, "rel": 0.0}),
+        finding("PLSR's Lyapunov solver and certificate constructor refuse a semidefinite Q and a singular P",
+                "numerical", solves,
+                {"provider": base, "checks": [_refusal("solve_lyapunov with Q = diag(1, 0)", "raises ValueError",
+                                                       solves["solve:psdQ"]),
+                                              _refusal("quadratic(diag(1, 0))", "raises ValueError",
+                                                       solves["quadratic:psd"])]}),
+    ]
+    if indefinite_accepted:
+        first = candidates[indefinite_accepted[0]]
+        findings.append(finding(
+            "quadratic() accepts binary64 P matrices that are exactly indefinite; the verdict then refuses or stays "
+            "inconclusive and never certifies", "numerical",
+            {"accepted_exactly_indefinite_observed": True, "certifying_verdicts": candidate_certified},
+            {"provider": base, "checks": [
+                _check("accepted candidates with negative exact determinant", len(indefinite_accepted), 1.0, "ge"),
+                _check("certifying verdicts with an exactly indefinite P", candidate_certified, 0.0)]},
+            counterexample={"statement": "A P accepted by PLSR's QuadraticCertificate is exactly positive definite",
+                            "witness": {"P_hex": R.hexed(first["P"]), "exact_det_sign": first["exact_det_sign"],
+                                        "weak_direction_code": _code(results[f"q{indefinite_accepted[0]}:weak"]),
+                                        "e1_code": _code(results[f"q{indefinite_accepted[0]}:e1"])}}))
+    findings += offline
+    fields["numerical_result"] = (
+        f"{len(cases)} edge cases: {violations} certifying verdicts on non-definite forms, {unexpected} codes outside "
+        f"the class expectation. Skew with P = I: {skew_codes}. Jordan with P = I: {jordan}. Solver and constructor: "
+        f"{solves}. Candidates: {len(accepted)}/{len(candidates)} accepted by quadratic(), "
+        f"{len(indefinite_accepted)} of them exactly indefinite; their verdict codes {candidate_codes}.")
+    fields["uncertainty"] = ("Exact classes are exact. Which candidates quadratic() accepts depends on the sign of "
+                             "a rounded eigenvalue and may differ between LAPACK builds; the retained value is only "
+                             "whether an exactly indefinite P was accepted.")
+    return _finish(fields, findings, PROVIDER_FILES, identity)

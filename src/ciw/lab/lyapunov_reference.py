@@ -250,6 +250,8 @@ def lambda_max_below(M, t) -> bool:
 
 def resolution_bin(M, res: float) -> str:
     """Exact position of max eig(M) relative to multiples of the resolution."""
+    if res == 0.0:
+        return "zero resolution"
     for bound, label in ((-2.0, "below -2 res"), (-1.0, "[-2, -1) res"), (0.0, "[-1, 0) res"),
                          (1.0, "[0, 1) res"), (2.0, "[1, 2) res")):
         if lambda_max_below(M, Fraction(bound) * Fraction(res)):

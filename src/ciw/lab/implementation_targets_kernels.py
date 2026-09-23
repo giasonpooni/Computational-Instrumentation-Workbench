@@ -18,7 +18,7 @@ from __future__ import annotations
 
 from fractions import Fraction
 import math
-from pathlib import Path
+import os
 import sys
 import time
 
@@ -26,7 +26,8 @@ import numpy as np
 
 U64 = 2.0 ** -53
 U32 = 2.0 ** -24
-PACKAGE_DIR = str(Path(__file__).resolve().parents[1])
+# Unresolved on purpose: code objects carry the path the package was imported from.
+PACKAGE_DIR = os.path.dirname(os.path.dirname(os.path.abspath(__file__))) + os.sep
 
 
 # ------------------------------------------------------ counted scalars
@@ -432,18 +433,23 @@ def compare_outputs(reference, candidate, policy: dict) -> dict:
         violating = candidate.view(np.int64) != reference.view(np.int64)
     elif mode == "bound":
         tolerance = np.broadcast_to(np.asarray(policy["tolerance"], dtype=np.float64), reference.shape)
+        if not np.all(tolerance > 0):
+            raise ValueError("Bound policy tolerances must be positive")
         violating = difference > tolerance
     elif mode == "abs_rel":
         tolerance = policy["abs"] + policy["rel"] * np.abs(reference)
+        if not np.all(tolerance > 0):
+            raise ValueError("Absolute/relative policy tolerances must be positive")
         violating = difference > tolerance
     else:
         raise ValueError(f"Unsupported comparison policy: {mode}")
-    with np.errstate(divide="ignore", invalid="ignore"):
-        ratio = np.where(tolerance > 0, difference / np.where(tolerance > 0, tolerance, 1.0),
-                         np.where(difference > 0, np.inf, 0.0))
+    # Ratios to the tolerance are defined only for tolerance policies; bitwise mode reports ULPs instead.
+    ratio = None if mode == "bitwise" else difference / tolerance
     return {"elements": int(reference.size), "bitwise_differences": int(np.sum(candidate != reference)),
             "violations": int(np.sum(violating)), "max_abs": float(np.max(difference)),
-            "max_ratio": float(np.max(ratio)), "ratios": ratio, "passed": not bool(np.any(violating))}
+            "max_ulp": float(np.max(ulp_distance(reference, candidate))),
+            "max_ratio": None if ratio is None else float(np.max(ratio)), "ratios": ratio,
+            "passed": not bool(np.any(violating))}
 
 
 def two_product(a, b):

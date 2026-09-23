@@ -92,11 +92,11 @@ def multi_sensor_bench(ctx):
 
     run0 = {"truth": bench["truth"][0], "readings": {n: {"ticks": bench["readings"][n]["ticks"],
                                                          "values": bench["readings"][n]["values"][0]} for n in names}}
-    ctx.artifactas_json("bench.json", as_json({"config": config.describe(), "seed": BENCH_SEED, "runs": BENCH_RUNS,
+    ctx.artifact_json("bench.json", as_json({"config": config.describe(), "seed": BENCH_SEED, "runs": BENCH_RUNS,
                                            "retained_run": 0, "run": run0,
                                            "declared_covariances": {s.name: s.covariance for s in config.sensors},
                                            "process_noise_Q_per_tick": bench["Q"]}))
-    ctx.artifactas_json("digests.json", {"seed": BENCH_SEED, "digest": bench_digest(bench),
+    ctx.artifact_json("digests.json", {"seed": BENCH_SEED, "digest": bench_digest(bench),
                                        "regenerated_digest": bench_digest(again),
                                        "other_seed_digest": bench_digest(other),
                                        "note": "SHA-256 over little-endian float64 truth and readings"})
@@ -223,7 +223,7 @@ def known_truth_covariance(ctx):
     max_z = float(np.max(np.abs(z_all)))
     detect = {name: row["variance_z_if_declared_10pct_low"] for name, row in table.items() if name != "process_noise"}
     minimal = {name: z_crit * math.sqrt(2.0 / table[name]["samples"]) for name in detect}
-    ctx.artifactas_json("covariance_moments.json", as_json({"family_size": family, "family_alpha": alpha,
+    ctx.artifact_json("covariance_moments.json", as_json({"family_size": family, "family_alpha": alpha,
                                                         "z_critical": z_crit, "per_stream": table,
                                                         "minimal_detectable_relative_variance_error": minimal}))
     ctx.artifact_text("zscores.svg", svg.line_plot(
@@ -347,7 +347,7 @@ def correlated_noise(ctx):
                           "position_rmse": rmse, "whitened_covariance": C, "whitened_max_z": white_z}
     z_crit = normal_quantile(1 - 1e-3 / (2 * family))
     good, bad = results["correct"], results["ignored"]
-    ctx.artifactas_json("consistency.json", as_json({"seed": seed, "runs": MC_RUNS, "ticks": MC_TICKS,
+    ctx.artifact_json("consistency.json", as_json({"seed": seed, "runs": MC_RUNS, "ticks": MC_TICKS,
                                                  "R_true": R_true, "R_ignored": R_ignored,
                                                  "whitened_z_critical": z_crit, "results": results}))
     ctx.artifact_text("anees.svg", svg.line_plot(
@@ -441,3 +441,4 @@ def correlated_noise(ctx):
 from . import sensor_fusion_geometry  # noqa: E402,F401  (T063, T064)
 from . import sensor_fusion_filtering  # noqa: E402,F401  (T065-T068)
 from . import sensor_fusion_robustness  # noqa: E402,F401  (T069-T071)
+from . import sensor_fusion_admission  # noqa: E402,F401  (T072-T076)

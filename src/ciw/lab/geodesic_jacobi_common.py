@@ -291,8 +291,8 @@ def derive(key: str) -> dict:
     (u, v), X, g = symbolic_model(key, sp)
     coords = (u, v)
     ginv = sp.simplify(g.inv())
-    gamma = [[[sp.simplify(sum(ginv[k, l] * (sp.diff(g[j, l], coords[i]) + sp.diff(g[i, l], coords[j])
-                                               - sp.diff(g[i, j], coords[l])) for l in range(2)) / 2)
+    gamma = [[[sp.simplify(sum(ginv[k, q] * (sp.diff(g[j, q], coords[i]) + sp.diff(g[i, q], coords[j])
+                                               - sp.diff(g[i, j], coords[q])) for q in range(2)) / 2)
                for j in range(2)] for i in range(2)] for k in range(2)]
     du, dv = sp.symbols("du dv", real=True)
     velocity = (du, dv)

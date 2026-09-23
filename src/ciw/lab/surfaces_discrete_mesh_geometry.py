@@ -666,25 +666,38 @@ def cotangent_weights(mesh: TriMesh):
     return cot
 
 
-def heat_distance(mesh: TriMesh, source: int, t_factor: float = 1.0, max_vertices: int = 3000) -> np.ndarray:
-    """Heat-method distance (Crane, Weischedel and Wardetzky 2013) with dense solves; t = t_factor h^2."""
-    n = len(mesh.vertices)
-    if n > max_vertices:
-        raise MeshRefusal("invalid_shape", f"Dense heat method limited to {max_vertices} vertices, mesh has {n}")
+def cotangent_laplacian(mesh: TriMesh):
+    """Positive semidefinite cotangent Laplacian as COO triplets (rows, cols, values)."""
     cot = cotangent_weights(mesh)
-    lap = np.zeros((n, n))
+    rows, cols, vals = [], [], []
     for k in range(3):
         i, j = mesh.faces[:, (k + 1) % 3], mesh.faces[:, (k + 2) % 3]
         w = 0.5 * cot[:, k]
-        np.add.at(lap, (i, j), -w)
-        np.add.at(lap, (j, i), -w)
-        np.add.at(lap, (i, i), w)
-        np.add.at(lap, (j, j), w)
+        rows += [i, j, i, j]
+        cols += [j, i, i, j]
+        vals += [-w, -w, w, w]
+    return np.concatenate(rows), np.concatenate(cols), np.concatenate(vals)
+
+
+def heat_distance(mesh: TriMesh, source: int, t_factor: float = 1.0, max_vertices: int = 3000) -> np.ndarray:
+    """Heat-method distance (Crane, Weischedel and Wardetzky 2013) with dense solves; t = t_factor h^2.
+
+    The heat solution decays like exp(-d^2 / 4t) and its far-field gradient
+    direction needs relative accuracy, so the solves are direct (LU), which
+    limits this method to small meshes.
+    """
+    n = len(mesh.vertices)
+    if n > max_vertices:
+        raise MeshRefusal("invalid_shape", f"Dense heat method limited to {max_vertices} vertices, mesh has {n}")
+    rows, cols, vals = cotangent_laplacian(mesh)
+    lap = np.zeros((n, n))
+    np.add.at(lap, (rows, cols), vals)
     mass = np.bincount(mesh.faces.ravel(), weights=np.repeat(mesh.face_areas / 3, 3), minlength=n)
     t = t_factor * mesh.mean_edge() ** 2
     delta = np.zeros(n)
     delta[source] = 1.0
     u = np.linalg.solve(np.diag(mass) + t * lap, delta)
+    cot = cotangent_weights(mesh)
     v = mesh.vertices[mesh.faces]
     grad = np.zeros((len(mesh.faces), 3))
     for k in range(3):
@@ -694,13 +707,13 @@ def heat_distance(mesh: TriMesh, source: int, t_factor: float = 1.0, max_vertice
     field_ = -grad / np.linalg.norm(grad, axis=1)[:, None]
     div = np.zeros(n)
     for k in range(3):
-        i = mesh.faces[:, k]
         e1 = v[:, (k + 1) % 3] - v[:, k]
         e2 = v[:, (k + 2) % 3] - v[:, k]
         # cot of the angle opposite e1 sits at corner k+2, opposite e2 at corner k+1
         contribution = 0.5 * (cot[:, (k + 2) % 3] * np.einsum("ij,ij->i", e1, field_)
                               + cot[:, (k + 1) % 3] * np.einsum("ij,ij->i", e2, field_))
-        np.add.at(div, i, contribution)
+        div += np.bincount(mesh.faces[:, k], weights=contribution, minlength=n)
+    # Pinning the source leaves a symmetric positive definite system on the other vertices.
     keep = np.arange(n) != source
     phi = np.zeros(n)
     phi[keep] = np.linalg.solve(lap[np.ix_(keep, keep)], -div[keep])

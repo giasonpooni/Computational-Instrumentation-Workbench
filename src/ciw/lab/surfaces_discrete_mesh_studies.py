@@ -151,16 +151,15 @@ def plane_study(shears=(0.0, 0.5, 1.0, 1.5), size=8, length=0.2, angles=(0.3, 1.
             statuses.append(tr.status)
             if tr.completed:
                 errors.append(float(np.max(np.abs(tr.end_point - (start + length * d)))))
-        far = size * (size + 1) + size  # vertex (size, size)
-        diag = mesh.vertices[far] - mesh.vertices[0]
-        side = size  # vertex (size, 0)
-        dist = G.edge_distances(mesh, 0)
+        # The sheared domain is convex, so the intrinsic distance from corner 0 is Euclidean.
+        dist = G.edge_distances(mesh, 0)[1:]
+        euclid = np.linalg.norm(mesh.vertices[1:] - mesh.vertices[0], axis=1)
         quality = mesh.quality()
         rows.append({"shear": shear, "min_angle_deg": quality["min_angle_deg"],
                      "max_radius_ratio": quality["max_radius_ratio"], "statuses": statuses,
                      "max_trace_error": max(errors) if errors else None,
-                     "diagonal_graph_excess": float(dist[far] / np.linalg.norm(diag) - 1),
-                     "side_graph_excess": float(dist[side] / np.linalg.norm(mesh.vertices[side]) - 1)})
+                     "max_graph_excess": float(np.max(dist / euclid - 1)),
+                     "mean_graph_excess": float(np.mean(dist / euclid - 1))})
     return {"size": size, "length": length, "rows": rows}
 
 
@@ -671,6 +670,9 @@ def variance_split_study(level=3, geometry_sigmas=(1e-4, 1e-3), sensor_sigmas=(1
     def distance(positions):
         return G.strip_unfold_distance(positions, strip["strip"], strip["a"], strip["b"])[0]
 
+    def corridor(positions):
+        return G.strip_unfold_distance(positions, strip["strip"], strip["a"], strip["b"])[1]
+
     nominal = float(distance(base[None])[0])
     gain = float(np.sqrt(np.sum(_fd_jacobian(distance, base) ** 2)))
     rng = np.random.Generator(np.random.PCG64(seed))
@@ -686,8 +688,9 @@ def variance_split_study(level=3, geometry_sigmas=(1e-4, 1e-3), sensor_sigmas=(1
             sst = (n_all - 1) * total
             ssb = inner * (outer - 1) * between
             ssw = outer * (inner - 1) * within
-            fresh_y = (distance(base[None] + rng.standard_normal((fresh,) + base.shape) * sigma_g) - nominal
-                       + rng.standard_normal(fresh) * sigma_s)
+            perturbed = base[None] + rng.standard_normal((fresh,) + base.shape) * sigma_g
+            fresh_y = distance(perturbed) - nominal + rng.standard_normal(fresh) * sigma_s
+            outside = float(np.mean(corridor(perturbed) < 0))
             geometry_linear = (gain * sigma_g) ** 2
             predicted = geometry_linear + sigma_s ** 2
             scenarios.append({"sigma_geometry": sigma_g, "sigma_sensor": sigma_s,
@@ -699,7 +702,7 @@ def variance_split_study(level=3, geometry_sigmas=(1e-4, 1e-3), sensor_sigmas=(1
                               "within_ratio": within / sigma_s ** 2,
                               "between_ratio": (between - within / inner) / geometry_linear,
                               "geometry_share": geometry_linear / predicted,
-                              "crossover_sensor_sigma": gain * sigma_g})
+                              "crossover_sensor_sigma": gain * sigma_g, "corridor_left_fraction": outside})
     sigma_g, sigma_s = repeat_case
     averaging = []
     for count in repeats:

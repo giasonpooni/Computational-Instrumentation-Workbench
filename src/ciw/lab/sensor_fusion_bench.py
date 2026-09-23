@@ -350,11 +350,13 @@ def mismatch_moments(F, Q_true, mu0, P0_true, x0_hat, steps, truth_plan) -> dict
 
 
 # Batch posterior and exact arithmetic (T074) -----------------------------------------
-def batch_posterior(F, Q, mu0, P0, plan, readings) -> tuple[np.ndarray, np.ndarray]:
+def batch_posterior(F, Q, mu0, P0, plan, readings, full=True) -> tuple[np.ndarray, np.ndarray]:
     """Exact Gaussian posterior over x_0..x_K from the information (normal-equation) form.
 
     Minimizes |x_0 - mu0|^2_{P0} + sum |x_k - F x_{k-1}|^2_Q + sum |z_k - H x_k|^2_R;
     no recursion is used, so it is an independent route to the filter's answer.
+    With ``full=False`` only the final-time covariance block is returned, from
+    one factorization shared with the mean.
     """
     n = F.shape[0]
     size = n * (len(plan) + 1)
@@ -374,9 +376,53 @@ def batch_posterior(F, Q, mu0, P0, plan, readings) -> tuple[np.ndarray, np.ndarr
             R_inv = np.linalg.inv(R)
             information[j, j] += H.T @ R_inv @ H
             vector[j] += H.T @ R_inv @ z
+    if not full:
+        rhs = np.zeros((size, n + 1))
+        rhs[:, 0] = vector
+        rhs[size - n:, 1:] = np.eye(n)
+        solved = np.linalg.solve(information, rhs)
+        return solved[:, 0].reshape(len(plan) + 1, n), solved[size - n:, 1:]
     covariance = np.linalg.inv(information)
     mean = np.linalg.solve(information, vector)
     return mean.reshape(len(plan) + 1, n), covariance
+
+
+def batch_posterior_banded(F, Q, mu0, P0, plan, readings) -> tuple[np.ndarray, np.ndarray]:
+    """The same batch posterior by block-tridiagonal elimination of the normal equations.
+
+    The information matrix of x_0..x_K is block tridiagonal (diagonal blocks
+    D_k, off-diagonal blocks -F^T Q^-1). Forward elimination produces Schur
+    complements whose last block is the final-time information; back
+    substitution gives every posterior mean. Only n x n solves are used, so
+    long horizons stay cheap and free of large multithreaded factorizations.
+    Returns the means (K+1, n) and the final-time covariance.
+    """
+    n = F.shape[0]
+    size = len(plan) + 1
+    P0_inv, Q_inv = np.linalg.inv(P0), np.linalg.inv(Q)
+    diagonal = [np.zeros((n, n)) for _ in range(size)]
+    vector = [np.zeros(n) for _ in range(size)]
+    diagonal[0] += P0_inv
+    vector[0] += P0_inv @ np.asarray(mu0, dtype=float)
+    coupling = -F.T @ Q_inv  # block (k-1, k)
+    for k, (item, z) in enumerate(zip(plan, readings), start=1):
+        diagonal[k] += Q_inv
+        diagonal[k - 1] += F.T @ Q_inv @ F
+        if item is not None:
+            H, R = item
+            R_inv = np.linalg.inv(R)
+            diagonal[k] += H.T @ R_inv @ H
+            vector[k] += H.T @ R_inv @ z
+    schur, rhs = [diagonal[0]], [vector[0]]
+    for k in range(1, size):
+        left = np.linalg.solve(schur[-1], np.column_stack([coupling, rhs[-1]]))
+        schur.append(diagonal[k] - coupling.T @ left[:, :n])
+        rhs.append(vector[k] - coupling.T @ left[:, n])
+    means = np.empty((size, n))
+    means[-1] = np.linalg.solve(schur[-1], rhs[-1])
+    for k in range(size - 2, -1, -1):
+        means[k] = np.linalg.solve(schur[k], rhs[k] - coupling @ means[k + 1])
+    return means, np.linalg.inv(schur[-1])
 
 
 def exact_scalar_filter(q: Fraction, r: Fraction, p0: Fraction, m0: Fraction, readings) -> dict:

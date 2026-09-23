@@ -27,7 +27,7 @@ import numpy as np
 from . import svg
 from .evidence import finding
 from .registry import task
-from .sensor_fusion_bench import (H_POS, batch_posterior, chi2_quantile, consistency, cv_model, exact_scalar_filter,
+from .sensor_fusion_bench import (H_POS, batch_posterior, batch_posterior_banded, chi2_quantile, consistency, cv_model, exact_scalar_filter,
                                   gain_schedule, generator, measure, nees_series, run_shared, simulate_truth)
 from .sensor_fusion_common import (MU0, P0_BENCH, R_CAMERA, TESTS, TOL_EXACT, TOL_MC, TOL_TINY, as_json, bonferroni,
                                    check, covariance_z, files, generator_basis, outcome, refusal, refusal_code,
@@ -117,7 +117,7 @@ def calibration_study(seed: int = 72_2026, ticks: int = 100, expiry: int = 60, r
     return {"seed": seed, "ticks": ticks, "expiry_tick": expiry, "fused_ticks": [fused[0], fused[-1]],
             "fused": len(fused), "refused_expired": len(refused), "first_refused": refused[0] if refused else None,
             "boundary": {"tick_before_expiry": codes[expiry - 1], "tick_at_expiry": codes[expiry]},
-            "retained": len(retained), "retained_digests_match": retained[:ticks] == submitted,
+            "retained": len(retained), "retained_digests_match": retained == submitted,
             "dispositions": {d: dispositions[:ticks].count(d) for d in sorted(set(dispositions[:ticks]))},
             "state_equals_prediction_only_shadow": identical, "renewed": renewed, "other_refusals": other,
             "monte_carlo": {"runs": runs, "drift_m_per_tick": drift_per_tick,
@@ -165,7 +165,7 @@ def calibration_expiry(ctx):
                                        "state_equals_prediction_only_shadow")},
                 {"derivation": "FusionSession.record before any refusal", "checks": [
                     check("exact_arithmetic", "retained entries minus submitted readings",
-                          study["retained"] - study["ticks"] - len(study["renewed"]) - len(other), 0),
+                          study["retained"] - study["ticks"], 0),
                     check("invariant", "retained digests differ from submitted digests",
                           float(not study["retained_digests_match"]), 0.0),
                     check("invariant", "state differs from the prediction-only shadow",
@@ -314,10 +314,11 @@ def track_lost_study(seed: int = 73_2026, active: int = 30, radius: float = 1.0,
         Pn = Fn @ P_active @ Fn.T + Qn
         e = turn_state(x_turn_start, omega, t) - Fn @ x_turn_start
         expected = 4.0 + float(e @ np.linalg.solve(Pn, e))
-        if n % 10 == 0:
+        if n % 5 == 0:
             table.append({"gap_ticks": n, "expected_nees": expected})
         if expected > threshold:
             consistent_until = n
+            radius_then = math.sqrt(float(np.linalg.eigvalsh(Pn[:2, :2]).max()) * gate)
             break
     return {"seed": seed, "active_ticks": active, "radius_m": radius, "track_probability": 0.99,
             "predicted_lost_tick": predicted_lost, "observed_lost_tick": observed_lost,
@@ -327,6 +328,7 @@ def track_lost_study(seed: int = 73_2026, active: int = 30, radius: float = 1.0,
                           "nees_mean": float(nees.mean()), "nees_z": nees_z, "sample": S, "formula": formula},
             "turn": {"omega_rad_s": omega, "speed_m_s": float(np.linalg.norm(x_active[2:])),
                      "threshold_chi2_4_99": threshold, "first_inconsistent_gap_ticks": consistent_until,
+                     "radius_at_inconsistency_m": radius_then if consistent_until else None,
                      "gap_ticks_before_track_loss": observed_lost - active, "table": table}}
 
 
@@ -376,18 +378,23 @@ def track_lost(ctx):
                           study["reacquire_covariance_error"], 1e-15)]},
                 tolerance=TOL_MC),
         finding("Under an unmodelled 0.2 rad/s turn during the gap, the expected NEES of the coasting track exceeds "
-                "the 99% chi-square(4) quantile before the covariance-based track-loss rule fires", "numerical",
+                "the 99% chi-square(4) quantile after a finite gap even though its covariance keeps growing; a "
+                "radius rule protects against this only if its radius is below the ellipse radius reached by then",
+                "numerical",
                 as_json({k: turn[k] for k in ("omega_rad_s", "speed_m_s", "threshold_chi2_4_99",
-                                             "first_inconsistent_gap_ticks", "gap_ticks_before_track_loss")}),
+                                             "first_inconsistent_gap_ticks", "radius_at_inconsistency_m",
+                                             "gap_ticks_before_track_loss")}),
                 {"derivation": "E[NEES] = dim + e^T P^-1 e for a deterministic model error e", "checks": [
-                    check("analytic", "gap ticks until inconsistency minus gap ticks until track loss",
-                          (turn["first_inconsistent_gap_ticks"] or 10_000) - turn["gap_ticks_before_track_loss"], 0.0,
-                          "le")]},
+                    check("analytic", "a finite gap (ticks) after which the coasting track is inconsistent",
+                          turn["first_inconsistent_gap_ticks"] or 10_000, 399, "le"),
+                    check("analytic", "declared 1 m radius below the radius reached at inconsistency (margin, m)",
+                          (turn["radius_at_inconsistency_m"] or 0.0) - study["radius_m"], 0.0, "ge")]},
                 tolerance={"abs": 1e-9, "rel": 1e-6}, counterexample={
                     "statement": "A coasting track stays statistically consistent for any gap because its covariance "
                                  "grows",
                     "witness": {"omega_rad_s": turn["omega_rad_s"],
-                                "gap_ticks": turn["first_inconsistent_gap_ticks"]}}),
+                                "gap_ticks": turn["first_inconsistent_gap_ticks"],
+                                "radius_at_inconsistency_m": turn["radius_at_inconsistency_m"]}}),
         unreal("A 1 m, 99% track-loss radius is a safe operating threshold", "machine_safety", seed,
                "not established: the threshold is a declared policy value"),
     ]
@@ -410,9 +417,10 @@ def track_lost(ctx):
                       "exercise admit, fuse and reacquire; Monte Carlo the two-point estimator; evaluate the "
                       "expected NEES of the coasting track under an unmodelled turn.",
         "numerical_result": f"lost at tick {study['observed_lost_tick']} (predicted {study['predicted_lost_tick']}); "
-                            f"two-point max |z| {two['max_abs_z']:.2f}, mean NEES {two['nees_mean']:.3f}; turn "
-                            f"inconsistency after {turn['first_inconsistent_gap_ticks']} ticks vs track loss after "
-                            f"{turn['gap_ticks_before_track_loss']} ticks.",
+                            f"two-point max |z| {two['max_abs_z']:.2f}, mean NEES {two['nees_mean']:.3f}; under the "
+                            f"turn the coasting track becomes inconsistent after {turn['first_inconsistent_gap_ticks']} "
+                            f"ticks (99% ellipse radius {turn['radius_at_inconsistency_m']:.2f} m), while the 1 m rule "
+                            f"had already declared loss after {turn['gap_ticks_before_track_loss']} ticks.",
         "uncertainty": "The lost tick and refusals are exact; the two-point statement carries Monte Carlo error "
                        "(Bonferroni bound); the turn statement is deterministic given the declared turn rate.",
         "failure_modes_checked": ["off-by-one in the loss tick", "fusion into a lost track", "admission of a lost "
@@ -447,12 +455,16 @@ def ground_truth_study(seed: int = 74_2026, runs: int = 200, ticks: int = 100, t
     for K in (10, 40, 100):
         d_mean = d_cov = 0.0
         for run in range(3):
-            mean, cov = batch_posterior(F, Q, MU0, P0_BENCH, plan[:K], [r[run] for r in readings[:K]])
+            mean, block = batch_posterior_banded(F, Q, MU0, P0_BENCH, plan[:K], [r[run] for r in readings[:K]])
             d_mean = max(d_mean, float(np.max(np.abs(mean[K] - estimates[run, K])) / np.max(np.abs(estimates[run, K]))))
-            block = cov[4 * K:4 * K + 4, 4 * K:4 * K + 4]
             d_cov = max(d_cov, float(np.max(np.abs(block - steps[K - 1].post)) / np.max(np.abs(steps[K - 1].post))))
         comparisons.append({"K": K, "batch_unknowns": 4 * (K + 1), "max_relative_mean_difference": d_mean,
                             "max_relative_covariance_difference": d_cov})
+    # The dense normal equations (one LU of the whole information matrix) at the short horizon.
+    dense_mean, dense = batch_posterior(F, Q, MU0, P0_BENCH, plan[:10], [r[0] for r in readings[:10]])
+    banded_mean, banded_cov = batch_posterior_banded(F, Q, MU0, P0_BENCH, plan[:10], [r[0] for r in readings[:10]])
+    dense_vs_banded = max(float(np.max(np.abs(dense_mean - banded_mean)) / np.max(np.abs(dense_mean))),
+                          float(np.max(np.abs(dense[40:44, 40:44] - banded_cov)) / np.max(np.abs(banded_cov))))
     worst_mean = max(row["max_relative_mean_difference"] for row in comparisons)
     worst_cov = max(row["max_relative_covariance_difference"] for row in comparisons)
     nees = nees_series(estimates, truth, steps)
@@ -462,7 +474,8 @@ def ground_truth_study(seed: int = 74_2026, runs: int = 200, ticks: int = 100, t
     rational = [Fraction(int(v), 100) for v in exact_rng.integers(-300, 300, 12)]
     exact = exact_scalar_filter(Fraction(1, 10), Fraction(1, 4), Fraction(1), Fraction(0), rational)
     exact_equal = exact["filter_mean"] == exact["batch_mean"] and exact["filter_variance"] == exact["batch_variance"]
-    return {"seed": seed, "runs": runs, "ticks": ticks, "comparisons": comparisons, "max_mean_difference": worst_mean,
+    return {"seed": seed, "runs": runs, "ticks": ticks, "comparisons": comparisons, "dense_vs_banded": dense_vs_banded,
+            "max_mean_difference": worst_mean,
             "max_covariance_difference": worst_cov, "nees": consistency(nees, 4), "nees_grand_z": grand_z,
             "anees": nees.mean(axis=0),
             "exact": {"readings": [str(v) for v in rational], "filter_mean": str(exact["filter_mean"]),
@@ -487,12 +500,14 @@ def analytic_ground_truth(ctx):
     findings = [
         finding("The recursive Kalman estimate and covariance equal the exact batch information-form posterior "
                 "marginal at K = 10, 40 and 100 ticks to near roundoff", "numerical",
-                {"comparisons": study["comparisons"]},
+                {"comparisons": study["comparisons"], "dense_vs_banded_at_K10": study["dense_vs_banded"]},
                 {**generator_basis(seed), "checks": [
                     check("analytic", "max relative mean difference against the batch posterior",
                           study["max_mean_difference"], 1e-9),
                     check("analytic", "max relative covariance difference against the batch posterior",
-                          study["max_covariance_difference"], 1e-9)]},
+                          study["max_covariance_difference"], 1e-9),
+                    check("invariant", "dense normal equations against block elimination at K = 10",
+                          study["dense_vs_banded"], 1e-9)]},
                 tolerance={"abs": 1e-9, "rel": 0.0}),
         finding("In exact rational arithmetic the scalar filter's final mean and variance are identical to the batch "
                 "posterior", "mathematical", ex,
