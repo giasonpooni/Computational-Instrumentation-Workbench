@@ -6,9 +6,10 @@ from unittest.mock import patch
 
 import pytest
 
+from ciw.adapters.protocol import AdapterRefusal
 from ciw.instruments import make_demo_run
 from ciw.operations.registry import Operation, OperationRegistry, default_registry
-from ciw.operations.runner import seal
+from ciw.operations.runner import check_seal, seal
 from ciw.session import Session, read_json, write_json
 
 
@@ -197,3 +198,66 @@ def test_failed_publication_releases_pending_reservation(tmp_path):
     assert len(session.results) == 1023 and not session.executions
     assert request(session)["payload"]["status"] == "completed"
     assert len(session.results) == 1024 and len(session.executions) == 1
+
+
+@pytest.mark.parametrize("refused", [False, True])
+def test_provider_owned_outputs_cannot_mutate_retained_records(tmp_path, refused):
+    run = make_demo_run()
+    operation_id = "spectrum.periodogram.v1"
+    parameters = {"channel": "q", "interval_s": [0.0, run["metadata"]["duration_s"]]}
+    cached_data = default_registry().get(operation_id).execute(run, parameters)
+    runtime = {"provider": "cached-test", "dependencies": {"version": "captured"}}
+    expected_runtime = deepcopy(runtime)
+
+    def calculate(run, parameters):
+        runtime["dependencies"]["version"] = "changed during execution"
+        if refused:
+            raise AdapterRefusal("test_refusal", "No result available")
+        return cached_data
+
+    operations = OperationRegistry()
+    operations.register(Operation(operation_id, "analysis", calculate, lambda: runtime))
+    session = Session(run, tmp_path, operations=operations)
+    response = request(session, operation_id, parameters)["payload"]
+    assert response["status"] == ("refused" if refused else "completed")
+    execution = response["execution"]
+    assert execution["runtime"] == expected_runtime
+
+    # Providers may reuse both nested runtime dictionaries and result arrays.
+    runtime["dependencies"]["version"] = "changed after publication"
+    cached_data["psd"][0] = -1.0
+    assert session.executions[execution["execution_id"]] == execution
+    check_seal(session.executions[execution["execution_id"]])
+    assert read_json(tmp_path / (execution["execution_id"] + ".json")) == execution
+    if not refused:
+        result = response["result"]
+        assert result["runtime"] == expected_runtime
+        assert session.results[result["result_id"]] == result
+        check_seal(session.results[result["result_id"]])
+        assert read_json(tmp_path / (result["result_id"] + ".json")) == result
+
+    path = session.save_workspace(tmp_path / "workspace.json")
+    restored = Session.from_workspace(path, tmp_path / "restored")
+    assert restored.executions == session.executions and restored.results == session.results
+
+
+@pytest.mark.parametrize("runtime", [{}, [], {"version": float("nan")}],
+                         ids=["empty", "list", "nonfinite"])
+def test_invalid_runtime_refusal_remains_restorable(tmp_path, runtime):
+    def must_not_execute(run, parameters):
+        raise AssertionError("A provider with invalid runtime identity must not execute")
+
+    operations = OperationRegistry()
+    operations.register(Operation("statistics.v1", "analysis", must_not_execute, lambda: runtime))
+    session = Session(make_demo_run(), tmp_path, operations=operations)
+    response = request(session)
+    assert response["type"] == "response"
+    assert response["payload"]["status"] == "refused"
+    assert response["payload"]["result"] is None
+    execution = response["payload"]["execution"]
+    assert execution["runtime"] is None
+    check_seal(execution)
+
+    path = session.save_workspace(tmp_path / "workspace.json")
+    restored = Session.from_workspace(path, tmp_path / "restored")
+    assert restored.executions == session.executions and not restored.results

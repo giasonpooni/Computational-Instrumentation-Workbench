@@ -8,7 +8,6 @@ from __future__ import annotations
 
 import base64
 from copy import deepcopy
-from datetime import datetime, timedelta
 from fractions import Fraction
 from importlib import resources
 import json
@@ -20,6 +19,7 @@ from . import telemetry
 from .adapters.protocol import AdapterRefusal
 from .adapters.subprocess import PinnedSubprocessAdapter, _json
 from .exchange import _identity
+from .calibrated_observable import _exact_timestamp
 from .telemetry import canonical, digest, byte_digest, _bundle_digest, _instant, _now, _keys
 
 SCHEMA = "ciw.calibrated-window-session.v1"
@@ -113,9 +113,7 @@ def _source(raw):
             raise ValueError("Unsupported calibrated window source")
         for key in ("experiment_id", "channel_id"):
             _text(source[key])
-        epoch = datetime.fromisoformat(source["epoch"].replace("Z", "+00:00"))
-        if epoch.tzinfo is None or epoch.utcoffset() != timedelta(0):
-            raise ValueError("Window epoch must explicitly declare UTC")
+        _exact_timestamp(source["epoch"], "Window epoch", require_utc=True)
         samples = source["samples"]
         if not isinstance(samples, list) or not 1 <= len(samples) <= 16:
             raise ValueError("A calibrated window requires 1 to 16 scalar samples")
@@ -149,6 +147,8 @@ def _source(raw):
         profile = source["calibration_profile"]
         _keys(profile, {"profile_id", "artifact_id", "sensor_id", "quantity_id", "input_unit", "output_unit",
                         "gain", "offset", "coefficient_covariance", "valid_from", "valid_until", "reference_ids", "input_range"})
+        for key in ("valid_from", "valid_until"):
+            _exact_timestamp(profile[key], "calibration " + key)
         _refs(profile["reference_ids"])
         for key in ("gain", "offset"):
             _number(profile[key])
@@ -389,7 +389,7 @@ def _validate(bundle):
         if evidence != {"artifact_ref": byte_digest(raw), "sha256": byte_digest(raw), "bytes_b64": base64.b64encode(raw).decode()}:
             raise ValueError("Exact source byte binding mismatch")
         source = _source(raw)
-        if bundle["source"] != {"experiment_id": source["experiment_id"], "experiment_digest": digest(source), "evidence": [evidence]} or bundle["configuration"] != source["configuration"]:
+        if bundle["source"] != {"experiment_id": source["experiment_id"], "experiment_digest": digest(source), "evidence": [evidence]} or canonical(bundle["configuration"]) != canonical(source["configuration"]):
             raise ValueError("Source/configuration binding mismatch")
         if [(s["runtime_ref"], s["operation_id"]) for s in bundle["steps"]] != list(OPERATIONS) or set(bundle["runtimes"]) != ROLES:
             raise ValueError("Calibrated window graph/runtime mismatch")
@@ -404,12 +404,12 @@ def _validate(bundle):
         for i, step in enumerate(bundle["steps"]):
             _keys(step, {"runtime_ref", "operation_id", "execution_id", "input_refs", "request", "request_sha256", "result", "result_sha256", "result_id", "numerical_result", "numerical_result_id"})
             request, refs = _request(i, source, bundle["steps"][:i], step["execution_id"], bundle["created_at"], bundle["runtimes"], evidence["artifact_ref"])
-            if step["request"] != request or step["input_refs"] != refs:
+            if canonical(step["request"]) != canonical(request) or step["input_refs"] != refs:
                 raise ValueError("Request differs from retained clock/calibration/window lineage")
             result = step["result"]
-            if step["numerical_result"] != _numerical(step["runtime_ref"], result):
+            if canonical(step["numerical_result"]) != canonical(_numerical(step["runtime_ref"], result)):
                 raise ValueError("Numerical projection mismatch")
-            for key, content in (("request_sha256", request), ("result_sha256", result), ("numerical_result_id", step["numerical_result"])):
+            for key, content in (("request_sha256", step["request"]), ("result_sha256", result), ("numerical_result_id", step["numerical_result"])):
                 if step[key] != digest(content):
                     raise ValueError("Step content binding mismatch")
             artifact = result.get("result_artifact", result)

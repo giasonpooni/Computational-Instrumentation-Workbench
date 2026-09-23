@@ -36,6 +36,10 @@ TBRT, MCUR and OIT steps from the existing process workflow.
 The source retains raw values and device timestamps unchanged. The clock map,
 its synchronization evidence, calibration profile/evidence and their validity
 periods remain separate from the derived reference times and calibrated values.
+Source timestamps, the UTC epoch and calibration validity bounds must be exactly
+representable at microsecond precision before provider binding. Extra trailing
+fractional zeros are accepted; values requiring finer precision are refused
+instead of truncated.
 For N samples, one full joint covariance is ordered:
 
 1. N device timestamps, clock skew, clock offset;
@@ -73,6 +77,10 @@ continues to own the observable process-balance/fault-isolation demonstration.
 ESM does not yet accept this new schema; candidate capture refuses it. Saved
 workspaces restore historical content without restoring executable bindings,
 fresh verification authority, eligibility or canonical admission.
+
+Retained configuration, provider requests and numerical projections are compared
+as canonical JSON bytes. Boolean, integer and floating-point substitutions such
+as `true`, `1` and `1.0` are distinct, even after recomputing the outer digest.
 
 `icrh.calibrated-window-to-state.v1` independently checks original/replay
 bindings, native artifacts, shared covariance propagation and compatibility.

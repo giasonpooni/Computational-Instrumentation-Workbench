@@ -18,6 +18,14 @@ TELEMETRY_REPOSITORIES = {
 
 
 def call(arguments, **kwargs):
+    # Pinned runtimes check tracked bytes. Inherit this override into helper
+    # scripts too, so Windows checkout settings cannot rewrite their sources.
+    environment = dict(kwargs.pop("env", os.environ))
+    index = int(environment.get("GIT_CONFIG_COUNT", "0"))
+    environment.update({"GIT_CONFIG_COUNT": str(index + 1),
+                        f"GIT_CONFIG_KEY_{index}": "core.autocrlf",
+                        f"GIT_CONFIG_VALUE_{index}": "false"})
+    kwargs["env"] = environment
     return subprocess.run(arguments, check=True, timeout=kwargs.pop("timeout", 300), **kwargs)
 
 
@@ -36,11 +44,14 @@ def main():
         if args.esm_root:
             esm, fixture = args.esm_root.resolve(), args.fixture_root.resolve()
         else:
+            npm = shutil.which("npm")
+            if npm is None:
+                raise RuntimeError("npm must be available to build the pinned ESM provider")
             esm = temporary / "esm"
             call(["git", "clone", "--quiet", "--no-checkout", "https://github.com/" + pin["repository"] + ".git", str(esm)])
             call(["git", "-C", str(esm), "checkout", "--quiet", "--detach", pin["revision"]])
-            call(["npm", "ci", "--ignore-scripts"], cwd=esm)
-            call(["npm", "run", "instrument:workbench:build"], cwd=esm)
+            call([npm, "ci", "--ignore-scripts"], cwd=esm)
+            call([npm, "run", "instrument:workbench:build"], cwd=esm)
             fixture = temporary / "fixture"
             call([sys.executable, "-B", str(esm / "scripts/check_calibrated_workbench.py"), "--output-dir", str(fixture)], timeout=1200)
         providers = args.telemetry_stack_root.resolve() if args.telemetry_stack_root else temporary / "telemetry-providers"

@@ -123,6 +123,28 @@ def test_undeclared_inputs_refuse_before_provider_execution(attack, monkeypatch)
     with pytest.raises(ValueError): window.create_session(window.canonical(source), {})
 
 
+@pytest.mark.parametrize("field", ["epoch", "valid_from", "valid_until"])
+def test_timestamp_precision_refuses_before_provider_execution(field, monkeypatch):
+    source = json.loads(SOURCE)
+    target = source if field == "epoch" else source["calibration_profile"]
+    target[field] = "2026-01-01T00:00:00.0000009Z"
+
+    def deny(*args, **kwargs):
+        pytest.fail("Timestamp precision must be validated before binding providers")
+
+    monkeypatch.setattr(window, "_adapters", deny)
+    with pytest.raises(ValueError, match="microsecond precision"):
+        window.create_session(window.canonical(source), {})
+
+
+def test_representable_timestamp_spellings_preserve_source_bytes():
+    source = json.loads(SOURCE)
+    source["epoch"] = "2026-01-01 00:00:00.123456000+00:00"
+    source["calibration_profile"]["valid_from"] = "2025-12-01T01:00:00,123456000+01:00"
+    source["calibration_profile"]["valid_until"] = "2026-12-01T00:00:00.000000000Z"
+    assert window._source(window.canonical(source)) == source
+
+
 def test_shared_parameter_covariance_and_native_lineage(retained):
     session, source, original, _, _, raw = retained
     assert window._validate(original) == raw
@@ -194,4 +216,32 @@ def test_resealed_request_cannot_drop_shared_uncertainty(retained):
     step["request_sha256"] = window.digest(step["request"])
     bundle["bundle_digest"] = window._bundle_digest(bundle)
     with pytest.raises(ValueError, match="lineage"):
+        window._validate(bundle)
+
+
+@pytest.mark.parametrize("replacement", [True, 1.0], ids=["boolean", "float"])
+@pytest.mark.parametrize("target", ["configuration", "request"])
+def test_equal_python_numbers_cannot_substitute_retained_json(retained, target, replacement):
+    bundle = deepcopy(retained[2])
+    bundle.pop("verification", None)
+    configuration = (bundle["configuration"] if target == "configuration"
+                     else bundle["steps"][0]["request"]["source"]["configuration"])
+    matrix = configuration["gsie"]["dynamics"]["matrix"]
+    assert type(matrix[0][0]) is int
+    matrix[0][0] = replacement
+    bundle["bundle_digest"] = window._bundle_digest(bundle)
+    with pytest.raises(ValueError, match="configuration binding|lineage"):
+        window._validate(bundle)
+
+
+def test_rehashed_numerical_projection_must_preserve_json_number_type(retained):
+    bundle = deepcopy(retained[2])
+    bundle.pop("verification", None)
+    step = bundle["steps"][0]
+    sample = step["numerical_result"]["data"]["samples"][0]
+    assert sample["event_time"] == 0.0
+    sample["event_time"] = False
+    step["numerical_result_id"] = window.digest(step["numerical_result"])
+    bundle["bundle_digest"] = window._bundle_digest(bundle)
+    with pytest.raises(ValueError, match="Numerical projection"):
         window._validate(bundle)

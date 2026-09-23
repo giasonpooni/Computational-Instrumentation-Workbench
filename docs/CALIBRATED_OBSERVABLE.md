@@ -117,12 +117,19 @@ an actual physical failure.
   independently of the outer bundle digest. Exact replay checks retained result
   contents against recomputation under the pinned runtimes.
 
+Retained configuration, provider requests and numerical projections are compared
+as canonical JSON bytes. Boolean, integer and floating-point substitutions such
+as `true`, `1` and `1.0` are distinct, even after recomputing the outer digest.
+
 The time policy is explicitly `nominal_alignment_with_retained_time_uncertainty`.
 It is bounded to a stationary hold model (`F = I`, `Q = 0`): time uncertainty is
 retained and no undeclared dynamic time-to-measurement uncertainty term is invented.
-Raw timestamps are never overwritten. The scalar aligned time must exactly
-represent its declared origin plus delta,
-and precision loss is refused before calibration. This path does not extract stream features;
+Raw timestamps are never overwritten. Source timestamps, the UTC epoch and
+calibration validity bounds must be exactly representable at microsecond
+precision. Extra trailing fractional zeros are accepted; a nonzero digit beyond
+microseconds is refused before provider binding. The scalar aligned time must
+also exactly represent its declared origin plus delta, and precision loss is
+refused before calibration. This path does not extract stream features;
 MCUR's separate compatibility assessment requires declared transformation/window
 compatibility before a calibration can commute with a feature operation.
 

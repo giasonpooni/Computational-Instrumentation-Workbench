@@ -7,6 +7,7 @@ from __future__ import annotations
 
 import base64
 from copy import deepcopy
+from datetime import datetime, timedelta
 from importlib import resources
 import json
 from pathlib import Path
@@ -32,6 +33,27 @@ OPERATIONS = (
     ("fdir", "fdir.residual-isolability.v1"),
 )
 ROLES = frozenset(role for role, _ in OPERATIONS) | {"set"}
+
+def _exact_timestamp(value, name, *, require_utc=False):
+    """Reject precision loss before Python's microsecond datetime conversion."""
+    if not isinstance(value, str):
+        raise ValueError(f"{name} must be a timezone-aware ISO timestamp")
+    # Keep the previously supported ISO spellings (including legacy space
+    # separators and offset seconds), while checking fractions before parsing.
+    if any(match.group(1)[6:].strip("0") for match in re.finditer(r"[.,](\d+)", value)):
+        raise ValueError(f"{name} cannot be represented at microsecond precision")
+    instant = datetime.fromisoformat(value.replace("Z", "+00:00"))
+    if instant.utcoffset() is None:
+        raise ValueError(f"{name} must be a timezone-aware ISO timestamp")
+    offset_fraction = re.search(r"[+-]\d{2}(?::?\d{2}){0,2}[.,](\d+)$", value)
+    if (offset_fraction and offset_fraction.group(1).strip("0")
+            and instant.utcoffset().microseconds == 0):
+        # fromisoformat also drops fractional offsets below one whole second.
+        raise ValueError(f"{name} timezone offset cannot be represented without precision loss")
+    if require_utc and instant.utcoffset() != timedelta(0):
+        raise ValueError(f"{name} must declare UTC")
+    return instant
+
 
 # Source-controlled adapter code only; no artifact can select code or imports.
 _BOOTSTRAP = r'''
@@ -227,6 +249,10 @@ def _source_inner(raw):
         raise ValueError("Unsupported calibrated experiment")
     if len(value.get("channels", [])) != 2:
         raise ValueError("Exactly two channels are required")
+    _exact_timestamp(value["epoch_utc"], "epoch_utc", require_utc=True)
+    for channel in value["channels"]:
+        for key in ("valid_from", "valid_until"):
+            _exact_timestamp(channel["calibration_profile"][key], "calibration " + key)
     configuration = value["configuration"]
     gsie = configuration["gsie"]
     oit = configuration["observability"]
@@ -352,7 +378,7 @@ def _validate(bundle):
         experiment = _source(raw)
         if bundle["source"]["experiment_id"] != experiment["experiment_id"] or bundle["source"]["experiment_digest"] != digest(experiment):
             raise ValueError("Experiment identity binding mismatch")
-        if bundle["configuration"] != experiment["configuration"]:
+        if canonical(bundle["configuration"]) != canonical(experiment["configuration"]):
             raise ValueError("Configuration differs from retained experiment")
         steps = bundle["steps"]
         if [(s["runtime_ref"], s["operation_id"]) for s in steps] != list(OPERATIONS) or set(bundle["runtimes"]) != ROLES:
@@ -370,14 +396,14 @@ def _validate(bundle):
         identities = {bundle["session_id"], evidence["artifact_ref"], *(op for _, op in OPERATIONS)}
         for index, step in enumerate(steps):
             request, refs = _request(index, experiment, steps[:index], step["execution_id"], evidence["artifact_ref"])
-            if step["request"] != request or step["input_refs"] != refs:
+            if canonical(step["request"]) != canonical(request) or step["input_refs"] != refs:
                 raise ValueError("Request differs from exact retained operation graph")
             result = step["result"]
-            for key, content in (("request_sha256", request), ("result_sha256", result),
+            for key, content in (("request_sha256", step["request"]), ("result_sha256", result),
                                  ("numerical_result_id", step["numerical_result"])):
                 if step[key] != digest(content):
                     raise ValueError("Calibrated step content binding mismatch")
-            if step["numerical_result"] != _numerical(step["runtime_ref"], result):
+            if canonical(step["numerical_result"]) != canonical(_numerical(step["runtime_ref"], result)):
                 raise ValueError("Calibrated numerical projection mismatch")
             if result["operation_id"] != step["operation_id"] or step["result_id"] != result["result_id"]:
                 raise ValueError("Calibrated operation/result identity mismatch")

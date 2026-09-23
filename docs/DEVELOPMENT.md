@@ -19,6 +19,10 @@ and transport semantics.
   stale selection revisions and record an operation's actual support.
 - Validate saved records without executing numerical providers. Runtime
   bindings are supplied explicitly and never loaded from workspace content.
+- The operation runner copies provider runtime identities before execution and
+  returned payloads before retention. Reusing or mutating provider-owned objects
+  must not alter retained records. Invalid runtime identities refuse before the
+  provider executes, retaining a restorable refusal with `runtime: null`.
 - Preserve covariance ordering, frames, units, source identities and declared
   assumptions. Do not silently repair, diagonalize or reinterpret a matrix.
 - Use isolated branches/checkouts and review current remote changes before
@@ -60,6 +64,22 @@ scientific sources. Source-dependent tests skip when their documented checkout
 variables are absent; report those skips. The optional PLSR environment and
 installed-package checks are described in [PLSR.md](PLSR.md).
 
+The installed candidate gate requires Python 3.12, Git, Node.js 22.13 and `npm`
+on `PATH`, plus network access for the pinned providers and packages:
+
+```powershell
+python -m pip install "setuptools>=77" wheel numpy==2.4.3 websockets==16.0
+python scripts/check_workbench_candidates.py
+```
+
+The gate resolves the Windows `npm.cmd` executable and passes `core.autocrlf=false`
+to its Git commands and nested helpers so pinned source bytes are preserved.
+It does not change global Git configuration. Reused checkouts must already match
+their pinned bytes; the gate does not repair them. Skipped integration tests
+fail this gate. The pinned ESM fixture helper still invokes `npx` without resolving
+the Windows command shim, so the complete candidate gate currently runs in Ubuntu
+CI; the Windows helper failure is a test-tooling limitation.
+
 For viewport changes run `python scripts/check_godot.py --godot <Godot 4.5.2 executable>`
 (import, `godot/tests/protocol_smoke.gd`, `channel_generality.gd`, `adapter_boundary.gd`);
 [godot/README.md](../godot/README.md) documents the individual commands. Deployment
@@ -72,6 +92,10 @@ and historical replay. `tests/test_calibration_status.py` checks live read
 surfaces, `tests/test_rci_records.py` checks retained measurement provenance,
 and `tests/test_covariance_replay_refusal.py` checks refusal when no runtime was
 bound to the original attempt. Historical replay requires the legacy checkouts.
+`tests/test_operation_runner.py::test_provider_owned_outputs_cannot_mutate_retained_records`
+checks provider-object isolation for successful and refused executions, and
+`test_invalid_runtime_refusal_remains_restorable` checks that invalid runtime
+identities prevent execution while preserving save/restore.
 Coverage is not exhaustive: the off-allowlist `runtime_mismatch`,
 `RUNTIME_UNAVAILABLE` and `RUNTIME_IO` branches, covariance CLI argument parsing,
 and the calibration-refusal exit code lack dedicated assertions in the current

@@ -72,6 +72,41 @@ def test_bounded_exact_source_bytes_required():
         _source(SOURCE.decode())
 
 
+@pytest.mark.parametrize("field", ["epoch_utc", "valid_from", "valid_until"])
+def test_submicrosecond_timestamps_refuse_before_runtime_resolution(field, monkeypatch):
+    experiment = json.loads(SOURCE)
+    target = experiment if field == "epoch_utc" else experiment["channels"][0]["calibration_profile"]
+    # Truncating this lower bound would incorrectly admit the fixture at 5 s.
+    target[field] = "2026-01-01T00:00:05.0000009Z"
+
+    def unexpected_runtime(*args, **kwargs):
+        pytest.fail("Timestamp precision must be validated before binding providers")
+
+    monkeypatch.setattr("ciw.calibrated_observable._adapters", unexpected_runtime)
+    with pytest.raises(ValueError, match=field + ".*microsecond precision"):
+        create_session(canonical(experiment), {})
+
+
+@pytest.mark.parametrize("field,instant", [
+    ("epoch_utc", "2026-01-01T00:00:00.123456000Z"),
+    ("epoch_utc", "2026-01-01 00:00:00.123456000+00:00"),
+    ("valid_from", "2025-12-01T01:00:00.123456000+01:00"),
+    ("valid_from", "2025-12-01 01:00:00,123456000+01:00"),
+    ("valid_until", "2026-12-01T00:00:00.000000000Z"),
+])
+def test_exact_timestamp_trailing_zeros_preserve_source_declarations(field, instant):
+    experiment = json.loads(SOURCE)
+    target = experiment if field == "epoch_utc" else experiment["channels"][0]["calibration_profile"]
+    target[field] = instant
+    assert _source(canonical(experiment)) == experiment
+
+
+def test_fractional_timezone_offset_cannot_silently_become_utc():
+    raw = altered_source(lambda s: s.update(epoch_utc="2026-01-01T00:00:00+00:00:00.5"))
+    with pytest.raises(ValueError, match="offset.*precision loss"):
+        _source(raw)
+
+
 def test_complete_path_matches_analytic_process_solution(bundle):
     assert bundle["verification"]["outcome"] == "passed"
     assert bundle["verification"]["independent"] is False
@@ -173,6 +208,32 @@ def test_content_tampering_rejected_after_outer_rehash(bundle, mutate):
     mutate(changed)
     changed["bundle_digest"] = _bundle_digest(changed)
     with pytest.raises(ValueError):
+        inspect_session(changed)
+
+
+@pytest.mark.parametrize("replacement", [True, 1], ids=["boolean", "integer"])
+@pytest.mark.parametrize("target", ["configuration", "request"])
+def test_equal_python_numbers_cannot_substitute_retained_json(bundle, target, replacement):
+    changed = deepcopy(bundle)
+    changed.pop("verification", None)
+    declaration = (changed["configuration"]["observability"] if target == "configuration"
+                   else changed["steps"][3]["request"]["inputs"]["declaration"])
+    assert type(declaration["transition"][0][0]) is float
+    declaration["transition"][0][0] = replacement
+    changed["bundle_digest"] = _bundle_digest(changed)
+    with pytest.raises(ValueError, match="Configuration differs|Request differs"):
+        inspect_session(changed)
+
+
+def test_rehashed_numerical_projection_must_preserve_json_number_type(bundle):
+    changed = deepcopy(bundle)
+    changed.pop("verification", None)
+    step = changed["steps"][3]
+    assert type(step["numerical_result"]["data"]["rank"]) is int
+    step["numerical_result"]["data"]["rank"] = float(step["numerical_result"]["data"]["rank"])
+    step["numerical_result_id"] = digest(step["numerical_result"])
+    changed["bundle_digest"] = _bundle_digest(changed)
+    with pytest.raises(ValueError, match="numerical projection"):
         inspect_session(changed)
 
 

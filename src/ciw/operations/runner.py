@@ -55,12 +55,15 @@ def execute(registry: OperationRegistry, run: dict, selection: dict, recording_f
             if key in parameters and parameters[key] != selection[key]:
                 raise AdapterRefusal("selection_mismatch", "Operation parameters contradict the captured selection")
         execution["parameters"] = copy.deepcopy(parameters)
-        execution["runtime"] = operation.runtime_identity()
-        if not isinstance(execution["runtime"], dict) or not execution["runtime"]:
+        runtime = copy.deepcopy(operation.runtime_identity())
+        if not isinstance(runtime, dict) or not runtime:
             raise AdapterRefusal("invalid_runtime_identity", "An operation must identify its numerical runtime")
-        finite_tree(execution["runtime"], "runtime identity")
+        finite_tree(runtime, "runtime identity")
+        execution["runtime"] = runtime
         # A provider receives detached scientific evidence, never live mutable state.
-        data = operation.execute(copy.deepcopy(run), copy.deepcopy(parameters))
+        # Cached provider objects remain provider-owned. Detach the returned
+        # payload before validating or retaining it as immutable evidence.
+        data = copy.deepcopy(operation.execute(copy.deepcopy(run), copy.deepcopy(parameters)))
         if not isinstance(data, dict):
             raise AdapterRefusal("invalid_adapter_output", "Operation data must be an object")
         validate_payload(operation_id, data, run, parameters, selection)
