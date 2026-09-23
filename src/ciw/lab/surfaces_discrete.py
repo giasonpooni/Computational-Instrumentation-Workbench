@@ -151,13 +151,13 @@ def surface_interface(ctx):
                                   "incomplete surface data, reusing its refusal of the seeded defects."),
     }
     findings = [
-        finding("Brioschi curvature from the metric alone equals the supplied Gaussian curvature on every conformance surface",
+        finding("Brioschi curvature from the metric alone equals the supplied Gaussian curvature at every sampled point",
                 "numerical", worst["gauss_equation"],
                 {"derivation": "Theorema Egregium, Brioschi form; docs/lab/SURFACE_INTERFACE.md#conformance-suite",
                  "checks": [_check("Brioschi K (fourth-order differences of exact dg) vs supplied K, worst normalized",
                                    worst["gauss_equation"], THRESHOLDS["gauss_equation"], kind="invariant")]},
                 unit="normalized residual", tolerance={"abs": THRESHOLDS["gauss_equation"], "rel": 0.0}),
-        finding("Metrics are symmetric positive definite on every declared domain", "numerical",
+        finding("Metrics are symmetric positive definite at every sampled point of the declared domains", "numerical",
                 {"max_asymmetry": worst["metric_asymmetry"], "min_eigenvalue_ratio": worst["min_eigenvalue_ratio"],
                  "points_refused_by_core_check": refused},
                 {"checks": [_check("|g_12 - g_21| / max|g|", worst["metric_asymmetry"], THRESHOLDS["metric_asymmetry"],
@@ -166,16 +166,18 @@ def surface_interface(ctx):
                                    THRESHOLDS["min_eigenvalue_ratio"], comparison="ge", kind="invariant"),
                             _check("sampled points refused by core Surface.check", refused, 0, kind="exact_arithmetic")]},
                 tolerance={"abs": 1e-13, "rel": 1e-9}),
-        finding("Christoffel symbols are symmetric in their lower indices", "numerical", worst["christoffel_asymmetry"],
+        finding("Christoffel symbols are symmetric in their lower indices at every sampled point", "numerical", worst["christoffel_asymmetry"],
                 {"checks": [_check("max |Gamma^k_ij - Gamma^k_ji|, normalized", worst["christoffel_asymmetry"],
                                    THRESHOLDS["christoffel_asymmetry"], kind="invariant")]},
                 tolerance={"abs": THRESHOLDS["christoffel_asymmetry"], "rel": 0.0}),
-        finding("The connection is metric compatible: d_k g_ij = Gamma^l_ki g_lj + Gamma^l_kj g_il", "numerical",
+        finding("The connection is metric compatible at every sampled point: d_k g_ij = Gamma^l_ki g_lj + Gamma^l_kj g_il",
+                "numerical",
                 worst["compatibility"],
                 {"checks": [_check("max compatibility residual, normalized", worst["compatibility"],
                                    THRESHOLDS["compatibility"], kind="invariant")]},
                 tolerance={"abs": THRESHOLDS["compatibility"], "rel": 0.0}),
-        finding("Supplied metric derivatives agree with fourth-order differences of the metric", "numerical",
+        finding("Supplied metric derivatives agree with fourth-order differences of the metric at every sampled point",
+                "numerical",
                 worst["derivative_consistency"],
                 {"checks": [_check("max |D4 g - dg|, normalized (h = 1e-3 l)", worst["derivative_consistency"],
                                    THRESHOLDS["derivative_consistency"], kind="self_convergence")]},
@@ -704,8 +706,8 @@ def chart_transitions(ctx):
         title="Normalized det g along the delta = 1e-3 great circle", xlabel="arclength s",
         ylabel="det g / R^4", logy=True, markers=False))
     fields = {
-        "hypothesis": ("A two-chart polar atlas of the sphere with exact transitions integrates any great circle, "
-                       "including those through or near a pole, with the accuracy of a regular chart, while a single "
+        "hypothesis": ("A two-chart polar atlas of the sphere with exact transitions integrates great circles through "
+                       "or near a pole with an accuracy that does not depend on how close they pass, while a single "
                        "polar chart loses accuracy or fails near its poles."),
         "mathematical_model": ("Chart A: X = R(sin t cos p, sin t sin p, cos t); chart B = R_y(pi/2) X_A, poles on A's "
                                "equator. det g / R^4 = sin^2 theta in each chart and sin^2 theta_A + sin^2 theta_B = "
@@ -790,7 +792,7 @@ def chart_transitions(ctx):
                                 "witness": {"delta_failed": [r["delta"] for r in failed],
                                             "delta_0.1_single_error": _sig(runs[0.1]["single_chart_error"]) if runs[0.1]["single_chart_error"] is not None else None,
                                             "delta_0.1_atlas_error": _sig(runs[0.1]["atlas_error"])}}),
-        finding("The exact meridian crosses the pole in a single chart because v_phi stays exactly zero", "numerical",
+        finding("Along the exact meridian (v_phi = 0 exactly) chart A alone crosses the pole accurately", "numerical",
                 _sig(single_through, 2),
                 {"checks": [_check("chart A alone, delta = 0: max |X - X_exact|", single_through, 1e-10, comparison="le",
                                    kind="analytic")]},
@@ -899,7 +901,7 @@ def coordinate_singularities(ctx):
         "numerical_result": (f"{len(classes) - len(misclassified)}/{len(classes)} approaches classified as expected; "
                              f"sphere pole exponents det {_fmt(e_pole['det'])}, cond {_fmt(e_pole['condition'])}, Gamma "
                              f"{_fmt(e_pole['christoffel'])}, K {_fmt(e_pole['curvature'])}; r^(3/2) graph K exponent "
-                             f"{_fmt(e_graph['curvature'])}, K r -> {_fmt(graph_prefactor)}; cone circumference ratio "
+                             f"{_fmt(e_graph['curvature'])}, K r -> {graph_prefactor:.6g} (9/8 expected); cone circumference ratio "
                              f"{_fmt(cone['circumference_ratio'])}; polar-plane and cone exponent signatures differ by "
                              f"{_fmt(signature)}; core check accepts cond(g) up to {_fmt(leniency['max_accepted_condition'])}; "
                              f"{sum(e == o for e, o in refusals.values())}/{len(refusals)} refusal codes as expected."),
@@ -913,6 +915,8 @@ def coordinate_singularities(ctx):
         "unresolved_assumptions": [
             "The classification rules are validated on seven declared examples, not proven for general surfaces.",
             "Non-rotationally-symmetric singular points (edges, cusps along curves) are not covered.",
+            "The pointwise guard reports both a conical point and a coordinate singularity as degenerate_metric and "
+            "does not flag the hyperbolic boundary at any finite y (cond g = 1, K = -1); only the scan separates them.",
             "The core Surface.check threshold (det g <= 1e-12 (tr g)^2) is left unchanged; a condition-number "
             "threshold is proposed as a core change."],
         "recommended_next_task": ("T042: adopt the refusal codes (degenerate_metric, curvature_blowup, "

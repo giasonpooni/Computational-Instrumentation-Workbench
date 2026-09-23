@@ -189,8 +189,13 @@ def _fields(hypothesis, model, invariant, experiment, result, uncertainty, failu
             "unresolved_assumptions": assumptions, "recommended_next_task": next_task}
 
 
+def _accepted(row: dict) -> bool:
+    """Accepted on reopen, or accepted by a pure validator (which may report a status)."""
+    return row["observed"] == "accepted" or row["observed"].startswith("accepted:")
+
+
 def _authentication(rows) -> dict:
-    survivors = sorted(row["name"] for row in rows if row["observed"] == "accepted")
+    survivors = sorted(row["name"] for row in rows if _accepted(row))
     return finding(
         "Retained workspace records are authenticated: a holder without a secret cannot produce a forged record "
         "that reopens", "provenance", {"surviving_mutants_in_this_task": survivors},
@@ -206,8 +211,8 @@ def _survivor(row: dict, claim: str, statement: str) -> dict:
     if "post_reopen" in row:
         witness["post_reopen"] = row["post_reopen"]
     return finding(claim, "provenance", {"mutant": row["name"], "observed": row["observed"]},
-                   {"checks": [_invariant(f"{row['name']}: accepted on reopen (1 = accepted)",
-                                          1.0 if row["observed"] == "accepted" else 0.0, 1.0, "ge")]},
+                   {"checks": [_invariant(f"{row['name']}: accepted (1 = accepted)",
+                                          1.0 if _accepted(row) else 0.0, 1.0, "ge")]},
                    tolerance=EXACT, counterexample={"statement": statement, "witness": witness})
 
 
@@ -245,7 +250,7 @@ def _retain_rows(ctx, rows, stem: str) -> None:
 
 
 def _summary(rows) -> str:
-    survivors = [row["name"] for row in rows if row["observed"] == "accepted"]
+    survivors = [row["name"] for row in rows if _accepted(row)]
     matched = sum(row["matches_prediction"] for row in rows)
     return (f"{len(rows)} mutants; {sum(row['killed'] for row in rows)} refused, {len(survivors)} accepted "
             f"({', '.join(survivors) or 'none'}); {matched}/{len(rows)} outcomes match the prediction exactly")

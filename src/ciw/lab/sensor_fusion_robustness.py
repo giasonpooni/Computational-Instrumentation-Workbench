@@ -233,8 +233,9 @@ def stale_clock_study(seed: int = 70_2026, runs: int = 200, ticks: int = 200, tr
                 readings.append(camera[:, k])
                 means.append(mean_truth[k][:2][None, :])
         estimates, innovations = run_shared(F, MU0, steps, readings)
-        # Exact expected innovations: the same linear filter run on the noise-free mean readings.
-        _, expected = run_shared(F, MU0, steps, means)
+        # Exact expected innovations and errors: the same linear filter run on the noise-free mean readings.
+        mean_estimates, expected = run_shared(F, MU0, steps, means)
+        mean_error = mean_estimates[0, burn + 1:, :2] - np.array(mean_truth)[burn + 1:, :2]
         cam = np.stack([_split_whitened(nu[:, :2], step.S[:2, :2]) for nu, step in zip(innovations, steps)], axis=1)
         cam_expected = np.stack([_split_whitened(mu[:, :2], step.S[:2, :2]) for mu, step in zip(expected, steps)],
                                 axis=1)[0]
@@ -252,6 +253,8 @@ def stale_clock_study(seed: int = 70_2026, runs: int = 200, ticks: int = 200, tr
         error = estimates[:, burn + 1:, :2] - truth[:, burn + 1:, :2]
         result["position_error_mean"] = error.mean(axis=(0, 1))
         result["position_error_mean_z_vs_zero"] = run_mean_z(error)[0]
+        result["position_error_predicted_mean"] = mean_error.mean(axis=0)
+        result["position_error_z_vs_predicted"] = run_mean_z(error - mean_error[None])[0]
         result["nees"] = consistency(nees_series(estimates, truth, steps)[:, burn:], 4)
         return result
 
@@ -350,13 +353,14 @@ def stale_clock(ctx):
                 "-tau v while the mean test passes", "numerical",
                 as_json({"camera_mean_z": one["camera_mean_z"], "position_error_mean": one["position_error_mean"],
                          "position_error_mean_z_vs_zero": one["position_error_mean_z_vs_zero"],
-                         "expected_position_bias": [-study["tau_s"] * MU0[2], -study["tau_s"] * MU0[3]],
+                         "predicted_position_error_mean": one["position_error_predicted_mean"],
+                         "position_error_z_vs_predicted": one["position_error_z_vs_predicted"],
                          "nees": one["nees"]}),
                 {**generator_basis(seed), "checks": [
                     check("analytic", "largest mean-innovation z (camera only)", one_z, zc, "le"),
                     check("analytic", "position error mean z against zero", error_z, zc, "ge"),
-                    check("analytic", "position error mean minus -tau E[v] (x component, m)",
-                          one["position_error_mean"][0] + study["tau_s"] * MU0[2], 0.02)]},
+                    check("analytic", "position error mean against the exact linear prediction (max |z|)",
+                          float(np.max(np.abs(one["position_error_z_vs_predicted"]))), zc, "le")]},
                 tolerance=TOL_MC, counterexample={
                     "statement": "A stale sensor clock always shows up as a bias in the filter innovations",
                     "witness": as_json({"sensors": "camera only", "camera_mean_z": one["camera_mean_z"],

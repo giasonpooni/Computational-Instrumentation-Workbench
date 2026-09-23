@@ -156,6 +156,19 @@ def _normal(matrix):
     return bool(np.all(np.isfinite(values)) and (nonzero.size == 0 or np.min(nonzero) >= 2.0 ** -1022))
 
 
+def _normal_window(A, P, time="continuous"):
+    """A, P, the decrease form and the resolution are all normal and finite.
+
+    Inside this window every operation of the documented procedure commutes
+    exactly with power-of-two scaling of A (up to LAPACK's own rescaling of
+    matrices whose largest entry lies outside [2^-485, 2^485]).
+    """
+    with np.errstate(over="ignore", invalid="ignore", under="ignore"):
+        form = R.decrease_matrix(A, P, time)
+        res = R.resolution(A, P, time, form=form)
+    return _normal(A) and _normal(P) and _normal(form) and math.isfinite(res) and res >= 2.0 ** -1022
+
+
 def _subnormal_witness():
     """A = [[-2, 5], [0, -3]] * 2^-1074, P = I: the exact decrease form [[-4, 5], [5, -6]] u is indefinite."""
     return np.array([[-2.0, 5.0], [0.0, -3.0]]) * R.TINY, np.eye(2), np.array([1.0, 0.0])
@@ -213,19 +226,23 @@ def _t101_family():
             A = np.ldexp(unit, k)
             cases.append(_verdict_case(f"F1:{i}:{k}", A, np.eye(2), [1.0, 0.5]))
             meta.append({"family": "F1", "eps_index": i, "eps": eps, "k": k, "A": A, "P": np.eye(2),
-                         "normal": _normal(A) and _normal(R.decrease_matrix(A, np.eye(2)))})
+                         "normal": _normal_window(A, np.eye(2))})
     for seed in range(4):
         rng = R.generator(101 + seed)
         A0 = rng.normal(size=(3, 3)) - 3.0 * np.eye(3)
         P0 = R.kron_lyapunov(A0, np.eye(3))
         for k in (-1074, -1070, -1066, -1062, -1058, -1050, -1040, -1022, -1000, -500, 0, 500, 1000, 1015, 1018,
-                  1020, 1021, 1022, 1023):
+                  1020):
             with np.errstate(over="ignore"):
                 A = np.ldexp(A0, k)
             if not np.all(np.isfinite(A)):
                 continue  # not a declarable binary64 matrix
             cases.append(_verdict_case(f"F2:{seed}:{k}", A, P0, np.ones(3)))
             meta.append({"family": "F2", "seed": seed, "k": k, "A": A, "P": P0})
+        for k in (500, 505, 508, 509, 510, 511, 512):
+            A, P = np.ldexp(A0, k), np.ldexp(P0, k)
+            cases.append(_verdict_case(f"F3:{seed}:{k}", A, P, np.ones(3)))
+            meta.append({"family": "F3", "seed": seed, "k": k, "A": A, "P": P})
     A, P, x = _subnormal_witness()
     cases.append(_verdict_case("witness", A, P, x))
     cases.append(_verdict_case("witness-unit", A / R.TINY, P, x))
@@ -239,7 +256,7 @@ def _t101_offline():
     base = R.resolution(A0, np.eye(2))
     for k in T101_SCALES:
         A = np.ldexp(A0, k)
-        if _normal(A) and _normal(R.decrease_matrix(A, np.eye(2))):
+        if _normal_window(A, np.eye(2)):
             homogeneity.append(abs(np.ldexp(R.resolution(A, np.eye(2)), -k) - base) / base)
     return [
         finding("Inconclusive threshold of the family A = s[[-eps, 1], [-1, -eps]], P = I: certified iff eps > "
@@ -277,7 +294,8 @@ def resolution_floor(ctx):
         "threshold is eps* = 4 gamma_5/(1 - 8u) = 2.2204e-15 for every s with normal arithmetic.",
         ["F1: 8 eps values x 25 exponents k in [-1074, 1023], A = 2^k [[-eps, 1], [-1, -eps]], P = I, x = (1, 0.5)",
          "F2: 4 seeded Hurwitz 3x3 A0 (PCG64 seeds 101-104) with P0 from a CIW Kronecker Lyapunov solve, "
-         "A = 2^k A0 for 19 exponents, x = ones",
+         "A = 2^k A0 for 16 exponents in [-1074, 1020], x = ones",
+         "F3: the same plants with A = 2^k A0 and P = 2^k P0 for k in [500, 512] (overflow boundary)",
          "Subnormal witness A = [[-2, 5], [0, -3]] 2^-1074, P = I, x = (1, 0), and its unit-scale twin"],
         "Runtime verdict code, resolution and margin per case, returned by the pinned PLSR in a subprocess.",
         "resolution_PLSR = resolution_CIW; code at scale 2^k equals the unit-scale code whenever every entry of A "
@@ -324,11 +342,12 @@ def resolution_floor(ctx):
                                           - results["F1:0:0"]["resolution"]) / results["F1:0:0"]["resolution"])
             elif code != unit_codes[m["eps_index"]]:
                 f1_below.append({"eps": m["eps"], "k": m["k"], "code": code, "unit_code": unit_codes[m["eps_index"]]})
-        else:
+        elif m["family"] == "F2":
             exact = R.exact_class(R.exact_form(m["A"], m["P"]))
             row["exact_class"] = exact
             if code in R.CERTIFYING and exact != "negative_definite":
                 false_certificates.append({"seed": m["seed"], "k": m["k"], "code": code, "exact_class": exact})
+        else:
             with np.errstate(over="ignore", invalid="ignore"):
                 overflows = not np.all(np.isfinite(R.decrease_matrix(m["A"], m["P"])))
             if overflows and m["seed"] not in overflow_first:
