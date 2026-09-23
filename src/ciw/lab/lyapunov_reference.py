@@ -5,9 +5,11 @@ re-derivations of the documented PLSR decrease form, resolution bound and
 decision order; exact dyadic-rational classification of the declared binary64
 inputs; optional SciPy Lyapunov solvers imported lazily; and seeded input
 generators. Exact arithmetic decides what the declared numbers imply
-mathematically. It says nothing about a physical plant, and agreement with the
-re-derived formulas shows only that the runtime implements its own documented
-specification, not that the specification is sufficient.
+mathematically. It says nothing about a physical plant. The float64
+re-derivations transcribe the runtime's documented procedure, so agreement with
+them is a same-specification check (recorded as an ordinary check, never as an
+independent one): it shows that the runtime implements its own documentation,
+not that the documentation is sufficient.
 """
 from __future__ import annotations
 
@@ -16,6 +18,8 @@ from itertools import combinations
 import math
 
 import numpy as np
+
+from .. import __version__
 
 U = 2.0 ** -53                      # binary64 unit roundoff
 TINY = 2.0 ** -1074                 # smallest positive subnormal
@@ -289,13 +293,13 @@ def scipy_lyapunov(A, Q, time="continuous"):
 
 
 def independent_lyapunov(A, Q, time="continuous"):
-    """SciPy when installed, otherwise the CIW Kronecker solve; returns (P, implementation)."""
+    """SciPy when installed, otherwise the CIW Kronecker solve; returns (P, implementation, revision)."""
     P = scipy_lyapunov(A, Q, time)
     if P is not None:
         import scipy
 
-        return P, f"scipy.linalg.solve_{time}_lyapunov@{scipy.__version__}"
-    return kron_lyapunov(A, Q, time), "ciw.lab.lyapunov_reference.kron_lyapunov"
+        return P, f"scipy.linalg.solve_{time}_lyapunov@{scipy.__version__}", scipy.__version__
+    return kron_lyapunov(A, Q, time), "ciw.lab.lyapunov_reference.kron_lyapunov", __version__
 
 
 # Seeded generators ----------------------------------------------------------
@@ -347,6 +351,37 @@ def razor_edge(rng, n, P=None, side=-1.0, skew=100.0, iterations=48):
         A = build(side * kappa * base)
         form = decrease_matrix(A, P)
         return side * float(np.max(np.linalg.eigvalsh(form))) / resolution(A, P, form=form), A
+
+    low, high = 0.5, 2.0
+    for _ in range(iterations):
+        middle = 0.5 * (low + high)
+        if ratio(middle)[0] > 1.0:
+            high = middle
+        else:
+            low = middle
+    value, A = ratio(high)
+    return A, P, value
+
+
+def razor_edge_discrete(rng, n, side=-1.0, iterations=48):
+    """Discrete-time A = Q diag(s, r) with P = I whose computed |max eig(A^T A - I)| / resolution is just above 1.
+
+    A^T A - I = diag(s^2 - 1, r^2 - 1) before rounding (r in [0.3, 0.8]), so s sets the top eigenvalue; the
+    bisection places it about one resolution from zero on the certifiable (side -1) or indefinite side.
+    """
+    q = random_orthogonal(rng, n)
+    rest = rng.uniform(0.3, 0.8, size=n - 1)
+    P = np.eye(n)
+
+    def build(top):
+        return q @ np.diag(np.concatenate(([math.sqrt(1.0 + top)], rest)))
+
+    base = resolution(build(0.0), P, "discrete")
+
+    def ratio(kappa):
+        A = build(side * kappa * base)
+        form = decrease_matrix(A, P, "discrete")
+        return side * float(np.max(np.linalg.eigvalsh(form))) / resolution(A, P, "discrete", form=form), A
 
     low, high = 0.5, 2.0
     for _ in range(iterations):

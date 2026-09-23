@@ -38,16 +38,91 @@ def expm_series(M, terms=24):
     return result
 
 
+# An eigendecomposition is a valid exponential only for a well-conditioned
+# eigenvector basis; defective matrices (a ZOH-augmented integrator) have none.
+EIGENVECTOR_CONDITION_LIMIT = 1e8
+
+
 def independent_expm(M):
-    """SciPy's expm when installed, otherwise an eigendecomposition in numpy; returns (value, implementation)."""
+    """exp(M) from an implementation outside CIW, or None when none applies here.
+
+    Returns (value, implementation, revision). SciPy's expm, else mpmath's
+    expm at 40 digits, else a NumPy eigendecomposition when the eigenvector
+    basis is well conditioned. A defective matrix without SciPy or mpmath gets
+    None: the caller then relies on its closed-form reference alone.
+    """
+    M = np.asarray(M, dtype=float)
     try:
+        import scipy
         from scipy.linalg import expm
     except ImportError:
-        values, vectors = np.linalg.eig(np.asarray(M, dtype=float))
-        return (vectors @ np.diag(np.exp(values)) @ np.linalg.inv(vectors)).real, f"numpy.linalg.eig@{np.__version__}"
-    import scipy
+        pass
+    else:
+        return expm(M), f"scipy.linalg.expm@{scipy.__version__}", scipy.__version__
+    try:
+        import mpmath
+    except ImportError:
+        pass
+    else:
+        with mpmath.workdps(40):
+            value = mpmath.expm(mpmath.matrix(M.tolist()))
+            result = np.array([[float(value[i, j]) for j in range(M.shape[1])] for i in range(M.shape[0])])
+        return result, f"mpmath.expm@{mpmath.__version__}", mpmath.__version__
+    values, vectors = np.linalg.eig(M)
+    if not np.all(np.isfinite(vectors)) or np.linalg.cond(vectors) > EIGENVECTOR_CONDITION_LIMIT:
+        return None
+    value = (vectors @ np.diag(np.exp(values)) @ np.linalg.inv(vectors)).real
+    return value, f"numpy.linalg.eig@{np.__version__}", np.__version__
 
-    return expm(np.asarray(M, dtype=float)), f"scipy.linalg.expm@{scipy.__version__}"
+
+def _phi1(x):
+    """(1 - e^-x) / x, accurate for small x."""
+    return -math.expm1(-x) / x if x != 0.0 else 1.0
+
+
+def _phi2(x):
+    """(e^-x - 1 + x) / x^2, by its alternating series for small x (the direct form cancels)."""
+    if abs(x) > 0.1:
+        return (math.expm1(-x) + x) / (x * x)
+    total, term, k = 0.0, 0.5, 0
+    while abs(term) > 1e-18:
+        total += term
+        k += 1
+        term *= -x / (k + 2)
+    return total
+
+
+def damped_oscillator_zoh(A, B, h):
+    """Closed-form augmented exponential exp([[A, B], [0, 0]] h) for a 2x2 A with complex eigenvalues.
+
+    e^(A h) = e^(-s h) [cos(w h) I + sin(w h) / w (A + s I)] with eigenvalues -s +- i w, and
+    Gamma = A^-1 (e^(A h) - I) B (A is invertible).
+    """
+    A, B = np.asarray(A, dtype=float), np.asarray(B, dtype=float)
+    s = -0.5 * float(np.trace(A))
+    w = math.sqrt(float(np.linalg.det(A)) - s * s)
+    Phi = math.exp(-s * h) * (math.cos(w * h) * np.eye(2) + math.sin(w * h) / w * (A + s * np.eye(2)))
+    Gamma = np.linalg.solve(A, (Phi - np.eye(2)) @ B)
+    return _augmented(Phi, Gamma)
+
+
+def servo_zoh_closed_form(J, h):
+    """Closed-form augmented exponential for J theta'' = -b theta' + Kt u (x = angle, rate), a = b/J.
+
+    Phi = [[1, h phi1(a h)], [0, e^-(a h)]], Gamma = (Kt/J) [[h^2 phi2(a h)], [h phi1(a h)]].
+    """
+    a, k = SERVO["b_N_m_s"] / J, SERVO["Kt_N_m_per_A"] / J
+    x = a * h
+    Phi = np.array([[1.0, h * _phi1(x)], [0.0, math.exp(-x)]])
+    Gamma = k * np.array([[h * h * _phi2(x)], [h * _phi1(x)]])
+    return _augmented(Phi, Gamma)
+
+
+def _augmented(Phi, Gamma):
+    n, m = Phi.shape[0], Gamma.shape[1]
+    result = np.eye(n + m)
+    result[:n, :n], result[:n, n:] = Phi, Gamma
+    return result
 
 
 def zoh(A, B, h):
@@ -110,6 +185,49 @@ def simulate_iss(A, B, P, w_bar, scenario, seed=112, step=ISS_STEP, horizon=ISS_
     return {"sup_sqrt_V": sup_v, "sup_state": sup_x, "final_state": x.tolist()}
 
 
+def reachable_sup(A, B, P, w_bar, step=ISS_STEP, horizon=60.0, angles=361, refinements=60):
+    """Largest sqrt(V) reachable from x(0) = 0 under any measurable |w| <= w_bar (single input, n = 2).
+
+    With P = L L^T, sqrt(V(x(t))) = |L^T x(t)| and x(t) = int_0^t e^(A s) B w(t - s) ds, so the supremum over
+    t and w is max over unit u of w_bar int_0^inf |u^T L^T e^(A s) B| ds (the support function of the
+    reachable set). The integral is a trapezoid rule on the exact sampled impulse response; the direction is
+    located on a grid over a half circle and refined by golden-section search in the bracketing cell.
+    Sample-held disturbances are admissible inputs, so no held simulation can exceed it.
+    """
+    L = np.linalg.cholesky(np.asarray(P, dtype=float))
+    Phi = expm_series(np.asarray(A, dtype=float) * step)
+    steps = int(round(horizon / step))
+    response = np.empty((steps + 1, 2))
+    column = np.asarray(B, dtype=float)[:, 0].copy()
+    for k in range(steps + 1):
+        response[k] = L.T @ column
+        column = Phi @ column
+
+    def support(phi):
+        magnitude = np.abs(response @ np.array([math.cos(phi), math.sin(phi)]))
+        return w_bar * step * (float(magnitude.sum()) - 0.5 * float(magnitude[0] + magnitude[-1]))
+
+    width = math.pi / (angles - 1)
+    grid = [support(i * width) for i in range(angles)]
+    best = int(np.argmax(grid))
+    low, high = (best - 1) * width, (best + 1) * width
+    ratio = 0.5 * (math.sqrt(5.0) - 1.0)
+    a, b = high - ratio * (high - low), low + ratio * (high - low)
+    fa, fb = support(a), support(b)
+    for _ in range(refinements):
+        if fa >= fb:
+            high, b, fb = b, a, fa
+            a = high - ratio * (high - low)
+            fa = support(a)
+        else:
+            low, a, fa = a, b, fb
+            b = low + ratio * (high - low)
+            fb = support(b)
+    phi = 0.5 * (low + high)
+    value = max(support(phi), grid[best])
+    return {"sup_sqrt_V": value, "direction_angle": phi, "step": step, "horizon": horizon, "angles": angles}
+
+
 def scalar_iss(a=1.0, w_bar=0.5, horizon=ISS_HORIZON):
     """x' = -a x + w with w = w_bar: the quadratic ISS bound w_bar/a is attained asymptotically."""
     bound = iss_bound(np.array([[-a]]), np.array([[1.0]]), np.eye(1), w_bar)
@@ -139,7 +257,9 @@ ISS_SPEC = {
         "any new status code for disturbance robustness (a new code is a new runtime-status version)"],
     "numerical_illustration": "synthetic: A = [[0, 1], [-4, -1.2]], B = [0, 1]^T, w_bar = 0.5, Q = I; exact "
                               "ZOH simulation with h = 0.005 s over 30 s from x(0) = 0 for four bounded "
-                              "disturbance classes; plus the scalar system x' = -x + w where the bound is tight.",
+                              "disturbance classes, compared with the quadratic ISS bound and with the sharp "
+                              "reachable-set supremum; plus the scalar system x' = -x + w, where the bound is "
+                              "approached as t grows.",
     "open_questions": [
         "a resolution-aware float64 evaluation of the ISS inequality analogous to decrease_resolution",
         "sampled-data ISS: inter-sample behaviour of a discrete certificate under held disturbances",
@@ -147,7 +267,7 @@ ISS_SPEC = {
 }
 
 
-def iss_spec_markdown(bound, simulations, scalar) -> str:
+def iss_spec_markdown(bound, simulations, scalar, reachable) -> str:
     lines = [f"# {ISS_SPEC['title']}", "", f"Status: {ISS_SPEC['status']}.", "", "## Definition", "",
              ISS_SPEC["definition"], "", "## ISS-Lyapunov function", "", ISS_SPEC["iss_lyapunov_function"], "",
              "## Data a host must supply", ""]
@@ -160,7 +280,10 @@ def iss_spec_markdown(bound, simulations, scalar) -> str:
     for name, result in simulations.items():
         lines.append(f"| {name} | {result['sup_sqrt_V']:.6g} | {result['sup_sqrt_V'] / bound['sqrt_V_bound']:.4f} | "
                      f"{result['sup_state']:.6g} |")
-    lines += ["", f"Scalar system: exact sup |x| = {scalar['exact_sup']:.12g}, bound = {scalar['state_bound']:.12g}.",
+    lines += ["", f"Sharp reference: the largest sqrt(V) reachable from x(0) = 0 under any |w| <= w_bar is "
+                  f"{reachable['sup_sqrt_V']:.6g} ({reachable['sup_sqrt_V'] / bound['sqrt_V_bound']:.4f} of the ISS "
+                  "bound); the quadratic ISS bound is conservative by the Cauchy-Schwarz step.",
+              "", f"Scalar system: exact sup |x| = {scalar['exact_sup']:.12g}, bound = {scalar['state_bound']:.12g}.",
               "", "## Open research questions", ""] + [f"- {item}" for item in ISS_SPEC["open_questions"]]
     return "\n".join(lines) + "\n"
 
@@ -174,6 +297,10 @@ ADAPTER_WINDOW = 400
 MAX_AGE_S = 0.05
 CERTIFICATE_VALID_UNTIL_S = 10.0
 SAMPLE_FIELDS = ("sample_schema", "x", "theta", "theta_dot")
+# The adapter forwards theta_hat and both ends of theta_hat +- GUARD_SE standard errors; the host accepts a
+# window only when the kernel certifies all three, so a point estimate near a box bound cannot pass alone.
+GUARD_SE = 3.0
+SAMPLE_ROLES = ("estimate", "lower", "upper")
 
 
 def adapter_plant():
@@ -235,11 +362,12 @@ def residual_statistics(readings):
 
 
 def adapt(envelope):
-    """Host-side adapter: a host-owned status, or a plsr-sample-v1 sample with numbers only.
+    """Host-side adapter: a host-owned status, or plsr-sample-v1 samples with numbers only.
 
-    The envelope carries sensor identity, units, calibration and timing; none of it is copied into the sample.
+    The envelope carries sensor identity, units, calibration and timing; none of it is copied into a sample.
     Host statuses are decided here because the kernel cannot see sensors, clocks or issuance policy. theta is
-    passed as estimated, never clipped: box membership is the kernel's decision.
+    passed as estimated and at both ends of its GUARD_SE-standard-error interval, never clipped: box membership
+    stays the kernel's decision, and the host accepts the window only if every sample is certified.
     """
     readings = envelope["readings"]
     if not all(math.isfinite(v) for v in readings):
@@ -254,18 +382,21 @@ def adapt(envelope):
     if stats["mean_nis"] > band:
         return {"host_status": "MODEL_MISMATCH", "reason": f"mean NIS {stats['mean_nis']:.3g} above {band:.3g}",
                 "statistics": stats}
-    sample = {"sample_schema": "plsr-sample-v1", "x": [float(v) for v in stats["x"]], "theta": [stats["theta"]],
-              "theta_dot": None}
-    return {"sample": sample, "statistics": stats}
+    spread = GUARD_SE * stats["theta_se"]
+    values = {"estimate": stats["theta"], "lower": stats["theta"] - spread, "upper": stats["theta"] + spread}
+    samples = {role: {"sample_schema": "plsr-sample-v1", "x": [float(v) for v in stats["x"]], "theta": [values[role]],
+                      "theta_dot": None} for role in SAMPLE_ROLES}
+    return {"samples": samples, "statistics": stats}
 
 
 def adapter_windows():
-    """Synthetic host windows: two nominal, out-of-box estimate, structural mismatch, stale, dropout, expired."""
+    """Synthetic host windows: two nominal, near-bound and out-of-box estimates, mismatch, stale, dropout, expired."""
     meta = {"sensor_id": "encoder-axis-7", "sensor_units": "m", "calibration_ref": "cal-2026-09-01-A",
             "calibration_valid_until": "2026-12-01T00:00:00Z", "filter": "EKF on (x, v, theta), r = 1e-6",
             "site": "synthetic-bench"}
     plan = [("nominal theta 0.1", 0.1, 0.4, 1131, False, 2.0, 2.01),
             ("nominal theta -0.3", -0.3, 0.4, 1132, False, 4.0, 4.01),
+            ("estimate near bound theta 0.48", 0.48, 0.4, 1138, False, 3.0, 3.01),
             ("estimate outside box theta 0.9", 0.9, 0.4, 1136, False, 5.0, 5.01),
             ("structural mismatch damping 3", 0.1, 3.0, 1135, False, 6.0, 6.01),
             ("stale window", 0.1, 0.4, 1133, False, 7.0, 7.5),
@@ -342,9 +473,49 @@ def servo_certificate(models):
 
 SERVO_SPEC_SECTIONS = ("purpose_and_status", "plant_model", "sampling", "identified_model_uncertainty",
                        "lyapunov_check_scope", "monitoring", "abort_criteria", "authority_and_safety")
+# Declared operating envelope of the pilot (placeholders): the monitor's level set must lie inside it.
+SERVO_ENVELOPE = {"angle_error_rad": 0.05, "velocity_rad_s": 2.0}
+# Runtime codes the pilot aborts on. Each must be producible by the declared monitor configuration.
+SERVO_ABORT_CODES = ("OUTSIDE_LEVEL_SET",)
+# Codes the declared configuration is expected to produce; anything else signals a changed model or runtime.
+SERVO_EXPECTED_CODES = ("CERTIFIED_WITH_MARGIN", "OUTSIDE_LEVEL_SET")
 
 
-def servo_spec(K, P, grid_classes):
+def servo_level(P):
+    """Level c with {x^T P x <= c} inside the envelope box: (1 - 1e-6) min_i e_i^2 / (P^-1)_ii.
+
+    max |x_i| over the ellipsoid is sqrt(c (P^-1)_ii); the 1e-6 shrink keeps rounding of P^-1 from pushing
+    the ellipsoid past the box.
+    """
+    inverse = np.linalg.inv(np.asarray(P, dtype=float))
+    bounds = (SERVO_ENVELOPE["angle_error_rad"], SERVO_ENVELOPE["velocity_rad_s"])
+    return (1.0 - 1e-6) * float(min(bounds[i] ** 2 / inverse[i, i] for i in range(2)))
+
+
+def monitor_scan(A_cl, P, level, count=200, seed=1141):
+    """Online monitor codes at seeded states with V(x) = r^2 c, r = 10^U(-8, 8), by the documented decision order.
+
+    Each state is evaluated without and with the declared level; the exact V(x) > c decision uses dyadic
+    rationals. Returns the rows and the sets of codes each configuration produced.
+    """
+    from fractions import Fraction
+
+    rng = R.generator(seed)
+    P = np.asarray(P, dtype=float)
+    exact_P, exact_level = R.fractions(P), Fraction(level)
+    rows = []
+    for _ in range(count):
+        angle, radius = float(rng.uniform(0.0, 2.0 * math.pi)), float(10.0 ** rng.uniform(-8.0, 8.0))
+        direction = np.array([math.cos(angle), math.sin(angle)])
+        x = radius * direction * math.sqrt(level / float(direction @ P @ direction))
+        rows.append({"x": x.tolist(), "radius": radius,
+                     "exact_exceeds_level": R.exact_quadratic(x, exact_P) > exact_level,
+                     "code_without_level": R.documented_code(A_cl, P, x, "discrete")["code"],
+                     "code_with_level": R.documented_code(A_cl, P, x, "discrete", level=level)["code"]})
+    return rows
+
+
+def servo_spec(K, P, grid_classes, monitor):
     return {
         "purpose_and_status": "Non-production pilot of a Lyapunov monitor beside one servo axis on a test bench. "
                               "Monitoring only; results are research data, not acceptance evidence.",
@@ -367,15 +538,40 @@ def servo_spec(K, P, grid_classes):
             "offline_check": "exact negative definiteness of A_cl(J)^T P A_cl(J) - P on a grid over the J interval; "
                              "A_cl is not affine in J, so the grid is evidence, not a box certificate",
             "grid_classes": grid_classes,
-            "online_use": "PLSR verdict on the declared discrete model at host-estimated states; runtime codes only",
-            "not_covered": ["unmodelled dynamics", "saturation", "friction nonlinearity", "disturbances (see T112)"]},
+            "online_use": "PLSR verdict on the declared nominal discrete model A_cl(J_nominal) with the balanced P at "
+                          "host-estimated states, with the declared level c; runtime codes only",
+            "state_dependence": "For a fixed declared model the sign of the decrease form does not depend on the "
+                                "state, so without a level set every state receives the same code "
+                                "(CERTIFIED_WITH_MARGIN here). The verdict carries information about the physical "
+                                "axis only through the level set, i.e. through the estimated state leaving "
+                                "{V <= c}; model validity is judged by the host's residual monitor "
+                                "(MODEL_MISMATCH), not by the kernel.",
+            "level_set": {"c": monitor["level"], "envelope": dict(SERVO_ENVELOPE),
+                          "derivation": "{x^T P x <= c} lies inside |angle| <= 0.05 rad, |rate| <= 2 rad/s: "
+                                        "c = (1 - 1e-6) min_i e_i^2 / (P^-1)_ii; the set is invariant for each "
+                                        "grid model because V decreases there"},
+            "runtime_codes": {"expected": list(SERVO_EXPECTED_CODES), "abort_on": list(SERVO_ABORT_CODES),
+                              "produced_by_scan_with_level": monitor["codes_with_level"],
+                              "produced_by_scan_without_level": monitor["codes_without_level"],
+                              "cannot_occur_for_this_configuration": [
+                                  "NOT_CERTIFIED, DECREASE_NOT_DEFINITE, NUMERICAL_INCONCLUSIVE and MARGIN_LOW "
+                                  "(the declared decrease form is fixed and exactly negative definite with a "
+                                  "margin far above the resolution; no required margin is declared)",
+                                  "OUTSIDE_PARAMETER_BOX (a LinearPlant has no parameter box)",
+                                  "CERTIFICATE_NOT_POSITIVE and NUMERICAL_OVERFLOW (fixed positive definite P of "
+                                  "moderate scale; the state is power-of-two scaled before evaluation)"]},
+            "not_covered": ["unmodelled dynamics", "saturation", "friction nonlinearity", "disturbances (see T112)",
+                            "the inertia interval between grid points (the online model is the nominal one)"]},
         "monitoring": {"logged": ["runtime code and the three booleans per sample", "margin ratio", "host statuses",
                                   "state estimate and its covariance", "provider identity and model digest"],
                        "host_statuses": ["STALE_STATE", "INVALID_SENSOR_DATA", "MODEL_MISMATCH",
                                          "CERTIFICATE_EXPIRED", "RUNTIME_FAULT"]},
         "abort_criteria": [
-            "NOT_CERTIFIED or DECREASE_NOT_DEFINITE on 3 consecutive samples",
-            "NUMERICAL_OVERFLOW, CERTIFICATE_NOT_POSITIVE or OUTSIDE_PARAMETER_BOX on any sample",
+            "OUTSIDE_LEVEL_SET on any sample: the estimated state left the certified sublevel set {V <= c} that "
+            "lies inside the operating envelope",
+            "any runtime code other than CERTIFIED_WITH_MARGIN or OUTSIDE_LEVEL_SET: impossible for the declared "
+            "configuration, so it signals a changed model, certificate or runtime and is handled as RUNTIME_FAULT",
+            "MODEL_MISMATCH from the host's residual monitor (mean NIS band, as in T113) on any window",
             "INVALID_SENSOR_DATA or RUNTIME_FAULT on any sample; STALE_STATE on 2 consecutive samples",
             "tracking error, velocity or current beyond the bench limits set by the safety function",
             "any operator request"],

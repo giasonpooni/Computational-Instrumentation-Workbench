@@ -5,11 +5,13 @@ Runtime (PLSR 0.1.0rc1, commit 19ea696) -- resolution floor, power-of-two
 scaling, overflow and underflow, semidefinite and defective edge cases, unit
 changes, the nine runtime-status-v1 codes, the declared-margin policy and the
 continuous/discrete conventions -- compared with CIW's exact dyadic-rational
-arithmetic, CIW's re-derivation of the documented formulas, NumPy eigenvalues
-and, when installed, SciPy Lyapunov solvers. The runtime runs in a subprocess
-under the interpreter bound as provider ``plsr-python`` after its source pin is
-verified; without it the provider-dependent tasks are reported ``blocked`` and
-retain only their provider-free findings. T112-T114 are specifications with
+arithmetic, NumPy eigenvalues and, when installed, SciPy Lyapunov solvers
+(independent checks), and with CIW's transcription of the documented formulas
+(same-specification checks, never counted as independent). The runtime runs in
+a subprocess under the interpreter bound as provider ``plsr-python`` after its
+source pin is verified. The tasks declare no hard requirement: without the
+provider they are reported ``partial`` and retain their provider-free findings,
+which a ``blocked`` report could not carry. T112-T114 are specifications with
 synthetic illustrations (``lyapunov_research``).
 
 Non-claims: every verdict concerns declared binary64 matrices and one declared
@@ -29,7 +31,7 @@ from .. import __version__
 from . import lyapunov_reference as R
 from . import lyapunov_research as X
 from . import svg
-from .evidence import COMPUTATIONAL_DOMAINS, finding
+from .evidence import COMPUTATIONAL_DOMAINS, finding, holds
 from .lyapunov_provider import PLSR_ROLE, ProviderRefusal, manifest, producer, provider_basis, run_plsr, source_digest
 from .registry import task
 
@@ -49,8 +51,13 @@ def _node(name):
     return f"{TESTS}::{name}"
 
 
+PARTIAL_TEST = f"{TESTS}::test_provider_tasks_are_partial_without_the_provider"
+
+
 EXACT = {"kind": "roundoff", "value": 0.0, "basis": "exact rational, integer or bitwise comparison; no rounding "
                                                     "enters the value"}
+# Regression tolerance for values that are codes, booleans or exact counts.
+EXACT_TOL = {"abs": 0.0, "rel": 0.0}
 ANALYTIC = {"kind": "roundoff", "value": 0.0, "basis": "closed-form argument; nothing was approximated"}
 
 
@@ -71,11 +78,11 @@ class _Unavailable(Exception):
 def _bridge(ctx, cases):
     if not ctx.available(REQUIREMENT):
         raise _Unavailable(f"Provider {PLSR_ROLE} is not bound; bind a Python 3.12+ interpreter with the pinned "
-                           f"PLSR via --provider {PLSR_ROLE}=PATH.")
+                           f"PLSR via --provider {PLSR_ROLE}=PATH")
     try:
         return run_plsr(ctx.providers[PLSR_ROLE], cases)
     except ProviderRefusal as exc:
-        raise _Unavailable(f"Provider {PLSR_ROLE} refused: {exc}.") from exc
+        raise _Unavailable(f"Provider {PLSR_ROLE} refused: {exc}") from exc
 
 
 def _pin_identity():
@@ -93,7 +100,7 @@ def _finish(fields, findings, changed, identity=None, blocked=None, provider=Tru
     if blocked is not None:
         # The provider-free parts ran and retain established findings, so the task is partial, not blocked.
         state = "partial"
-        fields["experiment"] = (f"Partial: {blocked} Only the provider-free parts ran and are retained. Planned: "
+        fields["experiment"] = (f"Partial: {blocked}. Only the provider-free parts ran and are retained. Planned: "
                                 f"{fields['experiment']}")
         fields["unresolved_assumptions"] = [blocked] + list(fields["unresolved_assumptions"])
     failed = [f["claim"] for f in findings if f["evidence_status"] == "not_established"
@@ -118,10 +125,8 @@ def _fields(hypothesis, model, inputs, observation, invariant, experiment, next_
 
 def _check(reference, observed, tolerance=0.0, comparison="abs_le", kind="exact_arithmetic"):
     observed, tolerance = float(observed), float(tolerance)
-    holds = {"abs_le": abs(observed) <= tolerance, "le": observed <= tolerance,
-             "ge": observed >= tolerance}[comparison]
     return {"reference_kind": kind, "reference": reference, "observed": observed, "tolerance": tolerance,
-            "comparison": comparison, "passed": holds}
+            "comparison": comparison, "passed": holds(observed, tolerance, comparison)}
 
 
 def _refusal(reference, expected, observed):
@@ -204,26 +209,40 @@ def _witness_exact():
 
 
 def _witness_finding(result, identity, statement, claim):
-    """PLSR certifies the subnormal witness although exact arithmetic denies a negative definite form."""
+    """The subnormal witness: robust facts are checked; PLSR's code is recorded, and a certificate is a counterexample.
+
+    The exact class and the underflowed resolution do not depend on the platform. Whether LAPACK's eigenvalue
+    of the rounded subnormal form stays negative does, so the certification is a counterexample attached (with
+    the check that observes it) only when it occurs.
+    """
     exact = _witness_exact()
     A, P, x = _subnormal_witness()
+    code = _code(result)
+    certified = code in R.CERTIFYING
+    checks = [_check("negated exact determinant of the declared 2x2 decrease form, units (2^-1074)^2 "
+                     "(at least 1 means indefinite)", -exact["exact_det_units2"], 1.0, "ge"),
+              _check("PLSR resolution of the witness (underflows to zero)", result.get("resolution", math.nan), 0.0,
+                     kind="invariant")]
+    extra = {}
+    if certified:
+        checks.append(_check("PLSR code on the witness is certifying (1 if so)", 1.0, 1.0, "ge", "invariant"))
+        extra["counterexample"] = {
+            "statement": statement,
+            "witness": {"A_hex": R.hexed(A), "P_hex": R.hexed(P), "x": x.tolist(), "code": code,
+                        "exact_form_units_of_2^-1074": exact["exact_form_units"],
+                        "binary64_form_units_of_2^-1074": exact["float_form_units"],
+                        "plsr_details": result.get("details")}}
     return finding(
         claim, "numerical",
-        {"code": _code(result), "exact_class": exact["exact_class"], "exact_det_units2": exact["exact_det_units2"],
-         "resolution": result.get("resolution", 0.0)},
-        {"provider": provider_basis(identity),
-         "checks": [_check("negated exact determinant of the declared 2x2 decrease form, units (2^-1074)^2 "
-                           "(at least 1 means indefinite)", -exact["exact_det_units2"], 1.0, "ge"),
-                    _check("PLSR code is CERTIFIED_WITH_MARGIN (1 if so)",
-                           1.0 if _code(result) == "CERTIFIED_WITH_MARGIN" else 0.0, 1.0, "ge", "invariant")]},
-        tolerance={"abs": 0.0, "rel": 0.0},
-        counterexample={"statement": statement,
-                        "witness": {"A_hex": R.hexed(A), "P_hex": R.hexed(P), "x": x.tolist(),
-                                    "exact_form_units_of_2^-1074": exact["exact_form_units"],
-                                    "binary64_form_units_of_2^-1074": exact["float_form_units"],
-                                    "plsr_details": result.get("details")}},
-                                    uncertainty=_platform(0.0, "the exact class is exact; whether PLSR certifies "
-                                                               "depends on LAPACK's subnormal handling"))
+        {"code": code, "certified": certified, "exact_class": exact["exact_class"],
+         "exact_det_units2": exact["exact_det_units2"], "resolution": result.get("resolution", 0.0)},
+        {"provider": provider_basis(identity), "checks": checks}, tolerance=EXACT_TOL,
+        uncertainty=_platform(0.0, "the exact class and the zero resolution are exact; whether PLSR certifies "
+                                   "depends on LAPACK's subnormal handling"), **extra)
+
+
+WITNESS_CLAIM = ("A subnormal plant whose declared decrease form is exactly indefinite drives the PLSR resolution to "
+                 "zero; PLSR's code on it is recorded")
 
 
 # T101 ------------------------------------------------------------------------
@@ -267,7 +286,12 @@ def _t101_family():
     return cases, meta
 
 
-def _t101_offline():
+def _t101_expected(eps):
+    """The code the analytic threshold assigns in the normal range: certified iff eps > eps*."""
+    return "CERTIFIED_WITH_MARGIN" if eps > EPSILON_STAR else "NUMERICAL_INCONCLUSIVE"
+
+
+def _t101_offline(meta):
     exact = _witness_exact()
     homogeneity = []
     A0 = np.array([[-0.1, 1.0], [-1.0, -0.1]])
@@ -276,6 +300,8 @@ def _t101_offline():
         A = np.ldexp(A0, k)
         if _normal_window(A, np.eye(2)):
             homogeneity.append(abs(np.ldexp(R.resolution(A, np.eye(2)), -k) - base) / base)
+    normal = [m for m in meta if m["family"] == "F1" and m["normal"]]
+    rederived = sum(R.documented_code(m["A"], m["P"], (1.0, 0.5))["code"] != _t101_expected(m["eps"]) for m in normal)
     return [
         finding("Inconclusive threshold of the family A = s[[-eps, 1], [-1, -eps]], P = I: certified iff eps > "
                 "4 gamma_5 / (1 - 8u), independent of s", "mathematical", EPSILON_STAR,
@@ -283,12 +309,19 @@ def _t101_offline():
                                "16 u eps) against margin 2 eps s (docs/lab/LYAPUNOV.md, T101)"},
                 tolerance={"abs": 0.0, "rel": 1e-12},
                 uncertainty=_roundoff(R.U * EPSILON_STAR, "one rounding of the closed form")),
+        finding("The documented decision order, transcribed in CIW, places the family's threshold at eps* in the "
+                "normal range", "numerical", {"normal_range_cases": len(normal), "mismatches": rederived},
+                {"generator": {"name": "T101 F1 family", "seed": None},
+                 "checks": [_check("codes of the transcribed order differing from the analytic threshold eps*",
+                                   rederived, 0.0, kind="analytic")]},
+                tolerance=EXACT_TOL, uncertainty=_roundoff(0.0, "the eps* cases sit 1e-6 relative from the "
+                                                                "threshold, far beyond rounding")),
         finding("CIW's re-derived resolution scales exactly with a power-of-two matrix scale in the normal range",
                 "numerical", {"scales": len(homogeneity), "max_relative_deviation": max(homogeneity)},
                 {"generator": {"name": "power-of-two scales of [[-0.1, 1], [-1, -0.1]]", "seed": None},
                  "checks": [_check("res(2^k A) 2^-k versus res(A), bitwise", max(homogeneity), 0.0,
                                    kind="invariant")]},
-                tolerance={"abs": 0.0, "rel": 0.0}, uncertainty=EXACT),
+                tolerance=EXACT_TOL, uncertainty=EXACT),
         finding("The subnormal witness's exact decrease form is indefinite while its binary64 evaluation is "
                 "negative definite", "numerical",
                 {"exact_det_units2": exact["exact_det_units2"], "float_det_units2": exact["float_det_units2"],
@@ -297,17 +330,23 @@ def _t101_offline():
                                    "means indefinite)", -exact["exact_det_units2"], 1.0, "ge"),
                             _check("determinant of the rounded form [[-4, 4], [4, -6]] (units 2^-2148)",
                                    exact["float_det_units2"], 1.0, "ge")]},
-                tolerance={"abs": 0.0, "rel": 0.0}, uncertainty=EXACT),
+                tolerance=EXACT_TOL, uncertainty=EXACT),
     ]
 
 
+CODE_LEVELS = {"CERTIFIED_WITH_MARGIN": 1.0, "NUMERICAL_INCONCLUSIVE": 0.0}
+
+
 @task("T101", changed_files=PROVIDER_FILES, regression_tests=(_node("test_t101_resolution_floor"),
-                                                                _node("test_reference_witness_is_exactly_indefinite")))
+                                                                _node("test_reference_witness_is_exactly_indefinite"),
+                                                                _node("test_t101_threshold_is_analytic"), PARTIAL_TEST))
 def resolution_floor(ctx):
     fields = _fields(
-        "PLSR's resolution floor is the documented Higham/Weyl/LAPACK bound and scales exactly with the matrix, so "
-        "the inconclusive threshold is scale-invariant across the binary64 normal range; the bound is not derived "
-        "for subnormal arithmetic, where it can underflow below the actual rounding error.",
+        "For the family A = s[[-eps, 1], [-1, -eps]], P = I, PLSR's resolution floor is the documented "
+        "Higham/Weyl/LAPACK bound and scales exactly with s, so the inconclusive threshold stays at eps* wherever "
+        "every quantity is a normal binary64 number (this family has a diagonal decrease form, where eigvalsh is "
+        "exact; T102 tests general near-threshold forms); the bound is not derived for subnormal arithmetic, "
+        "where it can underflow below the actual rounding error.",
         "Continuous decrease form M = A^T P + P A (symmetrised); resolution = n*(2 gamma_{n+3} n max|A| max|P|) + "
         "n^3 u max|M|; certified iff -max eig(M) > resolution. For A = s[[-eps, 1], [-1, -eps]], P = I the "
         "threshold is eps* = 4 gamma_5/(1 - 8u) = 2.2204e-15 for every s with normal arithmetic.",
@@ -317,31 +356,39 @@ def resolution_floor(ctx):
          "F3: the same plants with A = 2^k A0 and P = 2^k P0 for k in [500, 512] (overflow boundary)",
          "Subnormal witness A = [[-2, 5], [0, -3]] 2^-1074, P = I, x = (1, 0), and its unit-scale twin"],
         "Runtime verdict code, resolution and margin per case, returned by the pinned PLSR in a subprocess.",
-        "resolution_PLSR = resolution_CIW; code at scale 2^k equals the unit-scale code whenever every entry of A "
-        "and M is a normal number; exactly-indefinite declared forms are never certified.",
+        "resolution_PLSR = resolution_CIW; in the normal range the code is CERTIFIED_WITH_MARGIN iff eps > eps* "
+        "at every scale; NUMERICAL_OVERFLOW exactly where the decrease form overflows; exactly-indefinite "
+        "declared forms are never certified.",
         "Evaluate every case with PLSR, recompute the documented resolution and the exact rational class of the "
         "declared form in CIW, compare codes with the analytic threshold and the exact class, and locate where the "
         "prediction stops holding.",
         "T102: test power-of-two homogeneous scaling of A, P and x together; then propose a subnormal-aware "
         "resolution term (an absolute n^2 * 2^-1074 floor) upstream and re-run T101.",
         ["resolution differs from the documented formula", "normalised resolution drifts with scale",
-         "threshold moves with scale", "NUMERICAL_OVERFLOW boundary differs from where the form overflows",
+         "code differs from the analytic threshold eps*", "code differs from the unit-scale code",
+         "NUMERICAL_OVERFLOW before the decrease form overflows", "no NUMERICAL_OVERFLOW once it overflows",
          "false certificate below the normal range (exact rational class)"],
         ["The exact class concerns the declared binary64 numbers; they are synthetic, not measured plants.",
+         "The resolution comparison is against CIW's transcription of the documented formula: a same-"
+         "specification check, not an independent one.",
          "Subnormal behaviour of numpy.linalg.eigvalsh (LAPACK dsyevd) may differ between BLAS builds."])
-    offline = _t101_offline()
     cases, meta = _t101_family()
+    offline = _t101_offline(meta)
     try:
         bridge = _bridge(ctx, cases)
     except _Unavailable as exc:
-        fields["numerical_result"] = (f"Provider-free: eps* = {EPSILON_STAR:.6e}; the subnormal witness is exactly "
-                                      "indefinite.")
+        fields["numerical_result"] = (f"Provider-free: eps* = {EPSILON_STAR:.6e}; the transcribed decision order "
+                                      f"places the threshold at eps* in "
+                                      f"{offline[1]['value']['normal_range_cases'] - offline[1]['value']['mismatches']}"
+                                      f" of {offline[1]['value']['normal_range_cases']} normal-range cases; the "
+                                      "subnormal witness is exactly indefinite.")
         fields["uncertainty"] = "Exact rational arithmetic for the witness; analytic threshold."
         return _finish(fields, offline, PROVIDER_FILES, blocked=str(exc))
     identity, results = bridge["identity"], bridge["results"]
-    rows, rel_diffs, f1_normal, f1_mismatch, f1_below = [], [], 0, 0, []
+    rows, rel_diffs, f1_normal, f1_analytic, f1_unit, f1_below = [], [], 0, 0, 0, []
     unit_codes = {m["eps_index"]: _code(results[f"F1:{m['eps_index']}:0"]) for m in meta if m["family"] == "F1"}
     normalised, false_certificates, overflow_first = [], [], {}
+    early_overflow, overflow_rows = 0, 0
     for m, case in zip(meta, cases):
         result = results[case["id"]]
         code = _code(result)
@@ -356,7 +403,8 @@ def resolution_floor(ctx):
             row["eps"] = m["eps"]
             if m["normal"]:
                 f1_normal += 1
-                f1_mismatch += code != unit_codes[m["eps_index"]]
+                f1_analytic += code != _t101_expected(m["eps"])
+                f1_unit += code != unit_codes[m["eps_index"]]
                 if m["eps_index"] == 0 and result.get("sample") is not None:
                     normalised.append(abs(np.ldexp(result["resolution"], -m["k"])
                                           - results["F1:0:0"]["resolution"]) / results["F1:0:0"]["resolution"])
@@ -368,8 +416,15 @@ def resolution_floor(ctx):
             if code in R.CERTIFYING and exact != "negative_definite":
                 false_certificates.append({"seed": m["seed"], "k": m["k"], "code": code, "exact_class": exact})
         else:
+            # NUMERICAL_OVERFLOW is due when the decrease form or the scaled V or x^T M x leaves binary64.
             with np.errstate(over="ignore", invalid="ignore"):
-                overflows = not np.all(np.isfinite(R.decrease_matrix(m["A"], m["P"])))
+                form = R.decrease_matrix(m["A"], m["P"])
+                x = np.ones(3)
+                overflows = not (np.all(np.isfinite(form)) and math.isfinite(float(x @ m["P"] @ x))
+                                 and math.isfinite(float(x @ form @ x)))
+            row["ciw_overflows"] = overflows
+            overflow_rows += 1
+            early_overflow += code == "NUMERICAL_OVERFLOW" and not overflows
             if overflows and m["seed"] not in overflow_first:
                 overflow_first[m["seed"]] = {"k": m["k"], "code": code}
         rows.append(row)
@@ -377,62 +432,77 @@ def resolution_floor(ctx):
                                                             "f1_departures_outside_normal_range": f1_below,
                                                             "f2_false_certificates": false_certificates}))
     series = []
-    for i in (0, 3, 4, 5):
+    for offset, (i, label) in enumerate(((0, "eps = 0.1"), (3, "eps = 1e-14"), (4, "eps*(1 + 1e-6)"),
+                                         (5, "eps*(1 - 1e-6)"))):
         ks = [m["k"] for m in meta if m["family"] == "F1" and m["eps_index"] == i]
-        ratios = [results[f"F1:{i}:{k}"]["margin_ratio"] if results[f"F1:{i}:{k}"].get("sample") else float("nan")
-                  for k in ks]
-        series.append((f"eps={T101_EPSILONS[i]:.3g}", ks,
-                       [abs(r) if math.isfinite(r) else float("nan") for r in ratios]))
-    ctx.artifact_text("margin-ratio-vs-scale.svg", svg.line_plot(
-        series, title="T101 |margin / resolution| across matrix scales 2^k", xlabel="k (A scaled by 2^k)",
-        ylabel="|margin ratio|", logy=True))
+        levels = [CODE_LEVELS.get(_code(results[f"F1:{i}:{k}"]), -1.0) + 0.04 * offset for k in ks]
+        series.append((label, ks, levels))
+    ctx.artifact_text("codes-vs-scale.svg", svg.line_plot(
+        series, title="T101 verdict code across matrix scales 2^k (series offset by 0.04 for visibility)",
+        xlabel="k (A scaled by 2^k)", ylabel="1 certified, 0 inconclusive, -1 other"))
     overflow_mismatch = sum(entry["code"] != "NUMERICAL_OVERFLOW" for entry in overflow_first.values())
+    seeds = len({m["seed"] for m in meta if m["family"] == "F3"})
     witness = results["witness"]
+    base = provider_basis(identity)
     findings = [
-        finding("PLSR decrease_resolution equals the documented bound re-derived in CIW at every evaluated matrix "
+        finding("PLSR decrease_resolution equals the documented bound transcribed in CIW at every evaluated matrix "
                 "scale", "numerical", {"cases": len(rel_diffs), "max_relative_difference": max(rel_diffs)},
-                {"provider": provider_basis(identity),
-                 "independent_check": _independent(_check("CIW re-derivation of the documented resolution",
-                                                           max(rel_diffs), 1e-12, kind="analytic"), identity)},
+                {"provider": base,
+                 "checks": [_check("CIW transcription of the documented resolution formula (same specification)",
+                                   max(rel_diffs), 1e-12, kind="analytic")]},
                 tolerance={"abs": 1e-12, "rel": 0.0},
                 uncertainty=_roundoff(max(rel_diffs), "largest relative difference between two float64 evaluations "
                                                       "of one formula")),
-        finding("Inside the binary64 normal range the resolution scales exactly with 2^k and the inconclusive "
-                "threshold stays at eps*", "numerical",
-                {"normal_range_cases": f1_normal, "threshold_mismatches": f1_mismatch,
+        finding("Inside the binary64 normal range the resolution scales exactly with 2^k and PLSR certifies exactly "
+                "when eps > eps*", "numerical",
+                {"normal_range_cases": f1_normal, "analytic_mismatches": f1_analytic, "unit_scale_mismatches": f1_unit,
                  "max_normalised_resolution_deviation": max(normalised),
                  "unit_scale_codes": [unit_codes[i] for i in range(len(T101_EPSILONS))]},
-                {"provider": provider_basis(identity),
-                 "checks": [_check("codes versus the analytic threshold eps*", f1_mismatch, 0.0, kind="analytic"),
+                {"provider": base,
+                 "checks": [_check("normal-range codes (k = 0 included) differing from the analytic threshold: "
+                                   "CERTIFIED_WITH_MARGIN iff eps > eps*", f1_analytic, 0.0, kind="analytic"),
+                            _check("normal-range codes differing from PLSR's own unit-scale (k = 0) code", f1_unit,
+                                   0.0, kind="invariant"),
                             _check("res(2^k A) 2^-k versus res(A), bitwise", max(normalised), 0.0, kind="invariant")]},
-                tolerance={"abs": 0.0, "rel": 0.0},
+                tolerance=EXACT_TOL,
                 uncertainty=_roundoff(0.0, "bitwise comparisons; the eps* cases sit 1e-6 relative from the "
                                            "threshold")),
         finding("NUMERICAL_OVERFLOW first appears exactly where the CIW-recomputed decrease form overflows",
                 "numerical",
                 {str(seed): entry for seed, entry in sorted(overflow_first.items())},
-                {"provider": provider_basis(identity),
+                {"provider": base,
                  "checks": [_check("seeds whose first overflowing scale is not NUMERICAL_OVERFLOW", overflow_mismatch,
-                                   0.0, kind="invariant")]},
+                                   0.0, kind="invariant"),
+                            _check("F3 rows reported NUMERICAL_OVERFLOW while the recomputed form and scaled values "
+                                   "are finite", early_overflow, 0.0, kind="invariant"),
+                            _check("seeds that never overflow on the exponent grid", seeds - len(overflow_first), 0.0,
+                                   kind="invariant")]},
                 tolerance={"abs": 1.0, "rel": 0.0},
                 uncertainty=_platform(1.0, "the first overflowing exponent may move by one if a BLAS reorders "
                                            "products")),
         _witness_finding(witness, identity,
                          "The float64 resolution floor bounds the rounding error of the decrease form at every matrix "
-                         "scale, so an exactly indefinite declared form is never certified",
-                         "Below the normal range the resolution underflows to zero and PLSR certifies a declared "
-                         "decrease form that exact arithmetic shows indefinite"),
+                         "scale, so an exactly indefinite declared form is never certified", WITNESS_CLAIM),
     ] + offline
+    witness_code = _code(witness)
+    witness_clause = (f"below that range it underflows and the subnormal witness, whose exact decrease form is "
+                      f"indefinite, is certified ({witness_code})" if witness_code in R.CERTIFYING else
+                      f"below that range it underflows; the subnormal witness was not certified here ({witness_code})")
+    sound_clause = ("no F2 certificate contradicts its exact class" if not false_certificates else
+                    f"{len(false_certificates)} F2 certificates contradict their exact class")
     fields["numerical_result"] = (
         f"Resolution matches the documented formula (max relative difference {max(rel_diffs):.2e} over "
-        f"{len(rel_diffs)} cases). In {f1_normal} normal-range threshold cases codes equal the unit-scale codes "
-        f"({f1_mismatch} mismatches; eps* = {EPSILON_STAR:.6e}). Outside the normal range {len(f1_below)} threshold "
-        f"cases depart from the unit-scale code; F2 has {len(false_certificates)} certifying verdicts whose exact form "
-        f"is not negative definite. The witness returns {_code(witness)} with resolution {witness['resolution']:.3g} "
-        f"(unit-scale twin: {_code(results['witness-unit'])}). First overflow exponents: "
-        f"{ {s: e['k'] for s, e in sorted(overflow_first.items())} }. Conclusion: the floor is exactly the documented "
-        "bound and scale-invariant while every quantity is a normal number; below that range it underflows and a "
-        "subnormal plant is certified although its exact decrease form is indefinite.")
+        f"{len(rel_diffs)} cases). In {f1_normal} normal-range threshold cases {f1_analytic} codes differ from the "
+        f"analytic threshold eps* = {EPSILON_STAR:.6e} and {f1_unit} from the unit-scale code. Outside the normal "
+        f"range {len(f1_below)} threshold cases depart from the unit-scale code; F2 has {len(false_certificates)} "
+        f"certifying verdicts whose exact form is not negative definite. The witness returns {witness_code} with "
+        f"resolution {witness['resolution']:.3g} (unit-scale twin: {_code(results['witness-unit'])}). First overflow "
+        f"exponents: { {s: e['k'] for s, e in sorted(overflow_first.items())} }; {early_overflow} early overflow "
+        f"reports in {overflow_rows} F3 rows. Conclusion: "
+        + ("the floor is exactly the documented bound and the threshold stays at eps* while every quantity is a "
+           "normal number" if f1_analytic == 0 and max(normalised) == 0.0 else
+           "the normal-range threshold departs from eps*")
+        + f"; {sound_clause}; {witness_clause}.")
     fields["uncertainty"] = ("Resolution comparison is deterministic float arithmetic (relative 1e-12 allowed). "
                              "Subnormal-range codes depend on LAPACK's handling of tiny matrices and may differ "
                              "between BLAS builds; the witness's exact class is exact rational arithmetic.")
@@ -491,36 +561,60 @@ def _eigvalsh_window():
     return inside, outside
 
 
+def discrete_family():
+    """Discrete (A, P, x): six contractions far from the threshold (seed 1021) and six razor-edge cases (seed 1023)."""
+    rng = R.generator(1021)
+    family = []
+    for i in range(6):
+        n = 2 + i % 2
+        A = 0.8 * R.random_orthogonal(rng, n) @ np.diag(rng.uniform(0.3, 1.0, n))
+        family.append({"A": A, "P": R.kron_lyapunov(A, np.eye(n), "discrete"), "x": rng.normal(size=n),
+                       "kind": "contraction"})
+    rng = R.generator(1023)
+    for i in range(6):
+        n = 2 + i % 2
+        A, P, ratio = R.razor_edge_discrete(rng, n, -1.0 if i % 2 == 0 else 1.0)
+        family.append({"A": A, "P": P, "x": rng.normal(size=n), "kind": "razor edge", "ratio": ratio})
+    return family
+
+
 @task("T102", changed_files=PROVIDER_FILES, regression_tests=(_node("test_t102_power_of_two_scaling"),
-                                                                _node("test_eigvalsh_scaling_window")))
+                                                                _node("test_eigvalsh_scaling_window"),
+                                                                _node("test_discrete_razor_edge_sits_at_the_threshold"), PARTIAL_TEST))
 def power_of_two_scaling(ctx):
     fields = _fields(
         "Replacing (A, P, x) by (2^a A, 2^b P, 2^c x) multiplies M, max eig(M) and the resolution by 2^(a+b) "
         "exactly, so no verdict code and no margin ratio changes while every quantity stays normal and LAPACK "
-        "does not rescale internally; outside that window rounding differs and near-threshold codes may flip.",
+        "does not rescale internally; outside that window rounding differs and near-threshold codes may move, but "
+        "never against the exact class of the declared form.",
         "Continuous time: M(2^a A, 2^b P) = 2^(a+b) M(A, P) and resolution likewise (homogeneous of degree one in "
         "each of max|A|, max|P|, max|M|); PLSR divides x by a power of two before evaluating, so c never enters. "
         "Discrete time admits only (P, x) scaling. LAPACK dsyevd rescales by a non-power-of-two factor when "
-        "max|M| lies outside [2^-485, 2^485].",
+        "max|M| lies outside [2^-485, 2^485]. Exact power-of-two scaling preserves the exact class of M.",
         ["34 seeded continuous cases (PCG64 seed 102): n = 2..4, P = I or SPD (condition 10), kappa in "
          "{+-0.5, +-0.9, +-1.1, +-1.5, +-3} plus four robust cases (kappa = +-1e6)",
          "16 razor-edge cases (seed 1022, skew 1): computed |max eig(M)|/resolution tuned by bisection to just "
          "above 1 on the certified and the indefinite side",
          f"Inside-window exponent triples (a, b, c): {list(T102_INSIDE)}",
          f"Outside-window triples: {list(T102_OUTSIDE)}",
-         "6 discrete-time cases (seed 1021) under (0, b, c) scaling; the subnormal witness scaled by 2^-1074"],
-        "PLSR code and margin ratio (margin/resolution) for each scaled case versus the unscaled case.",
-        "Inside the window: identical codes and bitwise-identical margin ratios. The subnormal witness keeps its "
-        "unit-scale code DECREASE_NOT_DEFINITE.",
+         "12 discrete-time cases under (0, b, c) scaling: 6 contractions (seed 1021) and 6 razor-edge cases "
+         "A = Q diag(s, r), P = I (seed 1023) with computed |max eig(A^T A - I)|/resolution just above 1",
+         "The subnormal witness scaled by 2^-1074"],
+        "PLSR code and margin ratio (margin/resolution) for each scaled case versus the unscaled case; exact "
+        "rational class of each declared form.",
+        "Inside the window: identical codes and bitwise-identical margin ratios, continuous and discrete. "
+        "Everywhere: no certifying code on a form whose exact class is not negative definite.",
         "Evaluate base and scaled cases with PLSR in one subprocess; count code flips and ratio changes per window; "
-        "independently test numpy.linalg.eigvalsh against exact power-of-two scaling inside and outside the window.",
+        "classify every declared form exactly; independently test numpy.linalg.eigvalsh against exact power-of-two "
+        "scaling inside and outside the window.",
         "T103: overflow and underflow of states and parameters; propose that PLSR pre-scale M by a power of two "
         "into LAPACK's window before eigvalsh so verdicts are exactly scale-invariant.",
         ["code flip inside the window", "margin ratio changes inside the window", "x scaling alters the sample",
-         "code flip outside the window (searched as counterexample)", "subnormal flip"],
+         "discrete near-threshold code flip under (P, x) scaling",
+         "code moved against the exact class outside the window (searched as counterexample)", "subnormal flip"],
         ["The LAPACK window [2^-485, 2^485] is taken from reference dsyevd (RMIN, RMAX); other LAPACK builds may "
          "rescale differently.",
-         "Near-threshold inputs are synthetic; their exact spectra are not needed for an invariance test."])
+         "Outside-window flip counts depend on the LAPACK/BLAS build; only the soundness property is checked."])
     inside_eig, outside_eig = _eigvalsh_window()
     offline = [finding(
         "numpy.linalg.eigvalsh commutes exactly with power-of-two scaling while max|M| stays in [2^-485, 2^485]",
@@ -528,8 +622,12 @@ def power_of_two_scaling(ctx):
         {"generator": {"name": "near_threshold_family", "seed": 1020},
          "checks": [_check("eigenvalues of 2^j M rescaled by 2^-j versus eigenvalues of M, bitwise",
                            len(inside_eig) - sum(inside_eig), 0.0, kind="invariant")]},
-        tolerance={"abs": 0.0, "rel": 0.0}, uncertainty=EXACT)]
+        tolerance=EXACT_TOL, uncertainty=EXACT)]
     family = near_threshold_family(102, 30) + razor_family(1022, 16)
+    discrete = discrete_family()
+    exact_classes = {f"c{i}:base": R.exact_class(R.exact_form(m["A"], m["P"])) for i, m in enumerate(family)}
+    exact_classes.update({f"d{i}:base": R.exact_class(R.exact_form(m["A"], m["P"], "discrete"))
+                          for i, m in enumerate(discrete)})
     cases, plan = [], []
     for i, member in enumerate(family):
         A, P, x = member["A"], member["P"], member["x"]
@@ -539,17 +637,13 @@ def power_of_two_scaling(ctx):
                 cid = f"c{i}:{a}:{b}:{c}"
                 cases.append(_verdict_case(cid, np.ldexp(A, a), np.ldexp(P, b), np.ldexp(x, c)))
                 plan.append((f"c{i}:base", cid, window, member["kappa"], (a, b, c)))
-    rng = R.generator(1021)
-    for i in range(6):
-        n = 2 + i % 2
-        A = 0.8 * R.random_orthogonal(rng, n) @ np.diag(rng.uniform(0.3, 1.0, n))
-        P = R.kron_lyapunov(A, np.eye(n), "discrete")
-        x = rng.normal(size=n)
+    for i, member in enumerate(discrete):
+        A, P, x = member["A"], member["P"], member["x"]
         cases.append(_verdict_case(f"d{i}:base", A, P, x, time="discrete"))
         for b, c in ((13, 0), (-13, 5), (0, -700)):
             cid = f"d{i}:{b}:{c}"
             cases.append(_verdict_case(cid, A, np.ldexp(P, b), np.ldexp(x, c), time="discrete"))
-            plan.append((f"d{i}:base", cid, "discrete", None, (0, b, c)))
+            plan.append((f"d{i}:base", cid, "discrete", member.get("ratio"), (0, b, c)))
     A, P, x = _subnormal_witness()
     cases += [_verdict_case("w:unit", A / R.TINY, P, x), _verdict_case("w:sub", A, P, x)]
     try:
@@ -561,90 +655,109 @@ def power_of_two_scaling(ctx):
         fields["uncertainty"] = "Deterministic on one platform; the outside-window count depends on the LAPACK build."
         return _finish(fields, offline, PROVIDER_FILES, blocked=str(exc))
     identity, results = bridge["identity"], bridge["results"]
-    tally = {w: {"evaluations": 0, "code_flips": 0, "ratio_changes": 0} for w in ("inside", "outside", "discrete")}
+    tally = {w: {"evaluations": 0, "code_flips": 0, "ratio_changes": 0, "unsound": 0}
+             for w in ("inside", "outside", "discrete")}
     flips = []
-    members = {f"c{i}:base": member for i, member in enumerate(family)}
-    unsound = 0
     for base_id, cid, window, kappa, triple in plan:
         base, scaled = results[base_id], results[cid]
         tally[window]["evaluations"] += 1
+        # Exact power-of-two scaling preserves the exact class, so one class serves base and scaled forms.
+        exact = exact_classes[base_id]
+        tally[window]["unsound"] += (_code(scaled) in R.CERTIFYING) and exact != "negative_definite"
         if _code(base) != _code(scaled):
             tally[window]["code_flips"] += 1
-            flip = {"window": window, "kappa": kappa, "abc": list(triple), "base": _code(base),
-                    "scaled": _code(scaled), "base_ratio": base["margin_ratio"], "scaled_ratio": scaled["margin_ratio"]}
-            if base_id in members and R.CERTIFYING & {flip["base"], flip["scaled"]}:
-                # Exact power-of-two scaling preserves the exact class of the declared form.
-                member = members[base_id]
-                flip["exact_class"] = R.exact_class(R.exact_form(member["A"], member["P"]))
-                unsound += flip["exact_class"] != "negative_definite"
-            flips.append(flip)
+            flips.append({"window": window, "kappa": kappa, "abc": list(triple), "base": _code(base),
+                          "scaled": _code(scaled), "base_ratio": base["margin_ratio"],
+                          "scaled_ratio": scaled["margin_ratio"], "exact_class": exact})
         if base["ok"] and scaled["ok"] and base["margin_ratio"] != scaled["margin_ratio"]:
             tally[window]["ratio_changes"] += 1
+    base_unsound = sum(_code(results[key]) in R.CERTIFYING and exact_classes[key] != "negative_definite"
+                       for key in exact_classes)
     ctx.artifact_json("scaling-invariance.json", R.jsonable({"tally": tally, "flips": flips,
+                                                              "unsound_base_verdicts": base_unsound,
                                                               "eigvalsh_outside_bitwise_equal": sum(outside_eig),
                                                               "eigvalsh_outside_total": len(outside_eig)}))
     witness_unit, witness_sub = results["w:unit"], results["w:sub"]
     base = provider_basis(identity)
-    findings = [finding(
-        "Power-of-two scaling of (A, P, x) inside LAPACK's window never changes the PLSR code or margin ratio",
-        "numerical", tally["inside"],
-        {"provider": base, "checks": [
-            _check("code flips against the unscaled verdict", tally["inside"]["code_flips"], 0.0, kind="invariant"),
-            _check("margin ratios not bitwise equal", tally["inside"]["ratio_changes"], 0.0, kind="invariant")]},
-        tolerance={"abs": 0.0, "rel": 0.0}, uncertainty=EXACT),
-        finding("Scaling P and x by powers of two never changes a discrete-time PLSR code", "numerical",
-                tally["discrete"],
+    outside_flips = [flip for flip in flips if flip["window"] == "outside"]
+    outside_checks = [_check("scaled verdicts with a certifying code on a form whose exact class is not negative "
+                             "definite", tally["outside"]["unsound"], 0.0)]
+    outside_extra = {}
+    if outside_flips:
+        outside_checks.append(_check("outside-window code flips observed", len(outside_flips), 1.0, "ge",
+                                     kind="invariant"))
+        outside_extra["counterexample"] = {
+            "statement": "Power-of-two scaling of A and P never changes a PLSR verdict code while all quantities "
+                         "stay in the binary64 normal range", "witness": outside_flips[0]}
+    witness_checks = [
+        _check("unit-scale code is DECREASE_NOT_DEFINITE (1 if so)",
+               1.0 if _code(witness_unit) == "DECREASE_NOT_DEFINITE" else 0.0, 1.0, "ge", "invariant"),
+        _check("PLSR resolution of the witness scaled by 2^-1074 (underflows to zero)",
+               witness_sub.get("resolution", math.nan), 0.0, kind="invariant")]
+    witness_extra = {}
+    if _code(witness_sub) != _code(witness_unit):
+        witness_checks.append(_check("scaled code differs from the unit-scale code (1 if so)", 1.0, 1.0, "ge",
+                                     "invariant"))
+        witness_extra["counterexample"] = {
+            "statement": "Power-of-two scaling of A never changes a PLSR verdict code",
+            "witness": {"A_unit": [[-2.0, 5.0], [0.0, -3.0]], "scale": "2^-1074", "P": "I", "x": [1.0, 0.0],
+                        "unit_code": _code(witness_unit), "scaled_code": _code(witness_sub)}}
+    findings = [
+        finding("Power-of-two scaling of (A, P, x) inside LAPACK's window never changes the PLSR code or margin ratio",
+                "numerical", {k: tally["inside"][k] for k in ("evaluations", "code_flips", "ratio_changes")},
+                {"provider": base, "checks": [
+                    _check("code flips against the unscaled verdict", tally["inside"]["code_flips"], 0.0,
+                           kind="invariant"),
+                    _check("margin ratios not bitwise equal", tally["inside"]["ratio_changes"], 0.0,
+                           kind="invariant")]},
+                tolerance=EXACT_TOL, uncertainty=EXACT),
+        finding("Scaling P and x by powers of two never changes a discrete-time PLSR code, near the threshold "
+                "included", "numerical", {k: tally["discrete"][k] for k in ("evaluations", "code_flips")},
                 {"provider": base, "checks": [_check("code flips against the unscaled verdict",
                                                      tally["discrete"]["code_flips"], 0.0, kind="invariant")]},
-                tolerance={"abs": 0.0, "rel": 0.0}, uncertainty=EXACT)]
-    outside_flips = [flip for flip in flips if flip["window"] == "outside"]
-    if outside_flips:
-        findings.append(finding(
-            "Outside LAPACK's scaling window a power-of-two rescaling of A and P flips near-threshold PLSR codes",
-            "numerical", {"flips_observed": True},
-            {"provider": base, "checks": [_check("outside-window code flips observed", len(outside_flips), 1.0, "ge",
-                                                 kind="invariant"),
-                                          _check("flips into or out of a certifying code whose exact form is not "
-                                                 "negative definite", unsound, 0.0)]},
-            counterexample={"statement": "Power-of-two scaling of A and P never changes a PLSR verdict code while all "
-                                         "quantities stay in the binary64 normal range",
-                            "witness": outside_flips[0]},
-                            uncertainty=_platform(0.0, "flip counts depend on LAPACK/BLAS rounding; only existence "
-                                                       "is retained")))
-    else:
-        findings.append(finding(
-            "No outside-window code flip was observed on this platform", "numerical",
-            {"flips_observed": False, "ratio_changes": tally["outside"]["ratio_changes"]},
-            {"provider": base, "checks": [_check("outside-window code flips", 0.0, 0.0, kind="invariant")]},
-            uncertainty=_platform(0.0, "flip counts depend on LAPACK/BLAS rounding")))
-    findings.append(finding(
-        "Scaling the subnormal witness by 2^-1074 turns DECREASE_NOT_DEFINITE into CERTIFIED_WITH_MARGIN", "numerical",
-        {"unit_code": _code(witness_unit), "scaled_code": _code(witness_sub)},
-        {"provider": base, "checks": [
-            _check("unit-scale code is DECREASE_NOT_DEFINITE (1 if so)",
-                   1.0 if _code(witness_unit) == "DECREASE_NOT_DEFINITE" else 0.0, 1.0, "ge", "invariant"),
-            _check("scaled code is CERTIFIED_WITH_MARGIN (1 if so)",
-                   1.0 if _code(witness_sub) == "CERTIFIED_WITH_MARGIN" else 0.0, 1.0, "ge", "invariant")]},
-        counterexample={"statement": "Power-of-two scaling of A never changes a PLSR verdict code",
-                        "witness": {"A_unit": [[-2.0, 5.0], [0.0, -3.0]], "scale": "2^-1074", "P": "I",
-                                    "x": [1.0, 0.0]}},
-                                    uncertainty=_platform(0.0, "depends on LAPACK's subnormal handling")))
-    findings += offline
+                tolerance=EXACT_TOL, uncertainty=EXACT),
+        finding("Outside LAPACK's scaling window power-of-two rescaling of A and P never moves a PLSR code to a "
+                "certificate that the exact class contradicts", "numerical",
+                {"evaluations": tally["outside"]["evaluations"], "unsound": tally["outside"]["unsound"]},
+                {"provider": base, "checks": outside_checks}, tolerance=EXACT_TOL,
+                uncertainty=_platform(0.0, "which near-threshold codes flip depends on LAPACK/BLAS rounding; the "
+                                           "soundness count does not"), **outside_extra),
+        finding("Scaling the witness by 2^-1074 drives its resolution to zero while its unit-scale code is "
+                "DECREASE_NOT_DEFINITE; the scaled code is recorded", "numerical",
+                {"unit_code": _code(witness_unit), "scaled_code": _code(witness_sub)},
+                {"provider": base, "checks": witness_checks}, tolerance=EXACT_TOL,
+                uncertainty=_platform(0.0, "the scaled code depends on LAPACK's subnormal handling"), **witness_extra),
+        finding("No unscaled PLSR verdict certifies a form whose exact class is not negative definite", "numerical",
+                {"verdicts": len(exact_classes), "unsound": base_unsound},
+                {"provider": base, "independent_check": _independent(
+                    _check("exact rational class of each declared continuous and discrete form", base_unsound, 0.0),
+                    identity)}, tolerance=EXACT_TOL, uncertainty=EXACT),
+    ] + offline
+    witness_clause = ("the subnormal witness flips from " + _code(witness_unit) + " to a false certificate"
+                      if _code(witness_sub) in R.CERTIFYING else
+                      "the subnormal witness keeps a non-certifying code (" + _code(witness_sub) + ")")
+    inside_clause = ("verdicts are exactly power-of-two invariant inside LAPACK's unscaled window and the normal "
+                     "range" if tally["inside"]["code_flips"] == tally["inside"]["ratio_changes"] == 0
+                     and tally["discrete"]["code_flips"] == 0 else "power-of-two invariance fails inside the window")
+    outside_clause = (f"outside it {len(outside_flips)} near-threshold codes move" if outside_flips else
+                      "outside it no code moved on this platform")
+    unsound_total = sum(t["unsound"] for t in tally.values()) + base_unsound
     fields["numerical_result"] = (
         f"Inside the window: {tally['inside']['evaluations']} scaled evaluations, {tally['inside']['code_flips']} code "
         f"flips, {tally['inside']['ratio_changes']} ratio changes. Outside the window: "
-        f"{tally['outside']['evaluations']} evaluations, {tally['outside']['code_flips']} flips ({unsound} involving "
-        f"a certifying code on an exactly non-negative-definite form), "
-        f"{tally['outside']['ratio_changes']} ratio changes. Discrete (P, x) scaling: "
-        f"{tally['discrete']['code_flips']} flips in {tally['discrete']['evaluations']}. Subnormal witness: "
-        f"{_code(witness_unit)} -> {_code(witness_sub)}. eigvalsh bitwise homogeneous in "
+        f"{tally['outside']['evaluations']} evaluations, {tally['outside']['code_flips']} flips, "
+        f"{tally['outside']['ratio_changes']} ratio changes, {tally['outside']['unsound']} certificates contradicting "
+        f"the exact class. Discrete (P, x) scaling: {tally['discrete']['code_flips']} flips in "
+        f"{tally['discrete']['evaluations']} (half of the cases within about one resolution of the threshold). "
+        f"Subnormal witness: {_code(witness_unit)} -> {_code(witness_sub)}. eigvalsh bitwise homogeneous in "
         f"{sum(inside_eig)}/{len(inside_eig)} inside and {sum(outside_eig)}/{len(outside_eig)} outside scalings. "
-        "Conclusion: verdicts are exactly power-of-two invariant only inside LAPACK's unscaled window and the normal "
-        "range; outside it near-threshold codes move (soundly, per exact classes), and the subnormal witness flips "
-        "to a false certificate.")
+        f"Conclusion: {inside_clause}; {outside_clause}"
+        + (", never against the exact class" if unsound_total == 0 else
+           f", and {unsound_total} certificates contradict the exact class")
+        + f"; {witness_clause}.")
     fields["uncertainty"] = ("Inside-window results are exact (bitwise). Outside-window flip counts depend on the "
-                             "LAPACK/BLAS build and on how close each case sits to the threshold; only their "
-                             "existence is retained as a finding value.")
+                             "LAPACK/BLAS build and on how close each case sits to the threshold; they are retained "
+                             "in the artifact, and only the soundness count is a checked finding value.")
     return _finish(fields, findings, PROVIDER_FILES, identity)
 
 
@@ -682,12 +795,14 @@ def _level_counts(rows, key):
 
 
 @task("T103", changed_files=PROVIDER_FILES, regression_tests=(_node("test_t103_overflow_underflow"),
-                                                                _node("test_level_gate_prediction")))
+                                                                _node("test_level_gate_prediction"), PARTIAL_TEST))
 def overflow_underflow(ctx):
     fields = _fields(
-        "States anywhere in binary64 are classified exactly through PLSR's power-of-two state scaling; matrices "
-        "whose arithmetic leaves binary64 return NUMERICAL_OVERFLOW or an input refusal; no near-limit input "
-        "yields a false certificate or a missed level-set exceedance.",
+        "States anywhere in binary64 are classified with the code unchanged through PLSR's power-of-two state "
+        "scaling (components more than about 2^1022 below the largest one become subnormal in the scaled state "
+        "and vanish beyond about 2^1075, which a code decided relative to |x|^2 does not see); matrices whose "
+        "arithmetic leaves binary64 return NUMERICAL_OVERFLOW or an input refusal; no near-limit input yields a "
+        "false certificate or a missed level-set exceedance.",
         "V(x) = x^T P x and x^T M x are homogeneous of degree two in x, so PLSR evaluates at x / 2^e with the "
         "unit state in [1, 2). The level gate decides V > level as scaled_value > level / s^2 and treats an "
         "infinite s^2 as 'exceeded' and a zero s^2 as 'not exceeded'. Exact truth: V = 2^(p + 2e) for "
@@ -710,7 +825,10 @@ def overflow_underflow(ctx):
          "level gate reports a spurious exceedance", "overflow not reported as NUMERICAL_OVERFLOW",
          "overflow while forming A(theta) raises", "false certificate from subnormal arithmetic"],
         ["Near-limit inputs are synthetic binary64 numbers chosen to reach the limits, not plant data.",
-         "The documented level rule is re-derived from the runtime source at the pinned commit."])
+         "The documented level rule is transcribed from the runtime source at the pinned commit, so agreement "
+         "with it is a same-specification check; the exact exponent comparison is the independent reference.",
+         "Mixed-scale states lose their smallest components in the scaled evaluation; with a strictly negative "
+         "definite test form this cannot change the code and is not probed further here."])
     rows = level_scan()
     predicted_missed, predicted_spurious = _level_counts(rows, "documented_exceeded")
     offline = [finding(
@@ -767,50 +885,52 @@ def overflow_underflow(ctx):
                                                        "theta_details": {k: results[k].get("error")
                                                                          for k in theta_codes},
                                                        "witness": results["witness"]}))
+    level_witness = {}
+    for key, row in (("missed", first_missed), ("spurious", first_spurious)):
+        if row is not None:
+            level_witness[key] = dict(row, A="-I", P=f"2^{row['p']} I", x=f"(2^{row['e']}, 0)")
     findings = [
         finding("PLSR decides the level gate exactly as the documented rule predicts across the near-limit scan",
                 "numerical", {"cases": len(rows), "disagreements": disagreement},
-                {"provider": base, "independent_check": _independent(
-                    _check("documented level rule re-derived in CIW", disagreement, 0.0, kind="analytic"), identity)},
-                tolerance={"abs": 0.0, "rel": 0.0}, uncertainty=EXACT),
+                {"provider": base, "checks": [
+                    _check("level decisions differing from the documented rule transcribed in CIW (same "
+                           "specification)", disagreement, 0.0, kind="analytic")]},
+                tolerance=EXACT_TOL, uncertainty=EXACT),
         finding("States from 2^-1074 to the largest binary64 number leave the PLSR code of a fixed negative definite "
                 "form unchanged", "numerical", {"states": len(state_codes), "mismatches": state_mismatch,
                                                  "code": reference_code},
                 {"provider": base, "checks": [_check("codes differing from the unit-state code", state_mismatch, 0.0,
                                                      kind="invariant")]},
-                tolerance={"abs": 0.0, "rel": 0.0}, uncertainty=EXACT),
+                tolerance=EXACT_TOL, uncertainty=EXACT),
         finding("Non-finite states are refused as input errors, not classified", "numerical",
                 {"inf": _code(results["inf"]), "nan": _code(results["nan"])},
                 {"provider": base, "checks": [_refusal("x = (inf, 0)", "raises ValueError", _code(results["inf"])),
                                               _refusal("x = (nan, 0)", "raises ValueError", _code(results["nan"]))]},
-                                              uncertainty=EXACT),
+                tolerance=EXACT_TOL, uncertainty=EXACT),
         finding("Matrices whose decrease form or scaled V leaves binary64 return NUMERICAL_OVERFLOW as predicted, "
                 "and a control at the limit is still certified",
                 "numerical", limit_codes,
-                {"provider": base, "checks": [_check("codes differing from the CIW re-derived prediction",
-                                                     sum(limit_codes[k] != predicted_limits[k] for k in limits), 0.0,
-                                                     kind="analytic")]}, uncertainty=EXACT),
+                {"provider": base, "checks": [_check("codes differing from the CIW transcription of the documented "
+                                                     "order", sum(limit_codes[k] != predicted_limits[k]
+                                                                  for k in limits), 0.0, kind="analytic")]},
+                tolerance=EXACT_TOL, uncertainty=EXACT),
+        finding("The PLSR level gate misses exceedances when s^2 underflows: V > level is certified", "numerical",
+                {"missed": missed, "cases": len(rows)},
+                {"provider": base, "checks": [_check("scan cases with exact V > level and code != OUTSIDE_LEVEL_SET",
+                                                     missed, 1.0, "ge")]},
+                tolerance=EXACT_TOL,
+                counterexample={"statement": "OUTSIDE_LEVEL_SET is returned whenever V(x) exceeds the declared level",
+                                "witness": level_witness["missed"]} if "missed" in level_witness else None,
+                uncertainty=EXACT),
+        finding("The PLSR level gate reports OUTSIDE_LEVEL_SET for V below the level when s^2 overflows", "numerical",
+                {"spurious": spurious, "cases": len(rows)},
+                {"provider": base, "checks": [_check("scan cases with exact V < level and code OUTSIDE_LEVEL_SET",
+                                                     spurious, 1.0, "ge")]},
+                tolerance=EXACT_TOL,
+                counterexample={"statement": "The level gate is decided exactly through the power-of-two scaling",
+                                "witness": level_witness["spurious"]} if "spurious" in level_witness else None,
+                uncertainty=EXACT),
     ]
-    if missed:
-        findings.append(finding(
-            "The PLSR level gate misses exceedances when s^2 underflows: V > level is certified", "numerical",
-            {"missed": missed, "cases": len(rows)},
-            {"provider": base, "checks": [_check("scan cases with exact V > level and code != OUTSIDE_LEVEL_SET",
-                                                 missed, 1.0, "ge")]},
-            tolerance={"abs": 0.0, "rel": 0.0},
-            counterexample={"statement": "OUTSIDE_LEVEL_SET is returned whenever V(x) exceeds the declared level",
-                            "witness": dict(first_missed, A="-I", P=f"2^{first_missed['p']} I",
-                                            x=f"(2^{first_missed['e']}, 0)")}, uncertainty=EXACT))
-    if spurious:
-        findings.append(finding(
-            "The PLSR level gate reports OUTSIDE_LEVEL_SET for V below the level when s^2 overflows", "numerical",
-            {"spurious": spurious, "cases": len(rows)},
-            {"provider": base, "checks": [_check("scan cases with exact V < level and code OUTSIDE_LEVEL_SET",
-                                                 spurious, 1.0, "ge")]},
-            tolerance={"abs": 0.0, "rel": 0.0},
-            counterexample={"statement": "The level gate is decided exactly through the power-of-two scaling",
-                            "witness": dict(first_spurious, A="-I", P=f"2^{first_spurious['p']} I",
-                                            x=f"(2^{first_spurious['e']}, 0)")}, uncertainty=EXACT))
     raised = theta_codes["theta:+1e308,c=2"]
     findings.append(finding(
         "A finite in-box theta whose A(theta) overflows raises an input error instead of NUMERICAL_OVERFLOW",
@@ -818,22 +938,33 @@ def overflow_underflow(ctx):
         {"provider": base, "checks": [_refusal("theta = 1e308, A1 = 2I (A(theta) = inf)", "raises ValueError", raised),
                                       _refusal("theta = 1e308, A1 = I (A finite, M overflows)", "NUMERICAL_OVERFLOW",
                                                theta_codes["theta:+1e308,c=1"])]},
+        tolerance=EXACT_TOL,
         counterexample={"statement": "Every finite in-box sample yields a runtime-status-v1 code",
                         "witness": {"A0": "-I", "A1": "2I", "box": [-1e308, 1e308], "theta": 1e308,
                                     "error": results["theta:+1e308,c=2"].get("error")}}, uncertainty=EXACT))
     findings.append(_witness_finding(
-        results["witness"], identity,
-        "No binary64 input near the representable limits yields a false certificate",
-        "A subnormal plant matrix yields CERTIFIED_WITH_MARGIN for an exactly indefinite decrease form"))
+        results["witness"], identity, "No binary64 input near the representable limits yields a false certificate",
+        WITNESS_CLAIM))
     findings += offline
+    witness_code = _code(results["witness"])
+    refutations = []
+    if missed or spurious:
+        refutations.append("level-gate errors (" + ", ".join(
+            part for part, count in (("missed", missed), ("spurious", spurious)) if count) + ")")
+    if raised.startswith("raises"):
+        refutations.append("an input error raised for an in-box theta")
+    if witness_code in R.CERTIFYING:
+        refutations.append("a false certificate for a subnormal plant")
+    behaved = state_mismatch == 0 and all(limit_codes[k] == predicted_limits[k] for k in limits)
     fields["numerical_result"] = (
         f"{len(state_codes)} states from 2^-1074 to 1.797e308: {state_mismatch} code changes (all {reference_code}). "
         f"Level scan ({len(rows)} cases): {missed} missed exceedances (certified with V > level, s^2 underflowed), "
         f"{spurious} spurious exceedances (s^2 overflowed), {disagreement} disagreements with the documented rule. "
-        f"Near-limit matrices: {limit_codes}. theta overflow: {theta_codes}. Subnormal witness: "
-        f"{_code(results['witness'])}. Conclusion: state scaling and matrix overflow behave as documented; the "
-        "hypothesis is refuted by level-gate errors in both directions, by an input error raised for an in-box "
-        "theta, and by a false certificate for a subnormal plant.")
+        f"Near-limit matrices: {limit_codes}. theta overflow: {theta_codes}. Subnormal witness: {witness_code}. "
+        "Conclusion: " + ("state scaling and matrix overflow behave as documented" if behaved else
+                          "state scaling or matrix overflow departs from the documented order")
+        + ("; the hypothesis is refuted by " + ", by ".join(refutations) if refutations else
+           "; no refutation of the hypothesis was observed") + ".")
     fields["uncertainty"] = ("The level scan and the overflow cases involve only exact powers of two, so they are "
                              "platform-independent; the witness depends on LAPACK's subnormal handling.")
     return _finish(fields, findings, PROVIDER_FILES, identity)
@@ -926,7 +1057,7 @@ def expected_codes(exact_class, exact_bin):
 
 
 @task("T104", changed_files=PROVIDER_FILES, regression_tests=(_node("test_t104_semidefinite_edges"),
-                                                                _node("test_edge_case_exact_classes")))
+                                                                _node("test_edge_case_exact_classes"), PARTIAL_TEST))
 def semidefinite_edges(ctx):
     fields = _fields(
         "PLSR never certifies a decrease form that is only semidefinite or indefinite: skew-symmetric plants with "
@@ -1031,24 +1162,33 @@ def semidefinite_edges(ctx):
                 {"provider": base, "checks": [_refusal("solve_lyapunov with Q = diag(1, 0)", "raises ValueError",
                                                        solves["solve:psdQ"]),
                                               _refusal("quadratic(diag(1, 0))", "raises ValueError",
-                                                       solves["quadratic:psd"])]}, uncertainty=EXACT),
+                                                       solves["quadratic:psd"])]},
+                tolerance=EXACT_TOL, uncertainty=EXACT),
     ]
+    candidate_checks = [_check("certifying verdicts with an accepted, exactly indefinite P", candidate_certified,
+                               0.0)]
+    candidate_extra = {}
     if indefinite_accepted:
         first = candidates[indefinite_accepted[0]]
-        findings.append(finding(
-            "quadratic() accepts binary64 P matrices that are exactly indefinite; the verdict then refuses or stays "
-            "inconclusive and never certifies", "numerical",
-            {"accepted_exactly_indefinite_observed": True, "certifying_verdicts": candidate_certified},
-            {"provider": base, "checks": [
-                _check("accepted candidates with negative exact determinant", len(indefinite_accepted), 1.0, "ge"),
-                _check("certifying verdicts with an exactly indefinite P", candidate_certified, 0.0)]},
-            counterexample={"statement": "A P accepted by PLSR's QuadraticCertificate is exactly positive definite",
-                            "witness": {"P_hex": R.hexed(first["P"]), "exact_det_sign": first["exact_det_sign"],
-                                        "weak_direction_code": _code(results[f"q{indefinite_accepted[0]}:weak"]),
-                                        "e1_code": _code(results[f"q{indefinite_accepted[0]}:e1"])}},
-                                        uncertainty=_platform(0.0, "which candidates quadratic() accepts depends on "
-                                                                   "eigvalsh rounding")))
+        candidate_checks.append(_check("accepted candidates with negative exact determinant",
+                                       len(indefinite_accepted), 1.0, "ge"))
+        candidate_extra["counterexample"] = {
+            "statement": "A P accepted by PLSR's QuadraticCertificate is exactly positive definite",
+            "witness": {"P_hex": R.hexed(first["P"]), "exact_det_sign": first["exact_det_sign"],
+                        "weak_direction_code": _code(results[f"q{indefinite_accepted[0]}:weak"]),
+                        "e1_code": _code(results[f"q{indefinite_accepted[0]}:e1"])}}
+    findings.append(finding(
+        "No verdict certifies with a P that quadratic() accepts although it is exactly indefinite", "numerical",
+        {"candidates": len(candidates), "certifying_verdicts": candidate_certified},
+        {"provider": base, "checks": candidate_checks}, tolerance=EXACT_TOL,
+        uncertainty=_platform(0.0, "which candidates quadratic() accepts depends on eigvalsh rounding; the "
+                                   "certification count does not"), **candidate_extra))
     findings += offline
+    indefinite_codes = _counts(_code(results[f"q{i}:{where}"]) for i in indefinite_accepted
+                               for where in ("weak", "e1"))
+    constructor_clause = (f"the constructor's eigenvalue-sign test admitted {len(indefinite_accepted)} exactly "
+                          f"indefinite P, whose verdicts were {indefinite_codes}" if indefinite_accepted else
+                          "the constructor admitted no exactly indefinite candidate on this platform")
     fields["numerical_result"] = (
         f"{len(cases)} edge cases: {violations} certifying verdicts on non-definite forms, {unexpected} codes outside "
         f"the class expectation. Skew with P = I: {skew_codes}. Jordan with P = I: {jordan}. Solver and constructor: "
@@ -1056,12 +1196,15 @@ def semidefinite_edges(ctx):
         f"quadratic(), {len(indefinite_accepted)} of them exactly indefinite; verdicts on accepted candidates: "
         f"{candidate_codes.get('CERTIFICATE_NOT_POSITIVE', 0)} CERTIFICATE_NOT_POSITIVE, "
         f"{sum(v for k, v in candidate_codes.items() if k in R.CERTIFYING)} certifying, "
-        f"{sum(candidate_codes.values())} in total. Conclusion: no semidefinite, skew or indefinite edge case was "
-        "certified; the constructor's eigenvalue-sign test admits some exactly indefinite P, which the verdict then "
-        "refuses or leaves inconclusive.")
+        f"{sum(candidate_codes.values())} in total. Conclusion: "
+        + ("no semidefinite, skew or indefinite edge case was certified" if violations == 0 else
+           f"{violations} non-definite edge cases were certified")
+        + f"; {constructor_clause}"
+        + ("" if candidate_certified == 0 else f", and {candidate_certified} verdicts certified with such a P")
+        + ".")
     fields["uncertainty"] = ("Exact classes are exact. Which candidates quadratic() accepts depends on the sign of "
-                             "a rounded eigenvalue and may differ between LAPACK builds; the retained value is only "
-                             "whether an exactly indefinite P was accepted.")
+                             "a rounded eigenvalue and may differ between LAPACK builds; it is recorded as a "
+                             "counterexample when observed, and only the certification count is a checked value.")
     return _finish(fields, findings, PROVIDER_FILES, identity)
 
 
@@ -1141,7 +1284,7 @@ def conversion_scan(count=2000):
 
 
 @task("T105", changed_files=PROVIDER_FILES, regression_tests=(_node("test_t105_unit_scales"),
-                                                                _node("test_conversion_scan")))
+                                                                _node("test_conversion_scan"), PARTIAL_TEST))
 def unit_scales(ctx):
     fields = _fields(
         "The same physical parameter box and plant expressed in different units give the same PLSR verdicts: box "
@@ -1276,63 +1419,62 @@ def unit_scales(ctx):
                 {"provider": base, "checks": [_check("unit systems whose vertex check fails",
                                                      sum(v is not True for v in vertices.values()), 0.0,
                                                      kind="invariant")]},
-                                                     uncertainty=_roundoff(0.0, "vertex margins are far above the "
-                                                                                "resolution in every unit system")),
+                tolerance=EXACT_TOL, uncertainty=_roundoff(0.0, "vertex margins are far above the resolution in "
+                                                                "every unit system")),
         finding("Margin ratios are not invariant under non-uniform unit changes", "numerical",
                 {"interior0_ratio_spread": ratio_spread},
                 {"provider": base, "checks": [_check("max/min margin ratio across unit systems", ratio_spread, 10.0,
                                                      "ge", kind="invariant")]},
                 tolerance={"abs": 0.0, "rel": 1e-6},
                 uncertainty=_roundoff(1e-12, "relative rounding of float64 margin ratios")),
+        finding("The declared box bounds 8 and 12 N/m and their binary64 neighbours keep their SI box decision in all "
+                "five unit systems and under both conversion formulas", "numerical",
+                {"just_outside_admitted": admitted, "bound_refused_by_second_formula": divided_refused},
+                {"provider": base, "checks": [
+                    _check("just-outside samples admitted after conversion",
+                           sum(len(v) for v in admitted.values()), 0.0, kind="invariant"),
+                    _check("bound samples refused when converted as k / (1 / c)", len(divided_refused), 0.0,
+                           kind="invariant")]},
+                tolerance=EXACT_TOL, uncertainty=_roundoff(0.0, "scalar IEEE products and quotients; identical on "
+                                                                "every conforming platform")),
     ]
     witness_codes = {key: _code(results[key]) for key in (f"{n}|{l}" for n in witness_bounds for l in ("SI", "x1e-3"))}
     for name in witness_bounds:
         si, converted = witness_codes[f"{name}|SI"], witness_codes[f"{name}|x1e-3"]
-        if si != converted:
-            statement = ("Converting the box and the sample with the same formula preserves box membership"
-                         if name.startswith("collision") else
-                         "Mathematically equal unit conversions give the same box decision")
-            claim = ("A parameter just above the SI bound is admitted after multiplying bound and sample by 1e-3"
-                     if name.startswith("collision") else
-                     "A parameter exactly on the SI bound is refused when bound and sample are converted by the two "
-                     "mathematically equal formulas k * 0.001 and k / 1000")
-            findings.append(finding(
-                claim, "numerical", {"SI": si, "x1e-3": converted},
-                {"provider": base, "checks": [_check("SI and converted decisions differ (1 if so)", 1.0, 1.0, "ge",
-                                                     kind="invariant")]},
-                counterexample={"statement": statement, "witness": dict(scan["witnesses"][name], codes={
-                    "SI": si, "x1e-3": converted})}, uncertainty=EXACT))
-    if any(admitted.values()):
-        name = next(n for n, systems in admitted.items() if systems)
+        collision = name.startswith("collision")
+        statement = ("Converting the box and the sample with the same formula preserves box membership"
+                     if collision else "Mathematically equal unit conversions give the same box decision")
+        claim = ("A parameter just above the SI bound is admitted after multiplying bound and sample by 1e-3"
+                 if collision else
+                 "A parameter exactly on the SI bound is refused when bound and sample are converted by the two "
+                 "mathematically equal formulas k * 0.001 and k / 1000")
+        expected = (("OUTSIDE_PARAMETER_BOX", "CERTIFIED_WITH_MARGIN") if collision else
+                    ("CERTIFIED_WITH_MARGIN", "OUTSIDE_PARAMETER_BOX"))
         findings.append(finding(
-            "A stiffness just outside the SI box is admitted after an otherwise consistent unit conversion",
-            "numerical", admitted,
-            {"provider": base, "checks": [_check("unit systems admitting a just-outside sample",
-                                                 sum(len(v) for v in admitted.values()), 1.0, "ge")]},
-            counterexample={"statement": "Converting the box and the sample with the same formula preserves box "
-                                         "membership", "witness": {"sample": name, "theta_hex": thetas[name].hex(),
-                                                                   "codes": table[name]}}, uncertainty=EXACT))
-    if divided_refused:
-        findings.append(finding(
-            "A stiffness exactly on the bound is refused when the sample is converted as k / (1 / c) and the bound "
-            "as k * c", "numerical", divided_refused,
-            {"provider": base, "checks": [_check("bound samples refused under the second formula", len(divided_refused),
-                                                 1.0, "ge")]},
-            counterexample={"statement": "Mathematically equal unit conversions give the same box decision",
-                            "witness": next(iter(divided_refused))}, uncertainty=EXACT))
-    if len(set(light.values())) > 1:
-        findings.append(finding(
-            "The light-damping plant's verdict depends on the unit system although its exact decrease form is "
-            "negative definite in all of them", "numerical", light,
+            claim, "numerical", {"SI": si, "x1e-3": converted},
             {"provider": base, "checks": [
-                _check("distinct codes across unit systems", len(set(light.values())), 2.0, "ge"),
-                _check("unit systems whose exact decrease form is not negative definite",
-                       sum(c != "negative_definite" for c in light_exact.values()), 0.0)]},
-            counterexample={"statement": "The same physical plant in different units gets the same PLSR verdict",
-                            "witness": {"codes": light, "margin_ratio": light_ratio}},
-                            uncertainty=_roundoff(0.0, "margin ratios differ by orders of magnitude between unit "
-                                                       "systems")))
+                _check("SI and converted box decisions match the witness pattern (1 if so)",
+                       1.0 if (si, converted) == expected else 0.0, 1.0, "ge", kind="invariant")]},
+            tolerance=EXACT_TOL,
+            counterexample={"statement": statement, "witness": dict(scan["witnesses"][name], codes={
+                "SI": si, "x1e-3": converted})}, uncertainty=EXACT))
+    light_differs = len(set(light.values())) > 1
+    findings.append(finding(
+        "The light-damping plant's verdict depends on the unit system although its exact decrease form is "
+        "negative definite in all of them", "numerical", light,
+        {"provider": base, "checks": [
+            _check("distinct codes across unit systems", len(set(light.values())), 2.0, "ge", kind="invariant"),
+            _check("unit systems whose exact decrease form is not negative definite",
+                   sum(c != "negative_definite" for c in light_exact.values()), 0.0)]},
+        tolerance=EXACT_TOL,
+        counterexample={"statement": "The same physical plant in different units gets the same PLSR verdict",
+                        "witness": {"codes": light, "margin_ratio": light_ratio}} if light_differs else None,
+        uncertainty=_roundoff(0.0, "margin ratios differ by orders of magnitude between unit systems (0.0056 to "
+                                   "45000), far from the threshold 1")))
     findings += offline
+    boundary_clause = ("boundary decisions for the declared MSD box survive every conversion, but isolated bounds "
+                       "collide or depend on the conversion formula" if not any(admitted.values())
+                       and not divided_refused else "boundary decisions depend on how bounds and samples are rounded")
     fields["numerical_result"] = (
         f"Interior/bound samples: {interior_mismatch} code mismatches across {len(UNIT_SYSTEMS)} unit systems; "
         f"vertex check passed in {sum(v is True for v in vertices.values())}/{len(vertices)}. Just-outside MSD "
@@ -1341,9 +1483,12 @@ def unit_scales(ctx):
         f"(ratios { {k: float(f'{v:.3g}') for k, v in light_ratio.items()} }; exact classes {light_exact}). "
         f"Isolated box witnesses: {witness_codes}. Conversion scan: "
         f"{scan['neighbour_collisions']} neighbour collisions and {scan['formula_disagreements']} formula "
-        f"disagreements in {scan['draws']} draws. Conclusion: well-inside samples agree in every unit system, but "
-        "boundary decisions depend on how bounds and samples are rounded, and near-threshold verdicts depend on the "
-        "units because the resolution is not congruence-invariant.")
+        f"disagreements in {scan['draws']} draws. Conclusion: "
+        + ("well-inside samples agree in every unit system" if interior_mismatch == 0 else
+           "well-inside samples disagree between unit systems")
+        + f"; {boundary_clause}"
+        + ("; near-threshold verdicts depend on the units because the resolution is not congruence-invariant."
+           if light_differs else "; the light-damping verdict did not depend on the units here."))
     fields["uncertainty"] = ("Box decisions and conversions are exact IEEE arithmetic (platform-independent). "
                              "Margin ratios carry float64 rounding of the converted matrices (relative ~1e-15).")
     return _finish(fields, findings, PROVIDER_FILES, identity)
@@ -1352,6 +1497,8 @@ def unit_scales(ctx):
 # T106 ------------------------------------------------------------------------
 
 ROTATION = np.array([[0.0, 1.0], [-1.0, 0.0]])
+# Codes reachable with declared inputs far from every rounding threshold; CERTIFICATE_NOT_POSITIVE is not.
+ROUNDING_FREE_CODES = frozenset(R.RUNTIME_CODES) - {"CERTIFICATE_NOT_POSITIVE"}
 
 
 def status_paths():
@@ -1400,7 +1547,8 @@ def _path_cases(paths, candidates):
 
 
 @task("T106", changed_files=PROVIDER_FILES, regression_tests=(_node("test_t106_status_coverage"),
-                                                                _node("test_documented_decision_order")))
+                                                                _node("test_documented_decision_order"),
+                                                                _node("test_t106_offline_findings_without_the_provider"), PARTIAL_TEST))
 def status_transitions(ctx):
     fields = _fields(
         "Each of the nine runtime-status-v1 codes is reachable with declared inputs, codes change along "
@@ -1417,8 +1565,9 @@ def status_transitions(ctx):
          "INVALID_SENSOR_DATA, CERTIFICATE_EXPIRED, RUNTIME_FAULT"],
         "PLSR verdict code per step; require_status and Verdict construction outcomes for host-owned codes; the "
         "runtime's published constants.",
-        "The union of observed codes is the nine-code vocabulary; each observed code equals the CIW re-derivation "
-        "of the documented order; every host-owned code is refused.",
+        "The eight codes that do not depend on rounding are reached on paths far from every threshold, each path "
+        "step equals the CIW transcription of the documented order, CERTIFICATE_NOT_POSITIVE is reached only "
+        "through rounding and never with a certificate, and every host-owned code is refused.",
         "Build each path, evaluate all steps in one PLSR subprocess, recompute each expected code in CIW from A, P "
         "and x, and tabulate transitions and coverage.",
         "T107: near-boundary spectra; add an upstream regression that pins one witness per code, including a "
@@ -1426,23 +1575,27 @@ def status_transitions(ctx):
         ["a code unreachable", "a transition out of documented order", "a host-owned code accepted",
          "CERTIFICATE_NOT_POSITIVE only reachable through rounding"],
         ["CERTIFICATE_NOT_POSITIVE is reached only when a P accepted by quadratic() evaluates V < 0, which depends "
-         "on eigvalsh rounding; min eig P <= 0 cannot follow a passed construction check.",
-         "The CIW re-derivation shares the documented specification with the runtime, so it checks implementation "
-         "against specification, not the specification itself."])
+         "on eigvalsh rounding; min eig P <= 0 cannot follow a passed construction check. Its reachability is "
+         "therefore recorded, not required.",
+         "The CIW transcription shares the documented specification with the runtime, so it checks implementation "
+         "against specification (a same-specification check), not the specification itself."])
     candidates = [c for c in ctx.memo("lyapunov:indefinite-candidates", indefinite_candidates)[0]
                   if not c["exact_pd"]]
     paths = status_paths()
     cases, predictions = _path_cases(paths, candidates)
     predicted_codes = sorted(set(predictions.values()))
+    path_ids = [cid for cid in predictions if not cid.startswith("indefinite")]
+    stable_codes = sorted({predictions[cid] for cid in path_ids} & ROUNDING_FREE_CODES)
     authority = finding(
         "A CERTIFIED_WITH_MARGIN verdict (operationally_acceptable) authorizes actuation", "actuator_authority", None,
         {"derivation": "runtime-status-v1: operationally_acceptable is not an authorization; host statuses and "
                        "machine-safety functions are outside the evaluator"})
-    offline = [finding("The documented decision order, re-derived in CIW, assigns all nine codes to the constructed "
-                       "inputs", "numerical", {"codes": predicted_codes},
-                       {"generator": {"name": "status_paths + indefinite_candidates", "seed": 1041},
-                        "checks": [_check("distinct runtime codes predicted", len(predicted_codes), 9.0, "ge",
-                                          kind="analytic")]}, uncertainty=EXACT), authority]
+    offline = [finding("The documented decision order, transcribed in CIW, assigns the eight rounding-free codes to "
+                       "the constructed path steps", "numerical", {"codes": stable_codes},
+                       {"generator": {"name": "status_paths", "seed": None},
+                        "checks": [_check("rounding-free runtime codes predicted on the paths", len(stable_codes),
+                                          float(len(ROUNDING_FREE_CODES)), "ge", kind="analytic")]},
+                       tolerance=EXACT_TOL, uncertainty=EXACT), authority]
     for code in R.HOST_OWNED:
         cases.append({"id": f"require:{code}", "op": "require_status", "code": code})
         cases.append({"id": f"verdict:{code}", "op": "host_verdict", "code": code})
@@ -1450,14 +1603,21 @@ def status_transitions(ctx):
     try:
         bridge = _bridge(ctx, cases)
     except _Unavailable as exc:
-        fields["numerical_result"] = f"Provider-free prediction covers {len(predicted_codes)} codes: {predicted_codes}."
+        fields["numerical_result"] = (f"Provider-free prediction covers {len(stable_codes)} rounding-free codes on "
+                                      f"the paths and {len(predicted_codes)} codes including the indefinite-P "
+                                      f"witnesses: {predicted_codes}.")
         fields["uncertainty"] = "Deterministic re-derivation on this platform."
         return _finish(fields, offline, PROVIDER_FILES, blocked=str(exc))
     identity, results = bridge["identity"], bridge["results"]
     base = provider_basis(identity)
     observed = {cid: _code(results[cid]) for cid in predictions}
-    mismatches = {cid: {"observed": observed[cid], "predicted": predictions[cid]} for cid in predictions
-                  if observed[cid] != predictions[cid]}
+    path_mismatches = {cid: {"observed": observed[cid], "predicted": predictions[cid]} for cid in path_ids
+                       if observed[cid] != predictions[cid]}
+    reached_stable = sorted({observed[cid] for cid in path_ids} & ROUNDING_FREE_CODES)
+    witness_ids = [cid for cid in predictions if cid.startswith("indefinite")]
+    witness_codes = _counts(observed[cid] for cid in witness_ids)
+    witness_certified = sum(observed[cid] in R.CERTIFYING for cid in witness_ids)
+    not_positive = witness_codes.get("CERTIFICATE_NOT_POSITIVE", 0)
     reached = sorted(set(observed.values()) & set(R.RUNTIME_CODES))
     transitions = {name: [observed[f"{name}#{j}"] for j in range(len(steps))] for name, steps in paths.items()}
     host = {code: {"require_status": _code(results[f"require:{code}"]),
@@ -1471,24 +1631,34 @@ def status_transitions(ctx):
     lines += [f"| {code} | {'yes' if coverage[code] else 'no'} | {coverage[code][0] if coverage[code] else '-'} |"
               for code in R.RUNTIME_CODES]
     ctx.artifact_text("status-coverage.md", "\n".join(lines) + "\n")
+    not_positive_checks = [_check("certifying verdicts on the exactly indefinite P witnesses", witness_certified, 0.0,
+                                  kind="invariant")]
+    if not_positive:
+        not_positive_checks.append(_check("CERTIFICATE_NOT_POSITIVE verdicts observed", not_positive, 1.0, "ge",
+                                          kind="invariant"))
     findings = [
-        finding("All nine runtime-status-v1 codes are reached by constructed declared inputs", "numerical",
-                {"codes": reached},
-                {"provider": base, "independent_check": _independent(
-                    _check("steps whose code differs from the CIW re-derivation of the documented order",
-                           len(mismatches), 0.0, kind="analytic"), identity),
-                 "checks": [_check("distinct runtime codes observed", len(reached), 9.0, "ge", kind="invariant")]},
-                 uncertainty=_platform(0.0, "the CERTIFICATE_NOT_POSITIVE witness depends on eigvalsh and "
-                                            "dot-product rounding")),
+        finding("The eight rounding-free runtime-status-v1 codes are reached on one-parameter paths far from every "
+                "threshold", "numerical", {"codes": reached_stable},
+                {"provider": base, "checks": [_check("rounding-free codes reached", len(reached_stable),
+                                                     float(len(ROUNDING_FREE_CODES)), "ge", kind="invariant")]},
+                tolerance=EXACT_TOL, uncertainty=EXACT),
         finding("Codes along each one-parameter path follow the documented decision order", "numerical", transitions,
-                {"provider": base, "independent_check": _independent(
-                    _check("path steps differing from the CIW re-derivation", sum(
-                        1 for cid in mismatches if "#" in cid and not cid.startswith("indefinite")), 0.0,
-                           kind="analytic"), identity)}, uncertainty=EXACT),
+                {"provider": base, "checks": [
+                    _check("path steps differing from the CIW transcription of the documented order (same "
+                           "specification)", len(path_mismatches), 0.0, kind="analytic")]},
+                tolerance=EXACT_TOL, uncertainty=EXACT),
+        finding("The exactly indefinite P witnesses are never certified along their weak direction; whether they "
+                "reach CERTIFICATE_NOT_POSITIVE is recorded", "numerical",
+                {"witnesses": len(witness_ids), "certifying": witness_certified,
+                 "certificate_not_positive_reached": not_positive > 0},
+                {"provider": base, "checks": not_positive_checks}, tolerance=EXACT_TOL,
+                uncertainty=_platform(0.0, "whether the witnesses reach CERTIFICATE_NOT_POSITIVE depends on eigvalsh "
+                                           "and dot-product rounding; the certification count does not")),
         finding("The runtime refuses to emit the five host-owned status codes", "numerical", host,
                 {"provider": base, "checks": [
                     _refusal(f"{way} for {code}", "raises ValueError", outcome[way])
-                    for code, outcome in host.items() for way in ("require_status", "Verdict")]}, uncertainty=EXACT),
+                    for code, outcome in host.items() for way in ("require_status", "Verdict")]},
+                tolerance=EXACT_TOL, uncertainty=EXACT),
         finding("Pinned runtime constants: resolution factor, numerical policy, status vocabulary", "provenance",
                 constants, {"provider": base, "checks": [
                     _check("DECREASE_RESOLUTION_FACTOR minus the documented 1.0",
@@ -1501,16 +1671,19 @@ def status_transitions(ctx):
                            kind="invariant"),
                     _check("host-owned codes outside or missing from the documented five",
                            len(set(constants.get("HOST_OWNED_STATUSES", [])) ^ set(R.HOST_OWNED)), 0.0,
-                           kind="invariant")]}, uncertainty=EXACT),
+                           kind="invariant")]}, tolerance=EXACT_TOL, uncertainty=EXACT),
     ] + offline
     fields["numerical_result"] = (
-        f"Codes reached: {len(reached)}/9 ({reached}). {len(mismatches)} of {len(predictions)} steps differ from the "
-        f"CIW re-derivation. Transitions: {transitions}. Host-owned codes refused: "
+        f"Codes reached: {len(reached)}/9 ({reached}); rounding-free codes on the paths: "
+        f"{len(reached_stable)}/{len(ROUNDING_FREE_CODES)}. {len(path_mismatches)} of {len(path_ids)} path steps "
+        f"differ from the CIW transcription of the documented order. Indefinite-P witnesses: {witness_codes} "
+        f"({witness_certified} certifying). Transitions: {transitions}. Host-owned codes refused: "
         f"{sum(set(v.values()) == {'raises ValueError'} for v in host.values())}/5. "
         f"Constants: resolution factor {constants.get('DECREASE_RESOLUTION_FACTOR')}, policy "
         f"{constants.get('NUMERICAL_POLICY_VERSION')}.")
-    fields["uncertainty"] = ("Path codes are far from thresholds and platform-independent, except the "
-                             "CERTIFICATE_NOT_POSITIVE witnesses, which depend on eigvalsh and dot-product rounding.")
+    fields["uncertainty"] = ("Path codes are far from thresholds and platform-independent. The indefinite-P "
+                             "witnesses depend on eigvalsh and dot-product rounding, so only their non-certification "
+                             "is checked and CERTIFICATE_NOT_POSITIVE reachability is recorded.")
     return _finish(fields, findings, PROVIDER_FILES, identity)
 
 
@@ -1539,13 +1712,14 @@ def boundary_family():
     return family
 
 
-@task("T107", changed_files=PROVIDER_FILES, regression_tests=(_node("test_t107_inconclusive_band"),))
+@task("T107", changed_files=PROVIDER_FILES, regression_tests=(_node("test_t107_inconclusive_band"), PARTIAL_TEST))
 def inconclusive_band(ctx):
     fields = _fields(
-        "When the exact largest eigenvalue of the decrease form lies within two resolutions of zero, PLSR answers "
-        "NUMERICAL_INCONCLUSIVE, or MARGIN_LOW under a declared margin of three resolutions, and never "
-        "CERTIFIED_WITH_MARGIN for a form that is not exactly negative definite; beyond two resolutions the sign "
-        "is always resolved.",
+        "PLSR never gives a certifying code to a near-boundary decrease form that is not exactly negative "
+        "definite; beyond two resolutions from zero it always resolves the sign; under a declared margin of three "
+        "resolutions no case within two resolutions is CERTIFIED_WITH_MARGIN. The specification's stronger "
+        "statement -- that near-boundary spectra yield NUMERICAL_INCONCLUSIVE or MARGIN_LOW rather than "
+        "CERTIFIED_WITH_MARGIN -- is tested at required_margin 0 as a candidate counterexample.",
         "If the resolution bounds the float64 error e of max eig(M) (|e| <= res), then exact lambda < -2 res gives "
         "margin > res (certified), exact lambda >= 2 res gives max eig > res (not definite), and exact lambda >= 0 "
         "can never give margin > res. With required margin 3 res, certification needs margin > 3 res, impossible "
@@ -1556,14 +1730,16 @@ def inconclusive_band(ctx):
          "Each case evaluated with required_margin 0 and 3 * resolution"],
         "PLSR code and margin; exact bin of max eig(M) from Sylvester tests on M - t I at t = -2, -1, 0, 1, 2 "
         "resolutions in exact dyadic arithmetic.",
-        "No certifying code when exact lambda >= 0; certified beyond -2 res; resolved beyond +2 res; with the "
-        "declared margin no CERTIFIED_WITH_MARGIN within the band.",
+        "No certifying code unless the exact form is negative definite; certified beyond -2 res; resolved beyond "
+        "+2 res; with the declared margin no CERTIFIED_WITH_MARGIN within the band. Without a declared margin, "
+        "exactly negative definite band cases may be certified (soundly) or left inconclusive.",
         "Generate cases, bin their exact spectra, evaluate with PLSR at both margins and tabulate codes per bin.",
         "T108: required-margin monotonicity; measure how much of the [-2, 0) res band a less conservative "
         "eigensolver term (p(n) = n instead of n^2) would recover without losing soundness against exact bins.",
         ["certifying code on a form that is not exactly negative definite", "unresolved sign beyond two "
          "resolutions", "CERTIFIED_WITH_MARGIN inside the band under a declared margin",
-         "MARGIN_LOW inconsistent with the declared margin"],
+         "MARGIN_LOW inconsistent with the declared margin",
+         "CERTIFIED_WITH_MARGIN inside the band at required_margin 0 (searched as counterexample)"],
         ["Exact bins describe the declared binary64 matrices; the targets kappa are only approximately realised "
          "because A is rounded.", "The band refusal rate depends on the generator and is not a property of "
          "plants in general."])
@@ -1617,6 +1793,10 @@ def inconclusive_band(ctx):
                 margin_low_seen += code3 == "MARGIN_LOW"
         points.append((member["kappa"], zero["margin_ratio"], code0))
     refusal_rate = band_nd_inconclusive / band_nd if band_nd else 0.0
+    band_certified = [i for i, member in enumerate(family) if member["exact_bin"] in BAND
+                      and _code(results[f"b{i}:0"]) == "CERTIFIED_WITH_MARGIN"]
+    band_certified_unsound = sum(family[i]["exact_class"] != "negative_definite" for i in band_certified)
+    within_one = [i for i in band_certified if family[i]["exact_bin"] == "[-1, 0) res"]
     ctx.artifact_json("inconclusive-band.json", R.jsonable({"codes_by_exact_bin": table, "points": points}))
     by_code = {}
     for kappa, ratio, code in sorted(points):
@@ -1628,10 +1808,21 @@ def inconclusive_band(ctx):
         title="T107 computed max eig / resolution against target kappa", xlabel="target kappa",
         ylabel="max eig(M) / resolution", markers=True))
     exact_checker = _independent(_check("exact bins and classes of the declared forms", unsound, 0.0), identity)
+    band_extra = {}
+    if band_certified:
+        chosen = (within_one or band_certified)[0]
+        member = family[chosen]
+        band_extra["counterexample"] = {
+            "statement": "Near-boundary spectra yield NUMERICAL_INCONCLUSIVE or MARGIN_LOW rather than "
+                         "CERTIFIED_WITH_MARGIN (T107 specification)",
+            "witness": {"case": chosen, "n": member["n"], "exact_bin": member["exact_bin"],
+                        "exact_class": member["exact_class"], "code_at_required_margin_0": "CERTIFIED_WITH_MARGIN",
+                        "margin_ratio": results[f"b{chosen}:0"]["margin_ratio"], "A_hex": R.hexed(member["A"]),
+                        "P_hex": R.hexed(member["P"]), "x": member["x"].tolist()}}
     findings = [
         finding("No near-boundary case receives a certifying code unless its exact decrease form is negative "
                 "definite", "numerical", {"cases": len(family), "violations": unsound},
-                {"provider": base, "independent_check": exact_checker}, tolerance={"abs": 0.0, "rel": 0.0},
+                {"provider": base, "independent_check": exact_checker}, tolerance=EXACT_TOL,
                 uncertainty=EXACT),
         finding("Beyond two resolutions from zero PLSR always resolves the sign", "numerical",
                 {"resolved_cases": bins.get("below -2 res", 0) + bins.get("at or above 2 res", 0),
@@ -1648,26 +1839,48 @@ def inconclusive_band(ctx):
                            certified_in_band_declared, 0.0), identity)},
                 tolerance={"abs": 2.0, "rel": 0.0},
                 uncertainty=_platform(2.0, "counts near the band edge may shift between BLAS builds")),
+        finding("At required_margin 0 near-boundary spectra within two resolutions of zero receive "
+                "CERTIFIED_WITH_MARGIN, and every such certificate is exactly sound", "numerical",
+                {"band_cases": sum(bins.get(b, 0) for b in BAND), "certified": len(band_certified),
+                 "certified_within_one_resolution": len(within_one), "unsound": band_certified_unsound},
+                {"provider": base, "checks": [
+                    _check("band cases certified at required_margin 0", len(band_certified), 1.0, "ge",
+                           kind="invariant"),
+                    _check("band certificates whose exact decrease form is not negative definite",
+                           band_certified_unsound, 0.0)]},
+                tolerance={"abs": 4.0, "rel": 0.0},
+                uncertainty=_platform(4.0, "which band cases resolve depends on last-bit rounding; the [-2, -1) "
+                                           "res certifications are robust"), **band_extra),
         finding("MARGIN_LOW appears exactly when the resolvable margin does not exceed the declared margin",
                 "numerical", {"margin_low_observed": margin_low_seen > 0, "mismatches": margin_low_mismatch},
                 {"provider": base, "checks": [_check("codes differing from the declared-margin rule",
                                                      margin_low_mismatch, 0.0, kind="invariant"),
                                               _check("MARGIN_LOW verdicts observed", margin_low_seen, 1.0, "ge",
-                                                     kind="invariant")]}, uncertainty=EXACT),
+                                                     kind="invariant")]},
+                tolerance=EXACT_TOL, uncertainty=EXACT),
         finding("Share of exactly negative definite band cases answered NUMERICAL_INCONCLUSIVE without a declared "
-                "margin", "numerical", {"band_negative_definite": band_nd, "inconclusive_share": refusal_rate,
-                                        "certified": band_nd_certified},
+                "margin", "numerical", {"inconclusive_share": refusal_rate},
                 {"provider": base}, tolerance={"abs": 0.2, "rel": 0.0},
                 uncertainty=_platform(0.2, "the share of resolved band cases depends on last-bit rounding")),
     ] + offline
     fields["numerical_result"] = (
-        f"{len(family)} cases; codes by exact bin: {table}. Unsound certifications: {unsound}. Unresolved beyond "
-        f"two resolutions: {unresolved}. Certified within the band under the declared margin: "
-        f"{certified_in_band_declared}. Exactly negative definite band cases: {band_nd}, of which "
-        f"{band_nd_inconclusive} inconclusive ({refusal_rate:.0%}) and {band_nd_certified} certified at "
-        f"required_margin 0. MARGIN_LOW rule mismatches: {margin_low_mismatch}.")
+        f"{len(family)} cases; codes by exact bin at required_margin 0: {table}. Unsound certifications: {unsound}. "
+        f"Unresolved beyond two resolutions: {unresolved}. Certified within the band under the declared margin: "
+        f"{certified_in_band_declared}. At required_margin 0, {len(band_certified)} of "
+        f"{sum(bins.get(b, 0) for b in BAND)} band cases were CERTIFIED_WITH_MARGIN ({len(within_one)} within one "
+        f"resolution), {band_certified_unsound} of them unsound. Exactly negative definite band cases: {band_nd}, of "
+        f"which {band_nd_inconclusive} inconclusive ({refusal_rate:.0%}) and {band_nd_certified} certified. "
+        f"MARGIN_LOW rule mismatches: {margin_low_mismatch}. Conclusion: "
+        + ("every certificate is exactly sound and the sign is resolved beyond two resolutions"
+           if unsound == 0 and unresolved == 0 else "the soundness or resolution property failed")
+        + ("; the declared margin of three resolutions keeps the band out of CERTIFIED_WITH_MARGIN"
+           if certified_in_band_declared == 0 else "; the declared margin did not keep the band out of "
+                                                   "CERTIFIED_WITH_MARGIN")
+        + ("; without a declared margin the band is not uniformly inconclusive, which refutes the specification's "
+           "stronger statement (the certifications are sound)." if band_certified else
+           "; without a declared margin no band case was certified."))
     fields["uncertainty"] = ("Exact bins are exact; which band cases resolve depends on last-bit rounding and "
-                             "may differ between BLAS builds (share tolerance 0.2).")
+                             "may differ between BLAS builds (share tolerance 0.2, count tolerance 4).")
     return _finish(fields, findings, PROVIDER_FILES, identity)
 
 
@@ -1695,7 +1908,7 @@ def monotonicity_violations(sequence):
 
 
 @task("T108", changed_files=PROVIDER_FILES, regression_tests=(_node("test_t108_margin_monotonicity"),
-                                                                _node("test_documented_rule_is_monotone")))
+                                                                _node("test_documented_rule_is_monotone"), PARTIAL_TEST))
 def margin_monotonicity(ctx):
     fields = _fields(
         "Increasing required_margin never turns a failing verdict into a passing one: CERTIFIED_WITH_MARGIN and "
@@ -1734,7 +1947,7 @@ def margin_monotonicity(ctx):
                 "margin enters only as MARGIN_LOW iff margin <= r and meets = margin > max(r, res)",
                 {"derivation": "runtime.verdict at the pinned commit: required_margin is compared only after the "
                                "resolution test; both comparisons are monotone in r (docs/lab/LYAPUNOV.md, T108)"},
-                               uncertainty=ANALYTIC),
+                tolerance=EXACT_TOL, uncertainty=ANALYTIC),
         finding("The documented rule re-derived in CIW is monotone on the same margin grids", "numerical",
                 documented_total,
                 {"generator": {"name": "near_threshold_family + razor_family", "seed": 108},
@@ -1786,7 +1999,7 @@ def margin_monotonicity(ctx):
                 tolerance={"abs": 0.0, "rel": 0.0}, uncertainty=EXACT),
         finding("Negative and non-finite required margins are refused", "numerical", invalid,
                 {"provider": base, "checks": [_refusal(f"required_margin = {k}", "raises ValueError", v)
-                                              for k, v in invalid.items()]}, uncertainty=EXACT),
+                                              for k, v in invalid.items()]}, tolerance=EXACT_TOL, uncertainty=EXACT),
     ] + offline
     fields["numerical_result"] = (f"{evaluations} verdicts over {len(family)} cases: violations {totals}; threshold "
                                   f"mismatches {threshold_mismatch}; invalid margins {invalid}. No counterexample "
@@ -1797,7 +2010,10 @@ def margin_monotonicity(ctx):
 
 # T109 ------------------------------------------------------------------------
 
-T109_K = (1.0, 10.0, 1e2, 1e3, 1e4, 1e5, 1e6, 1e8)
+# 2.82 and 2.83 bracket the P = I threshold 2 sqrt 2 = 2.8284 from both sides.
+T109_K = (1.0, 2.82, 2.83, 10.0, 1e2, 1e3, 1e4, 1e5, 1e6, 1e8)
+# solve_lyapunov refuses through exactly these documented gates (lyapunov.equation at the pinned commit).
+SOLVER_GATES = ("solved P must be positive definite", "Lyapunov residual", "Lyapunov operator is singular")
 T109_JORDAN = ((3, 0), (4, 6), (5, 12), (6, 10), (6, 12), (8, 8), (8, 10))
 
 
@@ -1816,6 +2032,9 @@ def adversarial_cases():
         A = T @ J @ Ti
         # Integer unimodular similarity: A = T J T^-1 holds exactly, so the exact spectrum is {-lam} (defective).
         Tf, Jf, Tif = R.fractions(T), R.fractions(J), R.fractions(Ti)
+        # Ti is the rounded float inverse; the exact spectrum needs T Ti = I exactly.
+        assert all(sum(Tf[i][k] * Tif[k][j] for k in range(n)) == (1 if i == j else 0)
+                   for i in range(n) for j in range(n))
         TJ = [[sum(Tf[i][k] * Jf[k][j] for k in range(n)) for j in range(n)] for i in range(n)]
         exact = [[sum(TJ[i][k] * Tif[k][j] for k in range(n)) for j in range(n)] for i in range(n)]
         assert all(Fraction(float(A[i, j])) == exact[i][j] for i in range(n) for j in range(n))
@@ -1844,59 +2063,79 @@ def transient_peak(K, samples=4001, horizon=20.0):
     return float(np.max(np.sqrt(0.5 * (frobenius + np.sqrt(np.maximum(frobenius ** 2 - 4.0 * determinant ** 2, 0.0))))))
 
 
+def _valid_certificate(A, P, time="continuous"):
+    """Exact positive definiteness of P and exact negative definiteness of the declared decrease form."""
+    return R.positive_definite(R.fractions(P)) and R.exact_class(R.exact_form(A, P, time)) == "negative_definite"
+
+
 @task("T109", changed_files=PROVIDER_FILES, regression_tests=(_node("test_t109_adversarial_eigenvalues"),
-                                                                _node("test_numpy_misreads_exact_jordan_block")))
+                                                                _node("test_numpy_misreads_exact_jordan_block"), PARTIAL_TEST))
 def adversarial_eigenvalues(ctx):
     fields = _fields(
         "On highly non-normal, exactly defective and clustered Hurwitz plants PLSR either certifies soundly (the "
         "exact decrease form of its P is negative definite and P is exactly positive definite) or refuses; its "
-        "Lyapunov solutions agree with an independent solver where both exist; floating-point eigenvalues may "
-        "misjudge stability where the exact certificate route does not.",
+        "Lyapunov solutions agree with an independent solver to within conditioning; its solver may refuse plants "
+        "that do have a valid quadratic certificate; floating-point eigenvalues may misjudge stability where the "
+        "exact certificate route does not.",
         "Lyapunov: A Hurwitz iff A^T P + P A = -Q has P > 0 for Q > 0; a certified P bounds transients by "
         "||exp(At)|| <= sqrt(cond P). Non-normal A = [[-1, K], [0, -2]]: P = I certifies iff K < 2 sqrt 2. "
-        "Defective A = T J T^-1 with integer unimodular T has exact spectrum {-lambda}; eigenvalue perturbation "
-        "of an n-Jordan block is O(eps^(1/n)).",
-        ["Non-normal K in {1, 10, ..., 1e8}", "Exactly defective A = T J T^-1 (PCG64 seed 109): (n, lambda) in "
+        "Defective A = T J T^-1 with integer unimodular T (T Ti = I checked exactly) has exact spectrum {-lambda}; "
+        "eigenvalue perturbation of an n-Jordan block is O(eps^(1/n)). A backward-stable solve has forward error "
+        "of order n^2 u cond(P).",
+        ["Non-normal K in {1, 2.82, 2.83, 10, ..., 1e8} (2.82 and 2.83 bracket 2 sqrt 2)",
+         "Exactly defective A = T J T^-1 (PCG64 seed 109): (n, lambda) in "
          "{(3, 1), (4, 2^-6), (5, 2^-12), (6, 2^-10), (6, 2^-12), (8, 2^-8), (8, 2^-10)}",
          "Clustered spectra n = 3..5 with spacing 1e-8..1e-12 plus a 1e-3 non-normal part", "Q = I, x = ones"],
         "PLSR solve_lyapunov outcome and verdicts with P = I, with the independent P and with PLSR's own P; "
-        "numpy eigenvalues; exact rational checks of every certifying verdict.",
-        "No certifying verdict without an exactly valid certificate; PLSR and independent P agree on "
-        "well-conditioned cases; certified transients respect sqrt(cond P).",
+        "numpy eigenvalues; exact rational checks of every certifying verdict and of every candidate P.",
+        "No certifying verdict without an exactly valid certificate; PLSR and independent P agree to within "
+        "n^2 u cond(P); certified transients respect sqrt(cond P); every solver refusal comes from a documented "
+        "gate.",
         "Phase 1: PLSR solves and verdicts with P = I and the independent P; phase 2: verdicts with PLSR's P. "
         "CIW checks certificates exactly, computes transient peaks in closed form and compares numpy's spectral "
         "abscissa with the exact spectrum.",
         "T110: discrete versus continuous interpretation; add an exact-arithmetic Lyapunov solve (rational "
-        "Bartels-Stewart) to decide defective cases that PLSR's residual gate refuses.",
-        ["certificate without exact validity", "solver disagreement", "transient bound violated",
-         "eigenvalue sign wrong for an exactly Hurwitz matrix", "P = I threshold misplaced"],
+        "Bartels-Stewart) to decide defective cases that PLSR's residual gate refuses, and propose that "
+        "solve_lyapunov report the residual gate separately from definiteness.",
+        ["certificate without exact validity", "solver disagreement beyond conditioning", "transient bound violated",
+         "eigenvalue sign wrong for an exactly Hurwitz matrix", "P = I threshold misplaced",
+         "solver refusal outside the documented gates", "solver refuses a plant with a valid certificate "
+         "(searched as counterexample)"],
         ["Jordan and clustered plants are synthetic stress cases, not identified plant models.",
          "The independent solver is SciPy when installed, otherwise the CIW Kronecker solve."])
     cases = adversarial_cases()
-    jordan_wrong = [c for c in cases if c["group"] == "Jordan" and c["numpy_abscissa"] >= 0.0]
-    offline = []
+    jordan = [c for c in cases if c["group"] == "Jordan"]
+    misplacement = [abs(c["numpy_abscissa"] + c["exact_spectrum"][0]) / (float(np.finfo(float).eps)
+                                                                         * float(np.max(np.abs(c["A"]))))
+                    for c in jordan]
+    jordan_wrong = [c for c in jordan if c["numpy_abscissa"] >= 0.0]
+    numpy_checks = [_check("exactly defective cases whose numpy abscissa lies within 1e3 eps max|A| of the exact "
+                           "eigenvalue -lambda (A = T J T^-1 verified exactly)",
+                           sum(m <= 1e3 for m in misplacement), 0.0, kind="analytic")]
+    numpy_extra = {}
     if jordan_wrong:
-        offline.append(finding(
-            "numpy.linalg.eigvals reports a nonnegative spectral abscissa for exactly Hurwitz defective matrices",
-            "numerical", {"cases": sum(c["group"] == "Jordan" for c in cases), "wrong_sign": len(jordan_wrong)},
-            {"checks": [_check("exactly Hurwitz Jordan cases with numpy abscissa >= 0 (A = T J T^-1 verified "
-                               "in exact arithmetic)", len(jordan_wrong), 1.0, "ge")]},
-            counterexample={"statement": "The sign of the floating-point spectral abscissa decides Hurwitz stability",
-                            "witness": {"name": jordan_wrong[0]["name"], "A": jordan_wrong[0]["A"].tolist(),
-                                        "exact_spectrum": jordan_wrong[0]["exact_spectrum"][0],
-                                        "numpy_abscissa": jordan_wrong[0]["numpy_abscissa"]}},
-                                        uncertainty=_platform(0.0, "numpy eigenvalues of defective matrices vary at "
-                                                                   "the eps^(1/n) level between builds")))
-    else:
-        offline.append(finding("numpy.linalg.eigvals kept the sign of every exactly Hurwitz defective test matrix",
-                               "numerical", {"wrong_sign": 0}, {"checks": [_check("wrong signs", 0.0, 0.0)]},
-                               uncertainty=_platform(0.0, "numpy eigenvalues of defective matrices vary at the "
-                                                          "eps^(1/n) level between builds")))
+        numpy_checks.append(_check("exactly Hurwitz defective cases with numpy abscissa >= 0", len(jordan_wrong), 1.0,
+                                   "ge", kind="analytic"))
+        numpy_extra["counterexample"] = {
+            "statement": "The sign of the floating-point spectral abscissa decides Hurwitz stability",
+            "witness": {"name": jordan_wrong[0]["name"], "A": jordan_wrong[0]["A"].tolist(),
+                        "exact_spectrum": jordan_wrong[0]["exact_spectrum"][0],
+                        "numpy_abscissa": jordan_wrong[0]["numpy_abscissa"]}}
+    offline = [finding(
+        "numpy.linalg.eigvals misplaces the exact eigenvalue -lambda of every defective test matrix by far more "
+        "than machine precision; whether the sign flips is recorded", "numerical",
+        {"cases": len(jordan), "misplaced_beyond_1e3_eps": sum(m > 1e3 for m in misplacement),
+         "wrong_sign": len(jordan_wrong)},
+        {"generator": {"name": "adversarial_cases", "seed": 109}, "checks": numpy_checks},
+        tolerance={"abs": 7.0, "rel": 0.0},
+        uncertainty=_platform(0.0, "numpy eigenvalues of defective matrices vary at the eps^(1/n) level between "
+                                   "builds; the misplacement exceeds 1e3 eps by orders of magnitude, the sign count "
+                                   "may change"), **numpy_extra)]
     independent = {}
     for i, case in enumerate(cases):
         n = case["A"].shape[0]
-        P, name = R.independent_lyapunov(case["A"], np.eye(n))
-        independent[i] = {"P": P, "implementation": name}
+        P, name, revision = R.independent_lyapunov(case["A"], np.eye(n))
+        independent[i] = {"P": P, "implementation": name, "revision": revision}
     phase1 = []
     for i, case in enumerate(cases):
         n = case["A"].shape[0]
@@ -1911,8 +2150,8 @@ def adversarial_eigenvalues(ctx):
                   if first["results"][f"solve{i}"]["ok"]}
         second = _bridge(ctx, [_verdict_case(f"own{i}", cases[i]["A"], P, np.ones(len(P))) for i, P in solved.items()])
     except _Unavailable as exc:
-        fields["numerical_result"] = (f"Provider-free: numpy abscissa >= 0 for {len(jordan_wrong)} exactly Hurwitz "
-                                      "Jordan cases.")
+        fields["numerical_result"] = (f"Provider-free: numpy abscissa >= 0 for {len(jordan_wrong)} of {len(jordan)} "
+                                      "exactly Hurwitz Jordan cases; every case misplaced by more than 1e3 eps.")
         fields["uncertainty"] = "Exact construction; numpy eigenvalues are platform-dependent in the last bits."
         return _finish(fields, offline, PROVIDER_FILES, blocked=str(exc))
     identity = second["identity"]
@@ -1921,12 +2160,13 @@ def adversarial_eigenvalues(ctx):
     rows, violations, certified = [], 0, 0
     agreement, transient = [], []
     identity_threshold_mismatch = 0
+    solver_invalid, ungated, refused_with_certificate = 0, 0, []
     for i, case in enumerate(cases):
         n = case["A"].shape[0]
         row = {"name": case["name"], "group": case["group"], "numpy_abscissa": case["numpy_abscissa"],
                "exact_spectrum_max": None if case["exact_spectrum"] is None else max(case["exact_spectrum"]),
                "solve": "P returned" if i in solved else _code(results[f"solve{i}"]),
-               "solve_error": None if i in solved else results[f"solve{i}"]["error"]["message"][:120],
+               "solve_error": None if i in solved else results[f"solve{i}"]["error"]["message"],
                "code_P_identity": _code(results[f"I{i}"])}
         for key, P in (("independent", independent[i]["P"]), ("own", solved.get(i)), ("identity", np.eye(n))):
             cid = {"independent": f"ind{i}", "own": f"own{i}", "identity": f"I{i}"}[key]
@@ -1936,9 +2176,18 @@ def adversarial_eigenvalues(ctx):
             row[f"code_{key}"] = code
             if code in R.CERTIFYING:
                 certified += 1
-                valid = (R.positive_definite(R.fractions(P))
-                         and R.exact_class(R.exact_form(case["A"], P)) == "negative_definite")
-                violations += not valid
+                violations += not _valid_certificate(case["A"], P)
+        if i in solved:
+            solver_invalid += not _valid_certificate(case["A"], solved[i])
+        else:
+            ungated += not (row["solve"] == "raises ValueError" and row["solve_error"].startswith(SOLVER_GATES))
+            if (row.get("code_independent") in R.CERTIFYING
+                    and _valid_certificate(case["A"], independent[i]["P"])):
+                eig = np.linalg.eigvalsh(independent[i]["P"])
+                refused_with_certificate.append({"name": case["name"], "solver_error": row["solve_error"],
+                                                 "certificate": independent[i]["implementation"],
+                                                 "certificate_condition": float(eig[-1] / eig[0]),
+                                                 "verdict_with_certificate": row["code_independent"]})
         if case["group"] == "non-normal":
             expected = "CERTIFIED_WITH_MARGIN" if case["K"] < 2.0 * math.sqrt(2.0) else "not certified"
             observed = row["code_P_identity"]
@@ -1953,18 +2202,29 @@ def adversarial_eigenvalues(ctx):
             P_ind = independent[i]["P"]
             relative = float(np.linalg.norm(solved[i] - P_ind) / np.linalg.norm(P_ind))
             eig = np.linalg.eigvalsh(solved[i])
-            row.update(relative_difference=relative, condition_P=float(eig[-1] / eig[0]))
-            agreement.append((row["condition_P"], relative))
+            condition = float(eig[-1] / eig[0])
+            normalised = relative / (n * n * R.U * max(condition, 1.0))
+            row.update(relative_difference=relative, condition_P=condition, normalised_difference=normalised)
+            agreement.append((condition, relative, normalised))
         rows.append(row)
-    well = [rel for cond, rel in agreement if cond < 1e8]
     ctx.artifact_json("adversarial.json", R.jsonable({"rows": rows, "transient": transient,
+                                                       "refused_with_certificate": refused_with_certificate,
                                                        "independent_solver": independent[0]["implementation"]}))
     ctx.artifact_text("solver-agreement.svg", svg.line_plot(
-        [("PLSR vs independent P", [c for c, _ in agreement], [max(r, 1e-18) for _, r in agreement])],
+        [("PLSR vs independent P", [c for c, _, _ in agreement], [max(r, 1e-18) for _, r, _ in agreement]),
+         ("n^2 u cond(P) for n = 2", [c for c, _, _ in agreement], [4 * R.U * max(c, 1.0) for c, _, _ in agreement])],
         title="T109 relative difference of Lyapunov solutions", xlabel="condition number of P",
         ylabel="||P_PLSR - P_ind|| / ||P_ind||", logx=True, logy=True))
-    checker = {"implementation": independent[0]["implementation"],
-               "revision": independent[0]["implementation"].split("@")[-1]}
+    checker = {"implementation": independent[0]["implementation"], "revision": independent[0]["revision"]}
+    max_relative = max(r for _, r, _ in agreement)
+    max_normalised = max(m for _, _, m in agreement)
+    jordan_rows = [r for r in rows if r["group"] == "Jordan"]
+    jordan_solved = sum(r["solve"] == "P returned" for r in jordan_rows)
+    witness_extra = {}
+    if refused_with_certificate:
+        witness_extra["counterexample"] = {
+            "statement": "PLSR's solve_lyapunov refuses only plants for which no valid quadratic certificate is "
+                         "available in float64", "witness": refused_with_certificate[0]}
     findings = [
         finding("Every certifying PLSR verdict on the adversarial plants uses an exactly valid certificate",
                 "numerical",
@@ -1972,13 +2232,19 @@ def adversarial_eigenvalues(ctx):
                 {"provider": base, "independent_check": _independent(
                     _check("exact positive definiteness of P and negative definiteness of A^T P + P A", violations,
                            0.0), identity)},
-                tolerance={"abs": 0.0, "rel": 0.0}, uncertainty=EXACT),
-        finding("PLSR Lyapunov solutions agree with an independent solver on the well-conditioned adversarial cases",
-                "numerical", {"cases": len(well), "max_relative_difference": max(well)},
+                tolerance={"abs": 2.0, "rel": 0.0},
+                uncertainty=_platform(0.0, "the violation count is exact; the number of certifying verdicts may move "
+                                           "by one or two near the resolution")),
+        finding("PLSR Lyapunov solutions agree with an independent solver to within n^2 u cond(P) on every solved "
+                "adversarial case", "numerical",
+                {"cases": len(agreement), "max_relative_difference": max_relative,
+                 "max_normalised_difference": max_normalised},
                 {"provider": base, "independent_check": _independent(
-                    _check("relative Frobenius difference, cond(P) < 1e8", max(well), 1e-6), identity, checker)},
-                tolerance={"abs": 1e-6, "rel": 0.0},
-                uncertainty=_roundoff(max(well), "largest observed relative difference; grows with cond(P)")),
+                    _check("max over solved cases of the relative Frobenius difference divided by n^2 u cond(P)",
+                           max_normalised, 10.0, "le"), identity, checker)},
+                tolerance={"abs": 1e-12, "rel": 1.0},
+                uncertainty=_roundoff(max_relative, "largest observed relative difference; the normalised value "
+                                                    "may vary by a small factor between BLAS builds")),
         finding("Certified non-normal plants respect the Lyapunov transient bound ||exp(At)|| <= sqrt(cond P)",
                 "numerical", {"cases": len(transient), "max_ratio": max(t["ratio"] for t in transient)},
                 {"provider": base, "checks": [_check("max over K of peak ||exp(At)|| / sqrt(cond P)",
@@ -1987,33 +2253,52 @@ def adversarial_eigenvalues(ctx):
                 uncertainty={"kind": "truncation_bound", "value": 1e-4,
                              "basis": "peak sampled every 5e-3 s; second-order estimate of the missed peak, far below "
                                       "the margin to 1"}),
-        finding("With P = I the non-normal plants are certified exactly when K < 2 sqrt 2", "numerical",
-                {"mismatches": identity_threshold_mismatch},
+        finding("With P = I the non-normal plants are certified exactly when K < 2 sqrt 2, including K = 2.82 and "
+                "2.83 on either side", "numerical",
+                {"mismatches": identity_threshold_mismatch,
+                 "codes": {r["name"]: r["code_P_identity"] for r in rows if r["group"] == "non-normal"}},
                 {"provider": base, "checks": [_check("codes against the analytic threshold",
                                                      identity_threshold_mismatch, 0.0, kind="analytic")]},
-                uncertainty=EXACT),
-        finding("PLSR solves the well-conditioned Jordan case and refuses the ill-conditioned exactly Hurwitz ones "
-                "rather than return an invalid certificate", "numerical",
-                {r["name"]: r["solve"] for r in rows if r["group"] == "Jordan"},
+                tolerance=EXACT_TOL, uncertainty=EXACT),
+        finding("PLSR's solve_lyapunov returns only exactly valid certificates on the exactly Hurwitz Jordan plants "
+                "and otherwise raises ValueError at a documented gate", "numerical",
+                {r["name"]: r["solve"] for r in jordan_rows},
+                {"provider": base,
+                 "independent_check": _independent(_check("returned P that are not exactly valid certificates",
+                                                          solver_invalid, 0.0), identity),
+                 "checks": [_check("refusals not raised as ValueError by the positive-definiteness, residual or "
+                                   "singularity gate", ungated, 0.0, kind="invariant")]},
+                tolerance=EXACT_TOL, uncertainty=EXACT),
+        finding("solve_lyapunov refuses an exactly Hurwitz plant for which an exactly valid quadratic certificate "
+                "exists and PLSR's own verdict certifies it", "numerical",
+                {"refused_with_valid_certificate": len(refused_with_certificate),
+                 "plants": [entry["name"] for entry in refused_with_certificate]},
                 {"provider": base, "checks": [
-                    _refusal(f"solve_lyapunov for {r['name']}", "P returned" if r["name"].endswith("2^-0")
-                             else "raises ValueError", r["solve"]) for r in rows if r["group"] == "Jordan"]},
-                uncertainty=EXACT),
+                    _check("refused plants whose independent P is exactly valid and certified by PLSR's verdict",
+                           len(refused_with_certificate), 1.0, "ge")]},
+                tolerance=EXACT_TOL,
+                uncertainty=_platform(0.0, "depends on the independent solver's P for a cond ~5e11 plant; exact "
+                                           "validity of that P is decided in rational arithmetic"), **witness_extra),
     ] + offline
     fields["numerical_result"] = (
         f"{certified} certifying verdicts, {violations} without an exactly valid certificate. Solver agreement on "
-        f"{len(well)} well-conditioned cases: max relative difference {max(well):.2e} "
-        f"({independent[0]['implementation']}). Transient peak / sqrt(cond P): max "
-        f"{max(t['ratio'] for t in transient):.3f} "
-        f"over {len(transient)} certified K. P = I threshold mismatches: {identity_threshold_mismatch}. Jordan: "
-        f"numpy abscissa >= 0 in {len(jordan_wrong)} of {sum(c['group'] == 'Jordan' for c in cases)} exactly "
-        f"Hurwitz cases; PLSR solved {sum(r['solve'] == 'P returned' for r in rows if r['group'] == 'Jordan')} and "
-        f"refused {sum(r['solve'] != 'P returned' for r in rows if r['group'] == 'Jordan')} Jordan cases. "
-        "Conclusion: every PLSR certificate on these plants is exactly valid; the floating-point eigenvalue route "
-        "misjudges exactly Hurwitz defective matrices where PLSR refuses rather than guess.")
+        f"{len(agreement)} solved cases: max relative difference {max_relative:.2e}, max normalised by n^2 u cond(P) "
+        f"{max_normalised:.3g} ({independent[0]['implementation']}). Transient peak / sqrt(cond P): max "
+        f"{max(t['ratio'] for t in transient):.3f} over {len(transient)} certified K. P = I threshold mismatches: "
+        f"{identity_threshold_mismatch}. Jordan: numpy abscissa >= 0 in {len(jordan_wrong)} of {len(jordan)} exactly "
+        f"Hurwitz cases; PLSR's solver returned P for {jordan_solved} and refused {len(jordan_rows) - jordan_solved} "
+        f"({ungated} refusals outside the documented gates, {solver_invalid} returned P invalid); "
+        f"refused plants with an exactly valid independent certificate that PLSR's verdict certifies: "
+        f"{len(refused_with_certificate)}. Conclusion: "
+        + ("every PLSR certificate on these plants is exactly valid" if violations == 0 and solver_invalid == 0
+           else "some PLSR certificates are not exactly valid")
+        + ("; the solver's refusals are conservative, including plants that do have a valid certificate"
+           if refused_with_certificate else "; no refused plant had a valid certificate from the independent solver")
+        + ("; the floating-point eigenvalue sign misjudges exactly Hurwitz defective matrices." if jordan_wrong else
+           "; the floating-point eigenvalue sign did not flip here, though the eigenvalues are misplaced."))
     fields["uncertainty"] = ("Exact checks are exact. Solver agreement scales with cond(P) (retained per case). "
                              "numpy eigenvalues of defective matrices vary at the eps^(1/n) level between builds, "
-                             "so the count of wrong signs may change; its existence is the finding.")
+                             "so the count of wrong signs may change; the misplacement beyond 1e3 eps does not.")
     return _finish(fields, findings, PROVIDER_FILES, identity)
 
 
@@ -2042,7 +2327,7 @@ def quadrant_family(per_quadrant=10):
     return family
 
 
-@task("T110", changed_files=PROVIDER_FILES, regression_tests=(_node("test_t110_time_interpretation"),))
+@task("T110", changed_files=PROVIDER_FILES, regression_tests=(_node("test_t110_time_interpretation"), PARTIAL_TEST))
 def time_interpretation(ctx):
     fields = _fields(
         "PLSR distinguishes x' = A x from x+ = A x: the same matrix is certified in a time convention exactly when "
@@ -2122,47 +2407,79 @@ def time_interpretation(ctx):
             diagonal_mismatch += (code == "CERTIFIED_WITH_MARGIN") != (exact_class == "negative_definite")
             resolution_diff = max(resolution_diff, abs(results[f"{name}|{time}|res"]["value"]
                                                        - R.resolution(A, np.eye(2), time)))
-    mismatches, differing, quadrant_rows = 0, 0, []
+    mismatches, pattern_mismatch, differing, quadrant_rows = 0, 0, 0, []
+    cross_unsound, cross_total, solve_refusals, ungated = 0, 0, 0, 0
     for i, member in enumerate(family):
-        outcome = {}
+        outcome, errors = {}, {}
         for time in ("continuous", "discrete"):
             key = f"f{i}|P_{time}|{time}"
             outcome[time] = key in results and _code(results[key]) == "CERTIFIED_WITH_MARGIN"
             mismatches += outcome[time] != member["stable"][time]
-        differing += outcome["continuous"] != outcome["discrete"]
-        cross = {f"P_{t}->{a}": _code(results[f"f{i}|P_{t}|{a}"]) for t in ("continuous", "discrete")
-                 for a in ("continuous", "discrete") if f"f{i}|P_{t}|{a}" in results}
+            solved = results[f"f{i}|{time}|solve"]
+            if not solved["ok"]:
+                solve_refusals += 1
+                errors[time] = solved["error"]
+                ungated += not (solved["error"]["type"] == "ValueError"
+                                and solved["error"]["message"].startswith(SOLVER_GATES))
+        differs = outcome["continuous"] != outcome["discrete"]
+        differing += differs
+        # Per matrix: the outcomes differ exactly when the matrix is stable in one convention only.
+        pattern_mismatch += differs != (member["stable"]["continuous"] != member["stable"]["discrete"])
+        cross = {}
+        for t in ("continuous", "discrete"):
+            for a in ("continuous", "discrete"):
+                key = f"f{i}|P_{t}|{a}"
+                if key in results:
+                    cross[f"P_{t}->{a}"] = _code(results[key])
+                    if t != a:
+                        cross_total += 1
+                        # A P solved for one convention may certify in the other only where numpy finds stability.
+                        cross_unsound += cross[f"P_{t}->{a}"] in R.CERTIFYING and not member["stable"][a]
         quadrant_rows.append({"quadrant": member["quadrant"], "stable": member["stable"], "certified": outcome,
-                              "cross": cross})
+                              "cross": cross, "solve_errors": errors})
     off_quadrant = sum(m["quadrant"] in ("continuous only", "discrete only") for m in family)
     theta_dot = _code(results["discrete theta_dot"])
     ctx.artifact_json("time-interpretation.json", R.jsonable({"diagonal": diagonal_table, "family": quadrant_rows}))
     findings = [
         finding("PLSR certifies each matrix with its own Lyapunov P exactly in the time convention where numpy "
-                "finds it stable", "numerical", {"matrices": len(family), "mismatches": mismatches},
+                "finds it stable, and its solver refuses the other convention at a documented gate", "numerical",
+                {"matrices": len(family), "mismatches": mismatches, "solver_refusals": solve_refusals},
                 {"provider": base, "independent_check": _independent(
                     _check("certified-by-own-P against numpy spectral abscissa (continuous) and radius (discrete)",
-                           mismatches, 0.0, kind="analytic"), identity, NUMPY)},
-                tolerance={"abs": 0.0, "rel": 0.0}, uncertainty=_roundoff(0.0, "stability margins of at least 0.1")),
-        finding("The two time interpretations give different PLSR outcomes for every matrix whose stability "
-                "quadrant differs", "numerical", {"differing": differing, "off_quadrant_matrices": off_quadrant},
-                {"provider": base, "checks": [_check("differing outcomes minus off-quadrant matrices",
-                                                     differing - off_quadrant, 0.0, kind="invariant")]},
-                tolerance={"abs": 0.0, "rel": 0.0}, uncertainty=EXACT),
+                           mismatches, 0.0, kind="analytic"), identity, NUMPY),
+                 "checks": [_check("solver refusals not raised as ValueError by a documented gate", ungated, 0.0,
+                                   kind="invariant")]},
+                tolerance=EXACT_TOL, uncertainty=_roundoff(0.0, "stability margins of at least 0.1")),
+        finding("No Lyapunov P solved for one convention certifies a matrix in the other convention where numpy "
+                "finds it unstable", "numerical", {"cross_verdicts": cross_total, "unsound": cross_unsound},
+                {"provider": base, "independent_check": _independent(
+                    _check("cross-applied certifying verdicts in a convention where numpy finds the matrix unstable",
+                           cross_unsound, 0.0, kind="analytic"), identity, NUMPY)},
+                tolerance=EXACT_TOL, uncertainty=_roundoff(0.0, "stability margins of at least 0.1")),
+        finding("The two time interpretations give different PLSR outcomes exactly for the matrices whose stability "
+                "differs between conventions", "numerical",
+                {"differing": differing, "off_quadrant_matrices": off_quadrant, "pattern_mismatches": pattern_mismatch},
+                {"provider": base, "checks": [_check("matrices where (outcomes differ) differs from (stable in one "
+                                                     "convention only)", pattern_mismatch, 0.0, kind="invariant")]},
+                tolerance=EXACT_TOL, uncertainty=EXACT),
         finding("Diagonal plants with P = I receive the code of each convention's exact decrease form", "numerical",
                 diagonal_table,
                 {"provider": base, "checks": [_check("codes differing from the documented order or exact class",
                                                      diagonal_mismatch, 0.0),
                                               _check("PLSR resolution minus CIW resolution (per convention)",
-                                                     resolution_diff, 0.0, kind="analytic")]}, uncertainty=EXACT),
+                                                     resolution_diff, 0.0, kind="analytic")]},
+                tolerance=EXACT_TOL, uncertainty=EXACT),
         finding("A discrete plant refuses a theta_dot", "numerical", {"code": theta_dot},
                 {"provider": base, "checks": [_refusal("discrete affine plant with theta_dot = 0",
-                                                       "raises ValueError", theta_dot)]}, uncertainty=EXACT),
+                                                       "raises ValueError", theta_dot)]},
+                tolerance=EXACT_TOL, uncertainty=EXACT),
     ] + offline
     fields["numerical_result"] = (
         f"Diagonal plants: {diagonal_table}. Family: {mismatches} disagreements with numpy over {len(family)} "
-        f"matrices x 2 conventions; outcomes differ between conventions for {differing} matrices "
-        f"({off_quadrant} lie in the continuous-only or discrete-only quadrant). Discrete theta_dot: {theta_dot}.")
+        f"matrices x 2 conventions ({solve_refusals} solver refusals, {ungated} outside the documented gates); "
+        f"outcomes differ between conventions for {differing} matrices ({off_quadrant} lie in the continuous-only "
+        f"or discrete-only quadrant; {pattern_mismatch} per-matrix mismatches). Cross-applied P: {cross_unsound} of "
+        f"{cross_total} verdicts certify where numpy finds instability. Discrete theta_dot: {theta_dot}.")
     fields["uncertainty"] = "Margins of at least 0.1 in every quadrant; codes are far from the resolution."
     return _finish(fields, findings, PROVIDER_FILES, identity)
 
@@ -2198,7 +2515,7 @@ def unit_samples(count=64, n=2, seed=1111):
     return samples / np.linalg.norm(samples, axis=1, keepdims=True)
 
 
-@task("T111", changed_files=PROVIDER_FILES, regression_tests=(_node("test_t111_routes"),))
+@task("T111", changed_files=PROVIDER_FILES, regression_tests=(_node("test_t111_routes"), PARTIAL_TEST))
 def quadratic_routes(ctx):
     fields = _fields(
         "The PLSR matrix route (Lyapunov solve, then the sign of max eig of the decrease form beyond the "
@@ -2206,39 +2523,45 @@ def quadratic_routes(ctx):
         "Lyapunov solvers -- while the scalar quadratic route (the sign of x^T M x at sampled states) cannot "
         "certify definiteness and misses thin positive cones.",
         "Rayleigh: x^T M x <= max eig(M) |x|^2 for every x, with equality only on the top eigenvector, so sampled "
-        "negativity never implies negative definiteness. For n = 1 the decrease form is 2 a p (continuous), so "
-        "the verdict must follow sign(a) whenever 2|a|p exceeds the resolution.",
+        "negativity never implies negative definiteness. An unstable A has v*(A + A^T)v = 2 Re(lambda)|v|^2 > 0 "
+        "for an eigenvector v, so P = I can never certify it. For n = 1 the decrease form is 2 a p (continuous), "
+        "so the verdict must follow sign(a) whenever 2|a|p exceeds the resolution.",
         ["30 continuous plants n = 2..5 (PCG64 seed 111) with |spectral abscissa| > 0.05",
          "20 discrete plants n = 2..4 with |spectral radius - 1| > 0.05", "Thin-cone plant A = diag(-0.5, 5e-7), "
          "P = I (decrease form diag(-1, 1e-6)) with 64 random unit states (seed 1111)",
          f"Scalar plants a in {list(T111_SCALARS)}, p = 1"],
-        "PLSR solve_lyapunov P and verdicts with it; SciPy (or the CIW Kronecker solve when SciPy is absent) "
-        "Lyapunov P; numpy eigenvalues; PLSR verdicts at 64 sampled states.",
-        "PLSR P equals the independent P to solver accuracy; PLSR certifies exactly the numpy-stable plants; "
-        "sampled scalar decrease never contradicts the matrix route and cannot stand in for it.",
-        "Phase 1: PLSR solves, scalar and thin-cone verdicts; phase 2: verdicts with PLSR's P. Compare routes "
-        "case by case.",
+        "PLSR solve_lyapunov outcome (P or refusal) and verdicts with the returned P and with P = I; SciPy (or the "
+        "CIW Kronecker solve when SciPy is absent) Lyapunov P per time convention; numpy eigenvalues; PLSR "
+        "verdicts at 64 sampled states.",
+        "PLSR P equals the independent P to solver accuracy in each convention; solve_lyapunov returns P exactly "
+        "for the numpy-stable plants and otherwise raises ValueError; the verdict certifies every numpy-stable "
+        "plant with its own P and no numpy-unstable plant with P = I; sampled scalar decrease never contradicts "
+        "the matrix route and cannot stand in for it.",
+        "Phase 1: PLSR solves, P = I verdicts, scalar and thin-cone verdicts; phase 2: verdicts with PLSR's P. "
+        "Compare routes case by case.",
         "T112: a separate disturbance-aware (ISS) research branch; T113: connect filtered residuals.",
-        ["solver disagreement", "route disagreement on stability", "scalar route claims definiteness",
-         "scalar sign not followed for n = 1"],
+        ["solver disagreement", "solver returns P for an unstable plant", "solver refuses a stable plant",
+         "solver refusal other than ValueError", "verdict certifies an unstable plant", "scalar route claims "
+         "definiteness", "scalar sign not followed for n = 1"],
         ["Plants with margins below 0.05 are excluded, so the comparison says nothing about near-marginal plants "
          "(T107 covers those).", "The independent solver is SciPy when installed, otherwise the CIW Kronecker "
          "solve (same Lyapunov equation, different code)."])
     family = route_family()
     independent = [R.independent_lyapunov(m["A"], np.eye(m["A"].shape[0]), m["time"]) for m in family]
     offline_agree = sum((float(np.min(np.linalg.eigvalsh(P))) > 0.0) == m["stable"]
-                        for (P, _), m in zip(independent, family))
-    checker_name = independent[0][1]
+                        for (P, _, _), m in zip(independent, family))
+    solvers = sorted({(m["time"], name, revision) for (_, name, revision), m in zip(independent, family)})
     offline = [finding("The independent Lyapunov route (positive definite P) agrees with the numpy eigenvalue route "
                        "on every route-family plant", "numerical", {"plants": len(family), "agreeing": offline_agree},
                        {"generator": {"name": "route_family", "seed": 111},
                         "checks": [_check("plants where the two independent routes disagree",
                                           len(family) - offline_agree, 0.0, kind="analytic")]},
-                       tolerance={"abs": 0.0, "rel": 0.0},
-                       uncertainty=_roundoff(0.0, "stability margins of at least 0.05"))]
+                       tolerance=EXACT_TOL, uncertainty=_roundoff(0.0, "stability margins of at least 0.05"))]
     samples = unit_samples()
     thin_A = np.diag([-0.5, 5e-7])
     phase1 = [{"id": f"solve{i}", "op": "solve", "A": _mat(m["A"]), "time": m["time"]} for i, m in enumerate(family)]
+    phase1 += [_verdict_case(f"identity{i}", m["A"], np.eye(m["A"].shape[0]), m["x"], time=m["time"])
+               for i, m in enumerate(family)]
     phase1 += [_verdict_case(f"thin{j}", thin_A, np.eye(2), x) for j, x in enumerate(samples)]
     phase1 += [_verdict_case(f"scalar{k}", [[a]], [[1.0]], [1.0]) for k, a in enumerate(T111_SCALARS)]
     try:
@@ -2249,18 +2572,28 @@ def quadratic_routes(ctx):
                                for i, P in solved.items()])
     except _Unavailable as exc:
         fields["numerical_result"] = (f"Provider-free: {offline_agree}/{len(family)} plants agree between numpy and "
-                                      f"{checker_name}.")
+                                      f"{', '.join(name for _, name, _ in solvers)}.")
         fields["uncertainty"] = "Margins >= 0.05."
         return _finish(fields, offline, PROVIDER_FILES, blocked=str(exc))
     identity = second["identity"]
     results = dict(first["results"], **second["results"])
     base = provider_basis(identity)
-    route_mismatch, relative = 0, []
+    relative = {"continuous": [], "discrete": []}
+    solve_mismatch, own_mismatch, identity_unsound, refusals, errors = 0, 0, 0, [], {}
     for i, member in enumerate(family):
-        certified = f"own{i}" in results and _code(results[f"own{i}"]) == "CERTIFIED_WITH_MARGIN"
-        route_mismatch += certified != member["stable"]
+        solve_mismatch += (i in solved) != member["stable"]
         if i in solved:
-            relative.append(float(np.linalg.norm(solved[i] - independent[i][0]) / np.linalg.norm(independent[i][0])))
+            if member["stable"]:
+                own_mismatch += _code(results[f"own{i}"]) != "CERTIFIED_WITH_MARGIN"
+            relative[member["time"]].append(float(np.linalg.norm(solved[i] - independent[i][0])
+                                                  / np.linalg.norm(independent[i][0])))
+        else:
+            own_mismatch += member["stable"]
+            error = results[f"solve{i}"]["error"]
+            errors[str(i)] = error
+            refusals.append(_refusal(f"solve_lyapunov for {member['time']} plant {i} (numpy: unstable)",
+                                     "raises ValueError", _code(results[f"solve{i}"])))
+        identity_unsound += not member["stable"] and _code(results[f"identity{i}"]) in R.CERTIFYING
     thin_codes = _counts(_code(first["results"][f"thin{j}"]) for j in range(len(samples)))
     thin_form = R.exact_form(thin_A, np.eye(2))
     thin_scalar_negative = sum(R.exact_quadratic(x, thin_form) < 0 for x in samples)
@@ -2268,23 +2601,39 @@ def quadratic_routes(ctx):
     scalar_mismatch = sum((code == "CERTIFIED_WITH_MARGIN") != (a < 0.0)
                           for a, code in zip(T111_SCALARS, scalar_codes.values())
                           if abs(a) >= 2.0 ** -1022 or a == 0.0)
+    identity_codes = {str(i): _code(results[f"identity{i}"]) for i in range(len(family))}
     ctx.artifact_json("routes.json", R.jsonable({"relative_difference": relative, "thin_cone_codes": thin_codes,
-                                                  "scalar_codes": scalar_codes, "independent_solver": checker_name}))
-    checker = {"implementation": checker_name, "revision": checker_name.split("@")[-1]}
-    findings = [
-        finding("PLSR Lyapunov solutions agree with the independent solver on the route family", "numerical",
-                {"solves": len(relative), "max_relative_difference": max(relative)},
+                                                  "scalar_codes": scalar_codes, "solve_errors": errors,
+                                                  "identity_codes": identity_codes,
+                                                  "independent_solvers": [list(entry) for entry in solvers]}))
+    findings = []
+    for time in ("continuous", "discrete"):
+        name, revision = next((n, r) for t, n, r in solvers if t == time)
+        values = relative[time]
+        findings.append(finding(
+            f"PLSR {time}-time Lyapunov solutions agree with the independent solver on the route family",
+            "numerical", {"solves": len(values), "max_relative_difference": max(values)},
+            {"provider": base, "independent_check": _independent(
+                _check("relative Frobenius difference from the independent solution", max(values), 1e-9),
+                identity, {"implementation": name, "revision": revision})},
+            tolerance={"abs": 1e-9, "rel": 0.0},
+            uncertainty=_roundoff(max(values), "largest observed relative difference")))
+    findings += [
+        finding("PLSR's solve_lyapunov returns a P exactly for the plants numpy's eigenvalues call stable and raises "
+                "ValueError for the others", "numerical",
+                {"plants": len(family), "mismatches": solve_mismatch, "refused": len(refusals)},
                 {"provider": base, "independent_check": _independent(
-                    _check("relative Frobenius difference from the independent solution", max(relative), 1e-9),
-                    identity, checker)},
-                tolerance={"abs": 1e-9, "rel": 0.0},
-                uncertainty=_roundoff(max(relative), "largest observed relative difference")),
-        finding("The PLSR matrix route certifies exactly the plants that numpy's eigenvalues call stable", "numerical",
-                {"plants": len(family), "mismatches": route_mismatch, "solved": len(solved)},
+                    _check("plants where returning P and numpy stability disagree", solve_mismatch, 0.0,
+                           kind="analytic"), identity, NUMPY),
+                 "checks": refusals},
+                tolerance=EXACT_TOL, uncertainty=_roundoff(0.0, "stability margins of at least 0.05")),
+        finding("PLSR's verdict certifies every numpy-stable plant with its own P and no numpy-unstable plant with "
+                "P = I", "numerical",
+                {"stable_not_certified": own_mismatch, "unstable_certified_with_identity": identity_unsound},
                 {"provider": base, "independent_check": _independent(
-                    _check("plants where PLSR certification and the eigenvalue route disagree", route_mismatch, 0.0,
-                           kind="analytic"), identity, NUMPY)},
-                tolerance={"abs": 0.0, "rel": 0.0}, uncertainty=_roundoff(0.0, "stability margins of at least 0.05")),
+                    _check("stable plants not certified with their own P plus unstable plants certified with P = I",
+                           own_mismatch + identity_unsound, 0.0, kind="analytic"), identity, NUMPY)},
+                tolerance=EXACT_TOL, uncertainty=_roundoff(0.0, "stability margins of at least 0.05")),
         finding("The scalar route sees decrease at every sampled state of an indefinite form that PLSR reports "
                 "DECREASE_NOT_DEFINITE", "numerical",
                 {"samples": len(samples), "scalar_negative": int(thin_scalar_negative), "plsr_codes": thin_codes},
@@ -2293,6 +2642,7 @@ def quadratic_routes(ctx):
                            kind="exact_arithmetic"),
                     _check("samples PLSR certified", sum(v for k, v in thin_codes.items() if k in R.CERTIFYING), 0.0,
                            kind="invariant")]},
+                tolerance=EXACT_TOL,
                 counterexample={"statement": "A negative sampled scalar decrease at every tested state implies a "
                                              "negative definite decrease form",
                                 "witness": {"A": "diag(-0.5, 5e-7)", "P": "I", "M": "diag(-1, 1e-6)",
@@ -2301,14 +2651,23 @@ def quadratic_routes(ctx):
                 scalar_codes,
                 {"provider": base, "checks": [_check("normal-range scalar plants whose certification differs from "
                                                      "a < 0", scalar_mismatch, 0.0, kind="analytic")]},
-                                                     uncertainty=EXACT),
+                tolerance=EXACT_TOL, uncertainty=EXACT),
     ] + offline
+    routes_agree = solve_mismatch == 0 and own_mismatch == 0 and identity_unsound == 0
     fields["numerical_result"] = (
-        f"Solver agreement: max relative difference {max(relative):.2e} over {len(relative)} PLSR solves "
-        f"({checker_name}). Route mismatches: {route_mismatch} of {len(family)}. Thin cone: {thin_scalar_negative}/"
-        f"{len(samples)} sampled scalar decreases negative; PLSR codes {thin_codes}. Scalar plants: {scalar_codes}. "
-        "Conclusion: the matrix routes agree with each other on margin-separated plants; sampled scalar decrease "
-        "cannot stand in for them.")
+        f"Solver agreement: max relative difference {max(relative['continuous']):.2e} over "
+        f"{len(relative['continuous'])} continuous and {max(relative['discrete']):.2e} over "
+        f"{len(relative['discrete'])} discrete PLSR solves ({'; '.join(name for _, name, _ in solvers)}). "
+        f"solve_lyapunov: {solve_mismatch} disagreements with numpy stability over {len(family)} plants, "
+        f"{len(refusals)} refusals ({sum(not family[int(i)]['stable'] for i in errors)} of them numpy-unstable "
+        f"plants). Verdicts: {own_mismatch} stable plants not certified "
+        f"with their own P, {identity_unsound} unstable plants certified with P = I. Thin cone: "
+        f"{thin_scalar_negative}/{len(samples)} sampled scalar decreases negative; PLSR codes {thin_codes}. Scalar "
+        f"plants: {scalar_codes}. Conclusion: "
+        + ("the matrix routes agree with each other on margin-separated plants" if routes_agree else
+           "the matrix routes disagree on some margin-separated plants")
+        + ("; sampled scalar decrease cannot stand in for them." if thin_scalar_negative == len(samples)
+           and "DECREASE_NOT_DEFINITE" in thin_codes else "; the thin-cone probe did not separate the routes."))
     fields["uncertainty"] = ("Solver differences are at rounding level; route agreement holds only with the stated "
                              "stability margins. The subnormal scalar entries are reported, not asserted.")
     return _finish(fields, findings, PROVIDER_FILES, identity)
@@ -2319,55 +2678,107 @@ def quadratic_routes(ctx):
 ISS_SCENARIOS = ("constant", "worst-case switching", "resonant sinusoid", "random held")
 
 
-@task("T112", changed_files=RESEARCH_FILES, regression_tests=(_node("test_t112_iss_branch"),))
+def _exponential_finding(claim, series, closed_form, independent, reference):
+    """Series exponential against a closed form (always) and an outside implementation (when one applies)."""
+    closed = float(np.max(np.abs(series - closed_form)))
+    basis = {"checks": [_check(f"max abs entry difference from the closed form of {reference}", closed, 1e-12,
+                               kind="analytic")]}
+    value = {"max_abs_difference_closed_form": closed, "max_abs_difference_independent": None}
+    if independent is not None:
+        matrix, implementation, revision = independent
+        difference = float(np.max(np.abs(series - matrix)))
+        value["max_abs_difference_independent"] = difference
+        basis["independent_check"] = dict(
+            _check(f"max abs entry difference of {reference}", difference, 1e-12, kind="analytic"),
+            producer={"implementation": "ciw.lab.lyapunov_research.expm_series", "revision": __version__},
+            checker={"implementation": implementation, "revision": revision})
+    return finding(claim, "numerical", value, basis, tolerance={"abs": 1e-12, "rel": 0.0},
+                   uncertainty=_roundoff(max(v for v in value.values() if v is not None),
+                                         "observed maximum entry difference"))
+
+
+@task("T112", changed_files=RESEARCH_FILES, regression_tests=(_node("test_t112_iss_branch"),
+                                                                _node("test_research_tasks_without_optional_modules")))
 def iss_branch(ctx):
     fields = _fields(
         "For x' = A x + B w with |w| <= w_bar, the quadratic ISS-Lyapunov bound sqrt(V(t)) <= max(sqrt(V(0)), "
-        "2 ||P^(1/2) B|| w_bar / c) holds on every bounded disturbance and is attained in one dimension; this "
-        "belongs to a separate research branch, not to the PLSR runtime.",
+        "2 ||P^(1/2) B|| w_bar / c) holds on every bounded disturbance; it is conservative against the sharp "
+        "reachable-set supremum in two dimensions and approached in one dimension; this belongs to a separate "
+        "research branch, not to the PLSR runtime.",
         "V = x^T P x, A^T P + P A = -Q: V' <= -c V + 2 sqrt(V) beta with c = min eig(P^-1 Q), beta = "
-        "||P^(1/2) B|| w_bar (Cauchy-Schwarz in the P inner product), so W = sqrt(V) obeys W' <= -(c/2) W + beta.",
+        "||P^(1/2) B|| w_bar (Cauchy-Schwarz in the P inner product), so W = sqrt(V) obeys W' <= -(c/2) W + beta. "
+        "The sharp supremum from x(0) = 0 is max over unit u of w_bar int_0^inf |u^T L^T e^(A s) B| ds with "
+        "P = L L^T (support function of the reachable set).",
         ["A = [[0, 1], [-4, -1.2]], B = [0, 1]^T, w_bar = 0.5, Q = I (synthetic)",
          "Disturbances: constant w_bar; worst-case switching w_bar sign(B^T P x); resonant sinusoid at 2 rad/s; "
          "random levels held for 0.2 s (PCG64 seed 112)", "Scalar x' = -x + w, w = w_bar",
-         "Exact ZOH simulation, h = 0.005 s, 30 s from x(0) = 0"],
-        "sup_t sqrt(V(x(t))) and sup_t |x(t)| of the synthetic simulations against the analytic bound.",
-        "Every simulated sup sqrt(V) is at most the bound; the scalar sup approaches the bound to 1e-9.",
-        "Derive the bound, simulate four disturbance classes with the exact discretisation, compare, check the "
-        "matrix exponential against an independent implementation, and retain the written branch specification.",
+         "Exact ZOH simulation, h = 0.005 s, 30 s from x(0) = 0; reachable-set integral by the trapezoid rule on "
+         "the exact sampled impulse response (h and h/2, 60 s, 4001 directions)"],
+        "sup_t sqrt(V(x(t))) and sup_t |x(t)| of the synthetic simulations against the analytic bound and the "
+        "sharp reachable-set supremum.",
+        "Every simulated sup sqrt(V) is at most the sharp supremum, which is at most the ISS bound; the "
+        "worst-case switching disturbance comes within 2 % of the sharp supremum; the scalar sup approaches the "
+        "bound to 1e-9 at 30 s.",
+        "Derive the bound, compute the sharp reachable-set supremum, simulate four disturbance classes with the "
+        "exact discretisation, compare, check the matrix exponential against its closed form and an independent "
+        "implementation, and retain the written branch specification.",
         "Specify a resolution-aware float64 ISS inequality (open question 1 in the retained spec) before any "
         "runtime integration; acquiring an evidenced disturbance bound is hardware-gated.",
-        ["simulated trajectory exceeds the bound", "bound not tight in one dimension",
+        ["simulated trajectory exceeds the sharp supremum", "worst-case switching far below the sharp supremum",
+         "sharp supremum not converged in the step", "bound not approached in one dimension",
          "matrix exponential inaccurate", "ISS claims leaking into runtime statuses"],
         ["w_bar and B are declared synthetic values; no physical disturbance was measured.",
-         "Sample-held disturbances are one admissible class; inter-sample peaks are not sampled."])
+         "Sample-held disturbances are one admissible class; inter-sample peaks are not sampled.",
+         "Only four disturbance classes were simulated; the sharp supremum, not the simulations, covers every "
+         "bounded disturbance."])
     bound = X.iss_bound(X.ISS_A, X.ISS_B, np.eye(2), X.ISS_W)
     simulations = {name: X.simulate_iss(X.ISS_A, X.ISS_B, bound["P"], X.ISS_W, name) for name in ISS_SCENARIOS}
     ratios = {name: result["sup_sqrt_V"] / bound["sqrt_V_bound"] for name, result in simulations.items()}
+    reachable = X.reachable_sup(X.ISS_A, X.ISS_B, bound["P"], X.ISS_W)
+    refined = X.reachable_sup(X.ISS_A, X.ISS_B, bound["P"], X.ISS_W, step=X.ISS_STEP / 2.0)
+    sharp = reachable["sup_sqrt_V"]
+    convergence = abs(refined["sup_sqrt_V"] - sharp) / sharp
+    to_sharp = {name: result["sup_sqrt_V"] / sharp for name, result in simulations.items()}
     scalar = X.scalar_iss()
     augmented = np.zeros((3, 3))
     augmented[:2, :2], augmented[:2, 2:] = X.ISS_A, X.ISS_B
     series = X.expm_series(augmented * X.ISS_STEP)
-    reference, implementation = X.independent_expm(augmented * X.ISS_STEP)
-    expm_difference = float(np.max(np.abs(series - reference)))
-    ctx.artifact_text("iss-branch-spec.md", X.iss_spec_markdown(bound, simulations, scalar))
+    closed = X.damped_oscillator_zoh(X.ISS_A, X.ISS_B, X.ISS_STEP)
+    independent = X.independent_expm(augmented * X.ISS_STEP)
+    ctx.artifact_text("iss-branch-spec.md", X.iss_spec_markdown(bound, simulations, scalar, reachable))
     ctx.artifact_json("iss-branch-spec.json", R.jsonable(dict(X.ISS_SPEC, bound={k: v for k, v in bound.items()},
-                                                             simulations=simulations, scalar=scalar)))
+                                                             simulations=simulations, scalar=scalar,
+                                                             reachable=reachable)))
     ctx.artifact_text("iss-ratios.svg", svg.line_plot(
-        [("sup sqrt(V) / bound", list(range(len(ISS_SCENARIOS))), [ratios[n] for n in ISS_SCENARIOS]),
-         ("bound", [0, len(ISS_SCENARIOS) - 1], [1.0, 1.0])],
-        title="T112 simulated sup sqrt(V) over the ISS bound", xlabel="scenario index (see iss-branch-spec.md)",
-        ylabel="ratio"))
-    independent = {"implementation": implementation, "revision": implementation.split("@")[-1]}
+        [("sup sqrt(V) / ISS bound", list(range(len(ISS_SCENARIOS))), [ratios[n] for n in ISS_SCENARIOS]),
+         ("sharp supremum / ISS bound", [0, len(ISS_SCENARIOS) - 1], [sharp / bound["sqrt_V_bound"]] * 2),
+         ("ISS bound", [0, len(ISS_SCENARIOS) - 1], [1.0, 1.0])],
+        title="T112 simulated sup sqrt(V) against the sharp supremum and the ISS bound",
+        xlabel="scenario index (see iss-branch-spec.md)", ylabel="ratio to the ISS bound"))
     findings = [
-        finding("Simulated sup sqrt(V) stays below the quadratic ISS bound for every bounded disturbance class",
-                "numerical", {name: ratios[name] for name in ISS_SCENARIOS},
+        finding("For the four simulated disturbance classes sup sqrt(V) stays below the sharp reachable-set "
+                "supremum, and worst-case switching comes within 2 % of it", "numerical",
+                {"to_sharp_supremum": {name: to_sharp[name] for name in ISS_SCENARIOS},
+                 "to_iss_bound": {name: ratios[name] for name in ISS_SCENARIOS}},
                 {"generator": {"name": "simulate_iss", "seed": 112},
-                 "checks": [_check("max over scenarios of sup sqrt(V) / bound", max(ratios.values()), 1.0, "le",
-                                   kind="analytic")]},
+                 "checks": [_check("max over scenarios of sup sqrt(V) / sharp supremum", max(to_sharp.values()),
+                                   1.0 + 1e-5, "le", kind="analytic"),
+                            _check("worst-case switching sup sqrt(V) / sharp supremum",
+                                   to_sharp["worst-case switching"], 0.98, "ge", kind="analytic")]},
                 tolerance={"abs": 1e-9, "rel": 1e-6},
-                uncertainty=_roundoff(1e-12, "exact ZOH simulation; exponential accurate to about 1e-15, sampled at "
-                                             "5e-3 s")),
+                uncertainty=_roundoff(1e-5, "trapezoid error of the sharp supremum (h versus h/2 agree to "
+                                            f"{convergence:.1e} relative); the simulation is exact ZOH")),
+        finding("The sharp reachable-set supremum of sqrt(V) is converged in the quadrature step and lies below the "
+                "quadratic ISS bound", "numerical",
+                {"sharp_supremum": sharp, "to_iss_bound": sharp / bound["sqrt_V_bound"],
+                 "step_refinement_relative_change": convergence},
+                {"generator": {"name": "reachable_sup", "seed": None},
+                 "checks": [_check("relative change of the supremum when the step is halved", convergence, 1e-5,
+                                   "le", kind="self_convergence"),
+                            _check("sharp supremum / ISS bound", sharp / bound["sqrt_V_bound"], 1.0, "le",
+                                   kind="analytic")]},
+                tolerance={"abs": 1e-8, "rel": 1e-6},
+                uncertainty=_roundoff(convergence, "relative change under step halving")),
         finding("Quadratic ISS-Lyapunov bound for the synthetic oscillator", "mathematical",
                 {"c": bound["c"], "beta": bound["beta"], "sqrt_V_bound": bound["sqrt_V_bound"],
                  "state_bound": bound["state_bound"]},
@@ -2375,92 +2786,114 @@ def iss_branch(ctx):
                                "w_bar; lyapunov_research.iss_bound and docs/lab/LYAPUNOV.md (T112)"},
                 tolerance={"abs": 0.0, "rel": 1e-9},
                 uncertainty=_roundoff(1e-15, "float64 evaluation of the closed form")),
-        finding("In one dimension the quadratic ISS bound w_bar / a is attained", "numerical", scalar,
+        finding("In one dimension the quadratic ISS bound w_bar / a is approached: sup |x| over 30 s is (1 - e^-30) "
+                "of it", "numerical", scalar,
                 {"checks": [_check("1 - exact sup / bound for x' = -x + 0.5 over 30 s", 1.0 - scalar["ratio"], 1e-9,
                                    kind="analytic")]},
                 tolerance={"abs": 1e-12, "rel": 1e-9},
                 uncertainty=_roundoff(1e-13, "float64 evaluation of the exponential and the closed form")),
-        finding("The series matrix exponential behind the exact ZOH simulation agrees with an independent "
-                "exponential", "numerical", {"max_abs_difference": expm_difference},
-                {"independent_check": dict(_check("max abs entry difference of exp([[A, B], [0, 0]] h)",
-                                                  expm_difference, 1e-12, kind="analytic"),
-                                           producer={"implementation": "ciw.lab.lyapunov_research.expm_series",
-                                                     "revision": __version__},
-                                           checker=independent)},
-                tolerance={"abs": 1e-12, "rel": 0.0},
-                uncertainty=_roundoff(expm_difference, "observed maximum entry difference")),
+        _exponential_finding("The series matrix exponential behind the exact ZOH simulation agrees with its closed "
+                             "form and, where available, an independent exponential", series, closed, independent,
+                             "exp([[A, B], [0, 0]] h)"),
         finding("The ISS branch adds no runtime-status-v1 code, sample field or verdict to PLSR",
                 "computational_pipeline", "research branch only",
                 {"derivation": "retained iss-branch-spec.md: 'plsr_must_not_claim'; the runtime vocabulary is fixed "
-                               "by runtime-status-v1 at the pinned commit (T106 constants)"}, uncertainty=ANALYTIC),
+                               "by runtime-status-v1 at the pinned commit (T106 constants)"},
+                tolerance=EXACT_TOL, uncertainty=ANALYTIC),
         finding("The disturbance bound w_bar = 0.5 holds for a physical plant", "physical", None, {}),
         finding("The ISS bound defines a safe operating envelope for a machine", "machine_safety", None,
                 {"derivation": "an analytic bound on a declared model; safety requires a safety case outside the "
                                "workbench"}),
     ]
+    exponential = ("its closed form" + (f" and {independent[1]}" if independent is not None else "")
+                   + f" to {max(v for v in findings[4]['value'].values() if v is not None):.2e}")
     fields["numerical_result"] = (
-        f"Bound sqrt(V) <= {bound['sqrt_V_bound']:.6g} (|x| <= {bound['state_bound']:.6g}); simulated ratios "
-        f"{ {k: round(v, 4) for k, v in ratios.items()} }; scalar sup/bound = {scalar['ratio']:.12f}; series "
-        f"expm differs from {implementation} by {expm_difference:.2e}.")
-    fields["uncertainty"] = ("Simulation is exact ZOH (exponential accurate to 1e-12); the 2-D bound is "
-                             "conservative (worst-case ratio well below 1) because of the Cauchy-Schwarz step.")
+        f"ISS bound sqrt(V) <= {bound['sqrt_V_bound']:.6g} (|x| <= {bound['state_bound']:.6g}); sharp reachable-set "
+        f"supremum {sharp:.6g} ({sharp / bound['sqrt_V_bound']:.4f} of the bound, step-halving change "
+        f"{convergence:.1e}); simulated sup sqrt(V) / sharp supremum "
+        f"{ {k: round(v, 4) for k, v in to_sharp.items()} }; scalar sup/bound = {scalar['ratio']:.14f} "
+        f"(1 - e^-30); series expm agrees with {exponential}.")
+    fields["uncertainty"] = ("Simulation is exact ZOH (exponential accurate to 1e-12); the sharp supremum carries a "
+                             "trapezoid error below 1e-5 relative; the 2-D ISS bound is conservative by about a "
+                             "factor four because of the Cauchy-Schwarz step.")
     return _finish(fields, findings, RESEARCH_FILES, provider=False)
 
 
 # T113 ------------------------------------------------------------------------
 
-@task("T113", changed_files=(MODULE, REFERENCE, BRIDGE, RESEARCH, DOC),
-      regression_tests=(_node("test_t113_residual_adapter"), _node("test_adapter_keeps_metadata_outside")))
+T113_FILES = (MODULE, REFERENCE, BRIDGE, RESEARCH, DOC)
+
+
+@task("T113", changed_files=T113_FILES,
+      regression_tests=(_node("test_t113_residual_adapter"), _node("test_adapter_keeps_metadata_outside"),
+                        PARTIAL_TEST))
 def residual_adapter(ctx):
     fields = _fields(
-        "A host-side adapter can turn filtered residual statistics into the four fields of a plsr-sample-v1 "
-        "sample (a schema tag and numbers only) while sensor identity, units, calibration and timing stay in a host envelope; "
-        "host-owned statuses are decided before the kernel and never reach it, and the kernel's codes on "
-        "forwarded samples follow the declared model.",
+        "A host-side adapter can turn filtered residual statistics into plsr-sample-v1 samples (a schema tag and "
+        "numbers only) while sensor identity, units, calibration and timing stay in a host envelope; host-owned "
+        "statuses are decided before the kernel and never reach it; forwarding theta_hat together with both ends "
+        "of its three-standard-error interval keeps a near-bound point estimate from being accepted alone; and "
+        "the kernel's codes on forwarded samples follow the declared model.",
         "Declared discrete map A(theta) = I + h [[0, 1], [-(4 + theta), -0.4]], h = 0.01 s, theta in [-0.5, 0.5], "
         "common P from the nominal discrete Lyapunov equation (exactly valid at both vertices, hence on the box by "
-        "convexity). An EKF on (x, v, theta) yields x_hat, theta_hat, its standard error and the innovation NIS; "
-        "mean NIS above 1 + 6 sqrt(2/N) is MODEL_MISMATCH.",
-        ["Seven synthetic 4 s windows (PCG64 seeds 1131-1137): theta 0.1 and -0.3 (nominal), 0.9 (outside the "
-         "box), damping 3 instead of 0.4 (structural mismatch), a stale window, a dropout (NaN), an expired "
-         "certificate", "Envelope metadata: sensor id, units, calibration reference and validity, filter, site"],
-        "Adapter outputs (sample or host status), serialised kernel payloads, PLSR codes for forwarded samples, "
-        "and PLSR's treatment of host-owned codes.",
+        "convexity). An EKF on (x, v, theta) yields x_hat, theta_hat, its standard error se and the innovation "
+        "NIS; mean NIS above 1 + 6 sqrt(2/N) is MODEL_MISMATCH. The adapter forwards theta_hat and theta_hat +- "
+        "3 se; the host accepts a window only if the kernel certifies all three.",
+        ["Eight synthetic 4 s windows (PCG64 seeds 1131-1138): theta 0.1 and -0.3 (nominal), 0.48 (estimate near "
+         "the bound), 0.9 (outside the box), damping 3 instead of 0.4 (structural mismatch), a stale window, a "
+         "dropout (NaN), an expired certificate",
+         "Envelope metadata: sensor id, units, calibration reference and validity, filter, site"],
+        "Adapter outputs (samples or host status), serialised kernel payloads, PLSR codes for forwarded samples, "
+        "the host's window decision, and PLSR's treatment of host-owned codes.",
         "Payloads carry only plant, certificate and numeric sample fields; host statuses are host-owned codes; "
-        "forwarded codes equal the CIW prediction; theta estimates lie within 3 standard errors of the synthetic "
-        "truth.",
+        "forwarded codes equal the CIW transcription of the documented order; no window whose guard interval "
+        "leaves the box is accepted; theta estimates lie within 3 standard errors of the synthetic truth.",
         "Run the adapter on every window, serialise the kernel payloads and search them for envelope metadata, "
-        "evaluate forwarded samples with PLSR, and compare with the documented decision order.",
-        "T114: servo-axis pilot specification; then bind the adapter to acquired encoder data (hardware-gated).",
+        "evaluate every forwarded sample with PLSR, apply the host's window rule, and compare with the "
+        "documented decision order.",
+        "T114: servo-axis pilot specification; then bind the adapter to acquired encoder data (hardware-gated) and "
+        "check the coverage of the three-standard-error interval there.",
         ["metadata in the kernel payload", "non-numeric or extra sample field", "host status forwarded to the "
-         "kernel", "kernel accepts a host-owned code", "theta estimate inconsistent with its standard error"],
+         "kernel", "kernel accepts a host-owned code", "near-bound point estimate accepted although its interval "
+         "leaves the box", "theta estimate inconsistent with its standard error"],
         ["All data are synthetic; the EKF, noise levels and thresholds are illustrative, not tuned to a sensor.",
+         "The guard assumes the EKF standard error of theta is calibrated; its coverage for a real sensor is not "
+         "established (sensor_performance finding).",
          "Staleness and certificate validity use declared window times, not a real clock."])
     windows = X.adapter_windows()
     P, vertex_classes = X.adapter_certificate()
     A0, A1 = X.adapter_plant()
     box = ([X.ADAPTER_BOX[0]], [X.ADAPTER_BOX[1]])
-    rows, kernel_cases, leaks, bad_fields, estimate_misses = [], [], [], 0, 0
+    rows, kernel_cases, leaks, bad_fields, estimate_misses, guard_errors = [], [], [], 0, 0, 0
     for i, window in enumerate(windows):
         outcome = X.adapt(window["envelope"])
         row = {"window": window["name"], "host_status": outcome.get("host_status"),
                "statistics": {k: v for k, v in outcome.get("statistics", {}).items() if k != "x"}}
-        if "sample" in outcome:
-            sample = outcome["sample"]
-            bad_fields += tuple(sample) != X.SAMPLE_FIELDS or not all(
-                math.isfinite(v) for v in sample["x"] + sample["theta"])
-            case = _affine_case(f"w{i}", A0, [A1], box, P, sample["x"], sample["theta"], time="discrete")
-            kernel_cases.append(case)
-            leaks += X.metadata_leaks(case, window["envelope"])
+        if "samples" in outcome:
             stats = outcome["statistics"]
+            spread = X.GUARD_SE * stats["theta_se"]
+            expected = {"estimate": stats["theta"], "lower": stats["theta"] - spread, "upper": stats["theta"] + spread}
+            for role in X.SAMPLE_ROLES:
+                sample = outcome["samples"][role]
+                bad_fields += tuple(sample) != X.SAMPLE_FIELDS or not all(
+                    math.isfinite(v) for v in sample["x"] + sample["theta"])
+                guard_errors += sample["theta"] != [expected[role]]
+                case = _affine_case(f"w{i}:{role}", A0, [A1], box, P, sample["x"], sample["theta"], time="discrete")
+                kernel_cases.append(case)
+                leaks += X.metadata_leaks(case, window["envelope"])
             estimate_misses += abs(stats["theta"] - window["theta_true"]) > 3.0 * stats["theta_se"]
-            row["forwarded"] = True
+            row.update(forwarded=True, guard_interval=[expected["lower"], expected["upper"]],
+                       interval_inside_box=X.ADAPTER_BOX[0] <= expected["lower"]
+                       and expected["upper"] <= X.ADAPTER_BOX[1],
+                       estimate_inside_box=X.ADAPTER_BOX[0] <= stats["theta"] <= X.ADAPTER_BOX[1])
         rows.append(row)
     host = {r["window"]: r["host_status"] for r in rows if r["host_status"]}
-    forwarded = [r["window"] for r in rows if r.get("forwarded")]
+    forwarded = [r for r in rows if r.get("forwarded")]
+    near_bound = [r["window"] for r in forwarded if r["estimate_inside_box"] and not r["interval_inside_box"]]
     # Positive control: a payload that does carry envelope metadata must be flagged by the same detector.
     planted = dict(kernel_cases[0], sensor={"id": windows[0]["envelope"]["sensor_id"]})
     control = X.metadata_leaks(planted, windows[0]["envelope"])
+    largest_se = max(r["statistics"]["theta_se"] for r in forwarded)
     offline = [
         finding("Kernel payloads built by the adapter carry only the declared model and numeric sample fields, and "
                 "no envelope metadata",
@@ -2472,28 +2905,38 @@ def residual_adapter(ctx):
                                    len(control), 1.0, "ge", kind="invariant"),
                             _check("samples with extra, missing or non-finite fields", bad_fields, 0.0,
                                    kind="invariant")]},
-                tolerance={"abs": 0.0, "rel": 0.0}, uncertainty=EXACT),
+                tolerance=EXACT_TOL, uncertainty=EXACT),
+        finding("The adapter forwards theta_hat with both ends of its three-standard-error interval, and a near-bound "
+                "estimate yields an interval end outside the box", "computational_pipeline",
+                {"forwarded_windows": len(forwarded), "guard_errors": guard_errors, "near_bound_windows": near_bound},
+                {"checks": [_check("forwarded samples whose theta differs from theta_hat, theta_hat - 3 se or "
+                                   "theta_hat + 3 se", guard_errors, 0.0, kind="invariant"),
+                            _check("positive control: forwarded windows with theta_hat inside the box and an interval "
+                                   "end outside", len(near_bound), 1.0, "ge", kind="invariant")]},
+                tolerance=EXACT_TOL, uncertainty=EXACT),
         finding("Host statuses are decided in the adapter, are host-owned codes and are never forwarded", "numerical",
                 host, {"checks": [_check("adapter statuses outside the host-owned list",
                                          sum(v not in R.HOST_OWNED for v in host.values()), 0.0, kind="invariant"),
                                   _check("windows both forwarded and given a host status",
                                          sum(1 for r in rows if r.get("forwarded") and r["host_status"]), 0.0,
-                                         kind="invariant")]}, uncertainty=EXACT),
+                                         kind="invariant")]}, tolerance=EXACT_TOL, uncertainty=EXACT),
         finding("EKF theta estimates of forwarded windows lie within three standard errors of the synthetic truth",
                 "numerical", {"forwarded": len(forwarded), "misses": estimate_misses},
                 {"generator": {"name": "adapter_windows", "seed": 1131},
                  "checks": [_check("forwarded windows with |theta_hat - theta| > 3 se", estimate_misses, 0.0,
                                    kind="invariant")]},
-                tolerance={"abs": 0.0, "rel": 0.0},
-                uncertainty={"kind": "reference_error",
-                             "value": max(r["statistics"].get("theta_se", 0.0) for r in rows),
+                tolerance=EXACT_TOL,
+                uncertainty={"kind": "reference_error", "value": largest_se,
                              "basis": "largest EKF standard error of theta among forwarded windows"}),
         finding("The adapter's common P is exactly valid at both box vertices of the declared discrete map",
                 "numerical", {"vertex_classes": vertex_classes},
                 {"checks": [_check("vertices without an exactly negative definite decrease",
-                                   sum(c != "negative_definite" for c in vertex_classes), 0.0)]}, uncertainty=EXACT),
+                                   sum(c != "negative_definite" for c in vertex_classes), 0.0)]},
+                tolerance=EXACT_TOL, uncertainty=EXACT),
         finding("The synthetic residual statistics describe a real encoder's performance", "sensor_performance",
                 None, {}),
+        finding("The EKF standard error of theta covers the true parameter of a real axis at the stated rate",
+                "sensor_performance", None, {}),
         finding("The calibration referenced in the host envelope is valid", "calibration", None, {}),
     ]
     predicted = {case["id"]: R.documented_code(A0 + case["theta"][0] * A1, P, case["x"], "discrete",
@@ -2502,76 +2945,124 @@ def residual_adapter(ctx):
     bridge_cases = kernel_cases + [{"id": f"require:{code}", "op": "require_status", "code": code}
                                    for code in sorted(set(host.values()))]
     ctx.artifact_json("adapter-windows.json", R.jsonable({"rows": rows, "payload_example": kernel_cases[0],
-                                                           "sample_fields": X.SAMPLE_FIELDS}))
+                                                           "sample_fields": X.SAMPLE_FIELDS,
+                                                           "sample_roles": X.SAMPLE_ROLES}))
     try:
         bridge = _bridge(ctx, bridge_cases)
     except _Unavailable as exc:
-        fields["numerical_result"] = (f"Provider-free: {len(forwarded)} windows forwarded, host statuses {host}, "
-                                      f"{len(leaks)} metadata leaks, {estimate_misses} estimate misses.")
+        fields["numerical_result"] = (f"Provider-free: {len(forwarded)} windows forwarded with "
+                                      f"{len(kernel_cases)} samples, host statuses {host}, {len(leaks)} metadata "
+                                      f"leaks, {guard_errors} guard errors, near-bound windows {near_bound}, "
+                                      f"{estimate_misses} estimate misses.")
         fields["uncertainty"] = "Synthetic data; deterministic seeds."
-        return _finish(fields, offline, (MODULE, REFERENCE, BRIDGE, RESEARCH, DOC), blocked=str(exc))
+        return _finish(fields, offline, T113_FILES, blocked=str(exc))
     identity, results = bridge["identity"], bridge["results"]
     base = provider_basis(identity)
-    kernel_codes = {rows[int(cid[1:])]["window"]: _code(results[cid]) for cid in predicted}
+    names = {i: w["name"] for i, w in enumerate(windows)}
+    kernel_codes = {}
+    for cid in predicted:
+        index, role = cid[1:].split(":")
+        kernel_codes.setdefault(names[int(index)], {})[role] = _code(results[cid])
     mismatches = sum(_code(results[cid]) != code for cid, code in predicted.items())
+    accepted = {name: all(code == "CERTIFIED_WITH_MARGIN" for code in codes.values())
+                for name, codes in kernel_codes.items()}
+    interval_inside = {r["window"]: r["interval_inside_box"] for r in forwarded}
+    unsafe_accept = sum(accepted[name] and not interval_inside[name] for name in accepted)
+    near_bound_accepted = sum(accepted[name] for name in near_bound)
     refused = {code: _code(results[f"require:{code}"]) for code in sorted(set(host.values()))}
     findings = [
         finding("Forwarded samples receive the runtime codes predicted from the declared model", "numerical",
                 kernel_codes,
-                {"provider": base, "independent_check": _independent(
-                    _check("forwarded samples whose code differs from the CIW re-derivation", mismatches, 0.0,
-                           kind="analytic"), identity)}, uncertainty=EXACT),
+                {"provider": base, "checks": [
+                    _check("forwarded samples whose code differs from the CIW transcription of the documented order "
+                           "(same specification)", mismatches, 0.0, kind="analytic")]},
+                tolerance=EXACT_TOL, uncertainty=EXACT),
+        finding("The host accepts a window only when the kernel certifies theta_hat and both interval ends, so the "
+                "near-bound estimate is rejected", "numerical",
+                {"accepted": accepted, "near_bound_accepted": near_bound_accepted},
+                {"provider": base, "checks": [
+                    _check("accepted windows whose three-standard-error interval leaves the box", unsafe_accept, 0.0,
+                           kind="invariant"),
+                    _check("near-bound windows (theta_hat inside, an interval end outside) accepted",
+                           near_bound_accepted, 0.0, kind="invariant")]},
+                tolerance=EXACT_TOL, uncertainty=EXACT),
         finding("The kernel refuses every host-owned code the adapter emitted", "numerical", refused,
                 {"provider": base, "checks": [_refusal(f"require_status({code})", "raises ValueError", outcome)
-                                              for code, outcome in refused.items()]}, uncertainty=EXACT),
+                                              for code, outcome in refused.items()]},
+                tolerance=EXACT_TOL, uncertainty=EXACT),
     ] + offline
     fields["numerical_result"] = (
-        f"Windows: {len(windows)}; forwarded {forwarded} with kernel codes {kernel_codes}; host statuses {host}; "
-        f"metadata leaks {len(leaks)}; malformed samples {bad_fields}; theta estimate misses {estimate_misses}; "
-        f"kernel refusal of host codes {refused}.")
-    fields["uncertainty"] = ("Synthetic data with fixed seeds; the NIS band (6 standard deviations) and 3-se "
-                             "estimate test are illustrative thresholds, not validated detection rates.")
-    return _finish(fields, findings, (MODULE, REFERENCE, BRIDGE, RESEARCH, DOC), identity)
+        f"Windows: {len(windows)}; forwarded {[r['window'] for r in forwarded]} as {len(kernel_cases)} samples with "
+        f"kernel codes {kernel_codes}; host decisions {accepted}; host statuses {host}; metadata leaks {len(leaks)}; "
+        f"malformed samples {bad_fields}; guard errors {guard_errors}; theta estimate misses {estimate_misses} "
+        f"(largest forwarded se {largest_se:.4f}); kernel refusal of host codes {refused}.")
+    fields["uncertainty"] = ("Synthetic data with fixed seeds; the NIS band (6 standard deviations), the 3-se guard "
+                             "and the 3-se estimate test are illustrative thresholds, not validated detection or "
+                             "coverage rates.")
+    return _finish(fields, findings, T113_FILES, identity)
 
 
 # T114 ------------------------------------------------------------------------
 
-@task("T114", changed_files=RESEARCH_FILES, regression_tests=(_node("test_t114_servo_pilot_spec"),))
+@task("T114", changed_files=RESEARCH_FILES, regression_tests=(_node("test_t114_servo_pilot_spec"),
+                                                                _node("test_research_tasks_without_optional_modules")))
 def servo_pilot(ctx):
     fields = _fields(
         "A non-production servo-axis pilot can be specified so that the Lyapunov monitor's scope, data, abort "
-        "criteria and lack of authority are explicit, and so that its offline certificate check passes on the "
-        "declared inertia interval before any powered test.",
+        "criteria and lack of authority are explicit, every runtime abort trigger can actually fire for the "
+        "declared monitor configuration, and the offline certificate check passes at every grid inertia before "
+        "any powered test.",
         "Axis J theta'' = -b theta' + Kt u with PD state feedback designed for 20 Hz, damping 0.7 at nominal J; "
         "exact ZOH at Ts = 1 ms; closed loop A_cl(J) = Phi(J) - Gamma(J) K on a 9-point grid over J +- 30 %; "
-        "common P from the discrete Lyapunov equation at nominal J.",
+        "common P from the discrete Lyapunov equation at nominal J. Online: PLSR on the nominal model with a "
+        "declared level c such that {V <= c} lies inside the operating envelope; for a fixed model the decrease "
+        "form's sign is state-independent, so the code depends on the state only through the level gate.",
         ["Placeholder parameters (not identified): J = 2e-3 kg m^2 +- 30 %, b = 1e-3 N m s, Kt = 0.1 N m/A, "
-         "Ts = 1 ms", "Weightings Q = I and unit-balanced Q = diag(omega^2, 1), omega = 2 pi 20 rad/s"],
-        "Exact rational class of A_cl(J)^T P A_cl(J) - P at each grid inertia; ZOH exponential against an "
-        "independent exponential; specification section coverage.",
-        "The unit-balanced P is exactly valid at every grid inertia; every required section is present; "
-        "authority and physical claims remain not_established.",
-        "Build the sampled-data models, choose P, check each grid point exactly, verify the exponential, and "
-        "retain the specification (JSON and Markdown).",
+         "Ts = 1 ms", "Weightings Q = I and unit-balanced Q = diag(omega^2, 1), omega = 2 pi 20 rad/s",
+         "Operating envelope |angle error| <= 0.05 rad, |rate| <= 2 rad/s (placeholder)",
+         "Monitor scan: 200 seeded states (PCG64 seed 1141) with V(x) = r^2 c, r = 10^U(-8, 8)"],
+        "Exact rational class of A_cl(J)^T P A_cl(J) - P at each grid inertia; ZOH exponential against its closed "
+        "form and an independent exponential; monitor codes over the scan by the documented decision order, "
+        "against the exact V(x) > c decision.",
+        "The unit-balanced P is exactly valid at every grid inertia; the monitor's code is constant without a level "
+        "set and follows exact V > c with it; every abort code is produced by the scan; authority and physical "
+        "claims remain not_established.",
+        "Build the sampled-data models, choose P, check each grid point exactly, verify the exponential, derive the "
+        "level set, scan the monitor configuration, and retain the specification (JSON and Markdown).",
         "Hardware-gated: identify J, friction and delay on the bench, replace the placeholder interval, re-run "
         "this check with an affine over-approximation suitable for PLSR's box semantics, then run T113's adapter "
         "on acquired encoder data.",
-        ["certificate invalid on part of the interval", "exponential inaccurate", "specification section missing",
-         "authority or safety claimed"],
+        ["certificate invalid on part of the interval", "exponential inaccurate", "monitor code independent of the "
+         "state even with a level set", "abort trigger that the configuration cannot produce",
+         "level set outside the envelope", "authority or safety claimed"],
         ["All parameters are placeholders; the grid is evidence on 9 inertias, not a proof over the interval.",
-         "The current loop, friction nonlinearity, saturation and delay are not modelled."])
+         "The monitor scan uses CIW's transcription of the documented decision order, not the pinned runtime; "
+         "T113 exercises the runtime on the analogous adapter.",
+         "The current loop, friction nonlinearity, saturation and delay are not modelled; specification sections "
+         "are guarded by the regression test, not by a finding."])
     K, models = X.servo_models()
     P, classes = X.servo_certificate(models)
     nominal = min(models, key=lambda m: abs(m["J"] - X.SERVO["J_nominal_kg_m2"]))
     augmented = np.zeros((3, 3))
     augmented[:2, :2], augmented[:2, 2:] = nominal["A"], nominal["B"]
     series = X.expm_series(augmented * X.SERVO["Ts_s"])
-    reference, implementation = X.independent_expm(augmented * X.SERVO["Ts_s"])
-    difference = float(np.max(np.abs(series - reference)))
-    spec = X.servo_spec(K, P, classes)
-    missing = [section for section in X.SERVO_SPEC_SECTIONS if section not in spec]
+    closed = X.servo_zoh_closed_form(nominal["J"], X.SERVO["Ts_s"])
+    independent = X.independent_expm(augmented * X.SERVO["Ts_s"])
+    level = X.servo_level(P)
+    scan = X.monitor_scan(nominal["A_cl"], P, level)
+    without = sorted({r["code_without_level"] for r in scan})
+    with_level = sorted({r["code_with_level"] for r in scan})
+    level_mismatch = sum((r["code_with_level"] == "OUTSIDE_LEVEL_SET") != r["exact_exceeds_level"] for r in scan)
+    unexpected = sorted(set(with_level) - set(X.SERVO_EXPECTED_CODES))
+    unreachable_aborts = sorted(set(X.SERVO_ABORT_CODES) - set(with_level))
+    inverse = np.linalg.inv(P)
+    envelope_ratio = max(math.sqrt(level * inverse[0, 0]) / X.SERVO_ENVELOPE["angle_error_rad"],
+                         math.sqrt(level * inverse[1, 1]) / X.SERVO_ENVELOPE["velocity_rad_s"])
+    monitor = {"level": level, "codes_without_level": without, "codes_with_level": with_level}
+    spec = X.servo_spec(K, P, classes, monitor)
     ctx.artifact_json("servo-pilot-spec.json", R.jsonable(spec))
     ctx.artifact_text("servo-pilot-spec.md", X.servo_spec_markdown(spec))
+    ctx.artifact_json("monitor-scan.json", R.jsonable({"level": level, "rows": scan}))
     balanced, plain = classes["Q = diag(omega^2, 1)"], classes["Q = I"]
     findings = [
         finding("The unit-balanced nominal P gives an exactly negative definite discrete decrease at every grid "
@@ -2580,28 +3071,40 @@ def servo_pilot(ctx):
                 {"generator": {"name": "servo_models", "seed": None},
                  "checks": [_check("grid inertias without an exactly negative definite decrease",
                                    sum(c != "negative_definite" for c in balanced), 0.0)]},
-                tolerance={"abs": 0.0, "rel": 0.0}, uncertainty=EXACT),
+                tolerance=EXACT_TOL, uncertainty=EXACT),
         finding("With Q = I the nominal-model P does not cover the declared inertia interval", "numerical",
                 {"failing_grid_points": sum(c != "negative_definite" for c in plain), "grid_points": len(plain)},
                 {"checks": [_check("grid inertias failing with Q = I", sum(c != "negative_definite" for c in plain),
                                    1.0, "ge")]},
+                tolerance=EXACT_TOL,
                 counterexample={"statement": "A Lyapunov P solved at the nominal model with Q = I certifies the "
                                              "declared +-30 % inertia interval",
                                 "witness": {"J": [m["J"] for m, c in zip(models, plain) if c != "negative_definite"]}},
-                                uncertainty=EXACT),
-        finding("The ZOH exponential agrees with an independent exponential", "numerical",
-                {"max_abs_difference": difference},
-                {"independent_check": dict(_check("max abs entry difference of exp([[A, B], [0, 0]] Ts)", difference,
-                                                  1e-12, kind="analytic"),
-                                           producer={"implementation": "ciw.lab.lyapunov_research.expm_series",
-                                                     "revision": __version__},
-                                           checker={"implementation": implementation,
-                                                    "revision": implementation.split("@")[-1]})},
-                tolerance={"abs": 1e-12, "rel": 0.0},
-                uncertainty=_roundoff(difference, "observed maximum entry difference")),
-        finding("The pilot specification contains every required section", "computational_pipeline",
-                {"sections": list(X.SERVO_SPEC_SECTIONS), "missing": missing},
-                {"checks": [_check("missing sections", len(missing), 0.0, kind="invariant")]}, uncertainty=EXACT),
+                uncertainty=EXACT),
+        _exponential_finding("The ZOH exponential agrees with its closed form and, where available, an independent "
+                             "exponential", series, closed, independent, "exp([[A, B], [0, 0]] Ts)"),
+        finding("Without a level set the monitor's code is the same at every state; with the declared level it "
+                "follows the exact V(x) > c decision", "numerical",
+                {"states": len(scan), "codes_without_level": without, "codes_with_level": with_level,
+                 "level_mismatches": level_mismatch, "exceeding_states": sum(r["exact_exceeds_level"] for r in scan)},
+                {"generator": {"name": "monitor_scan", "seed": 1141},
+                 "checks": [_check("distinct codes over the scan without a level set", len(without), 1.0, "le",
+                                   kind="invariant"),
+                            _check("states whose OUTSIDE_LEVEL_SET decision differs from exact V(x) > c",
+                                   level_mismatch, 0.0),
+                            _check("largest ratio of the level set's extent to the envelope bound", envelope_ratio,
+                                   1.0, "le", kind="analytic")]},
+                tolerance=EXACT_TOL, uncertainty=_roundoff(0.0, "exact rationals decide V > c; states lie between "
+                                                                "1e-8 and 1e8 of the level radius")),
+        finding("Every runtime code named as an abort trigger is produced by the declared monitor configuration, "
+                "and the configuration produces no code outside the expected set", "computational_pipeline",
+                {"abort_codes": list(X.SERVO_ABORT_CODES), "expected_codes": list(X.SERVO_EXPECTED_CODES),
+                 "produced": with_level},
+                {"checks": [_check("abort codes never produced by the monitor scan", len(unreachable_aborts), 0.0,
+                                   kind="invariant"),
+                            _check("produced codes outside the expected set", len(unexpected), 0.0,
+                                   kind="invariant")]},
+                tolerance=EXACT_TOL, uncertainty=EXACT),
         finding("The servo-axis pilot is safe to operate", "machine_safety", None,
                 {"derivation": "requires a safety case and an independent safety function outside the workbench"}),
         finding("The Lyapunov monitor may command, gate or release the axis", "actuator_authority", None,
@@ -2612,10 +3115,16 @@ def servo_pilot(ctx):
         finding("The placeholder inertia interval contains the real axis inertia", "physical", None, {}),
         finding("Encoder and current-sensor calibrations of the bench are valid", "calibration", None, {}),
     ]
+    exponential = findings[2]["value"]
     fields["numerical_result"] = (
         f"K = {np.round(K, 6).tolist()}; balanced-Q grid classes {_counts(balanced)}; Q = I grid classes "
-        f"{_counts(plain)}; ZOH exponential differs from {implementation} by {difference:.2e}; spec sections "
-        f"missing: {missing}.")
+        f"{_counts(plain)}; ZOH exponential differs from its closed form by "
+        f"{exponential['max_abs_difference_closed_form']:.2e}"
+        + (f" and from {independent[1]} by {exponential['max_abs_difference_independent']:.2e}"
+           if independent is not None else " (no independent exponential applies to this defective matrix here)")
+        + f"; level c = {level:.6g} (extent/envelope {envelope_ratio:.6f}); monitor codes without level {without}, "
+        f"with level {with_level}, {level_mismatch} level decisions differing from exact V > c; abort codes not "
+        f"produced: {unreachable_aborts}.")
     fields["uncertainty"] = ("Exact rational classes on the declared float matrices; the interval between grid "
-                             "points is not covered by a proof.")
+                             "points is not covered by a proof; the level-set scan decides V > c exactly.")
     return _finish(fields, findings, RESEARCH_FILES, provider=False)

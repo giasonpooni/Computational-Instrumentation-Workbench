@@ -1,10 +1,11 @@
 """Lyapunov runtime experiments T101-T114.
 
-Provider-free parts (exact references, the documented-rule re-derivation, the
+Provider-free parts (exact references, the documented-rule transcription, the
 ISS branch, the residual adapter and the servo specification) always run.
 Parts that execute the pinned PLSR runtime need a Python 3.12+ interpreter with
 it installed: set CIW_LAB_PLSR_PYTHON, or run the tests under such an
-interpreter; otherwise they are skipped.
+interpreter; otherwise they are skipped. A CIW_LAB_PLSR_PYTHON that names a
+missing interpreter fails the provider tests instead of skipping them.
 """
 from fractions import Fraction
 import importlib.util
@@ -20,6 +21,7 @@ import pytest
 from ciw.lab import lyapunov as L
 from ciw.lab import lyapunov_reference as R
 from ciw.lab import lyapunov_research as X
+from ciw.lab.evidence import COMPUTATIONAL_DOMAINS
 from ciw.lab.lyapunov_provider import PLSR_ROLE, ProviderRefusal, manifest, run_plsr
 from ciw.lab.registry import load_implementations, load_queue
 from ciw.lab.report import validate_report
@@ -31,7 +33,7 @@ PROVIDER_TASKS = [f"T1{n:02d}" for n in range(1, 12)] + ["T113"]
 def _plsr_python():
     configured = os.environ.get("CIW_LAB_PLSR_PYTHON")
     if configured:
-        return configured if Path(configured).exists() else None
+        return configured  # checked by _provider(): a missing path fails rather than skips
     if sys.version_info >= (3, 12) and importlib.util.find_spec("lyapunov") is not None:
         return sys.executable
     return None
@@ -42,13 +44,20 @@ needs_provider = pytest.mark.skipif(PLSR_PYTHON is None, reason="set CIW_LAB_PLS
                                                                 "interpreter with the pinned PLSR runtime")
 
 
+def _provider():
+    if not Path(PLSR_PYTHON).exists():
+        pytest.fail(f"CIW_LAB_PLSR_PYTHON names a missing interpreter: {PLSR_PYTHON}")
+    return PLSR_PYTHON
+
+
 @pytest.fixture(scope="module")
 def reports(tmp_path_factory):
     """Run every provider-dependent task once with the bound runtime."""
     if PLSR_PYTHON is None:
         pytest.skip("PLSR provider interpreter not configured")
+    python = _provider()
     directory = tmp_path_factory.mktemp("lyapunov")
-    run_queue(directory, task_ids=PROVIDER_TASKS, providers={PLSR_ROLE: PLSR_PYTHON})
+    run_queue(directory, task_ids=PROVIDER_TASKS, providers={PLSR_ROLE: python})
     return {task_id: validate_report(json.loads((directory / "reports" / f"{task_id}.json").read_text(encoding="utf-8")))
             for task_id in PROVIDER_TASKS}
 
@@ -56,13 +65,34 @@ def reports(tmp_path_factory):
 def _run(task_id, tmp_path, providers=None):
     implementations, _ = load_implementations()
     item = next(t for t in load_queue()["tasks"] if t["id"] == task_id)
-    return run_task(item, implementations[task_id], Context(tmp_path, providers), {})
+    return validate_report(run_task(item, implementations[task_id], Context(tmp_path, providers), {}))
 
 
 def _finding(report, prefix):
     matches = [f for f in report["findings"] if f["claim"].startswith(prefix)]
     assert matches, f"no finding starting with {prefix!r}"
     return matches[0]
+
+
+def _label(report, prefix):
+    return _finding(report, prefix)["evidence_status"]
+
+
+def _regression_ready(report):
+    """Every computational finding carries a regression tolerance and an uncertainty; none is refuted."""
+    for record in report["findings"]:
+        if record["domain"] in COMPUTATIONAL_DOMAINS:
+            assert "regression_tolerance" in record, record["claim"]
+            assert record.get("uncertainty") is not None, record["claim"]
+            assert record["evidence_status"] != "not_established" or record.get("expected_not_established"), \
+                record["claim"]
+
+
+def _completed(report, primary):
+    assert report["state"] == "completed", report["unresolved_assumptions"]
+    assert report["evidence_status"]["primary"] == primary
+    assert report["provider_runtime_identity"]["provider"]["files_verified"] == 20
+    _regression_ready(report)
 
 
 # Provider-free references ------------------------------------------------------
@@ -88,9 +118,33 @@ def test_exact_classification_and_resolution_formula():
     assert L.EPSILON_STAR == pytest.approx(10 * np.finfo(float).eps, rel=1e-14)
 
 
+def test_t101_threshold_is_analytic():
+    _, meta = L._t101_family()
+    normal = [m for m in meta if m["family"] == "F1" and m["normal"]]
+    assert len(normal) == 112
+    # The analytic code depends on eps only: certified iff eps > eps*, whatever the scale 2^k.
+    assert {L._t101_expected(m["eps"]) for m in normal if m["eps"] > L.EPSILON_STAR} == {"CERTIFIED_WITH_MARGIN"}
+    mismatches = [m for m in normal
+                  if R.documented_code(m["A"], m["P"], (1.0, 0.5))["code"] != L._t101_expected(m["eps"])]
+    assert mismatches == []
+    offline = {f["claim"]: f for f in L._t101_offline(meta)}
+    assert offline["The documented decision order, transcribed in CIW, places the family's threshold at eps* in "
+                   "the normal range"]["evidence_status"] == "numerically_verified"
+
+
 def test_eigvalsh_scaling_window():
     inside, _ = L._eigvalsh_window()
     assert inside and all(inside)
+
+
+def test_discrete_razor_edge_sits_at_the_threshold():
+    rng = R.generator(4242)
+    for side in (-1.0, 1.0):
+        A, P, ratio = R.razor_edge_discrete(rng, 2, side)
+        assert 1.0 < ratio < 1.1
+        code = R.documented_code(A, P, np.ones(2), "discrete")["code"]
+        assert code == ("CERTIFIED_WITH_MARGIN" if side < 0 else "DECREASE_NOT_DEFINITE")
+        assert R.resolution_bin(R.exact_form(A, P, "discrete"), R.resolution(A, P, "discrete")) in L.BAND
 
 
 def test_level_gate_prediction():
@@ -132,7 +186,7 @@ def test_documented_decision_order():
     assert predictions["theta, box [-1, 1]#4"] == "OUTSIDE_PARAMETER_BOX"
     assert predictions["stability a, A = [[a, 1], [-1, a]]#3"] == "NUMERICAL_INCONCLUSIVE"
     assert predictions["direction phi, A = diag(-1, 1)#4"] == "NOT_CERTIFIED"
-    assert {p for p in predictions.values()} >= set(R.RUNTIME_CODES) - {"CERTIFICATE_NOT_POSITIVE"}
+    assert set(predictions.values()) == set(L.ROUNDING_FREE_CODES)
 
 
 def test_documented_rule_is_monotone():
@@ -149,9 +203,11 @@ def test_numpy_misreads_exact_jordan_block():
     cases = [c for c in L.adversarial_cases() if c["group"] == "Jordan"]
     largest = max(cases, key=lambda c: c["A"].shape[0])
     lam = -largest["exact_spectrum"][0]
-    # A = T J T^-1 holds exactly (asserted while building); the float spectrum moves by about eps^(1/n).
+    # A = T J T^-1 with T Ti = I holds exactly (asserted while building); the float spectrum moves by eps^(1/n).
     error = abs(largest["numpy_abscissa"] + lam)
     assert error > 1e3 * np.finfo(float).eps * np.max(np.abs(largest["A"]))
+    assert all(abs(c["numpy_abscissa"] + (-c["exact_spectrum"][0])) > 1e3 * np.finfo(float).eps
+               * np.max(np.abs(c["A"])) for c in cases)
 
 
 def test_bridge_refuses_unusable_interpreter():
@@ -162,71 +218,133 @@ def test_bridge_refuses_unusable_interpreter():
     assert caught.value.code in ("PLSR_PYTHON_UNSUPPORTED", "PLSR_UNAVAILABLE")
 
 
-def test_provider_tasks_are_partial_without_the_provider(tmp_path):
-    report = _run("T106", tmp_path)
+@pytest.mark.parametrize("task_id", PROVIDER_TASKS)
+def test_provider_tasks_are_partial_without_the_provider(task_id, tmp_path):
+    report = _run(task_id, tmp_path)
     assert report["state"] == "partial"
-    assert "not bound" in report["experiment"]
-    labels = {f["claim"]: f["evidence_status"] for f in report["findings"]}
-    assert labels["A CERTIFIED_WITH_MARGIN verdict (operationally_acceptable) authorizes actuation"] == "not_established"
-    assert labels["The documented decision order, re-derived in CIW, assigns all nine codes to the constructed inputs"] \
-        == "numerically_verified"
+    assert "not bound" in report["experiment"] and "not bound" in report["unresolved_assumptions"][0]
     assert report["provider_runtime_identity"]["provider"]["executed"] is False
+    assert report["evidence_status"]["primary"] != "not_established"
+    assert all("provider" not in f["basis"] for f in report["findings"])
+    _regression_ready(report)
+
+
+def test_t106_offline_findings_without_the_provider(tmp_path):
+    report = _run("T106", tmp_path)
+    assert _label(report, "A CERTIFIED_WITH_MARGIN verdict (operationally_acceptable) authorizes actuation") \
+        == "not_established"
+    assert _label(report, "The documented decision order, transcribed in CIW, assigns the eight") \
+        == "numerically_verified"
 
 
 def test_t112_iss_branch(tmp_path):
     report = _run("T112", tmp_path)
-    assert report["state"] == "completed"
-    ratios = _finding(report, "Simulated sup sqrt(V)")
-    assert ratios["evidence_status"] == "numerically_verified" and max(ratios["value"].values()) < 1.0
-    assert _finding(report, "Quadratic ISS-Lyapunov bound")["evidence_status"] == "analytic"
-    assert _finding(report, "In one dimension")["value"]["ratio"] == pytest.approx(1.0, abs=1e-9)
-    assert _finding(report, "The series matrix exponential")["evidence_status"] == "independently_verified"
-    assert _finding(report, "The disturbance bound")["evidence_status"] == "not_established"
+    assert report["state"] == "completed" and report["evidence_status"]["primary"] == "analytic"
+    _regression_ready(report)
+    simulated = _finding(report, "For the four simulated disturbance classes")
+    assert simulated["evidence_status"] == "numerically_verified"
+    assert max(simulated["value"]["to_sharp_supremum"].values()) <= 1.0 + 1e-5
+    assert simulated["value"]["to_sharp_supremum"]["worst-case switching"] >= 0.98
+    sharp = _finding(report, "The sharp reachable-set supremum")
+    assert sharp["evidence_status"] == "numerically_verified"
+    assert sharp["value"]["sharp_supremum"] == pytest.approx(0.411754, rel=1e-5)
+    assert sharp["value"]["to_iss_bound"] < 0.26
+    assert _label(report, "Quadratic ISS-Lyapunov bound") == "analytic"
+    approached = _finding(report, "In one dimension")
+    assert approached["value"]["ratio"] == pytest.approx(1.0 - math.exp(-30.0), abs=1e-13)
+    # The oscillator's augmented matrix is diagonalisable, so an independent exponential always applies.
+    assert _label(report, "The series matrix exponential") == "independently_verified"
+    assert _label(report, "The disturbance bound") == "not_established"
     assert _finding(report, "The ISS bound defines a safe")["domain"] == "machine_safety"
     assert report["physical_validation_status"]["status"] == "not_established"
 
 
 def test_adapter_keeps_metadata_outside():
     windows = X.adapter_windows()
-    outcomes = [X.adapt(w["envelope"]) for w in windows]
-    host = [o["host_status"] for o in outcomes if "host_status" in o]
+    outcomes = {w["name"]: X.adapt(w["envelope"]) for w in windows}
+    host = [o["host_status"] for o in outcomes.values() if "host_status" in o]
     assert sorted(host) == ["CERTIFICATE_EXPIRED", "INVALID_SENSOR_DATA", "MODEL_MISMATCH", "STALE_STATE"]
-    samples = [o["sample"] for o in outcomes if "sample" in o]
-    assert len(samples) == 3 and all(tuple(s) == X.SAMPLE_FIELDS for s in samples)
+    forwarded = {name: o for name, o in outcomes.items() if "samples" in o}
+    assert len(forwarded) == 4
+    for outcome in forwarded.values():
+        samples, stats = outcome["samples"], outcome["statistics"]
+        assert tuple(samples) == X.SAMPLE_ROLES and all(tuple(s) == X.SAMPLE_FIELDS for s in samples.values())
+        assert samples["upper"]["theta"][0] == stats["theta"] + X.GUARD_SE * stats["theta_se"]
+    near = forwarded["estimate near bound theta 0.48"]
+    assert near["samples"]["estimate"]["theta"][0] <= X.ADAPTER_BOX[1] < near["samples"]["upper"]["theta"][0]
     envelope = windows[0]["envelope"]
-    assert X.metadata_leaks({"x": samples[0]["x"], "theta": samples[0]["theta"]}, envelope) == []
+    sample = forwarded["nominal theta 0.1"]["samples"]["estimate"]
+    assert X.metadata_leaks({"x": sample["x"], "theta": sample["theta"]}, envelope) == []
     assert X.metadata_leaks({"x": [0.0], "note": f"from {envelope['sensor_id']}"}, envelope) == [
         "value encoder-axis-7"]
     assert "key calibration_ref" in X.metadata_leaks({"calibration_ref": 1.0}, envelope)
 
 
+def _exponential_label():
+    optional = any(importlib.util.find_spec(name) is not None for name in ("scipy", "mpmath"))
+    return "independently_verified" if optional else "numerically_verified"
+
+
 def test_t114_servo_pilot_spec(tmp_path):
     report = _run("T114", tmp_path)
-    assert report["state"] == "completed"
+    assert report["state"] == "completed" and report["evidence_status"]["primary"] == "numerically_verified"
+    _regression_ready(report)
     grid = _finding(report, "The unit-balanced nominal P")
     assert grid["evidence_status"] == "numerically_verified" and grid["value"]["not_negative_definite"] == 0
     assert _finding(report, "With Q = I the nominal-model P")["counterexample"]
+    assert _label(report, "The ZOH exponential") == _exponential_label()
+    monitor = _finding(report, "Without a level set the monitor's code")
+    assert monitor["evidence_status"] == "numerically_verified"
+    assert monitor["value"]["codes_without_level"] == ["CERTIFIED_WITH_MARGIN"]
+    assert monitor["value"]["codes_with_level"] == ["CERTIFIED_WITH_MARGIN", "OUTSIDE_LEVEL_SET"]
+    assert monitor["value"]["level_mismatches"] == 0
+    assert _label(report, "Every runtime code named as an abort trigger") == "numerically_verified"
     for domain in ("machine_safety", "actuator_authority", "production_acceptance", "industrial_readiness",
                    "physical", "calibration"):
         assert [f["evidence_status"] for f in report["findings"] if f["domain"] == domain] == ["not_established"]
     spec = json.loads((tmp_path / "artifacts" / "T114" / "servo-pilot-spec.json").read_text(encoding="utf-8"))
-    assert set(X.SERVO_SPEC_SECTIONS) <= set(spec)
+    assert set(X.SERVO_SPEC_SECTIONS) <= set(spec)  # schema guard for the retained specification
     assert spec["authority_and_safety"]["actuator_authority"].startswith("none")
+    criteria = " ".join(spec["abort_criteria"])
+    assert "OUTSIDE_LEVEL_SET" in criteria and "OUTSIDE_PARAMETER_BOX" not in criteria
+    assert "NOT_CERTIFIED or DECREASE_NOT_DEFINITE" not in criteria
+    assert spec["lyapunov_check_scope"]["runtime_codes"]["abort_on"] == ["OUTSIDE_LEVEL_SET"]
+
+
+def test_research_tasks_without_optional_modules(tmp_path, monkeypatch):
+    # The plain CI job has NumPy only: neither exponential check may depend on SciPy or mpmath.
+    for name in ("scipy", "scipy.linalg", "mpmath"):
+        monkeypatch.setitem(sys.modules, name, None)
+    augmented = np.zeros((3, 3))
+    _, models = X.servo_models()
+    augmented[:2, :2], augmented[:2, 2:] = models[0]["A"], models[0]["B"]
+    assert X.independent_expm(augmented * X.SERVO["Ts_s"]) is None  # defective: no eigendecomposition
+    servo = _run("T114", tmp_path / "servo")
+    assert servo["state"] == "completed"
+    exponential = _finding(servo, "The ZOH exponential")
+    assert exponential["evidence_status"] == "numerically_verified"
+    assert exponential["value"]["max_abs_difference_independent"] is None
+    iss = _run("T112", tmp_path / "iss")
+    assert iss["state"] == "completed"
+    assert _label(iss, "The series matrix exponential") == "independently_verified"
+    assert "numpy.linalg.eig" in _finding(iss, "The series matrix exponential")["basis"]["independent_check"][
+        "checker"]["implementation"]
 
 
 # Provider-backed ---------------------------------------------------------------
 
 @needs_provider
 def test_bridge_verifies_the_source_pin():
+    python = _provider()
     tampered = manifest()
     tampered["files"]["runtime.py"] = "0" * 64
     with pytest.raises(ProviderRefusal) as caught:
-        run_plsr(PLSR_PYTHON, [], pin=tampered)
+        run_plsr(python, [], pin=tampered)
     assert caught.value.code == "PLSR_SOURCE_MISMATCH" and "runtime.py" in str(caught.value)
     wrong = dict(manifest(), package_version="0.0.0")
     with pytest.raises(ProviderRefusal, match="PLSR_VERSION_MISMATCH"):
-        run_plsr(PLSR_PYTHON, [], pin=wrong)
-    identity = run_plsr(PLSR_PYTHON, [{"id": "c", "op": "constants"}])["identity"]
+        run_plsr(python, [], pin=wrong)
+    identity = run_plsr(python, [{"id": "c", "op": "constants"}])["identity"]
     assert identity["files_verified"] == identity["files_pinned"] == 20
     assert identity["commit"] == "19ea6967060166ba09db6cd4563bd87bd6b3d196"
 
@@ -234,111 +352,172 @@ def test_bridge_verifies_the_source_pin():
 @needs_provider
 def test_t101_resolution_floor(reports):
     report = reports["T101"]
-    assert report["state"] == "completed"
-    assert _finding(report, "PLSR decrease_resolution equals")["evidence_status"] == "independently_verified"
+    _completed(report, "analytic")
+    assert _label(report, "PLSR decrease_resolution equals") == "numerically_verified"
     inside = _finding(report, "Inside the binary64 normal range")
-    assert inside["value"]["threshold_mismatches"] == 0 and inside["value"]["max_normalised_resolution_deviation"] == 0.0
-    witness = _finding(report, "Below the normal range")
-    assert witness["value"]["code"] == "CERTIFIED_WITH_MARGIN" and witness["value"]["exact_det_units2"] == -1.0
-    assert witness["counterexample"]["statement"].startswith("The float64 resolution floor")
+    assert inside["evidence_status"] == "numerically_verified"
+    assert inside["value"]["analytic_mismatches"] == inside["value"]["unit_scale_mismatches"] == 0
+    assert inside["value"]["max_normalised_resolution_deviation"] == 0.0
+    assert _label(report, "NUMERICAL_OVERFLOW first appears") == "numerically_verified"
+    witness = _finding(report, "A subnormal plant whose declared decrease form")
+    assert witness["evidence_status"] == "numerically_verified"
+    assert witness["value"]["exact_det_units2"] == -1.0 and witness["value"]["resolution"] == 0.0
+    if witness["value"]["certified"]:
+        assert witness["counterexample"]["statement"].startswith("The float64 resolution floor")
 
 
 @needs_provider
 def test_t102_power_of_two_scaling(reports):
     report = reports["T102"]
+    _completed(report, "numerically_verified")
     inside = _finding(report, "Power-of-two scaling of (A, P, x) inside")
     assert inside["value"]["code_flips"] == 0 and inside["value"]["ratio_changes"] == 0
-    assert _finding(report, "Scaling the subnormal witness")["value"] == {
-        "scaled_code": "CERTIFIED_WITH_MARGIN", "unit_code": "DECREASE_NOT_DEFINITE"}
-    assert all(f["evidence_status"] != "not_established" for f in report["findings"])
+    assert inside["evidence_status"] == "numerically_verified"
+    discrete = _finding(report, "Scaling P and x by powers of two")
+    assert discrete["value"] == {"code_flips": 0, "evaluations": 36}
+    outside = _finding(report, "Outside LAPACK's scaling window")
+    assert outside["value"]["unsound"] == 0 and outside["evidence_status"] == "numerically_verified"
+    assert _label(report, "No unscaled PLSR verdict certifies") == "independently_verified"
+    witness = _finding(report, "Scaling the witness by 2^-1074")
+    assert witness["value"]["unit_code"] == "DECREASE_NOT_DEFINITE"
+    assert bool(witness.get("counterexample")) == (witness["value"]["scaled_code"] != "DECREASE_NOT_DEFINITE")
 
 
 @needs_provider
 def test_t103_overflow_underflow(reports):
     report = reports["T103"]
-    assert _finding(report, "PLSR decides the level gate")["value"]["disagreements"] == 0
-    assert _finding(report, "The PLSR level gate misses")["value"]["missed"] == 5
-    assert _finding(report, "The PLSR level gate reports")["value"]["spurious"] == 9
-    assert _finding(report, "Non-finite states")["value"] == {"inf": "raises ValueError", "nan": "raises ValueError"}
+    _completed(report, "numerically_verified")
+    gate = _finding(report, "PLSR decides the level gate")
+    assert gate["value"]["disagreements"] == 0 and gate["evidence_status"] == "numerically_verified"
+    missed = _finding(report, "The PLSR level gate misses")
+    assert missed["value"]["missed"] == 5 and missed["evidence_status"] == "numerically_verified"
+    spurious = _finding(report, "The PLSR level gate reports")
+    assert spurious["value"]["spurious"] == 9 and spurious["counterexample"]
+    refused = _finding(report, "Non-finite states")
+    assert refused["value"] == {"inf": "raises ValueError", "nan": "raises ValueError"}
+    assert refused["evidence_status"] == "numerically_verified"
     theta = _finding(report, "A finite in-box theta")
     assert theta["value"]["theta:+1e308,c=2"] == "raises ValueError"
     assert theta["value"]["theta:+1e308,c=1"] == "NUMERICAL_OVERFLOW"
-    assert _finding(report, "A subnormal plant matrix")["counterexample"]
+    assert _label(report, "A subnormal plant whose declared decrease form") == "numerically_verified"
 
 
 @needs_provider
 def test_t104_semidefinite_edges(reports):
     report = reports["T104"]
+    _completed(report, "numerically_verified")
     sound = _finding(report, "PLSR never certifies a semidefinite")
     assert sound["evidence_status"] == "independently_verified" and sound["value"]["violations"] == 0
     assert _finding(report, "Every edge-case code")["value"]["unexpected_codes"] == 0
     refusals = _finding(report, "PLSR's Lyapunov solver and certificate constructor")["value"]
     assert refusals["solve:psdQ"] == refusals["quadratic:psd"] == "raises ValueError"
+    candidates = _finding(report, "No verdict certifies with a P that quadratic() accepts")
+    assert candidates["value"]["certifying_verdicts"] == 0
+    assert candidates["evidence_status"] == "numerically_verified"
 
 
 @needs_provider
 def test_t105_unit_scales(reports):
     report = reports["T105"]
+    _completed(report, "numerically_verified")
     assert _finding(report, "Interior and boundary stiffness samples")["value"]["mismatches"] == 0
-    assert _finding(report, "A parameter just above the SI bound")["value"] == {
-        "SI": "OUTSIDE_PARAMETER_BOX", "x1e-3": "CERTIFIED_WITH_MARGIN"}
-    assert _finding(report, "A parameter exactly on the SI bound")["value"] == {
-        "SI": "CERTIFIED_WITH_MARGIN", "x1e-3": "OUTSIDE_PARAMETER_BOX"}
+    assert _label(report, "check_vertices passes") == "numerically_verified"
+    collision = _finding(report, "A parameter just above the SI bound")
+    assert collision["value"] == {"SI": "OUTSIDE_PARAMETER_BOX", "x1e-3": "CERTIFIED_WITH_MARGIN"}
+    assert collision["evidence_status"] == "numerically_verified" and collision["counterexample"]
+    formula = _finding(report, "A parameter exactly on the SI bound")
+    assert formula["value"] == {"SI": "CERTIFIED_WITH_MARGIN", "x1e-3": "OUTSIDE_PARAMETER_BOX"}
+    assert _label(report, "The declared box bounds 8 and 12 N/m") == "numerically_verified"
     light = _finding(report, "The light-damping plant's verdict")
     assert light["value"]["m, s, N/m"] == "CERTIFIED_WITH_MARGIN"
     assert light["value"]["m, ms, N/m"] == "NUMERICAL_INCONCLUSIVE"
-    assert _finding(report, "The declared stiffness box")["evidence_status"] == "not_established"
+    assert light["evidence_status"] == "numerically_verified"
+    assert _label(report, "The declared stiffness box") == "not_established"
 
 
 @needs_provider
 def test_t106_status_coverage(reports):
     report = reports["T106"]
-    coverage = _finding(report, "All nine runtime-status-v1 codes")
-    assert coverage["evidence_status"] == "independently_verified"
-    assert sorted(coverage["value"]["codes"]) == sorted(R.RUNTIME_CODES)
+    _completed(report, "numerically_verified")
+    coverage = _finding(report, "The eight rounding-free runtime-status-v1 codes")
+    assert coverage["evidence_status"] == "numerically_verified"
+    assert sorted(coverage["value"]["codes"]) == sorted(L.ROUNDING_FREE_CODES)
+    assert _label(report, "Codes along each one-parameter path") == "numerically_verified"
+    witnesses = _finding(report, "The exactly indefinite P witnesses")
+    assert witnesses["value"]["certifying"] == 0 and witnesses["evidence_status"] == "numerically_verified"
     host = _finding(report, "The runtime refuses to emit")["value"]
     assert all(v == {"Verdict": "raises ValueError", "require_status": "raises ValueError"} for v in host.values())
     constants = _finding(report, "Pinned runtime constants")
     assert constants["value"]["DECREASE_RESOLUTION_FACTOR"] == 1.0
     assert constants["evidence_status"] == "numerically_verified"
+    assert _label(report, "A CERTIFIED_WITH_MARGIN verdict") == "not_established"
 
 
 @needs_provider
 def test_t107_inconclusive_band(reports):
     report = reports["T107"]
+    _completed(report, "provider_backed")
+    for prefix in ("No near-boundary case receives", "Beyond two resolutions", "With a declared margin of three"):
+        assert _label(report, prefix) == "independently_verified"
     assert _finding(report, "No near-boundary case receives")["value"]["violations"] == 0
     assert _finding(report, "Beyond two resolutions")["value"]["unresolved"] == 0
     assert _finding(report, "With a declared margin of three")["value"]["certified"] == 0
+    band = _finding(report, "At required_margin 0 near-boundary spectra")
+    assert band["evidence_status"] == "numerically_verified" and band["counterexample"]
+    assert band["value"]["certified"] >= 1 and band["value"]["unsound"] == 0
+    assert "T107 specification" in band["counterexample"]["statement"]
     assert _finding(report, "MARGIN_LOW appears exactly")["value"]["margin_low_observed"] is True
+    assert _label(report, "Share of exactly") == "provider_backed"
+    assert set(_finding(report, "Share of exactly")["value"]) == {"inconclusive_share"}
 
 
 @needs_provider
 def test_t108_margin_monotonicity(reports):
     report = reports["T108"]
-    totals = _finding(report, "Increasing required_margin")["value"]
-    assert sum(totals[k] for k in ("passing_regained", "meets_regained", "noncertifying_code_changed",
-                                   "inequality_changed")) == 0
+    _completed(report, "analytic")
+    monotone = _finding(report, "Increasing required_margin")
+    assert monotone["evidence_status"] == "numerically_verified"
+    assert sum(monotone["value"][k] for k in ("passing_regained", "meets_regained", "noncertifying_code_changed",
+                                               "inequality_changed")) == 0
     assert _finding(report, "The switch from CERTIFIED_WITH_MARGIN")["value"]["mismatches"] == 0
     assert set(_finding(report, "Negative and non-finite")["value"].values()) == {"raises ValueError"}
+    assert _label(report, "Monotonicity of the verdict") == "analytic"
 
 
 @needs_provider
 def test_t109_adversarial_eigenvalues(reports):
     report = reports["T109"]
-    assert _finding(report, "Every certifying PLSR verdict")["value"]["violations"] == 0
+    _completed(report, "numerically_verified")
+    sound = _finding(report, "Every certifying PLSR verdict")
+    assert sound["value"]["violations"] == 0 and sound["evidence_status"] == "independently_verified"
     agreement = _finding(report, "PLSR Lyapunov solutions agree")
     assert agreement["evidence_status"] == "independently_verified"
-    assert agreement["value"]["max_relative_difference"] < 1e-6
+    assert agreement["value"]["max_normalised_difference"] <= 10.0
+    assert agreement["value"]["max_relative_difference"] < 1e-12
     assert _finding(report, "Certified non-normal plants")["value"]["max_ratio"] <= 1.0
-    assert _finding(report, "With P = I the non-normal plants")["value"]["mismatches"] == 0
+    threshold = _finding(report, "With P = I the non-normal plants")
+    assert threshold["value"]["mismatches"] == 0
+    assert threshold["value"]["codes"]["non-normal K=2.82"] == "CERTIFIED_WITH_MARGIN"
+    assert threshold["value"]["codes"]["non-normal K=2.83"] != "CERTIFIED_WITH_MARGIN"
+    solver = _finding(report, "PLSR's solve_lyapunov returns only exactly valid")
+    assert solver["evidence_status"] == "independently_verified"
+    refused = _finding(report, "solve_lyapunov refuses an exactly Hurwitz plant")
+    assert refused["evidence_status"] == "numerically_verified"
+    assert "Jordan n=4, lambda=2^-6" in refused["value"]["plants"] and refused["counterexample"]
+    assert _label(report, "numpy.linalg.eigvals misplaces") == "numerically_verified"
 
 
 @needs_provider
 def test_t110_time_interpretation(reports):
     report = reports["T110"]
-    assert _finding(report, "PLSR certifies each matrix")["value"]["mismatches"] == 0
+    _completed(report, "numerically_verified")
+    own = _finding(report, "PLSR certifies each matrix")
+    assert own["value"]["mismatches"] == 0 and own["evidence_status"] == "independently_verified"
+    cross = _finding(report, "No Lyapunov P solved for one convention")
+    assert cross["value"]["unsound"] == 0 and cross["evidence_status"] == "independently_verified"
     differing = _finding(report, "The two time interpretations")["value"]
     assert differing["differing"] == differing["off_quadrant_matrices"] == 20
+    assert differing["pattern_mismatches"] == 0
     table = _finding(report, "Diagonal plants with P = I")["value"]
     assert table["diag(-1.5, -0.25) continuous"] == "CERTIFIED_WITH_MARGIN"
     assert table["diag(-1.5, -0.25) discrete"] == "NOT_CERTIFIED"
@@ -348,19 +527,39 @@ def test_t110_time_interpretation(reports):
 @needs_provider
 def test_t111_routes(reports):
     report = reports["T111"]
-    assert _finding(report, "PLSR Lyapunov solutions agree")["value"]["max_relative_difference"] < 1e-9
-    assert _finding(report, "The PLSR matrix route certifies")["value"]["mismatches"] == 0
+    _completed(report, "numerically_verified")
+    for time in ("continuous", "discrete"):
+        agreement = _finding(report, f"PLSR {time}-time Lyapunov solutions agree")
+        assert agreement["evidence_status"] == "independently_verified"
+        assert agreement["value"]["max_relative_difference"] < 1e-9
+        checker = agreement["basis"]["independent_check"]["checker"]["implementation"]
+        assert checker.startswith((f"scipy.linalg.solve_{time}_lyapunov", "ciw.lab.lyapunov_reference"))
+    solver = _finding(report, "PLSR's solve_lyapunov returns a P exactly")
+    assert solver["value"]["mismatches"] == 0 and solver["evidence_status"] == "independently_verified"
+    assert solver["value"]["refused"] == len(solver["basis"]["checks"]) == 20
+    verdicts = _finding(report, "PLSR's verdict certifies every numpy-stable plant")
+    assert verdicts["value"] == {"stable_not_certified": 0, "unstable_certified_with_identity": 0}
+    assert verdicts["evidence_status"] == "independently_verified"
     thin = _finding(report, "The scalar route sees decrease")
     assert thin["value"]["plsr_codes"] == {"DECREASE_NOT_DEFINITE": 64} and thin["counterexample"]
+    assert _label(report, "For n = 1 the PLSR verdict") == "numerically_verified"
 
 
 @needs_provider
 def test_t113_residual_adapter(reports):
     report = reports["T113"]
-    assert report["state"] == "completed"
-    codes = _finding(report, "Forwarded samples receive")["value"]
-    assert codes["nominal theta 0.1"] == "CERTIFIED_WITH_MARGIN"
-    assert codes["estimate outside box theta 0.9"] == "OUTSIDE_PARAMETER_BOX"
+    _completed(report, "numerically_verified")
+    codes = _finding(report, "Forwarded samples receive")
+    assert codes["evidence_status"] == "numerically_verified"
+    assert set(codes["value"]["nominal theta 0.1"].values()) == {"CERTIFIED_WITH_MARGIN"}
+    assert codes["value"]["estimate near bound theta 0.48"]["upper"] == "OUTSIDE_PARAMETER_BOX"
+    assert codes["value"]["estimate outside box theta 0.9"]["estimate"] == "OUTSIDE_PARAMETER_BOX"
+    accepted = _finding(report, "The host accepts a window only when")
+    assert accepted["value"]["accepted"] == {"nominal theta 0.1": True, "nominal theta -0.3": True,
+                                             "estimate near bound theta 0.48": False,
+                                             "estimate outside box theta 0.9": False}
+    assert accepted["evidence_status"] == "numerically_verified"
     assert set(_finding(report, "The kernel refuses every host-owned code")["value"].values()) == {"raises ValueError"}
     assert _finding(report, "Kernel payloads built by the adapter carry only")["value"]["metadata_leaks"] == []
-    assert _finding(report, "The synthetic residual statistics")["evidence_status"] == "not_established"
+    assert _label(report, "The synthetic residual statistics") == "not_established"
+    assert _label(report, "The EKF standard error of theta covers") == "not_established"
