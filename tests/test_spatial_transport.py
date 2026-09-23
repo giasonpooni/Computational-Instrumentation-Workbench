@@ -63,7 +63,7 @@ def test_native_mutation_spatial_observation_and_restore(tmp_path):
                 retained = session.workbench.serialize()
                 restored = type(session.workbench).restore(retained)
                 assert restored.inspect_spatial({"source_id": added["source_id"]}) == packet
-                assert all(not item["available"] for item in restored.describe_operations())
+                assert {item["operation_id"] for item in restored.describe_operations() if item["available"]} == {"ciw.energy-accuracy.v1"}
     asyncio.run(exercise())
 
 

@@ -18,13 +18,14 @@ operating point.
 
 ## Shared operating session
 
-The [Workbench desktop tab](EXPERIMENT_VIEW.md) projects all twenty-one shared workflow
+The [Workbench desktop tab](EXPERIMENT_VIEW.md) projects all twenty-two shared workflow
 kinds through `experiment.inspect`: retained measurements, state/covariance,
 residuals, native dependencies, evidence and verification. It follows committed
 session changes and keeps replay occurrences separate. This read-only display
 adds no estimator or scientific operation; existing SET/ICRH profiles remain the
-numerical conformance boundaries. Physical acquisition and arbitrary algebraic or
-topological workload dispatch remain pending.
+numerical conformance boundaries. GPU energy acquisition is available through the explicit host CLI; shared
+energy operations analyze retained logs. Other physical-stream acquisition and
+arbitrary algebraic/topological dispatch remain pending.
 
 The live Session now hosts `ciw.telemetry.v1`, `ciw.calibrated-observable.v1` and
 `ciw.identified-design.v1`, plus `ciw.calibrated-window.v1`,
@@ -195,3 +196,12 @@ meaning matches; retain versioned mappings where it does not. Update this
 matrix, the provider's boundary and the operating guide with the same change.
 An optional integration test that skipped because its provider was unavailable
 does not count as execution evidence.
+
+## Workstation energy to accuracy
+
+[GPU energy capture](ENERGY_ACCURACY.md) connects a real NVML accumulated counter
+to bounded CUDA Gaussian inference. The shared `energy-accuracy` operation
+retains exact logs and reproduces analysis with fresh identities; replay does
+not repeat physical acquisition. Counter coverage, target failures and
+synthetic provenance remain explicit. CPU/whole-machine energy, calibrated
+uncertainty and thermal-state estimation remain future work.

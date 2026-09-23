@@ -166,7 +166,7 @@ async def run_server(session: Session, port: int = 8765, bind: str = "127.0.0.1"
         # Browser origins are explicitly bound to the read-only spatial endpoint.
         # The handler repeats the restriction even when embedded in another server.
         async with serve(bridge.handler, bind, port, origins=[None, *bridge.spatial_view_origins],
-                         max_size=1_048_576, max_queue=16, close_timeout=2):
+                         max_size=8 * 1024 * 1024, max_queue=4, close_timeout=2):
             started = True
             print(f"Computational Instrumentation Workbench: ws://{bind}:{port}", flush=True)
             print(f"Session {session.session_id} | {session.run['run_id']} | Ctrl+C to stop", flush=True)

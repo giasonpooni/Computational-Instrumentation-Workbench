@@ -145,7 +145,7 @@ def test_real_socket_replay_retains_stable_batch_and_all_fresh_executions(retain
     # Saving/reopening must not lose the second PPDA execution to batch deduplication.
     restored = Session.from_workspace(session.save_workspace(tmp_path / "replayed.json"), tmp_path / "restored")
     assert response(restored, "execution.list") == response(session, "execution.list")
-    assert all(not o["available"] for o in restored.workbench.describe_operations())
+    assert {o["operation_id"] for o in restored.workbench.describe_operations() if o["available"]} == {"ciw.energy-accuracy.v1"}
 
 
 def test_cbsr_consumes_retained_estimate_and_reuses_raw_observations(retained, repositories, tmp_path):
@@ -260,7 +260,7 @@ def test_telemetry_candidate_replays_and_captures_through_same_session(retained,
     path = session.save_workspace(tmp_path / "saved.json")
     restored = Session.from_workspace(path, tmp_path / "restored")
     assert response(restored, "candidate.get", {"candidate_id": capture["candidate_id"]}) == capture
-    assert all(not o["available"] for o in restored.workbench.describe_operations())
+    assert {o["operation_id"] for o in restored.workbench.describe_operations() if o["available"]} == {"ciw.energy-accuracy.v1"}
     # Restore cannot silently treat legacy telemetry as a calibrated process.
     saved = read_json(path)["workbench"]
     changed = saved["candidates"][0]

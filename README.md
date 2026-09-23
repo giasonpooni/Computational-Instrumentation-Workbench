@@ -18,7 +18,7 @@ The implementation is terminal-first, with a Python service and an optional
 Godot desktop. Instruments retain their numerical methods behind explicit
 contracts; the workbench connects their execution, inspection and replay.
 
-Twenty-one scientific workflow kinds share one local session for sources,
+Twenty-two scientific workflow kinds share one local session for sources,
 declared models, compatible sensor fusion, instrument results and replay
 evidence. Each scientific provider retains ownership of its calculations.
 The workbench supplies a common catalog, explicit operation requests, retained
@@ -39,6 +39,10 @@ The [variational free-energy demonstration](docs/VARIATIONAL_FREE_ENERGY.md)
 combines curved-path sensitivity, Gaussian sensor fusion and a Lyapunov check
 of the inference iteration. Six retained synthetic cases distinguish posterior
 agreement and optimization progress from truth error and held-out coverage.
+The [energy-to-accuracy bench](docs/ENERGY_ACCURACY.md) adds actual NVIDIA GPU
+energy capture around the Gaussian solver, with separate joule, elapsed-time
+and posterior-accuracy records. Its shared operation analyzes retained logs
+without acquiring new measurements.
 See the [assembly guide](docs/WORKBENCH_ASSEMBLY.md) for host bindings and
 the [integration coverage matrix](docs/INTEGRATION_COVERAGE.md) for exact scope.
 
@@ -94,13 +98,16 @@ execution, result and verification identities remain distinct. Reopening a
 workspace validates retained records without silently recomputing them;
 explicit replay creates new execution/result identities.
 
-The built-in examples are synthetic. Successful computation, content integrity
+The checked-in examples are synthetic; the energy capture command records
+actual supported GPU counters. Successful computation, content integrity
 and matching replay digests do not establish physical validity or calibration
-traceability. The Workbench tab presents twenty-one shared scientific workflows;
+traceability. The Workbench tab presents twenty-two shared scientific workflows;
 other external integrations expose terminal and JSON records as described below.
 
 ## Next engineering benchmark
 
+GPU energy capture now provides a first physical workstation testbed. Its
+counter accuracy and measurement uncertainty remain uncharacterized.
 The next planned milestone is one calibrated physical experiment carried through
 the investigation workflow. It should include a characterized reference,
 documented calibration, an uncertainty budget, deliberately introduced faults
@@ -176,12 +183,13 @@ establish physical validation or deployment readiness.
 | SCR/SP1 registered heat proof (`ciw.proved-heat.v1`) | Bounded proof operation; requires the pinned Linux host and registered guest | Native integer computation, real proof production, full-ELF verification, retained proof bytes, fresh replay and explicit retained-proof reverification | [Setup, claim and native gate](docs/PROVED_HEAT.md) |
 | Geometry providers (`ciw.covariance-geometry.v1`, `ciw.mesh-path.v1`, `ciw.translation-flow.v1`) | Bounded native SPD geometry, mesh-edge paths and square-tiled dynamics | Exact native requests/results, numerical evidence, fresh replay, explicit partial-flow states and provider-free inspection | [Profiles and shared session](docs/GEOMETRY_RESEARCH.md) |
 | Variational free-energy sensor fusion (`ciw.variational-free-energy.v1`) | Synthetic CSG → GSIE → PLSR composition with a bounded Gaussian variational kernel | Exact posterior comparison, mean/covariance iteration, normalized KL gap, held-out prediction, empirical coverage, stable/unstable iteration assessment and fresh replay | [Mathematics, six cases and operating guide](docs/VARIATIONAL_FREE_ENERGY.md) |
+| GPU energy to accuracy (`ciw.energy-accuracy.v1`) | Actual NVML counter capture and bounded CUDA Gaussian iteration; built-in offline analysis | Raw timestamped readings, independent posterior accuracy, separate startup/warmed phases, background-inclusive GPU joules, retained replay | [Measurement boundary and operating guide](docs/ENERGY_ACCURACY.md) |
 | Flat Torus Geodesic Reference (`ciw.flat-torus-reference.v1`) | Pinned native flat-lattice reference in the shared session | Retain winding, normalized trajectory, geometry digest, replay and independent analytic checks | [Setup and scope](docs/GEODESIC_REFERENCES.md) |
 | Curved Surface Geodesic Sensitivity (`ciw.curved-path-transfer.v1`) | Pinned native constant-curvature Jacobi transfer in the shared session | Retain transfer samples, separation, declared covariance and independent reference checks | [Setup and scope](docs/GEODESIC_REFERENCES.md) |
 
 The [integration coverage matrix](docs/INTEGRATION_COVERAGE.md) distinguishes
 executable paths, conformance coverage, and the next connections between
-existing instruments. The shared session connects the twenty-one workflow kinds
+existing instruments. The shared session connects the twenty-two workflow kinds
 to a common source, operation and result history. New scientific paths retain
 original, replay and adversarial evidence. The matrix distinguishes independent
 ICRH profiles from CIW-only checks and pending conformance work.

@@ -400,13 +400,53 @@ def parser() -> argparse.ArgumentParser:
         action.add_argument("--python", dest="python_executable", type=Path)
     for action in (geodesic_create, geodesic_inspect, geodesic_replay):
         action.add_argument("--json", action="store_true", help="Print covariance, identities and complete provenance")
+    energy = commands.add_parser("energy", help="Capture GPU energy or replay retained energy/accuracy logs")
+    energy_actions = energy.add_subparsers(dest="energy_command", required=True)
+    energy_probe = energy_actions.add_parser("probe", help="Read an actual NVML counter without running a workload")
+    energy_probe.add_argument("--gpu-index", type=int, default=0)
+    energy_record = energy_actions.add_parser("record", help="Run a bounded Gaussian GPU experiment into a new directory")
+    energy_record.add_argument("--problem", type=Path, required=True)
+    energy_record.add_argument("--output-dir", type=Path, required=True)
+    energy_record.add_argument("--duration", type=float, default=3)
+    energy_record.add_argument("--replicas", type=int, default=4096)
+    energy_record.add_argument("--iterations", type=int)
+    energy_record.add_argument("--gpu-index", type=int, default=0)
+    energy_record.add_argument("--max-batches", type=int, default=2048)
+    energy_record.add_argument("--warmup-batches", type=int, default=2)
+    energy_record.add_argument("--idle-duration", type=float, default=1)
+    energy_replay = energy_actions.add_parser("replay", help="Recompute analysis from raw logs; never acquire new measurements")
+    energy_replay.add_argument("path", type=Path)
+    energy_replay.add_argument("--output", type=Path)
     return root
 
 
 def main(argv: list[str] | None = None) -> int:
     args = parser().parse_args(argv)
     try:
-        if args.command == "demo":
+        if args.command == "energy":
+            if args.energy_command == "probe":
+                from .energy_bench import probe
+                print_json(probe(args.gpu_index))
+            elif args.energy_command == "record":
+                from .energy_bench import capture
+                log, report = capture(read_json(args.problem), args.output_dir,
+                    minimum_duration_s=args.duration, replicas=args.replicas, iterations=args.iterations,
+                    device_index=args.gpu_index, max_batches=args.max_batches,
+                    warmup_batches=args.warmup_batches, idle_duration_s=args.idle_duration)
+                print_json({"log_file": str(args.output_dir / "log.json"), "log_digest": log["log_digest"],
+                            "measurement": report["measurement"], "comparison": report["comparison"]})
+            else:
+                from .energy_records import analyze, MAX_BYTES
+                from .adapters.subprocess import _json
+                with args.path.open("rb") as stream:
+                    raw = stream.read(MAX_BYTES + 1)
+                if len(raw) > MAX_BYTES:
+                    raise ValueError("Energy source exceeds its exact-byte size bound")
+                report = analyze(_json(raw))
+                if args.output:
+                    _write_new_proof_report(args.output, report)
+                print_json(report)
+        elif args.command == "demo":
             run = make_demo_run()
             write_json(args.output, run)
             print_json({"recording_file": str(args.output), "run_id": run["run_id"],
@@ -651,7 +691,7 @@ def main(argv: list[str] | None = None) -> int:
                 return 3
         return 0
     except KeyboardInterrupt:
-        return 0
+        return 130 if args.command == "energy" and args.energy_command == "record" else 0
     except AdapterRefusal as exc:
         print(f"ciw: {exc.code}: {exc}", file=sys.stderr)
         return 2

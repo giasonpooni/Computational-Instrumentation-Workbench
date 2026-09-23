@@ -15,11 +15,11 @@ from threading import RLock
 
 from .adapters.protocol import AdapterRefusal
 from .adapters.subprocess import _json
-DECLARED_KINDS = frozenset({"schematic-assessment", "numerical-heat", "proved-heat", "schematic-companions", "bim-quantity", "acquired-dataset", "residual-monitor", "measurement-chain", "geometric-circle", "identified-stability", "flat-torus-reference", "curved-path-transfer", "covariance-geometry", "mesh-path", "translation-flow", "variational-free-energy"})
+DECLARED_KINDS = frozenset({"schematic-assessment", "numerical-heat", "proved-heat", "schematic-companions", "bim-quantity", "acquired-dataset", "residual-monitor", "measurement-chain", "geometric-circle", "identified-stability", "flat-torus-reference", "curved-path-transfer", "covariance-geometry", "mesh-path", "translation-flow", "variational-free-energy", "energy-accuracy"})
 REPRODUCED_KINDS = DECLARED_KINDS - {"proved-heat"}
 UPSTREAM_KINDS = {"identified-design": "calibrated-observable", "schematic-companions": "schematic-assessment",
                   "acquired-calibrated-window": "acquired-dataset", "identified-stability": "identified-design"}
-INSTRUMENT_ROLES = frozenset({"ppda", "tbrt", "mcur", "stfe", "gsie", "cbsr", "fdir", "oit", "sra", "scr", "cse", "rci", "fsrt", "jspt", "gte", "plsr", "ftr", "csg", "cggt", "isgt", "tsde"})
+INSTRUMENT_ROLES = frozenset({"ppda", "tbrt", "mcur", "stfe", "gsie", "cbsr", "fdir", "oit", "sra", "scr", "cse", "rci", "fsrt", "jspt", "gte", "plsr", "ftr", "csg", "cggt", "isgt", "tsde", "energy"})
 
 SCHEMA = "ciw.retained-workbench.v1"
 SOURCE_SCHEMA = "ciw.workbench-source.v1"
@@ -45,6 +45,7 @@ OPERATIONS = {
     "mesh-path": "ciw.mesh-path.v1",
     "translation-flow": "ciw.translation-flow.v1",
     "variational-free-energy": "ciw.variational-free-energy.v1",
+    "energy-accuracy": "ciw.energy-accuracy.v1",
 }
 WORKFLOW_OPERATION_IDS = frozenset(OPERATIONS.values())
 from .candidate_evidence import OPERATIONS as CANDIDATE_OPERATIONS
@@ -56,6 +57,9 @@ _OVERHEAD = 4096
 
 
 def _workflow(kind):
+    if kind == "energy-accuracy":
+        from .energy_workflow import EnergyAccuracyWorkflow
+        return EnergyAccuracyWorkflow()
     if kind == "variational-free-energy":
         from .free_energy_workflow import FreeEnergyWorkflow
         return FreeEnergyWorkflow()
@@ -265,6 +269,14 @@ def _claims(record):
         from .free_energy_workflow import identity_claims
         for identity, (role, body) in identity_claims(record["native"]).items():
             claim(identity, role, body)
+    if record["kind"] == "energy-accuracy":
+        native = record["native"]
+        data = native["steps"][0]["result"]["data"]
+        occurrence = native["source"]["experiment_id"]
+        # Reanalysis may reuse the same log; one capture occurrence cannot be
+        # rebound to changed evidence and masquerade as another measurement.
+        claim(occurrence, "retained_energy_log_occurrence", {"log_digest": data["log_digest"], "origin": data["origin"]})
+        claim(data["log_digest"], "retained_energy_log", {"run_id": occurrence, "origin": data["origin"]})
     return claims
 
 
@@ -540,7 +552,7 @@ class Workbench:
         self._lock = RLock()
         self._sources = {}
         self._bundles = {}
-        self._bindings = {}
+        self._bindings = {"energy-accuracy": {}}
         self._candidate_adapters = {}
         self._candidates = {}
         self._identities = {operation: ("operation", _digest(operation)) for operation in WORKFLOW_OPERATION_IDS}
@@ -576,7 +588,7 @@ class Workbench:
 
     def describe_operations(self):
         with self._lock:
-            return [{"operation_id": operation, "role": {"identified-design": "decision", "schematic-assessment": "schematic_assessment", "numerical-heat": "numerical_execution", "proved-heat": "proved_numerical_execution", "schematic-companions": "local_model_analysis", "bim-quantity": "construction_quantity", "acquired-dataset": "evidence_acquisition", "residual-monitor": "residual_diagnostics", "measurement-chain": "measurement_chain_testbed", "geometric-circle": "geometric_reconciliation", "identified-stability": "stability_assessment", "flat-torus-reference": "geometric_reference", "curved-path-transfer": "geometric_sensitivity", "covariance-geometry": "covariance_geometry", "mesh-path": "mesh_path_baseline", "translation-flow": "translation_dynamics", "variational-free-energy": "variational_inference"}.get(kind, "state_estimator"),
+            return [{"operation_id": operation, "role": {"identified-design": "decision", "schematic-assessment": "schematic_assessment", "numerical-heat": "numerical_execution", "proved-heat": "proved_numerical_execution", "schematic-companions": "local_model_analysis", "bim-quantity": "construction_quantity", "acquired-dataset": "evidence_acquisition", "residual-monitor": "residual_diagnostics", "measurement-chain": "measurement_chain_testbed", "geometric-circle": "geometric_reconciliation", "identified-stability": "stability_assessment", "flat-torus-reference": "geometric_reference", "curved-path-transfer": "geometric_sensitivity", "covariance-geometry": "covariance_geometry", "mesh-path": "mesh_path_baseline", "translation-flow": "translation_dynamics", "variational-free-energy": "variational_inference", "energy-accuracy": "offline_energy_accuracy_analysis"}.get(kind, "state_estimator"),
                      "source_kind": kind, "available": kind in self._bindings,
                      "requires_upstream_bundle": kind in UPSTREAM_KINDS,
                      **({"requires_upstream_bundles": "explicit_ordered_source_selection"} if kind == "residual-monitor" else {})}
@@ -907,6 +919,9 @@ class Workbench:
                 raise ValueError("Unknown retained workbench bundle")
             source = self._sources[record["source_id"]]
             declaration = _json(base64.b64decode(source["bytes_b64"], validate=True))
+            if record["kind"] == "energy-accuracy":
+                from .energy_view import project as project_energy
+                return project_energy(record, source, declaration, self._revision)
             if record["kind"] == "variational-free-energy":
                 from .free_energy_view import project as project_free_energy
                 return project_free_energy(record, source, declaration, self._revision)
@@ -1006,7 +1021,7 @@ class Workbench:
 
     @classmethod
     def restore(cls, value):
-        """Validate all saved data before returning an unbound workbench."""
+        """Validate saved data; only builtin offline analysis remains available."""
         try:
             if len(_canonical(value)) > MAX_BYTES:
                 raise ValueError("Retained workbench exceeds the byte budget")
