@@ -167,7 +167,8 @@ def cpu_energy_per_trajectory(ctx):
                 {"generator": dict(generator, steps=STEPS),
                  "checks": [_check("great circle cos(L) X0 + sin(L) T0", float(np.max(work["fixed_errors"])), 1e-8)]},
                 unit="normalized length", tolerance={"abs": 1e-12, "rel": 1e-3}),
-        finding("Adaptive Dormand-Prince 5(4) (rtol 1e-9) right-hand-side evaluations per trajectory",
+        finding("Adaptive Dormand-Prince 5(4) (rtol 1e-9) reaches every great-circle endpoint within 1e-7 with "
+                "these right-hand-side evaluation counts per trajectory",
                 "numerical", evaluations,
                 {"generator": dict(generator, rtol=1e-9, atol=1e-12),
                  "checks": [_check("great circle endpoint", float(np.max(work["adaptive_errors"])), 1e-7)]},
@@ -210,8 +211,8 @@ def cpu_energy_per_trajectory(ctx):
         numerical_result=f"{4 * STEPS} evaluations per RK4 trajectory; max endpoint error "
                          f"{float(np.max(work['fixed_errors'])):.3g}; adaptive evaluations {evaluations}; energy: "
                          + ("measured, see findings" if measured else "not measured (" + reason + ")"),
-        uncertainty="Work counts are exact; energy would carry RAPL model error, background load and a "
-                    "counter resolution of about 15 uJ that are not characterized here.",
+        uncertainty="Work counts are exact; a RAPL energy would carry model error, background load and a "
+                    "model-dependent counter unit (commonly 2^-16 J), none characterized here.",
         failure_modes_checked=["evaluation count differs from 4N", "endpoint error exceeds 1e-8",
                                "RAPL absent or unreadable (permission)", "RAPL counter wrap (one wrap allowed)"],
         unresolved_assumptions=["Evaluation counts are a work proxy, not an energy measurement",
@@ -243,8 +244,11 @@ PLAN_T116 = {
     "numerical_result": "none: no NVIDIA GPU or NVML in this environment",
     "uncertainty": "NVML counter resolution, update interval and accuracy are undeclared; energy is device-wide and "
                    "includes background work; host brackets add call overhead.",
-    "failure_modes_checked": ["counter reset or wrap", "missing endpoint brackets", "sensor/workload UUID mismatch",
-                              "accuracy target not met", "minimum duration not met"],
+    "failure_modes_checked": ["hardware:nvidia-gpu probe (nvidia-smi -L): no device here",
+                              "acquisition gate exercised by regression tests on synthetic logs: synthetic origin, "
+                              "absent or differing host NVML identity",
+                              "planned on a captured log (energy_records.analyze): counter reset or wrap, missing "
+                              "endpoint brackets, sensor/workload UUID mismatch, KL target, minimum duration"],
     "unresolved_assumptions": ["Blocked here: no NVIDIA GPU or NVML", "The RTX 2080 driver exposes the total-energy "
                                "counter (NVML documents it for Volta and newer); confirm with `ciw energy probe`"],
     "recommended_next_task": "T118: record utilization, temperature, power and kernel duration in the same session",
@@ -267,8 +271,11 @@ PLAN_T118 = {
     "numerical_result": "none: no NVIDIA GPU in this environment",
     "uncertainty": "NVML power is a vendor estimate with undeclared averaging; 100 ms sidecar sampling aliases short "
                    "batches; profiling perturbs timing and energy, so it is a separate pass.",
-    "failure_modes_checked": ["context reading unavailable (retained error code)", "device is not an RTX 2080",
-                              "UUID absent from the host", "sidecar missing"],
+    "failure_modes_checked": ["hardware:nvidia-gpu probe (nvidia-smi -L): no device here",
+                              "acquisition gate exercised by regression tests on synthetic logs: device is not an "
+                              "RTX 2080, synthetic origin",
+                              "planned on a captured log: context readings unavailable (retained error codes), "
+                              "sidecar missing or naming another UUID"],
     "unresolved_assumptions": ["Blocked here: no NVIDIA GPU", "Batch windows in log.json include launch, "
                                "synchronization and copy; they are not kernel durations"],
     "recommended_next_task": "T147: compare CPU and GPU outputs of the same workload on the RTX 2080 host",
@@ -282,7 +289,7 @@ def _stats(values):
     return {"min": min(values), "mean": math.fsum(values) / len(values), "max": max(values), "count": len(values)}
 
 
-def operator_log_outcome(ctx, task_id, raw, log, analysis, listing, smi_text=None):
+def operator_log_outcome(ctx, task_id, raw, log, analysis, host_identity, smi_text=None):
     """Findings from an operator-captured NVML log; physical labels only through the acquisition gate."""
     from ciw import energy_records
     from ciw.telemetry import canonical
@@ -295,7 +302,7 @@ def operator_log_outcome(ctx, task_id, raw, log, analysis, listing, smi_text=Non
                                           0.0, kind="exact_arithmetic")]})
     findings = [pipeline]
     if task_id == "T116":
-        basis, reasons = telemetry.physical_basis(raw, log, analysis, listing)
+        basis, reasons = telemetry.physical_basis(raw, log, analysis, host_identity)
         batches = measurement["batch_count"]
         value = (measurement["gross_energy_j"] / batches) if measurement["gross_energy_j"] is not None and batches else None
         if value is None:
@@ -310,7 +317,7 @@ def operator_log_outcome(ctx, task_id, raw, log, analysis, listing, smi_text=Non
                                                        measurement["target_kl_nats"], comparison="le")]},
                                     unit="nat", tolerance={"abs": 1e-12, "rel": 1e-6}))
     else:
-        basis, reasons = telemetry.physical_basis(raw, log, analysis, listing, required_name="RTX 2080")
+        basis, reasons = telemetry.physical_basis(raw, log, analysis, host_identity, required_name="RTX 2080")
         samples = log["phases"][3]["samples"]
         power = _stats(s["power_mw"] / 1000 if s["power_mw"] is not None else None for s in samples)
         temperature = _stats(s["temperature_c"] for s in samples)
@@ -322,13 +329,15 @@ def operator_log_outcome(ctx, task_id, raw, log, analysis, listing, smi_text=Non
                                    ("Host-bracketed batch solve duration (launch, sync and copy included)", durations, "ms")):
             findings.append(finding(claim, "physical", value, basis if value is not None else {"notes": reasons},
                                     unit=unit, tolerance={"abs": 0.0, "rel": 1.0}))
-        utilization = None
+        utilization, smi_reasons = None, [] if smi_text else ["no nvidia-smi sidecar was supplied"]
         if smi_text:
             columns = telemetry.smi_columns(smi_text)
             key = next((k for k in columns if k.startswith("utilization.gpu")), None)
-            utilization = _stats(columns[key]) if key else None
-        smi_basis = {"notes": reasons + ([] if smi_text else ["no nvidia-smi sidecar was supplied"])}
-        if utilization is not None and not reasons:
+            utilization = _stats(telemetry.numbers(columns[key])) if key else None
+            if {value.lower() for value in columns.get("uuid", [])} != {log["sensor"]["device_uuid"].lower()}:
+                smi_reasons.append("sidecar rows do not all name the log's device UUID")
+        smi_basis = {"notes": reasons + smi_reasons}
+        if utilization is not None and not reasons and not smi_reasons:
             smi_basis = {"acquisition": dict(basis["acquisition"],
                                              raw_sha256=hashlib.sha256(smi_text.encode()).hexdigest(),
                                              device=basis["acquisition"]["device"] + " via nvidia-smi sidecar")}
@@ -338,13 +347,19 @@ def operator_log_outcome(ctx, task_id, raw, log, analysis, listing, smi_text=Non
                                         "log.json brackets launch, synchronization and copy; kernel spans need an "
                                         "Nsight Systems pass", unit="ms"))
     ctx.artifact_json("operator-log-analysis.json", {"analysis": analysis, "withheld_reasons": reasons,
-                                                     "gpu_listing": listing})
+                                                     "host_sensor_identity": host_identity})
     plan = PLAN_T116 if task_id == "T116" else PLAN_T118
     measured = all(f["evidence_status"] == "hardware_measured" for f in findings if f["domain"] == "physical")
     fields = _fields(**{k: v for k, v in plan.items()})
     fields["experiment"] = "Analyzed the operator-captured log named by CIW_LAB_ENERGY_LOG. Protocol: " + plan["experiment"]
     fields["numerical_result"] = f"gross measurement energy {measurement['gross_energy_j']} J over " \
                                  f"{measurement['batch_count']} batches; physical findings withheld: {reasons or 'none'}"
+    fields["failure_modes_checked"] = [
+        "energy_records.validate_log structure and digest", "analysis recomputed from the retained bytes",
+        "analysis eligibility: counter reset or wrap, endpoint brackets, sensor/workload UUID, KL target, durations",
+        "acquisition gate: declared origin and host NVML identity (UUID, name, driver, NVML version, library digest)"]
+    if task_id == "T118":
+        fields["failure_modes_checked"] += ["device name contains RTX 2080", "sidecar rows name the same UUID"]
     fields["unresolved_assumptions"] = ["A sealed log proves internal integrity, not that the capture was genuine",
                                         *reasons]
     return {"state": "completed" if measured else "partial", "fields": fields, "findings": findings}
@@ -362,12 +377,14 @@ def _operator_log_task(ctx, task_id):
     raw, log, analysis = telemetry.read_operator_log(path)
     smi_path = telemetry.environment_log_path(telemetry.SMI_ENV)
     smi_text = open(smi_path, encoding="utf-8").read() if smi_path else None
-    return operator_log_outcome(ctx, task_id, raw, log, analysis, telemetry.gpu_listing(), smi_text)
+    host = telemetry.host_sensor_identity(log["sensor"]["device_uuid"])
+    return operator_log_outcome(ctx, task_id, raw, log, analysis, host, smi_text)
 
 
 @task("T116", changed_files=FILES, requires=("hardware:nvidia-gpu",), plan=PLAN_T116, regression_tests=(
     f"{TESTS}::test_gpu_tasks_are_blocked_with_the_recording_protocol",
-    f"{TESTS}::test_operator_log_gate_withholds_physical_labels_from_synthetic_logs"))
+    f"{TESTS}::test_operator_log_gate_withholds_physical_labels_from_synthetic_logs",
+    f"{TESTS}::test_operator_log_gate_trust_boundary_is_the_host_identity"))
 def gpu_energy_per_batch(ctx):
     return _operator_log_task(ctx, "T116")
 
@@ -605,7 +622,7 @@ def energy_per_accepted_result(ctx):
                    "gross/executed ratio and with a whole-run boundary.",
         numerical_result=f"baseline E_acc = {recomputed} J per accepted solve (synthetic); withheld for "
                          f"{sorted(withheld)}; naive under-target ratio {naive} J/solve with 0 accepted; "
-                         f"whole-run boundary ratio {ratio}.",
+                         f"whole-run boundary ratio {ratio:.6g}.",
         uncertainty="Synthetic values carry no physical uncertainty model; a real NVML counter has undeclared "
                     "resolution and background-inclusive scope.",
         failure_modes_checked=["counter reset", "missing endpoint brackets", "accuracy target not met",
@@ -618,7 +635,7 @@ def energy_per_accepted_result(ctx):
 
 # ----------------------------------------------------------------- T120
 PRECISION_GRID = (16, 32, 64, 128, 256, 512, 1024, 2048)
-TARGETS = (1e-4, 1e-5, 1e-7, 1e-9, 1e-11)
+TARGETS = (1e-4, 1e-5, 1e-7, 1e-10, 1e-11)
 
 
 def _precision_study():
@@ -823,9 +840,8 @@ def reduction_order_conclusions(ctx):
                 {"generator": generator,
                  "checks": [_check("orders with the wrong sign", wrong64, 0.0, kind="exact_arithmetic")]},
                 tolerance={"abs": 0.0, "rel": 0.0}),
-        finding("Threshold decisions guarded by the a priori bound never contradict across emulated orders",
-                "numerical", {k: {"contradictions": g["contradictions"], "undecided_fraction": g["undecided_fraction"]}
-                              for k, g in guards.items()},
+        finding("Threshold decisions guarded by the a priori bound never contradict across emulated orders "
+                "(unguarded decisions S > T do flip at some thresholds)", "numerical", guards,
                 {"generator": generator,
                  "checks": [_check("contradicting decisions over 17 thresholds x 4 datasets",
                                    sum(g["contradictions"] for g in guards.values()), 0.0, kind="exact_arithmetic")]},
@@ -1012,14 +1028,17 @@ def bounded_free_energy(ctx):
 
 
 # ----------------------------------------------------------------- T123
-def _keys(value):
+def numeric_fields(value, key=None):
+    """Names of fields holding numbers (decimal counter strings included), recursively."""
     if isinstance(value, dict):
-        for key, child in value.items():
-            yield key
-            yield from _keys(child)
+        for name, child in value.items():
+            yield from numeric_fields(child, name)
     elif isinstance(value, list):
         for child in value:
-            yield from _keys(child)
+            yield from numeric_fields(child, key)
+    elif key is not None and ((isinstance(value, (int, float)) and not isinstance(value, bool))
+                              or (isinstance(value, str) and value.isdigit())):
+        yield key
 
 
 def classify_field(name: str) -> str | None:
@@ -1066,10 +1085,16 @@ def free_energy_distinct_from_energy(ctx):
     energy_sources = [energy_records.analyze(json.loads(raws["baseline"])), json.loads(raws["baseline"])] if raws else []
     vi_sources = [run["fit"]["trace"], free_energy_math.free_energy(run["normalized"]["problem"], last["mean"],
                                                                     last["covariance"])]
-    energy_fields = sorted({k for source in energy_sources for k in _keys(source) if classify_field(k) == "energy"})
-    info_in_energy = sorted({k for source in energy_sources for k in _keys(source) if classify_field(k) == "information"})
-    vi_fields = sorted({k for source in vi_sources for k in _keys(source) if classify_field(k) == "information"})
-    energy_in_vi = sorted({k for source in vi_sources for k in _keys(source) if classify_field(k) == "energy"})
+    energy_numbers = {k for source in energy_sources for k in numeric_fields(source)}
+    vi_numbers = {k for source in vi_sources for k in numeric_fields(source)}
+    joule_fields = sorted(k for k in energy_numbers if classify_field(k) == "energy")
+    nat_fields = sorted(k for k in energy_numbers if classify_field(k) == "information")
+    vi_fields = sorted(k for k in vi_numbers if classify_field(k) == "information")
+    # An energy-named number without a joule-family unit token is ambiguous in an energy record.
+    ambiguous = sorted(k for k in energy_numbers if "energy" in k and classify_field(k) != "energy")
+    free_in_energy = sorted(k for k in energy_numbers if k.startswith("free_energy"))
+    joules_in_vi = sorted(k for k in vi_numbers if classify_field(k) == "energy")
+    vi_energy_named = sorted(k for k in vi_numbers if "energy" in k and classify_field(k) != "information")
     panels = {}
     if raws:
         view = ctx.memo("energy-gpu-session", lambda: telemetry.session_replay(raws))["baseline_view"]
@@ -1087,14 +1112,18 @@ def free_energy_distinct_from_energy(ctx):
                             _check("ln 2", bits, 1e-15, kind="exact_arithmetic"),
                             _check("F + log Z = KL", identity, 1e-10, kind="invariant")]},
                 tolerance={"abs": 1e-10, "rel": 0.0}),
-        finding("CIW energy records and free-energy records use disjoint unit-bearing fields", "provenance",
-                {"energy_fields": energy_fields, "information_fields": vi_fields, "panel_units": panels},
-                {"checks": [_check("fixtures available", 0.0 if raws else 1.0, 0.0, kind="exact_arithmetic"),
-                            _check("information-class fields in energy logs other than kl_*_nats",
-                                   len([k for k in info_in_energy if not k.endswith("_nats")]), 0.0,
+        finding("CIW energy records and free-energy records keep joules and nats in distinct unit-bearing fields",
+                "provenance", {"energy_record_joule_fields": joule_fields, "energy_record_nat_fields": nat_fields,
+                               "variational_nat_fields": vi_fields, "panel_units": panels},
+                {"checks": [_check("fixtures available (1 = missing)", 0.0 if raws else 1.0, 0.0, kind="exact_arithmetic"),
+                            _check("energy-named numbers in energy records without a J/mJ/mW unit token",
+                                   len(ambiguous), 0.0, kind="exact_arithmetic"),
+                            _check("free_energy fields in energy records", len(free_in_energy), 0.0,
                                    kind="exact_arithmetic"),
-                            _check("energy-class fields in variational records", len(energy_in_vi), 0.0,
+                            _check("J/mJ/mW fields in variational records", len(joules_in_vi), 0.0,
                                    kind="exact_arithmetic"),
+                            _check("energy-named variational numbers outside the free-energy (nat) family",
+                                   len(vi_energy_named), 0.0, kind="exact_arithmetic"),
                             _check("experiment view panels mixing units", mixed_panels, 0.0, kind="exact_arithmetic")]}),
         finding("An untyped sum of free energy and physical energy changes when the energy unit changes", "numerical",
                 {"free_energy_nats": f_nats, "energy_j": e_joules, "sum_with_joules": f_nats + e_joules,
@@ -1109,9 +1138,10 @@ def free_energy_distinct_from_energy(ctx):
                         "by the computation", "relating nats to joules needs a declared physical system and "
                         "temperature (for example k_B T per nat) and a measured device"),
     ]
-    ctx.artifact_json("field-audit.json", {"energy_fields": energy_fields, "information_fields_in_energy_records":
-                                           info_in_energy, "information_fields": vi_fields,
-                                           "energy_fields_in_variational_records": energy_in_vi,
+    ctx.artifact_json("field-audit.json", {"energy_record_joule_fields": joule_fields,
+                                           "energy_record_nat_fields": nat_fields, "variational_nat_fields": vi_fields,
+                                           "ambiguous_energy_numbers": ambiguous, "free_energy_in_energy_records":
+                                           free_in_energy, "joules_in_variational_records": joules_in_vi,
                                            "panel_units": panels, "refusals": refusals})
     fields = _fields(
         hypothesis="Variational free energy (nats, information) and device energy (joules) are different dimensions; "
@@ -1124,8 +1154,8 @@ def free_energy_distinct_from_energy(ctx):
         expected_invariant="nat + J, nat < J and J -> nat refused; same-dimension arithmetic exact; no field or panel "
                            "mixes the two dimensions.",
         experiment="Exercise the typed algebra; classify every field name by unit token; inspect experiment panels.",
-        numerical_result=f"refusals {refusals}; energy fields {energy_fields}; information fields {vi_fields}; "
-                         f"panel units {panels}.",
+        numerical_result=f"refusals {refusals}; joule fields {joule_fields}; nat fields in energy records "
+                         f"{nat_fields}; variational nat fields {vi_fields}; panel units {panels}.",
         uncertainty="Field classification is by naming convention (unit tokens); a field without a unit token is "
                     "not classified.",
         failure_modes_checked=["implicit nat/J addition", "cross-dimension comparison", "silent conversion",
@@ -1291,11 +1321,15 @@ def replay_energy_reports(ctx):
                             _check("bundles retained minus 2 per fixture", replay["bundle_count"] - 2 * len(rows), 0.0,
                                    kind="exact_arithmetic")]},
                 tolerance={"abs": 0.0, "rel": 0.0}),
-        finding("Replaying a retained bundle whose numerical result was edited is refused", "provenance",
-                replay["refusals"],
+        finding("Replaying a retained bundle whose numerical result was edited is refused, with or without "
+                "resealed envelopes", "provenance", replay["refusals"],
                 {"generator": generator,
-                 "checks": [_refusal("EnergyAccuracyWorkflow.replay_session on an edited bundle",
-                                     "Retained energy analysis binding differs", replay["refusals"].get("edited_bundle"))]}),
+                 "checks": [_refusal("replay_session on an edited bundle (stale digests)",
+                                     "Energy analysis bundle identity, schema or size differs",
+                                     replay["refusals"].get("edited_bundle")),
+                            _refusal("replay_session on an edited bundle with recomputed digests",
+                                     "Retained energy analysis binding differs",
+                                     replay["refusals"].get("edited_and_resealed_bundle"))]}),
         _no_measurement("Replayed energy values are physically valid measurements",
                         "replay recomputes the same retained synthetic readings; it acquires nothing"),
     ]
@@ -1315,7 +1349,7 @@ def replay_energy_reports(ctx):
         experiment="Run every fixture through one Session, replay it, compare identities, save and restore the "
                    "workspace, and replay an edited copy of the baseline bundle.",
         numerical_result=f"distinct numerical ids {distinct_numerical}; fresh identities {fresh}; restored equal "
-                         f"{replay['restored_equal']}; edited replay: {replay['refusals'].get('edited_bundle')}.",
+                         f"{replay['restored_equal']}; edited replays refused: {replay['refusals']}.",
         uncertainty="Exact; the numerical ids themselves may differ across platforms if float results differ in the "
                     "last bit, so only their stability within a run is asserted.",
         failure_modes_checked=["numerical id drift between original and replay", "reused execution identity",

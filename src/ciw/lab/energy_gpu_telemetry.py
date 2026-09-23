@@ -20,7 +20,6 @@ import hashlib
 import json
 import os
 from pathlib import Path
-import subprocess
 import tempfile
 
 REPO_ROOT = Path(__file__).resolve().parents[3]
@@ -32,11 +31,15 @@ SMI_ENV = "CIW_LAB_NVIDIA_SMI_CSV"
 
 
 # RAPL ---------------------------------------------------------------------
-def rapl_domains(root=POWERCAP) -> list:
-    """Top-level package domains ``intel-rapl:N`` with their name and wrap range."""
+def rapl_domains(root=POWERCAP, separator=":") -> list:
+    """Top-level package domains ``intel-rapl:N`` with their name and wrap range.
+
+    ``separator`` exists so tests can mimic the tree on file systems that
+    forbid ':' in names.
+    """
     domains = []
-    for directory in sorted(Path(root).glob("intel-rapl:*")):
-        if directory.name.count(":") != 1 or not (directory / "energy_uj").is_file():
+    for directory in sorted(Path(root).glob(f"intel-rapl{separator}*")):
+        if directory.name.count(separator) != 1 or not (directory / "energy_uj").is_file():
             continue  # subzones (intel-rapl:0:0) are contained in their package
         name = (directory / "name").read_text().strip() if (directory / "name").is_file() else directory.name
         limit = directory / "max_energy_range_uj"
@@ -154,13 +157,20 @@ def raw_inventory(log) -> dict:
 
 
 # Operator-captured NVML logs (GPU host only) --------------------------------
-def gpu_listing() -> str:
-    """``nvidia-smi -L`` output of this host (device names and UUIDs), or empty text."""
+SENSOR_BINDING = ("device_uuid", "name", "driver_version", "nvml_version", "library_sha256")
+
+
+def host_sensor_identity(device_uuid: str) -> dict | None:
+    """NVML identity of the device with this UUID on this host (no counter read), or None."""
     try:
-        done = subprocess.run(["nvidia-smi", "-L"], capture_output=True, text=True, timeout=10)
-    except (OSError, subprocess.TimeoutExpired):
-        return ""
-    return done.stdout if done.returncode == 0 else ""
+        from ciw.energy_nvml import NVMLEnergyCounter, NVMLUnavailable
+    except ImportError:
+        return None
+    try:
+        with NVMLEnergyCounter(uuid=device_uuid) as counter:
+            return counter.identity()
+    except (NVMLUnavailable, ValueError, OSError):
+        return None
 
 
 def _utc(ns_decimal: str) -> str:
@@ -169,23 +179,29 @@ def _utc(ns_decimal: str) -> str:
     return f"{stamp}.{remainder:09d}Z"
 
 
-def physical_basis(raw: bytes, log, analysis, listing: str, required_name: str | None = None) -> tuple[dict, list]:
-    """Acquisition basis for a physical finding, or an empty basis and the reasons it is withheld.
+def physical_basis(raw: bytes, log, analysis, host_identity: dict | None,
+                   required_name: str | None = None) -> tuple[dict, list]:
+    """Acquisition basis for a physical finding, or a notes-only basis and the reasons it is withheld.
 
     A retained log supports a physical claim here only when it declares a
-    physical measurement, its analysis is eligible, its sensor UUID is a device
-    present on this host, and (optionally) the device has the required name.
-    These checks bind the record to hardware on this host; they do not
-    authenticate that the operator's capture was genuine.
+    physical measurement, its analysis is eligible, and its sensor identity
+    (UUID, name, driver, NVML version and NVML library digest) equals the NVML
+    identity of that device on this host; optionally the device name must
+    contain ``required_name``. This binds the record to hardware and software
+    present on this host. It does not authenticate that the operator's capture
+    was genuine: no signature ties the readings to the device.
     """
     reasons = []
     if log["origin"] != "physical_measurement":
         reasons.append("log declares a synthetic fixture, not a physical measurement")
     if not analysis["comparison"]["eligible"]:
         reasons.extend(analysis["comparison"]["reasons"] or ["analysis is not eligible for comparison"])
-    uuid = log["sensor"]["device_uuid"].lower()
-    if uuid not in listing.lower():
-        reasons.append("sensor device UUID is not present on this host")
+    if host_identity is None:
+        reasons.append("no NVML device with the log's sensor UUID is present on this host")
+    else:
+        differing = [key for key in SENSOR_BINDING if host_identity.get(key) != log["sensor"].get(key)]
+        if differing:
+            reasons.append("log sensor identity differs from this host's NVML identity: " + ", ".join(differing))
     if required_name and required_name.lower() not in log["sensor"]["name"].lower():
         reasons.append(f"sensor device is not an {required_name}")
     if reasons:
@@ -207,7 +223,7 @@ def read_operator_log(path) -> tuple[bytes, dict, dict]:
 
 
 def smi_columns(text: str) -> dict:
-    """Parse ``nvidia-smi --query-gpu=... --format=csv,nounits`` text into numeric columns."""
+    """Split ``nvidia-smi --query-gpu=... --format=csv,nounits`` text into columns of raw cells."""
     lines = [line for line in text.splitlines() if line.strip()]
     if not lines:
         return {}
@@ -215,11 +231,19 @@ def smi_columns(text: str) -> dict:
     columns = {name: [] for name in header}
     for line in lines[1:]:
         for name, cell in zip(header, line.split(",")):
-            try:
-                columns[name].append(float(cell.strip()))
-            except ValueError:
-                columns[name].append(None)
+            columns[name].append(cell.strip())
     return columns
+
+
+def numbers(cells) -> list:
+    """Numeric cells as floats; unavailable readings ("[N/A]", blanks) become None."""
+    out = []
+    for cell in cells:
+        try:
+            out.append(float(cell))
+        except ValueError:
+            out.append(None)
+    return out
 
 
 # Offline replay through a ciw Session ----------------------------------------
@@ -270,20 +294,43 @@ def session_replay(raws: dict) -> dict:
             }
             if name == "baseline":
                 views[name] = call("experiment.inspect", {"bundle_id": original["bundle_id"]})
-                # A retained bundle whose numerical data was edited cannot be replayed.
-                tampered = deepcopy(first)
-                tampered["steps"][0]["result"]["data"]["measurement"]["gross_energy_j"] = 99.0
-                try:
-                    EnergyAccuracyWorkflow().replay_session(tampered, {})
-                    refusals["edited_bundle"] = None
-                except ValueError as exc:
-                    refusals["edited_bundle"] = str(exc)
+                # An edited retained bundle cannot be replayed, whether or not its envelopes were resealed.
+                for label, resealed in (("edited_bundle", False), ("edited_and_resealed_bundle", True)):
+                    tampered = deepcopy(first)
+                    for step in (tampered["steps"][0], tampered["verification"]["reproduction"]):
+                        step["result"]["data"]["measurement"]["gross_energy_j"] = 99.0
+                    if resealed:
+                        reseal_bundle(tampered)
+                    try:
+                        EnergyAccuracyWorkflow().replay_session(tampered, {})
+                        refusals[label] = None
+                    except ValueError as exc:
+                        refusals[label] = str(exc)
         saved = call("workspace.save", {})
         restored = Session.from_workspace(Path(saved["workspace_file"]), Path(scratch) / "restored")
         restored_equal = restored.workbench.serialize() == session.workbench.serialize()
         bundle_count = len(session.workbench.serialize()["bundles"])
     return {"fixtures": rows, "refusals": refusals, "restored_equal": restored_equal,
             "bundle_count": bundle_count, "baseline_view": views.get("baseline")}
+
+
+def reseal_bundle(bundle):
+    """Recompute every envelope digest so a refusal reflects the edited content, not a stale hash."""
+    from ciw.telemetry import _bundle_digest, byte_digest, canonical, digest
+    for step in (bundle["steps"][0], bundle["verification"]["reproduction"]):
+        result = step["result"]
+        result["result_id"] = digest({k: v for k, v in result.items() if k != "result_id"})
+        step["result_id"], step["result_sha256"] = result["result_id"], digest(result)
+        step["request_sha256"] = digest(step["request"])
+        step["numerical_result"] = {"operation_id": step["operation_id"], "data": deepcopy(result["data"])}
+        step["numerical_result_id"] = digest(step["numerical_result"])
+    bundle["bundle_digest"] = _bundle_digest(bundle)
+    verification = bundle["verification"]
+    verification["subject_ref"] = bundle["bundle_digest"]
+    verification["runtime_digest"] = digest(bundle["runtimes"])
+    verification["verification_id"] = byte_digest(verification["schema"].encode() + b"\0" + canonical(
+        {k: v for k, v in verification.items() if k != "verification_id"}))
+    return bundle
 
 
 def environment_log_path(variable=LOG_ENV) -> str | None:

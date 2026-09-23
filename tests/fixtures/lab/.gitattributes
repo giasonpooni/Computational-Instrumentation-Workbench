@@ -1,0 +1,2 @@
+# Golden and malformed fixtures are exact bytes: no end-of-line normalization.
+* -text

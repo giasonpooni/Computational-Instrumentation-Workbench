@@ -215,33 +215,64 @@ def lateral_direction3(surface, u, tangent_chart) -> np.ndarray:
 
 
 # Surface area sampling and coverage ----------------------------------------
-def area_grid(surface, x_range, y_range, count):
-    """Chart grid points, their embedding and trapezoid area weights sqrt(det g) dx dy."""
-    xs = np.linspace(*x_range, count)
-    ys = np.linspace(*y_range, count)
-    wx = np.full(count, xs[1] - xs[0])
-    wx[[0, -1]] *= 0.5
-    wy = np.full(count, ys[1] - ys[0])
-    wy[[0, -1]] *= 0.5
-    points, weights = [], []
+@dataclass
+class AreaGrid:
+    """Midpoint-rule cells of a chart rectangle: column abscissae, embedded centres, area weights."""
+
+    xs: np.ndarray
+    points: np.ndarray    # (columns, rows, 3) embedded cell centres
+    weights: np.ndarray   # (columns, rows) sqrt(det g) dx dy
+
+
+def area_grid(surface, x_range, y_range, count) -> AreaGrid:
+    """Cell centres avoid the chart lines where abutting swaths touch, so knife-edge ties carry no area."""
+    dx = (x_range[1] - x_range[0]) / count
+    dy = (y_range[1] - y_range[0]) / count
+    xs = x_range[0] + dx * (np.arange(count) + 0.5)
+    ys = y_range[0] + dy * (np.arange(count) + 0.5)
+    points = np.empty((count, count, 3))
+    weights = np.empty((count, count))
     for i, x in enumerate(xs):
         for j, y in enumerate(ys):
             u = np.array([x, y])
-            points.append(surface.embedding(u))
-            weights.append(math.sqrt(np.linalg.det(surface.metric(u))) * wx[i] * wy[j])
-    return np.array(points), np.array(weights)
+            points[i, j] = surface.embedding(u)
+            weights[i, j] = math.sqrt(np.linalg.det(surface.metric(u))) * dx * dy
+    return AreaGrid(xs, points, weights)
 
 
-def coverage_fraction(points3d, weights, rows3d, swath) -> float:
-    """Area fraction within swath/2 (3D distance to the nearest row sample) of some row."""
-    nearest = np.full(len(points3d), np.inf)
-    for row in rows3d:
-        for chunk in range(0, len(row), 256):
-            block = row[chunk:chunk + 256]
-            d = np.sqrt(((points3d[:, None, :] - block[None, :, :]) ** 2).sum(axis=2)).min(axis=1)
-            np.minimum(nearest, d, out=nearest)
-    covered = nearest <= 0.5 * swath + 1e-12
-    return float(weights[covered].sum() / weights.sum())
+def _segment_distances(points, a, b) -> np.ndarray:
+    """Distances from points (m, 3) to segments a[k] -> b[k]; returns (m,) minima."""
+    ab = b - a
+    length2 = np.maximum((ab * ab).sum(axis=1), 1e-300)
+    ap = points[:, None, :] - a[None, :, :]
+    t = np.clip((ap * ab[None, :, :]).sum(axis=2) / length2[None, :], 0.0, 1.0)
+    closest = a[None, :, :] + t[:, :, None] * ab[None, :, :]
+    return np.sqrt(((points[:, None, :] - closest) ** 2).sum(axis=2)).min(axis=1)
+
+
+def nearest_row_distance(grid: AreaGrid, rows3d, reach) -> np.ndarray:
+    """3D distance from every cell centre to the nearest row polyline, exact within ``reach``.
+
+    A segment farther than ``reach`` in chart-aligned x cannot be within reach
+    in 3D (|dX| >= |dx|), so each column only examines nearby segments.
+    """
+    segments = [(np.asarray(r[:-1], dtype=float), np.asarray(r[1:], dtype=float)) for r in rows3d if len(r) > 1]
+    a = np.concatenate([s[0] for s in segments])
+    b = np.concatenate([s[1] for s in segments])
+    xa, xb = np.minimum(a[:, 0], b[:, 0]), np.maximum(a[:, 0], b[:, 0])
+    nearest = np.full(grid.weights.shape, np.inf)
+    for i, x in enumerate(grid.xs):
+        near = (xb >= x - reach) & (xa <= x + reach)
+        if near.any():
+            nearest[i] = _segment_distances(grid.points[i], a[near], b[near])
+    return nearest
+
+
+def coverage_fraction(grid: AreaGrid, rows3d, swath) -> float:
+    """Area fraction of the chart rectangle within swath/2 (3D distance) of some row polyline."""
+    nearest = nearest_row_distance(grid, rows3d, 0.5 * swath + 1e-9)
+    covered = nearest <= 0.5 * swath
+    return float(grid.weights[covered].sum() / grid.weights.sum())
 
 
 def clip_to_extent(points_u, x_range=COUPON_X, y_range=COUPON_Y) -> np.ndarray:

@@ -519,6 +519,14 @@ def mahalanobis_gating(ctx):
 
 
 # T068 ------------------------------------------------------------------------------
+def _longest_run(flags) -> int:
+    best = current = 0
+    for flag in flags:
+        current = current + 1 if flag else 0
+        best = max(best, current)
+    return best
+
+
 def outlier_study(seed: int = 68_2026, runs: int = 400, ticks: int = 100, rate: float = 0.05) -> dict:
     rng = generator(seed)
     F, Q = cv_model(DT, 0.05)
@@ -531,25 +539,33 @@ def outlier_study(seed: int = 68_2026, runs: int = 400, ticks: int = 100, rate: 
     p, gate = 0.99, chi2_quantile(0.99, 2)
     burn = 20
 
-    def score(result):
-        est = result["estimates"]
-        err = est[:, burn + 1:, :2] - truth[:, burn + 1:, :2]
-        cov = result["covariances"][:, 1:]
-        nees = np.einsum("rki,rki->rk", est[:, 1:] - truth[:, 1:],
-                         np.linalg.solve(cov, (est[:, 1:] - truth[:, 1:])[..., None])[..., 0])
-        return {"position_rmse": float(np.sqrt(np.mean(np.sum(err ** 2, axis=-1)))),
-                "grand_mean_nees": float(nees[:, burn:].mean())}
-
     def run(z, threshold=None, admit=None):
         return run_gated(F, Q, MU0, P0_BENCH, plan, [z[:, k] for k in range(ticks)], threshold=threshold, admit=admit)
 
-    clean_open = run(z_clean)
-    clean_gated = run(z_clean, gate)
+    def mse(result):
+        """Per-run mean squared position error after the burn-in."""
+        err = result["estimates"][:, burn + 1:, :2] - truth[:, burn + 1:, :2]
+        return np.mean(np.sum(err ** 2, axis=-1), axis=1)
+
+    def paired(a, b):
+        """z of the mean per-run MSE difference a - b (runs are independent)."""
+        d = a - b
+        return float(d.mean() / (d.std(ddof=1) / math.sqrt(len(d))))
+
+    def rmse(values, mask=None):
+        values = values if mask is None else values[mask]
+        return float(math.sqrt(values.mean()))
+
+    clean_open, clean_gated = run(z_clean), run(z_clean, gate)
     clean_rejected = np.stack([~a for a in clean_gated["accepted"]], axis=1)
+    mse_clean_open, mse_clean_gated = mse(clean_open), mse(clean_gated)
     out = {"seed": seed, "runs": runs, "ticks": ticks, "contamination_rate": rate, "gate_p": p, "gate": gate,
            "outliers": int(contaminated.sum()), "burn_in": burn,
-           "clean": {"ungated": score(clean_open), "gated": score(clean_gated),
-                     "false_alarm": rate_interval(int(clean_rejected.sum()), clean_rejected.size)},
+           "first_reading_outliers": int(contaminated[:, 0].sum()),
+           "clean": {"rmse_ungated": rmse(mse_clean_open), "rmse_gated": rmse(mse_clean_gated),
+                     "paired_mse_z_gated_minus_ungated": paired(mse_clean_gated, mse_clean_open),
+                     "false_alarm": rate_interval(int(clean_rejected.sum()), clean_rejected.size),
+                     "longest_valid_rejection_streak": max(_longest_run(r) for r in clean_rejected)},
            "cases": {}}
     for label, magnitude in (("gross", 1.5), ("subtle", 0.3)):
         z = z_clean + np.where(contaminated[..., None], magnitude * direction, 0.0)
@@ -567,13 +583,29 @@ def outlier_study(seed: int = 68_2026, runs: int = 400, ticks: int = 100, rate: 
         probability = 1.0 - noncentral_chi2_2_cdf_many(gate, lam)
         expected = float(probability.sum())
         spread = math.sqrt(float(np.sum(probability * (1 - probability))))
+        # Lock-out: a run in which at least five consecutive valid readings were rejected.
+        streaks = np.array([_longest_run(r) for r in rejected & ~contaminated])
+        locked = streaks >= 5
+        accepted_first = contaminated[:, 0] & ~rejected[:, 0]
+        m_u, m_g, m_o = mse(ungated), mse(gated), mse(oracle)
+        worst = int(np.argmax(m_g - m_o))
         out["cases"][label] = {
             "magnitude_m": magnitude, "outliers": int(contaminated.sum()),
             "detection": rate_interval(detected, int(contaminated.sum())),
             "false_alarm": rate_interval(false_alarm, int((~contaminated).sum())),
             "predicted_detection_rate": expected / int(contaminated.sum()),
             "detection_z": float((detected - expected) / spread) if spread > 0 else 0.0,
-            "ungated": score(ungated), "gated": score(gated), "oracle": score(oracle)}
+            "first_reading_detection_predicted": float(np.mean(probability[ticks_idx == 0])),
+            "rmse": {"ungated": rmse(m_u), "gated": rmse(m_g), "oracle": rmse(m_o)},
+            "rmse_without_lockout_runs": {"ungated": rmse(m_u, ~locked), "gated": rmse(m_g, ~locked),
+                                          "oracle": rmse(m_o, ~locked)},
+            "paired_mse_z_gated_minus_ungated": paired(m_g, m_u),
+            "lockout_runs": int(locked.sum()), "lockout_run_ids": np.nonzero(locked)[0],
+            "accepted_first_reading_outliers": int(accepted_first.sum()),
+            "lockout_runs_with_accepted_first_outlier": int(np.sum(locked & accepted_first)),
+            "worst_run": {"run": worst, "rmse_gated": float(math.sqrt(m_g[worst])),
+                          "rmse_oracle": float(math.sqrt(m_o[worst])), "longest_valid_rejection_streak":
+                              int(streaks[worst])}}
     scalar = noncentral_chi2_2_cdf(gate, 4.0)
     vector = float(noncentral_chi2_2_cdf_many(gate, [4.0])[0])
     out["noncentral_cdf_agreement"] = abs(scalar - vector)
@@ -581,59 +613,85 @@ def outlier_study(seed: int = 68_2026, runs: int = 400, ticks: int = 100, rate: 
 
 
 @task("T068", changed_files=FILES, regression_tests=(
-    f"{TESTS}::test_outlier_rejection_detection_and_error",
+    f"{TESTS}::test_outlier_rejection_detection_lockout_and_cost",
     f"{TESTS}::test_section_reports_labels_and_states"))
 def outlier_rejection(ctx):
     study = outlier_study()
     seed = study["seed"]
     gross, subtle, clean = study["cases"]["gross"], study["cases"]["subtle"], study["clean"]
     ctx.artifact_json("outliers.json", as_json(study))
-    labels = ["clean", "gross", "subtle"]
     ctx.artifact_text("rmse.svg", svg.line_plot(
-        [(name, [0, 1, 2], [clean[name]["position_rmse"] if name in clean else float("nan"),
-                            gross[name]["position_rmse"], subtle[name]["position_rmse"]])
-         for name in ("ungated", "gated")] +
-        [("oracle", [1, 2], [gross["oracle"]["position_rmse"], subtle["oracle"]["position_rmse"]])],
-        title="T068 position RMSE (0 clean, 1 gross 1.5 m, 2 subtle 0.3 m)", xlabel="data set",
-        ylabel="RMSE (m)"))
+        [("ungated", [0, 1, 2], [clean["rmse_ungated"], gross["rmse"]["ungated"], subtle["rmse"]["ungated"]]),
+         ("gated", [0, 1, 2], [clean["rmse_gated"], gross["rmse"]["gated"], subtle["rmse"]["gated"]]),
+         ("oracle", [1, 2], [gross["rmse"]["oracle"], subtle["rmse"]["oracle"]]),
+         ("gated, lock-out runs removed", [1, 2], [gross["rmse_without_lockout_runs"]["gated"],
+                                                  subtle["rmse_without_lockout_runs"]["gated"]])],
+        title="T068 position RMSE (0 clean, 1 gross 1.5 m, 2 subtle 0.3 m)", xlabel="data set", ylabel="RMSE (m)"))
     z_crit = bonferroni(2)
+    clean_rows = gross["rmse_without_lockout_runs"]
     findings = [
         finding("Gross 1.5 m outliers are detected at the rate predicted by the noncentral chi-square(2) law with "
-                "lambda = b^T S^-1 b, and gating brings position RMSE back to the oracle that knows which readings "
-                "are bad", "numerical",
+                "lambda = b^T S^-1 b at each outlier's own prior covariance", "numerical",
                 {"detection_rate": gross["detection"]["rate"], "predicted": gross["predicted_detection_rate"],
-                 "detection_z": gross["detection_z"], "false_alarm_rate": gross["false_alarm"]["rate"],
-                 "rmse": {k: gross[k]["position_rmse"] for k in ("ungated", "gated", "oracle")},
-                 "nees": {k: gross[k]["grand_mean_nees"] for k in ("ungated", "gated", "oracle")}},
+                 "detection_z": gross["detection_z"], "outliers": gross["outliers"],
+                 "first_reading_detection_predicted": gross["first_reading_detection_predicted"]},
                 {**generator_basis(seed, runs=study["runs"], contamination=study["contamination_rate"]), "checks": [
                     check("analytic", "detections against the Poisson-binomial prediction (z)", gross["detection_z"],
-                          z_crit),
-                    check("analytic", "gated RMSE relative to oracle minus one",
-                          gross["gated"]["position_rmse"] / gross["oracle"]["position_rmse"] - 1.0, 0.05),
-                    check("analytic", "ungated RMSE exceeds gated RMSE by at least 20%",
-                          gross["ungated"]["position_rmse"] / gross["gated"]["position_rmse"], 1.2, "ge")]},
+                          z_crit)]},
                 tolerance=TOL_MC),
-        finding("On clean data the 99% gate raises false alarms at about 1% (Wilson interval overlapping "
-                "[0.5%, 1.5%]) and changes RMSE and NEES only slightly", "numerical",
-                {"false_alarm": clean["false_alarm"], "ungated": clean["ungated"], "gated": clean["gated"]},
+        finding("Outside the lock-out runs, gating returns the position RMSE to within 5% of the oracle that knows "
+                "which readings are bad, while fusing every reading is at least 30% worse", "numerical",
+                {"rmse_without_lockout_runs": clean_rows, "rmse_all_runs": gross["rmse"],
+                 "lockout_runs_removed": gross["lockout_runs"]},
+                {**generator_basis(seed), "checks": [
+                    check("analytic", "gated / oracle RMSE minus one", clean_rows["gated"] / clean_rows["oracle"] - 1.0,
+                          0.05),
+                    check("analytic", "ungated / oracle RMSE", clean_rows["ungated"] / clean_rows["oracle"], 1.3,
+                          "ge")]},
+                tolerance=TOL_MC),
+        finding("Cold-start lock-out: a gross outlier in the first reading passes the gate under the broad prior, "
+                "and the corrupted state then rejects runs of valid readings; every lock-out run starts this way",
+                "numerical",
+                {"first_reading_outliers": study["first_reading_outliers"],
+                 "accepted_first_reading_outliers": gross["accepted_first_reading_outliers"],
+                 "lockout_runs": gross["lockout_runs"],
+                 "lockout_runs_with_accepted_first_outlier": gross["lockout_runs_with_accepted_first_outlier"],
+                 "worst_run": gross["worst_run"]},
+                {**generator_basis(seed), "checks": [
+                    check("analytic", "number of lock-out runs", gross["lockout_runs"], 1, "ge"),
+                    check("exact_arithmetic", "lock-out runs not explained by an accepted first-reading outlier",
+                          gross["lockout_runs"] - gross["lockout_runs_with_accepted_first_outlier"], 0)]},
+                tolerance=TOL_MC, counterexample={
+                    "statement": "A chi-square gate protects a filter from gross outliers",
+                    "witness": gross["worst_run"]}),
+        finding("On clean data the 99% gate raises false alarms at about 1% and increases the mean squared error: "
+                "the rejected valid readings are the ones that would have corrected a large prior error",
+                "numerical", clean,
                 {**generator_basis(seed), "checks": [
                     check("analytic", "Wilson interval of the clean false-alarm rate overlaps [0.005, 0.015]",
-                          max(clean["false_alarm"]["wilson"][0] - 0.015,
-                                                   0.005 - clean["false_alarm"]["wilson"][1]), 0.0, "le")]},
-                tolerance=TOL_MC),
-        finding("Subtle 0.3 m outliers mostly pass the gate at the predicted low detection rate and inflate the "
-                "error relative to the oracle", "numerical",
-                {"detection_rate": subtle["detection"]["rate"], "predicted": subtle["predicted_detection_rate"],
-                 "detection_z": subtle["detection_z"],
-                 "rmse": {k: subtle[k]["position_rmse"] for k in ("ungated", "gated", "oracle")},
-                 "nees": {k: subtle[k]["grand_mean_nees"] for k in ("ungated", "gated", "oracle")}},
-                {**generator_basis(seed), "checks": [
-                    check("analytic", "detection rate", subtle["detection"]["rate"], 0.5, "le"),
-                    check("analytic", "gated RMSE above oracle RMSE (ratio)",
-                          subtle["gated"]["position_rmse"] / subtle["oracle"]["position_rmse"], 1.0, "ge")]},
+                          max(clean["false_alarm"]["wilson"][0] - 0.015, 0.005 - clean["false_alarm"]["wilson"][1]),
+                          0.0, "le"),
+                    check("analytic", "paired per-run MSE difference gated - ungated (z)",
+                          clean["paired_mse_z_gated_minus_ungated"], 3.0, "ge")]},
                 tolerance=TOL_MC, counterexample={
-                    "statement": "A Mahalanobis gate removes injected outliers",
-                    "witness": {"magnitude_m": subtle["magnitude_m"], "detection_rate": subtle["detection"]["rate"]}}),
+                    "statement": "Gating never degrades the estimate when the data are clean",
+                    "witness": {"rmse_ungated": clean["rmse_ungated"], "rmse_gated": clean["rmse_gated"],
+                                "paired_z": clean["paired_mse_z_gated_minus_ungated"]}}),
+        finding("Subtle 0.3 m outliers pass the gate at the predicted low detection rate; for them gating costs "
+                "more accuracy than the outliers do", "numerical",
+                {"detection_rate": subtle["detection"]["rate"], "predicted": subtle["predicted_detection_rate"],
+                 "detection_z": subtle["detection_z"], "rmse": subtle["rmse"],
+                 "paired_mse_z_gated_minus_ungated": subtle["paired_mse_z_gated_minus_ungated"]},
+                {**generator_basis(seed), "checks": [
+                    check("analytic", "detections against the Poisson-binomial prediction (z)", subtle["detection_z"],
+                          z_crit),
+                    check("analytic", "detection rate", subtle["detection"]["rate"], 0.5, "le"),
+                    check("analytic", "paired per-run MSE difference gated - ungated (z)",
+                          subtle["paired_mse_z_gated_minus_ungated"], 3.0, "ge")]},
+                tolerance=TOL_MC, counterexample={
+                    "statement": "A Mahalanobis gate removes injected outliers and so improves the estimate",
+                    "witness": {"magnitude_m": subtle["magnitude_m"], "detection_rate": subtle["detection"]["rate"],
+                                "rmse": subtle["rmse"]}}),
         finding("The vectorized and scalar noncentral chi-square CDFs agree", "numerical",
                 study["noncentral_cdf_agreement"],
                 {"derivation": "Poisson mixture of central chi-square CDFs", "checks": [
@@ -644,37 +702,42 @@ def outlier_rejection(ctx):
                "sensor_performance", seed, "not established: the contamination model is declared, not measured"),
     ]
     fields = {
-        "hypothesis": "A 99% chi-square gate on the correctly normalized NIS detects outliers with probability "
-                      "1 - F_ncx2(gate; b^T S^-1 b), removes gross outliers almost completely at ~1% false-alarm "
-                      "cost, and cannot remove outliers comparable to sqrt(S).",
+        "hypothesis": "A 99% chi-square gate on the correctly normalized NIS detects an outlier with probability "
+                      "1 - F_ncx2(gate; b^T S^-1 b), removes gross outliers at ~1% false-alarm cost, cannot remove "
+                      "outliers comparable to sqrt(S), and can lock out valid data after an undetected outlier.",
         "mathematical_model": "Readings z = H x + v + o with o = b u (u uniform on the unit circle) at 5% of "
                               "ticks; an outlier's NIS is noncentral chi2(2) with lambda = b^T S^-1 b when the prior "
-                              "error is N(0, P-).",
+                              "error is N(0, P-). Under the broad prior P0 (0.5 m std) a 1.5 m first-reading outlier "
+                              "has small lambda and often passes.",
         "input_data": [f"seed {seed} (PCG64)", f"{study['runs']} runs x {study['ticks']} ticks",
-                       f"{study['outliers']} contaminated readings (rate {study['contamination_rate']})",
+                       f"{study['outliers']} contaminated readings (rate {study['contamination_rate']}), "
+                       f"{study['first_reading_outliers']} of them first readings",
                        "magnitudes 1.5 m (gross) and 0.3 m (subtle)"],
         "observation_model": "Camera position every tick, correlated R, CV motion dt = 0.1 s, q = 0.05.",
         "expected_invariant": "Detection count matches the Poisson-binomial expectation; gated RMSE approaches the "
-                              "oracle for gross outliers; false alarms ~1% on clean data.",
-        "experiment": "Run ungated, gated (p = 0.99) and oracle filters (oracle skips exactly the contaminated "
-                      "readings) on the same contaminated readings; count detections and false alarms; compute "
-                      "RMSE and NEES after a 20-tick burn-in.",
+                              "oracle for gross outliers except after a cold-start lock-out; false alarms ~1%.",
+        "experiment": "Run ungated, gated (p = 0.99) and oracle filters (the oracle skips exactly the contaminated "
+                      "readings) on the same readings; count detections and false alarms; per-run MSE after a "
+                      "20-tick burn-in; identify lock-out runs (>= 5 consecutive valid readings rejected); paired "
+                      "per-run MSE tests for the cost of gating.",
         "numerical_result": f"gross: detection {gross['detection']['rate']:.3f} (predicted "
-                            f"{gross['predicted_detection_rate']:.3f}), RMSE ungated/gated/oracle "
-                            f"{gross['ungated']['position_rmse']:.3f}/{gross['gated']['position_rmse']:.3f}/"
-                            f"{gross['oracle']['position_rmse']:.3f} m; subtle: detection "
-                            f"{subtle['detection']['rate']:.3f} (predicted {subtle['predicted_detection_rate']:.3f}), "
-                            f"RMSE {subtle['ungated']['position_rmse']:.3f}/{subtle['gated']['position_rmse']:.3f}/"
-                            f"{subtle['oracle']['position_rmse']:.3f} m; clean false alarms "
-                            f"{clean['false_alarm']['rate']:.4f}.",
-        "uncertainty": "Detection prediction uses each outlier's own prior covariance from the gated run; it "
-                       "assumes the prior error is still N(0, P-) after earlier missed outliers, which holds well "
-                       "for gross outliers and only approximately for subtle ones.",
+                            f"{gross['predicted_detection_rate']:.3f}); RMSE ungated/gated/oracle "
+                            f"{gross['rmse']['ungated']:.3f}/{gross['rmse']['gated']:.3f}/{gross['rmse']['oracle']:.3f}"
+                            f" m, without {gross['lockout_runs']} lock-out runs {clean_rows['ungated']:.3f}/"
+                            f"{clean_rows['gated']:.3f}/{clean_rows['oracle']:.3f} m; worst lock-out run RMSE "
+                            f"{gross['worst_run']['rmse_gated']:.2f} m. subtle: detection "
+                            f"{subtle['detection']['rate']:.3f} (predicted {subtle['predicted_detection_rate']:.3f}). "
+                            f"clean: false alarms {clean['false_alarm']['rate']:.4f}, RMSE {clean['rmse_ungated']:.4f}"
+                            f" -> {clean['rmse_gated']:.4f} m with gating.",
+        "uncertainty": "Detection prediction uses each outlier's own prior covariance from the gated run and assumes "
+                       "the prior error is still N(0, P-); lock-out runs violate that assumption. Paired tests use "
+                       "run-level independence.",
         "failure_modes_checked": ["missed small outliers", "false alarms on clean data", "estimate corruption "
-                                  "without gating", "oracle comparison"],
+                                  "without gating", "cold-start lock-out", "oracle comparison"],
         "unresolved_assumptions": ["Outliers are independent across ticks; bursts and persistent biases defeat a "
                                    "per-reading gate and need T070-style bias states.",
-                                   "Gate lock-out after divergence is not exercised here (see T073)."],
+                                   "Lock-out recovery (covariance inflation or reacquisition) is not implemented in "
+                                   "the gated filter; T073 handles reacquisition explicitly in the session API."],
         "recommended_next_task": "T069: missing data must be handled by prediction only, never by zero-filling.",
     }
     return outcome(fields, findings)

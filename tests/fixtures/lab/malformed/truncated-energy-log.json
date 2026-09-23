@@ -1,0 +1,162 @@
+{
+  "schema": "ciw.energy-accuracy-log.v1",
+  "run_id": "energy-run-11111111111111111111111111111111",
+  "origin": "synthetic_fixture",
+  "clock": {
+    "epoch_id": "synthetic-clock-0",
+    "monotonic_origin_ns": "123456789",
+    "implementation": "synthetic monotonic",
+    "resolution_s": 1e-09,
+    "utc_unit": "unix_ns_decimal_string"
+  },
+  "sensor": {
+    "backend": "nvml",
+    "device_uuid": "GPU-01234567-89ab-cdef-0123-456789abcdef",
+    "name": "synthetic fixture device",
+    "driver_version": "fixture",
+    "nvml_version": "fixture",
+    "library_sha256": "bbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbb",
+    "counter_unit": "mJ",
+    "counter_scope": "gpu_device",
+    "power_unit": "mW",
+    "timestamp_semantics": "host_call_brackets",
+    "update_interval_s": null,
+    "resolution_j": null,
+    "accuracy_j": null,
+    "background_inclusive": true
+  },
+  "runtime": {
+    "workload": {
+      "schema": "ciw.cuda-gaussian-worker.v1",
+      "execution_device": "gpu",
+      "device_index": 0,
+      "device_name": "synthetic fixture device",
+      "device_uuid": "GPU-01234567-89ab-cdef-0123-456789abcdef",
+      "compute_capability": [
+        8,
+        6
+      ],
+      "cuda_driver_version": 12000,
+      "kernel_sha256": "aaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa",
+      "ptx_version": "6.0",
+      "ptx_target": "sm_50",
+      "arithmetic": "binary64_explicit_round_to_nearest_no_fma_contraction",
+      "algorithm": "fixed_step_mean_gradient_and_full_precision_relaxation",
+      "replica_semantics": "identical_declared_problem_independent_thread_work",
+      "iterations": 128,
+      "replicas": 4,
+      "threads_per_block": 128,
+      "output_layout": [
+        "mean_0",
+        "mean_1",
+        "covariance_00",
+        "covariance_01",
+        "covariance_10",
+        "covariance_11"
+      ],
+      "prepared_input_sha256": "5b741b49b6bc4ac239a866f5fa3042222552cf9e9a48632915afa1dd1600e1ff",
+      "problem_sha256": "acb6720505e8f7d620aec81343be96c3b0f14b296519952730ab97ad99211ca6",
+      "solver_settings": {
+        "initial_mean": [
+          0.0,
+          0.0
+        ],
+        "initial_covariance": [
+          [
+            1.0,
+            0.0
+          ],
+          [
+            0.0,
+            1.0
+          ]
+        ],
+        "alpha": 0.1,
+        "beta": 0.2,
+        "max_iterations": 256,
+        "gradient_tolerance": 1e-09,
+        "precision_tolerance": 1e-09
+      },
+      "measurement_boundary": "constructor_preparation_and_jit_excluded;solve_includes_launch_sync_copy_and_output_check"
+    },
+    "python": {
+      "version": "3.12.0",
+      "numpy_version": "2.4.3",
+      "executable_sha256": "cccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccc"
+    },
+    "implementation": {
+      "profile": "synthetic-fixture",
+      "code_sha256": "dddddddddddddddddddddddddddddddddddddddddddddddddddddddddddddddd"
+    }
+  },
+  "plan": {
+    "problem": {
+      "coordinate_system": "normalized_dimensionless",
+      "prior_mean": [
+        0.0,
+        0.0
+      ],
+      "prior_covariance": [
+        [
+          1.0,
+          0.0
+        ],
+        [
+          0.0,
+          1.0
+        ]
+      ],
+      "observation_matrix": [
+        [
+          1.0,
+          0.2
+        ],
+        [
+          0.0,
+          1.0
+        ]
+      ],
+      "observations": [
+        1.0,
+        2.0
+      ],
+      "noise_covariance": [
+        [
+          1.0,
+          0.1
+        ],
+        [
+          0.1,
+          1.0
+        ]
+      ]
+    },
+    "solver": {
+      "initial_mean": [
+        0.0,
+        0.0
+      ],
+      "initial_covariance": [
+        [
+          1.0,
+          0.0
+        ],
+        [
+          0.0,
+          1.0
+        ]
+      ],
+      "alpha": 0.1,
+      "beta": 0.2,
+      "max_iterations": 256,
+      "gradient_tolerance": 1e-09,
+      "precision_tolerance": 1e-09
+    },
+    "iterations": 128,
+    "replicas": 4,
+    "target_kl_nats": 1e-08,
+    "minimum_duration_s": 1.0,
+    "max_batches": 2,
+    "warmup_batches": 1,
+    "idle_duration_s": 0.2,
+    "problem_d

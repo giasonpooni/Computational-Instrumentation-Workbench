@@ -463,3 +463,962 @@ def cylinder_chord_coefficient(ctx):
                                 "Markers lie exactly on one geodesic"],
         recommended_next_task="T048: generate synthetic stereo-camera measurements of markers on the cylinder")
     return {"state": "completed", "fields": fields, "findings": findings}
+
+
+# --------------------------------------------------------------- camera scene
+HELIX_DEG = (0.0, 45.0, 90.0)
+ARCS_M = np.linspace(0.0, 0.12, 9)
+PIXEL_SIGMA_PX = 0.25
+
+
+def camera_scene() -> dict:
+    """Declared rig and markers on three cylinder geodesics; pairs (0, k) along each helix."""
+    cameras = cam.stereo_rig()
+    markers = [cam.helix_markers(math.radians(degrees), ARCS_M) for degrees in HELIX_DEG]
+    points = np.vstack([m["world"] for m in markers])
+    normals = np.vstack([m["normals"] for m in markers])
+    n = len(ARCS_M)
+    pairs = np.array([(n * i, n * i + k) for i in range(len(HELIX_DEG)) for k in range(1, n)])
+    visible = np.ones(len(points), dtype=bool)
+    for camera in cameras:
+        visible &= cam.visible(camera, points, normals)
+    return {"cameras": cameras, "points": points, "normals": normals, "pairs": pairs,
+            "arcs": np.array([ARCS_M[k] for _ in HELIX_DEG for k in range(1, n)]),
+            "alphas_deg": np.array([degrees for degrees in HELIX_DEG for _ in range(1, n)]),
+            "truth": cam.pair_chords(points, pairs), "visible": int(visible.sum())}
+
+
+def _scene_inputs(scene):
+    return [f"Stereo rig {cam.RIG}", f"Cylinder {cam.CYLINDER}",
+            f"Markers at s = {_floats(ARCS_M)} m along helices alpha = {list(HELIX_DEG)} deg "
+            f"({scene['visible']}/{len(scene['points'])} visible in both images)"]
+
+
+# --------------------------------------------------------------- T048
+@task("T048", changed_files=(MODULE, CAMERA_FILE, CHORD_FILE, MODES_FILE),
+      regression_tests=_tests("test_t048_synthetic_camera"))
+def synthetic_camera_measurements(ctx):
+    scene = ctx.memo("observation:camera-scene", camera_scene)
+    cameras, points, pairs, truth = scene["cameras"], scene["points"], scene["pairs"], scene["truth"]
+    left, right = cameras
+    pixels = (left.project(points), right.project(points))
+    dlt, midpoint = cam.triangulate(cameras, pixels), cam.triangulate_midpoint(cameras, pixels)
+    measured = cam.pair_chords(dlt, pairs)
+    chord_error = float(np.max(np.abs(measured - truth)))
+    method_gap = float(np.max(np.abs(dlt - midpoint)))
+    alphas = np.radians(scene["alphas_deg"])
+    radius = cam.CYLINDER["radius_m"]
+    predicted_bias = np.array([arc - float(chord.helix_chord(arc, radius, a)) for arc, a in zip(scene["arcs"], alphas)])
+    bias = scene["arcs"] - measured
+    bias_mismatch = float(np.max(np.abs(bias - predicted_bias)))
+    conversion_error = 0.0
+    for value, arc, alpha in zip(measured, scene["arcs"], alphas):
+        record = example_observation("camera_chord_distance", value=float(value))
+        model = dict(CYLINDER_MODEL, path_angle_rad=float(alpha))
+        conversion_error = max(conversion_error, abs(om.chord_to_surface_distance(record, model).value[0] - arc))
+    seed, trials = 48, 500
+    rng = sig.generator(seed)
+    noisy = cam.noisy_chords(cameras, points, pairs, PIXEL_SIGMA_PX, trials, rng)
+    arcs_back = np.column_stack([chord.arc_from_chord(noisy[:, j], radius, alphas[j]) for j in range(len(pairs))])
+    chord_rms = np.sqrt(np.mean((noisy - truth) ** 2, axis=0))
+    arc_rms = np.sqrt(np.mean((arcs_back - scene["arcs"]) ** 2, axis=0))
+    per_helix = {f"{degrees:g}": {"rms_chord_error_m": float(np.sqrt(np.mean(chord_rms[scene["alphas_deg"] == degrees] ** 2))),
+                                  "rms_arc_error_m": float(np.sqrt(np.mean(arc_rms[scene["alphas_deg"] == degrees] ** 2))),
+                                  "max_substitution_bias_m": float(np.max(bias[scene["alphas_deg"] == degrees]))}
+                 for degrees in HELIX_DEG}
+    rows = [{"alpha_deg": float(d), "arc_m": float(a), "true_chord_m": float(c), "noise_free_chord_m": float(m),
+             "substitution_bias_m": float(b), "noisy_chord_rms_m": float(cr), "noisy_arc_rms_m": float(ar)}
+            for d, a, c, m, b, cr, ar in zip(scene["alphas_deg"], scene["arcs"], truth, measured, bias, chord_rms, arc_rms)]
+    ctx.artifact_json("camera-measurements.json", {"rig": {"left": left.describe(), "right": right.describe()},
+                                                   "pairs": rows, "per_helix": per_helix,
+                                                   "noise": {"pixel_sigma_px": PIXEL_SIGMA_PX, "rounding": "integer",
+                                                             "grid_phase": "uniform per trial", "trials": trials,
+                                                             "seed": seed}})
+    ctx.artifact_text("substitution-bias-vs-noise.svg", svg.line_plot(
+        [(f"bias alpha={d:g}", scene["arcs"][scene["alphas_deg"] == d], np.maximum(bias[scene["alphas_deg"] == d], 1e-12))
+         for d in HELIX_DEG[:2]]
+        + [(f"noise RMS alpha={d:g}", scene["arcs"][scene["alphas_deg"] == d], chord_rms[scene["alphas_deg"] == d])
+           for d in HELIX_DEG[:2]],
+        title="Chord-for-geodesic substitution bias versus chord noise", xlabel="arc length s (m)",
+        ylabel="metres", logy=True))
+    worst_bias = float(np.max(bias))
+    noise_rms = float(np.sqrt(np.mean(chord_rms ** 2)))
+    findings = [
+        finding("Noise-free triangulation of the synthetic rig reproduces ground-truth marker chords",
+                "numerical", {"max_chord_error_m": chord_error, "dlt_midpoint_gap_m": method_gap},
+                {"generator": _generator("declared stereo rig and cylinder markers", None, pairs=len(pairs)),
+                 "checks": [_check("|triangulated chord - true chord| (m)", chord_error, 1e-12),
+                            _check("DLT against ray-midpoint triangulation (m)", method_gap, 1e-12,
+                                   kind="self_convergence")]},
+                unit="m", tolerance={"abs": 1e-11, "rel": 0}),
+        finding("Using the camera chord as geodesic distance underestimates it by s - c(s), up to "
+                f"{worst_bias * 1e3:.2f} mm on the circumferential helix", "numerical", worst_bias,
+                {"checks": [_check("measured bias against s - helix_chord(s) from T047 (m)", bias_mismatch, 1e-12)]},
+                unit="m", tolerance={"abs": 1e-12, "rel": 1e-9}),
+        finding("The declared cylinder model converts noise-free chords to arc lengths", "numerical",
+                conversion_error, {"checks": [_check("|converted arc - true arc| (m)", conversion_error, 1e-11)]},
+                unit="m", tolerance={"abs": 1e-11, "rel": 0}),
+        finding("Synthetic chord and model-converted arc RMS errors under 0.25 px Gaussian noise with integer "
+                "rounding", "numerical", {"rms_chord_error_m": noise_rms, "per_helix": per_helix},
+                {"generator": _generator("ciw.lab.observation_camera.noisy_chords", seed, trials=trials,
+                                         pixel_sigma_px=PIXEL_SIGMA_PX, rounding="integer")},
+                unit="m", uncertainty={"relative_standard_error_of_rms": 1 / math.sqrt(2 * trials)},
+                tolerance={"abs": 1e-12, "rel": 1e-4}),
+        _unestablished("A physical stereo rig with this geometry achieves the synthetic chord accuracy",
+                       "sensor_performance", "No camera was acquired; lens, sensor, marker detection and calibration "
+                       "errors of real hardware are not represented."),
+    ]
+    fields = _fields(
+        hypothesis="A declared pinhole stereo pair observing markers on the cylinder recovers chords exactly without "
+                   "noise; the chord differs from the geodesic distance by the T047 correction, which a declared "
+                   "surface model removes; pixel noise adds a random error far below the substitution bias.",
+        mathematical_model="x_cam = R X + t, pixels u = f x/z + c; linear DLT triangulation on normalized "
+                           "coordinates; chord = |X_i - X_j|; arc from chord by inverting the helix chord on its "
+                           "monotone branch.",
+        input_data=_scene_inputs(scene) + [f"Pixel noise sigma = {PIXEL_SIGMA_PX} px, integer rounding, uniform "
+                                           f"grid phase, {trials} trials, seed {seed}"],
+        observation_model="Synthetic images: ideal projection, then Gaussian pixel noise and integer rounding; the "
+                          "camera_chord_distance mode (extrinsic).",
+        expected_invariant="Noise-free chords equal truth to rounding; substitution bias equals s - c(s) exactly; "
+                           "model conversion recovers s.",
+        experiment="Project, triangulate (DLT and ray midpoint), compare chords with truth, convert chords through "
+                   "typed records and the declared cylinder model, then repeat with seeded noisy pixels.",
+        numerical_result=f"noise-free chord error {chord_error:.1e} m; substitution bias up to {worst_bias:.4e} m; "
+                         f"conversion error {conversion_error:.1e} m; noisy chord RMS {noise_rms:.3e} m.",
+        uncertainty=f"Noise-free results are exact to rounding; noisy RMS values carry about "
+                    f"{100 / math.sqrt(2 * trials):.1f} % relative Monte Carlo standard error.",
+        failure_modes_checked=["markers outside the image or back-facing (visibility check)",
+                               "DLT versus ray-midpoint disagreement", "chord substituted for geodesic distance",
+                               "conversion without a surface model (refused in T045)"],
+        unresolved_assumptions=["Pinhole cameras with perfectly known calibration (perturbed in T049/T050)",
+                                "Marker centres are detected without bias; occlusion is not modelled"],
+        recommended_next_task="T049: perturb focal length, principal point and extrinsic rotation")
+    return {"state": "completed", "fields": fields, "findings": findings}
+
+
+# --------------------------------------------------------------- T049
+CALIBRATION_DIRECTION = np.array([2.0, 0.5, -0.4, 2e-4, -1e-4, 3e-4])
+CALIBRATION_STEPS = np.array([1e-2, 1e-3, 1e-3, 1e-7, 1e-7, 1e-7])
+PARAMETERS = ("focal_px", "right_cx_px", "right_cy_px", "right_rx_rad", "right_ry_rad", "right_rz_rad")
+
+
+def _believed_chords(true_cameras, delta, points, pairs):
+    left, right = true_cameras
+    believed = cam.believed_rig(true_cameras, delta)
+    return cam.pair_chords(cam.triangulate(believed, (left.project(points), right.project(points))), pairs)
+
+
+def calibration_jacobian(cameras, points, pairs, steps=CALIBRATION_STEPS) -> np.ndarray:
+    """Central-difference d chord / d calibration error, one column per parameter."""
+    jac = np.empty((len(pairs), len(steps)))
+    for j, step in enumerate(steps):
+        delta = np.zeros(len(steps))
+        delta[j] = step
+        jac[:, j] = (_believed_chords(cameras, delta, points, pairs)
+                     - _believed_chords(cameras, -delta, points, pairs)) / (2 * step)
+    return jac
+
+
+def rectified_analytic_jacobian(points, pairs) -> np.ndarray:
+    """dc/df = dZ^2/(c f) and dc/dcx_right from Z = f b / disparity on the rectified rig."""
+    f, b = cam.RIG["focal_px"], cam.RIG["baseline_m"]
+    difference = points[pairs[:, 0]] - points[pairs[:, 1]]
+    length = np.linalg.norm(difference, axis=1)
+    depth = points[:, 2]
+    # Rectified left camera coordinates equal world coordinates; dZ/dcx = -Z^2/(b f), X = x Z, Y = y Z.
+    moved = np.column_stack([points[:, 0] / depth, points[:, 1] / depth, np.ones(len(points))]) \
+        * (-depth ** 2 / (b * f))[:, None]
+    d_difference = moved[pairs[:, 0]] - moved[pairs[:, 1]]
+    return np.column_stack([difference[:, 2] ** 2 / (length * f),
+                            np.einsum("ij,ij->i", difference, d_difference) / length])
+
+
+@task("T049", changed_files=(MODULE, CAMERA_FILE), regression_tests=_tests("test_t049_calibration_perturbations"))
+def camera_calibration_perturbations(ctx):
+    scene = ctx.memo("observation:camera-scene", camera_scene)
+    points, pairs = scene["points"], scene["pairs"]
+    selected = pairs[[8, 10, 12, 15]]  # alpha = 45 deg pairs spanning s = 0.015 to 0.12 m
+    converged = scene["cameras"]
+    rectified = cam.stereo_rig(rectified=True)
+    rect_visible = all(bool(np.all(cam.visible(c, points, scene["normals"]))) for c in rectified)
+    jac_rect = calibration_jacobian(rectified, points, selected)
+    analytic = rectified_analytic_jacobian(points, selected)
+    analytic_gap = float(max(np.max(np.abs(jac_rect[:, j] - analytic[:, j])) / np.max(np.abs(analytic[:, j]))
+                             for j in range(2)))
+    jac = calibration_jacobian(converged, points, selected)
+    jac_half = calibration_jacobian(converged, points, selected, CALIBRATION_STEPS / 2)
+    convergence = float(np.max(np.abs(jac - jac_half) / np.max(np.abs(jac), axis=0)))
+    base = _believed_chords(converged, np.zeros(6), points, selected)
+    scales = (0.03, 0.1, 0.3, 1.0, 3.0)
+    rows = []
+    for scale in scales:
+        delta = scale * CALIBRATION_DIRECTION
+        direct = _believed_chords(converged, delta, points, selected) - base
+        predicted = jac @ delta
+        rows.append({"scale": scale, "max_direct_error_m": float(np.max(np.abs(direct))),
+                     "max_first_order_residual_m": float(np.max(np.abs(direct - predicted))),
+                     "relative_residual": float(np.max(np.abs(direct - predicted)) / np.max(np.abs(direct)))})
+    slope = sig.loglog_slope(scales, [row["max_first_order_residual_m"] for row in rows])
+    declared = next(row for row in rows if row["scale"] == 1.0)
+    # Counterexample: a common focal error leaves same-depth (ruling) chords unchanged on the rectified rig.
+    focal_error = 5.0
+    # The circumferential pair (0, 4) spans a depth change; (0, 8) would be symmetric about phi = 0.
+    ruling, circumferential = np.array([[18, 26]]), np.array([[0, 4]])
+    ratio = 1 + focal_error / cam.RIG["focal_px"]
+    changes = {}
+    for name, pair in (("ruling", ruling), ("circumferential", circumferential)):
+        before = cam.pair_chords(points, pair)[0]
+        after = _believed_chords(rectified, [focal_error, 0, 0, 0, 0, 0], points, pair)[0]
+        changes[name] = float(after / before - 1)
+    all_pairs = pairs
+    d = points[all_pairs[:, 0]] - points[all_pairs[:, 1]]
+    exact_model = np.sqrt(d[:, 0] ** 2 + d[:, 1] ** 2 + (d[:, 2] * ratio) ** 2)
+    model_gap = float(np.max(np.abs(_believed_chords(rectified, [focal_error, 0, 0, 0, 0, 0], points, all_pairs)
+                                    - exact_model)))
+    sensitivity = {name: _floats(jac[:, j] * (1e-3 if name.endswith("_rad") else 1.0))
+                   for j, name in enumerate(PARAMETERS)}
+    ctx.artifact_json("calibration-jacobian.json", {
+        "pairs_arc_m": _floats(scene["arcs"][[8, 10, 12, 15]]), "parameters": list(PARAMETERS),
+        "sensitivity_m_per_px_or_mrad": sensitivity, "rectified_numeric": jac_rect[:, :2].tolist(),
+        "rectified_analytic": analytic.tolist(), "linearization": rows,
+        "declared_perturbation": dict(zip(PARAMETERS, _floats(CALIBRATION_DIRECTION))), "focal_counterexample": changes})
+    ctx.artifact_text("linearization-residual.svg", svg.line_plot(
+        [("direct chord error", scales, [r["max_direct_error_m"] for r in rows]),
+         ("first-order residual", scales, [r["max_first_order_residual_m"] for r in rows])],
+        title="Calibration perturbation: direct error and first-order residual", xlabel="perturbation scale",
+        ylabel="metres", logx=True, logy=True))
+    findings = [
+        finding("The finite-difference chord Jacobian matches the analytic focal-length and principal-point "
+                "derivatives on a rectified rig", "numerical", analytic_gap,
+                {"checks": [_check("max |numeric - analytic| / max |analytic| per column", analytic_gap, 1e-6)]},
+                tolerance={"abs": 1e-6, "rel": 0}),
+        finding("First-order calibration-error prediction agrees with direct recomputation with a second-order "
+                "residual", "numerical",
+                {"relative_residual_at_declared": declared["relative_residual"], "residual_slope": slope,
+                 "max_direct_error_m_at_declared": declared["max_direct_error_m"]},
+                {"generator": _generator("declared calibration perturbation direction", None,
+                                         direction=dict(zip(PARAMETERS, _floats(CALIBRATION_DIRECTION)))),
+                 "checks": [_check("relative first-order residual at the declared perturbation",
+                                   declared["relative_residual"], 0.01),
+                            _check("log-log slope of the residual against scale minus 2", slope - 2, 0.05)]},
+                tolerance={"abs": 1e-9, "rel": 1e-5}),
+        finding("Chord sensitivity to each calibration parameter (m per px, m per mrad)", "numerical", sensitivity,
+                {"checks": [_check("Jacobian change when finite-difference steps are halved (relative)", convergence,
+                                   1e-5, kind="self_convergence")]},
+                tolerance={"abs": 1e-12, "rel": 1e-5}),
+        finding("A common focal-length error leaves same-depth chords unchanged and scales only the depth "
+                "component", "numerical", {"ruling_relative_change": changes["ruling"],
+                                           "circumferential_relative_change": changes["circumferential"],
+                                           "exact_model_gap_m": model_gap},
+                {"checks": [_check("relative change of the ruling chord under a 5 px focal error",
+                                   changes["ruling"], 1e-12),
+                            _check("relative change of the circumferential chord (resolved)",
+                                   abs(changes["circumferential"]), 1e-5, "ge"),
+                            _check("chords against sqrt(dX^2 + dY^2 + (dZ f_b/f)^2) (m)", model_gap, 1e-12)]},
+                tolerance={"abs": 1e-12, "rel": 1e-6},
+                counterexample={"statement": "A common focal-length error rescales every measured distance by one "
+                                             "factor",
+                                "witness": {"rig": "rectified", "focal_error_px": focal_error,
+                                            "ruling_relative_change": changes["ruling"],
+                                            "circumferential_relative_change": changes["circumferential"]}}),
+        _unestablished("The declared perturbation magnitudes bound the calibration error of a real stereo rig",
+                       "calibration", "No calibration procedure was run; real calibration uncertainty is unknown."),
+    ]
+    fields = _fields(
+        hypothesis="Chord errors caused by small calibration errors are linear in the errors, with a Jacobian that "
+                   "matches closed forms where they exist; rotation errors of a fraction of a milliradian dominate.",
+        mathematical_model="Pixels from the true rig are triangulated with a believed rig (focal f + df on both "
+                           "cameras, right principal point + (dcx, dcy), right rotation exp([w]) about its centre). "
+                           "Rectified rig: Z_b = Z f_b/f and X_b = X, so c_b^2 = dX^2 + dY^2 + (dZ f_b/f)^2 and "
+                           "dZ/dcx = -Z^2/(b f).",
+        input_data=_scene_inputs(scene) + [f"Declared direction {dict(zip(PARAMETERS, _floats(CALIBRATION_DIRECTION)))}",
+                                           f"Scales {list(scales)}", f"Finite-difference steps {_floats(CALIBRATION_STEPS)}",
+                                           f"Rectified rig markers visible: {rect_visible}"],
+        observation_model="Noise-free synthetic pixels; only the calibration used for triangulation is wrong.",
+        expected_invariant="Direct error - J delta = O(|delta|^2); exact closed forms on the rectified rig.",
+        experiment="Central-difference Jacobian, step-halving convergence, comparison with analytic derivatives, "
+                   "direct recomputation over five perturbation scales, and a counterexample search for uniform "
+                   "focal scaling.",
+        numerical_result=f"analytic gap {analytic_gap:.1e}; relative first-order residual "
+                         f"{declared['relative_residual']:.2e} at the declared perturbation (direct error "
+                         f"{declared['max_direct_error_m']:.2e} m); residual slope {slope:.3f}; ruling change "
+                         f"{changes['ruling']:.1e} vs circumferential {changes['circumferential']:.2e} for df = 5 px.",
+        uncertainty="Finite-difference truncation below 1e-5 relative (step halving); no stochastic component.",
+        failure_modes_checked=["nonlinearity at large perturbations (residual slope)", "finite-difference step size",
+                               "rotation about the camera centre versus about the world origin",
+                               "uniform-scaling assumption for focal errors"],
+        unresolved_assumptions=["Calibration errors are static and small", "Distortion is absent (see T050)"],
+        recommended_next_task="T050: add perspective and lens-distortion perturbations")
+    return {"state": "completed", "fields": fields, "findings": findings}
+
+
+# --------------------------------------------------------------- T050
+DISTORTION_SHIFTS = ((0.0, 0.0, 0.0), (0.04, -0.03, 0.0), (0.08, -0.06, 0.0), (0.12, -0.09, 0.0), (0.16, -0.12, 0.0))
+DISTORTION_K1 = (-0.1, -0.01, 0.01, 0.1)
+
+
+def _pixel_offsets(cameras, distorted_cameras, points, pairs):
+    """Pixel displacement vectors in the (uL_a, vL_a, uR_a, vR_a, uL_b, vL_b, uR_b, vR_b) order."""
+    blocks = []
+    for index in (pairs[:, 0], pairs[:, 1]):
+        for ideal, distorted in zip(cameras, distorted_cameras):
+            blocks.append(distorted.project(points[index]) - ideal.project(points[index]))
+    return np.concatenate(blocks, axis=1)
+
+
+def distortion_study() -> dict:
+    f = cam.RIG["focal_px"]
+    radii = np.geomspace(0.02, 0.4, 12)
+    along_x = np.column_stack([radii, np.zeros_like(radii)])
+    formula = {}
+    for k1 in (1e-3, 1e-2, 1e-1):
+        shift = f * np.linalg.norm(cam.distort(along_x, (k1, 0.0, 0.0, 0.0)) - along_x, axis=1)
+        formula[k1] = shift
+    formula_error = max(float(np.max(np.abs(v / (f * k1 * radii ** 3) - 1))) for k1, v in formula.items())
+    k1, k2 = 0.05, 0.02
+    both = f * np.linalg.norm(cam.distort(along_x, (k1, k2, 0.0, 0.0)) - along_x, axis=1)
+    formula_error = max(formula_error, float(np.max(np.abs(both / (f * (k1 * radii ** 3 + k2 * radii ** 5)) - 1))))
+    slope_radius = sig.loglog_slope(radii, formula[1e-2])
+    slope_k1 = sig.loglog_slope([1e-3, 1e-2, 1e-1], [formula[k][9] for k in (1e-3, 1e-2, 1e-1)])
+
+    cameras = cam.stereo_rig()
+    pairs = np.array([[0, 2], [0, 4], [1, 3]])
+    rows, first_order, odd = [], 0.0, 0.0
+    visible_all = True
+    for shift in DISTORTION_SHIFTS:
+        markers = cam.helix_markers(math.radians(45.0), np.linspace(0.0, 0.06, 5), shift=shift)
+        points = markers["world"]
+        for camera in cameras:
+            visible_all &= bool(np.all(cam.visible(camera, points, markers["normals"])))
+        truth = cam.pair_chords(points, pairs)
+        jac = cam.chord_pixel_jacobian(cameras, points[pairs[:, 0]], points[pairs[:, 1]])
+        radius = float(np.mean([np.linalg.norm(c.normalized(c.project(points)), axis=1).mean() for c in cameras]))
+        biases = {}
+        for k in DISTORTION_K1:
+            distorted = tuple(replace(c, distortion=(k, 0.0, 0.0, 0.0)) for c in cameras)
+            left, right = distorted
+            measured = cam.pair_chords(cam.triangulate(cameras, (left.project(points), right.project(points))), pairs)
+            direct = measured - truth
+            predicted = np.einsum("ij,ij->i", jac, _pixel_offsets(cameras, distorted, points, pairs))
+            first_order = max(first_order, float(np.max(np.abs(direct - predicted) / np.abs(direct))))
+            biases[k] = direct
+        odd = max(odd, float(np.max(np.abs(biases[0.01] + biases[-0.01]) / np.abs(biases[0.01]))))
+        rows.append({"shift_m": list(shift), "mean_normalized_radius": radius,
+                     "bias_m": {f"{k:g}": _floats(v) for k, v in biases.items()},
+                     "mean_abs_bias_k1_0.01_m": float(np.mean(np.abs(biases[0.01])))})
+    growth = [row["mean_abs_bias_k1_0.01_m"] for row in rows]
+    non_monotone = sum(b <= a for a, b in zip(growth, growth[1:]))
+
+    model = (0.05, 0.01, 5e-4, -5e-4)
+    distorted = tuple(replace(c, distortion=model) for c in cameras)
+    markers = cam.helix_markers(math.radians(45.0), np.linspace(0.0, 0.06, 5), shift=DISTORTION_SHIFTS[-1])
+    points = markers["world"]
+    pixels = tuple(c.project(points) for c in distorted)
+    truth = cam.pair_chords(points, pairs)
+    uncorrected = float(np.max(np.abs(cam.pair_chords(cam.triangulate(cameras, pixels), pairs) - truth)))
+    corrected = float(np.max(np.abs(cam.pair_chords(cam.triangulate(cameras, pixels, undistort_model=model), pairs)
+                                    - truth)))
+
+    # Fold of the radial model: r (1 + k1 r^2) peaks at r = 1/sqrt(-3 k1).
+    k_fold = -1.2
+    fold = 1 / math.sqrt(-3 * k_fold)
+    corner = math.hypot(*cam.RIG["image_size_px"]) / 2 / f
+    r_true = 0.53
+    target = r_true * (1 + k_fold * r_true ** 2)
+    low, high = 0.0, fold
+    for _ in range(200):
+        middle = 0.5 * (low + high)
+        low, high = (middle, high) if middle * (1 + k_fold * middle ** 2) < target else (low, middle)
+    r_other = 0.5 * (low + high)
+    recovered = float(np.linalg.norm(cam.undistort(np.array([[target, 0.0]]), (k_fold, 0, 0, 0))[0]))
+    return {"radii": _floats(radii), "displacement_px": {f"{k:g}": _floats(v) for k, v in formula.items()},
+            "formula_relative_error": formula_error, "slope_radius": slope_radius, "slope_k1": slope_k1,
+            "chord_rows": rows, "first_order_relative_residual": first_order, "odd_symmetry_residual": odd,
+            "non_monotone_steps": non_monotone, "all_visible": visible_all,
+            "tangential_model": list(model), "uncorrected_bias_m": uncorrected, "corrected_error_m": corrected,
+            "fold": {"k1": k_fold, "fold_radius": fold, "image_corner_radius": corner, "r_true": r_true,
+                     "r_other": r_other, "distorted_radius": target,
+                     "distorted_gap": abs(r_other * (1 + k_fold * r_other ** 2) - target),
+                     "undistorted_radius": recovered, "round_trip_error_px": abs(recovered - r_true) * f}}
+
+
+@task("T050", changed_files=(MODULE, CAMERA_FILE), regression_tests=_tests("test_t050_lens_distortion"))
+def lens_distortion_perturbations(ctx):
+    study = distortion_study()
+    fold = study["fold"]
+    ctx.artifact_json("distortion-study.json", study)
+    ctx.artifact_text("radial-displacement.svg", svg.line_plot(
+        [(f"k1 = {k}", study["radii"], v) for k, v in study["displacement_px"].items()],
+        title="Radial distortion displacement f k1 r^3", xlabel="normalized image radius r",
+        ylabel="displacement (px)", logx=True, logy=True))
+    rows = study["chord_rows"]
+    ctx.artifact_text("chord-bias-vs-radius.svg", svg.line_plot(
+        [("|bias| k1 = 0.01", [r["mean_normalized_radius"] for r in rows], [r["mean_abs_bias_k1_0.01_m"] for r in rows])],
+        title="Uncorrected radial distortion: chord bias", xlabel="mean normalized image radius",
+        ylabel="mean |chord bias| (m)", logy=True))
+    findings = [
+        finding("Radial distortion displaces image points by f (k1 r^3 + k2 r^5): slope 3 in radius, linear in k1",
+                "numerical", {"formula_relative_error": study["formula_relative_error"],
+                              "slope_radius": study["slope_radius"], "slope_k1": study["slope_k1"]},
+                {"checks": [_check("|displacement / f(k1 r^3 + k2 r^5) - 1|", study["formula_relative_error"], 1e-9),
+                            _check("log-log slope in radius minus 3", study["slope_radius"] - 3, 1e-6),
+                            _check("log-log slope in k1 minus 1", study["slope_k1"] - 1, 1e-6)]},
+                tolerance={"abs": 1e-9, "rel": 1e-9}),
+        finding("Uncorrected radial distortion biases chords as J_pix delta_pix to first order, odd in k1 and "
+                "growing with image radius", "numerical",
+                {"first_order_relative_residual": study["first_order_relative_residual"],
+                 "odd_symmetry_residual_k1_0.01": study["odd_symmetry_residual"],
+                 "mean_abs_bias_k1_0.01_m": [r["mean_abs_bias_k1_0.01_m"] for r in rows],
+                 "mean_normalized_radius": [r["mean_normalized_radius"] for r in rows]},
+                {"generator": _generator("declared rig, 45 deg helix markers shifted across the image", None,
+                                         shifts_m=[list(s) for s in DISTORTION_SHIFTS], k1=list(DISTORTION_K1)),
+                 "checks": [_check("max |direct - J_pix delta_pix| / |direct| for |k1| <= 0.1",
+                                   study["first_order_relative_residual"], 0.03),
+                            _check("|bias(k1) + bias(-k1)| / |bias(k1)| at k1 = 0.01", study["odd_symmetry_residual"],
+                                   0.01),
+                            _check("non-increasing steps of mean |bias| with image radius", study["non_monotone_steps"],
+                                   0, kind="invariant"),
+                            _check("all shifted markers visible in both images", 0 if study["all_visible"] else 1, 0,
+                                   kind="invariant")]},
+                tolerance={"abs": 1e-12, "rel": 1e-6}),
+        finding("Undistorting with the true Brown-Conrady model (radial and tangential) removes the chord bias",
+                "numerical", {"uncorrected_bias_m": study["uncorrected_bias_m"], "corrected_error_m": study["corrected_error_m"]},
+                {"checks": [_check("chord error after undistortion with the generating model (m)",
+                                   study["corrected_error_m"], 1e-12)]},
+                tolerance={"abs": 1e-12, "rel": 1e-6}),
+        finding("Strong barrel distortion folds inside the image, so the radial model is not invertible there",
+                "numerical", {"fold_radius": fold["fold_radius"], "image_corner_radius": fold["image_corner_radius"],
+                              "r_true": fold["r_true"], "r_other": fold["r_other"],
+                              "round_trip_error_px": fold["round_trip_error_px"]},
+                {"checks": [_check("fold radius minus image-corner radius (negative: fold inside the image)",
+                                   fold["fold_radius"] - fold["image_corner_radius"], 0.0, "le", kind="invariant"),
+                            _check("|r_d(r_other) - r_d(r_true)| (two radii, one distorted radius)",
+                                   fold["distorted_gap"], 1e-12),
+                            _check("fixed-point undistortion round-trip error (px)", fold["round_trip_error_px"], 1.0,
+                                   "ge")]},
+                tolerance={"abs": 1e-6, "rel": 1e-6},
+                counterexample={"statement": "The Brown-Conrady radial model can be inverted everywhere in the image",
+                                "witness": {"k1": fold["k1"], "r_true": fold["r_true"], "r_other": fold["r_other"],
+                                            "distorted_radius": fold["distorted_radius"]}}),
+        _unestablished("A two-term radial plus tangential Brown-Conrady model describes a real lens to the required "
+                       "accuracy", "calibration", "No lens was measured; higher-order, decentring and "
+                       "temperature effects of real optics are unknown."),
+    ]
+    fields = _fields(
+        hypothesis="Uncorrected radial distortion displaces pixels by f(k1 r^3 + k2 r^5), producing chord biases "
+                   "that are first order in k1, grow with image radius and vanish when the generating model is "
+                   "inverted; strong barrel distortion makes the model non-invertible inside the image.",
+        mathematical_model="x_d = x (1 + k1 r^2 + k2 r^4) + [2 p1 x y + p2 (r^2 + 2x^2), p1 (r^2 + 2y^2) + 2 p2 x y]; "
+                           "chord bias ~ J_pix delta_pix with J_pix = d chord / d pixels; r (1 + k1 r^2) is monotone only "
+                           "for r < 1/sqrt(-3 k1) when k1 < 0.",
+        input_data=_scene_inputs(ctx.memo("observation:camera-scene", camera_scene))
+        + [f"Shifts {[list(s) for s in DISTORTION_SHIFTS]} m",
+                                                    f"k1 in {list(DISTORTION_K1)}", f"Tangential model {study['tangential_model']}",
+                                                    "Fold search at k1 = -1.2"],
+        observation_model="Noise-free synthetic pixels from distorted cameras triangulated as if undistorted "
+                          "(uncorrected) or after fixed-point undistortion with the true model.",
+        expected_invariant="Displacement exactly f(k1 r^3 + k2 r^5); first-order bias law; zero bias after correct "
+                           "undistortion inside the fold radius.",
+        experiment="Closed-form displacement scan in r and k1; chord bias against pixel-Jacobian prediction across "
+                   "image radius; correction with the generating model; fold counterexample.",
+        numerical_result=f"formula error {study['formula_relative_error']:.1e}; slopes {study['slope_radius']:.6f} "
+                         f"(radius), {study['slope_k1']:.6f} (k1); first-order residual "
+                         f"{study['first_order_relative_residual']:.2%}; bias at k1 = 0.01 grows from "
+                         f"{rows[0]['mean_abs_bias_k1_0.01_m']:.2e} to {rows[-1]['mean_abs_bias_k1_0.01_m']:.2e} m; "
+                         f"corrected error {study['corrected_error_m']:.1e} m; fold at r = {fold['fold_radius']:.3f} < "
+                         f"corner {fold['image_corner_radius']:.3f}, round trip {fold['round_trip_error_px']:.1f} px.",
+        uncertainty="Deterministic; the first-order residual is O(k1 r^2) and bounded by the stated tolerance.",
+        failure_modes_checked=["sign of k1 (odd symmetry)", "markers leaving the image at large shifts",
+                               "tangential terms", "non-invertible distortion inside the image"],
+        unresolved_assumptions=["Both cameras share one distortion model", "Principal point equals distortion centre"],
+        recommended_next_task="T051: add quantization and pixel noise")
+    return {"state": "completed", "fields": fields, "findings": findings}
+
+
+# --------------------------------------------------------------- T051
+def quantization_study(seed=51, samples=200_000) -> dict:
+    rng = sig.generator(seed)
+    rows = []
+    for sigma in (0.0, 0.1, 0.25, 0.5, 1.0):
+        truth = rng.uniform(0.0, 1.0, samples) * 37.0  # uniform sub-pixel phase
+        error = np.round(truth + sigma * rng.standard_normal(samples)) - truth
+        stats = sig.variance_z(error, sigma ** 2 + 1 / 12)
+        rows.append({"sigma_px": sigma, **{k: float(v) for k, v in stats.items()}})
+    aligned = np.full(samples, 512.0)
+    aligned_error = np.round(aligned + 0.1 * rng.standard_normal(samples)) - aligned
+    return {"rows": rows, "aligned_sigma_px": 0.1, "aligned_variance": float(aligned_error.var()),
+            "aligned_prediction": 0.01 + 1 / 12, "seed": seed, "samples": samples}
+
+
+@task("T051", changed_files=(MODULE, CAMERA_FILE, SIGNALS_FILE), regression_tests=_tests("test_t051_quantization_noise"))
+def quantization_and_pixel_noise(ctx):
+    study = quantization_study()
+    scene = ctx.memo("observation:camera-scene", camera_scene)
+    cameras, points = scene["cameras"], scene["points"]
+    pairs = scene["pairs"][[0, 3, 7, 8, 11, 15]]
+    jac = cam.chord_pixel_jacobian(cameras, points[pairs[:, 0]], points[pairs[:, 1]])
+    variance = PIXEL_SIGMA_PX ** 2 + 1 / 12
+    predicted_sd = np.sqrt(variance * np.sum(jac ** 2, axis=1))
+    seed, trials = 5100, 4000
+    chords = cam.noisy_chords(cameras, points, pairs, PIXEL_SIGMA_PX, trials, sig.generator(seed))
+    errors = chords - cam.pair_chords(points, pairs)
+    propagation = []
+    for j in range(len(pairs)):
+        stats = sig.variance_z(errors[:, j], predicted_sd[j] ** 2)
+        low = (trials - 1) * stats["sample_variance"] / sig.chi2_quantile(0.9995, trials - 1)
+        high = (trials - 1) * stats["sample_variance"] / sig.chi2_quantile(0.0005, trials - 1)
+        propagation.append({"arc_m": float(scene["arcs"][[0, 3, 7, 8, 11, 15]][j]),
+                            "alpha_deg": float(scene["alphas_deg"][[0, 3, 7, 8, 11, 15]][j]),
+                            "predicted_sd_m": float(predicted_sd[j]), "sample_sd_m": math.sqrt(stats["sample_variance"]),
+                            "sd_interval_99.9_m": [math.sqrt(low), math.sqrt(high)], "z": float(stats["z"]),
+                            "mean_error_z": float(sig.mean_z(errors[:, j], 0.0)["z"])})
+    ctx.artifact_json("quantization.json", {"additivity": study, "propagation": propagation,
+                                            "pixel_sigma_px": PIXEL_SIGMA_PX, "trials": trials, "seed": seed})
+    ctx.artifact_text("error-variance-vs-sigma.svg", svg.line_plot(
+        [("sample variance", [r["sigma_px"] for r in study["rows"]], [r["sample_variance"] for r in study["rows"]]),
+         ("sigma^2 + 1/12", [r["sigma_px"] for r in study["rows"]], [r["predicted_variance"] for r in study["rows"]])],
+        title="Rounded noisy pixels: error variance", xlabel="Gaussian sigma (px)", ylabel="variance (px^2)"))
+    max_z = max(abs(r["z"]) for r in study["rows"])
+    max_prop_z = max(abs(r["z"]) for r in propagation)
+    inside = sum(r["sd_interval_99.9_m"][0] <= r["predicted_sd_m"] <= r["sd_interval_99.9_m"][1] for r in propagation)
+    findings = [
+        finding("Rounding plus Gaussian pixel noise has error variance sigma^2 + 1/12 px^2 under a uniform grid phase",
+                "numerical", {"sigma_px": [r["sigma_px"] for r in study["rows"]], "z": [r["z"] for r in study["rows"]]},
+                {"generator": _generator("uniform sub-pixel phase, Gaussian noise, integer rounding", study["seed"],
+                                         samples=study["samples"]),
+                 "checks": [_z_check(f"sample variance against sigma^2 + 1/12 at sigma = {r['sigma_px']}", r["z"])
+                            for r in study["rows"]]},
+                tolerance={"abs": 1e-6, "rel": 1e-4}),
+        finding("Without a random grid phase the quantization variance is not 1/12: an integer-aligned coordinate "
+                "with sigma = 0.1 px has almost no rounding error", "numerical",
+                {"sample_variance": study["aligned_variance"], "additive_prediction": study["aligned_prediction"]},
+                {"checks": [_check("sample variance for an integer-aligned coordinate, sigma = 0.1 px (px^2)",
+                                   study["aligned_variance"], 0.01, "le")]},
+                tolerance={"abs": 1e-6, "rel": 0},
+                counterexample={"statement": "Integer pixel rounding always adds 1/12 px^2 to the noise variance",
+                                "witness": {"true_coordinate_px": 512.0, "sigma_px": 0.1,
+                                            "sample_variance": study["aligned_variance"]}}),
+        finding("Linear propagation J (sigma^2 + 1/12) J^T predicts the chord standard deviation", "numerical",
+                {"predicted_sd_m": [r["predicted_sd_m"] for r in propagation],
+                 "sample_sd_m": [r["sample_sd_m"] for r in propagation], "z": [r["z"] for r in propagation]},
+                {"generator": _generator("ciw.lab.observation_camera.noisy_chords", seed, trials=trials,
+                                         pixel_sigma_px=PIXEL_SIGMA_PX),
+                 "checks": [_z_check(f"chord variance, pair s = {r['arc_m']:.3f} m, alpha = {r['alpha_deg']:g} deg",
+                                     r["z"]) for r in propagation]},
+                unit="m", uncertainty={"interval": "99.9 % chi-square interval on each sample SD",
+                                       "predicted_inside_interval": f"{inside}/{len(propagation)}"},
+                tolerance={"abs": 1e-12, "rel": 1e-4}),
+        _unestablished("Real image noise is Gaussian with sigma = 0.25 px and marker localization rounds to whole "
+                       "pixels", "sensor_performance", "No images were acquired; real noise is signal dependent, "
+                       "spatially correlated and marker detectors interpolate below one pixel."),
+    ]
+    fields = _fields(
+        hypothesis="Rounding to integer pixels after Gaussian noise gives error variance sigma^2 + 1/12 when the "
+                   "true coordinate is uniformly placed on the pixel grid, and chord standard deviations follow "
+                   "linear propagation through the triangulation Jacobian.",
+        mathematical_model="e = round(x + n) - x = n + q; with frac(x) ~ U(0,1) independent of n, q ~ U(-1/2, 1/2) is "
+                           "independent of n, so Var e = sigma^2 + 1/12. sigma_c^2 = (sigma^2 + 1/12) sum_j J_j^2 "
+                           "(8 pixel coordinates per pair).",
+        input_data=_scene_inputs(scene) + [f"{study['samples']} scalar samples per sigma (seed {study['seed']})",
+                                           f"{trials} stereo trials (seed {seed}), sigma = {PIXEL_SIGMA_PX} px"],
+        observation_model="Synthetic pixels with uniform grid phase, Gaussian noise and integer rounding.",
+        expected_invariant="Sample variances within 99.9 % sampling intervals of the predictions.",
+        experiment="Scalar Monte Carlo of the additivity law at five sigmas; aligned-coordinate counterexample; "
+                   "seeded stereo Monte Carlo against first-order chord propagation.",
+        numerical_result=f"additivity max |z| = {max_z:.2f}; aligned variance {study['aligned_variance']:.2e} vs "
+                         f"{study['aligned_prediction']:.4f}; chord propagation max |z| = {max_prop_z:.2f}, predicted SD "
+                         f"inside the 99.9 % interval for {inside}/{len(propagation)} pairs.",
+        uncertainty="Variance z-scores use a fourth-moment standard error; intervals are 99.9 % two-sided "
+                    "(chi-square Wilson-Hilferty quantiles).",
+        failure_modes_checked=["no dither (integer-aligned coordinate)", "sigma = 0 (pure quantization)",
+                               "nonlinearity bias of chords (mean error z recorded)"],
+        unresolved_assumptions=["Noise is independent between pixels and cameras",
+                                "Grid phase is uniform, which a fixed rig and target do not guarantee"],
+        recommended_next_task="T052: add encoder bias, scale and backlash")
+    return {"state": "completed", "fields": fields, "findings": findings}
+
+
+# --------------------------------------------------------------- T052
+ENCODER = {"backlash_m": 2e-5, "scale": 5e-4, "bias_m": 3e-5, "noise_m": 5e-7, "samples": 4000, "duration_s": 20.0}
+
+
+def encoder_study(seed=52) -> dict:
+    rng = sig.generator(seed)
+    time = np.linspace(0.0, ENCODER["duration_s"], ENCODER["samples"])
+    reference = (0.004 * np.sin(2 * math.pi * 0.23 * time) + 0.0025 * np.sin(2 * math.pi * 0.61 * time + 0.4)
+                 + 0.0005 * time)
+    width = ENCODER["backlash_m"]
+    played = sig.backlash(reference, width)
+    error = played - reference
+    labels = sig.engagement(reference, width)
+    steps = np.sign(np.diff(reference))
+    reversals = int(np.sum(steps[1:] * steps[:-1] < 0))
+    changed = np.abs(np.diff(error)) > 1e-9 * width
+    # A step is inside a post-reversal window if it starts in the deadband or ends the take-up.
+    window = (labels[:-1] == 0) | (labels[:-1] != labels[1:])
+    reading = (1 + ENCODER["scale"]) * played + ENCODER["bias_m"] + ENCODER["noise_m"] * rng.standard_normal(len(time))
+    engaged = labels != 0
+    design = np.column_stack([reference[engaged], np.ones(engaged.sum()), (labels[engaged] == -1).astype(float)])
+    fit = sig.least_squares(design, reading[engaged])
+    truth = np.array([1 + ENCODER["scale"], ENCODER["bias_m"], (1 + ENCODER["scale"]) * width])
+    sd = np.sqrt(np.diag(fit["covariance"]))
+    naive = sig.least_squares(np.column_stack([reference, np.ones(len(time))]), reading)
+    naive_sd = np.sqrt(np.diag(naive["covariance"]))
+    return {"error_min_m": float(error.min()), "error_max_m": float(error.max()), "reversals": reversals,
+            "error_changes": int(changed.sum()), "changes_outside_windows": int(np.sum(changed & ~window)),
+            "rising_engaged_max_m": float(np.max(np.abs(error[labels == 1]))),
+            "falling_engaged_offset_m": float(np.max(np.abs(error[labels == -1] - width))),
+            "engaged_fraction": float(engaged.mean()), "falling_fraction": float(np.mean(labels == -1)),
+            "estimates": _floats(fit["coefficients"]), "truth": _floats(truth), "standard_errors": _floats(sd),
+            "z": _floats((fit["coefficients"] - truth) / sd), "residual_sigma_m": fit["residual_sigma"],
+            "naive_estimates": _floats(naive["coefficients"]), "naive_z": _floats((naive["coefficients"] - truth[:2]) / naive_sd),
+            "naive_bias_error_over_backlash": float((naive["coefficients"][1] - truth[1]) / width),
+            "trace": {"time_s": _floats(time[:1200:6]), "error_m": _floats(error[:1200:6])}}
+
+
+@task("T052", changed_files=(MODULE, SIGNALS_FILE), regression_tests=_tests("test_t052_encoder_backlash"))
+def encoder_bias_scale_backlash(ctx):
+    study = encoder_study()
+    b = ENCODER["backlash_m"]
+    ctx.artifact_json("encoder-study.json", study)
+    ctx.artifact_text("backlash-error.svg", svg.line_plot(
+        [("played - reference", study["trace"]["time_s"], study["trace"]["error_m"])],
+        title="Encoder backlash error (first 6 s)", xlabel="time (s)", ylabel="metres", markers=False))
+    names = ("1 + scale", "bias", "(1 + scale) backlash")
+    findings = [
+        finding("Backlash error stays within [0, b] for a play operator of width b", "numerical",
+                {"min_m": study["error_min_m"], "max_m": study["error_max_m"], "backlash_m": b},
+                {"generator": _generator("two-tone reference with drift", 52, **ENCODER),
+                 "checks": [_check("minimum of played - reference (m)", study["error_min_m"], 0.0, "ge", "invariant"),
+                            _check("maximum minus b (m)", study["error_max_m"] - b, 1e-9 * b, "le", "invariant")]},
+                unit="m", tolerance={"abs": 1e-15, "rel": 1e-9}),
+        finding("Backlash error changes only while the play is taken up after a direction reversal", "numerical",
+                {"reversals": study["reversals"], "error_changes": study["error_changes"],
+                 "changes_outside_windows": study["changes_outside_windows"]},
+                {"checks": [_check("error changes outside post-reversal windows", study["changes_outside_windows"], 0,
+                                   kind="invariant"),
+                            _check("rising engaged |error| (m)", study["rising_engaged_max_m"], 1e-15, kind="invariant"),
+                            _check("falling engaged |error - b| (m)", study["falling_engaged_offset_m"], 1e-15,
+                                   kind="invariant")]},
+                tolerance={"abs": 0, "rel": 0}),
+        finding("Least squares with a direction term recovers scale, bias and backlash", "numerical",
+                {"estimates": study["estimates"], "truth": study["truth"], "z": study["z"]},
+                {"generator": _generator("encoder reading (1 + scale) play(x) + bias + noise", 52, **ENCODER),
+                 "checks": [_z_check(f"{name} estimate against truth", z) for name, z in zip(names, study["z"])]},
+                tolerance={"abs": 1e-12, "rel": 1e-6}),
+        finding("Least squares that ignores backlash biases the offset estimate by about b times the falling "
+                "fraction", "numerical",
+                {"naive_bias_z": study["naive_z"][1], "bias_error_over_backlash": study["naive_bias_error_over_backlash"],
+                 "falling_fraction": study["falling_fraction"]},
+                {"checks": [_check("|z| of the naive bias estimate exceeds the 99.9 % bound", abs(study["naive_z"][1]),
+                                   Z999, "ge")]},
+                tolerance={"abs": 1e-9, "rel": 1e-6},
+                counterexample={"statement": "Fitting reading = a x + c without a direction term gives unbiased "
+                                             "scale and bias under backlash",
+                                "witness": {"backlash_m": b, "naive_bias_z": study["naive_z"][1],
+                                            "bias_error_over_backlash": study["naive_bias_error_over_backlash"]}}),
+        _unestablished("A real encoder drive train behaves as a constant-width play operator with constant scale and "
+                       "bias", "physical", "No drive was measured; real backlash varies with load, wear, temperature "
+                       "and position."),
+    ]
+    fields = _fields(
+        hypothesis="With reading = (1 + scale) play_b(x) + bias + noise, the backlash error lies in [0, b], changes "
+                   "only during take-up after reversals, and a direction-aware least-squares fit recovers scale, "
+                   "bias and backlash.",
+        mathematical_model="Play operator: y_k = max(min(y_{k-1}, x_k + b), x_k) (engaged on the positive flank at "
+                           "start); engaged samples: reading = (1 + s) x + beta + (1 + s) b [falling].",
+        input_data=[f"Declared parameters {ENCODER}", "Reference x(t) = 4 mm sin(2 pi 0.23 t) + 2.5 mm "
+                    "sin(2 pi 0.61 t + 0.4) + 0.5 mm/s t", "Seed 52"],
+        observation_model="Synthetic encoder_displacement readings with Gaussian noise; no quantization "
+                          "(studied in T051).",
+        expected_invariant="0 <= play - x <= b; error constant on engaged samples; LS estimates within sampling error.",
+        experiment="Generate the reference and readings, label engagement by travel since reversal, check the "
+                   "invariants, fit with and without a direction term.",
+        numerical_result=f"error in [{study['error_min_m']:.1e}, {study['error_max_m']:.4e}] m for b = {b} m; "
+                         f"{study['reversals']} reversals, {study['changes_outside_windows']} changes outside take-up; "
+                         f"z = {[round(z, 2) for z in study['z']]}; naive bias z = {study['naive_z'][1]:.1f}.",
+        uncertainty="Estimates carry LS standard errors from the residual variance; checks use the two-sided 99.9 % "
+                    "normal bound.",
+        failure_modes_checked=["reversal within one sample of engagement", "rounding at the engaged offset",
+                               "fitting without a direction term"],
+        unresolved_assumptions=["Backlash width, scale and bias are constant", "The reference position is known "
+                                "exactly (a real calibration needs an independent reference instrument)"],
+        recommended_next_task="T053: add IMU drift and orientation noise")
+    return {"state": "completed", "fields": fields, "findings": findings}
+
+
+# --------------------------------------------------------------- T053
+IMU = {"runs": 2000, "steps": 500, "dt_s": 0.01, "bias_rad_per_s": 1e-3, "arw_rad_per_sqrt_s": 1e-3}
+STRAPDOWN = {"bias_rad_per_s": [2e-3, 0.0, 1e-3], "rotation_rad_per_s": [0.0, 0.0, 2 * math.pi],
+             "arw_rad_per_sqrt_s": 2e-4, "runs": 200, "steps": 500, "dt_s": 0.01}
+
+
+def imu_study(seed=53) -> dict:
+    rng = sig.generator(seed)
+    dt, bias, arw = IMU["dt_s"], IMU["bias_rad_per_s"], IMU["arw_rad_per_sqrt_s"]
+    errors = sig.gyro_heading_error(IMU["runs"], IMU["steps"], dt, bias, arw, rng)
+    single = []
+    for k in (49, 99, 199, 499):
+        t = (k + 1) * dt
+        sample = errors[:, k]
+        single.append({"t_s": t, "mean_z": float(sig.mean_z(sample, bias * t)["z"]),
+                       "variance_z": float(sig.variance_z(sample, arw ** 2 * t)["z"]),
+                       "mse": float(np.mean(sample ** 2)), "mse_predicted": arw ** 2 * t + (bias * t) ** 2,
+                       "mse_z": float(sig.mean_z(sample ** 2, arw ** 2 * t + (bias * t) ** 2)["z"])})
+    b3 = np.array(STRAPDOWN["bias_rad_per_s"])
+    steps, dt3 = STRAPDOWN["steps"], STRAPDOWN["dt_s"]
+    cases = {}
+    for name, omega in (("stationary", np.zeros(3)), ("rotating", np.array(STRAPDOWN["rotation_rad_per_s"]))):
+        exact = sig.orientation_errors(omega, b3, 0.0, 1, steps, dt3, rng)[:, 0, :]
+        predicted = sig.bias_error_prediction(omega, b3, steps, dt3)
+        transverse = np.linalg.norm(exact[:, :2], axis=1)
+        noisy = sig.orientation_errors(omega, b3, STRAPDOWN["arw_rad_per_sqrt_s"], STRAPDOWN["runs"], steps, dt3, rng)
+        spread = np.sum((noisy - predicted[:, None, :]) ** 2, axis=2)
+        cases[name] = {"prediction_relative_error": float(np.max(np.abs(exact - predicted)) / np.max(np.abs(predicted))),
+                       "max_transverse_rad": float(transverse.max()), "final_error_rad": _floats(exact[-1]),
+                       "arw_z": [float(sig.mean_z(spread[k], 3 * STRAPDOWN["arw_rad_per_sqrt_s"] ** 2 * (k + 1) * dt3)["z"])
+                                 for k in (99, 499)],
+                       "transverse_trace": _floats(transverse[::10])}
+    b_perp = float(np.linalg.norm(b3[:2]))
+    bound = 2 * b_perp / float(np.linalg.norm(STRAPDOWN["rotation_rad_per_s"]))
+    return {"single_axis": single, "strapdown": cases, "transverse_bound_rad": bound,
+            "stationary_transverse_at_end_rad": b_perp * steps * dt3, "seed": seed,
+            "mean_trace": {"t_s": _floats((np.arange(IMU["steps"]) + 1)[::10] * dt),
+                           "mean": _floats(errors.mean(axis=0)[::10]), "variance": _floats(errors.var(axis=0)[::10])}}
+
+
+@task("T053", changed_files=(MODULE, SIGNALS_FILE), regression_tests=_tests("test_t053_imu_drift"))
+def imu_drift_and_noise(ctx):
+    study = imu_study()
+    single, cases = study["single_axis"], study["strapdown"]
+    ctx.artifact_json("imu-study.json", study)
+    trace = study["mean_trace"]
+    ctx.artifact_text("heading-error-moments.svg", svg.line_plot(
+        [("sample mean", trace["t_s"], trace["mean"]),
+         ("b t", trace["t_s"], [IMU["bias_rad_per_s"] * t for t in trace["t_s"]]),
+         ("sample variance x 1000", trace["t_s"], [1000 * v for v in trace["variance"]]),
+         ("N^2 t x 1000", trace["t_s"], [1000 * IMU["arw_rad_per_sqrt_s"] ** 2 * t for t in trace["t_s"]])],
+        title="Single-axis gyro heading error", xlabel="time (s)", ylabel="rad (variance scaled)", markers=False))
+    rotating, stationary = cases["rotating"], cases["stationary"]
+    findings = [
+        finding("Single-axis gyro heading error has mean b t and variance N^2 t", "numerical",
+                {"t_s": [r["t_s"] for r in single], "mean_z": [r["mean_z"] for r in single],
+                 "variance_z": [r["variance_z"] for r in single]},
+                {"generator": _generator("gyro bias plus white rate noise", study["seed"], **IMU),
+                 "checks": [_z_check(f"mean at t = {r['t_s']:g} s", r["mean_z"]) for r in single]
+                 + [_z_check(f"variance at t = {r['t_s']:g} s", r["variance_z"]) for r in single]},
+                tolerance={"abs": 1e-9, "rel": 1e-6}),
+        finding("Mean squared heading error is N^2 t + (b t)^2", "numerical",
+                {"mse": [r["mse"] for r in single], "predicted": [r["mse_predicted"] for r in single]},
+                {"checks": [_z_check(f"mean squared error at t = {r['t_s']:g} s", r["mse_z"]) for r in single]},
+                unit="rad^2", tolerance={"abs": 1e-15, "rel": 1e-6}),
+        finding("Strapdown bias error follows e_{k+1} = exp(-omega dt) e_k + J_r(omega dt) b dt", "numerical",
+                {"stationary_relative_error": stationary["prediction_relative_error"],
+                 "rotating_relative_error": rotating["prediction_relative_error"]},
+                {"checks": [_check("stationary body: integrated error against b t (relative)",
+                                   stationary["prediction_relative_error"], 1e-9),
+                            _check("rotating body: integrated error against the linearized recursion (relative)",
+                                   rotating["prediction_relative_error"], 2e-3)]},
+                tolerance={"abs": 1e-9, "rel": 1e-6}),
+        finding("On a body rotating about z, transverse gyro bias produces a bounded orientation error "
+                "2 |b_perp| / |omega| instead of |b_perp| t", "numerical",
+                {"max_transverse_rad": rotating["max_transverse_rad"], "bound_rad": study["transverse_bound_rad"],
+                 "stationary_transverse_rad": stationary["max_transverse_rad"]},
+                {"checks": [_check("max transverse error minus the bound (rad)",
+                                   rotating["max_transverse_rad"] - study["transverse_bound_rad"],
+                                   1e-3 * study["transverse_bound_rad"], "le"),
+                            _check("stationary transverse error over the rotating bound",
+                                   stationary["max_transverse_rad"] / study["transverse_bound_rad"], 10.0, "ge")]},
+                tolerance={"abs": 1e-12, "rel": 1e-6},
+                counterexample={"statement": "The mean orientation error from a constant gyro bias grows as |bias| t",
+                                "witness": {"rotation_rad_per_s": STRAPDOWN["rotation_rad_per_s"],
+                                            "bias_rad_per_s": STRAPDOWN["bias_rad_per_s"],
+                                            "max_transverse_rad": rotating["max_transverse_rad"],
+                                            "stationary_transverse_rad": stationary["max_transverse_rad"]}}),
+        finding("Angle random walk stays isotropic with E|e - m|^2 = 3 N^2 t on stationary and rotating bodies",
+                "numerical", {"stationary_z": stationary["arw_z"], "rotating_z": rotating["arw_z"]},
+                {"generator": _generator("strapdown SO(3) integration", study["seed"], **STRAPDOWN),
+                 "checks": [_z_check(f"{name} spread at step {k}", z) for name in ("stationary", "rotating")
+                            for k, z in zip((100, 500), cases[name]["arw_z"])]},
+                tolerance={"abs": 1e-9, "rel": 1e-6}),
+        _unestablished("Real gyroscopes have constant bias and white rate noise with the declared densities",
+                       "sensor_performance", "No IMU was acquired; bias instability, scale factor, temperature and "
+                       "vibration effects are not modelled."),
+    ]
+    fields = _fields(
+        hypothesis="Integrating a gyro with constant bias b and white rate noise of density N gives heading error "
+                   "with mean b t and variance N^2 t; in 3-D the bias error rotates with the body, so transverse "
+                   "bias stays bounded while the random walk stays isotropic.",
+        mathematical_model="Single axis: e(t) = b t + N W(t). Strapdown: E_{k+1} = exp(-[w] dt) E_k exp([w + b + n] dt); "
+                           "linearized e_{k+1} = exp(-[w] dt) e_k + J_r(w dt)(b + n) dt, so transverse components "
+                           "circle with radius |b_perp|/|w| (maximum 2|b_perp|/|w|).",
+        input_data=[f"Single axis {IMU}", f"Strapdown {STRAPDOWN}", f"Seed {study['seed']}"],
+        observation_model="Synthetic imu_orientation outputs from integrated gyro rates; no accelerometer or "
+                          "magnetometer aiding.",
+        expected_invariant="Moments within 99.9 % Monte Carlo intervals; deterministic bias propagation matches the "
+                           "linearized recursion.",
+        experiment="Seeded single-axis ensemble; noise-free and noisy SO(3) integrations for a stationary and a "
+                   "rotating body; counterexample search for unbounded bias growth.",
+        numerical_result=f"single-axis max |z| = {max(max(abs(r['mean_z']), abs(r['variance_z'])) for r in single):.2f}; "
+                         f"rotating transverse max {rotating['max_transverse_rad']:.3e} rad vs bound "
+                         f"{study['transverse_bound_rad']:.3e} (stationary {stationary['max_transverse_rad']:.3e}); "
+                         f"linearization error {rotating['prediction_relative_error']:.1e}.",
+        uncertainty="Monte Carlo z-scores with 2000 (single axis) and 200 (strapdown) runs; second-order BCH terms "
+                    "limit the linearized recursion to about 1e-3 relative.",
+        failure_modes_checked=["noncommuting rotation with a transverse bias", "small-angle log map",
+                               "variance versus mean squared error"],
+        unresolved_assumptions=["Bias is constant (no bias instability)", "Truth rotation rate is constant and known"],
+        recommended_next_task="T054: add asynchronous timestamps")
+    return {"state": "completed", "fields": fields, "findings": findings}
+
+
+# --------------------------------------------------------------- T054
+TIMING = {"rate_a_hz": 100.0, "rate_b_hz": 30.0, "offset_s": 1 / 256, "jitter_s": 5e-4, "runs": 300}
+
+
+def _signal(t):
+    return 0.05 * np.sin(2 * math.pi * 0.7 * t) + 0.02 * np.sin(2 * math.pi * 1.9 * t + 0.3)
+
+
+def _velocity(t):
+    return (0.05 * 2 * math.pi * 0.7 * np.cos(2 * math.pi * 0.7 * t)
+            + 0.02 * 2 * math.pi * 1.9 * np.cos(2 * math.pi * 1.9 * t + 0.3))
+
+
+def _acceleration_bound():
+    return 0.05 * (2 * math.pi * 0.7) ** 2 + 0.02 * (2 * math.pi * 1.9) ** 2
+
+
+def timing_study(seed=54) -> dict:
+    rng = sig.generator(seed)
+    times_a = np.arange(20, 380) / TIMING["rate_a_hz"]
+    knots = np.arange(0, 121) / TIMING["rate_b_hz"]
+    values = _signal(knots)
+    baseline = np.interp(times_a, knots, values) - _signal(times_a)
+    # Sample level: attributing x(t) to t + delta.
+    deltas = np.geomspace(1e-4, 1e-2, 7)
+    residuals, violations = [], 0
+    for delta in deltas:
+        error = values - _signal(knots + delta)
+        residual = np.abs(error + _velocity(knots) * delta)
+        violations += int(np.sum(residual > _acceleration_bound() * delta ** 2 / 2 * (1 + 1e-9)))
+        residuals.append(float(residual.max()))
+    sample_slope = sig.loglog_slope(deltas, residuals)
+    # After linear interpolation to the common (A) times.
+    delta = 2e-3
+    index, weight, width = sig.interpolation_weights(knots, times_a)
+    secant = (values[index + 1] - values[index]) / width
+    offset_error = np.interp(times_a, knots + delta, values) - _signal(times_a) - baseline
+    no_knot = weight * width >= delta
+    exact_residual = float(np.max(np.abs(offset_error + secant * delta)[no_knot]))
+    reference = -_velocity(times_a) * delta
+    regression = float(offset_error @ reference / (reference @ reference))
+    # Jitter.
+    sigma = TIMING["jitter_s"]
+    per_run = np.empty(TIMING["runs"])
+    for run in range(TIMING["runs"]):
+        stamps = knots + sigma * rng.standard_normal(len(knots))
+        per_run[run] = np.mean((np.interp(times_a, stamps, values) - _signal(times_a) - baseline) ** 2)
+    predicted = float(np.mean(secant ** 2 * sigma ** 2 * ((1 - weight) ** 2 + weight ** 2)))
+    jitter = sig.mean_z(per_run, predicted)
+    return {"deltas_s": _floats(deltas), "sample_residual_max": residuals, "sample_slope": sample_slope,
+            "bound_violations": violations, "interp_delta_s": delta, "exact_residual": exact_residual,
+            "excluded_near_knots": int(np.sum(~no_knot)), "velocity_regression": regression,
+            "jitter_mse": float(jitter["sample_mean"]), "jitter_predicted": predicted, "jitter_z": float(jitter["z"]),
+            "baseline_rms": float(np.sqrt(np.mean(baseline ** 2))), "seed": seed}
+
+
+def _encoder_record(value, clock, epoch, time_s, sequence):
+    return om.observe("encoder_displacement", value, unit="m", frame_id="axis:x", clock_id=clock,
+                      clock_basis="acquisition", epoch=epoch, time_s=float(time_s),
+                      calibration_ref="calibration:declared-synthetic", sequence=sequence,
+                      raw_ref=f"raw:{clock}:{sequence}")
+
+
+@task("T054", changed_files=(MODULE, SIGNALS_FILE, MODES_FILE), regression_tests=_tests("test_t054_asynchronous_timestamps"))
+def asynchronous_timestamps(ctx):
+    study = timing_study()
+    offset = TIMING["offset_s"]
+    knots = np.arange(0, 121) / TIMING["rate_b_hz"]
+    b_records = [_encoder_record(v, "clock:B", "epoch:B-boot", t + offset, k)
+                 for k, (t, v) in enumerate(zip(knots, _signal(knots)))]
+    a_record = _encoder_record(float(_signal(np.array([1.0]))[0]), "clock:A", "epoch:run-0", 1.0, 0)
+    mapping = om.ClockMapping("clock:B", "epoch:B-boot", "acquisition", "clock:A", "epoch:run-0", "acquisition",
+                              1.0, -offset, "declared synthetic synchronization")
+    mapped = [om.apply_clock(record, mapping) for record in b_records]
+    times_a = np.arange(20, 380) / TIMING["rate_a_hz"]
+    stamps = np.array([record.time_s for record in mapped])
+    values = np.array([record.value[0] for record in mapped])
+    mapped_gap = float(np.max(np.abs(np.interp(times_a, stamps, values) - np.interp(times_a, knots, _signal(knots)))))
+    unmapped_stamps = np.array([record.time_s for record in b_records])
+    unmapped_gap = float(np.max(np.abs(np.interp(times_a, unmapped_stamps, values)
+                                       - np.interp(times_a, knots, _signal(knots)))))
+    refusals = [_refusal("combining clock A and clock B records without a mapping", "clock_mismatch",
+                         lambda: om.combine(a_record, b_records[30])),
+                _refusal("combining after the declared mapping", "accepted", lambda: om.combine(a_record, mapped[30])),
+                _refusal("applying the mapping to a record of another epoch", "epoch_mismatch",
+                         lambda: om.apply_clock(replace(b_records[30], epoch="epoch:B-reboot"), mapping))]
+    ctx.artifact_json("timing-study.json", {**study, "declared": TIMING, "mapping": mapping.record(),
+                                            "mapped_interpolation_gap": mapped_gap,
+                                            "unmapped_interpolation_gap": unmapped_gap})
+    ctx.artifact_text("offset-residual.svg", svg.line_plot(
+        [("max |e + v delta|", study["deltas_s"], study["sample_residual_max"]),
+         ("a_max delta^2 / 2", study["deltas_s"], [_acceleration_bound() * d ** 2 / 2 for d in study["deltas_s"]])],
+        title="Clock offset: first-order residual", xlabel="offset delta (s)", ylabel="position residual (m)",
+        logx=True, logy=True))
+    findings = [
+        finding("A clock offset delta produces error -v delta + O(delta^2) at the sample times", "numerical",
+                {"residual_slope": study["sample_slope"], "bound_violations": study["bound_violations"]},
+                {"checks": [_check("log-log slope of max |e + v delta| minus 2", study["sample_slope"] - 2, 0.02),
+                            _check("samples exceeding a_max delta^2 / 2", study["bound_violations"], 0,
+                                   kind="invariant")]},
+                tolerance={"abs": 1e-9, "rel": 1e-9}),
+        finding("After linear interpolation to a common time the offset error is exactly -S delta (S the interpolant "
+                "slope) and -v delta to first order", "numerical",
+                {"exact_residual_m": study["exact_residual"], "velocity_regression": study["velocity_regression"]},
+                {"checks": [_check("|error + S delta| away from knots (m)", study["exact_residual"], 1e-12),
+                            _check("regression coefficient on -v delta minus 1", study["velocity_regression"] - 1,
+                                   0.02)]},
+                tolerance={"abs": 1e-12, "rel": 1e-9}),
+        finding("Timestamp jitter adds mean squared error S^2 sigma_j^2 ((1 - w)^2 + w^2)", "numerical",
+                {"sample_mse": study["jitter_mse"], "predicted_mse": study["jitter_predicted"], "z": study["jitter_z"]},
+                {"generator": _generator("Gaussian timestamp jitter", study["seed"], jitter_s=TIMING["jitter_s"],
+                                         runs=TIMING["runs"]),
+                 "checks": [_z_check("per-run mean squared jitter error against the first-order prediction",
+                                     study["jitter_z"])]},
+                unit="m^2", tolerance={"abs": 1e-18, "rel": 1e-6}),
+        finding("A declared clock mapping removes the offset error; combining clocks without one is refused",
+                "computational_pipeline", {"mapped_gap_m": mapped_gap, "unmapped_gap_m": unmapped_gap},
+                {"checks": refusals + [_check("interpolation with mapped stamps against true stamps (m)", mapped_gap,
+                                              1e-15)]},
+                tolerance={"abs": 1e-15, "rel": 1e-9}),
+        _unestablished("Real sensor clocks have the declared constant offset and white jitter", "physical",
+                       "No clocks were measured; drift, rate error and non-Gaussian latency are not modelled."),
+    ]
+    fields = _fields(
+        hypothesis="An uncorrected clock offset delta between two sensors produces an error equal to -velocity x "
+                   "delta to first order after interpolation to a common time; jitter adds a predictable variance; "
+                   "a declared clock mapping removes the offset.",
+        mathematical_model="x(t) attributed to t + delta: e = x(t) - x(t + delta) = -v delta - a delta^2/2 + ...; "
+                           "linear interpolation I(t - delta) - I(t) = -S delta off the knots; jitter j_i: "
+                           "e = -S((1 - w) j_i + w j_{i+1}) to first order.",
+        input_data=[f"Declared timing {TIMING}", "Signal 50 mm sin(2 pi 0.7 t) + 20 mm sin(2 pi 1.9 t + 0.3)",
+                    f"Seed {study['seed']}"],
+        observation_model="Synthetic encoder_displacement records on clock B (30 Hz) interpolated to clock A times "
+                          "(100 Hz), acquisition-stamped.",
+        expected_invariant="Residual O(delta^2); exact secant law; jitter MSE within the Monte Carlo interval; mapped "
+                           "stamps reproduce the true-stamp interpolation.",
+        experiment="Offset scan over delta; exact comparison with the interpolant slope; seeded jitter ensemble; "
+                   "typed records mapped with a declared ClockMapping and combined.",
+        numerical_result=f"residual slope {study['sample_slope']:.4f}; exact residual {study['exact_residual']:.1e} m; "
+                         f"velocity regression {study['velocity_regression']:.4f}; jitter MSE {study['jitter_mse']:.3e} "
+                         f"vs {study['jitter_predicted']:.3e} (z = {study['jitter_z']:.2f}); mapped gap {mapped_gap:.1e} m "
+                         f"vs unmapped {unmapped_gap:.2e} m.",
+        uncertainty="The velocity regression departs from 1 by the secant-slope factor about 1 - (omega h)^2/24; "
+                    "jitter z uses 300 independent runs.",
+        failure_modes_checked=["offset crossing an interpolation knot (excluded and counted)",
+                               "combining clocks without a mapping", "mapping applied to the wrong epoch"],
+        unresolved_assumptions=["Clock offset is constant (no drift)", "Jitter is white and much smaller than the "
+                                "sample interval"],
+        recommended_next_task="T055: add dropped observations")
+    return {"state": "completed", "fields": fields, "findings": findings}

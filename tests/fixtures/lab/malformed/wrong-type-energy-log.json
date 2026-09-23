@@ -1,0 +1,408 @@
+{
+ "clock": {
+  "epoch_id": "synthetic-clock-0",
+  "implementation": "synthetic monotonic",
+  "monotonic_origin_ns": "123456789",
+  "resolution_s": 1e-09,
+  "utc_unit": "unix_ns_decimal_string"
+ },
+ "log_digest": "sha256:7d9639af0758fd56b9f6ec5664d098cf806139016505c1a778321284d2cdb803",
+ "origin": true,
+ "phases": [
+  {
+   "batches": [],
+   "end_ns": 200000100,
+   "error": null,
+   "name": "startup",
+   "samples": [
+    {
+     "context_errors": {},
+     "energy_mj": "1000",
+     "error_code": null,
+     "graphics_clock_mhz": 1000,
+     "power_mw": 1000,
+     "read_end_ns": 90,
+     "read_start_ns": 80,
+     "status": "ok",
+     "temperature_c": 40,
+     "utc_end_ns": "1000000000000000090",
+     "utc_start_ns": "1000000000000000080"
+    },
+    {
+     "context_errors": {},
+     "energy_mj": "1200",
+     "error_code": null,
+     "graphics_clock_mhz": 1000,
+     "power_mw": 1000,
+     "read_end_ns": 200000120,
+     "read_start_ns": 200000110,
+     "status": "ok",
+     "temperature_c": 40,
+     "utc_end_ns": "1000000000200000120",
+     "utc_start_ns": "1000000000200000110"
+    }
+   ],
+   "start_ns": 100
+  },
+  {
+   "batches": [
+    {
+     "batch_index": 0,
+     "end_ns": 400000160,
+     "result": {
+      "encoding": "ciw.constant-float64-row.v1",
+      "expanded_sha256": "sha256:dcf56e8a81c0b43241220a45df1731ca13f59909f11223bbc9c8335169c62f05",
+      "replicas": 4,
+      "values": [
+       0.3508771929824561,
+       1.0175438596491229,
+       0.4987468671679198,
+       -0.025062656641604012,
+       -0.025062656641604012,
+       0.4987468671679198
+      ]
+     },
+     "start_ns": 200000220
+    }
+   ],
+   "end_ns": 400000200,
+   "error": null,
+   "name": "warmup",
+   "samples": [
+    {
+     "context_errors": {},
+     "energy_mj": "1300",
+     "error_code": null,
+     "graphics_clock_mhz": 1000,
+     "power_mw": 1000,
+     "read_end_ns": 200000190,
+     "read_start_ns": 200000180,
+     "status": "ok",
+     "temperature_c": 40,
+     "utc_end_ns": "1000000000200000190",
+     "utc_start_ns": "1000000000200000180"
+    },
+    {
+     "context_errors": {},
+     "energy_mj": "1400",
+     "error_code": null,
+     "graphics_clock_mhz": 1000,
+     "power_mw": 1000,
+     "read_end_ns": 400000180,
+     "read_start_ns": 400000170,
+     "status": "ok",
+     "temperature_c": 40,
+     "utc_end_ns": "1000000000400000180",
+     "utc_start_ns": "1000000000400000170"
+    },
+    {
+     "context_errors": {},
+     "energy_mj": "1500",
+     "error_code": null,
+     "graphics_clock_mhz": 1000,
+     "power_mw": 1000,
+     "read_end_ns": 400000220,
+     "read_start_ns": 400000210,
+     "status": "ok",
+     "temperature_c": 40,
+     "utc_end_ns": "1000000000400000220",
+     "utc_start_ns": "1000000000400000210"
+    }
+   ],
+   "start_ns": 200000200
+  },
+  {
+   "batches": [],
+   "end_ns": 600000300,
+   "error": null,
+   "name": "idle_before",
+   "samples": [
+    {
+     "context_errors": {},
+     "energy_mj": "1600",
+     "error_code": null,
+     "graphics_clock_mhz": 1000,
+     "power_mw": 1000,
+     "read_end_ns": 400000290,
+     "read_start_ns": 400000280,
+     "status": "ok",
+     "temperature_c": 40,
+     "utc_end_ns": "1000000000400000290",
+     "utc_start_ns": "1000000000400000280"
+    },
+    {
+     "context_errors": {},
+     "energy_mj": "1800",
+     "error_code": null,
+     "graphics_clock_mhz": 1000,
+     "power_mw": 1000,
+     "read_end_ns": 600000320,
+     "read_start_ns": 600000310,
+     "status": "ok",
+     "temperature_c": 40,
+     "utc_end_ns": "1000000000600000320",
+     "utc_start_ns": "1000000000600000310"
+    }
+   ],
+   "start_ns": 400000300
+  },
+  {
+   "batches": [
+    {
+     "batch_index": 0,
+     "end_ns": 1600000360,
+     "result": {
+      "encoding": "ciw.constant-float64-row.v1",
+      "expanded_sha256": "sha256:dcf56e8a81c0b43241220a45df1731ca13f59909f11223bbc9c8335169c62f05",
+      "replicas": 4,
+      "values": [
+       0.3508771929824561,
+       1.0175438596491229,
+       0.4987468671679198,
+       -0.025062656641604012,
+       -0.025062656641604012,
+       0.4987468671679198
+      ]
+     },
+     "start_ns": 600000420
+    }
+   ],
+   "end_ns": 1600000400,
+   "error": null,
+   "name": "measurement",
+   "samples": [
+    {
+     "context_errors": {},
+     "energy_mj": "1900",
+     "error_code": null,
+     "graphics_clock_mhz": 1000,
+     "power_mw": 1000,
+     "read_end_ns": 600000390,
+     "read_start_ns": 600000380,
+     "status": "ok",
+     "temperature_c": 40,
+     "utc_end_ns": "1000000000600000390",
+     "utc_start_ns": "1000000000600000380"
+    },
+    {
+     "context_errors": {},
+     "energy_mj": "2000",
+     "error_code": null,
+     "graphics_clock_mhz": 1000,
+     "power_mw": 1000,
+     "read_end_ns": 1600000380,
+     "read_start_ns": 1600000370,
+     "status": "ok",
+     "temperature_c": 40,
+     "utc_end_ns": "1000000001600000380",
+     "utc_start_ns": "1000000001600000370"
+    },
+    {
+     "context_errors": {},
+     "energy_mj": "2100",
+     "error_code": null,
+     "graphics_clock_mhz": 1000,
+     "power_mw": 1000,
+     "read_end_ns": 1600000420,
+     "read_start_ns": 1600000410,
+     "status": "ok",
+     "temperature_c": 40,
+     "utc_end_ns": "1000000001600000420",
+     "utc_start_ns": "1000000001600000410"
+    }
+   ],
+   "start_ns": 600000400
+  },
+  {
+   "batches": [],
+   "end_ns": 1800000500,
+   "error": null,
+   "name": "idle_after",
+   "samples": [
+    {
+     "context_errors": {},
+     "energy_mj": "2200",
+     "error_code": null,
+     "graphics_clock_mhz": 1000,
+     "power_mw": 1000,
+     "read_end_ns": 1600000490,
+     "read_start_ns": 1600000480,
+     "status": "ok",
+     "temperature_c": 40,
+     "utc_end_ns": "1000000001600000490",
+     "utc_start_ns": "1000000001600000480"
+    },
+    {
+     "context_errors": {},
+     "energy_mj": "2400",
+     "error_code": null,
+     "graphics_clock_mhz": 1000,
+     "power_mw": 1000,
+     "read_end_ns": 1800000520,
+     "read_start_ns": 1800000510,
+     "status": "ok",
+     "temperature_c": 40,
+     "utc_end_ns": "1000000001800000520",
+     "utc_start_ns": "1000000001800000510"
+    }
+   ],
+   "start_ns": 1600000500
+  }
+ ],
+ "plan": {
+  "idle_duration_s": 0.2,
+  "iterations": 128,
+  "max_batches": 2,
+  "minimum_duration_s": 1.0,
+  "model_digest": "sha256:3e0b9654e409264ab03bf2fab8a6afc0ddbe9323efa9a1d725dbc426ce57574c",
+  "observations_digest": "sha256:44c32c0bf4f665d42f890db37d9eef40d82f33c1379e1871917625787d164d4b",
+  "problem": {
+   "coordinate_system": "normalized_dimensionless",
+   "noise_covariance": [
+    [
+     1.0,
+     0.1
+    ],
+    [
+     0.1,
+     1.0
+    ]
+   ],
+   "observation_matrix": [
+    [
+     1.0,
+     0.2
+    ],
+    [
+     0.0,
+     1.0
+    ]
+   ],
+   "observations": [
+    1.0,
+    2.0
+   ],
+   "prior_covariance": [
+    [
+     1.0,
+     0.0
+    ],
+    [
+     0.0,
+     1.0
+    ]
+   ],
+   "prior_mean": [
+    0.0,
+    0.0
+   ]
+  },
+  "problem_digest": "sha256:acb6720505e8f7d620aec81343be96c3b0f14b296519952730ab97ad99211ca6",
+  "replicas": 4,
+  "solver": {
+   "alpha": 0.1,
+   "beta": 0.2,
+   "gradient_tolerance": 1e-09,
+   "initial_covariance": [
+    [
+     1.0,
+     0.0
+    ],
+    [
+     0.0,
+     1.0
+    ]
+   ],
+   "initial_mean": [
+    0.0,
+    0.0
+   ],
+   "max_iterations": 256,
+   "precision_tolerance": 1e-09
+  },
+  "target_kl_nats": 1e-08,
+  "warmup_batches": 1
+ },
+ "run_id": "energy-run-11111111111111111111111111111111",
+ "runtime": {
+  "implementation": {
+   "code_sha256": "dddddddddddddddddddddddddddddddddddddddddddddddddddddddddddddddd",
+   "profile": "synthetic-fixture"
+  },
+  "python": {
+   "executable_sha256": "cccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccc",
+   "numpy_version": "2.4.3",
+   "version": "3.12.0"
+  },
+  "workload": {
+   "algorithm": "fixed_step_mean_gradient_and_full_precision_relaxation",
+   "arithmetic": "binary64_explicit_round_to_nearest_no_fma_contraction",
+   "compute_capability": [
+    8,
+    6
+   ],
+   "cuda_driver_version": 12000,
+   "device_index": 0,
+   "device_name": "synthetic fixture device",
+   "device_uuid": "GPU-01234567-89ab-cdef-0123-456789abcdef",
+   "execution_device": "gpu",
+   "iterations": 128,
+   "kernel_sha256": "aaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa",
+   "measurement_boundary": "constructor_preparation_and_jit_excluded;solve_includes_launch_sync_copy_and_output_check",
+   "output_layout": [
+    "mean_0",
+    "mean_1",
+    "covariance_00",
+    "covariance_01",
+    "covariance_10",
+    "covariance_11"
+   ],
+   "prepared_input_sha256": "5b741b49b6bc4ac239a866f5fa3042222552cf9e9a48632915afa1dd1600e1ff",
+   "problem_sha256": "acb6720505e8f7d620aec81343be96c3b0f14b296519952730ab97ad99211ca6",
+   "ptx_target": "sm_50",
+   "ptx_version": "6.0",
+   "replica_semantics": "identical_declared_problem_independent_thread_work",
+   "replicas": 4,
+   "schema": "ciw.cuda-gaussian-worker.v1",
+   "solver_settings": {
+    "alpha": 0.1,
+    "beta": 0.2,
+    "gradient_tolerance": 1e-09,
+    "initial_covariance": [
+     [
+      1.0,
+      0.0
+     ],
+     [
+      0.0,
+      1.0
+     ]
+    ],
+    "initial_mean": [
+     0.0,
+     0.0
+    ],
+    "max_iterations": 256,
+    "precision_tolerance": 1e-09
+   },
+   "threads_per_block": 128
+  }
+ },
+ "schema": "ciw.energy-accuracy-log.v1",
+ "sensor": {
+  "accuracy_j": null,
+  "backend": "nvml",
+  "background_inclusive": true,
+  "counter_scope": "gpu_device",
+  "counter_unit": "mJ",
+  "device_uuid": "GPU-01234567-89ab-cdef-0123-456789abcdef",
+  "driver_version": "fixture",
+  "library_sha256": "bbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbb",
+  "name": "synthetic fixture device",
+  "nvml_version": "fixture",
+  "power_unit": "mW",
+  "resolution_j": null,
+  "timestamp_semantics": "host_call_brackets",
+  "update_interval_s": null
+ }
+}

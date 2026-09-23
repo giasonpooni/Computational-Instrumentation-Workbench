@@ -386,19 +386,16 @@ def cylinder_mesh(n: int, m: int, radius: float = 1.0, height: float = 1.0, lant
     phi = 2 * math.pi * i[None, :] / n + (lantern * (j[:, None] % 2)) * math.pi / n
     z = np.broadcast_to((height * j / m)[:, None], phi.shape)
     vertices = np.stack([radius * np.cos(phi), radius * np.sin(phi), z], axis=-1).reshape(-1, 3)
-    faces = []
-    for band in range(m):
-        base, top = band * n, (band + 1) * n
-        for k in range(n):
-            k1 = (k + 1) % n
-            if lantern and band % 2 == 0:
-                faces.append([base + k, base + k1, top + k])
-                faces.append([base + k1, top + k1, top + k])
-            else:
-                faces.append([base + k, base + k1, top + k1])
-                faces.append([base + k, top + k1, top + k])
+    band = np.repeat(np.arange(m), n)[:, None]
+    k = np.tile(np.arange(n), m)[:, None]
+    base, top, k1 = band * n, (band + 1) * n, (k + 1) % n
+    # Lantern even bands: apex of the upward triangle sits between two base vertices.
+    offset = (lantern & (band % 2 == 0))
+    first = np.where(offset, np.hstack([base + k, base + k1, top + k]), np.hstack([base + k, base + k1, top + k1]))
+    second = np.where(offset, np.hstack([base + k1, top + k1, top + k]), np.hstack([base + k, top + k1, top + k]))
+    faces = np.stack([first, second], axis=1).reshape(-1, 3)
     name = "schwarz-lantern" if lantern else "prism-cylinder"
-    return TriMesh(vertices, np.array(faces), f"{name}-{n}x{m}",
+    return TriMesh(vertices, faces, f"{name}-{n}x{m}",
                    {"n": n, "m": m, "radius": radius, "height": height, "lantern": lantern})
 
 
@@ -500,7 +497,8 @@ def trace(mesh: TriMesh, face: int, point, direction, length: float, *, vertex_t
         origin = corners[0]
         e1 = corners[1] - origin
         e1 /= np.linalg.norm(e1)
-        e2 = np.cross(mesh.face_normals[face], e1)
+        nx, ny, nz = mesh.face_normals[face]
+        e2 = np.array([ny * e1[2] - nz * e1[1], nz * e1[0] - nx * e1[2], nx * e1[1] - ny * e1[0]])
         local = np.stack([(corners - origin) @ e1, (corners - origin) @ e2], axis=1)
         q = np.array([(point - origin) @ e1, (point - origin) @ e2])
         w = np.array([direction @ e1, direction @ e2])

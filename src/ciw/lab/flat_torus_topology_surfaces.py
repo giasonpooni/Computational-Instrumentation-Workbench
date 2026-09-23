@@ -20,7 +20,11 @@ import math
 
 
 class GluingRefusal(ValueError):
-    """An edge pairing that does not define the declared kind of surface."""
+    """An edge pairing that does not define the declared kind of surface, with a stable code."""
+
+    def __init__(self, code: str, message: str):
+        super().__init__(f"{code}: {message}")
+        self.code = code
 
 
 class FlowTermination(Exception):
@@ -144,21 +148,22 @@ class PolygonSurface:
         for left, right in pairs:
             for edge in (left, right):
                 if edge in self.partner:
-                    raise GluingRefusal(f"Edge {edge} is glued twice")
+                    raise GluingRefusal("EDGE_GLUED_TWICE", f"Edge {edge} is glued twice")
             self.partner[left], self.partner[right] = right, left
         edges = {(i, j) for i, p in enumerate(self.polygons) for j in range(len(p))}
         if set(self.partner) != edges:
-            raise GluingRefusal("Every polygon edge must be glued to exactly one other edge")
+            raise GluingRefusal("EDGE_UNGLUED", "Every polygon edge must be glued to exactly one other edge")
         for i, polygon in enumerate(self.polygons):
             if len(polygon) < 3:
-                raise GluingRefusal("Polygons need at least three vertices")
+                raise GluingRefusal("DEGENERATE_POLYGON", "Polygons need at least three vertices")
             for j in range(len(polygon)):
                 if not self._positive(_cross(self.edge(i, j), self.edge(i, (j + 1) % len(polygon)))):
-                    raise GluingRefusal(f"Polygon {i} is not strictly convex and counterclockwise at vertex {j + 1}")
+                    raise GluingRefusal("POLYGON_NOT_CONVEX_CCW",
+                                    f"Polygon {i} is not strictly convex and counterclockwise at vertex {j + 1}")
         for (i, j), (k, l) in self.partner.items():
             if abs(float(_dot(self.edge(i, j), self.edge(i, j))) - float(_dot(self.edge(k, l), self.edge(k, l)))) > 1e-12 \
                     and not self._equal(_dot(self.edge(i, j), self.edge(i, j)), _dot(self.edge(k, l), self.edge(k, l))):
-                raise GluingRefusal(f"Glued edges {(i, j)} and {(k, l)} have different lengths")
+                raise GluingRefusal("EDGE_LENGTH_MISMATCH", f"Glued edges {(i, j)} and {(k, l)} have different lengths")
 
     def _positive(self, x):
         return float(x) > self.tol if self.tol else x > 0
@@ -188,7 +193,7 @@ class PolygonSurface:
     def require_translation(self):
         kind = self.gluing_kind()
         if kind != "translation":
-            raise GluingRefusal(f"{self.name}: gluing is {kind}, not a translation surface")
+            raise GluingRefusal("GLUING_NOT_TRANSLATION", f"{self.name}: gluing is {kind}, not a translation surface")
 
     # Topology ---------------------------------------------------------
     def vertex_classes(self):
@@ -342,7 +347,7 @@ def square_tiled(name, r, u, origins=None):
     """
     n = len(r)
     if sorted(r) != list(range(n)) or sorted(u) != list(range(n)):
-        raise GluingRefusal("r and u must be permutations of the squares")
+        raise GluingRefusal("NOT_PERMUTATIONS", "r and u must be permutations of the squares")
     origins = origins or [(k, 0) for k in range(n)]
     polygons = [unit_square(o) for o in origins]
     pairs = [((s, 1), (r[s], 3)) for s in range(n)] + [((s, 2), (u[s], 0)) for s in range(n)]

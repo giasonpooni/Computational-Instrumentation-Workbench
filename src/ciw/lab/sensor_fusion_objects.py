@@ -324,7 +324,13 @@ class FusionSession:
 
     def initialize(self, mean, covariance, tick: int) -> CandidateState:
         self._writable()
-        self.x, self.P = np.array(mean, dtype=float), np.array(covariance, dtype=float)
+        mean, covariance = np.array(mean, dtype=float), np.array(covariance, dtype=float)
+        if mean.shape != (4,) or not np.all(np.isfinite(mean)):
+            raise FusionRefusal("nonfinite_state", "The initial state must be four finite numbers")
+        if covariance.shape != (4, 4) or not _positive_definite(covariance):
+            raise FusionRefusal("covariance_not_positive_definite",
+                                "The initial covariance must be symmetric positive definite")
+        self.x, self.P = mean, covariance
         self.tick, self.track_status = _tick(tick, "tick"), "tracking"
         return self._issue()
 

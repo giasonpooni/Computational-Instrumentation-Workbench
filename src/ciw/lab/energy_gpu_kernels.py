@@ -25,11 +25,11 @@ import sys
 import numpy as np
 
 # Geodesic workload ------------------------------------------------------
-# Unit sphere, polar chart u = (theta, phi). Starting on the equator with
-# heading a from the meridian keeps |theta - pi/2| <= a < pi/2, so every
-# trajectory stays away from the chart singularities at the poles.
+# Unit sphere, polar chart u = (theta, phi). A great circle leaving the
+# equator at heading a from the meridian stays at polar distance >= a, so
+# headings >= 0.7 rad keep every trajectory away from the chart singularities.
 THETA0 = math.pi / 2
-HEADINGS = (0.15, 0.35, 0.55, 0.75, 0.95, 1.15)
+HEADINGS = (0.7, 0.85, 1.0, 1.15, 1.3, 1.45)
 LENGTH = 3.0
 
 # Per-step operation count of the closed-form RK4 below (see rk4_operation_count).

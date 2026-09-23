@@ -26,7 +26,11 @@ def T(k: int = 1):
 
 
 class LatticeRefusal(ValueError):
-    """A basis change or form outside the declared exact domain."""
+    """A basis change or form outside the declared exact domain, with a stable code."""
+
+    def __init__(self, code: str, message: str):
+        super().__init__(f"{code}: {message}")
+        self.code = code
 
 
 def exact(value):
@@ -34,7 +38,7 @@ def exact(value):
     if isinstance(value, (int, Fraction)) and not isinstance(value, bool):
         return value
     if isinstance(value, float):
-        raise LatticeRefusal("Exact lattice arithmetic refuses floating-point entries")
+        raise LatticeRefusal("FLOAT_ENTRY", "Exact lattice arithmetic refuses floating-point entries")
     return Fraction(value)
 
 
@@ -43,9 +47,9 @@ def gram(G):
     (a, b), (b2, c) = G
     a, b, b2, c = (exact(x) for x in (a, b, b2, c))
     if b != b2:
-        raise LatticeRefusal("Gram matrix must be symmetric")
+        raise LatticeRefusal("GRAM_NOT_SYMMETRIC", "Gram matrix must be symmetric")
     if not (a > 0 and a * c - b * b > 0):
-        raise LatticeRefusal("Gram matrix must be positive definite")
+        raise LatticeRefusal("GRAM_NOT_POSITIVE_DEFINITE", "Gram matrix must be positive definite")
     return (a, b, c)
 
 
@@ -89,12 +93,14 @@ def inverse_sl2(M):
 
 def check_sl2z(M):
     if not all(isinstance(x, int) and not isinstance(x, bool) for row in M for x in row):
-        raise LatticeRefusal("Basis change must have integer entries")
+        raise LatticeRefusal("BASIS_CHANGE_NOT_INTEGER", "Basis change must have integer entries")
     determinant = det2(M)
     if determinant == -1:
-        raise LatticeRefusal("Basis change reverses orientation (det -1): same lattice, not an SL(2,Z) change")
+        raise LatticeRefusal("BASIS_CHANGE_REVERSES_ORIENTATION",
+                             "Basis change reverses orientation (det -1): same lattice, not an SL(2,Z) change")
     if determinant != 1:
-        raise LatticeRefusal(f"Basis change is not unimodular (det {determinant}): it generates a sublattice")
+        raise LatticeRefusal("BASIS_CHANGE_NOT_UNIMODULAR",
+                             f"Basis change is not unimodular (det {determinant}): it generates a sublattice")
     return M
 
 
@@ -161,7 +167,7 @@ def gauss_reduce(form):
     if a == c and b < 0:
         form, M = transform(form, S), matmul(M, S)
     if not is_canonical(form):
-        raise LatticeRefusal("Gauss reduction did not reach the canonical domain")
+        raise LatticeRefusal("REDUCTION_FAILED", "Gauss reduction did not reach the canonical domain")
     return form, M, steps
 
 
@@ -193,20 +199,22 @@ def reduced_basis_count(form, bound: int = 2):
     return sum(1 for M in sl2z_matrices(bound) if is_reduced(transform(canonical, M)))
 
 
-def coefficient_bounds(form, radius_sq):
-    """Integer bounds |m| <= Bm, |n| <= Bn containing every (m, n) with Q(m, n) <= radius_sq."""
-    a, b, c = (float(x) for x in form)
-    det = a * c - b * b
-    r2 = float(radius_sq)
-    return int(math.floor(math.sqrt(r2 * c / det))) + 1, int(math.floor(math.sqrt(r2 * a / det))) + 1
-
-
 def lattice_vectors(form, radius_sq, include_zero=False):
-    """All (m, n) with Q(m, n) <= radius_sq, exact comparison, sorted by (Q, m, n)."""
-    bm, bn = coefficient_bounds(form, radius_sq)
+    """All (m, n) with Q(m, n) <= radius_sq, exact comparison, sorted by (Q, m, n).
+
+    Rows n are scanned Fincke-Pohst style: Q = a (m + b n / a)^2 + (det / a) n^2,
+    so each row needs only the m-interval around -b n / a. Float bounds are
+    widened by one and every candidate is filtered exactly, so skewed
+    (unreduced) bases cost O(sqrt(a)) rows rather than a full box.
+    """
+    a, b, c = form
+    af, bf, detf, r2 = float(a), float(b), float(det_form(form)), float(radius_sq)
+    rows = int(math.floor(math.sqrt(r2 * af / detf))) + 1
     out = []
-    for m in range(-bm, bm + 1):
-        for n in range(-bn, bn + 1):
+    for n in range(-rows, rows + 1):
+        center = -bf * n / af
+        half = math.sqrt(max(0.0, (r2 - detf * n * n / af) / af))
+        for m in range(int(math.floor(center - half)) - 1, int(math.ceil(center + half)) + 2):
             if not include_zero and m == 0 and n == 0:
                 continue
             value = quad(form, m, n)
@@ -239,7 +247,7 @@ def area_one_form(tau: complex):
     """Float Gram entries of the area-one lattice y^{-1/2} (Z + tau Z)."""
     x, y = float(tau.real), float(tau.imag)
     if not y > 0:
-        raise LatticeRefusal("tau must lie in the upper half-plane")
+        raise LatticeRefusal("TAU_NOT_IN_UPPER_HALF_PLANE", "tau must lie in the upper half-plane")
     return (1.0 / y, x / y, (x * x + y * y) / y)
 
 
@@ -258,7 +266,7 @@ def float_reduce(tau: complex, tol: float = 1e-12):
             continue
         break
     else:
-        raise LatticeRefusal("Float reduction did not terminate")
+        raise LatticeRefusal("REDUCTION_FAILED", "Float reduction did not terminate")
     if abs(2 * b + a) <= tol * a:
         a, b, c = transform_any((a, b, c), T(1))
         M = matmul(M, T(1))
@@ -345,7 +353,7 @@ def cut_locus_vertices(form, span: int = 2):
 def classify_winding(m: int, n: int) -> dict:
     """Primitive classes are simple closed geodesics; (k m', k n') is a k-fold cover."""
     if m == 0 and n == 0:
-        raise LatticeRefusal("Winding (0, 0) is the constant loop, not a closed geodesic")
+        raise LatticeRefusal("ZERO_WINDING", "Winding (0, 0) is the constant loop, not a closed geodesic")
     g = math.gcd(m, n)
     return {"winding": [m, n], "gcd": g, "primitive": g == 1, "cover_degree": g,
             "primitive_class": [m // g, n // g]}
