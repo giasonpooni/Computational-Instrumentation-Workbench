@@ -18,7 +18,7 @@ The implementation is terminal-first, with a Python service and an optional
 Godot desktop. Instruments retain their numerical methods behind explicit
 contracts; the workbench connects their execution, inspection and replay.
 
-Twenty scientific workflow kinds share one local session for sources,
+Twenty-one scientific workflow kinds share one local session for sources,
 declared models, compatible sensor fusion, instrument results and replay
 evidence. Each scientific provider retains ownership of its calculations.
 The workbench supplies a common catalog, explicit operation requests, retained
@@ -35,6 +35,10 @@ evaluation, typed schematics, integer diffusion, BIM quantity conditioning and
 verification; [Julia simulation and finite-field topology](docs/JULIA_SP1.md)
 are the next specified extensions. The three former geometry scaffolds now
 provide [executable mathematical profiles](docs/GEOMETRY_RESEARCH.md).
+The [variational free-energy demonstration](docs/VARIATIONAL_FREE_ENERGY.md)
+combines curved-path sensitivity, Gaussian sensor fusion and a Lyapunov check
+of the inference iteration. Six retained synthetic cases distinguish posterior
+agreement and optimization progress from truth error and held-out coverage.
 See the [assembly guide](docs/WORKBENCH_ASSEMBLY.md) for host bindings and
 the [integration coverage matrix](docs/INTEGRATION_COVERAGE.md) for exact scope.
 
@@ -92,7 +96,7 @@ explicit replay creates new execution/result identities.
 
 The built-in examples are synthetic. Successful computation, content integrity
 and matching replay digests do not establish physical validity or calibration
-traceability. The Workbench tab presents twenty shared native workflows;
+traceability. The Workbench tab presents twenty-one shared scientific workflows;
 other external integrations expose terminal and JSON records as described below.
 
 ## Next engineering benchmark
@@ -122,13 +126,14 @@ of its evidence, runtime, execution and result:
   projections as canonical JSON. Substituting `true`, `1` or `1.0` cannot pass
   an integrity check simply because Python considers their values equal.
 
-The verification baseline is [commit `aca2531`](https://github.com/giasonpooni/Computational-Instrumentation-Workbench/commit/aca253164f11135c866d7f61ea0c3e8fac52521e),
-checked on **2026-09-23**. All twelve CI workflows passed, covering installed
-packages, native Windows and container deployment, Godot synchronization and
-pinned-provider integrations. The local suite passed 583 tests and 38 subtests;
-421 optional-runtime or platform-specific tests were skipped in that run.
-Dedicated integration gates exercised their pinned providers separately, and
-the installed calibrated-window gate passed all 30 tests without skips.
+The local regression suite checked on **2026-09-23** passed 1,113 tests and
+38 subtests; 562 optional-runtime or platform-specific tests were skipped in
+that run. Dedicated integration gates exercise their pinned providers
+separately and reject skipped integration tests. The new free-energy gate
+builds an isolated wheel and exercises all six cases on Linux and Windows.
+[CI results](https://github.com/giasonpooni/Computational-Instrumentation-Workbench/actions)
+also cover installed packages, native Windows and container deployment,
+Godot synchronization and the existing scientific integrations.
 
 See the [development guide](docs/DEVELOPMENT.md#validation-commands) for commands
 and environment requirements. The candidate-evidence gate runs in Ubuntu CI;
@@ -170,12 +175,13 @@ establish physical validation or deployment readiness.
 | SCR numerical execution (`ciw.numerical-heat.v1`) | Native Rust integer diffusion in the same catalog and desktop | Execute a bounded declared field, retain byte commitments and host-bound engine identity, replay and independently check integer results with ICRH | [Setup and contract](docs/DECLARED_WORKLOADS.md) |
 | SCR/SP1 registered heat proof (`ciw.proved-heat.v1`) | Bounded proof operation; requires the pinned Linux host and registered guest | Native integer computation, real proof production, full-ELF verification, retained proof bytes, fresh replay and explicit retained-proof reverification | [Setup, claim and native gate](docs/PROVED_HEAT.md) |
 | Geometry providers (`ciw.covariance-geometry.v1`, `ciw.mesh-path.v1`, `ciw.translation-flow.v1`) | Bounded native SPD geometry, mesh-edge paths and square-tiled dynamics | Exact native requests/results, numerical evidence, fresh replay, explicit partial-flow states and provider-free inspection | [Profiles and shared session](docs/GEOMETRY_RESEARCH.md) |
+| Variational free-energy sensor fusion (`ciw.variational-free-energy.v1`) | Synthetic CSG → GSIE → PLSR composition with a bounded Gaussian variational kernel | Exact posterior comparison, mean/covariance iteration, normalized KL gap, held-out prediction, empirical coverage, stable/unstable iteration assessment and fresh replay | [Mathematics, six cases and operating guide](docs/VARIATIONAL_FREE_ENERGY.md) |
 | Flat Torus Geodesic Reference (`ciw.flat-torus-reference.v1`) | Pinned native flat-lattice reference in the shared session | Retain winding, normalized trajectory, geometry digest, replay and independent analytic checks | [Setup and scope](docs/GEODESIC_REFERENCES.md) |
 | Curved Surface Geodesic Sensitivity (`ciw.curved-path-transfer.v1`) | Pinned native constant-curvature Jacobi transfer in the shared session | Retain transfer samples, separation, declared covariance and independent reference checks | [Setup and scope](docs/GEODESIC_REFERENCES.md) |
 
 The [integration coverage matrix](docs/INTEGRATION_COVERAGE.md) distinguishes
 executable paths, conformance coverage, and the next connections between
-existing instruments. The shared session connects the twenty workflow kinds
+existing instruments. The shared session connects the twenty-one workflow kinds
 to a common source, operation and result history. New scientific paths retain
 original, replay and adversarial evidence. The matrix distinguishes independent
 ICRH profiles from CIW-only checks and pending conformance work.

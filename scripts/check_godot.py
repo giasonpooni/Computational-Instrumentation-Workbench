@@ -93,6 +93,21 @@ def stop_service(process: subprocess.Popen) -> None:
         process.wait(timeout=5)
 
 
+def cleanup_temporary(directory: tempfile.TemporaryDirectory) -> None:
+    # Windows virtualenv launchers can finish before their terminated interpreter
+    # releases inherited handles. The parent log is already closed here; allow
+    # only that transient sharing violation to settle, without hiding failures.
+    deadline = time.monotonic() + 5
+    while True:
+        try:
+            directory.cleanup()
+            return
+        except OSError as exc:
+            if os.name != "nt" or getattr(exc, "winerror", None) != 32 or time.monotonic() >= deadline:
+                raise
+            time.sleep(0.05)
+
+
 def run_godot(executable: str, label: str, arguments: list[str], timeout: int) -> str:
     print(f"Checking {label}...", flush=True)
     try:
@@ -124,8 +139,9 @@ def check(executable: str) -> None:
     environment = os.environ.copy()
     environment["PYTHONPATH"] = str(ROOT / "src") + os.pathsep + environment.get("PYTHONPATH", "")
     environment["PYTHONIOENCODING"] = "utf-8"
-    with tempfile.TemporaryDirectory(prefix="ciw-godot-check-") as temporary:
-        directory = Path(temporary)
+    temporary = tempfile.TemporaryDirectory(prefix="ciw-godot-check-")
+    try:
+        directory = Path(temporary.name)
         log_path = directory / "service.log"
         with log_path.open("w", encoding="utf-8") as log:
             process = subprocess.Popen(
@@ -169,6 +185,8 @@ def check(executable: str) -> None:
                 stop_service(process)
                 if failed:
                     show_output("temporary service diagnostics", log_path.read_text(encoding="utf-8", errors="replace"))
+    finally:
+        cleanup_temporary(temporary)
     print("PASS: Godot import, live protocol, channel generality, adapter and experiment view checks; temporary service stopped.",
           flush=True)
 

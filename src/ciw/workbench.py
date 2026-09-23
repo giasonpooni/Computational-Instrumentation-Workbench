@@ -15,7 +15,7 @@ from threading import RLock
 
 from .adapters.protocol import AdapterRefusal
 from .adapters.subprocess import _json
-DECLARED_KINDS = frozenset({"schematic-assessment", "numerical-heat", "proved-heat", "schematic-companions", "bim-quantity", "acquired-dataset", "residual-monitor", "measurement-chain", "geometric-circle", "identified-stability", "flat-torus-reference", "curved-path-transfer", "covariance-geometry", "mesh-path", "translation-flow"})
+DECLARED_KINDS = frozenset({"schematic-assessment", "numerical-heat", "proved-heat", "schematic-companions", "bim-quantity", "acquired-dataset", "residual-monitor", "measurement-chain", "geometric-circle", "identified-stability", "flat-torus-reference", "curved-path-transfer", "covariance-geometry", "mesh-path", "translation-flow", "variational-free-energy"})
 REPRODUCED_KINDS = DECLARED_KINDS - {"proved-heat"}
 UPSTREAM_KINDS = {"identified-design": "calibrated-observable", "schematic-companions": "schematic-assessment",
                   "acquired-calibrated-window": "acquired-dataset", "identified-stability": "identified-design"}
@@ -44,6 +44,7 @@ OPERATIONS = {
     "covariance-geometry": "ciw.covariance-geometry.v1",
     "mesh-path": "ciw.mesh-path.v1",
     "translation-flow": "ciw.translation-flow.v1",
+    "variational-free-energy": "ciw.variational-free-energy.v1",
 }
 WORKFLOW_OPERATION_IDS = frozenset(OPERATIONS.values())
 from .candidate_evidence import OPERATIONS as CANDIDATE_OPERATIONS
@@ -55,6 +56,9 @@ _OVERHEAD = 4096
 
 
 def _workflow(kind):
+    if kind == "variational-free-energy":
+        from .free_energy_workflow import FreeEnergyWorkflow
+        return FreeEnergyWorkflow()
     # Lazy imports avoid the existing workflows' Session persistence dependency.
     if kind in {"covariance-geometry", "mesh-path", "translation-flow"}:
         from .geometry_research import GeometryResearchWorkflow
@@ -257,6 +261,10 @@ def _claims(record):
             claim(step["operation_id"], "operation", step["operation_id"])
         for identity, (role, body) in identity_claims(record["native"]).items():
             claim(identity, role, body)
+    if record["kind"] == "variational-free-energy":
+        from .free_energy_workflow import identity_claims
+        for identity, (role, body) in identity_claims(record["native"]).items():
+            claim(identity, role, body)
     return claims
 
 
@@ -265,6 +273,9 @@ def _catalog_steps(native):
     steps = list(native["steps"])
     if native["schema"] == "ciw.measurement-chain-session.v1":
         from .measurement_chain import catalog_steps
+        steps.extend(catalog_steps(native))
+    if native["schema"] == "ciw.variational-free-energy-session.v1":
+        from .free_energy_workflow import catalog_steps
         steps.extend(catalog_steps(native))
     return steps
 
@@ -349,6 +360,12 @@ def _validate_links(record, bundles):
             if (other["bundle_id"] != record["bundle_id"] and other["kind"] == "schematic-companions"
                     and not occurrences.isdisjoint(native_occurrences(other["native"]))):
                 raise ValueError("Companion bundles must retain fresh native execution occurrences")
+    if record["kind"] == "variational-free-energy":
+        from .free_energy_workflow import native_occurrences
+        occurrences = native_occurrences(native)
+        for other in bundles.values():
+            if other["bundle_id"] != record["bundle_id"] and other["kind"] == "variational-free-energy" and not occurrences.isdisjoint(native_occurrences(other["native"])):
+                raise ValueError("Free-energy experiments require fresh native stage occurrences")
     if record["kind"] in DECLARED_KINDS:
         occurrences = {native["steps"][0]["execution_id"]}
         if record["kind"] in REPRODUCED_KINDS:
@@ -559,7 +576,7 @@ class Workbench:
 
     def describe_operations(self):
         with self._lock:
-            return [{"operation_id": operation, "role": {"identified-design": "decision", "schematic-assessment": "schematic_assessment", "numerical-heat": "numerical_execution", "proved-heat": "proved_numerical_execution", "schematic-companions": "local_model_analysis", "bim-quantity": "construction_quantity", "acquired-dataset": "evidence_acquisition", "residual-monitor": "residual_diagnostics", "measurement-chain": "measurement_chain_testbed", "geometric-circle": "geometric_reconciliation", "identified-stability": "stability_assessment", "flat-torus-reference": "geometric_reference", "curved-path-transfer": "geometric_sensitivity", "covariance-geometry": "covariance_geometry", "mesh-path": "mesh_path_baseline", "translation-flow": "translation_dynamics"}.get(kind, "state_estimator"),
+            return [{"operation_id": operation, "role": {"identified-design": "decision", "schematic-assessment": "schematic_assessment", "numerical-heat": "numerical_execution", "proved-heat": "proved_numerical_execution", "schematic-companions": "local_model_analysis", "bim-quantity": "construction_quantity", "acquired-dataset": "evidence_acquisition", "residual-monitor": "residual_diagnostics", "measurement-chain": "measurement_chain_testbed", "geometric-circle": "geometric_reconciliation", "identified-stability": "stability_assessment", "flat-torus-reference": "geometric_reference", "curved-path-transfer": "geometric_sensitivity", "covariance-geometry": "covariance_geometry", "mesh-path": "mesh_path_baseline", "translation-flow": "translation_dynamics", "variational-free-energy": "variational_inference"}.get(kind, "state_estimator"),
                      "source_kind": kind, "available": kind in self._bindings,
                      "requires_upstream_bundle": kind in UPSTREAM_KINDS,
                      **({"requires_upstream_bundles": "explicit_ordered_source_selection"} if kind == "residual-monitor" else {})}
@@ -584,7 +601,8 @@ class Workbench:
                 "instrument": step["runtime_ref"], "operation_id": step["operation_id"],
                 "result_id": step["result_id"], "execution_id": step["execution_id"],
                 "view": "retained_native_result", "state_admission": "not_performed"}
-                for record in self._bundles.values() for step in _catalog_steps(record["native"])
+                for record in self._bundles.values()
+                for step in {s["runtime_ref"]: s for s in _catalog_steps(record["native"])}.values()
                 if step["runtime_ref"] in INSTRUMENT_ROLES])
 
     def inspect_instrument(self, payload):
@@ -889,6 +907,9 @@ class Workbench:
                 raise ValueError("Unknown retained workbench bundle")
             source = self._sources[record["source_id"]]
             declaration = _json(base64.b64decode(source["bytes_b64"], validate=True))
+            if record["kind"] == "variational-free-energy":
+                from .free_energy_view import project as project_free_energy
+                return project_free_energy(record, source, declaration, self._revision)
             if record["kind"] in {"covariance-geometry", "mesh-path", "translation-flow"}:
                 from .geometry_research_view import project as project_geometry_research
                 return project_geometry_research(record, source, declaration, self._revision)

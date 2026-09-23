@@ -18,7 +18,7 @@ operating point.
 
 ## Shared operating session
 
-The [Workbench desktop tab](EXPERIMENT_VIEW.md) projects all twenty shared workflow
+The [Workbench desktop tab](EXPERIMENT_VIEW.md) projects all twenty-one shared workflow
 kinds through `experiment.inspect`: retained measurements, state/covariance,
 residuals, native dependencies, evidence and verification. It follows committed
 session changes and keeps replay occurrences separate. This read-only display
@@ -75,6 +75,7 @@ keep their native owners; the table below distinguishes implemented ICRH profile
 | Declared constant curvature → CSG | Shared `ciw.curved-path-transfer.v1`; native Jacobi transfer, separation and declared covariance propagation | ICRH `curved-path-transfer.v1`; constant-curvature oracle, covariance and replay binding checks | Curvature profile only; no embedded path, surveyed geometry or calibrated sensor claim. |
 | Declared integer field → SCR/SP1 | Shared `ciw.proved-heat.v1`; native execution, registered guest proof, full-ELF verification, exact retained proof bytes and fresh replay | Separate verifier invocation through pinned SCR/SP1; installed-wheel real-proof gate with corrupted-proof rejection; no separate ICRH proved-heat profile | Bounded integer arithmetic only. Offline consistency is not fresh cryptographic verification; Julia and F2 topology remain planned. |
 | Declared SPD matrices, meshes and square-tiled surfaces → geometry providers | Three native shared-session profiles with inspection, retained evidence and fresh replay | Provider analytical fixtures and CIW installed-wheel gate on Linux/Windows; no dedicated ICRH profiles | Mesh paths are edge constrained; flows retain explicit partial status; no physical calibration or state admission. |
+| CSG → Gaussian variational inference / GSIE → PLSR | Shared `ciw.variational-free-energy.v1`; two latent path errors, exact reference, full covariance iteration, objective/held-out/coverage diagnostics and fresh native replay | CIW algebraic, native and installed-wheel session gates; no dedicated ICRH profile | Synthetic constant-curvature model; optimizer convergence and simulation coverage do not establish physical validity, calibration or plant stability. |
 
 “Independent harness” means a separately implemented conformance checker. It
 does not mean an independent physical measurement or independent validation of

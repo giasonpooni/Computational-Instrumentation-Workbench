@@ -81,6 +81,16 @@ CIW wheel gate on Python 3.12 with exact clean public provider pins:
 python scripts/check_geometry_research.py --output-dir results/geometry-gate
 ```
 
+The [variational free-energy bench](VARIATIONAL_FREE_ENERGY.md) has a separate
+installed-wheel gate on Python 3.12, Linux and Windows. It provisions exact CSG,
+GSIE and PLSR revisions, exercises six retained simulation cases, checks offline
+records and fresh replay, and runs the live shared-session client. Every native
+test must run without skips:
+
+```sh
+python scripts/check_free_energy.py --output-dir results/free-energy-gate
+```
+
 This gate requires all native analytical, retained-contract, shared-session and
 replay tests to complete without skips, on Linux and Windows. It retains the
 three original/replay artifact pairs and a reopenable workspace. Its scope is

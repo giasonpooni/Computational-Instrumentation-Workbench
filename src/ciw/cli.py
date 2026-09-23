@@ -263,6 +263,7 @@ def parser() -> argparse.ArgumentParser:
     server.add_argument("--spatial-view-origin", action="append", default=[], help="Exact browser http(s) origin allowed on the read-only /spatial endpoint; repeat to allow more")
     server.add_argument("--computation-repo", type=Path, help="Bind pinned SCR numerical execution")
     server.add_argument("--computation-engine", type=Path, help="Host-built SCR execution-cli (required with --computation-repo)")
+    server.add_argument("--free-energy-stack-root", type=Path, help="Bind exact csg/gsie/plsr checkouts for the synthetic variational inference demonstration")
     server.add_argument("--covariance-geometry-repo", type=Path, help="Bind pinned SPD covariance geometry provider")
     server.add_argument("--intrinsic-surface-repo", type=Path, help="Bind pinned mesh edge-path baseline provider")
     server.add_argument("--translation-surface-repo", type=Path, help="Bind pinned square-tiled translation-flow provider")
@@ -481,6 +482,8 @@ def main(argv: list[str] | None = None) -> int:
                 session.workbench.bind_workflow("flat-torus-reference", {"ftr": args.flat_torus_repo})
             if args.curved_surface_repo is not None:
                 session.workbench.bind_workflow("curved-path-transfer", {"csg": args.curved_surface_repo})
+            if args.free_energy_stack_root is not None:
+                session.workbench.bind_workflow("variational-free-energy", {role: args.free_energy_stack_root / role for role in ("csg", "gsie", "plsr")})
             if args.covariance_geometry_repo is not None:
                 session.workbench.bind_workflow("covariance-geometry", {"cggt": args.covariance_geometry_repo})
             if args.intrinsic_surface_repo is not None:

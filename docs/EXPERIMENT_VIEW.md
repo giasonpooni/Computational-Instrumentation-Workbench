@@ -161,6 +161,14 @@ inspectable. See [the reference operation contracts](GEODESIC_REFERENCES.md).
 
 ## Mathematical geometry results
 
+The [variational free-energy bench](VARIATIONAL_FREE_ENERGY.md) adds seven
+read-only panels: variational and exact-reference posteriors, simulated truth,
+Gaussian KL progress, held-out prediction, exact-reference ensemble coverage,
+and the PLSR numerical margin for the fixed inference iteration. The coverage
+panel uses exact-reference estimates even when the representative iterative
+solver fails; optimizer status remains explicit. These synthetic diagnostics
+establish neither sensor calibration nor physical plant stability.
+
 The three [geometry provider profiles](GEOMETRY_RESEARCH.md) use the generic
 Workbench result view. Covariance panels retain the complete declared matrices;
 mesh panels distinguish edge-path lengths from Euclidean lower bounds and list
