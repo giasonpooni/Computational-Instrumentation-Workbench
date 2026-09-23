@@ -23,6 +23,8 @@ existing benches.
 | Identified model and budgeted next observation | Retained calibrated experiment plus pinned SIDT, OIT, GSIE, EDSPT and YWIR; ICRH `identified-budgeted-observation.v1` | `python3.12 -m ciw identified-design create`, `inspect`, `replay`; [contract and guide](IDENTIFIED_DESIGN.md) |
 | JSPT covariance propagation | Pinned operation over retained RCI/FSRT covariance artifacts | `python -m ciw covariance`, `covariance-replay`; [guide](COVARIANCE.md) |
 | GTE circle investigation | Pinned projection, local covariance, held candidate and replay | `python -m ciw geodesic create`, `inspect`, `replay`; [guide](GTE.md) |
+| Flat Torus Geodesic Reference | Pinned native area-one lattice and winding trajectory, shared inspection/replay | `ciw serve --flat-torus-repo /trusted/ftr`; [contract](GEODESIC_REFERENCES.md) |
+| Curved Surface Geodesic Sensitivity | Pinned native constant-curvature Jacobi transfer and declared covariance | `ciw serve --curved-surface-repo /trusted/csg`; [contract](GEODESIC_REFERENCES.md) |
 
 ## Identified model and budgeted next observation
 

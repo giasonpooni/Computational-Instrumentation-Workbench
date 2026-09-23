@@ -148,3 +148,12 @@ unannounced calibration, sample ordering or estimator update is performed by the
 view. Arbitrary algebra/topology objects, live sensor scheduling, spatial GSV/CSE
 panels and authoring scientific operations in the desktop remain future assembly
 work.
+
+## Geodesic reference objects
+
+`flat-torus-reference` and `curved-path-transfer` expose native reference panels
+and their declared units, geometry scope and covariance assumptions through the
+same `experiment.inspect` response. They have `fusion_context: null`;
+mathematical trajectories and sensitivity records are not estimated physical
+states. Source bytes, native runtime identities and replay occurrences remain
+inspectable. See [the reference operation contracts](GEODESIC_REFERENCES.md).

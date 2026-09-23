@@ -244,6 +244,10 @@ def parser() -> argparse.ArgumentParser:
                         help="Bind pinned GTE for retained circle inspection in the shared workbench")
     server.add_argument("--stability-repo", type=Path,
                         help="Bind pinned PLSR for explicitly selected identified model/state assessment")
+    server.add_argument("--flat-torus-repo", type=Path,
+                        help="Bind pinned flat-torus geodesic reference provider")
+    server.add_argument("--curved-surface-repo", type=Path,
+                        help="Bind pinned constant-curvature Jacobi transfer provider")
     server.add_argument("--spatial-view-origin", action="append", default=[], help="Exact browser http(s) origin allowed on the read-only /spatial endpoint; repeat to allow more")
     server.add_argument("--computation-repo", type=Path, help="Bind pinned SCR numerical execution")
     server.add_argument("--computation-engine", type=Path, help="Host-built SCR execution-cli (required with --computation-repo)")
@@ -447,6 +451,10 @@ def main(argv: list[str] | None = None) -> int:
                 session.workbench.bind_workflow("geometric-circle", {"gte": args.geometry_repo})
             if args.stability_repo is not None:
                 session.workbench.bind_workflow("identified-stability", {"plsr": args.stability_repo})
+            if args.flat_torus_repo is not None:
+                session.workbench.bind_workflow("flat-torus-reference", {"ftr": args.flat_torus_repo})
+            if args.curved_surface_repo is not None:
+                session.workbench.bind_workflow("curved-path-transfer", {"csg": args.curved_surface_repo})
             if (args.computation_repo is None) != (args.computation_engine is None):
                 raise ValueError("--computation-repo and --computation-engine must be supplied together")
             if args.computation_repo is not None:

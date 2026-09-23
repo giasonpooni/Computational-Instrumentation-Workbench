@@ -1,0 +1,54 @@
+{
+  "schema": "ciw.curved-path-transfer-source.v1",
+  "experiment_id": "curvature:constant-reference",
+  "configuration": {
+    "geometry_basis": "declared_constant_curvature",
+    "solver": "native_rk4",
+    "observation_mode": "intrinsic-surface-distance",
+    "uncertainty": "conditional_on_declared_starting_covariance",
+    "physical_geometry": "not_established"
+  },
+  "arclength": [
+    0,
+    0.125,
+    0.25,
+    0.375,
+    0.5,
+    0.625,
+    0.75,
+    0.875,
+    1,
+    1.125,
+    1.25,
+    1.375,
+    1.5,
+    1.625,
+    1.75,
+    1.875,
+    2
+  ],
+  "gaussian_curvature": 0.25,
+  "units": {
+    "length": "m",
+    "angle": "radian"
+  },
+  "initial_perturbation": [
+    0.01,
+    0.002
+  ],
+  "starting_covariance": {
+    "matrix": [
+      [
+        0.0001,
+        0.00001
+      ],
+      [
+        0.00001,
+        0.0004
+      ]
+    ],
+    "basis": "assumed",
+    "note": "Synthetic initial-pose covariance; no physical calibration"
+  },
+  "relative_tolerance": 0.0001
+}

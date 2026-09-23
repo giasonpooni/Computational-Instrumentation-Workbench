@@ -7,7 +7,7 @@ native execution records and replay evidence. Provider repositories keep their
 scientific responsibilities while their operations and artifacts join this suite.
 
 The [Workbench desktop tab](EXPERIMENT_VIEW.md) is now implemented over that
-substrate: it links fourteen retained workflows to measurement/state/covariance and
+substrate: it links sixteen retained workflows to measurement/state/covariance and
 residual panels, native input dependencies, evidence inspection and live session
 invalidation. It introduces no additional estimator or parallel result store.
 
@@ -147,6 +147,10 @@ at `operation.execute`. It does not import arbitrary saved workflow bundles.
 Measurement-chain, circle geometry and identified stability now have explicit
 shared source contracts; [their operating guide](REMAINING_MODULES.md) documents
 bindings, native history and replay. Existing standalone commands remain available.
+The [geodesic references](GEODESIC_REFERENCES.md) add native flat-torus trajectories
+and constant-curvature Jacobi transfer through `--flat-torus-repo` and
+`--curved-surface-repo`. They use the same catalog and replay surfaces while
+remaining mathematical reference objects outside the fusion-state list.
 Execution publishes a bundle only after the existing
 workflow's complete validation and verification succeed.
 
@@ -166,7 +170,7 @@ normal server shutdown also saves them. A workflow that refuses before producing
 a bundle returns an error and leaves its source retained, without publishing a
 partial state. The catalog permits at most 64 sources, 128 completed bundles and
 64 MiB of retained content. Existing protocol frame limits still apply. It
-supports fourteen executable source kinds and source-only geography; it is not an arbitrary bundle
+supports sixteen executable source kinds and source-only geography; it is not an arbitrary bundle
 importer or a live acquisition service.
 
 ## What shares a workspace

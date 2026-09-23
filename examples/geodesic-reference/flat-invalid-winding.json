@@ -1,0 +1,23 @@
+{
+  "schema": "ciw.flat-torus-reference-source.v1",
+  "experiment_id": "flat-torus:square-diagonal",
+  "configuration": {
+    "geometry_basis": "area_one_flat_quotient",
+    "length_unit": "normalized_length",
+    "uncertainty": "not_applicable",
+    "physical_geometry": "not_established"
+  },
+  "tau": [
+    0,
+    1
+  ],
+  "winding": [
+    1.5,
+    1
+  ],
+  "start": [
+    0.125,
+    0.25
+  ],
+  "samples": 17
+}

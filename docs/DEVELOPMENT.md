@@ -45,9 +45,10 @@ and transport semantics.
 | `deploy/` | Native and container operation guides |
 
 `recordings/`, `results/` and `.ciw/` hold local runtime output and are ignored by
-Git. Scientific source pins live in `src/ciw/adapter-runtimes.json` and
-`src/ciw/plsr-runtime.json`; update pins only with the relevant compatibility and
-replay checks. The covariance examples in `examples/adapters/` include
+Git. Scientific source pins live in the `src/ciw/*-runtimes.json` manifests,
+`src/ciw/plsr-runtime.json`, and the explicit `PIN`/`PINS` declarations in native
+workflow modules linked by their operating guides. Update pins only with the
+relevant compatibility and replay checks. The covariance examples in `examples/adapters/` include
 `two-reservoir-covariance.json` and `tank-covariance-map.json`; the original
 `two-reservoir.json` fixture remains available.
 
@@ -105,6 +106,14 @@ the current tests assert, what they cover in part, and what is not implemented.
 
 Documentation-only edits require working links and consistency with the
 implemented interfaces; they do not imply a new numerical validation result.
+
+The native geodesic-reference gate is `python scripts/check_geodesic_references.py`.
+It runs both pinned providers from an installed CIW wheel, exercises the live
+session and provider-free restore, rejects skips, then independently checks the
+retained pairs with pinned ICRH profiles. See [the operating contract](GEODESIC_REFERENCES.md)
+for local-checkout arguments and numerical scope. Existing authenticated local
+checkouts can also provision older integration gates; [provider availability](PROVIDER_AVAILABILITY.md)
+documents their options and remaining public-source assumptions.
 
 ## Documenting an integrated tool
 

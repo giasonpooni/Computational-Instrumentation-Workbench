@@ -59,3 +59,8 @@ and after execution, exercises the live WebSocket catalog and rejects skipped
 native tests. The retained output includes actual source, original, replay,
 held and refusal fixtures plus the common workspace. Refusal receipts record
 rejected attempts and are not scientific result artifacts.
+
+These are CIW native integration and numerical tests. The gate does not invoke
+ICRH; independent `measurement-chain.v1`, `geometric-circle.v1` and
+`identified-stability.v1` harness profiles remain pending. Matching replay
+results and CIW test assertions do not establish that missing coverage.

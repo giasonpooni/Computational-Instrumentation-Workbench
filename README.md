@@ -18,7 +18,7 @@ The implementation is terminal-first, with a Python service and an optional
 Godot desktop. Instruments retain their numerical methods behind explicit
 contracts; the workbench connects their execution, inspection and replay.
 
-Fourteen scientific workflow kinds share one local session for sources,
+Sixteen scientific workflow kinds share one local session for sources,
 declared models, compatible sensor fusion, instrument results and replay
 evidence. Each scientific provider retains ownership of its calculations.
 The workbench supplies a common catalog, explicit operation requests, retained
@@ -29,7 +29,8 @@ state and covariance, residuals, native dependencies and evidence for the select
 execution occurrence. Committed session changes update the view; replay creates
 a distinct occurrence. The shared paths include calibrated process and stream
 analysis, observation design, measurement chains, circle geometry, stability
-evaluation, typed schematics, integer diffusion and BIM quantity conditioning.
+evaluation, typed schematics, integer diffusion, BIM quantity conditioning and
+[geodesic reference calculations](docs/GEODESIC_REFERENCES.md).
 See the [assembly guide](docs/WORKBENCH_ASSEMBLY.md) for host bindings and
 the [integration coverage matrix](docs/INTEGRATION_COVERAGE.md) for exact scope.
 
@@ -87,7 +88,7 @@ explicit replay creates new execution/result identities.
 
 The built-in examples are synthetic. Successful computation, content integrity
 and matching replay digests do not establish physical validity or calibration
-traceability. The Workbench tab presents fourteen shared native workflows;
+traceability. The Workbench tab presents sixteen shared native workflows;
 other external integrations expose terminal and JSON records as described below.
 
 ## Next engineering benchmark
@@ -163,12 +164,15 @@ establish physical validation or deployment readiness.
 | BIM quantity conditioning (`ciw.bim-quantity.v1`) | Native CSE quantity workflow in the shared session | Condition a declared IFC quantity on an independent scalar observation; retain covariance, held or refused outcomes, execution ledger and replay | [Host bindings and scientific scope](docs/INTEGRATED_MODULES.md) |
 | Snapshot acquisition (`ciw.acquired-dataset.v1`) | Native bounded PPDA/SCOUT acquisition in the shared session | Retain exact source bytes, adapter and source identities, acquisition checkpoints and durable-pool restoration; explicitly select records for downstream calibration | [Acquisition contract and examples](docs/ACQUIRED_DATASET.md) |
 | SCR numerical execution (`ciw.numerical-heat.v1`) | Native Rust integer diffusion in the same catalog and desktop | Execute a bounded declared field, retain byte commitments and host-bound engine identity, replay and independently check integer results with ICRH | [Setup and contract](docs/DECLARED_WORKLOADS.md) |
+| Flat Torus Geodesic Reference (`ciw.flat-torus-reference.v1`) | Pinned native flat-lattice reference in the shared session | Retain winding, normalized trajectory, geometry digest, replay and independent analytic checks | [Setup and scope](docs/GEODESIC_REFERENCES.md) |
+| Curved Surface Geodesic Sensitivity (`ciw.curved-path-transfer.v1`) | Pinned native constant-curvature Jacobi transfer in the shared session | Retain transfer samples, separation, declared covariance and independent reference checks | [Setup and scope](docs/GEODESIC_REFERENCES.md) |
 
 The [integration coverage matrix](docs/INTEGRATION_COVERAGE.md) distinguishes
 executable paths, conformance coverage, and the next connections between
-existing instruments. The shared session connects the fourteen workflow kinds
+existing instruments. The shared session connects the sixteen workflow kinds
 to a common source, operation and result history. New scientific paths retain
-original, replay and adversarial evidence through an ICRH profile.
+original, replay and adversarial evidence. The matrix distinguishes independent
+ICRH profiles from CIW-only checks and pending conformance work.
 
 The standalone and identified-stability PLSR paths use upstream commit
 [`19ea6967060166ba09db6cd4563bd87bd6b3d196`](https://github.com/giasonpooni/Parameterized-Lyapunov-Stability-Runtime/tree/19ea6967060166ba09db6cd4563bd87bd6b3d196).
@@ -186,6 +190,16 @@ statistical validation of uncertainty estimates.
 Every successful tool integration updates this catalogue and its operating guide
 in the same change. See the [documentation requirements](docs/DEVELOPMENT.md#documenting-an-integrated-tool)
 for the required commands, specifications, version pins, and validation evidence.
+
+## Provider access
+
+Scientific execution and replay use explicit local checkouts at exact revisions.
+Saved-workspace inspection works without those providers. The integration gates
+accept local provider paths, including the adapter, telemetry and calibrated-process
+gates. Some other installation and CI paths still fetch public repositories.
+Follow the [provider availability guide](docs/PROVIDER_AVAILABILITY.md) before
+changing visibility; preserve current and historical pins, submodules, dependencies
+and licenses. Integrating a provider does not bundle its source into CIW.
 
 ## Related stack components
 

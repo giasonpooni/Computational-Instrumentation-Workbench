@@ -18,7 +18,7 @@ operating point.
 
 ## Shared operating session
 
-The [Workbench desktop tab](EXPERIMENT_VIEW.md) projects all fourteen shared workflow
+The [Workbench desktop tab](EXPERIMENT_VIEW.md) projects all sixteen shared workflow
 kinds through `experiment.inspect`: retained measurements, state/covariance,
 residuals, native dependencies, evidence and verification. It follows committed
 session changes and keeps replay occurrences separate. This read-only display
@@ -32,7 +32,8 @@ The live Session now hosts `ciw.telemetry.v1`, `ciw.calibrated-observable.v1` an
 `ciw.bim-quantity.v1`, `ciw.acquired-dataset.v1`,
 `ciw.acquired-calibrated-window.v1`, `ciw.residual-monitor.v1`,
 `ciw.measurement-chain.v1`, `ciw.geometric-circle.v1` and
-`ciw.identified-stability.v1`, through `operation.list/execute`.
+`ciw.identified-stability.v1`, `ciw.flat-torus-reference.v1` and
+`ciw.curved-path-transfer.v1`, through `operation.list/execute`.
 `source.*`, `bundle.*` and `fusion.list` expose retained inputs, native bundles
 and candidate contexts; result and execution lists include those native records
 alongside existing session operations. Workspace format 3 retains this content,
@@ -49,7 +50,7 @@ documents startup bindings, request payloads and change events. Shared desktop
 inspection, SRA companion calls, SCR dispatch, PPDA bounded acquisition, GSV's
 read-only provider and CSE quantity mapping are implemented. Hardware acquisition,
 generic continuous fusion and surveyed-frame geometry remain delivery work. Scientific calculations
-keep their native owners and individual ICRH contracts.
+keep their native owners; the table below distinguishes implemented ICRH profiles from pending coverage.
 
 ## Existing executable paths
 
@@ -62,14 +63,16 @@ keep their native owners and individual ICRH contracts.
 | Retained GSIE innovations → FDIR/OIT | Shared `ciw.residual-monitor.v1`; explicit ordered windows, native residual covariance, observability gate and CUSUM transitions | ICRH `residual-monitor.v1`; scalar numerical oracle, held observability, replay aliases, unknown covariance and ambiguity checks | Diagnostic candidates only; unknown cross-window dependence blocks statistical alarm authority and unique isolation. No posterior feedback. |
 | FSRT → TBRT → MCUR → OIT → GSIE → CBSR → FDIR → SET | `ciw calibrated-observable create/inspect/replay`; two calibrated channels, retained clock uncertainty, observability gate and declared residual covariance | ICRH `calibrated-observable-telemetry.v1`; original, replay, held, ambiguous and refusal fixtures | Synthetic stationary hold; no calibrated stream window or identified dynamics in this profile. |
 | Retained calibrated experiment → SIDT → OIT → GSIE → EDSPT → YWIR | `ciw identified-design create/inspect/replay`; freshly checked upstream prior, identified point model, candidate observability, future conditional covariance, cost-constrained reduction and separate advisory token decision | ICRH [`identified-budgeted-observation.v1`](https://github.com/giasonpooni/Instrument-Conformance-and-Replay-Harness/blob/main/profiles/identified-budgeted-observation.v1.json); retained original/replay/token-denial fixtures | Parameter uncertainty remains unknown; selection is advisory and cannot dispatch acquisition or admit ESM state. |
-| RCI → FSRT → JSPT | Shared `ciw.measurement-chain.v1`; unchanged native investigation, raw/calibrated evidence, posterior/reconciled covariance and explicit quantity map; inner executions/results join common history | ICRH `measurement-chain.v1`; calibration, estimator and mapped covariance checks, original/replay/held/fault fixtures | Explicit independent simultaneous channels; general cross-provider state-to-quantity mapping remains separate. |
-| Declared circle → GTE | Shared `ciw.geometric-circle.v1`; observations, full joint/tangent covariance, held candidate and native replay | ICRH `geometric-circle.v1`; separate geometric/covariance oracle and binding checks | Declared circle in one plane; no surveyed BIM frame mapping or inferred constraint. |
-| Retained SIDT model + GSIE state + certificate → PLSR | Shared `ciw.identified-stability.v1`; exact retained model/state selection, discrete interval and native sealed artifact/verdict | ICRH `identified-stability.v1`; independent quadratic/discrete decrease checks, upstream identity bindings and inconclusive/held cases | Conditional on the identified point model; unknown parameter covariance remains unknown and state covariance is context, not a probabilistic certificate. |
+| RCI → FSRT → JSPT | Shared `ciw.measurement-chain.v1`; unchanged native investigation, raw/calibrated evidence, posterior/reconciled covariance and explicit quantity map; inner executions/results join common history | CIW native tests cover calibration, mapped covariance, original/replay/held/fault fixtures; independent ICRH profile pending | Explicit independent simultaneous channels; general cross-provider state-to-quantity mapping remains separate. |
+| Declared circle → GTE | Shared `ciw.geometric-circle.v1`; observations, full joint/tangent covariance, held candidate and native replay | CIW geometric/covariance oracle and binding tests; independent ICRH profile pending | Declared circle in one plane; no surveyed BIM frame mapping or inferred constraint. |
+| Retained SIDT model + GSIE state + certificate → PLSR | Shared `ciw.identified-stability.v1`; exact retained model/state selection, discrete interval and native sealed artifact/verdict | CIW quadratic/discrete decrease, upstream binding and inconclusive/held tests; independent ICRH profile pending | Conditional on the identified point model; unknown parameter covariance remains unknown and state covariance is context, not a probabilistic certificate. |
 | PPDA/SCR exchange artifact → SET → CIW inspector | `ciw exchange inspect`; unchanged artifacts, byte digests and conformance report | Actual producer integration tests in CIW | Read-only inspection does not dispatch an SCR workload or import native state. |
 | Retained SRA assessment → SRA/JSPT/PLSR | Shared `ciw.schematic-companions.v1`, native local calls and explicit upstream result edge | ICRH `schematic-companions.v1`; scalar derivative/covariance/Lyapunov and binding checks | Local continuous linear surrogate only; no equilibrium or nonlinear region claim. |
 | IFC + declared scalar observation → CSE | Shared `ciw.bim-quantity.v1`, native conditioning, rollback and replayed ledger | ICRH `bim-quantity.v1`; conditioning oracle, ledger/world commitments and held/refused cases | Quantity-only model; surveyed-frame geometry remains separate. |
 | Retained snapshots → PPDA/SCOUT | Shared `ciw.acquired-dataset.v1`, native incremental acquisition, evidence pool and checkpoints | ICRH `acquired-dataset.v1`; lineage/cursor/pool reconstruction and replay bindings | Calibrated conversion now uses explicit retained selection; hardware polling remains separate. |
 | Declared geographic context → GSV | `spatial.inspect`, exact source bytes through native GSV provider/WorldStore | ICRH geographic declaration checks; actual CIW WebSocket/provider tests | Source-only CRS84 nodes with declared constant states; no inferred geometry or estimator. |
+| Flat lattice and winding → FTR | Shared `ciw.flat-torus-reference.v1`; native trajectory, geometry digest and fresh replay | ICRH `flat-torus-reference.v1`; analytic lattice/closure and retained pair checks | Area-one flat quotient; no embedded torus, physical units or observed uncertainty. |
+| Declared constant curvature → CSG | Shared `ciw.curved-path-transfer.v1`; native Jacobi transfer, separation and declared covariance propagation | ICRH `curved-path-transfer.v1`; constant-curvature oracle, covariance and replay binding checks | Curvature profile only; no embedded path, surveyed geometry or calibrated sensor claim. |
 
 “Independent harness” means a separately implemented conformance checker. It
 does not mean an independent physical measurement or independent validation of
@@ -168,9 +171,12 @@ produced and consume it.
 No research/dependency fork is counted as an instrument merely because it is in
 the account. The covariance-geometry, intrinsic-surface and translation-surface
 scaffolds remain deferred until a GSIE, GTE or CBSR workload needs a specific
-operation. The executable flat-torus and curved-surface references remain
-bounded reference tools; their existence does not require expanding the current
-process milestone into geometry research.
+operation. The flat-torus and curved-surface references now execute as bounded shared-session
+operations; see [geodesic references](GEODESIC_REFERENCES.md). The first retains an
+area-one flat quotient-torus trajectory, and the second a constant-curvature Jacobi
+transfer and declared starting covariance. Neither creates measured geometry or
+a state-estimator context. Additional surface, mesh and topology workloads remain
+separate work.
 
 ESM stays at candidate-evidence retention. A replayable result, conformance
 receipt or advisory selected observation grants neither canonical-state

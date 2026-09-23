@@ -1,0 +1,28 @@
+name: Native geodesic references
+
+on:
+  push:
+  pull_request:
+
+permissions:
+  contents: read
+
+jobs:
+  references:
+    strategy:
+      matrix:
+        os: [ubuntu-latest, windows-latest]
+    runs-on: ${{ matrix.os }}
+    timeout-minutes: 20
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-python@v5
+        with:
+          python-version: '3.12'
+      - run: python -m pip install 'setuptools>=77' wheel
+      - run: python scripts/check_geodesic_references.py --output-dir results/geodesic-references
+      - uses: actions/upload-artifact@v4
+        if: success()
+        with:
+          name: geodesic-reference-evidence-${{ matrix.os }}
+          path: results/geodesic-references
