@@ -97,7 +97,7 @@ def save(session) -> dict:
 
 
 def build_session_fixture(root: Path) -> dict:
-    """Oscillator operations, energy bundles, replays, save, reopen and an independent session."""
+    """Oscillator operations, energy bundles, replays, save, reopen and a separate session (same process and code)."""
     from ..instruments import make_demo_run
     from ..session import Session
 
@@ -121,18 +121,19 @@ def build_session_fixture(root: Path) -> dict:
     replay_reopened = request(reopened, "bundle.replay", {"bundle_id": b0["bundle_id"]})
     replay_of_replay = request(reopened, "bundle.replay", {"bundle_id": replay["bundle"]["bundle_id"]})
     saved_reopened = save(reopened)
-    # An independent session analysing the same bytes, plus a relabelled copy.
-    independent = Session(run, root / "session-c")
-    source_c = energy_source(independent, baseline, "baseline")
-    relabelled = energy_source(independent, baseline, "baseline (relabelled copy)")
-    b4 = energy_execute(independent, source_c["source_id"])
+    # A separate session in the same process retains the same bytes under the
+    # same label and under a second label; only the same-label source is executed.
+    separate = Session(run, root / "session-c")
+    source_c = energy_source(separate, baseline, "baseline")
+    relabelled = energy_source(separate, baseline, "baseline (relabelled copy)")
+    b4 = energy_execute(separate, source_c["source_id"])
     bundles = {"B0": b0["bundle_id"], "B0b": b0b["bundle_id"], "Bother": bother["bundle_id"],
                "B1": replay["bundle"]["bundle_id"], "B2": replay_reopened["bundle"]["bundle_id"],
                "B3": replay_of_replay["bundle"]["bundle_id"]}
     natives = {role: reopened.workbench.get_bundle(identity) for role, identity in bundles.items()}
-    natives["B4"] = independent.workbench.get_bundle(b4["bundle_id"])
+    natives["B4"] = separate.workbench.get_bundle(b4["bundle_id"])
     return {
-        "run": deepcopy(run), "session_ids": [session.session_id, reopened.session_id, independent.session_id],
+        "run": deepcopy(run), "session_ids": [session.session_id, reopened.session_id, separate.session_id],
         "oscillator": {"E1": first["execution"], "R1": first["result"], "E2": second["execution"],
                        "R2": second["result"], "RL": legacy},
         "runtime_declared": session.operations.get("statistics.v1").runtime_identity(),

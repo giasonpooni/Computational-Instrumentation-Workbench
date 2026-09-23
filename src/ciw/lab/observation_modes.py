@@ -24,6 +24,7 @@ import math
 import numpy as np
 
 from ..core.identities import content_identity
+from .observation_chord import arc_from_chord, helix_chord
 
 CLOCK_BASES = ("acquisition", "arrival")
 GEOMETRY_CLASSES = ("intrinsic", "extrinsic", "none")
@@ -195,13 +196,6 @@ def require_mode(observation: Observation, expected: str) -> Observation:
 
 # Chord to surface distance ------------------------------------------------
 
-def helix_chord(s, radius, alpha):
-    """Exact chord of a cylinder geodesic at angle ``alpha`` from the circumferential direction."""
-    s = np.asarray(s, dtype=float)
-    theta = s * math.cos(alpha) / radius
-    return np.sqrt((2 * radius * np.sin(theta / 2)) ** 2 + (s * math.sin(alpha)) ** 2)
-
-
 def arc_length_from_chord(chord: float, model: dict) -> float:
     """Invert chord -> geodesic arc length on a declared surface model."""
     kind = model.get("kind")
@@ -214,21 +208,11 @@ def arc_length_from_chord(chord: float, model: dict) -> float:
         return 2 * radius * math.asin(chord / (2 * radius))
     if kind == "cylinder_geodesic":
         radius, alpha = float(model["radius"]), float(model["path_angle_rad"])
-        if abs(math.cos(alpha)) < 1e-15:
-            return float(chord)
         # The chord increases monotonically with s while s cos(alpha) / R <= pi.
-        low, high = float(chord), math.pi * radius / abs(math.cos(alpha))
-        if float(helix_chord(high, radius, alpha)) < chord:
+        if abs(math.cos(alpha)) >= 1e-15 and float(helix_chord(math.pi * radius / abs(math.cos(alpha)),
+                                                               radius, alpha)) < chord:
             raise ObservationRefusal("chord_outside_model", "Chord exceeds the monotone range of the declared helix")
-        for _ in range(200):
-            mid = 0.5 * (low + high)
-            if float(helix_chord(mid, radius, alpha)) < chord:
-                low = mid
-            else:
-                high = mid
-            if high - low <= 4e-16 * high:
-                break
-        return 0.5 * (low + high)
+        return float(arc_from_chord(chord, radius, alpha))
     raise ObservationRefusal("unsupported_surface_model", f"Unsupported surface model: {kind!r}")
 
 

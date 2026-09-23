@@ -101,6 +101,36 @@ def _independent(reference, observed, tolerance, checker, revision, kind="exact_
                 checker={"implementation": checker, "revision": revision})
 
 
+# Per-finding uncertainty (AUTHORING rule 5). ``value`` is a bound or a 95 %
+# half-width in the finding's unit, a list or dict of them matching the value.
+def _uncertainty(kind, value, basis) -> dict:
+    return {"kind": kind, "value": value, "basis": basis}
+
+
+def _exact(basis="exact: integer counts, refusal codes or dyadic arithmetic; no rounding") -> dict:
+    return _uncertainty("exact", 0.0, basis)
+
+
+def _roundoff(value, basis) -> dict:
+    return _uncertainty("roundoff", float(value), basis)
+
+
+def _truncation(value, basis) -> dict:
+    return _uncertainty("truncation_bound", value, basis)
+
+
+def _mc95(value, basis) -> dict:
+    return _uncertainty("monte_carlo_95ci", value, basis)
+
+
+Z95 = sig.normal_quantile(0.975)
+
+
+def _half_width(standard_error) -> float:
+    """Two-sided 95 % half-width from a standard error."""
+    return float(Z95 * standard_error)
+
+
 # Observation records -------------------------------------------------------------
 
 EXAMPLE_VALUES = {"intrinsic_geodesic_distance": 0.12, "camera_chord_distance": 0.11292849467900708,
@@ -128,7 +158,10 @@ def example_observation(mode: str, **overrides) -> om.Observation:
 
 
 # --------------------------------------------------------------- T045
-@task("T045", changed_files=(MODULE, MODES_FILE, DOC), regression_tests=_tests("test_t045_modes_and_refusals"))
+CONVERSION_ARCS_M = (0.015, 0.06, 0.12)
+
+
+@task("T045", changed_files=(MODULE, MODES_FILE, CHORD_FILE, DOC), regression_tests=_tests("test_t045_modes_and_refusals"))
 def typed_observation_modes(ctx):
     registry = {name: mode.describe() for name, mode in sorted(om.MODES.items())}
     required = ("quantity", "unit", "frame_kind", "clock_basis", "geometry", "noise_model", "cannot_observe")
@@ -158,11 +191,14 @@ def typed_observation_modes(ctx):
         for provided in registry for wanted in registry if provided != wanted}
     refused = sum(code == "mode_substitution" for code in substitutions.values())
 
+    # Forward model independent of the inverted helix_chord: embedded points of
+    # Cylinder.exact_geodesic (straight lines in the (phi, z) chart).
     conversions, worst = [], 0.0
     for degrees in (0.0, 30.0, 60.0, 90.0):
         model = dict(CYLINDER_MODEL, path_angle_rad=math.radians(degrees))
-        for arc in (0.015, 0.06, 0.12):
-            measured = float(chord.helix_chord(arc, 0.1, math.radians(degrees)))
+        embedded = chord.embedded_helix_chords(CONVERSION_ARCS_M, 0.1, math.radians(degrees))
+        for arc, measured in zip(CONVERSION_ARCS_M, embedded):
+            measured = float(measured)
             converted = om.chord_to_surface_distance(example_observation("camera_chord_distance", value=measured),
                                                      model)
             om.validate(converted)
@@ -179,7 +215,8 @@ def typed_observation_modes(ctx):
                  lambda: om.require_mode(chord_record, "intrinsic_geodesic_distance")),
         _refusal("model-derived distance used as a direct intrinsic observation", "mode_substitution",
                  lambda: om.require_mode(derived, "intrinsic_geodesic_distance")),
-        _check("recovered arc length against the generating arc length (m)", worst, 1e-13, kind="analytic")]
+        _check("recovered arc length against the arc length of Cylinder.exact_geodesic embeddings (m)", worst,
+               1e-13, kind="analytic")]
 
     ctx.artifact_json("observation-modes.json", registry)
     ctx.artifact_json("refusals.json", {"records": [{"case": label, "expected": code, "observed": check["observed_refusal"]}
@@ -195,17 +232,19 @@ def typed_observation_modes(ctx):
                             _check("invalid clock basis or geometry class", len(invalid), 0, kind="exact_arithmetic"),
                             _check("well-formed examples accepted minus modes", accepted - len(registry), 0,
                                    kind="exact_arithmetic")]},
-                tolerance={"abs": 0, "rel": 0}),
+                uncertainty=_exact(), tolerance={"abs": 0, "rel": 0}),
         finding("Validation refuses records lacking frame, clock, epoch, calibration or clock-basis references",
                 "computational_pipeline", [check["observed_refusal"] for check in record_checks],
-                {"checks": record_checks}, tolerance={"abs": 0, "rel": 0}),
+                {"checks": record_checks}, uncertainty=_exact(), tolerance={"abs": 0, "rel": 0}),
         finding("No observation mode stands in for another: every ordered substitution is refused",
                 "computational_pipeline", {"ordered_pairs": len(substitutions), "refused": refused},
                 {"checks": [_check("ordered pairs not refused as mode_substitution", len(substitutions) - refused, 0,
                                    kind="exact_arithmetic")] + conversion_checks[1:3]},
-                tolerance={"abs": 0, "rel": 0}),
+                uncertainty=_exact(), tolerance={"abs": 0, "rel": 0}),
         finding("A camera chord becomes a surface distance only through a declared surface model",
                 "numerical", worst, {"checks": [conversion_checks[0], conversion_checks[3]]}, unit="m",
+                uncertainty=_roundoff(1e-15, "a few ulp of the 0.12 m chord amplified by 1/(dc/ds) <= 1.22; the "
+                                      "bisection converges to adjacent doubles"),
                 tolerance={"abs": 1e-12, "rel": 0}),
         _unestablished("The declared noise-model parameters describe real instruments of these modes",
                        "sensor_performance", "Noise parameters are declared placeholders; no instrument was acquired."),
@@ -219,7 +258,8 @@ def typed_observation_modes(ctx):
                            "an inverted chord-arc relation of a declared surface model (T046/T047).",
         input_data=["Seven declared modes in ciw.lab.observation_modes.MODES",
                     "One synthetic well-formed record per mode (example_observation)",
-                    "Helix chords on a declared cylinder R = 0.1 m at alpha = 0, 30, 60, 90 deg"],
+                    "Chords of Cylinder.exact_geodesic embeddings on a declared cylinder R = 0.1 m at alpha = 0, "
+                    "30, 60, 90 deg and s = 0.015, 0.06, 0.12 m"],
         observation_model="No instrument: records are generated with declared (synthetic) calibration references.",
         expected_invariant="Every well-formed record validates; every record with a missing reference or a "
                            "substituted mode is refused with a stable code; conversion needs a declared model.",
@@ -228,7 +268,8 @@ def typed_observation_modes(ctx):
         numerical_result=f"{len(registry)} modes, {len(missing)} missing declarations; {len(record_checks)} record "
                          f"refusals as expected; {refused}/{len(substitutions)} substitutions refused; chord-to-arc "
                          f"inversion error {worst:.2e} m.",
-        uncertainty="Refusals are exact; the chord inversion is a bisection converged to about 1e-16 relative.",
+        uncertainty="Refusals and counts are exact; the chord inversion is a bisection converged to adjacent "
+                    "doubles, so the recovered arc carries rounding of about 1e-16 m.",
         failure_modes_checked=["missing frame, clock, epoch, calibration or clock basis",
                                "arrival stamp on an acquisition-stamped mode", "frame kind or unit mismatch",
                                "surface distance without surface model", "all 42 mode substitutions",

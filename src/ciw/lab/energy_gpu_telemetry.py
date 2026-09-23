@@ -1,15 +1,19 @@
 """Telemetry helpers for the energy and GPU experiments (T115-T125).
 
-Scope: read-only probes of Linux RAPL powercap counters; loading and
-tampering the retained synthetic energy/accuracy fixtures; gating when a
-retained NVML log may support a physical-domain finding; and a replay of the
-offline energy-accuracy workflow through a ciw Session.
+Scope: read-only probes of Linux RAPL powercap counters and an operator-run
+RAPL capture that executes outside the lab runner; loading and tampering the
+retained synthetic energy/accuracy fixtures; gating when a retained NVML log
+or RAPL capture may support a physical-domain finding; parsing timestamped
+nvidia-smi sidecar rows; and a replay of the offline energy-accuracy
+workflow through a ciw Session.
 
 Non-claims: the bundled fixtures are synthetic. Validation of a sealed log
 establishes internal integrity only; neither the declared ``origin`` nor the
 device identity in a log authenticates that a physical device produced it.
-Nothing here starts GPU work, changes device settings or estimates energy
-from time or utilization.
+The lab runner calls nothing here that reads an energy counter: counters are
+read only by ``python -m ciw.lab.energy_gpu_telemetry rapl-capture`` (an
+operator action) and by ``ciw energy record``. Nothing here starts GPU work,
+changes device settings or estimates energy from time or utilization.
 """
 from __future__ import annotations
 
@@ -20,14 +24,23 @@ import hashlib
 import json
 import os
 from pathlib import Path
+import platform
+import re
+import sys
 import tempfile
+import time
 
-REPO_ROOT = Path(__file__).resolve().parents[3]
-FIXTURE_DIR = REPO_ROOT / "examples" / "energy-accuracy"
+from . import runner
+
 FIXTURES = ("baseline", "reset", "missing", "under-target")
 POWERCAP = Path("/sys/class/powercap")
 LOG_ENV = "CIW_LAB_ENERGY_LOG"
 SMI_ENV = "CIW_LAB_NVIDIA_SMI_CSV"
+SMI_OFFSET_ENV = "CIW_LAB_NVIDIA_SMI_UTC_OFFSET"
+RAPL_ENV = "CIW_LAB_RAPL_LOG"
+RAPL_SCHEMA = "ciw.lab.rapl-capture.v1"
+OPERATOR_NOTE = ("acquired by an operator outside the lab runner; the lab checked the identity binding and "
+                 "retained the bytes, it did not authenticate the capture")
 
 
 # RAPL ---------------------------------------------------------------------
@@ -62,10 +75,120 @@ def rapl_delta_uj(before: int, after: int, max_range: int | None) -> tuple[int, 
     return after + (max_range - before) + 1, True
 
 
+def rapl_host_identity(root=POWERCAP, separator=":") -> dict:
+    """CPU model, platform and RAPL package zones of this host (reads no counter)."""
+    cpu = None
+    try:
+        for line in Path("/proc/cpuinfo").read_text().splitlines():
+            if line.startswith("model name"):
+                cpu = line.split(":", 1)[1].strip()
+                break
+    except OSError:
+        pass
+    return {"cpu_model": cpu, "machine": platform.machine(), "system": platform.system(),
+            "zones": [f"{d['zone']} {d['name']}" for d in rapl_domains(root, separator)]}
+
+
+def _bracket(domains, action) -> dict:
+    """Counter reads before and after ``action`` with UTC and monotonic brackets."""
+    utc_start, mono_start = time.time_ns(), time.monotonic_ns()
+    before = rapl_read(domains)
+    action()
+    after = rapl_read(domains)
+    mono_end, utc_end = time.monotonic_ns(), time.time_ns()
+    return {"before_uj": before, "after_uj": after, "start_utc_ns": str(utc_start), "end_utc_ns": str(utc_end),
+            "elapsed_monotonic_ns": mono_end - mono_start}
+
+
+def capture_rapl(output, repeats=3, root=POWERCAP, separator=":", sleep=time.sleep) -> dict:
+    """Operator-run capture: bracket ``repeats`` batches of the T115 workload, then an idle interval of equal length.
+
+    This is the only function in the section that reads energy counters; the
+    lab runner never calls it. The record is written once (an existing file is
+    refused) and analyzed read-only by T115 through ``CIW_LAB_RAPL_LOG``.
+    """
+    from . import energy_gpu_kernels as kernels
+    path = Path(output)
+    if path.exists():
+        raise ValueError("Refusing to overwrite an existing RAPL capture")
+    if type(repeats) is not int or not 1 <= repeats <= 1000:
+        raise ValueError("repeats must be an integer in [1, 1000]")
+    domains = rapl_domains(root, separator)
+    if not domains:
+        raise ValueError("No intel-rapl package domain with an energy_uj counter")
+
+    def work():
+        for _ in range(repeats):
+            kernels.fixed_step_batch()
+
+    workload = _bracket(domains, work)
+    idle = _bracket(domains, lambda: sleep(workload["elapsed_monotonic_ns"] / 1e9))
+    record = {"schema": RAPL_SCHEMA, "captured_by": "python -m ciw.lab.energy_gpu_telemetry rapl-capture",
+              "workload": dict(kernels.WORKLOAD), "repeats": repeats,
+              "trajectories_per_repeat": len(kernels.HEADINGS), "host": rapl_host_identity(root, separator),
+              "domains": domains, "workload_bracket": workload, "idle_bracket": idle}
+    path.write_text(json.dumps(record, indent=1, sort_keys=True) + "\n", encoding="utf-8")
+    return record
+
+
+def rapl_capture_reasons(record, host_identity: dict, workload: dict) -> list:
+    """Why a capture cannot support a physical finding here (empty when it can)."""
+    reasons = []
+    if not isinstance(record, dict) or record.get("schema") != RAPL_SCHEMA:
+        return [f"capture is not a {RAPL_SCHEMA} record"]
+    if record.get("workload") != workload:
+        reasons.append("capture names a different workload than this task declares")
+    if type(record.get("repeats")) is not int or record["repeats"] < 1 or \
+            record.get("trajectories_per_repeat") != len(workload["headings_rad"]):
+        reasons.append("capture repeat or trajectory counts are malformed")
+    host = record.get("host") or {}
+    differing = [key for key in ("cpu_model", "machine", "system", "zones") if host.get(key) != host_identity.get(key)]
+    if differing:
+        reasons.append("capture host differs from this host: " + ", ".join(differing))
+    domains = record.get("domains") or []
+    for name in ("workload_bracket", "idle_bracket"):
+        bracket = record.get(name) or {}
+        if len(bracket.get("before_uj") or []) != len(domains) or len(bracket.get("after_uj") or []) != len(domains) \
+                or not domains or not isinstance(bracket.get("elapsed_monotonic_ns"), int) \
+                or bracket["elapsed_monotonic_ns"] <= 0:
+            reasons.append(f"capture {name} is malformed")
+    return reasons
+
+
+def rapl_capture_energy(record) -> dict:
+    """Gross and idle-subtracted package energy per trajectory (one wrap per bracket allowed)."""
+    domains = record["domains"]
+
+    def total(bracket):
+        deltas = [rapl_delta_uj(int(b), int(a), d["max_energy_range_uj"])
+                  for b, a, d in zip(bracket["before_uj"], bracket["after_uj"], domains)]
+        return sum(delta for delta, _ in deltas), [wrapped for _, wrapped in deltas]
+
+    gross_uj, wrapped = total(record["workload_bracket"])
+    idle_uj, idle_wrapped = total(record["idle_bracket"])
+    work_s = record["workload_bracket"]["elapsed_monotonic_ns"] / 1e9
+    idle_s = record["idle_bracket"]["elapsed_monotonic_ns"] / 1e9
+    trajectories = record["repeats"] * record["trajectories_per_repeat"]
+    # Idle energy is rescaled to the workload interval before subtraction.
+    idle_equivalent_uj = idle_uj * work_s / idle_s
+    return {"trajectories": trajectories, "gross_uj": gross_uj, "idle_uj": idle_uj, "workload_s": work_s,
+            "idle_s": idle_s, "wrapped": wrapped + idle_wrapped,
+            "gross_j_per_trajectory": gross_uj * 1e-6 / trajectories,
+            "idle_subtracted_j_per_trajectory": (gross_uj - idle_equivalent_uj) * 1e-6 / trajectories}
+
+
 # Fixtures -------------------------------------------------------------------
+def fixture_dir() -> Path | None:
+    """``examples/energy-accuracy`` under the lab repository root (honours CIW_LAB_REPOSITORY_ROOT)."""
+    return runner.repository_path("examples", "energy-accuracy")
+
+
 def fixture_bytes() -> dict | None:
-    """Exact retained bytes of the synthetic fixtures, or None outside a source checkout."""
-    paths = {name: FIXTURE_DIR / f"{name}.json" for name in FIXTURES}
+    """Exact retained bytes of the synthetic fixtures, or None when the repository files are unreachable."""
+    root = fixture_dir()
+    if root is None:
+        return None
+    paths = {name: root / f"{name}.json" for name in FIXTURES}
     if not all(path.is_file() for path in paths.values()):
         return None
     return {name: path.read_bytes() for name, path in paths.items()}
@@ -207,10 +330,11 @@ def physical_basis(raw: bytes, log, analysis, host_identity: dict | None,
     if reasons:
         return {"notes": reasons}, reasons
     samples = log["phases"][3]["samples"]
-    acquisition = {"device": f"{log['sensor']['name']} {log['sensor']['device_uuid']} (NVML total energy counter)",
+    acquisition = {"device": f"{log['sensor']['name']} {log['sensor']['device_uuid']} (NVML total energy counter; "
+                             "operator-captured log, unauthenticated)",
                    "raw_sha256": hashlib.sha256(raw).hexdigest(), "acquired_at": _utc(samples[0]["utc_start_ns"]),
                    "calibration": "not_applied: vendor counter, resolution and accuracy undeclared"}
-    return {"acquisition": acquisition}, []
+    return {"acquisition": acquisition, "notes": [OPERATOR_NOTE]}, []
 
 
 def read_operator_log(path) -> tuple[bytes, dict, dict]:
@@ -222,28 +346,59 @@ def read_operator_log(path) -> tuple[bytes, dict, dict]:
     return raw, log, energy_records.analyze(log)
 
 
-def smi_columns(text: str) -> dict:
-    """Split ``nvidia-smi --query-gpu=... --format=csv,nounits`` text into columns of raw cells."""
+def utc_offset_ns(text: str | None) -> int | None:
+    """Declared offset of local time from UTC ("+HH:MM" or "-HH:MM") in nanoseconds, or None."""
+    match = re.fullmatch(r"([+-])(\d{2}):(\d{2})", (text or "").strip())
+    if not match or int(match.group(2)) > 14 or int(match.group(3)) > 59:
+        return None
+    sign = 1 if match.group(1) == "+" else -1
+    return sign * (int(match.group(2)) * 3600 + int(match.group(3)) * 60) * 10**9
+
+
+def smi_rows(text: str) -> list:
+    """Rows of ``nvidia-smi --query-gpu=... --format=csv,nounits`` text as {header: raw cell} dicts."""
     lines = [line for line in text.splitlines() if line.strip()]
     if not lines:
-        return {}
+        return []
     header = [name.strip() for name in lines[0].split(",")]
-    columns = {name: [] for name in header}
-    for line in lines[1:]:
-        for name, cell in zip(header, line.split(",")):
-            columns[name].append(cell.strip())
-    return columns
+    return [dict(zip(header, (cell.strip() for cell in line.split(",")))) for line in lines[1:]]
 
 
-def numbers(cells) -> list:
-    """Numeric cells as floats; unavailable readings ("[N/A]", blanks) become None."""
-    out = []
-    for cell in cells:
+def smi_utc_ns(cell: str, offset_ns: int) -> int | None:
+    """nvidia-smi prints local wall time ("YYYY/MM/DD HH:MM:SS.fff"); convert with the declared offset."""
+    for pattern in ("%Y/%m/%d %H:%M:%S.%f", "%Y/%m/%d %H:%M:%S"):
         try:
-            out.append(float(cell))
+            local = datetime.strptime(cell.strip(), pattern)
         except ValueError:
-            out.append(None)
-    return out
+            continue
+        since = local - datetime(1970, 1, 1)
+        return (since.days * 86400 + since.seconds) * 10**9 + since.microseconds * 1000 - offset_ns
+    return None
+
+
+def number(cell) -> float | None:
+    """A numeric cell as a float; unavailable readings ("[N/A]", blanks) become None."""
+    try:
+        return float(cell)
+    except (TypeError, ValueError):
+        return None
+
+
+def smi_window(text: str, start_ns: int, end_ns: int, offset_ns: int | None) -> tuple[list, list]:
+    """Sidecar rows whose UTC timestamp lies in [start_ns, end_ns], and the reasons none can be used.
+
+    The sidecar runs longer than the measurement phase (it is started before
+    and stopped after the capture), so rows outside the window are idle,
+    warmup or startup samples and must not enter a measurement statistic.
+    """
+    if offset_ns is None:
+        return [], [f"no UTC offset declared for the sidecar's local timestamps ({SMI_OFFSET_ENV})"]
+    rows = smi_rows(text)
+    stamped = [(smi_utc_ns(row.get("timestamp", ""), offset_ns), row) for row in rows]
+    if any(stamp is None for stamp, _ in stamped):
+        return [], ["sidecar rows carry unparseable timestamps"]
+    inside = [row for stamp, row in stamped if start_ns <= stamp <= end_ns]
+    return inside, ([] if inside else ["no sidecar row falls inside the measurement window"])
 
 
 # Offline replay through a ciw Session ----------------------------------------
@@ -336,3 +491,27 @@ def reseal_bundle(bundle):
 def environment_log_path(variable=LOG_ENV) -> str | None:
     value = os.environ.get(variable, "").strip()
     return value or None
+
+
+def main(argv=None) -> int:
+    """``python -m ciw.lab.energy_gpu_telemetry rapl-capture OUTPUT``: the operator-run T115 capture."""
+    import argparse
+    parser = argparse.ArgumentParser(prog="python -m ciw.lab.energy_gpu_telemetry",
+                                     description="Operator-run RAPL capture for lab task T115 (outside the lab runner)")
+    commands = parser.add_subparsers(dest="command", required=True)
+    capture = commands.add_parser("rapl-capture", help="bracket the T115 workload and an equal idle interval")
+    capture.add_argument("output", help="new JSON file for the raw capture (an existing file is refused)")
+    capture.add_argument("--repeats", type=int, default=3)
+    args = parser.parse_args(argv)
+    try:
+        record = capture_rapl(args.output, args.repeats)
+    except (OSError, ValueError) as exc:
+        print(f"RAPL capture refused: {exc}", file=sys.stderr)
+        return 2
+    print(json.dumps({"output": str(args.output), "zones": record["host"]["zones"],
+                      "then": f"{RAPL_ENV}={args.output} ciw lab run T115 --output-dir <dir>"}, indent=1))
+    return 0
+
+
+if __name__ == "__main__":
+    raise SystemExit(main())

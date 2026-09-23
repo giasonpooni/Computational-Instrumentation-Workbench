@@ -219,15 +219,18 @@ def pair_chords(points, pairs) -> np.ndarray:
 def noisy_chords(cameras, points, pairs, sigma_px: float, trials: int, rng, quantize: bool = True) -> np.ndarray:
     """Chords triangulated from Gaussian-noisy, optionally integer-rounded pixels (distortion-free cameras).
 
-    Each trial draws a uniform pixel-grid phase per camera (the unknown
-    sub-pixel position of the principal point); triangulation uses the
-    matching principal point, so the phase adds no calibration error but
-    makes the rounding error uniform on [-1/2, 1/2) px.
+    Each trial draws an independent uniform pixel-grid phase per marker,
+    camera and axis (the unknown sub-pixel position of each marker image) and
+    removes it again after rounding, so the rounding errors are uniform on
+    [-1/2, 1/2) px and independent between coordinates, as the linear
+    propagation sigma_c^2 = (sigma^2 + 1/12) sum J^2 assumes. A phase shared by
+    all markers of a camera would correlate their rounding errors.
     """
     normalized = []
     for camera in cameras:
         ideal = camera.project(points)
-        phase = rng.uniform(0.0, 1.0, (trials, 1, 2)) if quantize else np.zeros((trials, 1, 2))
+        shape = (trials, len(points), 2)
+        phase = rng.uniform(0.0, 1.0, shape) if quantize else np.zeros(shape)
         pixels = ideal[None] + phase + sigma_px * rng.standard_normal((trials, len(points), 2))
         if quantize:
             pixels = np.round(pixels)

@@ -9,8 +9,9 @@ For a unit-speed curve with curvature kappa(s) and torsion tau(s) the chord
 c(s) = |gamma(s) - gamma(0)| satisfies
 
     c = s - kappa0^2 s^3 / 24 - kappa0 kappa0' s^4 / 24 + c5 s^5 + O(s^6),
+    c5 = (3 kappa0^4 + 8 kappa0^2 tau0^2 - 72 kappa0 kappa0'' - 64 kappa0'^2) / 5760,
 
-with c5 = kappa^4 / 1920 + kappa^2 tau^2 / 720 when kappa and tau are
+which is kappa^4 / 1920 + kappa^2 tau^2 / 720 when kappa and tau are
 constant. Along a surface geodesic the geodesic curvature vanishes, so kappa
 is the absolute normal curvature II(T, T).
 
@@ -21,7 +22,7 @@ marker placement are not modelled.
 """
 from __future__ import annotations
 
-from fractions import Fraction
+from functools import lru_cache
 import math
 
 import numpy as np
@@ -29,19 +30,18 @@ import numpy as np
 from . import jacobi
 from .surfaces import Cylinder, Sphere, Torus
 
-# Rational sample points (kappa0, kappa1, kappa2, tau0) for exact coefficient comparison.
-SAMPLE_POINTS = ((Fraction(1, 2), Fraction(1, 3), Fraction(0), Fraction(1, 5)),
-                 (Fraction(3), Fraction(-2), Fraction(5, 4), Fraction(7, 4)),
-                 (Fraction(5, 7), Fraction(0), Fraction(0), Fraction(2)),
-                 (Fraction(2, 3), Fraction(0), Fraction(0), Fraction(0)))
 
+def closed_form_coefficients(kappa0, kappa1, tau0, kappa2=0):
+    """Hand-derived chord coefficients c3, c4, c5 (docs/lab/OBSERVATION.md).
 
-def closed_form_coefficients(kappa0, kappa1, tau0):
-    """Hand-derived chord coefficients (c3, c4, c5 for constant kappa and tau)."""
+    ``kappa1`` and ``kappa2`` are kappa'(0) and kappa''(0). The arguments may
+    be numbers or sympy symbols, so the same expressions feed the numerical
+    studies and the symbolic check.
+    """
     c3 = -kappa0 ** 2 / 24
     c4 = -kappa0 * kappa1 / 24
-    c5_constant = kappa0 ** 4 / 1920 + kappa0 ** 2 * tau0 ** 2 / 720
-    return c3, c4, c5_constant
+    c5 = (3 * kappa0 ** 4 + 8 * kappa0 ** 2 * tau0 ** 2 - 72 * kappa0 * kappa2 - 64 * kappa1 ** 2) / 5760
+    return c3, c4, c5
 
 
 def circle_chord(kappa: float, s):
@@ -70,6 +70,16 @@ def arc_from_chord(chords, radius: float, alpha: float, iterations: int = 80) ->
     return 0.5 * (low + high)
 
 
+def embedded_helix_chords(s_values, radius: float, alpha: float, u0=(0.3, -0.2)) -> np.ndarray:
+    """Chords of embedded points of ``Cylinder.exact_geodesic``, a forward model independent of :func:`helix_chord`."""
+    cylinder = Cylinder(radius)
+    start = np.asarray(u0, dtype=float)
+    chart = cylinder.exact_geodesic(start, cylinder.unit_tangent(start, alpha),
+                                    np.concatenate([[0.0], np.asarray(s_values, dtype=float)]))
+    points = np.array([cylinder.embedding(u) for u in chart])
+    return np.linalg.norm(points[1:] - points[0], axis=1)
+
+
 def helix_curvature_torsion(radius: float, alpha: float) -> tuple[float, float]:
     """kappa = cos^2(alpha) / R and tau = sin(alpha) cos(alpha) / R for the cylinder geodesic."""
     return math.cos(alpha) ** 2 / radius, math.sin(alpha) * math.cos(alpha) / radius
@@ -77,6 +87,7 @@ def helix_curvature_torsion(radius: float, alpha: float) -> tuple[float, float]:
 
 # Independent symbolic derivation ------------------------------------------------
 
+@lru_cache(maxsize=1)
 def sympy_general_series():
     """Chord series of a Frenet curve with polynomial kappa(s), tau(s), derived by sympy.
 
@@ -107,37 +118,27 @@ def sympy_general_series():
     return {n: sp.factor(chord.coeff(s, n)) for n in range(1, 6)}, (k0, k1, k2, t0)
 
 
-def _fraction(value) -> Fraction:
-    import sympy as sp
-
-    rational = sp.Rational(value)
-    return Fraction(int(rational.p), int(rational.q))
-
-
 def sympy_versus_closed_form() -> dict:
-    """Exact rational comparison of sympy's coefficients with the closed form."""
+    """Symbolic identity check of sympy's coefficients against the closed form.
+
+    Each residual sympy(c_n) - closed(c_n) is simplified as a polynomial in
+    (kappa0, kappa0', kappa0'', tau0); the check passes only if every residual
+    is identically zero, not merely zero at sample points.
+    """
     import sympy as sp
 
     coefficients, (k0, k1, k2, t0) = sympy_general_series()
-    rows, worst = [], Fraction(0)
-    for point in SAMPLE_POINTS:
-        kappa0, kappa1, kappa2, tau0 = point
-        c3, c4, c5 = closed_form_coefficients(kappa0, kappa1, tau0)
-        subs = {k0: sp.Rational(kappa0.numerator, kappa0.denominator),
-                k1: sp.Rational(kappa1.numerator, kappa1.denominator),
-                k2: sp.Rational(kappa2.numerator, kappa2.denominator),
-                t0: sp.Rational(tau0.numerator, tau0.denominator)}
-        symbolic = {n: _fraction(coefficients[n].subs(subs)) for n in (1, 2, 3, 4)}
-        # The closed-form c5 is claimed only for constant curvature and torsion.
-        constant = {k0: subs[k0], k1: 0, k2: 0, t0: subs[t0]}
-        symbolic_c5 = _fraction(coefficients[5].subs(constant))
-        differences = [symbolic[1] - 1, symbolic[2], symbolic[3] - c3, symbolic[4] - c4, symbolic_c5 - c5]
-        worst = max([worst] + [abs(d) for d in differences])
-        rows.append({"point": [str(x) for x in point], "sympy": {f"c{n}": str(symbolic[n]) for n in (3, 4)},
-                     "sympy_c5_constant": str(symbolic_c5),
-                     "closed_form": {"c3": str(c3), "c4": str(c4), "c5_constant": str(c5)}})
-    return {"expressions": {f"c{n}": str(coefficients[n]) for n in range(1, 6)}, "points": rows,
-            "max_abs_difference": float(worst), "sympy": sp.__version__}
+    c3, c4, c5 = closed_form_coefficients(k0, k1, t0, k2)
+    closed = {1: sp.Integer(1), 2: sp.Integer(0), 3: sp.sympify(c3), 4: sp.sympify(c4), 5: sp.sympify(c5)}
+    residuals = {n: sp.simplify(sp.expand(coefficients[n] - closed[n])) for n in range(1, 6)}
+    # The constant-curvature, constant-torsion specialisation quoted for the circle and helix.
+    constant = sp.simplify(coefficients[5].subs({k1: 0, k2: 0}) - (k0 ** 4 / 1920 + k0 ** 2 * t0 ** 2 / 720))
+    nonzero = sum(residual != 0 for residual in residuals.values()) + int(constant != 0)
+    return {"expressions": {f"c{n}": str(coefficients[n]) for n in range(1, 6)},
+            "closed_form": {f"c{n}": str(closed[n]) for n in range(1, 6)},
+            "residuals": {f"c{n}": str(residuals[n]) for n in range(1, 6)},
+            "constant_curvature_c5_residual": str(constant), "nonzero_residuals": int(nonzero),
+            "sympy": sp.__version__}
 
 
 def sympy_cylinder_series(angles_deg) -> dict:
@@ -150,8 +151,8 @@ def sympy_cylinder_series(angles_deg) -> dict:
     series = sp.series(chord, s, 0, 6).removeO()
     c3, c5 = sp.simplify(series.coeff(s, 3)), sp.simplify(series.coeff(s, 5))
     kappa, tau = sp.cos(alpha) ** 2 / radius, sp.sin(alpha) * sp.cos(alpha) / radius
-    symbolic_residual = [sp.simplify(c3 + kappa ** 2 / 24),
-                         sp.simplify(c5 - (kappa ** 4 / 1920 + kappa ** 2 * tau ** 2 / 720))]
+    closed3, _, closed5 = closed_form_coefficients(kappa, 0, tau)
+    symbolic_residual = [sp.simplify(c3 - closed3), sp.simplify(c5 - closed5)]
     rows, worst = [], 0.0
     for degrees in angles_deg:
         a = math.radians(degrees)
@@ -180,6 +181,12 @@ def _fit(x, y, degree):
     return np.linalg.lstsq(design, np.asarray(y, dtype=float), rcond=None)[0]
 
 
+def _intercept_with_truncation(x, y, degree) -> tuple[float, float]:
+    """Fitted intercept and its change when one more polynomial term is fitted (truncation estimate)."""
+    intercept = float(_fit(x, y, degree)[0])
+    return intercept, abs(float(_fit(x, y, degree + 1)[0]) - intercept)
+
+
 def sphere_study(radii=(0.5, 1.0, 2.0), steps=400) -> dict:
     """Great circles integrated with RK4: chords against 2R sin(s/2R) and the s^3 coefficient."""
     rows = []
@@ -191,12 +198,14 @@ def sphere_study(radii=(0.5, 1.0, 2.0), steps=400) -> dict:
         small = (s > 0) & (s <= 0.25 * radius)
         # (s - c) / s^3 = kappa^2/24 - kappa^4 s^2/1920 + ...
         coefficients = _fit(s[small] ** 2, (s[small] - chord[small]) / s[small] ** 3, 2)
+        _, truncation = _intercept_with_truncation(s[small] ** 2, (s[small] - chord[small]) / s[small] ** 3, 2)
         predicted = 1.0 / (24 * radius ** 2)
         rows.append({"radius": radius, "kappa": 1.0 / radius, "steps": steps,
                      "max_chord_error": float(np.max(np.abs(chord - exact))),
                      "relative_chord_error": float(np.max(np.abs(chord - exact)) / radius),
                      "fitted_c3": float(-coefficients[0]), "predicted_c3": -predicted,
                      "c3_relative_error": float(abs(coefficients[0] / predicted - 1)),
+                     "c3_relative_fit_truncation": float(truncation / predicted),
                      "fitted_c5": float(-coefficients[1]), "predicted_c5": 1.0 / (1920 * radius ** 4),
                      "speed_drift": float(transfer.speed_drift().max()),
                      "curve": {"s": s[small][::4].tolist(), "s_minus_c": (s - chord)[small][::4].tolist()}})
@@ -220,22 +229,27 @@ def torus_counterexample(length=0.4, steps=800, low=0.02, degree=4) -> dict:
     kappa = np.abs([normal_curvature(torus, y) for y in transfer.states])
     poly = np.polynomial.polynomial.polyfit(s, kappa, 8)
     kappa0, kappa1 = float(kappa[0]), float(poly[1])
+    kappa1_truncation = abs(float(np.polynomial.polynomial.polyfit(s, kappa, 9)[1]) - kappa1)
     predicted = kappa0 * kappa1 / 24
     selected = s >= low
     start_residual = s - chord - kappa0 ** 2 * s ** 3 / 24
     start_fit = _fit(s[selected], start_residual[selected] / s[selected] ** 4, degree)
+    _, start_truncation = _intercept_with_truncation(s[selected], start_residual[selected] / s[selected] ** 4, degree)
     # Curvature at the arc midpoint cancels the s^4 term by symmetry.
     even = np.arange(2, steps + 1, 2)
     s_even, kappa_mid = s[even], kappa[even // 2]
     mid_residual = s_even - chord[even] - kappa_mid ** 2 * s_even ** 3 / 24
     keep = s_even >= low
     mid_fit = _fit(s_even[keep], mid_residual[keep] / s_even[keep] ** 4, degree)
+    _, mid_truncation = _intercept_with_truncation(s_even[keep], mid_residual[keep] / s_even[keep] ** 4, degree)
     slope_start = float(np.polyfit(np.log(s_even[keep]), np.log(np.abs(start_residual[even][keep])), 1)[0])
     slope_mid = float(np.polyfit(np.log(s_even[keep]), np.log(np.abs(mid_residual[keep])), 1)[0])
     return {"surface": torus.describe(), "u0": u0.tolist(), "heading_rad": heading, "length": length,
             "steps": steps, "kappa0": kappa0, "kappa0_prime": kappa1,
             "predicted_c4_residual": predicted, "fitted_start_s4": float(start_fit[0]),
             "start_relative_error": float(abs(start_fit[0] / predicted - 1)),
+            "start_s4_fit_truncation": start_truncation, "kappa0_prime_fit_truncation": kappa1_truncation,
+            "midpoint_ratio_fit_truncation": float(mid_truncation / abs(predicted)),
             "fitted_midpoint_s4": float(mid_fit[0]),
             "midpoint_ratio": float(abs(mid_fit[0] / predicted)),
             "loglog_slope_start": slope_start, "loglog_slope_midpoint": slope_mid,
@@ -254,10 +268,11 @@ def helix_torsion_counterexample(radius=1.0, alpha_deg=45.0, length=0.8, steps=1
     gap = chord - circle_chord(kappa, s)
     selected = s >= 0.1 * length
     fit = _fit(s[selected] ** 2, gap[selected] / s[selected] ** 5, 2)
+    _, truncation = _intercept_with_truncation(s[selected] ** 2, gap[selected] / s[selected] ** 5, 2)
     predicted = kappa ** 2 * tau ** 2 / 720
     return {"radius": radius, "alpha_deg": alpha_deg, "kappa": kappa, "tau": tau, "length": length,
             "max_gap": float(np.max(np.abs(gap))), "predicted_s5_gap": predicted, "fitted_s5_gap": float(fit[0]),
-            "relative_error": float(abs(fit[0] / predicted - 1)),
+            "relative_error": float(abs(fit[0] / predicted - 1)), "s5_fit_truncation": truncation,
             "max_exact_chord_error": float(np.max(np.abs(chord - helix_chord(s, radius, alpha))))}
 
 
@@ -269,11 +284,13 @@ def cylinder_fit(angles_deg, radius: float, low=0.02, high=0.3, points=40) -> li
         s = np.geomspace(low, high, points) * radius
         chord = helix_chord(s, radius, alpha)
         coefficients = _fit(s ** 2, (s - chord) / s ** 3, 2)
+        _, truncation = _intercept_with_truncation(s ** 2, (s - chord) / s ** 3, 2)
         kappa, _ = helix_curvature_torsion(radius, alpha)
         predicted = kappa ** 2 / 24
         rows.append({"alpha_deg": degrees, "radius": radius, "fitted": float(coefficients[0]),
                      "predicted": predicted, "abs_error": float(abs(coefficients[0] - predicted)),
-                     "normalized_error": float(abs(coefficients[0] - predicted) * 24 * radius ** 2)})
+                     "normalized_error": float(abs(coefficients[0] - predicted) * 24 * radius ** 2),
+                     "normalized_fit_truncation": float(truncation * 24 * radius ** 2)})
     return rows
 
 
@@ -287,10 +304,12 @@ def cylinder_integrated(angles_deg, radius: float, length_factor=0.3, steps=60) 
         s, chord = transfer.s, _embedded_chords(cylinder, transfer)
         selected = s > 0
         coefficients = _fit(s[selected] ** 2, (s[selected] - chord[selected]) / s[selected] ** 3, 2)
+        _, truncation = _intercept_with_truncation(s[selected] ** 2, (s[selected] - chord[selected]) / s[selected] ** 3, 2)
         kappa, _ = helix_curvature_torsion(radius, alpha)
         rows.append({"alpha_deg": degrees, "radius": radius,
                      "max_chord_error": float(np.max(np.abs(chord - helix_chord(s, radius, alpha)))),
                      "max_s_minus_c": float(np.max(s - chord)), "fitted": float(coefficients[0]),
                      "predicted": kappa ** 2 / 24,
-                     "normalized_error": float(abs(coefficients[0] - kappa ** 2 / 24) * 24 * radius ** 2)})
+                     "normalized_error": float(abs(coefficients[0] - kappa ** 2 / 24) * 24 * radius ** 2),
+                     "normalized_fit_truncation": float(truncation * 24 * radius ** 2)})
     return rows

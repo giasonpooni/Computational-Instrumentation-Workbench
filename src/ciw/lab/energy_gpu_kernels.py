@@ -31,6 +31,12 @@ import numpy as np
 THETA0 = math.pi / 2
 HEADINGS = (0.7, 0.85, 1.0, 1.15, 1.3, 1.45)
 LENGTH = 3.0
+WORKLOAD_STEPS = 256
+
+# The declared CPU workload of T115; an operator capture must name it exactly.
+WORKLOAD = {"name": "equatorial unit-sphere geodesics", "integrator": "ciw.lab.integrators.integrate_fixed rk4",
+            "rhs": "ciw.lab.surfaces.Sphere(1.0).geodesic_rhs", "headings_rad": list(HEADINGS), "length": LENGTH,
+            "steps": WORKLOAD_STEPS}
 
 # Per-step operation count of the closed-form RK4 below (see rk4_operation_count).
 RHS_MUL, RHS_DIV, RHS_TRIG = 6, 1, 2
@@ -39,6 +45,14 @@ RHS_MUL, RHS_DIV, RHS_TRIG = 6, 1, 2
 def initial_states(headings=HEADINGS) -> np.ndarray:
     """Rows (theta, phi, dtheta/ds, dphi/ds) of unit-speed geodesics on the equator."""
     return np.array([[THETA0, 0.0, math.cos(a), math.sin(a) / math.sin(THETA0)] for a in headings])
+
+
+def fixed_step_batch() -> list:
+    """One batch of the declared workload: every trajectory integrated once with fixed-step RK4."""
+    from .integrators import integrate_fixed
+    from .surfaces import Sphere
+    surface = Sphere(1.0)
+    return [integrate_fixed(surface.geodesic_rhs, y0, LENGTH, WORKLOAD_STEPS, "rk4")[1][-1] for y0 in initial_states()]
 
 
 def sphere_rhs(y):
@@ -91,7 +105,11 @@ def endpoint_errors(initial, final, length) -> np.ndarray:
 
 
 def rk4_operation_count() -> dict:
-    """Arithmetic per RK4 step of the closed-form kernel; identical for every precision."""
+    """Counted arithmetic per RK4 step of the closed-form kernel; the same count for every precision.
+
+    The count is of operations in the source; the float32 and float64 sin/cos
+    implementations themselves differ, so equal counts are not equal cost.
+    """
     rhs = 4 * (RHS_MUL + RHS_DIV)
     stages = 3 * 4 * 2            # y + c * k for three intermediate stages
     combine = 4 * (2 + 3) + 4 * 2  # k1 + 2 k2 + 2 k3 + k4, then y + (h/6) * sum
@@ -105,22 +123,25 @@ def rk4_operation_count() -> dict:
 RUST_SOURCE = r'''// ciw.lab energy_gpu T117: unit-sphere geodesic RK4, std only, JSON over stdin/stdout.
 use std::io::{self, Read, Write};
 
-fn rhs(y: &[f64; 4]) -> [f64; 4] {
+// Every right-hand-side call increments the counter, so the reported count is
+// observed, not assumed from the step count.
+fn rhs(y: &[f64; 4], evaluations: &mut u64) -> [f64; 4] {
+    *evaluations += 1;
     let s = y[0].sin();
     let c = y[0].cos();
     [y[2], y[3], s * c * y[3] * y[3], -2.0 * (c / s) * y[2] * y[3]]
 }
 
-fn step(y: &[f64; 4], h: f64) -> [f64; 4] {
+fn step(y: &[f64; 4], h: f64, evaluations: &mut u64) -> [f64; 4] {
     let hh = 0.5 * h;
-    let k1 = rhs(y);
+    let k1 = rhs(y, evaluations);
     let mut t = [0.0; 4];
     for i in 0..4 { t[i] = y[i] + hh * k1[i]; }
-    let k2 = rhs(&t);
+    let k2 = rhs(&t, evaluations);
     for i in 0..4 { t[i] = y[i] + hh * k2[i]; }
-    let k3 = rhs(&t);
+    let k3 = rhs(&t, evaluations);
     for i in 0..4 { t[i] = y[i] + h * k3[i]; }
-    let k4 = rhs(&t);
+    let k4 = rhs(&t, evaluations);
     let h6 = h / 6.0;
     let mut out = [0.0; 4];
     for i in 0..4 { out[i] = y[i] + h6 * (k1[i] + 2.0 * k2[i] + 2.0 * k3[i] + k4[i]); }
@@ -182,8 +203,7 @@ fn run(text: &str) -> Result<String, String> {
     for chunk in flat.chunks(4) {
         let mut y = [chunk[0], chunk[1], chunk[2], chunk[3]];
         for _ in 0..n {
-            y = step(&y, h);
-            evaluations += 4;
+            y = step(&y, h, &mut evaluations);
         }
         if !y.iter().all(|v| v.is_finite()) { return Err("nonfinite state".into()); }
         rows.push(format!("[{:?},{:?},{:?},{:?}]", y[0], y[1], y[2], y[3]));
@@ -224,7 +244,10 @@ def build_rust_kernel(directory) -> dict:
     source = directory / "sphere_rk4.rs"
     source.write_text(RUST_SOURCE, encoding="utf-8", newline="\n")
     executable = directory / ("sphere_rk4.exe" if sys.platform == "win32" else "sphere_rk4")
-    command = [rustc, "-O", "-C", "debuginfo=0", "--edition", "2021", "-o", str(executable), str(source)]
+    # Remapping the scratch path and one codegen unit make the binary digest
+    # reproducible for a given rustc and target.
+    flags = ["-O", "-C", "debuginfo=0", "-C", "codegen-units=1", "--edition", "2021"]
+    command = [rustc, *flags, f"--remap-path-prefix={directory}=.", "-o", str(executable), str(source)]
     try:
         built = subprocess.run(command, capture_output=True, text=True, timeout=120)
         version = subprocess.run([rustc, "--version"], capture_output=True, text=True, timeout=30).stdout.strip()
@@ -233,7 +256,7 @@ def build_rust_kernel(directory) -> dict:
     if built.returncode != 0 or not executable.is_file():
         raise NativeKernelUnavailable("rustc failed: " + built.stderr.strip()[:2000])
     return {"implementation": "ciw.lab.energy_gpu_kernels.RUST_SOURCE", "language": "rust", "rustc": version,
-            "flags": command[1:6], "source_sha256": rust_source_sha256(),
+            "flags": flags + ["--remap-path-prefix=<scratch>=."], "source_sha256": rust_source_sha256(),
             "binary_sha256": hashlib.sha256(executable.read_bytes()).hexdigest(), "executable": str(executable)}
 
 
@@ -343,22 +366,54 @@ def unit_roundoff(dtype) -> float:
     return float(np.finfo(dtype).eps) / 2.0
 
 
+def gamma(k, dtype) -> float:
+    """gamma_k = k u / (1 - k u) (Higham, Accuracy and Stability of Numerical Algorithms, 2nd ed., 3.1)."""
+    u = unit_roundoff(dtype)
+    return k * u / (1 - k * u)
+
+
 def summation_bound(x, dtype) -> float:
-    """|computed - exact| <= gamma_{n-1} sum|x_i| for every summation order (Higham, Accuracy
-    and Stability of Numerical Algorithms, 2nd ed., section 4.2); Kahan's bound is smaller."""
-    n, u = len(x), unit_roundoff(dtype)
-    gamma = (n - 1) * u / (1 - (n - 1) * u)
-    return gamma * math.fsum(abs(float(v)) for v in x)
+    """|computed - exact| <= gamma_{n-1} sum|x_i| for every summation order (Higham section 4.2)."""
+    return gamma(len(x) - 1, dtype) * math.fsum(abs(float(v)) for v in x)
+
+
+def order_depths(n, block=BLOCK) -> dict:
+    """Largest number of additions any one input passes through, per emulated order.
+
+    A summation in which every input passes through at most d additions errs
+    by at most gamma_d sum|x_i| (Higham 4.2): n - 1 for the left fold, the tree
+    height for pairwise trees, block height plus the fold over n / block
+    partials for the blocked and atomic orders.
+    """
+    blocks = -(-n // block)
+    tree, block_tree, partial_tree = (math.ceil(math.log2(max(v, 1))) for v in (n, block, blocks))
+    return {"sequential": n - 1, "tree-adjacent": tree, "tree-strided": tree,
+            "blocked-two-pass": block_tree + partial_tree, "block-sequential": (block - 1) + (blocks - 1),
+            "atomic": block_tree + (blocks - 1)}
+
+
+def order_bounds(x, dtype, block=BLOCK) -> dict:
+    """Order-specific a priori error bounds; Kahan uses the leading-order (2u + n u^2) sum|x| (Higham 4.3)."""
+    total = math.fsum(abs(float(v)) for v in x)
+    u = unit_roundoff(dtype)
+    bounds = {name: gamma(depth, dtype) * total for name, depth in order_depths(len(x), block).items()}
+    bounds["kahan"] = (2 * u + len(x) * u * u) * total
+    return bounds
+
+
+def bound_for(order: str, bounds: dict) -> float:
+    return bounds["atomic"] if order.startswith("atomic-") else bounds[order]
 
 
 # Typed quantities -------------------------------------------------------
-# Units map to (dimension, scale to the dimension's base unit). Information
-# and energy are different dimensions; relating them needs a physical model
-# (for example k_B T per nat at a declared temperature) that is not implied
-# by a variational calculation.
-UNITS = {"nat": ("information", 1.0), "bit": ("information", math.log(2.0)),
-         "J": ("energy", 1.0), "mJ": ("energy", 1e-3), "kJ": ("energy", 1e3),
-         "s": ("time", 1.0), "ms": ("time", 1e-3), "solve": ("count", 1.0), "1": ("dimensionless", 1.0)}
+# Units map to (dimension vector, scale to the base unit of that vector).
+# Information and energy are different dimensions; relating them needs a
+# physical model (for example k_B T per nat at a declared temperature) that
+# is not implied by a variational calculation. Power is energy per time.
+UNITS = {"nat": ({"information": 1}, 1.0), "bit": ({"information": 1}, math.log(2.0)),
+         "J": ({"energy": 1}, 1.0), "mJ": ({"energy": 1}, 1e-3), "kJ": ({"energy": 1}, 1e3),
+         "W": ({"energy": 1, "time": -1}, 1.0), "mW": ({"energy": 1, "time": -1}, 1e-3),
+         "s": ({"time": 1}, 1.0), "ms": ({"time": 1}, 1e-3), "solve": ({"count": 1}, 1.0), "1": ({}, 1.0)}
 
 
 class QuantityRefusal(ValueError):
@@ -366,16 +421,21 @@ class QuantityRefusal(ValueError):
 
 
 class Quantity:
-    """A float with a dimension vector; addition and comparison require equal dimensions."""
+    """A float with a dimension vector; addition, subtraction and comparison require equal dimensions.
+
+    Equality is a comparison too: it refuses mismatched dimensions and
+    otherwise compares values in base units (1 J == 1000 mJ). Quantities are
+    therefore unhashable. Untyped numbers are refused on either side.
+    """
 
     __slots__ = ("value", "dimension", "unit")
+    __hash__ = None
 
     def __init__(self, value, unit=None, *, dimension=None):
         if dimension is None:
             if unit not in UNITS:
                 raise QuantityRefusal(f"Unsupported unit: {unit}")
-            name, scale = UNITS[unit]
-            dimension = {} if name == "dimensionless" else {name: 1}
+            dimension, scale = UNITS[unit]
             value = float(value) * scale
         if not math.isfinite(float(value)):
             raise QuantityRefusal("Quantities must be finite")
@@ -398,9 +458,24 @@ class Quantity:
         self._same(other, "add")
         return Quantity(self.value + other.value, dimension=self.dimension)
 
+    def __radd__(self, other):
+        self._same(other, "add")
+        return Quantity(other.value + self.value, dimension=self.dimension)
+
     def __sub__(self, other):
         self._same(other, "subtract")
         return Quantity(self.value - other.value, dimension=self.dimension)
+
+    def __rsub__(self, other):
+        self._same(other, "subtract")
+        return Quantity(other.value - self.value, dimension=self.dimension)
+
+    def __eq__(self, other):
+        self._same(other, "compare")
+        return self.value == other.value
+
+    def __ne__(self, other):
+        return not self.__eq__(other)
 
     def __lt__(self, other):
         self._same(other, "compare")
@@ -410,6 +485,14 @@ class Quantity:
         self._same(other, "compare")
         return self.value <= other.value
 
+    def __gt__(self, other):
+        self._same(other, "compare")
+        return self.value > other.value
+
+    def __ge__(self, other):
+        self._same(other, "compare")
+        return self.value >= other.value
+
     def __mul__(self, other):
         if not isinstance(other, Quantity):
             raise QuantityRefusal("Scale quantities by typed dimensionless quantities")
@@ -417,6 +500,9 @@ class Quantity:
         for key, power in other.dimension.items():
             merged[key] = merged.get(key, 0) + power
         return Quantity(self.value * other.value, dimension=merged)
+
+    def __rmul__(self, other):
+        raise QuantityRefusal("Scale quantities by typed dimensionless quantities")
 
     def __truediv__(self, other):
         if not isinstance(other, Quantity):
@@ -426,10 +512,11 @@ class Quantity:
             merged[key] = merged.get(key, 0) - power
         return Quantity(self.value / other.value, dimension=merged)
 
+    def __rtruediv__(self, other):
+        raise QuantityRefusal("Divide quantities by typed quantities")
+
     def to(self, unit) -> float:
         """Value in ``unit``; refused unless the unit has this quantity's dimension."""
-        name, scale = UNITS.get(unit, (None, None))
-        target = {} if name == "dimensionless" else {name: 1}
-        if name is None or target != self.dimension:
+        if unit not in UNITS or {k: v for k, v in UNITS[unit][0].items() if v} != self.dimension:
             raise QuantityRefusal(f"Cannot express {self.describe()} in {unit}")
-        return self.value / scale
+        return self.value / UNITS[unit][1]
