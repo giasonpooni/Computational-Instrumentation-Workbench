@@ -104,6 +104,8 @@ report is still informative. Soft optional checks use `ctx.available(...)`.
   clock in findings, no dict-order dependence. Keep elapsed-time measurements
   out of findings (they are not reproducible); retain them in artifacts.
 - Budget: the whole section run ≤ 60 s and its tests ≤ 60 s on one CPU core.
+  Each artifact is at most 2 MiB (`runner.MAX_ARTIFACT_BYTES`); retain sampled
+  or aggregated tables rather than full trajectories.
 - Tests: `tests/test_lab_<section>.py`, Python 3.11 and Windows compatible, no
   network, `pytest.importorskip` for optional modules, env-gated skips for
   providers (`CIW_LAB_<ROLE>_REPO`). Tests should call the task functions via

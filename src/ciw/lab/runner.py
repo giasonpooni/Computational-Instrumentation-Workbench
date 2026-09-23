@@ -28,6 +28,9 @@ from .registry import load_implementations, load_queue
 from .report import FIELDS, FIELD_NAMES, build_report, render_markdown, validate_report
 
 PACKAGE_ROOT = Path(__file__).resolve().parents[1]
+# Retained evidence is committed; one artifact larger than this is refused so
+# tables stay summaries (sample, aggregate or truncate long trajectories).
+MAX_ARTIFACT_BYTES = 2 * 1024 * 1024
 
 
 def dumps(value) -> str:
@@ -97,6 +100,8 @@ class Context:
     def _write(self, name: str, data: bytes) -> str:
         if "/" in name or "\\" in name or name.startswith("."):
             raise ValueError("Artifact names are single file names")
+        if len(data) > MAX_ARTIFACT_BYTES:
+            raise ValueError(f"Artifact {name} exceeds {MAX_ARTIFACT_BYTES} bytes; retain a summary instead")
         directory = self.output_dir / "artifacts" / self.task_id
         directory.mkdir(parents=True, exist_ok=True)
         (directory / name).write_bytes(data)

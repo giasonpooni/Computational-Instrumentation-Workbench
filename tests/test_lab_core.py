@@ -130,3 +130,13 @@ def test_regression_comparison_detects_value_and_label_changes(tmp_path):
     result = runner.compare(tmp_path / "old", tmp_path / "new")
     assert not result["passed"] and "regression tolerance" in result["problems"][0]
     assert runner.compare(tmp_path / "old", tmp_path / "old")["passed"]
+
+
+def test_oversized_artifacts_are_refused(tmp_path):
+    ctx = runner.Context(tmp_path)
+    ctx.begin("T001")
+    ctx.artifact_text("small.txt", "x")
+    with pytest.raises(ValueError, match="exceeds"):
+        ctx.artifact_text("large.txt", "x" * (runner.MAX_ARTIFACT_BYTES + 1))
+    with pytest.raises(ValueError, match="single file names"):
+        ctx.artifact_text("../escape.txt", "x")
