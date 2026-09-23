@@ -24,7 +24,8 @@ use an instrument, modify its equations and assumptions, or create a new one.
 Godot desktop and the integrations catalogued below. The broader authoring
 workspace and Julia-centred scientific core described here are development
 directions. JuliaControl, JuMP, ModelingToolkit, a general machine-manifest
-compiler, an MCP adapter and FPGA deployment are not yet integrated operations.
+compiler, an MCP adapter over engineering operations and FPGA deployment are
+not yet integrated operations; only the lab queue is served over MCP.
 
 **License:** GNU Affero General Public License version 3 only
 (`AGPL-3.0-only`). Copyright (c) 2026 Notation Systems. See [LICENSE](LICENSE).
@@ -178,7 +179,9 @@ without erasing the earlier evidence.
 The terminal, graphical editors, scripts and a future
 [MCP adapter](https://modelcontextprotocol.io/docs/learn/architecture) should use
 the same engineering operation API. MCP provides assistant access to operations
-and records; the numerical core does not depend on it or on an LLM.
+and records; the numerical core does not depend on it or on an LLM. The first
+MCP surface is lab-scoped: `ciw lab mcp` lets an assistant plan, run and read
+queue experiments but exposes no tool that accepts an evidence label.
 
 | Result classification | Meaning |
 | --- | --- |
