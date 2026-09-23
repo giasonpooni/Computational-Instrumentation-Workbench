@@ -4,8 +4,19 @@ Part of **Notation Systems' computational instrumentation and evidence infrastru
 
 [Stack map](https://github.com/giasonpooni/Computational-Instrumentation-Workbench/blob/main/docs/STACK.md) · [Component role and interfaces](docs/STACK_ROLE.md)
 
-**Notation Systems Workbench** — a terminal-first Python workbench for retained
-scientific observations, explicit operations, and reproducible investigations.
+**Notation Systems Workbench** — an applied mathematics and engineering bench
+for measurement, estimation, and model-based investigation.
+
+Its core is computational metrology and model-based systems engineering:
+connecting mathematical operations to observations of physical systems,
+declared models, uncertainty and retained evidence. Assumptions and intermediate
+results remain inspectable as an investigation moves from measurements to state
+estimates, diagnostics and advice on the next observation.
+
+**Computational Instrumentation Workbench (CIW)** remains the technical name.
+The implementation is terminal-first, with a Python service and an optional
+Godot desktop. Instruments retain their numerical methods behind explicit
+contracts; the workbench connects their execution, inspection and replay.
 
 Fourteen scientific workflow kinds share one local session for sources,
 declared models, compatible sensor fusion, instrument results and replay
@@ -29,6 +40,15 @@ scientific operations use explicitly bound, source-pinned runtimes; the table
 below identifies the integrations currently implemented.
 
 ## Workbench at a glance
+
+The organizing investigation workflow is:
+
+**Observe → align time → calibrate → propagate uncertainty → estimate state →
+test constraints → diagnose → advise the next observation.**
+
+Supported combinations run through the bounded workflows in the catalogue below.
+Observation advice remains advisory; it does not issue a physical acquisition
+command. Each operation retains its inputs, declared assumptions and results:
 
 ```mermaid
 flowchart TD
@@ -69,6 +89,18 @@ The built-in examples are synthetic. Successful computation, content integrity
 and matching replay digests do not establish physical validity or calibration
 traceability. The Workbench tab presents fourteen shared native workflows;
 other external integrations expose terminal and JSON records as described below.
+
+## Next engineering benchmark
+
+The next planned milestone is one calibrated physical experiment carried through
+the investigation workflow. It should include a characterized reference,
+documented calibration, an uncertainty budget, deliberately introduced faults
+and reproducible analysis of the retained observations.
+
+This benchmark will test the connections between acquisition, calibration,
+estimation and diagnostics against an actual physical system. The physical
+experiment and its qualification remain planned; the current software checks
+and synthetic examples provide the development baseline.
 
 ## Integrity and verification
 
