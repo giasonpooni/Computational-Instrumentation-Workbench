@@ -20,7 +20,7 @@ import math
 import numpy as np
 
 from . import integrators, jacobi
-from .surfaces import Cylinder, GaussianBump, Plane, Torus
+from .surfaces import Cylinder, GaussianBump, MongeSurface, Plane, Torus
 
 # Declared nominal specimens (millimetres). The coupon dome has crest principal
 # radius sigma^2 / height = 40 mm and sits 60 mm from the station edge, so a
@@ -41,6 +41,25 @@ STEP_MM = 1.0
 
 def coupon(height=DOME_HEIGHT, sigma=DOME_SIGMA) -> GaussianBump:
     return GaussianBump(height, sigma)
+
+
+class MongeCylinder(MongeSurface):
+    """The rolled cylinder as a graph z = sqrt(R^2 - y^2) - R (|y| < R), for ray casting on a Monge chart."""
+
+    name = "monge-cylinder"
+
+    def __init__(self, radius=CYLINDER_RADIUS):
+        self.radius = float(radius)
+
+    def describe(self):
+        return {"name": self.name, "radius": self.radius, "graph": "z = sqrt(R^2 - y^2) - R"}
+
+    def height(self, u):
+        return math.sqrt(self.radius ** 2 - u[1] ** 2) - self.radius
+
+    def height_derivatives(self, u):
+        root = math.sqrt(self.radius ** 2 - u[1] ** 2)
+        return 0.0, -u[1] / root, 0.0, 0.0, -self.radius ** 2 / root ** 3
 
 
 def embed(surface, points) -> np.ndarray:
@@ -269,12 +288,19 @@ def _segment_distances(points, a, b) -> np.ndarray:
 
 
 def coverage_fraction(sample: AreaSample, rows3d, swath) -> float:
-    """Area fraction of the chart rectangle within swath/2 (3D distance) of some row polyline.
+    """Area fraction of the chart rectangle within swath/2 (3D distance) of some row polyline."""
+    return coverage_with_margin(sample, rows3d, swath)[0]
+
+
+def coverage_with_margin(sample: AreaSample, rows3d, swath) -> tuple[float, float]:
+    """(covered area fraction, min |distance - swath/2| over the examined samples).
 
     Valid for graph surfaces X = (x, y, f(x, y)) (the plate and the coupon): the 3D
     distance is at least the difference in x, so each column only examines
     segments whose x-range lies within reach. A relative slack of 1e-9 (1e-8 mm
-    for a 20 mm swath) absorbs rounding at exact ties.
+    for a 20 mm swath) absorbs rounding at exact ties; the margin shows how far the
+    nearest sample is from the footprint boundary, so rounding cannot flip it.
+    Samples with no segment within reach are uncovered by more than the margin.
     """
     reach = 0.5 * swath * (1.0 + 1e-9)
     segments = [(np.asarray(r[:-1], dtype=float), np.asarray(r[1:], dtype=float)) for r in rows3d if len(r) > 1]
@@ -282,12 +308,15 @@ def coverage_fraction(sample: AreaSample, rows3d, swath) -> float:
     b = np.concatenate([seg[1] for seg in segments])
     xa, xb = np.minimum(a[:, 0], b[:, 0]), np.maximum(a[:, 0], b[:, 0])
     covered = total = 0.0
+    margin = math.inf
     for lo, hi, points, weights in sample.columns:
         total += float(weights.sum())
         near = (xb >= lo - reach) & (xa <= hi + reach)
         if near.any():
-            covered += float(weights[_segment_distances(points, a[near], b[near]) <= reach].sum())
-    return covered / total
+            distances = _segment_distances(points, a[near], b[near])
+            covered += float(weights[distances <= reach].sum())
+            margin = min(margin, float(np.min(np.abs(distances - 0.5 * swath))))
+    return covered / total, margin
 
 
 def clip_to_extent(points_u, x_range=COUPON_X, y_range=COUPON_Y) -> np.ndarray:

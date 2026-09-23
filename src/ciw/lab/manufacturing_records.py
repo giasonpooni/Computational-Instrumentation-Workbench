@@ -9,22 +9,29 @@ hardware evidence, and the policy that keeps production acceptance outside
 the workbench.
 
 Non-claims: a protocol that validates is a well-formed plan, not an executed
-experiment. A retention record that validates is well-formed metadata; only a
-record of kind ``measurement`` backed by real raw bytes can supply the
-acquisition fields of a ``hardware_measured`` finding, and none exists here.
-The workbench never accepts or rejects production parts.
+experiment. A retention record that validates is well-formed metadata. A
+record of kind ``schema_fixture``, or one carrying the fixture's markers, is
+refused as hardware evidence; a record of kind ``measurement`` with matching
+raw bytes yields acquisition fields, but these checks cannot tell whether the
+bytes came from an instrument (the runner additionally requires a hardware
+probe in the same task). No measurement exists here. The acceptance-language
+screen is a vocabulary check on this section's findings, not a general proof
+that free-text claims are filed in the right domain. The workbench never
+accepts or rejects production parts.
 """
 from __future__ import annotations
 
 from copy import deepcopy
 from dataclasses import dataclass
+from datetime import datetime
 import hashlib
+import json
 import re
 
 import numpy as np
 
 from ..core.identities import content_identity
-from .evidence import LABELS
+from .evidence import AUTHORITY_DOMAINS, LABELS
 
 PROTOCOL_SCHEMA = "ciw.lab-measurement-protocol.v1"
 RETENTION_SCHEMA = "ciw.lab-measurement-retention.v1"
@@ -36,6 +43,11 @@ PROTOCOL_FIELDS = ("schema", "protocol_id", "task_id", "title", "purpose", "spec
 RETENTION_FIELDS = ("schema", "record_kind", "protocol_id", "raw", "instrument", "calibration", "frame_chain", "clock")
 ACQUISITION_FIELDS = ("device", "raw_sha256", "acquired_at", "calibration")
 UTC_PATTERN = re.compile(r"^\d{4}-\d{2}-\d{2}T\d{2}:\d{2}:\d{2}(\.\d+)?(Z|[+-]\d{2}:\d{2})$")
+DIGEST_PATTERN = re.compile(r"[0-9a-f]{64}")
+IDENTITY_PATTERN = re.compile(r"sha256:[0-9a-f]{64}")
+# Markers of the schema fixture: none of them may reach hardware evidence, whatever record_kind says.
+FIXTURE_RAW_PREFIX = b"SCHEMA FIXTURE"
+FIXTURE_SERIAL_PREFIX = "FIXTURE-"
 
 
 class RecordRefusal(ValueError):
@@ -103,6 +115,13 @@ def validate_protocol(record: dict) -> dict:
             if not isinstance(acquisition, dict) or any(not acquisition.get(k) for k in ACQUISITION_FIELDS):
                 raise RecordRefusal("measurement_without_acquisition",
                                     "Every hardware record needs device, raw digest, acquisition time and calibration")
+            if not DIGEST_PATTERN.fullmatch(str(acquisition["raw_sha256"])) \
+                    or not UTC_PATTERN.match(str(acquisition["acquired_at"])):
+                raise RecordRefusal("acquisition_malformed",
+                                    "Hardware records need a SHA-256 raw digest and an ISO 8601 time with an offset")
+            if not IDENTITY_PATTERN.fullmatch(str(entry.get("retention_identity", ""))):
+                raise RecordRefusal("retention_record_missing",
+                                    "Every hardware record must cite the identity of its T139 retention record")
     if record["production_acceptance"] != "outside_system":
         raise RecordRefusal("acceptance_inside_system", "Production acceptance is decided outside the workbench")
     return record
@@ -121,6 +140,13 @@ def protocol_refusal_matrix(record: dict) -> dict:
             status="acquired", records=[{"value": 1.0}]), "measurement_without_acquisition"),
         "records_in_empty_slot": (lambda r: r["hardware_measured"]["records"].append({"value": 1.0}),
                                   "measurement_without_acquisition"),
+        "slot_with_malformed_acquisition": (lambda r: r["hardware_measured"].update(status="acquired", records=[{
+            "acquisition": {"device": "camera:1", "raw_sha256": "not-a-digest", "acquired_at": "yesterday",
+                            "calibration": "CERT"}, "retention_identity": "sha256:" + "a" * 64}]),
+            "acquisition_malformed"),
+        "slot_without_retention_record": (lambda r: r["hardware_measured"].update(status="acquired", records=[{
+            "acquisition": {"device": "camera:1", "raw_sha256": "a" * 64, "acquired_at": "2026-09-23T00:00:00Z",
+                            "calibration": "CERT"}}]), "retention_record_missing"),
         "criterion_marked_accepted": (lambda r: r["acceptance_criteria"][0].update(status="accepted"),
                                       "criterion_is_decision"),
         "prediction_labelled_measured": (lambda r: r["predicted_quantities"][0].update(
@@ -143,8 +169,14 @@ def _frame_link(link, index):
     if np.asarray(link["translation_mm"], dtype=float).shape != (3,):
         raise RecordRefusal("frame_translation_invalid", f"Frame link {index} translation must have three components")
     covariance = np.asarray(link["covariance"], dtype=float)
-    if covariance.shape != (6, 6) or not np.allclose(covariance, covariance.T, atol=1e-15) \
-            or np.min(np.linalg.eigvalsh(0.5 * (covariance + covariance.T))) < -1e-15:
+    if covariance.shape != (6, 6) or not np.all(np.isfinite(covariance)):
+        raise RecordRefusal("frame_covariance_invalid", f"Frame link {index} covariance must be a finite 6 x 6 matrix")
+    # Scale-aware tolerances: a rank-deficient covariance in mm^2 at robot lever arms has
+    # rounding-level negative eigenvalues far above any absolute threshold.
+    scale = max(1.0, float(np.max(np.abs(covariance))))
+    eigenvalues = np.linalg.eigvalsh(0.5 * (covariance + covariance.T))
+    if np.max(np.abs(covariance - covariance.T)) > 1e-12 * scale \
+            or eigenvalues[0] < -1e-12 * max(1.0, float(eigenvalues[-1])):
         raise RecordRefusal("frame_covariance_invalid", f"Frame link {index} covariance is not symmetric positive semidefinite")
 
 
@@ -174,6 +206,10 @@ def validate_retention(record: dict, raw_bytes: dict | None = None) -> dict:
     _require(calibration, ("status",), "Calibration reference")
     if calibration["status"] == "applied":
         _require(calibration, ("reference", "sha256", "valid_from", "valid_until"), "Applied calibration")
+        if not DIGEST_PATTERN.fullmatch(str(calibration["sha256"])):
+            raise RecordRefusal("calibration_digest_invalid", "Calibration digests must be lowercase SHA-256 hex")
+        if not all(UTC_PATTERN.match(str(calibration[k])) for k in ("valid_from", "valid_until")):
+            raise RecordRefusal("calibration_window_invalid", "Calibration validity needs ISO 8601 times with offsets")
     elif calibration["status"] != "not_applied":
         raise RecordRefusal("calibration_status_invalid", "Calibration status must be applied or not_applied")
     chain = record["frame_chain"]
@@ -187,7 +223,27 @@ def validate_retention(record: dict, raw_bytes: dict | None = None) -> dict:
     _require(clock, ("source", "acquired_at", "synchronization", "uncertainty_s"), "Clock")
     if not UTC_PATTERN.match(str(clock["acquired_at"])):
         raise RecordRefusal("clock_without_timezone", "Acquisition time must be ISO 8601 with an explicit offset")
+    if calibration["status"] == "applied":
+        acquired = _instant(clock["acquired_at"])
+        if not _instant(calibration["valid_from"]) <= acquired <= _instant(calibration["valid_until"]):
+            raise RecordRefusal("calibration_expired", "Acquisition time lies outside the calibration validity window")
     return record
+
+
+def _instant(text: str) -> datetime:
+    # Python 3.11 parses both 'Z' and '+hh:mm'; UTC_PATTERN has already required an explicit offset.
+    return datetime.fromisoformat(text)
+
+
+def raw_manifest(record: dict) -> bytes:
+    """Canonical bytes listing every raw file (name, digest, size, media type) of a retention record.
+
+    The acquisition digest is the SHA-256 of these bytes, so it binds every raw
+    file, not only the first; a task that cites it must retain these bytes.
+    """
+    entries = sorted(({k: entry[k] for k in ("name", "sha256", "bytes", "media_type")} for entry in record["raw"]),
+                     key=lambda entry: entry["name"])
+    return json.dumps({"schema": RETENTION_SCHEMA, "raw": entries}, sort_keys=True, separators=(",", ":")).encode("utf-8")
 
 
 def to_acquisition(record: dict, raw_bytes: dict | None = None) -> dict:
@@ -197,9 +253,15 @@ def to_acquisition(record: dict, raw_bytes: dict | None = None) -> dict:
         raise RecordRefusal("fixture_is_not_measurement", "A schema fixture cannot supply hardware evidence")
     if raw_bytes is None:
         raise RecordRefusal("raw_bytes_not_presented", "Hardware evidence requires the raw bytes to recompute digests")
+    # record_kind is self-declared: refuse the fixture's own markers whatever the record calls itself.
     calibration = record["calibration"]
+    if (any(bytes(data).startswith(FIXTURE_RAW_PREFIX) for data in raw_bytes.values())
+            or str(record["instrument"]["serial"]).startswith(FIXTURE_SERIAL_PREFIX)
+            or (calibration["status"] == "applied" and set(str(calibration["sha256"])) == {"0"})):
+        raise RecordRefusal("fixture_is_not_measurement", "Schema-fixture bytes, serials or calibration digests "
+                                                          "cannot supply hardware evidence")
     return {"device": f"{record['instrument']['kind']}:{record['instrument']['id']}:{record['instrument']['serial']}",
-            "raw_sha256": record["raw"][0]["sha256"], "acquired_at": record["clock"]["acquired_at"],
+            "raw_sha256": hashlib.sha256(raw_manifest(record)).hexdigest(), "acquired_at": record["clock"]["acquired_at"],
             "calibration": calibration.get("reference", "not_applied") if calibration["status"] == "applied"
             else "not_applied"}
 
@@ -233,6 +295,43 @@ def compare_separation(predicted: dict, measured: dict | None) -> dict:
 
 
 # Production acceptance -------------------------------------------------------
+# Words that state an acceptance decision (not the topic of acceptance): a claim or
+# string value using them outside an authority domain is refused by the screen.
+DECISION_WORDS = re.compile(r"\b(accepted|approved|signed[ -]off|dispositioned|released for (?:production|use|shipment)|"
+                            r"passed (?:inspection|acceptance)|certified (?:for|as) (?:production|use|conforming))\b",
+                            re.IGNORECASE)
+
+
+def screen_acceptance_language(findings) -> list:
+    """Refuse findings outside the authority domains whose claim or string value states an acceptance decision.
+
+    Returns the screened claims. This is a vocabulary check: it catches the
+    decision words above in any domain that could be established, not every
+    paraphrase; which domain a free-text claim belongs to remains a review
+    question.
+    """
+    for record in findings:
+        if record["domain"] in AUTHORITY_DOMAINS:
+            continue
+        texts = [record["claim"]] + _strings(record.get("value"))
+        hit = next((m.group(0) for m in map(DECISION_WORDS.search, texts) if m), None)
+        if hit:
+            raise RecordRefusal("acceptance_outside_authority_domain",
+                                f"Claim states an acceptance decision ({hit!r}) outside an authority domain: "
+                                f"{record['claim']!r}")
+    return [record["claim"] for record in findings]
+
+
+def _strings(value) -> list:
+    if isinstance(value, str):
+        return [value]
+    if isinstance(value, dict):
+        return [text for item in value.values() for text in _strings(item)]
+    if isinstance(value, (list, tuple)):
+        return [text for item in value for text in _strings(item)]
+    return []
+
+
 @dataclass(frozen=True)
 class AcceptancePolicy:
     """Production acceptance is an external authority decision; the workbench records it as not performed."""

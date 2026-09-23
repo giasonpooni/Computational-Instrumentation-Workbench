@@ -1,3 +1,5 @@
+from copy import deepcopy
+import hashlib
 import importlib.util
 import json
 import math
@@ -10,7 +12,7 @@ from ciw.lab import manufacturing_geometry as geo
 from ciw.lab import manufacturing_metrology as met
 from ciw.lab import manufacturing_records as rec
 from ciw.lab import runner
-from ciw.lab.evidence import AUTHORITY_DOMAINS, PHYSICAL_DOMAINS, finding
+from ciw.lab.evidence import AUTHORITY_DOMAINS, PHYSICAL_DOMAINS, EvidenceRefusal, finding
 from ciw.lab.registry import load_queue, section_implementations
 from ciw.lab.report import validate_report
 
@@ -50,10 +52,14 @@ def test_every_task_is_registered_and_reports_honestly(section):
         for record in report["findings"]:
             if record["domain"] in PHYSICAL_DOMAINS | AUTHORITY_DOMAINS:
                 assert record["evidence_status"] == "not_established"
-            if record["domain"] not in PHYSICAL_DOMAINS | AUTHORITY_DOMAINS:
+            if record["domain"] not in PHYSICAL_DOMAINS | AUTHORITY_DOMAINS and not record.get("expected_not_established"):
                 assert "regression_tolerance" in record, record["claim"]
                 assert record["uncertainty"] is not None, record["claim"]
+            assert "|" not in record["claim"], record["claim"]  # claims are table cells in the rendered report
         assert any(f["domain"] in PHYSICAL_DOMAINS | AUTHORITY_DOMAINS for f in report["findings"]), task_id
+        # Every section task passes its findings through the acceptance-language screen.
+        assert rec.screen_acceptance_language(report["findings"])
+        assert hasattr(section_implementations("manufacturing")[task_id].run, "__wrapped__")
         for name in ("hypothesis", "mathematical_model", "experiment", "numerical_result", "recommended_next_task"):
             assert isinstance(report[name], str) and report[name].strip()
 
@@ -84,11 +90,20 @@ def test_protocols_refuse_filled_slots_and_decisions(section):
         matrix = rec.protocol_refusal_matrix(protocol)
         assert all(case["observed"] == case["expected"] for case in matrix.values()), matrix
         validated = [f for f in reports[task_id]["findings"] if f["claim"].endswith("refuses malformed variants")]
-        assert validated[0]["value"] == len(matrix) == 7
+        assert validated[0]["value"] == len(matrix) == 9
         assert validated[0]["evidence_status"] == "numerically_verified"
-    acquired = dict(protocol, hardware_measured={"status": "acquired", "records": [{"acquisition": {
+        assert all("unsteered" in path["realization"] for path in protocol["paths"] if "realization" in path)
+    forged = dict(protocol, hardware_measured={"status": "acquired", "records": [{"acquisition": {
+        "device": "camera:1", "raw_sha256": "not-a-digest", "acquired_at": "yesterday", "calibration": "CERT"},
+        "retention_identity": "sha256:" + "a" * 64}]})
+    assert rec.refusal_code(rec.validate_protocol, forged) == "acquisition_malformed"
+    uncited = dict(protocol, hardware_measured={"status": "acquired", "records": [{"acquisition": {
         "device": "camera:1", "raw_sha256": "a" * 64, "acquired_at": "2026-09-23T00:00:00Z", "calibration": "CERT"}}]})
-    assert rec.validate_protocol(acquired)["hardware_measured"]["status"] == "acquired"
+    assert rec.refusal_code(rec.validate_protocol, uncited) == "retention_record_missing"
+    # A well-formed slot passes the schema check only; the hardware gate is the runner's (T139).
+    cited = deepcopy(uncited)
+    cited["hardware_measured"]["records"][0]["retention_identity"] = "sha256:" + "a" * 64
+    assert rec.validate_protocol(cited)["hardware_measured"]["status"] == "acquired"
 
 
 def test_cylinder_protocol_predicts_chord_geodesic_gaps(section):
@@ -121,24 +136,42 @@ def test_coupon_protocol_predicts_focal_crossing(section):
     assert signature["coupon_lateral_2mm"] < 0 < signature["plate_lateral_2mm"]
     assert _labels(report)["The formed coupon matches the declared dome (height 10 mm, sigma 20 mm) within tolerance"] \
         == "not_established"
+    # Same-origin second derivations are always present and always numerically_verified.
+    integrator = _finding(report, "The RK4 coupon transfer agrees with ciw's adaptive")
+    geometry = _finding(report, "Coupon Christoffel symbols and Gaussian curvature agree with finite-difference")
+    assert integrator["evidence_status"] == geometry["evidence_status"] == "numerically_verified"
+    assert integrator["value"] < 1e-5 and 0.0 < geometry["value"]["curvature"] < 1e-9
+    signature = _finding(report, "Curvature signature")
+    assert signature["basis"]["checks"][0]["observed"] > 5.0  # plate - coupon separation over the combined U
     has = {name: importlib.util.find_spec(name) is not None for name in ("scipy", "sympy")}
-    integrator = _finding(report, "The RK4 coupon transfer agrees")
-    geometry = _finding(report, "Coupon Christoffel symbols and Gaussian curvature agree")
-    assert integrator["evidence_status"] == ("independently_verified" if has["scipy"] else "numerically_verified")
-    assert geometry["evidence_status"] == ("independently_verified" if has["sympy"] else "numerically_verified")
-    assert integrator["value"] < 1e-4
+    for prefix, module in (("scipy DOP853 integrating", "scipy"), ("A sympy derivation", "sympy")):
+        record = _finding(report, prefix)
+        if has[module]:
+            assert record["evidence_status"] == "independently_verified"
+        else:
+            assert record["evidence_status"] == "not_established" and record["expected_not_established"] is True
 
 
-def test_coupon_independent_checks_fall_back_to_same_origin_labels(monkeypatch):
+def test_coupon_report_wording_does_not_depend_on_optional_modules(section, monkeypatch, tmp_path):
+    _, reports = section
     real = importlib.util.find_spec
     monkeypatch.setattr(importlib.util, "find_spec",
-                        lambda name, *args: None if name in ("scipy", "sympy") else real(name, *args))
+                        lambda name, *args: None if name in ("scipy", "sympy", "mpmath") else real(name, *args))
     result = mfg.independent_coupon_checks(mfg.nominal_study()["length_mm"])
-    assert result["integrator"]["checker"] is None and result["geometry"]["checker"] is None
-    basis = mfg._independent_basis(result["integrator"], "fallback", result["integrator"]["max_difference"], 1e-4)
-    record = finding("fallback agreement", "numerical", 0.0, basis)
-    assert record["evidence_status"] == "numerically_verified"
-    assert result["geometry"]["max_christoffel_difference"] < 1e-7
+    assert result["scipy"] is None and result["sympy"] is None
+    # The fallback curvature comes from the height values, not from the curvature it checks.
+    assert 0.0 < result["ciw_geometry"]["max_curvature_difference"] < 1e-9
+    queue = {t["id"]: t for t in load_queue()["tasks"]}
+    bare = validate_report(runner.run_task(queue["T128"], section_implementations("manufacturing")["T128"],
+                                           runner.Context(tmp_path), {}))
+    full = reports["T128"]
+    assert bare["state"] == "completed" and bare["evidence_status"]["primary"] == "numerically_verified"
+    assert [f["claim"] for f in bare["findings"]] == [f["claim"] for f in full["findings"]]
+    for name in runner.PROSE_FIELDS:
+        assert runner._skeleton(bare[name]) == runner._skeleton(full[name]), name
+    changed = {f["claim"] for f, g in zip(bare["findings"], full["findings"]) if f["evidence_status"] != g["evidence_status"]}
+    optional = {f["claim"] for f in full["findings"] if f["claim"].startswith(("scipy DOP853", "A sympy derivation"))}
+    assert changed <= optional
 
 
 def test_metrology_sampling_design_and_counterexamples(section):
@@ -184,7 +217,10 @@ def test_gage_rr_recovers_components_and_refuses_unbalanced(section):
     assert recovery["value"]["repeatability"] == pytest.approx(1e-4, rel=0.02)
     spread = _finding(report, "Sampling spread of %GRR")["value"]
     assert spread["0.05"] < spread["true"] < spread["0.95"] and spread["true"] == pytest.approx(23.94, abs=0.01)
-    assert _finding(report, "Gage R&R refuses")["value"] == 2
+    refused = _finding(report, "Gage R&R refuses")
+    assert refused["value"] == 2 and refused["evidence_status"] == "numerically_verified"
+    spread_checks = _finding(report, "Sampling spread of %GRR")["basis"]["checks"]
+    assert all(check["passed"] for check in spread_checks) and len(spread_checks) == 3
     assert _labels(report)["The measurement system is approved for production use"] == "not_established"
     exact = np.zeros((2, 2, 2))
     exact[1] += 1.0
@@ -209,8 +245,17 @@ def test_winding_clairaut_sensitivity_and_slippage(section):
     _, reports = section
     report = reports["T133"]
     assert _finding(report, "The Clairaut constant is conserved")["evidence_status"] == "numerically_verified"
-    amplification = _finding(report, "Heading-error amplification")["value"]
-    assert amplification["psi70_passing"] > 2.5 and amplification["psi50_bounded"] < 1.0
+    # Both regimes grow secularly (linearly): the rate is |M01| / P of the parabolic one-period monodromy.
+    rate = _finding(report, "Secular growth rate of the heading-error Jacobi field")
+    assert rate["evidence_status"] == "numerically_verified"
+    assert rate["value"]["psi50_librating"] == pytest.approx(1.0417, abs=1e-3)
+    assert rate["value"]["psi70_circulating"] == pytest.approx(2.9540, abs=1e-3)
+    study = mfg.winding_study()
+    for regime in study["regimes"].values():
+        assert abs(regime["monodromy_trace_minus_2"]) < 1e-6
+        assert regime["three_period_ratio"] == pytest.approx(1.0, abs=1e-6)
+        assert regime["m01_mm"] == pytest.approx(regime["m01_clairaut_mm"], rel=1e-5)
+    assert _finding(report, "The 50 deg winding librates")["evidence_status"] == "numerically_verified"
     slip = _finding(report, "Slippage tendency")["value"]
     assert slip["psi50"]["max_ratio"] == pytest.approx(0.4436, abs=1e-3) and slip["psi70"]["fraction_above_mu"] == 0.0
     counter = _finding(report, "A constant winding angle is not geodesic")
@@ -228,6 +273,7 @@ def test_coating_standoff_and_offset_cusp(section):
     assert cusp["value"]["min_concave_radius_mm"] < cusp["value"]["spray_standoff_mm"]
     assert cusp["value"]["reversed_segments"] > 0 and "counterexample" in cusp
     assert _labels(report)["The trajectory is safe to execute on a welding or coating robot cell"] == "not_established"
+    assert mfg.coating_study()["cylinder_control"]["max_difference_mm"] < 1e-12
     u = np.array([-20.0, 5.0])
     t = geo.COUPON.unit_tangent(u, 0.3)
     exact = geo.standoff_error_exact(geo.COUPON, u, geo.lateral_direction3(geo.COUPON, u, t), 0.01, 15.0)
@@ -256,6 +302,14 @@ def test_rankings_by_calibration_tolerance_and_focus_margin(section):
     calibration = _finding(reports["T136"], "Candidate coupon routes ranked by the heading calibration tolerance")
     assert calibration["evidence_status"] == "numerically_verified"
     assert calibration["value"]["ranking"][0] == "fan+0deg"
+    table = mfg.calibration_table()
+    for row in table["rows"]:
+        assert len(row["corner_ratios"]) == 4
+        assert max(row["corner_ratios"].values()) <= mfg.DERATE_TARGET + 1e-9, row["route"]
+        assert row["realized_max_error_mm"] <= mfg.LATERAL_SPEC_MM
+    first = _finding(reports["T136"], "The first-order tolerance allocation exceeds the spec")
+    assert first["evidence_status"] == "numerically_verified" and "counterexample" in first
+    assert first["value"]["fan+25deg"] > 1.0 and first["value"]["fan+0deg"] < 1.0
     focus = _finding(reports["T137"], "Candidate coupon routes ranked by focus margin")
     assert focus["value"]["ranking"][-1] == "fan+0deg"
     assert focus["value"]["margin"]["fan+0deg"] == pytest.approx(0.7588, abs=1e-4)
@@ -263,7 +317,7 @@ def test_rankings_by_calibration_tolerance_and_focus_margin(section):
     assert counter["evidence_status"] == "numerically_verified"
     assert counter["counterexample"]["witness"]["route"] == "fan+0deg"
     variation = _finding(reports["T137"], "The second variation of route length")["value"]
-    assert variation["finite_difference_mm"] == pytest.approx(variation["index_form_mm"], rel=2e-3)
+    assert variation["finite_difference_mm"] == pytest.approx(variation["index_form_mm"], rel=2e-4)
     assert _finding(reports["T136"], "The robot, fixture and frame calibration")["evidence_status"] == "not_established"
 
 
@@ -275,29 +329,56 @@ def test_predicted_separation_has_no_measured_counterpart(section):
     assert predicted["evidence_status"] == "numerically_verified"
     assert predicted["value"]["separation_mm"][0] == pytest.approx(2.0, abs=1e-6)
     assert predicted["value"]["separation_mm"][-1] == pytest.approx(-1.0374, abs=1e-4)
-    assert _finding(report, "The comparison refuses")["value"] == 3
+    refused = _finding(report, "The comparison refuses")
+    assert refused["value"] == 4 and refused["evidence_status"] == "numerically_verified"
     assert _finding(report, "Measured separation on the coupon agrees")["evidence_status"] == "not_established"
+    start = _finding(report, "A 2-sigma start offset of the declared jig")
+    assert start["value"]["max_en_without_execution"] > 1.0 >= start["value"]["max_en_open_loop"]
+    assert "counterexample" in start
+    prediction = mfg.separation_prediction()
+    assert max(prediction["conditioned_expanded_mm"]) < max(prediction["open_loop_expanded_mm"])
+    assert all(value <= 0.1 for value in prediction["linearity"].values())
     with pytest.raises(rec.RecordRefusal) as refused:
         rec.compare_separation({"separation_mm": [1.0], "expanded_uncertainty_mm": [0.1]}, None)
     assert refused.value.code == "measurement_absent"
     assert rec.normalized_error([1.1], [1.0], [0.06], [0.08])[0] == pytest.approx(1.0)
 
 
-def test_retention_schema_refusals_and_fixture_boundary(section):
+def test_retention_schema_refusals_and_fixture_boundary(section, tmp_path):
     _, reports = section
     report = reports["T139"]
     schema = _finding(report, "The retention schema refuses")
-    assert schema["value"] == 9 and schema["evidence_status"] == "numerically_verified"
-    assert _finding(report, "A schema fixture, or a record without its raw bytes")["value"] == 2
+    assert schema["value"] == 11 and schema["evidence_status"] == "numerically_verified"
+    boundary = _finding(report, "A schema fixture (as is or relabelled as a measurement)")
+    assert boundary["value"] == 3 and boundary["evidence_status"] == "numerically_verified"
+    assert _finding(report, "The retention schema keeps a valid rank-deficient")["evidence_status"] == "numerically_verified"
     assert _finding(report, "A real measurement with raw bytes")["evidence_status"] == "not_established"
+    assert not any(a["path"].endswith("fixture.txt") for a in report["generated_artifacts"])
     fixture, raw = mfg._schema_fixture()
     assert rec.refusal_code(rec.to_acquisition, fixture, raw) == "fixture_is_not_measurement"
-    measured = dict(fixture, record_kind="measurement")
-    acquisition = rec.to_acquisition(measured, raw)
-    # Only a real measurement record could make a physical finding hardware_measured; a fixture never does.
-    assert finding("probe", "physical", 1.0, {"acquisition": acquisition})["evidence_status"] == "hardware_measured"
+    # Relabelling the fixture does not help: its bytes, serial and zero calibration digest are refused.
+    assert rec.refusal_code(rec.to_acquisition, dict(fixture, record_kind="measurement"), raw) == "fixture_is_not_measurement"
     assert rec.refusal_code(rec.validate_retention, dict(fixture, clock=dict(fixture["clock"], acquired_at="2026-09-23 00:00"))) \
         == "clock_without_timezone"
+    assert rec.refusal_code(rec.validate_retention, dict(fixture, clock=dict(fixture["clock"], acquired_at="2031-01-01T00:00:00Z"))) \
+        == "calibration_expired"
+    # A record that is not the fixture yields acquisition fields bound to every raw file, yet the runner still refuses
+    # a physical finding without a hardware probe and retained bytes: validators alone cannot mint hardware evidence.
+    data = {"a.bin": b"bytes of file a", "b.bin": b"bytes of file b"}
+    record = deepcopy(fixture)
+    record.update(record_kind="measurement", instrument=dict(fixture["instrument"], serial="SN-1"),
+                  raw=[{"name": name, "sha256": hashlib.sha256(value).hexdigest(), "bytes": len(value),
+                        "media_type": "application/octet-stream"} for name, value in data.items()])
+    record["calibration"] = dict(fixture["calibration"], sha256="c" * 64)
+    acquisition = rec.to_acquisition(record, data)
+    assert acquisition["raw_sha256"] == hashlib.sha256(rec.raw_manifest(record)).hexdigest()
+    physical = finding("probe", "physical", 1.0, {"acquisition": acquisition})
+    with pytest.raises(EvidenceRefusal):
+        runner._gate_physical([physical], runner.Context(tmp_path))
+    jac = np.random.Generator(np.random.PCG64(1)).normal(0.0, 1000.0, (6, 3))
+    lever = deepcopy(fixture)
+    lever["frame_chain"][0]["covariance"] = (jac @ np.diag([1e-4] * 3) @ jac.T).tolist()
+    assert rec.refusal_code(rec.validate_retention, lever, raw) is None
 
 
 def test_uncertainty_budget_classifies_limiting_terms(section):
@@ -305,8 +386,16 @@ def test_uncertainty_budget_classifies_limiting_terms(section):
     report = reports["T140"]
     budget = _finding(report, "Uncertainty budget per predicted quantity")["value"]
     assert budget["cylinder gap, 90 deg pair"]["dominant"] == "instrument"
-    assert budget["coupon focal distance"]["dominant"] == "geometry"
-    assert budget["coarse-solver control (8 RK4 steps)"]["dominant"] == "solver"
+    assert budget["coupon focal distance (conditioned on the measured start pose)"]["dominant"] == "geometry"
+    assert budget["coupon separation at L, 5 mrad heading offset (open-loop start)"]["dominant"] == "execution"
+    assert budget["coarse-solver control (6 RK4 steps)"]["dominant"] == "solver"
+    plate = budget["plate separation at 240 mm, 5 mrad heading offset (open-loop start)"]
+    assert plate["value"] == pytest.approx(1.2, abs=1e-12) and 0.0 < plate["geometry"] < 1e-5
+    assert _finding(report, "On the coupon, the heading-offset separation")["evidence_status"] == "numerically_verified"
+    # Richardson: a fine-step value carries |Q(h) - Q(2h)| / 15, the same as T128 uses for the focal point.
+    focal = budget["coupon focal distance (conditioned on the measured start pose)"]
+    nominal = mfg.nominal_study()
+    assert focal["solver"] == pytest.approx(abs(nominal["focal_mm"] - nominal["focal_h2_mm"]) / 15.0, rel=1e-12)
     counter = _finding(report, "The coupon focal-distance prediction is geometry-limited")
     assert counter["value"] > 0.5 and "counterexample" in counter
     assert mfg._classify({"instrument": 1.0, "geometry": 1.0, "solver": 0.0})[0] == "mixed (largest: instrument)"
@@ -315,8 +404,18 @@ def test_uncertainty_budget_classifies_limiting_terms(section):
 def test_production_acceptance_stays_outside_the_system(section):
     _, reports = section
     report = reports["T141"]
-    api = _finding(report, "The lab API cannot mark production acceptance")
-    assert api["evidence_status"] == "numerically_verified" and api["value"] == 64 * len(AUTHORITY_DOMAINS)
+    api = _finding(report, "No basis establishes a claim filed in an authority domain")
+    assert api["evidence_status"] == "numerically_verified"
+    assert api["value"]["basis_domain_cases"] == 64 * len(AUTHORITY_DOMAINS) and api["value"]["violations"] == 0
+    loophole = _finding(report, "evidence.finding establishes an acceptance statement")
+    assert loophole["value"] == "numerically_verified" and "counterexample" in loophole
+    note = _finding(report, "Domain assignment of free-text claims is machine-checked")
+    assert note["evidence_status"] == "not_established" and note["expected_not_established"] is True
+    passing = {"reference_kind": "analytic", "reference": "r", "observed": 0.0, "tolerance": 1.0, "passed": True}
+    statement = finding("Coupon lot accepted for production", "computational_pipeline", "accepted", {"checks": [passing]})
+    assert rec.refusal_code(rec.screen_acceptance_language, [statement]) == "acceptance_outside_authority_domain"
+    topic = finding("Acceptance criteria are hypotheses", "computational_pipeline", 1.0, {"checks": [passing]})
+    assert rec.screen_acceptance_language([topic]) == ["Acceptance criteria are hypotheses"]
     assert _finding(report, "Production acceptance of the coupon")["evidence_status"] == "not_established"
     policy = rec.AcceptancePolicy()
     with pytest.raises(rec.RecordRefusal) as refused:
