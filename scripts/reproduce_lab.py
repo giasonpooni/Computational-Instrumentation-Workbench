@@ -69,6 +69,9 @@ def main() -> int:
         environment = {key: value for key, value in os.environ.items() if key not in ("PYTHONPATH", "PYTEST_ADDOPTS")}
         environment["PYTHONDONTWRITEBYTECODE"] = "1"
         environment["CIW_LAB_REPOSITORY_ROOT"] = str(work)
+        # Single-threaded BLAS keeps reduction order, and so retained values, stable.
+        for variable in ("OPENBLAS_NUM_THREADS", "OMP_NUM_THREADS", "MKL_NUM_THREADS"):
+            environment[variable] = "1"
         located = subprocess.run([python, "-c", "import ciw, sys; print(ciw.__file__)"], check=True,
                                  capture_output=True, text=True, cwd=work, env=environment).stdout.strip()
         if Path(located).resolve().is_relative_to(ROOT):

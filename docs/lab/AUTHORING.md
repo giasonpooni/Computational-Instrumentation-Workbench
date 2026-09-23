@@ -124,6 +124,8 @@ in an installed package without them (report blocked in that case).
   clock in findings, no dict-order dependence. Keep elapsed-time measurements
   out of findings (they are not reproducible); retain them in artifacts.
 - Budget: the whole section run ≤ 60 s and its tests ≤ 60 s on one CPU core.
+  The clean-room gate pins `OPENBLAS_NUM_THREADS=1`; do not rely on BLAS
+  threading, and avoid large dense solves where a structured solver exists.
   Each artifact is at most 2 MiB (`runner.MAX_ARTIFACT_BYTES`); retain sampled
   or aggregated tables rather than full trajectories.
 - Tests: `tests/test_lab_<section>.py`, Python 3.11 and Windows compatible, no
