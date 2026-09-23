@@ -21,7 +21,11 @@ SINGULAR_DET = 1e-12
 
 
 class SurfaceRefusal(ValueError):
-    """A point is outside the chart or the chart is singular there."""
+    """A point is outside the chart or the chart is singular there; ``code`` names the reason."""
+
+    def __init__(self, message: str, code: str = "surface_refused"):
+        super().__init__(message)
+        self.code = code
 
 
 class Surface:
@@ -54,10 +58,11 @@ class Surface:
         """Refuse nonfinite points and coordinate singularities (degenerate metric)."""
         u = np.asarray(u, dtype=float)
         if u.shape != (2,) or not np.all(np.isfinite(u)):
-            raise SurfaceRefusal("Surface coordinates must be two finite numbers")
+            raise SurfaceRefusal("Surface coordinates must be two finite numbers", "nonfinite_point")
         g = self.metric(u)
         if not np.all(np.isfinite(g)) or np.linalg.det(g) <= SINGULAR_DET * max(1.0, float(np.trace(g))) ** 2:
-            raise SurfaceRefusal(f"{self.name}: coordinate singularity or degenerate metric at {u.tolist()}")
+            raise SurfaceRefusal(f"{self.name}: coordinate singularity or degenerate metric at {u.tolist()}",
+                                 "degenerate_metric")
 
     def christoffel(self, u) -> np.ndarray:
         """Gamma[k, i, j] = 1/2 g^{kl} (d_i g_jl + d_j g_il - d_l g_ij)."""
@@ -365,7 +370,7 @@ class HyperbolicPlane(Surface):
 
     def check(self, u):
         if not (np.all(np.isfinite(u)) and u[1] > 0):
-            raise SurfaceRefusal("Hyperbolic chart requires y > 0")
+            raise SurfaceRefusal("Hyperbolic chart requires y > 0", "outside_chart")
 
     def metric(self, u):
         return np.eye(2) / (self.k * u[1]) ** 2
@@ -481,6 +486,26 @@ def rotation_matrix(axis, angle) -> np.ndarray:
     return np.array([[c + x * x * (1 - c), x * y * (1 - c) - z * s, x * z * (1 - c) + y * s],
                      [y * x * (1 - c) + z * s, c + y * y * (1 - c), y * z * (1 - c) - x * s],
                      [z * x * (1 - c) - y * s, z * y * (1 - c) + x * s, c + z * z * (1 - c)]])
+
+
+# Declared sampling boxes (u1, u2 ranges) inside each catalogue chart, away from
+# coordinate singularities, for experiments that draw seeded sample points.
+SAMPLING_DOMAINS = {
+    "plane": ((-2.0, 2.0), (-2.0, 2.0)),
+    "sphere": ((0.3, math.pi - 0.3), (-math.pi, math.pi)),
+    "cylinder": ((-math.pi, math.pi), (-2.0, 2.0)),
+    "saddle": ((-1.5, 1.5), (-1.5, 1.5)),
+    "torus": ((-math.pi, math.pi), (-math.pi, math.pi)),
+    "gaussian-bump": ((-2.5, 2.5), (-2.5, 2.5)),
+    "hyperbolic-plane": ((-2.0, 2.0), (0.3, 3.0)),
+}
+
+
+def sampling_domain(name: str):
+    """The declared sampling box for a catalogue surface."""
+    if name not in SAMPLING_DOMAINS:
+        raise SurfaceRefusal(f"No declared sampling domain for {name}", "unknown_surface")
+    return SAMPLING_DOMAINS[name]
 
 
 def catalogue() -> dict:
