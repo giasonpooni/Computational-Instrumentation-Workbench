@@ -1,0 +1,19 @@
+{
+  "schema": "ciw.experiment-spec.v1",
+  "experiment_id": "cylinder-misdeclared-observable",
+  "title": "An instrument declared as intrinsic that actually reports chords",
+  "hypothesis": {
+    "statement": "If synthetic data are generated as camera chords but the instrument is declared as intrinsic_distance, the comparison shows heading-dependent inconsistency and the diagnosis identifies camera_chord as the consistent observable."
+  },
+  "model": {"kind": "surface-geodesic", "surface": {"type": "cylinder", "radius": {"value": 50, "unit": "mm"}}, "length_unit": "m"},
+  "sweep": {"mode": "product", "parameters": {"heading": {"values": [0, 30, 60, 90], "unit": "deg"}}},
+  "initial_conditions": {"point": {"value": [0.0, 0.0], "unit": ["rad", "m"]}, "heading": "$heading"},
+  "observation": {"observable": "intrinsic_distance", "synthetic_truth": "camera_chord", "noise_std": {"value": 2, "unit": "um"},
+                  "acquisition": "synthetic", "instrument": "stereo-camera-1"},
+  "solver": {"solver_id": "geometry.geodesic-rk4.v1", "steps": 400},
+  "tolerances": {"abs": 1e-12, "rel": 1e-9},
+  "invariants": ["closed-form-endpoint", "speed-conservation"],
+  "stopping": {"arclength": {"value": 60, "unit": "mm"}, "max_steps": 20000},
+  "evidence": {"physical_measurements": "not_acquired", "claims_sought": ["computed", "verified"]},
+  "backend": {"seed": 11}
+}

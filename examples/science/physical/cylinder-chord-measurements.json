@@ -1,0 +1,191 @@
+[
+ {
+  "point_id": "arc-30",
+  "repeat": 1,
+  "value": {
+   "value": 25.8841,
+   "unit": "mm"
+  },
+  "acquired_at": "2026-09-01T10:00:00+00:00",
+  "clock": "lab-utc",
+  "environment": {
+   "temperature": {
+    "value": 20.4,
+    "unit": "degC"
+   },
+   "humidity": {
+    "value": 45.0,
+    "unit": "percent"
+   }
+  },
+  "acquisition": "synthetic"
+ },
+ {
+  "point_id": "arc-60",
+  "repeat": 1,
+  "value": {
+   "value": 50.0031,
+   "unit": "mm"
+  },
+  "acquired_at": "2026-09-01T10:03:00+00:00",
+  "clock": "lab-utc",
+  "environment": {
+   "temperature": {
+    "value": 20.4,
+    "unit": "degC"
+   },
+   "humidity": {
+    "value": 45.0,
+    "unit": "percent"
+   }
+  },
+  "acquisition": "synthetic"
+ },
+ {
+  "point_id": "arc-90",
+  "repeat": 2,
+  "value": {
+   "value": 70.7086,
+   "unit": "mm"
+  },
+  "acquired_at": "2026-09-01T10:06:00+00:00",
+  "clock": "lab-utc",
+  "environment": {
+   "temperature": {
+    "value": 20.4,
+    "unit": "degC"
+   },
+   "humidity": {
+    "value": 45.0,
+    "unit": "percent"
+   }
+  },
+  "acquisition": "synthetic"
+ },
+ {
+  "point_id": "arc-60",
+  "repeat": 3,
+  "value": {
+   "value": 50.0012,
+   "unit": "mm"
+  },
+  "acquired_at": "2026-09-01T10:09:00+00:00",
+  "clock": "lab-utc",
+  "environment": {
+   "temperature": {
+    "value": 20.4,
+    "unit": "degC"
+   },
+   "humidity": {
+    "value": 45.0,
+    "unit": "percent"
+   }
+  },
+  "acquisition": "synthetic"
+ },
+ {
+  "point_id": "arc-30",
+  "repeat": 2,
+  "value": {
+   "value": 25.8797,
+   "unit": "mm"
+  },
+  "acquired_at": "2026-09-01T10:12:00+00:00",
+  "clock": "lab-utc",
+  "environment": {
+   "temperature": {
+    "value": 20.4,
+    "unit": "degC"
+   },
+   "humidity": {
+    "value": 45.0,
+    "unit": "percent"
+   }
+  },
+  "acquisition": "synthetic"
+ },
+ {
+  "point_id": "arc-90",
+  "repeat": 3,
+  "value": {
+   "value": 70.7102,
+   "unit": "mm"
+  },
+  "acquired_at": "2026-09-01T10:15:00+00:00",
+  "clock": "lab-utc",
+  "environment": {
+   "temperature": {
+    "value": 20.4,
+    "unit": "degC"
+   },
+   "humidity": {
+    "value": 45.0,
+    "unit": "percent"
+   }
+  },
+  "acquisition": "synthetic"
+ },
+ {
+  "point_id": "arc-30",
+  "repeat": 3,
+  "value": {
+   "value": 25.8826,
+   "unit": "mm"
+  },
+  "acquired_at": "2026-09-01T10:18:00+00:00",
+  "clock": "lab-utc",
+  "environment": {
+   "temperature": {
+    "value": 20.4,
+    "unit": "degC"
+   },
+   "humidity": {
+    "value": 45.0,
+    "unit": "percent"
+   }
+  },
+  "acquisition": "synthetic"
+ },
+ {
+  "point_id": "arc-60",
+  "repeat": 2,
+  "value": {
+   "value": 49.9978,
+   "unit": "mm"
+  },
+  "acquired_at": "2026-09-01T10:21:00+00:00",
+  "clock": "lab-utc",
+  "environment": {
+   "temperature": {
+    "value": 20.4,
+    "unit": "degC"
+   },
+   "humidity": {
+    "value": 45.0,
+    "unit": "percent"
+   }
+  },
+  "acquisition": "synthetic"
+ },
+ {
+  "point_id": "arc-90",
+  "repeat": 1,
+  "value": {
+   "value": 70.7131,
+   "unit": "mm"
+  },
+  "acquired_at": "2026-09-01T10:24:00+00:00",
+  "clock": "lab-utc",
+  "environment": {
+   "temperature": {
+    "value": 20.4,
+    "unit": "degC"
+   },
+   "humidity": {
+    "value": 45.0,
+    "unit": "percent"
+   }
+  },
+  "acquisition": "synthetic"
+ }
+]

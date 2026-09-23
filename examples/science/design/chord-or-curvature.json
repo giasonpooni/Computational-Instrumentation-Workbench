@@ -1,0 +1,23 @@
+{
+  "schema": "ciw.design-problem.v1",
+  "question": "Is the distance deficit seen on curved coupons caused by the camera measuring chords, or by an error in the declared intrinsic curvature?",
+  "hypotheses": [
+    {"id": "H-chord", "description": "the camera reports straight chords; geometry as declared", "observable": "camera_chord", "curvature_scale": 1.0},
+    {"id": "H-curvature", "description": "the instrument reports intrinsic distance; true Gaussian curvature is 4 % above the declared value", "observable": "intrinsic_distance", "curvature_scale": 1.04},
+    {"id": "H-null", "description": "the instrument reports intrinsic distance; geometry as declared", "observable": "intrinsic_distance", "curvature_scale": 1.0}
+  ],
+  "target_pair": ["H-chord", "H-curvature"],
+  "candidates": [
+    {"candidate_id": "flat-plate", "surface": {"type": "plane"}, "cost": 1.0, "risk": 0.0, "calibration_burden": 0.5, "available": true,
+     "description": "ground plate with engraved fiducials"},
+    {"candidate_id": "cylinder-r50", "surface": {"type": "cylinder", "radius": {"value": 50, "unit": "mm"}}, "cost": 1.5, "risk": 0.1, "calibration_burden": 0.5, "available": true,
+     "description": "turned cylinder coupon"},
+    {"candidate_id": "sphere-r50", "surface": {"type": "sphere", "radius": {"value": 50, "unit": "mm"}}, "cost": 4.0, "risk": 0.2, "calibration_burden": 1.0, "available": true,
+     "description": "precision sphere; costly to make and to datum"}
+  ],
+  "sampling": {"separation": {"value": 40, "unit": "mm"}, "headings": {"values": [0, 30, 60, 90], "unit": "deg"}},
+  "noise_std": {"value": 2, "unit": "um"},
+  "repeats": 3,
+  "length_unit": "m",
+  "monte_carlo": {"samples": 4000, "seed": 1}
+}

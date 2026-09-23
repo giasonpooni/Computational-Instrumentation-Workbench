@@ -1,0 +1,18 @@
+{
+  "schema": "ciw.hardware-replay-reference.v1",
+  "description": "Synthetic CIWT v1 stream (flag 0x80 on every packet) whose sequence wraps through 2^32. Replaying it with layouts.json must reproduce the retained digest on every platform.",
+  "capture": "synthetic-capture.ciwt",
+  "layouts": "layouts.json",
+  "input_identity": "sha256:37642c6b245aa9ed2848c44cbb032b0c6a108e8b20c0f017e5d596368c7f1771",
+  "retained_digest": "sha256:d79f810310987dd71c4afb39a3616af93b1ab245e391ba22814683459c0b2f35",
+  "parse": {
+    "tick_rate_hz": 100000000.0,
+    "device_clock": "fpga_counter"
+  },
+  "expected": {
+    "acquisition": "synthetic",
+    "packets_decoded": 24,
+    "lost": 0,
+    "sequence_wraps": 1
+  }
+}

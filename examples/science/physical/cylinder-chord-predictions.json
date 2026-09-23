@@ -1,0 +1,5 @@
+{
+  "arc-30": {"value": {"value": 25.881905, "unit": "mm"}, "standard_uncertainty": {"value": 0.0005, "unit": "mm"}},
+  "arc-60": {"value": {"value": 50.0, "unit": "mm"}, "standard_uncertainty": {"value": 0.0005, "unit": "mm"}},
+  "arc-90": {"value": {"value": 70.710678, "unit": "mm"}, "standard_uncertainty": {"value": 0.0005, "unit": "mm"}}
+}

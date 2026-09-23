@@ -1,0 +1,15 @@
+{
+  "schema": "ciw.admission-policy.v1",
+  "min_accepted_updates": 10,
+  "nis_window": 20,
+  "nis_confidence": 0.95,
+  "max_position_std": 10.0,
+  "std_unit": "mm",
+  "max_refused_fraction": 0.2,
+  "refusal_window": 50,
+  "max_state_age_s": 0.5,
+  "require_valid_provenance": true,
+  "allowed_acquisition": [
+    "synthetic"
+  ]
+}

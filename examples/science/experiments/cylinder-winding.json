@@ -1,0 +1,14 @@
+{
+  "schema": "ciw.experiment-spec.v1",
+  "experiment_id": "cylinder-winding-classes",
+  "title": "One geodesic per homotopy class between two cylinder points",
+  "hypothesis": {"statement": "Between two points on a cylinder each winding class k contains one geodesic of length sqrt((R(dphi + 2 pi k))^2 + dz^2); the boundary-value solver must be told which class it is solving for."},
+  "model": {"kind": "surface-boundary-value", "surface": {"type": "cylinder", "radius": {"value": 50, "unit": "mm"}}, "length_unit": "m"},
+  "sweep": {"mode": "product", "parameters": {"winding": {"values": [-2, -1, 0, 1, 2], "unit": "1"}}},
+  "boundary": {"start": {"value": [0.0, 0.0], "unit": ["rad", "mm"]}, "target": {"value": [60, 40], "unit": ["deg", "mm"]}, "winding": "$winding"},
+  "solver": {"solver_id": "geometry.log-map-shooting.v1", "requires": ["winding_classes"], "steps": 200},
+  "tolerances": {"abs": 1e-10, "rel": 1e-9},
+  "invariants": ["closed-form-distance"],
+  "stopping": {"arclength": {"value": 1, "unit": "m"}, "max_steps": 20000},
+  "evidence": {"physical_measurements": "not_acquired", "claims_sought": ["computed", "verified"]}
+}

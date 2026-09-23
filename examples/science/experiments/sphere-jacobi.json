@@ -1,0 +1,22 @@
+{
+  "schema": "ciw.experiment-spec.v1",
+  "experiment_id": "sphere-jacobi-through-pole",
+  "title": "Jacobi fields and conjugate points on a 100 mm sphere",
+  "hypothesis": {
+    "statement": "On a sphere of radius R the normal Jacobi field is j(s) = R sin(s/R), the first conjugate point lies at pi R, and geodesics crossing a pole continue through a chart transition without loss of accuracy.",
+    "falsified_if": "any declared invariant fails within tolerance"
+  },
+  "model": {"kind": "surface-jacobi", "surface": {"type": "sphere", "radius": {"value": 100, "unit": "mm"}}, "length_unit": "m", "frame": "coupon"},
+  "parameters": {"start_theta": {"value": 90, "unit": "deg"}, "start_phi": {"value": 0, "unit": "deg"}},
+  "sweep": {"mode": "product", "parameters": {"heading": {"values": [0, 45, 90, 135, 180], "unit": "deg"}}},
+  "initial_conditions": {"point": {"value": ["$start_theta", "$start_phi"], "unit": ["rad", "rad"]}, "heading": "$heading"},
+  "perturbations": [{"parameter": "heading", "distribution": "normal", "std": {"value": 1, "unit": "mrad"}, "samples": 48}],
+  "solver": {"solver_id": "geometry.jacobi-rk4.v1", "requires": ["chart_transitions", "conjugate_detection"], "steps": 1200},
+  "tolerances": {"abs": 1e-10, "rel": 1e-8},
+  "invariants": ["closed-form-endpoint", "closed-form-jacobi", "finite-difference-jacobi", "conjugate-point",
+                 "speed-conservation", "extrinsic-alternate", "step-halving", "unit-invariance",
+                 "christoffel-from-metric", "curvature-from-christoffel"],
+  "stopping": {"arclength": {"value": 400, "unit": "mm"}, "max_steps": 20000},
+  "evidence": {"physical_measurements": "not_acquired", "claims_sought": ["computed", "predicted", "verified", "measured"]},
+  "backend": {"preferred": ["python-numpy-cpu"], "precision": "binary64", "seed": 20260923}
+}

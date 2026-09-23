@@ -1,0 +1,44 @@
+{
+  "schema": "ciw.frame-registry.v1",
+  "length_unit": "m",
+  "description": "Declared inspection cell for coupon experiments. Values are illustrative calibrations, not measurements of a real cell.",
+  "frames": [
+    {"frame_id": "world", "kind": "world", "description": "cell floor datum"},
+    {"frame_id": "machine", "kind": "machine", "description": "robot base"},
+    {"frame_id": "tool", "kind": "tool", "description": "probe tip"},
+    {"frame_id": "camera", "kind": "camera", "description": "stereo camera left optical frame"},
+    {"frame_id": "coupon", "kind": "surface", "description": "coupon datum: cylinder axis along z, phi = 0 on +x"}
+  ],
+  "clocks": [
+    {"clock_id": "cell-ptp", "kind": "ptp", "resolution_s": 1e-6},
+    {"clock_id": "camera-clock", "kind": "device", "resolution_s": 1e-4},
+    {"clock_id": "sim", "kind": "simulation", "resolution_s": 1e-9}
+  ],
+  "clock_mappings": [
+    {"mapping_id": "camera-to-ptp-2026-09", "source": "camera-clock", "target": "cell-ptp", "offset_s": 12.5, "rate": 1.00002,
+     "covariance": [[4e-8, 0.0], [0.0, 1e-14]], "valid_from": 0.0, "valid_until": 86400.0,
+     "calibration": {"calibration_id": "camera-clock-sync", "version": "2026-09-20"}}
+  ],
+  "transforms": [
+    {"transform_id": "machine-in-world", "source": "machine", "target": "world",
+     "rotation": {"quaternion_wxyz": [1.0, 0.0, 0.0, 0.0]}, "translation": [1.2, 0.4, 0.0], "unit": "m",
+     "covariance": [[1e-8,0,0,0,0,0],[0,1e-8,0,0,0,0],[0,0,1e-8,0,0,0],[0,0,0,1e-8,0,0],[0,0,0,0,1e-8,0],[0,0,0,0,0,1e-8]],
+     "clock": "cell-ptp", "estimated_at": 100.0, "valid_from": 100.0, "valid_until": 86400.0,
+     "calibration": {"calibration_id": "cell-survey", "version": "3"}},
+    {"transform_id": "camera-in-machine", "source": "camera", "target": "machine",
+     "rotation": {"quaternion_wxyz": [0.7071067811865476, 0.0, 0.7071067811865476, 0.0]}, "translation": [450.0, -120.0, 800.0], "unit": "mm",
+     "covariance": [[2.5e-7,0,0,0,0,0],[0,2.5e-7,0,0,0,0],[0,0,2.5e-7,0,0,0],[0,0,0,0.04,0,0],[0,0,0,0,0.04,0],[0,0,0,0,0,0.04]],
+     "clock": "cell-ptp", "estimated_at": 200.0, "valid_from": 200.0, "valid_until": 43200.0,
+     "calibration": {"calibration_id": "hand-eye", "version": "2026-09-21a"}},
+    {"transform_id": "coupon-in-machine", "source": "coupon", "target": "machine",
+     "rotation": {"quaternion_wxyz": [1.0, 0.0, 0.0, 0.0]}, "translation": [600.0, 0.0, 150.0], "unit": "mm",
+     "covariance": [[1e-6,0,0,0,0,0],[0,1e-6,0,0,0,0],[0,0,1e-6,0,0,0],[0,0,0,0.0004,0,0],[0,0,0,0,0.0004,0],[0,0,0,0,0,0.0004]],
+     "clock": "cell-ptp", "estimated_at": 300.0, "valid_from": 300.0, "valid_until": 7200.0,
+     "calibration": {"calibration_id": "coupon-datum", "version": "1"}},
+    {"transform_id": "tool-in-machine", "source": "tool", "target": "machine",
+     "rotation": {"quaternion_wxyz": [1.0, 0.0, 0.0, 0.0]}, "translation": [0.0, 0.0, 250.0], "unit": "mm",
+     "covariance": [[1e-7,0,0,0,0,0],[0,1e-7,0,0,0,0],[0,0,1e-7,0,0,0],[0,0,0,0.0025,0,0],[0,0,0,0,0.0025,0],[0,0,0,0,0,0.0025]],
+     "clock": "cell-ptp", "estimated_at": 100.0, "valid_from": 100.0, "valid_until": 86400.0,
+     "calibration": {"calibration_id": "tool-centre-point", "version": "7"}}
+  ]
+}

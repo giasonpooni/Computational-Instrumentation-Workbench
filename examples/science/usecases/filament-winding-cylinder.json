@@ -1,0 +1,8 @@
+{
+  "schema": "ciw.use-case.v1",
+  "use_case_id": "pressure-vessel-hoop-helical",
+  "domain": "filament-winding",
+  "part": {"geometry": "cylinder", "dimensions": {"radius": {"value": 150, "unit": "mm"}, "length": {"value": 900, "unit": "mm"}}},
+  "feature_tolerance": {"value": 0.5, "unit": "mm"},
+  "process": {"friction_coefficient": 0.2}
+}

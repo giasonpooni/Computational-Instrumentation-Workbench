@@ -1,0 +1,16 @@
+{
+  "schema": "ciw.experiment-spec.v1",
+  "experiment_id": "hyperbolic-jacobi-growth",
+  "title": "Negative curvature: Jacobi fields grow as sinh",
+  "hypothesis": {"statement": "On the hyperbolic half-plane (K = -1) nearby geodesics diverge with j(s) = sinh(s) and no conjugate point occurs."},
+  "model": {"kind": "surface-jacobi", "surface": {"type": "hyperbolic-half-plane"}, "length_unit": "m"},
+  "sweep": {"mode": "product", "parameters": {"heading": {"values": [-60, 0, 30, 120], "unit": "deg"}}},
+  "initial_conditions": {"point": {"value": [0.0, 1.0], "unit": ["1", "1"]}, "heading": "$heading"},
+  "perturbations": [{"parameter": "heading", "distribution": "normal", "std": {"value": 0.5, "unit": "mrad"}}],
+  "solver": {"solver_id": "geometry.jacobi-rk4.v1", "steps": 1500},
+  "tolerances": {"abs": 1e-9, "rel": 1e-8},
+  "invariants": ["closed-form-endpoint", "closed-form-jacobi", "conjugate-point", "finite-difference-jacobi",
+                 "speed-conservation", "high-order-reference", "step-halving"],
+  "stopping": {"arclength": {"value": 2.5, "unit": "1"}, "max_steps": 20000},
+  "evidence": {"physical_measurements": "not_acquired", "claims_sought": ["computed", "predicted", "verified"]}
+}

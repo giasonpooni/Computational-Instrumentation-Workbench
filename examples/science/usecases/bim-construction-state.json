@@ -1,0 +1,11 @@
+{
+  "schema": "ciw.use-case.v1",
+  "use_case_id": "level-3-slab-edges",
+  "domain": "bim-construction-state",
+  "part": {"geometry": "building", "dimensions": {"storey_height": {"value": 3.4, "unit": "m"}}},
+  "feature_tolerance": {"value": 10, "unit": "mm"},
+  "existing_sensors": [
+    {"sensor_id": "tls-1", "kind": "terrestrial_laser_scanner", "observable": "reconstructed_geometry", "resolution": {"value": 2, "unit": "mm"}},
+    {"sensor_id": "ts-1", "kind": "total_station", "observable": "tracker_position", "resolution": {"value": 0.5, "unit": "mm"}}
+  ]
+}

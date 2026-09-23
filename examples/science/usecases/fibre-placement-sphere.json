@@ -1,0 +1,8 @@
+{
+  "schema": "ciw.use-case.v1",
+  "use_case_id": "dome-afp-plies",
+  "domain": "fibre-placement",
+  "part": {"geometry": "sphere", "dimensions": {"radius": {"value": 800, "unit": "mm"}}, "material": "carbon/epoxy prepreg tow"},
+  "feature_tolerance": {"value": 1.0, "unit": "mm"},
+  "process": {"min_steering_radius": {"value": 2.0, "unit": "m"}}
+}

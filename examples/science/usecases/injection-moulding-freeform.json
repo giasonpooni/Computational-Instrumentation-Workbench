@@ -1,0 +1,8 @@
+{
+  "schema": "ciw.use-case.v1",
+  "use_case_id": "housing-cover-warpage",
+  "domain": "injection-moulding",
+  "part": {"geometry": "freeform", "dimensions": {"min_radius": {"value": 5, "unit": "mm"}}, "material": "PC/ABS"},
+  "feature_tolerance": {"value": 0.1, "unit": "mm"},
+  "existing_sensors": [{"sensor_id": "blue-light-scanner", "kind": "fringe_projection", "observable": "reconstructed_geometry", "resolution": {"value": 0.02, "unit": "mm"}}]
+}

@@ -1,0 +1,25 @@
+{
+  "schema": "ciw.frame-registry.v1",
+  "length_unit": "m",
+  "description": "Example registry: an FPGA tick counter disciplined to UTC by a PPS calibration. Illustrative values.",
+  "frames": [
+    {"frame_id": "fpga_board", "kind": "sensor", "description": "Board frame of the example FPGA"}
+  ],
+  "clocks": [
+    {"clock_id": "fpga_counter", "kind": "device", "resolution_s": 1e-08},
+    {"clock_id": "utc", "kind": "utc", "resolution_s": 1e-09}
+  ],
+  "clock_mappings": [
+    {
+      "mapping_id": "fpga-to-utc",
+      "source": "fpga_counter",
+      "target": "utc",
+      "offset_s": 1790121600.0,
+      "rate": 1.00000002,
+      "covariance": [[2.5e-13, 0.0], [0.0, 1e-18]],
+      "valid_from": 0.0,
+      "valid_until": 86400.0,
+      "calibration": {"calibration_id": "example-pps-discipline", "version": "2026-09-01"}
+    }
+  ]
+}

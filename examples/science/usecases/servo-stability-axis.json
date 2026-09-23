@@ -1,0 +1,8 @@
+{
+  "schema": "ciw.use-case.v1",
+  "use_case_id": "gantry-x-axis-retune",
+  "domain": "servo-stability",
+  "part": {"geometry": "axis", "dimensions": {"stroke": {"value": 1.5, "unit": "m"}}},
+  "feature_tolerance": {"value": 5, "unit": "um"},
+  "existing_sensors": [{"sensor_id": "x-linear-scale", "kind": "linear_scale", "observable": "encoder_displacement", "resolution": {"value": 0.1, "unit": "um"}}]
+}

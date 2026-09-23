@@ -1,0 +1,14 @@
+{
+  "schema": "ciw.experiment-spec.v1",
+  "experiment_id": "cylinder-mesh-heat-refinement",
+  "title": "Mesh geodesic distance on a cylinder patch under refinement",
+  "hypothesis": {"statement": "Heat-method distances on an inscribed cylinder mesh approach the smooth unrolled distance as the mesh is refined, while edge-graph distances never undercut the exact polyhedral distance."},
+  "model": {"kind": "mesh-distance", "surface": {"type": "cylinder", "radius": {"value": 50, "unit": "mm"}}, "length_unit": "m",
+            "mesh": {"height": {"value": 80, "unit": "mm"}, "angle_span": {"value": 120, "unit": "deg"}, "cells": [8, 6]}},
+  "sweep": {"mode": "product", "parameters": {"refinement": {"values": [1, 2], "unit": "1"}}},
+  "solver": {"solver_id": "geometry.mesh-heat.v1"},
+  "tolerances": {"abs": 0.0, "rel": 0.1, "oracles": {"mesh-smooth-reference": {"rel": 0.1}}},
+  "invariants": ["mesh-smooth-reference", "mesh-polyhedral-bound", "mesh-refinement"],
+  "stopping": {"max_vertices": 3000},
+  "evidence": {"physical_measurements": "not_acquired", "claims_sought": ["computed", "verified"]}
+}

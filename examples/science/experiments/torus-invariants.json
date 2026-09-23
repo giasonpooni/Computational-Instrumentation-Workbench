@@ -1,0 +1,17 @@
+{
+  "schema": "ciw.experiment-spec.v1",
+  "experiment_id": "torus-variable-curvature",
+  "title": "Geodesics on a ring torus without a closed form",
+  "hypothesis": {
+    "statement": "Where no closed form exists, intrinsic RK4 geodesics agree with an extrinsic R^3 integration and an order-6 Gauss-Legendre reference, conserve speed and Clairaut's angular momentum, converge at fourth order and are unchanged by rescaling units."
+  },
+  "model": {"kind": "surface-geodesic", "surface": {"type": "torus", "major_radius": {"value": 300, "unit": "mm"}, "minor_radius": {"value": 100, "unit": "mm"}}, "length_unit": "m"},
+  "sweep": {"mode": "zip", "parameters": {"heading": {"values": [10, 40, 70], "unit": "deg"}, "tube_angle": {"values": [0, 60, 150], "unit": "deg"}}},
+  "initial_conditions": {"point": {"value": [0.0, "$tube_angle"], "unit": ["rad", "rad"]}, "heading": "$heading"},
+  "solver": {"solver_id": "geometry.geodesic-rk4.v1", "steps": 1000},
+  "tolerances": {"abs": 1e-9, "rel": 1e-8},
+  "invariants": ["extrinsic-alternate", "high-order-reference", "speed-conservation", "clairaut", "step-halving",
+                 "unit-invariance", "christoffel-from-metric", "curvature-from-christoffel"],
+  "stopping": {"arclength": {"value": 1.0, "unit": "m"}, "max_steps": 20000},
+  "evidence": {"physical_measurements": "not_acquired", "claims_sought": ["computed", "verified"]}
+}

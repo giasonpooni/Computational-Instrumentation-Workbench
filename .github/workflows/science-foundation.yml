@@ -1,0 +1,27 @@
+name: Scientific foundation
+
+on:
+  push:
+  pull_request:
+
+permissions:
+  contents: read
+
+jobs:
+  science:
+    strategy:
+      matrix:
+        os: [ubuntu-latest, windows-latest]
+    runs-on: ${{ matrix.os }}
+    timeout-minutes: 20
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-python@v5
+        with:
+          python-version: '3.12'
+      - run: python -m pip install -e ".[dev,bench-models]"
+      - name: Units, frames, ledger, geometry, oracles, experiments, fusion, hardware, bundles and governance
+        shell: bash
+        run: python -m pytest -q tests/test_science_*.py -W error::RuntimeWarning
+      - name: Full synthetic bench, replay and signed offline round trip
+        run: python scripts/check_science.py

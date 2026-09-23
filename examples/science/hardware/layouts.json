@@ -1,0 +1,33 @@
+{
+  "schema": "ciw.telemetry-layouts.v1",
+  "description": "Example CIWT v1 frame layouts for an FPGA sensor board. Declared layouts, not measurements.",
+  "frames": {
+    "1": {
+      "name": "imu",
+      "fields": [
+        {"name": "accel_x", "format": "h", "unit": "m/s^2", "scale": 0.001},
+        {"name": "accel_y", "format": "h", "unit": "m/s^2", "scale": 0.001},
+        {"name": "accel_z", "format": "h", "unit": "m/s^2", "scale": 0.001},
+        {"name": "gyro_z", "format": "i", "unit": "rad/s", "scale": 1e-06}
+      ]
+    },
+    "2": {
+      "name": "thermal",
+      "fields": [
+        {"name": "die_temperature", "format": "f", "unit": "K", "scale": 1.0},
+        {"name": "supply_voltage", "format": "H", "unit": "V", "scale": 0.0001},
+        {"name": "fan_state", "format": "B", "unit": "count", "scale": 1.0}
+      ]
+    },
+    "3": {
+      "name": "adc",
+      "fields": [
+        {"name": "sample", "format": "q", "unit": "V", "scale": 1e-09},
+        {"name": "sample_index", "format": "Q", "unit": "count", "scale": 1.0},
+        {"name": "gain_step", "format": "b", "unit": "1", "scale": 1.0},
+        {"name": "current", "format": "I", "unit": "mA", "scale": 0.001},
+        {"name": "reference", "format": "d", "unit": "V", "scale": 1.0}
+      ]
+    }
+  }
+}

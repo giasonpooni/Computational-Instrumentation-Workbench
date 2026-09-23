@@ -400,6 +400,9 @@ def parser() -> argparse.ArgumentParser:
         action.add_argument("--python", dest="python_executable", type=Path)
     for action in (geodesic_create, geodesic_inspect, geodesic_replay):
         action.add_argument("--json", action="store_true", help="Print covariance, identities and complete provenance")
+    commands.add_parser("science", add_help=False,
+                        help="Experiment specifications, evidence ledger, oracles, replay, reports and the bench "
+                             "(run `ciw science --help`)")
     energy = commands.add_parser("energy", help="Capture GPU energy or replay retained energy/accuracy logs")
     energy_actions = energy.add_subparsers(dest="energy_command", required=True)
     energy_probe = energy_actions.add_parser("probe", help="Read an actual NVML counter without running a workload")
@@ -421,6 +424,10 @@ def parser() -> argparse.ArgumentParser:
 
 
 def main(argv: list[str] | None = None) -> int:
+    argv = sys.argv[1:] if argv is None else list(argv)
+    if argv[:1] == ["science"]:
+        from .science.cli import main as science
+        return science(argv[1:])
     args = parser().parse_args(argv)
     try:
         if args.command == "energy":

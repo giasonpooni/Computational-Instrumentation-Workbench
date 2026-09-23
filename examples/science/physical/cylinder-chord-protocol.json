@@ -1,0 +1,45 @@
+{
+  "schema": "ciw.physical-protocol.v1",
+  "protocol_id": "cyl-r50-chord-2026-09",
+  "description": "Chord lengths between scribed marks on a 50 mm radius aluminium cylinder coupon, compared with the closed-form chord 2R sin(theta/2).",
+  "object": {
+    "coupon_id": "CYL-AL-050-01",
+    "geometry": {"type": "cylinder", "dimensions": {"radius": {"value": 50.0, "unit": "mm"}, "length": {"value": 120.0, "unit": "mm"}}},
+    "material": "EN AW-6082-T6",
+    "nominal_tolerance": {"value": 0.05, "unit": "mm"}
+  },
+  "instrument": {
+    "instrument_id": "photogrammetry-rig-2",
+    "kind": "stereo_photogrammetry",
+    "observable": "camera_chord",
+    "unit": "mm",
+    "resolution": {"value": 0.001, "unit": "mm"},
+    "calibration": {"calibration_id": "PG2-scale-bar", "version": "2026.08", "valid_from": "2026-08-15T00:00:00+00:00", "valid_until": "2027-02-15T00:00:00+00:00"}
+  },
+  "datum": {"frame_id": "coupon-datum", "features": ["cylinder axis", "end face A", "scribe mark 0"], "established": true},
+  "sampling_plan": {
+    "points": [
+      {"point_id": "arc-30", "description": "marks 0 and 30 degrees", "nominal": {"value": 25.8819, "unit": "mm"}},
+      {"point_id": "arc-60", "description": "marks 0 and 60 degrees", "nominal": {"value": 50.0, "unit": "mm"}},
+      {"point_id": "arc-90", "description": "marks 0 and 90 degrees", "nominal": {"value": 70.7107, "unit": "mm"}}
+    ],
+    "repeats": 3,
+    "randomize_order": true,
+    "seed": 20260901
+  },
+  "environment_limits": {
+    "temperature": {"min": {"value": 18.0, "unit": "degC"}, "max": {"value": 22.0, "unit": "degC"}},
+    "humidity": {"min": {"value": 30.0, "unit": "percent"}, "max": {"value": 70.0, "unit": "percent"}}
+  },
+  "uncertainty_budget": {
+    "components": [
+      {"name": "scale bar calibration", "type": "B", "distribution": "normal", "value": {"value": 0.010, "unit": "mm"}, "coverage_factor": 2.0, "sensitivity": 1.0, "dof": null},
+      {"name": "resolution", "type": "B", "distribution": "rectangular", "value": {"value": 0.0005, "unit": "mm"}, "sensitivity": 1.0, "dof": null},
+      {"name": "thermal expansion", "type": "B", "distribution": "rectangular", "value": {"value": 2.0, "unit": "K"}, "sensitivity": 0.00115, "sensitivity_unit": "mm/K", "dof": null},
+      {"name": "target centring", "type": "B", "distribution": "triangular", "value": {"value": 4.0, "unit": "um"}, "sensitivity": 1.0, "dof": 12}
+    ]
+  },
+  "coverage": {"level": 0.95},
+  "acceptance": {"rule": "en_le_1"},
+  "exclusion": {"max_repeatability_std": {"value": 0.02, "unit": "mm"}, "require_datum": true, "require_valid_calibration": true}
+}

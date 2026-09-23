@@ -1,0 +1,22 @@
+{
+  "schema": "ciw.experiment-spec.v1",
+  "experiment_id": "cylinder-chord-vs-intrinsic",
+  "title": "Camera chords versus intrinsic distance on a 50 mm cylinder coupon",
+  "hypothesis": {
+    "statement": "A camera that reconstructs straight chords between fiducials measures camera_chord, which is shorter than the intrinsic geodesic distance by an amount that depends on the heading relative to the cylinder axis.",
+    "competing": [{"id": "H-intrinsic", "statement": "the instrument reports intrinsic surface distance"},
+                  {"id": "H-chord", "statement": "the instrument reports straight 3-D chords"}]
+  },
+  "model": {"kind": "surface-geodesic", "surface": {"type": "cylinder", "radius": {"value": 50, "unit": "mm"}}, "length_unit": "m", "frame": "coupon"},
+  "sweep": {"mode": "product", "parameters": {"heading": {"linspace": [0, 90, 7], "unit": "deg"}}},
+  "initial_conditions": {"point": {"value": [0.0, 0.0], "unit": ["rad", "m"]}, "heading": "$heading"},
+  "observation": {"observable": "camera_chord", "synthetic_truth": "camera_chord", "noise_std": {"value": 2, "unit": "um"},
+                  "acquisition": "synthetic", "instrument": "stereo-camera-1", "frame": "coupon", "clock": "sim"},
+  "solver": {"solver_id": "geometry.geodesic-rk4.v1", "steps": 400},
+  "tolerances": {"abs": 1e-12, "rel": 1e-9},
+  "invariants": ["closed-form-endpoint", "extrinsic-alternate", "speed-conservation", "clairaut", "step-halving",
+                 "unit-invariance", "high-order-reference"],
+  "stopping": {"arclength": {"value": 60, "unit": "mm"}, "max_steps": 20000},
+  "evidence": {"physical_measurements": "planned", "claims_sought": ["computed", "predicted", "verified"]},
+  "backend": {"seed": 7}
+}
