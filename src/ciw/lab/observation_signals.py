@@ -1,8 +1,9 @@
 """Synthetic signal models for encoder, IMU, timing and filtering experiments.
 
 Scope: the generators and estimators used by T052-T057: a backlash (play)
-operator with scale and bias, gyro bias plus angle random walk, sampling with
-clock offset and jitter, a constant-velocity Kalman filter with a
+operator with scale and bias, gyro bias plus angle random walk (single axis
+and strapdown SO(3)), sample-and-hold tracking through a lossy link, sampling
+with clock offset and jitter, a constant-velocity Kalman filter with a
 Rauch-Tung-Striebel smoother, and the confidence-interval helpers used to
 compare seeded Monte Carlo ensembles with predictions.
 
@@ -123,6 +124,92 @@ def rotation_exp(vectors: np.ndarray) -> np.ndarray:
     k[:, 1, 0], k[:, 2, 0], k[:, 2, 1] = axis[:, 2], -axis[:, 1], axis[:, 0]
     sin, cos = np.sin(angle)[:, None, None], np.cos(angle)[:, None, None]
     return np.eye(3)[None] + sin * k + (1 - cos) * (k @ k)
+
+
+def rotation_log(matrices: np.ndarray) -> np.ndarray:
+    """Rotation vectors of a stack of rotation matrices (angles below pi)."""
+    cosine = np.clip((np.trace(matrices, axis1=1, axis2=2) - 1) / 2, -1.0, 1.0)
+    angle = np.arccos(cosine)
+    vee = np.stack([matrices[:, 2, 1] - matrices[:, 1, 2], matrices[:, 0, 2] - matrices[:, 2, 0],
+                    matrices[:, 1, 0] - matrices[:, 0, 1]], axis=1)
+    safe = np.where(angle > 1e-8, angle, 1.0)
+    factor = np.where(angle > 1e-8, angle / (2 * np.sin(safe)), 0.5)
+    return vee * factor[:, None]
+
+
+def right_jacobian(phi) -> np.ndarray:
+    """Right Jacobian of SO(3): exp(phi + d) = exp(phi) exp(J_r(phi) d) to first order in d."""
+    phi = np.asarray(phi, dtype=float)
+    angle = float(np.linalg.norm(phi))
+    if angle < 1e-12:
+        return np.eye(3)
+    k = np.array([[0.0, -phi[2], phi[1]], [phi[2], 0.0, -phi[0]], [-phi[1], phi[0], 0.0]])
+    return np.eye(3) - (1 - math.cos(angle)) / angle ** 2 * k + (angle - math.sin(angle)) / angle ** 3 * (k @ k)
+
+
+def orientation_errors(omega, bias, arw: float, runs: int, steps: int, dt: float, rng) -> np.ndarray:
+    """Body-frame error log(R_true^T R_est) per step for a strapdown gyro integration.
+
+    The true body turns at constant rate ``omega``; the gyro reads omega +
+    bias + white noise of density ``arw``. Returns shape (steps, runs, 3).
+    """
+    omega, bias = np.asarray(omega, dtype=float), np.asarray(bias, dtype=float)
+    true_step = rotation_exp(omega[None, :] * dt)[0]
+    truth, estimate = np.eye(3), np.repeat(np.eye(3)[None], runs, axis=0)
+    out = np.empty((steps, runs, 3))
+    for k in range(steps):
+        noise = (arw / math.sqrt(dt)) * rng.standard_normal((runs, 3)) if arw > 0 else 0.0
+        estimate = estimate @ rotation_exp((omega + bias + noise) * dt)
+        truth = truth @ true_step
+        out[k] = rotation_log(np.einsum("ji,njk->nik", truth, estimate))
+    return out
+
+
+def bias_error_prediction(omega, bias, steps: int, dt: float) -> np.ndarray:
+    """Linearized mean error e_{k+1} = exp(-omega dt) e_k + J_r(omega dt) bias dt."""
+    omega, bias = np.asarray(omega, dtype=float), np.asarray(bias, dtype=float)
+    back = rotation_exp(-omega[None, :] * dt)[0]
+    injected = right_jacobian(omega * dt) @ bias * dt
+    mean, out = np.zeros(3), np.empty((steps, 3))
+    for k in range(steps):
+        mean = back @ mean + injected
+        out[k] = mean
+    return out
+
+
+# Dropped samples and hold estimates -------------------------------------------
+
+def hold_estimates(dropped: np.ndarray, q: float, r: float, rng, burn: int) -> dict:
+    """Sample-and-hold tracking of a random walk through a lossy link.
+
+    Truth x_k is a random walk with increment variance ``q``; each received
+    sample is x_k plus noise of variance ``r``. Returns per-run means (after
+    ``burn`` steps) of the squared hold error and of the age of the held sample.
+    """
+    runs, n = dropped.shape
+    truth = np.cumsum(math.sqrt(q) * rng.standard_normal((runs, n)), axis=1)
+    measured = truth + math.sqrt(r) * rng.standard_normal((runs, n))
+    held, held_at = np.full(runs, np.nan), np.full(runs, -1)
+    squared, ages, counts = np.zeros(runs), np.zeros(runs), np.zeros(runs)
+    for k in range(n):
+        received = ~dropped[:, k]
+        held = np.where(received, measured[:, k], held)
+        held_at = np.where(received, k, held_at)
+        if k >= burn:
+            valid = held_at >= 0
+            squared += np.where(valid, (held - truth[:, k]) ** 2, 0.0)
+            ages += np.where(valid, k - held_at, 0)
+            counts += valid
+    return {"mse": squared / counts, "age": ages / counts, "evaluated": counts}
+
+
+# Timing -------------------------------------------------------------------------
+
+def interpolation_weights(knots, times) -> tuple[np.ndarray, np.ndarray, np.ndarray]:
+    """Interval index, fractional position w in [0, 1) and interval length for linear interpolation."""
+    index = np.clip(np.searchsorted(knots, times, side="right") - 1, 0, len(knots) - 2)
+    width = knots[index + 1] - knots[index]
+    return index, (times - knots[index]) / width, width
 
 
 # Kalman filter and RTS smoother ------------------------------------------------

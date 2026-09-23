@@ -30,21 +30,13 @@ from .sensor_fusion_bench import (BENCH_SEED, H_POS, BenchConfig, bench_digest, 
                                   gain_schedule, generate_bench, generator, measure, mismatch_moments,
                                   nees_series, normal_quantile, quadratic, run_shared, sensor_function,
                                   simulate_truth, with_sensor)
-from .sensor_fusion_common import (TESTS, TOL_EXACT, TOL_MC, TOL_ROUNDOFF, as_json, check, files,
-                                   generator_basis, outcome, unreal)
+from .sensor_fusion_common import (MU0, P0_BENCH, TESTS, TOL_EXACT, TOL_MC, TOL_ROUNDOFF, as_json, check,
+                                   files, generator_basis, outcome, unreal)
 
 FILES = files("sensor_fusion")
 BENCH_RUNS = 50
 MC_RUNS = 200
 MC_TICKS = 100
-
-
-def _cv_plan(H, R, ticks, every=1):
-    return [(H, R) if k % every == 0 else None for k in range(1, ticks + 1)]
-
-
-P0_BENCH = np.diag([0.25, 0.25, 0.04, 0.04])
-MU0 = np.array([0.0, 0.0, 1.0, 0.5])
 
 
 def _bench(ctx):
@@ -442,3 +434,9 @@ def correlated_noise(ctx):
         "recommended_next_task": "T066: show that residual consistency needs the filter covariance S, not raw R.",
     }
     return outcome(fields, findings)
+
+
+# Tasks T063-T076 live in sibling modules; importing them registers them with
+# the queue when the runner imports this section module.
+from . import sensor_fusion_geometry  # noqa: E402,F401  (T063, T064)
+from . import sensor_fusion_filtering  # noqa: E402,F401  (T065-T068)

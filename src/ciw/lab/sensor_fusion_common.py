@@ -26,6 +26,12 @@ COMMON = "src/ciw/lab/sensor_fusion_common.py"
 PRODUCER = {"implementation": "ciw.lab.sensor_fusion", "revision": __version__}
 FAMILY_ALPHA = 1e-3
 
+# Shared linear-Gaussian bench constants: prior mean and covariance of the
+# planar constant-velocity state (x, y, vx, vy) and the declared camera noise.
+MU0 = np.array([0.0, 0.0, 1.0, 0.5])
+P0_BENCH = np.diag([0.25, 0.25, 0.04, 0.04])
+R_CAMERA = np.array([[0.04, 0.012], [0.012, 0.04]])
+
 # Regression tolerances. Seeded Monte Carlo statistics reproduce to roundoff
 # (BLAS summation order moves the last bits only); exact counts and refusal
 # codes must match exactly; rates derived from counts get one-sample slack.

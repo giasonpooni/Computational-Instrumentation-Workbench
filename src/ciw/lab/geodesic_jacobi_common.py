@@ -404,20 +404,85 @@ def mp_speed_squared(derived: dict, state, dps: int):
         return e * state[2] ** 2 + 2 * f * state[2] * state[3] + g * state[3] ** 2
 
 
+MP_DPS = 34
+MP_MACRO_STEPS = (10, 20)
+
+
+def mp_reference(key: str, dps: int = MP_DPS, macro_steps=MP_MACRO_STEPS) -> dict:
+    """Arbitrary-precision geodesic + Jacobi end state of a declared path (needs sympy and mpmath).
+
+    The equations are the sympy derivation (Christoffel symbols and Brioschi
+    curvature), not ``ciw.lab.surfaces``; the start is the same binary64 state
+    the ciw integrators use, so only the integration differs. The error
+    estimate is the largest component difference between the two macro-step
+    counts at ``dps`` digits.
+    """
+    import mpmath
+
+    spec = path(key)
+    derived = derive(spec.surface)
+    functions = lambdified(derived, modules="mpmath")
+    rhs, curvature = functions["rhs"], functions["curvature"]
+
+    def f(y):
+        k = curvature(y[0], y[1])
+        return [*rhs(y[0], y[1], y[2], y[3]), y[5], -k * y[4], y[7], -k * y[6]]
+
+    y0 = [float(x) for x in start_state(key)]
+    with mpmath.workdps(dps):
+        coarse, _ = gbs_integrate(f, y0, spec.length, macro_steps[0])
+        fine, indicator = gbs_integrate(f, y0, spec.length, macro_steps[1])
+        estimate = max(abs(a - b) for a, b in zip(coarse, fine))
+        speed = mp_speed_squared(derived, fine, dps)
+        return {"kind": "mpmath", "state": [float(x) for x in fine], "digits": [mpmath.nstr(x, 30) for x in fine],
+                "error_estimate": float(estimate), "local_indicator": float(indicator),
+                "speed_squared_minus_one": float(speed - 1), "dps": dps, "macro_steps": list(macro_steps),
+                "method": "Gragg-Bulirsch-Stoer modified midpoint, sequence 2..16", "mpf_state": fine}
+
+
+def scipy_reference(key: str, rtol: float = 1e-13, atol: float = 1e-15) -> dict:
+    """End state from scipy's DOP853 applied to the ciw geodesic + Jacobi right-hand side (needs scipy)."""
+    from scipy.integrate import solve_ivp
+
+    spec = path(key)
+    f = jacobi.rhs(surface(spec.surface))
+    solution = solve_ivp(lambda s, y: f(y), (0.0, spec.length), start_state(key), method="DOP853",
+                         rtol=rtol, atol=atol)
+    if not solution.success:
+        raise FloatingPointError(f"scipy DOP853 failed on {key}: {solution.message}")
+    return {"kind": "scipy", "state": [float(x) for x in solution.y[:, -1]], "nfev": int(solution.nfev),
+            "rtol": rtol, "atol": atol}
+
+
 # Pinned constant-curvature Jacobi provider (optional) ---------------------
 CSG_REPOSITORY = "giasonpooni/Curved-Surface-Geodesic-Sensitivity-Runtime"
 CSG_IMPLEMENTATION = "Curved-Surface-Geodesic-Sensitivity-Runtime"
 CSG_ENTRY = "geodesic_testbed.jacobi.integrate_jacobi"
 
 # Runs in a separate interpreter so the provider never shares this process's imports.
+# Besides the RK4 traces it returns, per case, the provider's TransferMap
+# (matrices, determinant, focus events) built from that trace and from its
+# closed-form constant_curvature_transfer.
 _CSG_BOOTSTRAP = r'''
-import json, sys
+import dataclasses, json, sys
 sys.path.insert(0, sys.argv[1])
 import numpy
 from geodesic_testbed.jacobi import integrate_jacobi
+from geodesic_testbed.engine.transfer import TransferMap, constant_curvature_transfer
+def summary(transfer):
+    return {"matrices": transfer.matrices().tolist(), "determinant": transfer.determinant.tolist(),
+            "focus_events": {column: [dataclasses.asdict(event) for event in transfer.focus_events(component=column)]
+                             for column in ("a", "b")}}
 cases = json.loads(sys.stdin.read())
-traces = [integrate_jacobi(case["arclength"], case["gaussian_curvature"]).as_dict() for case in cases]
-print(json.dumps({"python": sys.version.split()[0], "numpy": numpy.__version__, "traces": traces},
+traces, maps = [], []
+for case in cases:
+    trace = integrate_jacobi(case["arclength"], case["gaussian_curvature"])
+    traces.append(trace.as_dict())
+    numeric = TransferMap(arc_length=trace.arclength, a=trace.position_basis, a_rate=trace.position_rate,
+                          b=trace.angle_basis, b_rate=trace.angle_rate)
+    exact = constant_curvature_transfer(numpy.asarray(case["arclength"], dtype=float), case["gaussian_curvature"])
+    maps.append({"numeric": summary(numeric), "closed_form": summary(exact)})
+print(json.dumps({"python": sys.version.split()[0], "numpy": numpy.__version__, "traces": traces, "maps": maps},
                  sort_keys=True, allow_nan=False))
 '''
 

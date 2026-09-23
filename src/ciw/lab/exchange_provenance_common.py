@@ -38,7 +38,9 @@ FORGED_SESSION = "session-" + hashlib.sha256(b"ciw-lab forged session").hexdiges
 FORGED_TIME = "2001-01-01T00:00:00+00:00"
 FORGED_RUNTIME = {"provider": "lab.forged-provider", "version": "99"}
 FRESH_PATTERNS = {"execution": r"execution-[0-9a-f]{32}", "result": r"result-[0-9a-f]{32}",
-                  "session": r"session-[0-9a-f]{32}"}
+                  "session": r"session-[0-9a-f]{32}", "sha256": r"sha256:[0-9a-f]{64}"}
+# Fixed forged constants are deterministic and stay readable in witnesses.
+CONSTANTS = {FORGED_DIGEST: "sha256:<forged-constant>", FORGED_SESSION: "session:<forged-constant>"}
 
 
 def fixture_available() -> bool:
@@ -93,6 +95,7 @@ def build_session_fixture(root: Path) -> dict:
 
     run = make_demo_run()
     session = Session(run, root / "session-a")
+    recording = (root / "session-a" / session.recording_file).read_bytes()
     first = request(session, "operation.execute", deepcopy(STATS))
     second = request(session, "operation.execute", deepcopy(STATS))
     legacy = request(session, "analysis.stats", deepcopy(STATS["parameters"]))
@@ -132,6 +135,8 @@ def build_session_fixture(root: Path) -> dict:
         "workspace": saved["workspace"], "workspace_bytes": saved["bytes"],
         "workspace_reopened": saved_reopened["workspace"],
         "reopened_run_evidence_id": reopened.run["evidence_id"],
+        "recording": {"file": session.recording_file, "sha256": hashlib.sha256(recording).hexdigest(),
+                      "is_reserialization": recording == (json.dumps(run, indent=2) + "\n").encode("utf-8")},
     }
 
 
@@ -170,9 +175,11 @@ def relabel(value, labels: dict):
     if isinstance(value, str):
         if value in labels:
             return labels[value]
+        if value in CONSTANTS:
+            return CONSTANTS[value]
         for kind, pattern in FRESH_PATTERNS.items():
             if re.fullmatch(pattern, value):
-                return f"{kind}:<fresh>"
+                return f"{kind}:<unlabelled>"
     return value
 
 
@@ -329,3 +336,130 @@ def validator_row(name, task, target, description, predicted, call) -> dict:
     return {"name": name, "task": task, "target": target, "recompute": "local", "description": description,
             "predicted": predicted, "observed": observed, "error": error,
             "killed": error is not None, "matches_prediction": observed == predicted}
+
+
+def esm_case(native: dict) -> dict:
+    """A minimal ESM candidate inspection that the pure validator accepts for ``native``.
+
+    Only :func:`ciw.candidate_evidence.validate_response` runs; no ESM process,
+    adapter binding or candidate store is involved.
+    """
+    from ..telemetry import canonical
+    raw = canonical(native)
+    parameters = {"bundle_id": native["bundle_digest"], "inspected_at": "2026-01-01T00:00:00Z"}
+    policy = {"review_context": {"requestId": "lab-request-1", "authority": "lab-operator-review"}}
+    response = {"schema": "payload.instrument-candidate-inspection.v1", "inspectedAt": parameters["inspected_at"],
+                "requestId": "lab-request-1", "authority": "lab-operator-review",
+                "state": "ELIGIBLE_FOR_CANDIDATE_REVIEW", "bundleBytesDigest": "sha256:" + hashlib.sha256(raw).hexdigest(),
+                "canonicalAdmission": "REFUSED", "canonicalStateMutated": False, "evidenceRetained": False,
+                "releaseActivated": False, "sourceTruthClaimed": False, "independentlyVerified": False,
+                "retractionHistoryComplete": False,
+                "candidate": {"state": "UNADMITTED", "bundleDigest": native["bundle_digest"],
+                              "executionIds": sorted(step["execution_id"] for step in native["steps"]),
+                              "verification": {"outcome": "passed", "independent": False},
+                              "reconciliation": {"status": "not_run"}}}
+    return {"response": response, "parameters": parameters, "policy": policy, "raw": raw, "bundle": native}
+
+
+def check_esm(case: dict, edit=None) -> None:
+    """Run the pure ESM response validator on an edited copy of ``case``."""
+    from ..candidate_evidence import validate_response
+    case = deepcopy(case)
+    if edit is not None:
+        edit(case)
+    return validate_response(case["response"], "inspect", case["bundle"], case["raw"], case["parameters"],
+                             case["policy"])
+
+
+def exchange_artifact(schema: str, body: dict, field: str) -> dict:
+    """A synthetic exchange artifact whose content identity is recomputed locally."""
+    artifact = {"schema": schema, **deepcopy(body)}
+    payload = json.dumps({key: value for key, value in artifact.items() if key != field}, sort_keys=True,
+                         separators=(",", ":"), ensure_ascii=False, allow_nan=False).encode("utf-8")
+    artifact[field] = "sha256:" + hashlib.sha256(schema.encode("utf-8") + b"\x00" + payload).hexdigest()
+    return artifact
+
+
+def _reverse_keys(value):
+    if isinstance(value, dict):
+        return {key: _reverse_keys(value[key]) for key in reversed(list(value))}
+    if isinstance(value, list):
+        return [_reverse_keys(item) for item in value]
+    return value
+
+
+def byte_variants(raw: bytes) -> dict:
+    """Byte strings whose parsed JSON is canonically equal to ``raw`` (whitespace, order, spelling)."""
+    parsed = json.loads(raw.decode("utf-8"))
+
+    def dump(value, **options):
+        return json.dumps(value, ensure_ascii=False, allow_nan=False, **options).encode("utf-8")
+    return {"original": raw, "crlf": raw.replace(b"\n", b"\r\n"),
+            "minified": dump(parsed, separators=(",", ":")), "tab-indented": dump(parsed, indent="\t"),
+            "sorted-keys": dump(parsed, indent=4, sort_keys=True),
+            "reversed-keys": dump(_reverse_keys(parsed), indent=2),
+            "trailing-whitespace": raw + b"\n\n \t\n",
+            "float-spelling": raw.replace(b"1e-09", b"0.000000001")}
+
+
+def refused_variants(raw: bytes) -> dict:
+    """Numerically equal re-encodings that are not canonically equal, or not plain JSON."""
+    return {"int-for-float": raw.replace(b"1.0,", b"1,", 1), "byte-order-mark": b"\xef\xbb\xbf" + raw}
+
+
+def canonical_content(raw: bytes) -> str:
+    """Type-aware canonical text of parsed JSON (1 and 1.0 differ); a BOM is stripped first."""
+    return json.dumps(json.loads(raw.decode("utf-8-sig")), sort_keys=True, separators=(",", ":"),
+                      ensure_ascii=False, allow_nan=False)
+
+
+def build_variant_fixture(root: Path) -> dict:
+    """Retain every fixture log and every baseline byte variant, execute, save and reopen."""
+    from ..instruments import make_demo_run
+    from ..session import Session
+
+    session = Session(make_demo_run(), root / "variants-a")
+    baseline = fixture_bytes("baseline")
+    inputs = [(name, "fixture_log", fixture_bytes(name)) for name in FIXTURE_LOGS]
+    inputs += [(f"baseline/{name}", "byte_variant", raw) for name, raw in byte_variants(baseline).items()]
+    rows = []
+    for label, kind, raw in inputs:
+        source = energy_source(session, raw, label)
+        bundle = energy_execute(session, source["source_id"])
+        rows.append({"label": label, "kind": kind, "raw": raw, "source": source, "bundle_id": bundle["bundle_id"]})
+    live = {row["label"]: request(session, "source.get", {"source_id": row["source"]["source_id"]}) for row in rows}
+    saved = save(session)
+    reopened = Session.from_workspace(saved["path"], root / "variants-b")
+    baseline_content = canonical_content(baseline)
+    records = []
+    for row in rows:
+        raw, source = row["raw"], row["source"]
+        restored = request(reopened, "source.get", {"source_id": source["source_id"]})
+        native = reopened.workbench.get_bundle(row["bundle_id"])
+        evidence = native["source"]["evidence"][0]
+        step = native["steps"][0]
+        records.append({
+            "label": row["label"], "kind": row["kind"], "byte_count": len(raw),
+            "input_sha256": "sha256:" + hashlib.sha256(raw).hexdigest(),
+            "evidence_id": source["evidence_id"], "source_id": source["source_id"],
+            "declared_byte_count": source["byte_count"],
+            "live_bytes_equal": base64.b64decode(live[row["label"]]["bytes_b64"]) == raw,
+            "reopened_bytes_equal": base64.b64decode(restored["bytes_b64"]) == raw,
+            "bundle_bytes_equal": base64.b64decode(evidence["bytes_b64"]) == raw,
+            "artifact_ref": evidence["artifact_ref"], "experiment_digest": native["source"]["experiment_digest"],
+            "log_digest": step["result"]["data"]["log_digest"], "numerical_result_id": step["numerical_result_id"],
+            "canonical_equal_to_baseline": canonical_content(raw) == baseline_content,
+            "python_equal_to_baseline": json.loads(raw.decode("utf-8")) == json.loads(baseline.decode("utf-8")),
+        })
+    refusals = {}
+    for name, raw in refused_variants(baseline).items():
+        refusals[name] = dict(attempt(session, "source.add", {"kind": KIND, "label": f"baseline/{name}",
+                                                              "bytes_b64": b64(raw)}),
+                              python_equal=json.loads(raw.decode("utf-8-sig")) == json.loads(baseline.decode("utf-8")),
+                              canonical_equal=canonical_content(raw) == baseline_content)
+    encoded = b64(baseline)
+    transports = {"missing-padding": b64(b"A").rstrip("="), "line-wrapped": encoded[:76] + "\n" + encoded[76:],
+                  "noncanonical-trailing-bits": "QR=="}
+    for name, text in transports.items():
+        refusals["base64/" + name] = attempt(session, "source.add", {"kind": KIND, "label": "transport", "bytes_b64": text})
+    return {"records": records, "refusals": refusals, "workspace_bytes": len(saved["bytes"])}

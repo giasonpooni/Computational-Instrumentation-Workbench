@@ -1,7 +1,7 @@
 """Typed instrument observation modes, frame and clock bases, and retention without admission.
 
 Scope: the record types and refusals used by the observation experiments
-(T045, T055, T056, T058, T059). A mode declares the quantity it observes, its
+(T045, T048, T054-T056, T058, T059). A mode declares the quantity it observes, its
 unit, the frame kind and clock basis a record must carry, whether it sees
 intrinsic or extrinsic surface geometry, declared noise-model parameters and
 what it cannot observe. Validation refuses records without frame, clock or
@@ -377,13 +377,25 @@ def admit_fresh(observation: Observation, now_s: float, limit_s: float) -> float
 # Retention without admission ------------------------------------------------
 
 class StateStore:
-    """Scalar estimator state that only admitted, digest-bound observations may update."""
+    """Estimator state for one mode that only admitted, digest-bound observations may update.
 
-    def __init__(self, mode: str, mean: float, variance: float):
-        if mode not in MODES or MODES[mode].components != 1:
-            raise ObservationRefusal("unknown_mode", "State store requires a scalar observation mode")
+    The state is a mean and an independent variance per component of the
+    mode. Retention keeps any record as evidence without validating or using
+    it; admission validates a retained record and binds its content digest;
+    only then may :meth:`update` apply a per-component Kalman update.
+    """
+
+    def __init__(self, mode: str, mean, variance):
+        if mode not in MODES:
+            raise ObservationRefusal("unknown_mode", f"Unknown observation mode: {mode!r}")
+        components = MODES[mode].components
+        mean = np.broadcast_to(np.asarray(mean, dtype=float), (components,))
+        variance = np.broadcast_to(np.asarray(variance, dtype=float), (components,))
+        if not (np.all(np.isfinite(mean)) and np.all(np.isfinite(variance)) and np.all(variance > 0)):
+            raise ObservationRefusal("invalid_state", "State needs finite means and positive variances")
         self.mode = mode
-        self._state = {"mode": mode, "mean": float(mean), "variance": float(variance), "updates": []}
+        self._state = {"mode": mode, "mean": [float(v) for v in mean], "variance": [float(v) for v in variance],
+                       "updates": []}
         self._retained: dict = {}
         self._admissions: dict = {}
 
@@ -407,13 +419,13 @@ class StateStore:
     def admit(self, digest: str, decision: str) -> dict:
         if digest not in self._retained:
             raise ObservationRefusal("not_retained", "Only a retained observation can be admitted")
-        validate(observation_from_record(self._retained[digest]["observation"]))
+        require_mode(observation_from_record(self._retained[digest]["observation"]), self.mode)
         admission = {"observation_digest": digest, "state_admission": ADMITTED, "decision": decision}
         self._admissions[digest] = admission
         return deepcopy(admission)
 
-    def update(self, record: dict, variance: float) -> dict:
-        """Scalar Kalman update from an admitted record; everything else is refused."""
+    def update(self, record: dict, variance) -> dict:
+        """Per-component Kalman update from an admitted record; everything else is refused."""
         observation = observation_from_record(record["observation"])
         digest = observation.digest()
         if digest != record.get("observation_digest"):
@@ -421,10 +433,14 @@ class StateStore:
         if digest not in self._admissions:
             raise ObservationRefusal("not_admitted", "A retained observation was not admitted as state")
         require_mode(observation, self.mode)
-        prior_mean, prior_variance = self._state["mean"], self._state["variance"]
-        gain = prior_variance / (prior_variance + variance)
-        self._state["mean"] = prior_mean + gain * (observation.value[0] - prior_mean)
-        self._state["variance"] = (1 - gain) * prior_variance
+        variance = np.broadcast_to(np.asarray(variance, dtype=float), (len(observation.value),))
+        means, variances = [], []
+        for prior_mean, prior_variance, value, noise in zip(self._state["mean"], self._state["variance"],
+                                                            observation.value, variance):
+            gain = prior_variance / (prior_variance + float(noise))
+            means.append(prior_mean + gain * (value - prior_mean))
+            variances.append((1 - gain) * prior_variance)
+        self._state["mean"], self._state["variance"] = means, variances
         self._state["updates"].append(digest)
         return self.state
 

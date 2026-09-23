@@ -271,8 +271,13 @@ def batched_update(x, P, nu, H, R):
     return x + (K @ nu[..., None])[..., 0], P_new, S, nis
 
 
-def run_gated(F, Q, x0_hat, P0, plan, readings, threshold=None) -> dict:
-    """Per-run filter whose covariance depends on gating decisions (NIS > threshold is rejected)."""
+def run_gated(F, Q, x0_hat, P0, plan, readings, threshold=None, admit=None) -> dict:
+    """Per-run filter whose covariance depends on gating decisions (NIS > threshold is rejected).
+
+    ``admit`` optionally lists, per tick, a boolean array over runs of readings
+    that exist; an absent reading is a prediction-only step for that run (never
+    a substituted value). Rejected and absent readings leave the prior as is.
+    """
     runs = next(z.shape[0] for z in readings if z is not None)
     n = F.shape[0]
     x = np.broadcast_to(np.asarray(x0_hat, dtype=float), (runs, n)).copy()
@@ -289,6 +294,8 @@ def run_gated(F, Q, x0_hat, P0, plan, readings, threshold=None) -> dict:
             nu = z - x @ H.T
             x_upd, P_upd, _, nis = batched_update(x, P, nu, H, R)
             accept = np.ones(runs, dtype=bool) if threshold is None else nis <= threshold
+            if admit is not None:
+                accept = accept & admit[k]
             x = np.where(accept[:, None], x_upd, x)
             P = np.where(accept[:, None, None], P_upd, P)
             nis_all.append(nis)
@@ -488,6 +495,24 @@ def noncentral_chi2_2_cdf(x: float, noncentrality: float, terms: int = 400) -> f
         if j > noncentrality and weight < 1e-18:
             break
     return total
+
+
+def noncentral_chi2_2_cdf_many(x: float, noncentrality, terms: int = 600) -> np.ndarray:
+    """Vectorized noncentral chi-square (2 dof) CDF at one point for many noncentralities.
+
+    F(x; lam) = sum_j Pois(j; lam/2) P(chi2_{2+2j} <= x) with
+    P(chi2_{2+2j} <= x) = 1 - sum_{i<=j} Pois(i; x/2), summed in log space.
+    """
+    lam = np.atleast_1d(np.asarray(noncentrality, dtype=float))
+    j = np.arange(terms)
+    log_factorial = np.concatenate([[0.0], np.cumsum(np.log(np.arange(1, terms)))])
+    half = x / 2
+    central = 1.0 - np.cumsum(np.exp(j * math.log(half) - half - log_factorial)) if half > 0 else np.zeros(terms)
+    with np.errstate(divide="ignore", invalid="ignore"):
+        log_weights = np.where(lam[:, None] > 0, j[None, :] * np.log(lam[:, None] / 2),
+                               np.where(j == 0, 0.0, -np.inf))
+    weights = np.exp(log_weights - lam[:, None] / 2 - log_factorial[None, :])
+    return weights @ np.clip(central, 0.0, 1.0)
 
 
 def consistency(values: np.ndarray, dof: int, confidence: float = 0.99) -> dict:

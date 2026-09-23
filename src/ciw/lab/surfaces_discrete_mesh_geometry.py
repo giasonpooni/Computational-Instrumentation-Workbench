@@ -30,10 +30,11 @@ import numpy as np
 DEGENERATE_RATIO = 1e-12      # 2 * area / longest_edge^2 at or below this is a zero-area face
 VERTEX_TOLERANCE = 1e-9       # edge parameter distance to an endpoint that counts as a vertex hit
 ON_FACE_TOLERANCE = 1e-9      # distance to a face (relative to its longest edge) for a start point
+FOLD_COSINE = -0.9            # adjacent unit normals with dot at or below this (bend > 154 degrees) are folded
 
 # Named refusal codes in the order the validator reports them.
 MESH_CODES = ("invalid_shape", "empty_mesh", "nonfinite_vertex", "invalid_face_index", "degenerate_face",
-              "non_manifold_edge", "inconsistent_orientation", "non_manifold_vertex", "unreferenced_vertex",
+              "non_manifold_edge", "inconsistent_orientation", "non_manifold_vertex", "folded_face", "unreferenced_vertex",
               "disconnected_components", "open_boundary")
 TRACE_CODES = ("point_outside_face", "invalid_direction", "boundary_reached", "vertex_hit",
                "step_budget_exceeded")
@@ -88,6 +89,14 @@ def inspect(vertices, faces, *, require_connected=True, require_closed=False) ->
     pinched = np.flatnonzero(fans > 1)
     if len(pinched):
         issues.append(("non_manifold_vertex", f"Vertices {pinched[:5].tolist()} join separate face fans"))
+    if not len(bad) and not len(degenerate) and not edges["misoriented"] and len(edges["pair_first"]):
+        # Consistently oriented neighbours with nearly opposite normals: a fold-over
+        # that structural checks accept but that inverts local geometry.
+        unit = cross / np.linalg.norm(cross, axis=1)[:, None]
+        dots = np.einsum("ij,ij->i", unit[edges["pair_first"] // 3], unit[edges["pair_second"] // 3])
+        folded = int(np.sum(dots <= FOLD_COSINE))
+        if folded:
+            issues.append(("folded_face", f"{folded} interior edges join faces with nearly opposite normals"))
     unused = np.flatnonzero(np.bincount(faces.ravel(), minlength=len(vertices)) == 0)
     if len(unused):
         issues.append(("unreferenced_vertex", f"Vertices {unused[:5].tolist()} belong to no face"))
@@ -614,10 +623,8 @@ def steiner_graph(mesh: TriMesh, k: int, extra=()):
     nodes = np.concatenate([mesh.vertices, steiner])
     ids = [mesh.faces]
     for local in range(3):
-        edge = mesh.edge_of_half[:, local]
-        forward = mesh.faces[:, local] == mesh.edges[edge, 0]
-        offsets = np.where(forward[:, None], np.arange(k)[None, :], (k - 1 - np.arange(k))[None, :])
-        ids.append(n + edge[:, None] * k + offsets)
+        # Node order inside a face is irrelevant: every pair of its nodes is joined.
+        ids.append(n + mesh.edge_of_half[:, local][:, None] * k + np.arange(k)[None, :])
     face_nodes = np.concatenate(ids, axis=1)
     i, j = np.triu_indices(face_nodes.shape[1], 1)
     src, dst = face_nodes[:, i].ravel(), face_nodes[:, j].ravel()

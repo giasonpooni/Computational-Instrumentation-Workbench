@@ -57,6 +57,19 @@ def helix_chord(s, radius: float, alpha: float):
     return np.sqrt((2 * radius * np.sin(theta / 2)) ** 2 + (s * math.sin(alpha)) ** 2)
 
 
+def arc_from_chord(chords, radius: float, alpha: float, iterations: int = 80) -> np.ndarray:
+    """Vectorized inverse of :func:`helix_chord` on its monotone branch s cos(alpha)/R <= pi."""
+    chords = np.asarray(chords, dtype=float)
+    if abs(math.cos(alpha)) < 1e-15:
+        return chords.copy()
+    low, high = chords.copy(), np.full_like(chords, math.pi * radius / abs(math.cos(alpha)))
+    for _ in range(iterations):
+        middle = 0.5 * (low + high)
+        below = helix_chord(middle, radius, alpha) < chords
+        low, high = np.where(below, middle, low), np.where(below, high, middle)
+    return 0.5 * (low + high)
+
+
 def helix_curvature_torsion(radius: float, alpha: float) -> tuple[float, float]:
     """kappa = cos^2(alpha) / R and tau = sin(alpha) cos(alpha) / R for the cylinder geodesic."""
     return math.cos(alpha) ** 2 / radius, math.sin(alpha) * math.cos(alpha) / radius
@@ -84,7 +97,8 @@ def sympy_general_series():
 
     v = (sp.Integer(1), sp.Integer(0), sp.Integer(0))
     delta = [sp.Integer(0)] * 3
-    for n in range(1, 7):
+    # Orders one to five of the Taylor expansion fix |delta|^2 through s^6 and c through s^5.
+    for n in range(1, 6):
         for i in range(3):
             delta[i] += v[i].subs(s, 0) * s ** n / sp.factorial(n)
         v = tuple(sp.expand(x) for x in derivative(v))

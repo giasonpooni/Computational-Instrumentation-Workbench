@@ -110,8 +110,12 @@ def cylinder_to_world() -> tuple[np.ndarray, np.ndarray]:
     return rotation, front + np.array([0.0, 0.0, radius])
 
 
-def helix_markers(alpha: float, s_values, phi0: float = -0.6, z0: float = -0.03) -> dict:
-    """Markers along the exact cylinder geodesic at angle ``alpha`` from the circumferential direction."""
+def helix_markers(alpha: float, s_values, phi0: float = -0.6, z0: float = -0.03, shift=(0.0, 0.0, 0.0)) -> dict:
+    """Markers along the exact cylinder geodesic at angle ``alpha`` from the circumferential direction.
+
+    ``shift`` translates the whole cylinder in the world; chords and arc
+    lengths are unchanged, only where the markers fall in the images.
+    """
     cylinder = Cylinder(CYLINDER["radius_m"])
     u0 = np.array([phi0, z0])
     tangent = cylinder.unit_tangent(u0, alpha)
@@ -119,8 +123,8 @@ def helix_markers(alpha: float, s_values, phi0: float = -0.6, z0: float = -0.03)
     rotation, offset = cylinder_to_world()
     local = np.array([cylinder.embedding(u) for u in chart])
     normals = np.array([[math.cos(u[0]), math.sin(u[0]), 0.0] for u in chart])
-    return {"s": np.asarray(s_values, dtype=float), "chart": chart, "world": local @ rotation.T + offset,
-            "normals": normals @ rotation.T}
+    return {"s": np.asarray(s_values, dtype=float), "chart": chart,
+            "world": local @ rotation.T + offset + np.asarray(shift, dtype=float), "normals": normals @ rotation.T}
 
 
 def visible(camera: Camera, points, normals) -> np.ndarray:
@@ -163,9 +167,14 @@ def undistort(distorted, model, iterations: int = 60) -> np.ndarray:
 
 def triangulate(cameras, pixel_sets, undistort_model=None) -> np.ndarray:
     """Linear DLT triangulation on normalized coordinates; batched over points."""
+    return triangulate_normalized(cameras, [camera.normalized(pixels, undistort_model)
+                                            for camera, pixels in zip(cameras, pixel_sets)])
+
+
+def triangulate_normalized(cameras, normalized_sets) -> np.ndarray:
+    """DLT on already normalized coordinates; only the camera poses are used."""
     rows = []
-    for camera, pixels in zip(cameras, pixel_sets):
-        x = camera.normalized(pixels, undistort_model)
+    for camera, x in zip(cameras, normalized_sets):
         projection = np.hstack([camera.rotation, camera.translation[:, None]])
         rows.append(x[:, 0:1] * projection[2][None, :] - projection[0][None, :])
         rows.append(x[:, 1:2] * projection[2][None, :] - projection[1][None, :])
@@ -190,9 +199,42 @@ def triangulate_midpoint(cameras, pixel_sets) -> np.ndarray:
     return 0.5 * ((a.center + ta[:, None] * da) + (b.center + tb[:, None] * db))
 
 
+def believed_rig(cameras, delta) -> tuple[Camera, Camera]:
+    """Calibration used for triangulation when it differs from the true rig.
+
+    ``delta`` = (focal error of both cameras [px], right principal point
+    errors cx, cy [px], right-camera rotation vector [rad] about its center).
+    """
+    focal, cx, cy, wx, wy, wz = (float(v) for v in delta)
+    left, right = cameras
+    return (replace(left, focal_px=left.focal_px + focal),
+            right.perturbed(focal=focal, cx=cx, cy=cy, rotation_vector=(wx, wy, wz)))
+
+
 def pair_chords(points, pairs) -> np.ndarray:
     pairs = np.asarray(pairs)
     return np.linalg.norm(points[pairs[:, 0]] - points[pairs[:, 1]], axis=1)
+
+
+def noisy_chords(cameras, points, pairs, sigma_px: float, trials: int, rng, quantize: bool = True) -> np.ndarray:
+    """Chords triangulated from Gaussian-noisy, optionally integer-rounded pixels (distortion-free cameras).
+
+    Each trial draws a uniform pixel-grid phase per camera (the unknown
+    sub-pixel position of the principal point); triangulation uses the
+    matching principal point, so the phase adds no calibration error but
+    makes the rounding error uniform on [-1/2, 1/2) px.
+    """
+    normalized = []
+    for camera in cameras:
+        ideal = camera.project(points)
+        phase = rng.uniform(0.0, 1.0, (trials, 1, 2)) if quantize else np.zeros((trials, 1, 2))
+        pixels = ideal[None] + phase + sigma_px * rng.standard_normal((trials, len(points), 2))
+        if quantize:
+            pixels = np.round(pixels)
+        normalized.append(((pixels - phase - np.array([camera.cx, camera.cy])) / camera.focal_px).reshape(-1, 2))
+    world = triangulate_normalized(cameras, normalized).reshape(trials, len(points), 3)
+    pairs = np.asarray(pairs)
+    return np.linalg.norm(world[:, pairs[:, 0]] - world[:, pairs[:, 1]], axis=2)
 
 
 def chord_from_pixels(cameras, pixels_left, pixels_right, pairs, undistort_model=None) -> np.ndarray:
