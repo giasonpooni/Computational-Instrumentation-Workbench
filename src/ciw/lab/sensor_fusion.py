@@ -19,101 +19,24 @@ recorded as ``not_established`` findings in physical and authority domains.
 """
 from __future__ import annotations
 
-from copy import deepcopy
-from dataclasses import replace as _replace
-from fractions import Fraction
 import math
 
 import numpy as np
 
-from .. import __version__
 from . import svg
-from .evidence import COMPUTATIONAL_DOMAINS, finding
+from .evidence import finding
 from .registry import task
-from .sensor_fusion_bench import (BENCH_SEED, H_POS, BenchConfig, batch_posterior, bench_digest,
-                                  chi2_quantile, consistency, cv_model, exact_scalar_filter, gain_schedule,
-                                  gaussian, generate_bench, generator, measure, mismatch_moments,
-                                  noncentral_chi2_2_cdf, nees_series, normal_quantile, quadratic, run_gated,
-                                  run_shared, sensor_function, simulate_truth, wilson_interval, with_sensor)
-from .sensor_fusion_objects import (ADMISSION_CHECKS, DEFAULT_AUTHORITY, AdmittedState, CalibrationRecord,
-                                    CandidateState, FrameTransform, FusionRefusal, FusionSession, Observation,
-                                    admission_verdict)
+from .sensor_fusion_bench import (BENCH_SEED, H_POS, BenchConfig, bench_digest, consistency, cv_model,
+                                  gain_schedule, generate_bench, generator, measure, mismatch_moments,
+                                  nees_series, normal_quantile, quadratic, run_shared, sensor_function,
+                                  simulate_truth, with_sensor)
+from .sensor_fusion_common import (TESTS, TOL_EXACT, TOL_MC, TOL_ROUNDOFF, as_json, check, files,
+                                   generator_basis, outcome, unreal)
 
-FILES = ("src/ciw/lab/sensor_fusion.py", "src/ciw/lab/sensor_fusion_bench.py", "src/ciw/lab/sensor_fusion_objects.py")
-TESTS = "tests/test_lab_sensor_fusion.py"
+FILES = files("sensor_fusion")
 BENCH_RUNS = 50
 MC_RUNS = 200
 MC_TICKS = 100
-PRODUCER = {"implementation": "ciw.lab.sensor_fusion", "revision": __version__}
-
-# Regression tolerances: seeded Monte Carlo statistics reproduce to roundoff,
-# counts and rates can move by a sample only if a statistic sits on a threshold.
-TOL_MC = {"abs": 1e-9, "rel": 1e-6}
-TOL_EXACT = {"abs": 0.0, "rel": 0.0}
-TOL_RATE = {"abs": 2e-3, "rel": 0.0}
-TOL_ROUNDOFF = {"abs": 1e-9, "rel": 1e-6}
-
-
-# Evidence helpers --------------------------------------------------------------
-def _check(kind, reference, observed, tolerance, comparison="abs_le") -> dict:
-    observed, tolerance = float(observed), float(tolerance)
-    holds = {"abs_le": abs(observed) <= tolerance, "le": observed <= tolerance,
-             "ge": observed >= tolerance}[comparison]
-    return {"reference_kind": kind, "reference": reference, "observed": observed, "tolerance": tolerance,
-            "comparison": comparison, "passed": holds}
-
-
-def _refusal(reference, expected, observed) -> dict:
-    return {"reference_kind": "refusal", "reference": reference, "expected_refusal": expected,
-            "observed_refusal": observed, "passed": observed == expected}
-
-
-def _generator(seed, **extra) -> dict:
-    return {"generator": {"name": "ciw.lab.sensor_fusion_bench", "bit_generator": "PCG64", "seed": seed, **extra}}
-
-
-def _refusal_code(call) -> str:
-    try:
-        call()
-    except FusionRefusal as refusal:
-        return refusal.code
-    return "no_refusal"
-
-
-def _json(value):
-    """Plain JSON values (numpy scalars and arrays converted, floats kept finite)."""
-    if isinstance(value, dict):
-        return {str(k): _json(v) for k, v in value.items()}
-    if isinstance(value, (list, tuple)):
-        return [_json(v) for v in value]
-    if isinstance(value, np.ndarray):
-        return _json(value.tolist())
-    if isinstance(value, (bool, np.bool_)):
-        return bool(value)
-    if isinstance(value, (int, np.integer)):
-        return int(value)
-    if isinstance(value, (float, np.floating)):
-        value = float(value)
-        if not math.isfinite(value):
-            raise ValueError("Finding values must be finite")
-        return value
-    return value
-
-
-def _unreal(claim, domain, seed, statement) -> dict:
-    """A real-world conclusion the synthetic bench invites but cannot support."""
-    return finding(claim, domain, statement, {**_generator(seed), "notes": "synthetic draws only; no acquisition"})
-
-
-def _result(fields: dict, findings: list) -> dict:
-    """Completed when every computational check passed; otherwise partial with the failures named."""
-    failed = [f["claim"] for f in findings if f["evidence_status"] == "not_established"
-              and f["domain"] in COMPUTATIONAL_DOMAINS and not f.get("expected_not_established")]
-    fields = dict(fields)
-    if failed:
-        fields["unresolved_assumptions"] = list(fields["unresolved_assumptions"]) + [
-            f"Check failed in this run: {claim}" for claim in failed]
-    return {"state": "partial" if failed else "completed", "fields": fields, "findings": findings}
 
 
 def _cv_plan(H, R, ticks, every=1):
@@ -177,11 +100,11 @@ def multi_sensor_bench(ctx):
 
     run0 = {"truth": bench["truth"][0], "readings": {n: {"ticks": bench["readings"][n]["ticks"],
                                                          "values": bench["readings"][n]["values"][0]} for n in names}}
-    ctx.artifact_json("bench.json", _json({"config": config.describe(), "seed": BENCH_SEED, "runs": BENCH_RUNS,
+    ctx.artifactas_json("bench.json", as_json({"config": config.describe(), "seed": BENCH_SEED, "runs": BENCH_RUNS,
                                            "retained_run": 0, "run": run0,
                                            "declared_covariances": {s.name: s.covariance for s in config.sensors},
                                            "process_noise_Q_per_tick": bench["Q"]}))
-    ctx.artifact_json("digests.json", {"seed": BENCH_SEED, "digest": bench_digest(bench),
+    ctx.artifactas_json("digests.json", {"seed": BENCH_SEED, "digest": bench_digest(bench),
                                        "regenerated_digest": bench_digest(again),
                                        "other_seed_digest": bench_digest(other),
                                        "note": "SHA-256 over little-endian float64 truth and readings"})
@@ -196,32 +119,32 @@ def multi_sensor_bench(ctx):
                 "bit for bit, and a different seed changes every stream", "computational_pipeline",
                 {"arrays_compared": len(names) + 1, "same_seed_arrays_differing": same_differences,
                  "other_seed_fraction_changed": other_changed},
-                {**_generator(BENCH_SEED, runs=BENCH_RUNS), "checks": [
-                    _check("invariant", "same-seed regeneration", same_differences, 0),
-                    _check("invariant", "different-seed regeneration", other_changed, 1.0, "ge")]},
+                {**generator_basis(BENCH_SEED, runs=BENCH_RUNS), "checks": [
+                    check("invariant", "same-seed regeneration", same_differences, 0),
+                    check("invariant", "different-seed regeneration", other_changed, 1.0, "ge")]},
                 tolerance=TOL_EXACT),
         finding("Every sensor reports exactly at its declared rate on the 20 Hz base clock over 20 s "
                 "(camera 10 Hz, encoder 20 Hz, IMU 20 Hz, tracker 2 Hz)", "computational_pipeline",
                 {"per_sensor": counts, "max_count_mismatch": count_mismatch, "off_grid_ticks": offgrid},
-                {**_generator(BENCH_SEED), "checks": [
-                    _check("exact_arithmetic", "declared rate times duration", count_mismatch, 0),
-                    _check("exact_arithmetic", "reading ticks on the declared grid", offgrid, 0)]},
+                {**generator_basis(BENCH_SEED), "checks": [
+                    check("exact_arithmetic", "declared rate times duration", count_mismatch, 0),
+                    check("exact_arithmetic", "reading ticks on the declared grid", offgrid, 0)]},
                 tolerance=TOL_EXACT),
         finding("Every raw reading equals the noise-free sensor function of the retained truth, recomputed by an "
                 "independent code path, plus its retained noise draw", "numerical", composition,
-                {**_generator(BENCH_SEED), "checks": [
-                    _check("invariant", "hypot and complex-angle recomputation of h(truth)", composition, 1e-12)]},
+                {**generator_basis(BENCH_SEED), "checks": [
+                    check("invariant", "hypot and complex-angle recomputation of h(truth)", composition, 1e-12)]},
                 unit="max abs difference", tolerance={"abs": 1e-12, "rel": 0.0}),
         finding("Changing the tracker rate from 2 Hz to 4 Hz leaves the truth and the camera, encoder and IMU "
                 "streams unchanged (independent spawned PCG64 streams)", "computational_pipeline", stream_changes,
-                {**_generator(BENCH_SEED), "checks": [
-                    _check("invariant", "streams other than the tracker", stream_changes, 0)]},
+                {**generator_basis(BENCH_SEED), "checks": [
+                    check("invariant", "streams other than the tracker", stream_changes, 0)]},
                 tolerance=TOL_EXACT),
         finding("Every declared sensor covariance is symmetric positive definite", "numerical", min_eigen,
                 {"derivation": "declared constants in DEFAULT_SENSORS", "checks": [
-                    _check("analytic", "smallest eigenvalue of the declared covariances", min_eigen, 1e-6, "ge")]},
+                    check("analytic", "smallest eigenvalue of the declared covariances", min_eigen, 1e-6, "ge")]},
                 unit="smallest eigenvalue", tolerance=TOL_ROUNDOFF),
-        _unreal("The bench's noise levels, rates and motion describe real camera, encoder, IMU or tracker hardware",
+        unreal("The bench's noise levels, rates and motion describe real camera, encoder, IMU or tracker hardware",
                 "sensor_performance", BENCH_SEED, "not established: every stream is a declared synthetic draw"),
     ]
     count_text = ", ".join(f"{name} {row['readings_per_run']}" for name, row in counts.items())
@@ -259,7 +182,7 @@ def multi_sensor_bench(ctx):
                                    "Encoder and IMU are nonlinear in the state; no experiment here fuses them."],
         "recommended_next_task": "T061: verify the empirical noise covariance against the declared covariance.",
     }
-    return _result(fields, findings)
+    return outcome(fields, findings)
 
 
 # T061 ------------------------------------------------------------------------------
@@ -308,7 +231,7 @@ def known_truth_covariance(ctx):
     max_z = float(np.max(np.abs(z_all)))
     detect = {name: row["variance_z_if_declared_10pct_low"] for name, row in table.items() if name != "process_noise"}
     minimal = {name: z_crit * math.sqrt(2.0 / table[name]["samples"]) for name in detect}
-    ctx.artifact_json("covariance_moments.json", _json({"family_size": family, "family_alpha": alpha,
+    ctx.artifactas_json("covariance_moments.json", as_json({"family_size": family, "family_alpha": alpha,
                                                         "z_critical": z_crit, "per_stream": table,
                                                         "minimal_detectable_relative_variance_error": minimal}))
     ctx.artifact_text("zscores.svg", svg.line_plot(
@@ -318,15 +241,15 @@ def known_truth_covariance(ctx):
         finding("Sample means and covariances of every sensor residual z - h(truth) and of the process noise "
                 "x_{k+1} - F x_k agree with the declared covariances within a Bonferroni-corrected 99.9% Monte "
                 "Carlo bound", "numerical", {"max_abs_z": max_z, "z_critical": z_crit, "moments_tested": family},
-                {**_generator(BENCH_SEED, runs=BENCH_RUNS), "checks": [
-                    _check("analytic", "Gaussian sampling law Var(S_ij) = (R_ij^2 + R_ii R_jj)/N", max_z, z_crit)]},
+                {**generator_basis(BENCH_SEED, runs=BENCH_RUNS), "checks": [
+                    check("analytic", "Gaussian sampling law Var(S_ij) = (R_ij^2 + R_ii R_jj)/N", max_z, z_crit)]},
                 tolerance=TOL_MC),
         finding("A 10% understatement of every declared variance is detected at this sample size for the 10-20 Hz "
                 "streams but escapes detection for the 2 Hz tracker", "numerical", detect,
-                {**_generator(BENCH_SEED), "checks": [
-                    _check("analytic", "tracker variance z under a 10% understatement (not detected)",
+                {**generator_basis(BENCH_SEED), "checks": [
+                    check("analytic", "tracker variance z under a 10% understatement (not detected)",
                            detect["tracker"], z_crit, "le"),
-                    _check("analytic", "camera variance z under a 10% understatement (detected)",
+                    check("analytic", "camera variance z under a 10% understatement (detected)",
                            detect["camera"], z_crit, "ge")]},
                 tolerance=TOL_MC, counterexample={
                     "statement": "A covariance check on one bench run detects a 10% misstatement for every sensor",
@@ -335,7 +258,7 @@ def known_truth_covariance(ctx):
         finding("Minimal relative variance misstatement detectable per stream at the family bound, "
                 "z_crit * sqrt(2 / N)", "mathematical", minimal,
                 {"derivation": "delta = z_crit sqrt(2/N) from Var(S_ii) = 2 R_ii^2 / N"}, tolerance=TOL_ROUNDOFF),
-        _unreal("Real sensors' noise covariance equals the covariance declared for this bench", "sensor_performance",
+        unreal("Real sensors' noise covariance equals the covariance declared for this bench", "sensor_performance",
                 BENCH_SEED, "not established: residuals are synthetic draws from the declared covariance"),
     ]
     fields = {
@@ -367,7 +290,7 @@ def known_truth_covariance(ctx):
                                    "defined as the gyro's own integrated increment."],
         "recommended_next_task": "T062: test independent versus correlated noise in the filter.",
     }
-    return _result(fields, findings)
+    return outcome(fields, findings)
 
 
 # T062 ------------------------------------------------------------------------------
@@ -432,7 +355,7 @@ def correlated_noise(ctx):
                           "position_rmse": rmse, "whitened_covariance": C, "whitened_max_z": white_z}
     z_crit = normal_quantile(1 - 1e-3 / (2 * family))
     good, bad = results["correct"], results["ignored"]
-    ctx.artifact_json("consistency.json", _json({"seed": seed, "runs": MC_RUNS, "ticks": MC_TICKS,
+    ctx.artifactas_json("consistency.json", as_json({"seed": seed, "runs": MC_RUNS, "ticks": MC_TICKS,
                                                  "R_true": R_true, "R_ignored": R_ignored,
                                                  "whitened_z_critical": z_crit, "results": results}))
     ctx.artifact_text("anees.svg", svg.line_plot(
@@ -447,19 +370,19 @@ def correlated_noise(ctx):
                 "their 99% chi-square intervals and the whitened innovations have identity covariance",
                 "numerical", {"nees": good["nees"], "nis": good["nis"], "whitened_max_z": good["whitened_max_z"],
                               "z_critical": z_crit},
-                {**_generator(seed, runs=MC_RUNS, ticks=MC_TICKS), "checks": [
-                    _check("analytic", "fraction of ticks with ANEES in chi2(4N)/N 99% interval",
+                {**generator_basis(seed, runs=MC_RUNS, ticks=MC_TICKS), "checks": [
+                    check("analytic", "fraction of ticks with ANEES in chi2(4N)/N 99% interval",
                            good["nees"]["fraction_inside"], 0.9, "ge"),
-                    _check("analytic", "fraction of ticks with ANIS in chi2(4N)/N 99% interval",
+                    check("analytic", "fraction of ticks with ANIS in chi2(4N)/N 99% interval",
                            good["nis"]["fraction_inside"], 0.9, "ge"),
-                    _check("analytic", "whitened innovation covariance vs I (Bonferroni 99.9%)",
+                    check("analytic", "whitened innovation covariance vs I (Bonferroni 99.9%)",
                            good["whitened_max_z"], z_crit, "le")]},
                 tolerance=TOL_MC),
         finding("Ignoring the camera-tracker cross-correlation makes the filter overconfident: run-averaged NEES "
                 "exceeds the 99% upper bound at nearly every tick", "numerical",
                 {"nees": bad["nees"], "predicted_mean_nees": bad["predicted_mean_nees"]},
-                {**_generator(seed), "checks": [
-                    _check("analytic", "fraction of ticks with ANEES above the 99% upper bound",
+                {**generator_basis(seed), "checks": [
+                    check("analytic", "fraction of ticks with ANEES above the 99% upper bound",
                            bad["nees"]["fraction_above"], 0.9, "ge")]},
                 tolerance=TOL_MC, counterexample={
                     "statement": "Ignoring correlation between sensor noises is harmless",
@@ -468,10 +391,10 @@ def correlated_noise(ctx):
         finding("The ignored-correlation filter still passes the mean-NIS test (grand mean near 4); only the full "
                 "whitened-innovation covariance test exposes the missing cross-correlation", "numerical",
                 {"nis": bad["nis"], "whitened_max_z": bad["whitened_max_z"], "z_critical": z_crit},
-                {**_generator(seed), "checks": [
-                    _check("analytic", "fraction of ticks with ANIS inside the 99% interval",
+                {**generator_basis(seed), "checks": [
+                    check("analytic", "fraction of ticks with ANIS inside the 99% interval",
                            bad["nis"]["fraction_inside"], 0.9, "ge"),
-                    _check("analytic", "whitened innovation covariance deviates from I",
+                    check("analytic", "whitened innovation covariance deviates from I",
                            bad["whitened_max_z"], z_crit, "ge")]},
                 tolerance=TOL_MC, counterexample={
                     "statement": "A passing mean-NIS chi-square test shows the measurement noise model is correct",
@@ -483,10 +406,10 @@ def correlated_noise(ctx):
                  "predicted": {k: {"nees": r["predicted_mean_nees"], "nis": r["predicted_mean_nis"],
                                    "position_rmse": r["predicted_position_rmse"]} for k, r in results.items()},
                  "observed_position_rmse": {k: r["position_rmse"] for k, r in results.items()}},
-                {**_generator(seed), "checks": [
-                    _check("analytic", "mismatch_moments exact propagation", moments_gap, 4.0, "le")]},
+                {**generator_basis(seed), "checks": [
+                    check("analytic", "mismatch_moments exact propagation", moments_gap, 4.0, "le")]},
                 tolerance=TOL_MC),
-        _unreal("Real camera and tracker noises share the common-mode covariance assumed here", "sensor_performance",
+        unreal("Real camera and tracker noises share the common-mode covariance assumed here", "sensor_performance",
                 seed, "not established: the cross-correlation is a declared synthetic parameter"),
     ]
     fields = {
@@ -518,4 +441,4 @@ def correlated_noise(ctx):
                                    "NEES needs ground truth, which a deployed system does not have."],
         "recommended_next_task": "T066: show that residual consistency needs the filter covariance S, not raw R.",
     }
-    return _result(fields, findings)
+    return outcome(fields, findings)

@@ -143,6 +143,21 @@ def transfer(ctx, key: str, method: str = "rk4", steps: int | None = None, rtol:
     return ctx.memo(("gj-transfer", key, method, steps, rtol, atol), compute)
 
 
+# A fixed RK4 step of at most this arclength keeps Jacobi-column errors near
+# 1e-9 on every declared path; shared so tasks reuse one memoized integration.
+FINE_STEP = 0.015
+
+
+def fine_steps(key: str) -> int:
+    return max(100, int(math.ceil(path(key).length / FINE_STEP)))
+
+
+def start_state(key: str) -> np.ndarray:
+    """Binary64 geodesic + Jacobi initial state of a declared path (shared by every reference)."""
+    spec = path(key)
+    return jacobi.initial_state(surface(spec.surface), spec.u0, spec.heading)
+
+
 # Geometry of positions ---------------------------------------------------
 def position(key: str, u) -> np.ndarray:
     """Embedded point for embedded surfaces, chart point for the hyperbolic plane."""
