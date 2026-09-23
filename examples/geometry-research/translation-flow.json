@@ -1,0 +1,38 @@
+{
+  "schema": "ciw.translation-flow-source.v1",
+  "experiment_id": "translation-flow-reference",
+  "configuration": {
+    "surface": "declared_square_tiled",
+    "arithmetic": "exact_rational",
+    "partial_trajectory": "retain_explicit_status",
+    "state_admission": "not_performed"
+  },
+  "request": {
+    "schema": "tsde.square-tiled-flow-request.v1",
+    "gluing": {
+      "right": [
+        1,
+        0,
+        2
+      ],
+      "up": [
+        2,
+        1,
+        0
+      ]
+    },
+    "start": {
+      "tile": 0,
+      "position": [
+        "1/4",
+        "1/3"
+      ]
+    },
+    "direction": [
+      "1",
+      "1/2"
+    ],
+    "duration": "3",
+    "max_events": 128
+  }
+}

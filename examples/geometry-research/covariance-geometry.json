@@ -1,0 +1,60 @@
+{
+  "schema": "ciw.covariance-geometry-source.v1",
+  "experiment_id": "commuting-diagonal-reference",
+  "configuration": {
+    "metric": "affine_invariant",
+    "covariance_basis": "declared_matrices",
+    "physical_calibration": "not_established",
+    "state_admission": "not_performed"
+  },
+  "request": {
+    "schema": "covariance-geometry-request-v1",
+    "experiment_id": "commuting-diagonal-reference",
+    "metric": "affine_invariant",
+    "coordinates": [
+      {
+        "name": "x",
+        "unit": "1"
+      },
+      {
+        "name": "y",
+        "unit": "1"
+      }
+    ],
+    "frame": "declared-dimensionless-coordinate-basis",
+    "covariance_a": [
+      [
+        1,
+        0
+      ],
+      [
+        0,
+        4
+      ]
+    ],
+    "covariance_b": [
+      [
+        4,
+        0
+      ],
+      [
+        0,
+        16
+      ]
+    ],
+    "parameters": [
+      0,
+      0.25,
+      0.5,
+      0.75,
+      1
+    ],
+    "settings": {
+      "symmetry_tolerance": 1e-12,
+      "eigenvalue_floor": 1e-08,
+      "condition_limit": 1000000,
+      "relative_tolerance": 1e-09,
+      "absolute_tolerance": 1e-10
+    }
+  }
+}

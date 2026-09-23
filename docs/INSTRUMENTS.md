@@ -331,6 +331,20 @@ and synthetic native-byte execution commitments. It is not a native observation
 adapter, an execution backend, independent verification, physical validation,
 a new covariance representation, or a session/viewport integration.
 
+## Bounded mathematical geometry
+
+Three native providers are available through the shared session:
+`covariance-geometry` computes affine-invariant SPD distance and geodesics;
+`mesh-path` computes shortest mesh-edge paths with Euclidean lower bounds;
+`translation-flow` retains exact rational square-tiled trajectories and explicit
+vertex or event-budget stops. They use the same source, execute, inspect,
+replay and workspace persistence methods as the other instruments.
+
+The [geometry integration guide](GEOMETRY_RESEARCH.md) specifies bindings,
+exact pins, request limits, views and the installed-package gate. Numerical
+fixtures and retained-record validation do not confer physical calibration,
+state admission or a dedicated independent ICRH conformance receipt.
+
 ## Related components
 
 The [related stack catalogue](../README.md#related-stack-components) records the

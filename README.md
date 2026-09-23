@@ -18,7 +18,7 @@ The implementation is terminal-first, with a Python service and an optional
 Godot desktop. Instruments retain their numerical methods behind explicit
 contracts; the workbench connects their execution, inspection and replay.
 
-Seventeen scientific workflow kinds share one local session for sources,
+Twenty scientific workflow kinds share one local session for sources,
 declared models, compatible sensor fusion, instrument results and replay
 evidence. Each scientific provider retains ownership of its calculations.
 The workbench supplies a common catalog, explicit operation requests, retained
@@ -33,7 +33,8 @@ evaluation, typed schematics, integer diffusion, BIM quantity conditioning and
 [geodesic reference calculations](docs/GEODESIC_REFERENCES.md). The
 [registered heat proof operation](docs/PROVED_HEAT.md) adds SCR/SP1 computation
 verification; [Julia simulation and finite-field topology](docs/JULIA_SP1.md)
-are the next specified extensions.
+are the next specified extensions. The three former geometry scaffolds now
+provide [executable mathematical profiles](docs/GEOMETRY_RESEARCH.md).
 See the [assembly guide](docs/WORKBENCH_ASSEMBLY.md) for host bindings and
 the [integration coverage matrix](docs/INTEGRATION_COVERAGE.md) for exact scope.
 
@@ -91,7 +92,7 @@ explicit replay creates new execution/result identities.
 
 The built-in examples are synthetic. Successful computation, content integrity
 and matching replay digests do not establish physical validity or calibration
-traceability. The Workbench tab presents seventeen shared native workflows;
+traceability. The Workbench tab presents twenty shared native workflows;
 other external integrations expose terminal and JSON records as described below.
 
 ## Next engineering benchmark
@@ -168,12 +169,13 @@ establish physical validation or deployment readiness.
 | Snapshot acquisition (`ciw.acquired-dataset.v1`) | Native bounded PPDA/SCOUT acquisition in the shared session | Retain exact source bytes, adapter and source identities, acquisition checkpoints and durable-pool restoration; explicitly select records for downstream calibration | [Acquisition contract and examples](docs/ACQUIRED_DATASET.md) |
 | SCR numerical execution (`ciw.numerical-heat.v1`) | Native Rust integer diffusion in the same catalog and desktop | Execute a bounded declared field, retain byte commitments and host-bound engine identity, replay and independently check integer results with ICRH | [Setup and contract](docs/DECLARED_WORKLOADS.md) |
 | SCR/SP1 registered heat proof (`ciw.proved-heat.v1`) | Bounded proof operation; requires the pinned Linux host and registered guest | Native integer computation, real proof production, full-ELF verification, retained proof bytes, fresh replay and explicit retained-proof reverification | [Setup, claim and native gate](docs/PROVED_HEAT.md) |
+| Geometry providers (`ciw.covariance-geometry.v1`, `ciw.mesh-path.v1`, `ciw.translation-flow.v1`) | Bounded native SPD geometry, mesh-edge paths and square-tiled dynamics | Exact native requests/results, numerical evidence, fresh replay, explicit partial-flow states and provider-free inspection | [Profiles and shared session](docs/GEOMETRY_RESEARCH.md) |
 | Flat Torus Geodesic Reference (`ciw.flat-torus-reference.v1`) | Pinned native flat-lattice reference in the shared session | Retain winding, normalized trajectory, geometry digest, replay and independent analytic checks | [Setup and scope](docs/GEODESIC_REFERENCES.md) |
 | Curved Surface Geodesic Sensitivity (`ciw.curved-path-transfer.v1`) | Pinned native constant-curvature Jacobi transfer in the shared session | Retain transfer samples, separation, declared covariance and independent reference checks | [Setup and scope](docs/GEODESIC_REFERENCES.md) |
 
 The [integration coverage matrix](docs/INTEGRATION_COVERAGE.md) distinguishes
 executable paths, conformance coverage, and the next connections between
-existing instruments. The shared session connects the seventeen workflow kinds
+existing instruments. The shared session connects the twenty workflow kinds
 to a common source, operation and result history. New scientific paths retain
 original, replay and adversarial evidence. The matrix distinguishes independent
 ICRH profiles from CIW-only checks and pending conformance work.

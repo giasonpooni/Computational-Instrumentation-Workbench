@@ -84,22 +84,23 @@ The shared-session operation bindings already accept explicit local paths.
 Availability of those paths is distinct from numerical readiness, successful
 replay, verification scope and physical calibration.
 
-## Numerical readiness audit
+## Numerical readiness
 
-The following `main` commits were inspected on 2026-09-23. Their complete trees
-contain documentation, `portfolio-project.json` and scaffold tests, with no
-numerical package, native API, executable CLI or numerical reference fixtures.
-Each manifest declares `status: planned`; their tests check metadata and honest
-status wording only. They remain planned entries, not executable CIW adapters.
+The three former scaffolds now provide executable native packages, command-line
+interfaces, reference fixtures and Linux/Windows installed-package tests.
+CIW binds their exact commit and tree identities from
+[`geometry_research.py`](../src/ciw/geometry_research.py).
 
-| Repository and inspected commit | Missing implemented capability |
-| --- | --- |
-| [Intrinsic-Surface-Geodesics-Testbed — `000ba9f7458309c9047202381aa1c211586bb650`](https://github.com/giasonpooni/Intrinsic-Surface-Geodesics-Testbed/tree/000ba9f7458309c9047202381aa1c211586bb650) | Triangle-mesh intrinsic distances and paths; mesh-quality evidence, analytic error checks and refinement studies |
-| [Translation-Surface-Dynamics-Explorer — `6c3766d423e016e98b74ef3077c4fdfdca890b33`](https://github.com/giasonpooni/Translation-Surface-Dynamics-Explorer/tree/6c3766d423e016e98b74ef3077c4fdfdca890b33) | Polygon gluing and translation flows; trajectory invariants, event logs and tolerance evidence |
-| [Covariance-Geometry-and-Geodesic-Testbed — `0f955364e98fee0425792bfb123ff76d0b346334`](https://github.com/giasonpooni/Covariance-Geometry-and-Geodesic-Testbed/tree/0f955364e98fee0425792bfb123ff76d0b346334) | SPD-matrix geometry with an explicit metric, eigenvalue margins and invariant checks |
+| Provider | Implemented bounded profile | Remaining scope |
+| --- | --- | --- |
+| Covariance Geometry and Geodesic Testbed | Affine-invariant SPD distance and sampled geodesics, with eigenvalue and numerical-budget evidence | Additional metrics and calibrated covariance sources |
+| Intrinsic Surface Geodesics Testbed | Mesh-edge Dijkstra paths, quality records and Euclidean lower bounds | Continuous surface paths and certified discretization error |
+| Translation Surface Dynamics Explorer | Exact rational flows on connected square-tiled surfaces, with explicit partial outcomes | General polygon gluings and singularity continuation |
 
-The implemented flat-torus reference and JSPT covariance transport retain their
-separate identities; they do not make these scaffold projects executable.
+See [executable geometry providers](GEOMETRY_RESEARCH.md) for binding flags,
+request profiles, trust limits and the mandatory installed-workbench gate.
+The flat-torus reference and JSPT covariance transport retain their separate
+identities. Mathematical execution alone does not establish physical validity.
 
 ## Validation
 

@@ -149,9 +149,9 @@ diagrams. These groups organize documentation, not a universal execution order.
 | [Jacobian Sensitivity Propagation Testbed](https://github.com/giasonpooni/Jacobian-Sensitivity-Propagation-Testbed#readme) | Local maps and covariance propagation |
 | [Flat Torus Geodesic Reference](https://github.com/giasonpooni/Flat-Torus-Geodesic-Reference#readme) | Flat reference and representation invariants |
 | [Curved Surface Geodesic Sensitivity Runtime](https://github.com/giasonpooni/Curved-Surface-Geodesic-Sensitivity-Runtime#readme) | Curved path and sensitivity calculation |
-| [Covariance Geometry and Geodesic Testbed](https://github.com/giasonpooni/Covariance-Geometry-and-Geodesic-Testbed#readme) | Metadata scaffold; planned covariance geometry |
-| [Intrinsic Surface Geodesics Testbed](https://github.com/giasonpooni/Intrinsic-Surface-Geodesics-Testbed#readme) | Metadata scaffold; planned mesh geodesics |
-| [Translation Surface Dynamics Explorer](https://github.com/giasonpooni/Translation-Surface-Dynamics-Explorer#readme) | Metadata scaffold; planned trajectory dynamics |
+| [Covariance Geometry and Geodesic Testbed](https://github.com/giasonpooni/Covariance-Geometry-and-Geodesic-Testbed#readme) | Bounded affine-invariant SPD geometry; native execution and replay |
+| [Intrinsic Surface Geodesics Testbed](https://github.com/giasonpooni/Intrinsic-Surface-Geodesics-Testbed#readme) | Mesh-edge shortest-path baseline; continuous solver remains unimplemented |
+| [Translation Surface Dynamics Explorer](https://github.com/giasonpooni/Translation-Surface-Dynamics-Explorer#readme) | Exact rational square-tiled flows; explicit partial trajectories |
 
 ### Domain decisions and computational resources
 

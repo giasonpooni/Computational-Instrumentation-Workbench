@@ -15,11 +15,11 @@ from threading import RLock
 
 from .adapters.protocol import AdapterRefusal
 from .adapters.subprocess import _json
-DECLARED_KINDS = frozenset({"schematic-assessment", "numerical-heat", "proved-heat", "schematic-companions", "bim-quantity", "acquired-dataset", "residual-monitor", "measurement-chain", "geometric-circle", "identified-stability", "flat-torus-reference", "curved-path-transfer"})
+DECLARED_KINDS = frozenset({"schematic-assessment", "numerical-heat", "proved-heat", "schematic-companions", "bim-quantity", "acquired-dataset", "residual-monitor", "measurement-chain", "geometric-circle", "identified-stability", "flat-torus-reference", "curved-path-transfer", "covariance-geometry", "mesh-path", "translation-flow"})
 REPRODUCED_KINDS = DECLARED_KINDS - {"proved-heat"}
 UPSTREAM_KINDS = {"identified-design": "calibrated-observable", "schematic-companions": "schematic-assessment",
                   "acquired-calibrated-window": "acquired-dataset", "identified-stability": "identified-design"}
-INSTRUMENT_ROLES = frozenset({"ppda", "tbrt", "mcur", "stfe", "gsie", "cbsr", "fdir", "oit", "sra", "scr", "cse", "rci", "fsrt", "jspt", "gte", "plsr", "ftr", "csg"})
+INSTRUMENT_ROLES = frozenset({"ppda", "tbrt", "mcur", "stfe", "gsie", "cbsr", "fdir", "oit", "sra", "scr", "cse", "rci", "fsrt", "jspt", "gte", "plsr", "ftr", "csg", "cggt", "isgt", "tsde"})
 
 SCHEMA = "ciw.retained-workbench.v1"
 SOURCE_SCHEMA = "ciw.workbench-source.v1"
@@ -41,6 +41,9 @@ OPERATIONS = {
     "identified-stability": "ciw.identified-stability.v1",
     "flat-torus-reference": "ciw.flat-torus-reference.v1",
     "curved-path-transfer": "ciw.curved-path-transfer.v1",
+    "covariance-geometry": "ciw.covariance-geometry.v1",
+    "mesh-path": "ciw.mesh-path.v1",
+    "translation-flow": "ciw.translation-flow.v1",
 }
 WORKFLOW_OPERATION_IDS = frozenset(OPERATIONS.values())
 from .candidate_evidence import OPERATIONS as CANDIDATE_OPERATIONS
@@ -53,6 +56,9 @@ _OVERHEAD = 4096
 
 def _workflow(kind):
     # Lazy imports avoid the existing workflows' Session persistence dependency.
+    if kind in {"covariance-geometry", "mesh-path", "translation-flow"}:
+        from .geometry_research import GeometryResearchWorkflow
+        return GeometryResearchWorkflow(kind)
     if kind == "proved-heat":
         from .proved_heat import ProvedHeatWorkflow
         return ProvedHeatWorkflow()
@@ -553,7 +559,7 @@ class Workbench:
 
     def describe_operations(self):
         with self._lock:
-            return [{"operation_id": operation, "role": {"identified-design": "decision", "schematic-assessment": "schematic_assessment", "numerical-heat": "numerical_execution", "proved-heat": "proved_numerical_execution", "schematic-companions": "local_model_analysis", "bim-quantity": "construction_quantity", "acquired-dataset": "evidence_acquisition", "residual-monitor": "residual_diagnostics", "measurement-chain": "measurement_chain_testbed", "geometric-circle": "geometric_reconciliation", "identified-stability": "stability_assessment", "flat-torus-reference": "geometric_reference", "curved-path-transfer": "geometric_sensitivity"}.get(kind, "state_estimator"),
+            return [{"operation_id": operation, "role": {"identified-design": "decision", "schematic-assessment": "schematic_assessment", "numerical-heat": "numerical_execution", "proved-heat": "proved_numerical_execution", "schematic-companions": "local_model_analysis", "bim-quantity": "construction_quantity", "acquired-dataset": "evidence_acquisition", "residual-monitor": "residual_diagnostics", "measurement-chain": "measurement_chain_testbed", "geometric-circle": "geometric_reconciliation", "identified-stability": "stability_assessment", "flat-torus-reference": "geometric_reference", "curved-path-transfer": "geometric_sensitivity", "covariance-geometry": "covariance_geometry", "mesh-path": "mesh_path_baseline", "translation-flow": "translation_dynamics"}.get(kind, "state_estimator"),
                      "source_kind": kind, "available": kind in self._bindings,
                      "requires_upstream_bundle": kind in UPSTREAM_KINDS,
                      **({"requires_upstream_bundles": "explicit_ordered_source_selection"} if kind == "residual-monitor" else {})}
@@ -883,6 +889,9 @@ class Workbench:
                 raise ValueError("Unknown retained workbench bundle")
             source = self._sources[record["source_id"]]
             declaration = _json(base64.b64decode(source["bytes_b64"], validate=True))
+            if record["kind"] in {"covariance-geometry", "mesh-path", "translation-flow"}:
+                from .geometry_research_view import project as project_geometry_research
+                return project_geometry_research(record, source, declaration, self._revision)
             if record["kind"] in {"flat-torus-reference", "curved-path-transfer"}:
                 from .geodesic_reference_view import project as project_reference
                 return project_reference(record, source, declaration, self._revision)

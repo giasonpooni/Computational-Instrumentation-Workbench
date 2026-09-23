@@ -1,0 +1,68 @@
+{
+  "schema": "ciw.mesh-path-source.v1",
+  "experiment_id": "mesh-path-reference",
+  "configuration": {
+    "algorithm": "edge_dijkstra",
+    "path_scope": "edge_constrained_upper_bound",
+    "physical_calibration": "not_established",
+    "state_admission": "not_performed"
+  },
+  "request": {
+    "schema": "isgt.edge-geodesic-request.v1",
+    "mesh": {
+      "vertices": [
+        [
+          0,
+          0,
+          0
+        ],
+        [
+          1,
+          0,
+          0
+        ],
+        [
+          1,
+          1,
+          0
+        ],
+        [
+          0,
+          1,
+          0
+        ]
+      ],
+      "triangles": [
+        [
+          0,
+          1,
+          2
+        ],
+        [
+          0,
+          2,
+          3
+        ]
+      ],
+      "units": "normalized_length",
+      "coordinate_frame": "synthetic-planar-square",
+      "provenance": {
+        "source": "analytical unit square",
+        "preprocessing": []
+      },
+      "mesh_digest": "sha256:6e1850582921d31e8760171076df213ae7161d4b147461d8757cf7c711b6f345"
+    },
+    "source_vertex": 1,
+    "target_vertex": 3,
+    "settings": {
+      "algorithm": "edge_dijkstra",
+      "minimum_triangle_quality": 1e-12,
+      "distance_absolute_tolerance": 1e-10
+    },
+    "tolerance_budget": {
+      "discretization": "not_estimated",
+      "scan_noise": "not_established",
+      "calibration": "not_established"
+    }
+  }
+}

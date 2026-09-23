@@ -18,7 +18,7 @@ operating point.
 
 ## Shared operating session
 
-The [Workbench desktop tab](EXPERIMENT_VIEW.md) projects all seventeen shared workflow
+The [Workbench desktop tab](EXPERIMENT_VIEW.md) projects all twenty shared workflow
 kinds through `experiment.inspect`: retained measurements, state/covariance,
 residuals, native dependencies, evidence and verification. It follows committed
 session changes and keeps replay occurrences separate. This read-only display
@@ -74,6 +74,7 @@ keep their native owners; the table below distinguishes implemented ICRH profile
 | Flat lattice and winding → FTR | Shared `ciw.flat-torus-reference.v1`; native trajectory, geometry digest and fresh replay | ICRH `flat-torus-reference.v1`; analytic lattice/closure and retained pair checks | Area-one flat quotient; no embedded torus, physical units or observed uncertainty. |
 | Declared constant curvature → CSG | Shared `ciw.curved-path-transfer.v1`; native Jacobi transfer, separation and declared covariance propagation | ICRH `curved-path-transfer.v1`; constant-curvature oracle, covariance and replay binding checks | Curvature profile only; no embedded path, surveyed geometry or calibrated sensor claim. |
 | Declared integer field → SCR/SP1 | Shared `ciw.proved-heat.v1`; native execution, registered guest proof, full-ELF verification, exact retained proof bytes and fresh replay | Separate verifier invocation through pinned SCR/SP1; installed-wheel real-proof gate with corrupted-proof rejection; no separate ICRH proved-heat profile | Bounded integer arithmetic only. Offline consistency is not fresh cryptographic verification; Julia and F2 topology remain planned. |
+| Declared SPD matrices, meshes and square-tiled surfaces → geometry providers | Three native shared-session profiles with inspection, retained evidence and fresh replay | Provider analytical fixtures and CIW installed-wheel gate on Linux/Windows; no dedicated ICRH profiles | Mesh paths are edge constrained; flows retain explicit partial status; no physical calibration or state admission. |
 
 “Independent harness” means a separately implemented conformance checker. It
 does not mean an independent physical measurement or independent validation of
@@ -169,10 +170,10 @@ produced and consume it.
 | [SCR](https://github.com/giasonpooni/Scientific-Computation-Runtime) | Explicit execution specifications, native dispatch, scientific workloads and exchange exports | CIW now invokes native integer diffusion with exact commitments and a host-bound executable. Additional descriptors and physical-model semantics need separate contracts. |
 | [GSV](https://github.com/giasonpooni/Geospatial-State-Visualization) | Browser provider interface, geographic/temporal inspection and comparison checks | CIW declared CRS84 sources now enter its native provider; local laboratory/BIM coordinates still require explicit mappings. |
 
-No research/dependency fork is counted as an instrument merely because it is in
-the account. The covariance-geometry, intrinsic-surface and translation-surface
-scaffolds remain deferred until a GSIE, GTE or CBSR workload needs a specific
-operation. The flat-torus and curved-surface references now execute as bounded shared-session
+The covariance-geometry, mesh-edge and square-tiled translation providers now
+execute as [bounded shared-session operations](GEOMETRY_RESEARCH.md). Their
+native analytical fixtures and retained-record checks have explicit scope;
+dedicated independent ICRH profiles remain separate work. The flat-torus and curved-surface references now execute as bounded shared-session
 operations; see [geodesic references](GEODESIC_REFERENCES.md). The first retains an
 area-one flat quotient-torus trajectory, and the second a constant-curvature Jacobi
 transfer and declared starting covariance. Neither creates measured geometry or

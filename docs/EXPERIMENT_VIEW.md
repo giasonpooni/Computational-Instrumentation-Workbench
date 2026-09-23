@@ -158,3 +158,12 @@ same `experiment.inspect` response. They have `fusion_context: null`;
 mathematical trajectories and sensitivity records are not estimated physical
 states. Source bytes, native runtime identities and replay occurrences remain
 inspectable. See [the reference operation contracts](GEODESIC_REFERENCES.md).
+
+## Mathematical geometry results
+
+The three [geometry provider profiles](GEOMETRY_RESEARCH.md) use the generic
+Workbench result view. Covariance panels retain the complete declared matrices;
+mesh panels distinguish edge-path lengths from Euclidean lower bounds and list
+unreachable vertices. Translation panels label partial outcomes explicitly.
+Exact rational strings, segment and event records remain in context; floating
+values in display panels are projections for inspection only.

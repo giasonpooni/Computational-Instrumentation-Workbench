@@ -74,6 +74,19 @@ scientific sources. Source-dependent tests skip when their documented checkout
 variables are absent; report those skips. The optional PLSR environment and
 installed-package checks are described in [PLSR.md](PLSR.md).
 
+The three [geometry provider profiles](GEOMETRY_RESEARCH.md) have an installed
+CIW wheel gate on Python 3.12 with exact clean public provider pins:
+
+```sh
+python scripts/check_geometry_research.py --output-dir results/geometry-gate
+```
+
+This gate requires all native analytical, retained-contract, shared-session and
+replay tests to complete without skips, on Linux and Windows. It retains the
+three original/replay artifact pairs and a reopenable workspace. Its scope is
+mathematical reference behavior and record consistency; independent ICRH
+profiles and physical calibration remain separate work.
+
 The installed candidate gate requires Python 3.12, Git, Node.js 22.13 and `npm`
 on `PATH`, plus network access for the pinned providers and packages:
 

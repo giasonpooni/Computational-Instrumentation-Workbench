@@ -7,7 +7,7 @@ native execution records and replay evidence. Provider repositories keep their
 scientific responsibilities while their operations and artifacts join this suite.
 
 The [Workbench desktop tab](EXPERIMENT_VIEW.md) is now implemented over that
-substrate: it links seventeen retained workflows to measurement/state/covariance and
+substrate: it links twenty retained workflows to measurement/state/covariance and
 residual panels, native input dependencies, evidence inspection and live session
 invalidation. It introduces no additional estimator or parallel result store.
 
@@ -177,7 +177,7 @@ normal server shutdown also saves them. A workflow that refuses before producing
 a bundle returns an error and leaves its source retained, without publishing a
 partial state. The catalog permits at most 64 sources, 128 completed bundles and
 64 MiB of retained content. Existing protocol frame limits still apply. It
-supports seventeen executable source kinds and source-only geography; it is not an arbitrary bundle
+supports twenty executable source kinds and source-only geography; it is not an arbitrary bundle
 importer or a live acquisition service.
 
 ## What shares a workspace
@@ -271,11 +271,11 @@ frame and supplied certificate. Inspection links each result to its exact source
 and execution. Parameter uncertainty remains unknown; retained state covariance
 does not become a probabilistic stability certificate.
 
-GTE remains a specialized geometry provider. The curved-surface geodesic runtime
-and flat-torus reference can likewise expose bounded operations or artifacts
-when a workload needs them. Covariance-geometry, intrinsic-surface and
-translation-surface research scaffolds remain deferred until a GSIE, GTE or CBSR
-workload needs a specific operation.
+GTE remains a specialized geometry provider. The curved-surface and flat-torus
+references already expose bounded shared operations. The new
+[covariance, mesh-edge and translation-flow profiles](GEOMETRY_RESEARCH.md)
+likewise retain native results and replay. Their mathematical declarations do
+not create a GSIE state or a physically calibrated geometry observation.
 
 ## Delivery work items
 
