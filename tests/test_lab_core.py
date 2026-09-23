@@ -1,3 +1,4 @@
+import hashlib
 import json
 
 import pytest
@@ -218,3 +219,145 @@ def test_label_changes_name_differing_optional_modules(tmp_path):
 def test_module_implementations_returns_only_that_module():
     from ciw.lab.registry import module_implementations
     assert set(module_implementations("research_portfolio")) == {f"T{n}" for n in range(155, 169)}
+
+
+@pytest.mark.parametrize("checker", ["ciw-rust", "python:ciw", "rust ciw", "https://github.com/x/ciw",
+                                     "сiw.lab", "ciw​.lab", "ｃｉｗ.lab", "homemade.solver"])
+def test_independence_cannot_be_minted_by_spelling(checker):
+    check = dict(CHECK, producer={"implementation": "ciw.lab"}, checker={"implementation": checker})
+    with pytest.raises(EvidenceRefusal):
+        supported_label({"independent_check": check}, "numerical")
+
+
+@pytest.mark.parametrize("checker", ["scipy.integrate.solve_ivp(DOP853)", "sympy", "git rev-parse HEAD^{tree}",
+                                     "Curved-Surface-Geodesic-Sensitivity-Runtime@bbc535a", "cpython.math.fsum"])
+def test_recognised_external_origins_are_independent(checker):
+    check = dict(CHECK, producer={"implementation": "ciw.lab"}, checker={"implementation": checker})
+    assert supported_label({"independent_check": check}, "numerical") == "independently_verified"
+    same_origin = dict(check, reference_kind="cross_implementation")
+    with pytest.raises(EvidenceRefusal, match="same-origin"):
+        supported_label({"independent_check": same_origin}, "numerical")
+
+
+def test_check_passed_flags_and_comparisons_are_strict():
+    refusal = {"reference_kind": "refusal", "reference": "parser", "expected_refusal": "E_RANGE",
+               "observed_refusal": "E_OTHER", "passed": True}
+    with pytest.raises(EvidenceRefusal, match="expected and observed refusal"):
+        supported_label({"checks": [refusal]}, "numerical")
+    with pytest.raises(EvidenceRefusal, match="must be a string"):
+        supported_label({"checks": [dict(refusal, observed_refusal=None, passed=False)]}, "numerical")
+    with pytest.raises(EvidenceRefusal, match="nonnegative magnitude"):
+        supported_label({"checks": [dict(CHECK, observed=-10.0, tolerance=1e-9, comparison="le", passed=True)]}, "numerical")
+    signed = dict(CHECK, observed=-10.0, tolerance=1e-9, comparison="signed_le", passed=True)
+    assert supported_label({"checks": [signed]}, "numerical") == "numerically_verified"
+    with pytest.raises(EvidenceRefusal, match="vacuous"):
+        supported_label({"checks": [dict(CHECK, observed=3.0, tolerance=-1e308, comparison="ge", passed=True)]}, "numerical")
+
+
+def test_acquisition_needs_a_raw_digest_and_flags_are_strict():
+    with pytest.raises(EvidenceRefusal, match="SHA-256"):
+        supported_label({"acquisition": dict(ACQUISITION, raw_sha256="n/a")}, "physical")
+    failed = dict(CHECK, observed=5.0, passed=False)
+    with pytest.raises(EvidenceRefusal, match="supported or refuted"):
+        finding("refuted", "numerical", 5.0, {"checks": [failed]}, expected_not_established=True)
+    with pytest.raises(EvidenceRefusal, match="True or False"):
+        finding("flag", "numerical", 1.0, {}, expected_not_established="false")
+    record = finding("flag", "numerical", 1.0, {}, expected_not_established=True)
+    with pytest.raises(EvidenceRefusal, match="exactly true"):
+        validate_finding(dict(record, expected_not_established="false"))
+
+
+def test_primary_label_is_order_independent_and_conservative():
+    strong = finding("independent", "numerical", 1.0, {"independent_check": dict(
+        CHECK, producer={"implementation": "ciw.lab"}, checker={"implementation": "sympy"})})
+    checked = finding("checked", "numerical", 1.0, {"checks": [CHECK]})
+    honest = finding("unsupported", "provenance", None, {}, expected_not_established=True)
+    physical = finding("physical", "physical", None, {})
+    for order in ([strong, checked, honest, physical], [physical, honest, checked, strong]):
+        assert evidence.primary_label(order) == "numerically_verified"
+    assert evidence.primary_label([honest, physical]) == "not_established"
+    assert evidence.primary_label([checked, finding("refuted", "numerical", 1.0, {})]) == "not_established"
+
+
+def test_reports_refuse_duplicates_edited_statements_and_established_blocked_findings():
+    task = load_queue()["tasks"][0]
+    record = finding("rate", "numerical", 4.0, {"generator": {"name": "g"}, "checks": [CHECK]})
+    with pytest.raises(EvidenceRefusal, match="unique"):
+        report.validate_report(report.build_report(task, "completed", {}, [record, dict(record)]))
+    built = report.build_report(task, "completed", {}, [record])
+    edited = json.loads(json.dumps(built))
+    edited["physical_validation_status"]["statement"] = "Validated on the production line."
+    edited["report_id"] = report.report_identity(edited)
+    with pytest.raises(EvidenceRefusal, match="derived statement"):
+        report.validate_report(edited)
+    with pytest.raises(EvidenceRefusal, match="blocked or deferred"):
+        report.validate_report(report.build_report(task, "blocked", {}, [record]))
+
+
+def _implementation(run, requires=()):
+    from ciw.lab.registry import Implementation
+    return Implementation("T116", run, requires=requires)
+
+
+def test_invented_hardware_results_are_refused_and_real_ones_need_retained_bytes(tmp_path, monkeypatch):
+    item = {t["id"]: t for t in load_queue()["tasks"]}["T116"]
+    raw = b"timestamp,energy_mj\n0,1\n"
+    acquisition = dict(ACQUISITION, raw_sha256=hashlib.sha256(raw).hexdigest())
+
+    def invented(ctx):
+        return {"findings": [finding("GPU energy", "physical", 1.0, {"acquisition": acquisition})]}
+    built = runner.run_task(item, _implementation(invented), runner.Context(tmp_path / "a"), {})
+    assert built["state"] == "blocked" and "no hardware probe succeeded" in built["experiment"]
+
+    monkeypatch.setattr(runner, "_probe_hardware", lambda name: name == "nvidia-gpu")
+
+    def unretained(ctx):
+        assert ctx.available("hardware:nvidia-gpu")
+        return {"findings": [finding("GPU energy", "physical", 1.0, {"acquisition": acquisition})]}
+    built = runner.run_task(item, _implementation(unretained), runner.Context(tmp_path / "b"), {})
+    assert built["state"] == "blocked" and "not a retained artifact" in built["experiment"]
+
+    def measured(ctx):
+        assert ctx.available("hardware:nvidia-gpu")
+        ctx.artifact_text("raw.csv", raw.decode())
+        return {"findings": [finding("GPU energy", "physical", 1.0, {"acquisition": acquisition})]}
+    built = runner.run_task(item, _implementation(measured), runner.Context(tmp_path / "c"), {})
+    assert built["state"] == "completed" and built["physical_validation_status"]["status"] == "hardware_measured"
+
+
+def test_contract_violations_become_blocked_reports_and_the_queue_continues(tmp_path):
+    item = {t["id"]: t for t in load_queue()["tasks"]}["T116"]
+
+    def careless(ctx):
+        return {"state": "completed", "findings": [finding("unsupported", "numerical", 1.0, {})]}
+    built = runner.run_task(item, _implementation(careless), runner.Context(tmp_path), {})
+    assert built["state"] == "blocked" and "evidence contract" in built["experiment"]
+
+    def run(ctx):
+        raise AssertionError("never runs")
+    run.plan = {"findings": [finding("claimed", "numerical", 1.0, {"checks": [CHECK]})]}
+    built = runner.run_task(item, _implementation(run, ("hardware:no-such-device",)), runner.Context(tmp_path), {})
+    assert built["state"] == "blocked" and not built["findings"] and "Plan findings refused" in built["experiment"]
+
+
+def test_verification_catches_wording_units_and_artifact_edits(tmp_path):
+    task = load_queue()["tasks"][0]
+    record = finding("rate", "numerical", 4.0, {"generator": {"name": "g"}, "checks": [CHECK]}, unit="rad",
+                     tolerance={"abs": 1e-6, "rel": 0.0})
+    for name, fields, unit in (("old", {"numerical_result": "rate 4.000 rad"}, "rad"),
+                               ("digits", {"numerical_result": "rate 4.001 rad"}, "rad"),
+                               ("words", {"numerical_result": "rate 4.000 rad, validated on hardware"}, "rad"),
+                               ("units", {"numerical_result": "rate 4.000 rad"}, "mm")):
+        directory = tmp_path / name
+        (directory / "reports").mkdir(parents=True)
+        ctx = runner.Context(directory)
+        ctx.begin("T001")
+        ctx.artifact_text("table.csv", "a,b\n")
+        built = report.build_report(task, "completed", dict(fields, generated_artifacts=ctx.artifacts),
+                                    [dict(record, unit=unit)])
+        (directory / "reports" / "T001.json").write_text(runner.dumps(built))
+    assert runner.compare(tmp_path / "old", tmp_path / "digits")["passed"]
+    assert any("wording differs" in p for p in runner.compare(tmp_path / "old", tmp_path / "words")["problems"])
+    assert any("unit or domain" in p for p in runner.compare(tmp_path / "old", tmp_path / "units")["problems"])
+    (tmp_path / "old" / "artifacts" / "T001" / "table.csv").write_text("edited\n")
+    assert any("recorded digest" in p for p in runner.compare(tmp_path / "old", tmp_path / "digits")["problems"])

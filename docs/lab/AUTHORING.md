@@ -34,24 +34,69 @@ Check objects: `{"reference_kind": "analytic" | "high_precision" | "invariant" |
 "self_convergence" | "exact_arithmetic" | "refusal" | "cross_implementation",
 "reference": "<what was
 compared>", "observed": <float>, "tolerance": <float>, "comparison": "abs_le" |
-"le" | "ge", "passed": <bool>}`. The validator recomputes `passed` from
-`observed` and `tolerance`; a mismatch is refused. Refusal checks use
-`expected_refusal`/`observed_refusal` strings instead of numbers.
+"le" | "ge" | "signed_le" | "signed_ge", "passed": <bool>}`. The validator
+recomputes `passed` from `observed` and `tolerance` with
+`ciw.lab.evidence.holds`, which section helpers should call too; a mismatch is
+refused. Choose the comparison by what `observed` is:
+
+| Observed quantity | Comparison |
+| --- | --- |
+| An error or residual whose sign is irrelevant | `abs_le` (default) |
+| A nonnegative magnitude: error norm, count, ratio, bound | `le` or `ge`; a negative observed value with `le` is refused |
+| A signed quantity with a one-sided bound: a difference such as "refined minus coarse error", "KL increase", "value minus bound" | `signed_le` or `signed_ge` |
+
+`le` refuses a negative observed value because it would pass any upper bound
+without testing anything. Tolerances must be finite with magnitude at most
+`1e100`, and nonnegative for `abs_le`/`le`, so a threshold cannot make a
+check vacuous. Refusal checks use `expected_refusal` and `observed_refusal`
+strings instead of numbers (`observed_refusal` is `"none"` when nothing was
+refused), and `passed` must equal `observed_refusal == expected_refusal`.
 
 `cross_implementation` records agreement between two implementations of the
 same origin (a ciw Rust kernel against ciw Python): numerically verified, never
 independent.
 
 `independent_check` = a check object plus `producer` and `checker`, each
-`{"implementation": "...", "revision": "..."}`. `ciw.*` code checking `ciw.*`
-code is *not* independent (same origin) and is refused; declare it as a
-`self_convergence` or `analytic` check instead.
+`{"implementation": "...", "revision": "..."}`. The origin of an implementation
+is its leading ASCII name token after NFKC normalization, casefolded
+(`scipy.integrate.solve_ivp` → `scipy`). The producer must be `ciw` or a
+recognised external family, and the checker a recognised family different from
+the producer: `scipy`, `sympy`, `mpmath`, `numpy`, `cpython`, `zlib`, `git` and
+the pinned providers (`curved-surface-geodesic-sensitivity-runtime`,
+`flat-torus-geodesic-reference`, `parameterized-lyapunov-stability-runtime`,
+`scientific-computation-runtime`). Unknown families, non-ASCII look-alikes and
+names that embed `ciw` (`ciw-rust`, `python:ciw`) are refused, so independence
+cannot be minted by spelling. `ciw.*` code checking `ciw.*` code is *not*
+independent and is refused; declare it as a `cross_implementation`,
+`self_convergence` or `analytic` check instead. An independent check cannot use
+the `cross_implementation` kind.
 
 Domains: `mathematical`, `numerical`, `computational_pipeline`, `provenance`
 (computational); `physical`, `calibration`, `sensor_performance` (need acquired
 hardware — always `not_established` here); `machine_safety`,
 `industrial_readiness`, `customer_demand`, `actuator_authority`,
 `production_acceptance` (always `not_established`).
+
+Report-level rules, enforced by `validate_report` and the runner:
+
+- The primary label is the *weakest* established computational label among the
+  findings, in the order `synthetic` < `analytic` < `provider_backed` <
+  `numerically_verified` < `independently_verified`. It is `not_established`
+  when no computational finding is established or any computational finding is
+  refuted. It never depends on finding order, and strong findings never lift a
+  weak one.
+- Claims within a report are unique, and the physical-validation statement is
+  derived from the findings; an edited statement is refused.
+- Plan findings (the `plan` attached to a task whose requirements are missing)
+  must all be `not_established`; blocked and deferred reports carry nothing
+  else.
+- A physical-domain finding with an acquisition record needs a hardware probe
+  that succeeded in this run (`ctx.available("hardware:...")`) and a
+  `raw_sha256` equal to the digest of an artifact the task retained. Without
+  both, the task becomes blocked; an invented measurement cannot enter a
+  report.
+- A contract violation (`EvidenceRefusal`) inside a task becomes a blocked
+  report that names the refusal; the rest of the queue continues.
 
 Rules that are never relaxed:
 
@@ -67,7 +112,10 @@ Rules that are never relaxed:
    regression gate matches findings across runs by claim. Put such values in
    artifacts or in the finding's value when they are stable.
 4. A finding that honestly records an unestablished computational claim in a
-   completed task sets `expected_not_established=True`.
+   completed task sets `expected_not_established=True` (exactly the boolean
+   `True`) with no checks and no independent check. A computational finding
+   whose checks fail is a refutation: it makes the report's primary label
+   `not_established` and cannot be flagged as expected.
 5. Give every numerical finding an `uncertainty`: a number with a stated
    meaning or an object such as `{"kind": "truncation_bound" |
    "monte_carlo_95ci" | "roundoff" | "reference_error", "value": ...,

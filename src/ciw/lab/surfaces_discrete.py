@@ -27,7 +27,7 @@ from pathlib import Path
 import numpy as np
 
 from . import svg
-from .evidence import finding
+from .evidence import finding, holds as compare
 from .registry import task
 from .surfaces import HyperbolicPlane, Plane, Reparametrized, Saddle, Sphere
 from .surfaces_discrete_ad import (DualMath, DualSurface, formulas, partial, symbolic_exact_curvature,
@@ -51,7 +51,7 @@ AD_POINTS = 12
 
 def _check(reference, observed, tolerance, comparison="abs_le", kind="analytic"):
     observed, tolerance = float(observed), float(tolerance)
-    holds = {"abs_le": abs(observed) <= tolerance, "le": observed <= tolerance, "ge": observed >= tolerance}[comparison]
+    holds = compare(observed, tolerance, comparison)
     return {"reference_kind": kind, "reference": reference, "observed": observed, "tolerance": tolerance,
             "comparison": comparison, "passed": holds}
 

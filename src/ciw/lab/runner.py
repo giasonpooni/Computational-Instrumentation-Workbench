@@ -15,6 +15,7 @@ import math
 import os
 from pathlib import Path
 import platform
+import re
 import shutil
 import subprocess
 import time
@@ -24,7 +25,7 @@ import xml.etree.ElementTree as ET
 import numpy as np
 
 from .. import __version__
-from .evidence import validate_finding
+from .evidence import PHYSICAL_DOMAINS, EvidenceRefusal, validate_finding
 from .registry import load_implementations, load_queue
 from .report import FIELDS, FIELD_NAMES, build_report, render_markdown, validate_report
 
@@ -96,9 +97,10 @@ class Context:
         self._memo: dict = {}
         self.task_id: str | None = None
         self.artifacts: list = []
+        self.hardware: set = set()
 
     def begin(self, task_id: str) -> None:
-        self.task_id, self.artifacts = task_id, []
+        self.task_id, self.artifacts, self.hardware = task_id, [], set()
 
     def memo(self, key, compute):
         """Share one deterministic computation between tasks in a run."""
@@ -115,7 +117,10 @@ class Context:
         if kind == "tool":
             return shutil.which(name) is not None
         if kind == "hardware":
-            return _probe_hardware(name)
+            present = _probe_hardware(name)
+            if present:
+                self.hardware.add(name)  # a physical finding needs a probe that succeeded in its task
+            return present
         raise ValueError(f"Unsupported lab requirement: {requirement}")
 
     def _write(self, name: str, data: bytes) -> str:
@@ -215,6 +220,24 @@ def _default_fields(task, reason):
     }
 
 
+def _gate_physical(findings, ctx):
+    """Refuse physical labels unless hardware answered a probe and the raw bytes were retained."""
+    retained = {artifact["sha256"] for artifact in ctx.artifacts}
+    for record in findings:
+        if record["domain"] in PHYSICAL_DOMAINS and record["evidence_status"] != "not_established":
+            digest = record["basis"]["acquisition"]["raw_sha256"]
+            if not ctx.hardware:
+                raise EvidenceRefusal(f"Hardware evidence refused for '{record['claim']}': no hardware probe succeeded in this task")
+            if digest not in retained:
+                raise EvidenceRefusal(f"Hardware evidence refused for '{record['claim']}': raw bytes {digest[:12]} are not a retained artifact")
+
+
+def _blocked(task, reason, failure):
+    fields = _default_fields(task, reason)
+    fields["failure_modes_checked"] = [failure]
+    return "blocked", fields, []
+
+
 def run_task(task, implementation, ctx: Context, junit: dict, import_error: str | None = None) -> dict:
     ctx.begin(task["id"])
     findings, state = [], "deferred"
@@ -232,8 +255,13 @@ def run_task(task, implementation, ctx: Context, junit: dict, import_error: str 
             if plan:
                 fields.update({k: v for k, v in plan.items() if k in FIELD_NAMES})
                 fields["experiment"] = reason + " Planned: " + str(plan.get("experiment", ""))
-                # A blocked task may still record the claims it cannot establish.
-                findings = [validate_finding(record) for record in plan.get("findings", [])]
+                # A blocked task may record the claims it cannot establish, and nothing else.
+                try:
+                    findings = [validate_finding(record) for record in plan.get("findings", [])]
+                    if any(record["evidence_status"] != "not_established" for record in findings):
+                        raise EvidenceRefusal("Planned findings of a blocked task must be not_established")
+                except EvidenceRefusal as exc:
+                    state, fields, findings = _blocked(task, reason + f" Plan findings refused: {exc}", str(exc))
         else:
             try:
                 outcome = implementation.run(ctx)
@@ -241,11 +269,13 @@ def run_task(task, implementation, ctx: Context, junit: dict, import_error: str 
                 fields = _default_fields(task, "")
                 fields.update(outcome.get("fields", {}))
                 findings = outcome.get("findings", [])
+                for record in findings:
+                    validate_finding(record)
+                _gate_physical(findings, ctx)
             except Exception as exc:  # retained as a blocked report, never hidden
                 reason = f"Blocked by unexpected {type(exc).__name__}: {exc}"
-                fields = _default_fields(task, reason)
-                fields["failure_modes_checked"] = [traceback.format_exception_only(type(exc), exc)[-1].strip()]
-                state, findings = "blocked", []
+                state, fields, findings = _blocked(task, reason,
+                                                   traceback.format_exception_only(type(exc), exc)[-1].strip())
     changed = list(implementation.changed_files) if implementation else []
     fields.setdefault("changed_files", changed)
     if not fields.get("changed_files"):
@@ -257,10 +287,17 @@ def run_task(task, implementation, ctx: Context, junit: dict, import_error: str 
     fields["tests_passed"], fields["tests_skipped"] = passed, skipped
     if failed and state == "completed":
         state = "partial"
-    report = build_report(task, state, {k: v for k, v in fields.items() if k in FIELD_NAMES
-                                        and k not in ("evidence_status", "physical_validation_status")},
-                          findings, extra={"tests_failed": failed} if failed else None)
-    return validate_report(report)
+    try:
+        report = build_report(task, state, {k: v for k, v in fields.items() if k in FIELD_NAMES
+                                            and k not in ("evidence_status", "physical_validation_status")},
+                              findings, extra={"tests_failed": failed} if failed else None)
+        return validate_report(report)
+    except (EvidenceRefusal, ValueError, TypeError) as exc:
+        # A report the contract refuses is retained as blocked so the queue continues.
+        state, fields, _ = _blocked(task, f"Blocked: report refused by the evidence contract: {exc}", str(exc))
+        fields.update(changed_files=changed, generated_artifacts=deepcopy(ctx.artifacts),
+                      provider_runtime_identity=builtin_identity(changed), tests_passed=[], tests_skipped=[])
+        return validate_report(build_report(task, state, {k: v for k, v in fields.items() if k in FIELD_NAMES}, []))
 
 
 def run_queue(output_dir, task_ids=None, providers=None, junit_path=None, budget_seconds=None) -> dict:
@@ -380,11 +417,36 @@ def _optional_difference(old, new) -> str:
     return ", ".join([f"-{m}" for m in sorted(before - after)] + [f"+{m}" for m in sorted(after - before)])
 
 
+PROSE_FIELDS = ("hypothesis", "mathematical_model", "input_data", "observation_model", "expected_invariant",
+                "experiment", "numerical_result", "uncertainty", "failure_modes_checked",
+                "unresolved_assumptions", "recommended_next_task", "physical_validation_status")
+NUMBER = re.compile(r"[-+]?(?:\d+\.?\d*|\.\d+)(?:[eE][-+]?\d+)?")
+
+
+def _skeleton(value) -> str:
+    """Report prose with numbers masked: wording must match, last digits may differ by platform."""
+    text = value if isinstance(value, str) else json.dumps(value, sort_keys=True, ensure_ascii=False)
+    return NUMBER.sub("#", text)
+
+
+def artifact_problems(directory) -> list:
+    """Retained artifacts must still hash to the digests their reports record."""
+    problems = []
+    for report in load_reports(directory):
+        for artifact in report["generated_artifacts"]:
+            path = Path(directory) / artifact["path"]
+            if not path.is_file():
+                problems.append(f"{report['task_id']}: artifact {artifact['path']} missing")
+            elif hashlib.sha256(path.read_bytes()).hexdigest() != artifact["sha256"]:
+                problems.append(f"{report['task_id']}: artifact {artifact['path']} differs from its recorded digest")
+    return problems
+
+
 def compare(retained_dir, fresh_dir) -> dict:
-    """Regression gate: same states, same labels, values within declared tolerance."""
+    """Regression gate: same states, labels, claims, units and wording; values within tolerance."""
     retained = {r["task_id"]: r for r in load_reports(retained_dir)}
     fresh = {r["task_id"]: r for r in load_reports(fresh_dir)}
-    problems = []
+    problems = artifact_problems(retained_dir) + artifact_problems(fresh_dir)
     if retained:
         # New evidence must be reviewed and retained, not slip in through a gate run.
         problems += [f"{task_id}: not retained" for task_id in sorted(set(fresh) - set(retained))]
@@ -395,15 +457,19 @@ def compare(retained_dir, fresh_dir) -> dict:
             continue
         if old["state"] != new["state"]:
             problems.append(f"{task_id}: state {old['state']} -> {new['state']}")
-        old_findings = {f["claim"]: f for f in old["findings"]}
-        new_findings = {f["claim"]: f for f in new["findings"]}
-        if old_findings.keys() != new_findings.keys():
-            changed = sorted(set(old_findings) ^ set(new_findings))
+        for name in PROSE_FIELDS:
+            if _skeleton(old[name]) != _skeleton(new[name]):
+                problems.append(f"{task_id}: '{name}' wording differs")
+        old_claims = [f["claim"] for f in old["findings"]]
+        new_claims = [f["claim"] for f in new["findings"]]
+        if old_claims != new_claims:
+            changed = sorted(set(old_claims) ^ set(new_claims)) or ["order"]
             problems.append(f"{task_id}: finding claims differ: {changed[:4]}")
         if len(old["findings"]) != len(new["findings"]):
             problems.append(f"{task_id}: finding count {len(old['findings'])} -> {len(new['findings'])}")
-        for claim, record in old_findings.items():
-            other = new_findings.get(claim)
+        new_findings = {f["claim"]: f for f in new["findings"]}
+        for record in old["findings"]:
+            claim, other = record["claim"], new_findings.get(record["claim"])
             if other is None:
                 continue
             validate_finding(other)
@@ -411,6 +477,8 @@ def compare(retained_dir, fresh_dir) -> dict:
                 note = _optional_difference(old, new)
                 problems.append(f"{task_id}: '{claim}' label {record['evidence_status']} -> {other['evidence_status']}"
                                 + (f" (optional modules differ: {note})" if note else ""))
+            if record.get("unit") != other.get("unit") or record["domain"] != other["domain"]:
+                problems.append(f"{task_id}: '{claim}' unit or domain differs")
             tolerance = record.get("regression_tolerance", {"abs": 0.0, "rel": 1e-9})
             if not _close(record["value"], other["value"], tolerance):
                 problems.append(f"{task_id}: '{claim}' value outside regression tolerance")

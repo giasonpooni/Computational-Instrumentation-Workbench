@@ -29,12 +29,12 @@ def test_lab_verify_exits_3_on_drift(tmp_path, capsys):
     fresh = tmp_path / "fresh"
     (fresh / "reports").mkdir(parents=True)
     report = json.loads((out / "reports" / "T156.json").read_text())
-    report["state"] = "blocked"
+    report["state"] = "partial" if report["state"] != "partial" else "completed"
     from ciw.lab.report import report_identity
     report["report_id"] = report_identity(report)
     (fresh / "reports" / "T156.json").write_text(json.dumps(report))
     assert cli.main(["lab", "verify", "--retained", str(out), "--fresh", str(fresh)]) == 3
-    assert "-> blocked" in capsys.readouterr().out
+    assert f"state {json.loads((out / 'reports' / 'T156.json').read_text())['state']} -> " in capsys.readouterr().out
 
 
 def test_lab_cli_refuses_ambiguous_selection_and_bad_bindings(tmp_path, capsys):

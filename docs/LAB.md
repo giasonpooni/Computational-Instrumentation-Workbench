@@ -39,6 +39,13 @@ agreement; independent verification by another party is outside what the
 queue can establish. Machine safety, industrial readiness, customer demand,
 actuator authority and production acceptance are always `not_established`.
 
+A report's primary label is the weakest established computational label among
+its findings (`synthetic` < `analytic` < `provider_backed` <
+`numerically_verified` < `independently_verified`), and `not_established` when
+any computational finding is refuted or none is established. A report with an
+analytic derivation and two independent checks is therefore `analytic`: strong
+findings never lift a weaker one. The per-label counts sit next to it.
+
 | A computational experiment may establish | It cannot establish alone |
 | --- | --- |
 | Analytic agreement | Physical truth |

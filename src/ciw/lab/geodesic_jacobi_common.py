@@ -22,6 +22,7 @@ import numpy as np
 from .. import __version__
 from . import integrators, jacobi
 from .surfaces import ChartMap, Cylinder, Plane, Reparametrized, catalogue
+from .evidence import holds
 
 SEED = 20260923
 
@@ -194,14 +195,7 @@ def exact_position(key: str, s_values) -> np.ndarray | None:
 # Checks whose pass flag is derived from their numbers ----------------------
 def check(kind: str, reference: str, observed: float, tolerance: float, comparison: str = "abs_le") -> dict:
     observed, tolerance = float(observed), float(tolerance)
-    if comparison == "abs_le":
-        passed = abs(observed) <= tolerance
-    elif comparison == "le":
-        passed = observed <= tolerance
-    elif comparison == "ge":
-        passed = observed >= tolerance
-    else:
-        raise ValueError(f"Unsupported comparison: {comparison}")
+    passed = holds(observed, tolerance, comparison)
     return {"reference_kind": kind, "reference": reference, "observed": observed, "tolerance": tolerance,
             "comparison": comparison, "passed": bool(passed)}
 

@@ -26,11 +26,27 @@ declared generator, `D` a derivation and `A` a hardware acquisition record:
    `P → provider_backed`, `G → synthetic`, `D → analytic`, else
    `not_established`.
 5. Origin rule: `I` requires `origin(producer) ≠ origin(checker)`, where
-   `origin` is the leading name of the implementation identifier. Code in one
-   family never verifies itself independently.
+   `origin` is the leading ASCII name token of the NFKC-normalized,
+   casefolded implementation identifier, both origins belong to a closed
+   allowlist (`ciw` plus the recognised external families), and the checker is
+   not `ciw`. Code in one family never verifies itself independently, and a
+   `cross_implementation` check is never `I`.
 6. Non-upgrade: a stated label must equal `L(basis, domain)`
    (`validate_finding`); a derived physical status is `hardware_measured` only
    if every input is (`physical_status`).
+7. Comparisons: a check passes by `holds(observed, tolerance, comparison)`
+   with `abs_le: |x| ≤ t`, `le: x ≤ t` (x ≥ 0 required),
+   `ge: x ≥ t`, `signed_le: x ≤ t`, `signed_ge: x ≥ t`, finite `x`,
+   `|t| ≤ 10¹⁰⁰`. The stated `passed` must equal the computed one.
+8. Primary label of a report: with `E` the established computational labels
+   and `R` the refuted computational findings (not `not_established` by
+   declaration), `primary = not_established` if `R ≠ ∅` or `E = ∅`, else
+   `min(E)` in the order `synthetic < analytic < provider_backed <
+   numerically_verified < independently_verified`. The function is
+   order-independent and monotone: adding a weaker finding never raises it.
+9. Physical gate: an acquisition record enters a report only when a hardware
+   probe succeeded in the run and its `raw_sha256` equals the digest of a
+   retained artifact of the same task.
 
 T155 checks rules 1–4 exhaustively over a finite basis grammar. T100 checks
 that synthetic, provider-backed and physical results remain visibly distinct.

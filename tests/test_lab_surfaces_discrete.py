@@ -141,7 +141,7 @@ def test_t034_report(tmp_path):
     pytest.importorskip("sympy")
     report = _run("T034", tmp_path)
     assert report["state"] == "completed"
-    assert report["evidence_status"]["primary"] == "independently_verified"
+    assert report["evidence_status"]["primary"] == "numerically_verified"
     assert report["evidence_status"]["counts"]["independently_verified"] == 3
     assert report["evidence_status"]["counts"]["numerically_verified"] == 4
     exact = next(f for f in report["findings"] if f["claim"].startswith("sympy simplifies"))

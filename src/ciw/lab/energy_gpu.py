@@ -30,7 +30,7 @@ import numpy as np
 from . import energy_gpu_kernels as kernels
 from . import energy_gpu_telemetry as telemetry
 from . import svg
-from .evidence import AUTHORITY_DOMAINS, PHYSICAL_DOMAINS, EvidenceRefusal, finding, supported_label
+from .evidence import AUTHORITY_DOMAINS, PHYSICAL_DOMAINS, EvidenceRefusal, finding, supported_label, holds as compare
 from .integrators import integrate_adaptive, integrate_fixed
 from .registry import task
 from .surfaces import Sphere
@@ -49,7 +49,7 @@ FIXTURE_NOTE = ("examples/energy-accuracy/{baseline,reset,missing,under-target}.
 
 def _check(reference, observed, tolerance, comparison="abs_le", kind="analytic"):
     observed, tolerance = float(observed), float(tolerance)
-    holds = {"abs_le": abs(observed) <= tolerance, "le": observed <= tolerance, "ge": observed >= tolerance}[comparison]
+    holds = compare(observed, tolerance, comparison)
     return {"reference_kind": kind, "reference": reference, "observed": observed, "tolerance": tolerance,
             "comparison": comparison, "passed": holds}
 
@@ -966,7 +966,7 @@ def bounded_free_energy(ctx):
                  "status": fit["status"], "condition_number": runs["declared"]["condition"]},
                 {"generator": generator,
                  "checks": [_check("final KL", kl[-1], 1e-12, "le"),
-                            _check("largest KL increase between iterates", increase, 1e-15, "le", kind="invariant"),
+                            _check("largest KL increase between iterates", increase, 1e-15, "signed_le", kind="invariant"),
                             _check("iterations within the declared bound", fit["iterations"], 512, "le",
                                    kind="exact_arithmetic")]},
                 tolerance={"abs": 1e-12, "rel": 0.05}),

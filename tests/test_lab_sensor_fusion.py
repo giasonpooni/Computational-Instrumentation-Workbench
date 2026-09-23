@@ -42,7 +42,8 @@ def test_section_reports_labels_and_states(reports):
     assert set(IMPLEMENTATIONS) == set(TASK_IDS)
     for task_id, report in reports.items():
         assert report["state"] == "completed", (task_id, report["unresolved_assumptions"])
-        assert report["evidence_status"]["primary"] == "numerically_verified", task_id
+        # T061 derives its steady-state gain analytically; the primary label is the weakest established one.
+        assert report["evidence_status"]["primary"] == ("analytic" if task_id == "T061" else "numerically_verified"), task_id
         assert report["physical_validation_status"]["status"] == "not_established"
         unreal = [f for f in report["findings"] if f["domain"] in PHYSICAL_DOMAINS | AUTHORITY_DOMAINS]
         assert unreal and all(f["evidence_status"] == "not_established" for f in unreal), task_id

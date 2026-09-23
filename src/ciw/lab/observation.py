@@ -28,7 +28,7 @@ from . import observation_chord as chord
 from . import observation_modes as om
 from . import observation_signals as sig
 from . import svg
-from .evidence import finding
+from .evidence import finding, holds as compare
 from .registry import task
 
 MODULE = "src/ciw/lab/observation.py"
@@ -60,8 +60,7 @@ def _fields(**values) -> dict:
 
 def _check(reference, observed, tolerance, comparison="abs_le", kind="analytic") -> dict:
     observed, tolerance = float(observed), float(tolerance)
-    holds = {"abs_le": abs(observed) <= tolerance, "le": observed <= tolerance,
-             "ge": observed >= tolerance}[comparison]
+    holds = compare(observed, tolerance, comparison)
     return {"reference_kind": kind, "reference": reference, "observed": observed, "tolerance": tolerance,
             "comparison": comparison, "passed": holds}
 
@@ -903,7 +902,7 @@ def lens_distortion_perturbations(ctx):
                               "r_true": fold["r_true"], "r_other": fold["r_other"],
                               "round_trip_error_px": fold["round_trip_error_px"]},
                 {"checks": [_check("fold radius minus image-corner radius (negative: fold inside the image)",
-                                   fold["fold_radius"] - fold["image_corner_radius"], 0.0, "le", kind="invariant"),
+                                   fold["fold_radius"] - fold["image_corner_radius"], 0.0, "signed_le", kind="invariant"),
                             _check("|r_d(r_other) - r_d(r_true)| (two radii, one distorted radius)",
                                    fold["distorted_gap"], 1e-12),
                             _check("fixed-point undistortion round-trip error (px)", fold["round_trip_error_px"], 1.0,
@@ -1241,7 +1240,7 @@ def imu_drift_and_noise(ctx):
                  "stationary_transverse_rad": stationary["max_transverse_rad"]},
                 {"checks": [_check("max transverse error minus the bound (rad)",
                                    rotating["max_transverse_rad"] - study["transverse_bound_rad"],
-                                   1e-3 * study["transverse_bound_rad"], "le"),
+                                   1e-3 * study["transverse_bound_rad"], "signed_le"),
                             _check("stationary transverse error over the rotating bound",
                                    stationary["max_transverse_rad"] / study["transverse_bound_rad"], 10.0, "ge")]},
                 tolerance={"abs": 1e-12, "rel": 1e-6},
@@ -1801,14 +1800,14 @@ def raw_filtered_smoothed(ctx):
                  "interior_min_trace_reduction": study["interior_min_trace"]},
                 {"generator": _generator("constant-velocity track", study["seed"], **TRACK),
                  "checks": [_check("negated min eigenvalue of P_filt - P_smooth over all steps",
-                                   -study["min_eigenvalue"], 1e-12, "le", "invariant"),
+                                   -study["min_eigenvalue"], 1e-12, "signed_le", "invariant"),
                             _check("min trace(P_filt - P_smooth) before the final step (strict reduction)",
                                    study["interior_min_trace"], 1e-6, "ge", "invariant")]},
                 tolerance={"abs": 1e-12, "rel": 1e-6}),
         finding("Ensemble position RMSE orders smoothed <= filtered <= raw", "numerical", rmse,
                 {"generator": _generator("constant-velocity track", study["seed"], **TRACK),
-                 "checks": [_check("filtered minus raw RMSE", rmse["filtered"] - rmse["raw"], 0.0, "le", "invariant"),
-                            _check("smoothed minus filtered RMSE", rmse["smoothed"] - rmse["filtered"], 0.0, "le",
+                 "checks": [_check("filtered minus raw RMSE", rmse["filtered"] - rmse["raw"], 0.0, "signed_le", "invariant"),
+                            _check("smoothed minus filtered RMSE", rmse["smoothed"] - rmse["filtered"], 0.0, "signed_le",
                                    "invariant")]},
                 tolerance={"abs": 1e-12, "rel": 1e-6}),
         finding("Filtered and smoothed NEES are chi-square consistent across the ensemble", "numerical",

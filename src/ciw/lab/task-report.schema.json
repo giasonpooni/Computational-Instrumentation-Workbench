@@ -136,7 +136,7 @@
     "reference": {"type": "string", "minLength": 1},
     "observed": true,
     "tolerance": {"type": "number"},
-    "comparison": {"enum": ["abs_le", "le", "ge"]},
+    "comparison": {"enum": ["abs_le", "le", "ge", "signed_le", "signed_ge"]},
     "passed": {"type": "boolean"}
    }
   }

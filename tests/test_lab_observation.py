@@ -91,7 +91,7 @@ def _fields(record):
 def test_t046_chord_expansion(tmp_path):
     report = _run("T046", tmp_path)
     sympy_present = importlib.util.find_spec("sympy") is not None
-    _completed(report, "independently_verified" if sympy_present else "analytic")
+    _completed(report, "numerically_verified" if sympy_present else "analytic")
     torus = _find(report, "A torus geodesic")
     assert torus["evidence_status"] == "numerically_verified" and torus["counterexample"]
     assert torus["value"]["fitted_s4"] == pytest.approx(torus["value"]["predicted_s4"], rel=1e-4)
@@ -121,7 +121,7 @@ def test_chord_derivation_degrades_without_sympy(tmp_path):
 
 def test_t047_cylinder_coefficient(tmp_path):
     report = _run("T047", tmp_path)
-    _completed(report, "independently_verified" if importlib.util.find_spec("sympy") else "analytic")
+    _completed(report, "numerically_verified" if importlib.util.find_spec("sympy") else "analytic")
     fitted = _find(report, "Small-s fits")["value"]["fitted_R1"]
     predicted = [math.cos(math.radians(a)) ** 4 / 24 for a in observation.ANGLES_DEG]
     assert fitted == pytest.approx(predicted, abs=1e-10)
@@ -134,7 +134,7 @@ def test_t047_cylinder_coefficient(tmp_path):
 
 def test_t048_synthetic_camera(tmp_path):
     report = _run("T048", tmp_path)
-    _completed(report)
+    _completed(report, "synthetic")
     assert _find(report, "Noise-free triangulation")["value"]["max_chord_error_m"] < 1e-12
     bias = _find(report, "Using the camera chord")
     assert bias["value"] == pytest.approx(0.12 - 0.2 * math.sin(0.6), abs=1e-12)

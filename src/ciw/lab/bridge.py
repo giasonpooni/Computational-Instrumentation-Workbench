@@ -26,6 +26,7 @@ from __future__ import annotations
 import base64
 import json
 from pathlib import Path
+import re
 import tempfile
 
 from ..session import Session, read_json
@@ -50,11 +51,24 @@ def _providers(value, found=None):
     return found
 
 
+def _declares_synthetic(text: str) -> bool:
+    """A clause that begins with 'synthetic' (e.g. 'synthetic_fixture', 'synthetic evidence').
+
+    Negated or embedded mentions such as 'non-synthetic field measurement' or
+    'not synthetic: operator log' do not declare synthetic inputs.
+    """
+    for clause in re.split(r"[;,]", text.lower()):
+        clause = clause.strip()
+        if clause.startswith("synthetic") or clause == "retained_synthetic_values":
+            return True
+    return False
+
+
 def _synthetic(value) -> bool:
     """True when a record declares synthetic inputs under a provenance-bearing key."""
     if isinstance(value, dict):
         for key, child in value.items():
-            if key in SYNTHETIC_KEYS and isinstance(child, str) and "synthetic" in child.lower():
+            if key in SYNTHETIC_KEYS and isinstance(child, str) and _declares_synthetic(child):
                 return True
             if _synthetic(child):
                 return True

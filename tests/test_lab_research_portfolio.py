@@ -118,7 +118,8 @@ def test_clean_room_marker_is_recognized(tmp_path, monkeypatch):
     assert _run("T164", tmp_path)["state"] == "partial"
     monkeypatch.setenv("CIW_LAB_CLEAN_ROOM", json.dumps({"wheel_sha256": "a" * 64, "python": "3.12"}))
     report = _run("T164", tmp_path)
-    assert report["state"] == "completed" and report["findings"][0]["evidence_status"] == "numerically_verified"
+    # An asserted marker without a matching wheel and isolated install is not evidence.
+    assert report["state"] == "partial" and report["findings"][0]["evidence_status"] == "not_established"
 
 
 def test_regression_coverage_is_checked(retained, monkeypatch):

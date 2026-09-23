@@ -1555,9 +1555,9 @@ def conjugate_focal_points(ctx):
             check for k, v in negative.items() for check in (
                 gj.check("exact_arithmetic", f"zeros found on {k}", len(v["conjugate"]) + len(v["focal"]), 0.0),
                 gj.check("invariant", f"Sturm comparison: largest s - j_head on {k}", v["max_s_minus_j_head"], 1e-9,
-                         "le"),
+                         "signed_le"),
                 gj.check("invariant", f"Sturm comparison: largest 1 - j_lat on {k}", v["max_1_minus_j_lat"], 1e-9,
-                         "le"))]},
+                         "signed_le"))]},
         tolerance=TOL_VALUE))
     findings.append(finding(
         "Sturm comparison bound holds: no conjugate point before pi/sqrt(max K) on seeded torus and bump geodesics",

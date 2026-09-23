@@ -670,7 +670,7 @@ def outlier_rejection(ctx):
                 {**generator_basis(seed), "checks": [
                     check("analytic", "Wilson interval of the clean false-alarm rate overlaps [0.005, 0.015]",
                           max(clean["false_alarm"]["wilson"][0] - 0.015, 0.005 - clean["false_alarm"]["wilson"][1]),
-                          0.0, "le"),
+                          0.0, "signed_le"),
                     check("analytic", "paired per-run MSE difference gated - ungated (z)",
                           clean["paired_mse_z_gated_minus_ungated"], 3.0, "ge")]},
                 tolerance=TOL_MC, counterexample={

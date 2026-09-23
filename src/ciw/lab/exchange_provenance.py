@@ -29,7 +29,7 @@ from pathlib import Path
 import tempfile
 import uuid
 
-from .evidence import finding
+from .evidence import finding, holds as compare
 from .exchange_provenance_common import (
     FORGED_CODE, FORGED_DIGEST, FORGED_RUNTIME, FORGED_SESSION, FORGED_TIME, KIND, OPERATION, Mutant, View,
     attempt, build_session_fixture, build_variant_fixture, build_verification, check_esm, esm_case,
@@ -105,7 +105,7 @@ def _exact(reference: str, mismatches: int) -> dict:
 
 def _invariant(reference: str, observed, tolerance=0.0, comparison="abs_le") -> dict:
     observed, tolerance = float(observed), float(tolerance)
-    holds = {"abs_le": abs(observed) <= tolerance, "le": observed <= tolerance, "ge": observed >= tolerance}[comparison]
+    holds = compare(observed, tolerance, comparison)
     return {"reference_kind": "invariant", "reference": reference, "observed": observed, "tolerance": tolerance,
             "comparison": comparison, "passed": holds}
 

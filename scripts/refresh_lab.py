@@ -10,6 +10,7 @@ are machine-specific and not retained evidence. Review ``git diff lab`` and
 from __future__ import annotations
 
 import argparse
+import json
 import os
 from pathlib import Path
 import shutil
@@ -37,6 +38,9 @@ def main() -> int:
             if args.temporary_root:
                 command += ["--temporary-root", str(args.temporary_root)]
             subprocess.run(command, check=True)
+        gate = run / "gate.json"
+        if not gate.is_file() or json.loads(gate.read_text(encoding="utf-8")).get("schema") != "ciw.lab-clean-room-gate.v1":
+            raise SystemExit(f"Not a clean-room output (no ciw.lab-clean-room-gate.v1 gate.json): {run}")
         missing = [name for name in RETAINED if not (run / name).exists()]
         if missing:
             raise SystemExit(f"Clean-room output is incomplete: {missing}")

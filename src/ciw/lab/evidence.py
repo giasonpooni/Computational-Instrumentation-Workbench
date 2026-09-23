@@ -32,6 +32,8 @@ from __future__ import annotations
 
 from copy import deepcopy
 import math
+import re
+import unicodedata
 
 LABELS = ("analytic", "synthetic", "numerically_verified", "provider_backed",
           "hardware_measured", "independently_verified", "not_established")
@@ -47,6 +49,9 @@ DOMAINS = COMPUTATIONAL_DOMAINS | PHYSICAL_DOMAINS | AUTHORITY_DOMAINS
 # ``cross_implementation`` is agreement between two implementations of the
 # same origin (for example ciw Python and a ciw Rust kernel): a passing check,
 # never independence.
+# Thresholds beyond this magnitude cannot fail for any finite measurement of interest.
+MAX_THRESHOLD = 1e100
+
 REFERENCE_KINDS = frozenset({"analytic", "high_precision", "invariant", "self_convergence",
                              "exact_arithmetic", "refusal", "cross_implementation"})
 
@@ -80,6 +85,25 @@ def _finite(value, name):
     return float(value)
 
 
+COMPARISONS = ("abs_le", "le", "ge", "signed_le", "signed_ge")
+
+
+def holds(observed: float, tolerance: float, comparison: str = "abs_le") -> bool:
+    """Evaluate one check comparison; section helpers use this to fill ``passed``.
+
+    ``abs_le`` bounds |observed|; ``le`` and ``ge`` bound a nonnegative
+    magnitude; ``signed_le`` and ``signed_ge`` bound a signed quantity such as
+    a difference that the claim says must not exceed (or fall below) a value.
+    """
+    if comparison not in COMPARISONS:
+        raise EvidenceRefusal(f"comparison must be one of {', '.join(COMPARISONS)}")
+    if comparison == "abs_le":
+        return abs(observed) <= tolerance
+    if comparison in ("le", "signed_le"):
+        return observed <= tolerance
+    return observed >= tolerance
+
+
 def _check_passed(check, name):
     """A reference comparison passes only if its recorded numbers say so."""
     if not isinstance(check, dict):
@@ -92,24 +116,28 @@ def _check_passed(check, name):
         # A refusal check passes when the expected refusal code was observed.
         expected, observed = check.get("expected_refusal"), check.get("observed_refusal")
         _text(expected, f"{name}.expected_refusal")
-        return observed == expected and check.get("passed") is True
+        if not isinstance(observed, str):
+            raise EvidenceRefusal(f"{name}.observed_refusal must be a string (use 'none' when nothing was refused)")
+        if check.get("passed") is not (observed == expected):
+            raise EvidenceRefusal(f"{name}.passed does not match its expected and observed refusal codes")
+        return observed == expected
     observed = _finite(check.get("observed"), f"{name}.observed")
     tolerance = _finite(check.get("tolerance"), f"{name}.tolerance")
     comparison = check.get("comparison", "abs_le")
-    if comparison == "abs_le" and tolerance < 0:
-        # A bound on |observed| must be nonnegative; le/ge compare with a signed threshold.
-        raise EvidenceRefusal(f"{name}.tolerance must be nonnegative for abs_le")
-    if comparison == "abs_le":
-        holds = abs(observed) <= tolerance
-    elif comparison == "ge":
-        holds = observed >= tolerance
-    elif comparison == "le":
-        holds = observed <= tolerance
-    else:
-        raise EvidenceRefusal(f"{name}.comparison must be abs_le, le or ge")
-    if check.get("passed") is not holds:
+    if abs(tolerance) > MAX_THRESHOLD:
+        raise EvidenceRefusal(f"{name}.tolerance {tolerance!r} makes the comparison vacuous")
+    if comparison in ("abs_le", "le") and tolerance < 0:
+        raise EvidenceRefusal(f"{name}.tolerance must be nonnegative for {comparison}")
+    if comparison == "le" and observed < 0:
+        # le bounds a nonnegative magnitude (error, residual, count); a signed
+        # quantity with an upper bound must say so with signed_le.
+        raise EvidenceRefusal(f"{name}: le bounds a nonnegative magnitude; use abs_le or signed_le for {observed!r}")
+    if comparison not in COMPARISONS:
+        raise EvidenceRefusal(f"{name}.comparison must be abs_le, le, ge, signed_le or signed_ge")
+    result = holds(observed, tolerance, comparison)
+    if check.get("passed") is not result:
         raise EvidenceRefusal(f"{name}.passed does not match its observed value and tolerance")
-    return holds
+    return result
 
 
 def _identity(value, name):
@@ -119,16 +147,43 @@ def _identity(value, name):
     return value["implementation"]
 
 
+# Implementation families recognised as independent of the workbench's own
+# code. An origin outside this set, or the ciw family itself, cannot supply an
+# independent check. numpy counts only for routines the compared ciw code does
+# not itself call; reviewers check that per finding.
+CIW_ORIGIN = "ciw"
+INDEPENDENT_ORIGINS = frozenset({
+    "scipy", "sympy", "mpmath", "numpy", "cpython", "zlib", "git",
+    "curved-surface-geodesic-sensitivity-runtime", "flat-torus-geodesic-reference",
+    "parameterized-lyapunov-stability-runtime", "scientific-computation-runtime",
+})
+
+
 def origin(implementation: str) -> str:
-    """Implementation family: the leading name before any '.', ':', '@' or '/'.
+    """Implementation family: the leading ASCII name before '.', ':', '@', '/', '(', ' ' or '#'.
 
     Code in one family (for example every ``ciw.*`` module) cannot verify
-    itself independently, whatever its revision or step size.
+    itself independently, whatever its revision, language or step size.
+    Identifiers must be plain ASCII so lookalike characters cannot mint a
+    new family.
     """
-    head = implementation.strip().lower()
-    for separator in ".:@/ ":
-        head = head.split(separator, 1)[0]
-    return head
+    text = unicodedata.normalize("NFKC", implementation).strip()
+    if not text.isascii() or not text:
+        raise EvidenceRefusal(f"Implementation identifiers must be nonempty ASCII: {implementation!r}")
+    match = re.match(r"[A-Za-z0-9][A-Za-z0-9_-]*", text)
+    if not match:
+        raise EvidenceRefusal(f"Implementation identifier has no family name: {implementation!r}")
+    return match.group(0).casefold()
+
+
+def _known_origin(implementation: str, name: str) -> str:
+    family = origin(implementation)
+    if family != CIW_ORIGIN and family not in INDEPENDENT_ORIGINS:
+        raise EvidenceRefusal(f"{name} origin {family!r} is not a recognised implementation family")
+    tokens = set(re.split(r"[^a-z0-9]+", implementation.casefold()))
+    if family != CIW_ORIGIN and CIW_ORIGIN in tokens:
+        raise EvidenceRefusal(f"{name} {implementation!r} names the ciw family inside another family")
+    return family
 
 
 def supported_label(basis: dict, domain: str) -> str:
@@ -165,6 +220,8 @@ def supported_label(basis: dict, domain: str) -> str:
             raise EvidenceRefusal("acquisition must be an object")
         for field in ("device", "raw_sha256", "acquired_at", "calibration"):
             _text(acquisition.get(field), f"acquisition.{field}")
+        if not re.fullmatch(r"[0-9a-f]{64}", acquisition["raw_sha256"]):
+            raise EvidenceRefusal("acquisition.raw_sha256 must be the SHA-256 of retained raw bytes")
         return "independently_verified" if independent_passed else "hardware_measured"
     if acquisition is not None:
         raise EvidenceRefusal("A computational claim cannot cite hardware acquisition as its basis")
@@ -197,7 +254,9 @@ def supported_label(basis: dict, domain: str) -> str:
 def _independent(check):
     producer = _identity(check.get("producer"), "independent_check.producer")
     checker = _identity(check.get("checker"), "independent_check.checker")
-    if origin(producer) == origin(checker):
+    if check.get("reference_kind") == "cross_implementation":
+        raise EvidenceRefusal("cross_implementation agreement is same-origin evidence; record it as a check")
+    if _known_origin(producer, "producer") == _known_origin(checker, "checker"):
         # The same implementation family at another step size, revision or
         # module is self-consistency; declare it as a self_convergence check.
         raise EvidenceRefusal("independent_check producer and checker share an implementation origin")
@@ -222,9 +281,21 @@ def finding(claim: str, domain: str, value, basis: dict, *, unit: str | None = N
     if counterexample is not None:
         _text(counterexample.get("statement"), "counterexample.statement")
         record["counterexample"] = deepcopy(counterexample)
-    if expected_not_established:
+    if expected_not_established is True:
         record["expected_not_established"] = True
+        _check_expected(record)
+    elif expected_not_established is not False:
+        raise EvidenceRefusal("expected_not_established must be True or False")
     return record
+
+
+def _check_expected(record):
+    """The flag marks an honestly unsupported claim, never a refuted or supported one."""
+    if record["evidence_status"] != "not_established":
+        raise EvidenceRefusal("expected_not_established applies only to not_established findings")
+    basis = record["basis"]
+    if basis.get("checks") or basis.get("independent_check"):
+        raise EvidenceRefusal("A claim with checks is supported or refuted, not expected to be unestablished")
 
 
 def validate_finding(record: dict) -> dict:
@@ -239,6 +310,10 @@ def validate_finding(record: dict) -> dict:
         raise EvidenceRefusal(f"Evidence label refused: basis supports {supported}, finding states {stated}")
     if record.get("assigned_by") != "ciw.lab.evidence":
         raise EvidenceRefusal("Evidence labels are assigned by the deterministic validator only")
+    if "expected_not_established" in record:
+        if record["expected_not_established"] is not True:
+            raise EvidenceRefusal("expected_not_established must be exactly true when present")
+        _check_expected(record)
     return record
 
 
@@ -253,6 +328,28 @@ def physical_status(findings) -> str:
                         in ("hardware_measured", "independently_verified") for record in findings):
         return "hardware_measured"
     return "not_established"
+
+
+# Strength order of computational labels for the task headline.
+COMPUTATIONAL_ORDER = ("not_established", "synthetic", "analytic", "provider_backed",
+                       "numerically_verified", "independently_verified")
+
+
+def primary_label(findings) -> str:
+    """Headline label: the weakest label among established computational findings.
+
+    Independent of finding order. Physical and authority claims are reported
+    separately (physical validation status), and findings that honestly record
+    an unestablished claim are counted, not averaged into the headline. A task
+    whose computational findings are all unestablished is ``not_established``.
+    """
+    established = [f["evidence_status"] for f in findings
+                   if f["domain"] in COMPUTATIONAL_DOMAINS and f["evidence_status"] != "not_established"]
+    refuted = [f for f in findings if f["domain"] in COMPUTATIONAL_DOMAINS
+               and f["evidence_status"] == "not_established" and not f.get("expected_not_established")]
+    if refuted or not established:
+        return "not_established"
+    return min(established, key=COMPUTATIONAL_ORDER.index)
 
 
 def summarize(findings) -> dict:

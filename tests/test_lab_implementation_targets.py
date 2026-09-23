@@ -113,7 +113,7 @@ def test_t144_architecture_scan(tmp_path):
 def test_t145_julia_partial_with_plan(tmp_path):
     report, findings = _run("T145", tmp_path)
     assert report["state"] == "partial"
-    assert report["evidence_status"]["primary"] == "not_established"
+    assert report["evidence_status"]["primary"] == "analytic"
     assert findings["Julia environment pinned and exercised through the CIW to SCR boundary"]["evidence_status"] == \
         "not_established"
     assert findings["Julia provider pin procedure"]["evidence_status"] == "analytic"
@@ -171,7 +171,7 @@ def test_t146_rust_byte_identity(rust_probe):
 def test_t147_harness_detects_differences(tmp_path):
     report, findings = _run("T147", tmp_path)
     assert report["state"] == "partial"
-    assert report["evidence_status"]["primary"] == "not_established"
+    assert report["evidence_status"]["primary"] == "numerically_verified"
     assert findings["Bitwise policy detects reduction-order differences between float64 CPU orders"]["value"] >= 1
     within = findings["Float64 reduction-order differences lie within the analytic error-bound policy"]
     assert within["evidence_status"] == "numerically_verified" and within["value"] < 1.0

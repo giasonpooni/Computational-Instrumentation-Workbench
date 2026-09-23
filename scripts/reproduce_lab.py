@@ -79,7 +79,8 @@ def main() -> int:
         junit = output / "tests.xml"
         run([python, "-I", "-B", "-m", "pytest", "-q", "-p", "no:cacheprovider", "--rootdir", str(work),
              "--junitxml", str(junit), str(tests)], cwd=work, env=environment)
-        environment["CIW_LAB_CLEAN_ROOM"] = json.dumps({"wheel_sha256": wheel_sha256, "python": sys.version.split()[0]})
+        environment["CIW_LAB_CLEAN_ROOM"] = json.dumps({"wheel_sha256": wheel_sha256, "wheel_path": str(wheel),
+                                                        "python": sys.version.split()[0]})
         command = [python, "-m", "ciw", "lab", "run", "--all", "--output-dir", str(output), "--junit", str(junit)]
         for binding in args.provider:
             role, _, path = binding.partition("=")

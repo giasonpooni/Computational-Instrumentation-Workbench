@@ -11,7 +11,7 @@ from copy import deepcopy
 
 from ..core.identities import canonical_json, content_identity
 from .evidence import (AUTHORITY_DOMAINS, LABELS, PHYSICAL_DOMAINS, EvidenceRefusal, physical_status,
-                       summarize, validate_finding)
+                       primary_label, summarize, validate_finding)
 
 REPORT_SCHEMA = "ciw.lab-task-report.v1"
 
@@ -45,10 +45,20 @@ STATES = ("completed", "partial", "deferred", "blocked")
 
 
 def evidence_status(findings) -> dict:
-    """Label counts plus the primary label, recomputed from the findings."""
-    counts = summarize(findings)
-    primary = findings[0]["evidence_status"] if findings else "not_established"
-    return {"primary": primary, "counts": counts}
+    """Label counts plus the order-independent primary label, recomputed from the findings."""
+    return {"primary": primary_label(findings), "counts": summarize(findings)}
+
+
+PHYSICAL_STATEMENTS = {
+    "not_established": "Physical validation requires acquired hardware evidence; none was acquired for this task.",
+    "hardware_measured": "Physical-domain findings cite acquired hardware evidence.",
+}
+
+
+def physical_validation(findings) -> dict:
+    """Derived physical validation status with its fixed statement."""
+    status = physical_status([f for f in findings if f["domain"] in PHYSICAL_DOMAINS])
+    return {"status": status, "statement": PHYSICAL_STATEMENTS[status]}
 
 
 def validate_report(report: dict) -> dict:
@@ -67,9 +77,14 @@ def validate_report(report: dict) -> dict:
         validate_finding(record)
     if report["evidence_status"] != evidence_status(findings):
         raise EvidenceRefusal("Report evidence status differs from its findings")
-    physical = physical_status([f for f in findings if f["domain"] in PHYSICAL_DOMAINS])
-    if report["physical_validation_status"].get("status") != physical:
-        raise EvidenceRefusal(f"Physical validation status must be {physical}")
+    expected_physical = physical_validation(findings)
+    if report["physical_validation_status"] != expected_physical:
+        raise EvidenceRefusal(f"Physical validation status must be {expected_physical['status']} with its derived statement")
+    claims = [f["claim"] for f in findings]
+    if len(claims) != len(set(claims)):
+        raise EvidenceRefusal("Finding claims must be unique within a report")
+    if report["state"] in ("blocked", "deferred") and any(f["evidence_status"] != "not_established" for f in findings):
+        raise EvidenceRefusal("A blocked or deferred task cannot carry established findings")
     if report["state"] == "completed" and not findings:
         raise EvidenceRefusal("A completed task must retain at least one finding")
     if report["state"] == "completed" and any(f["evidence_status"] == "not_established"
@@ -98,7 +113,6 @@ def build_report(task: dict, state: str, fields: dict, findings: list, extra: di
         raise EvidenceRefusal("Evidence and physical validation status are derived, not supplied")
     for record in findings:
         validate_finding(record)
-    physical_findings = [f for f in findings if f["domain"] in PHYSICAL_DOMAINS]
     report = {"schema": REPORT_SCHEMA, "task_id": task["id"], "number": task["number"],
               "section": task["section_key"], "title": task["title"], "state": state}
     for name in FIELD_NAMES:
@@ -106,12 +120,7 @@ def build_report(task: dict, state: str, fields: dict, findings: list, extra: di
             continue
         report[name] = deepcopy(fields.get(name, []))
     report["evidence_status"] = evidence_status(findings)
-    report["physical_validation_status"] = {
-        "status": physical_status(physical_findings),
-        "statement": ("Physical validation requires acquired hardware evidence; none was acquired for this task."
-                      if not physical_findings or physical_status(physical_findings) == "not_established"
-                      else "Physical-domain findings cite acquired hardware evidence."),
-    }
+    report["physical_validation_status"] = physical_validation(findings)
     report["findings"] = deepcopy(findings)
     report.update(deepcopy(extra or {}))
     canonical_json(report)

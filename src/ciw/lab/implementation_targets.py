@@ -32,7 +32,7 @@ from . import implementation_targets_fpga as fpga
 from . import implementation_targets_kernels as kernels
 from . import implementation_targets_serial as serial
 from . import integrators, jacobi, svg
-from .evidence import finding
+from .evidence import finding, holds as compare
 from .registry import task
 from .surfaces import Sphere, Torus
 
@@ -51,7 +51,7 @@ EXACT = {"abs": 0, "rel": 0}
 
 def _check(reference, observed, tolerance=0.0, comparison="abs_le", kind="exact_arithmetic"):
     observed, tolerance = float(observed), float(tolerance)
-    holds = {"abs_le": abs(observed) <= tolerance, "le": observed <= tolerance, "ge": observed >= tolerance}[comparison]
+    holds = compare(observed, tolerance, comparison)
     return {"reference_kind": kind, "reference": reference, "observed": observed, "tolerance": tolerance,
             "comparison": comparison, "passed": holds}
 

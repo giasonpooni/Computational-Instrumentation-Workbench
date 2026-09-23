@@ -15,7 +15,7 @@ import math
 import numpy as np
 
 from .. import __version__
-from .evidence import COMPUTATIONAL_DOMAINS, finding
+from .evidence import COMPUTATIONAL_DOMAINS, finding, holds as compare
 from .sensor_fusion_bench import normal_quantile, wilson_interval
 from .sensor_fusion_objects import FusionRefusal
 
@@ -49,8 +49,7 @@ def files(*modules) -> tuple:
 def check(kind, reference, observed, tolerance, comparison="abs_le") -> dict:
     """A reference check whose ``passed`` flag is computed exactly as the validator does."""
     observed, tolerance = float(observed), float(tolerance)
-    holds = {"abs_le": abs(observed) <= tolerance, "le": observed <= tolerance,
-             "ge": observed >= tolerance}[comparison]
+    holds = compare(observed, tolerance, comparison)
     return {"reference_kind": kind, "reference": reference, "observed": observed, "tolerance": tolerance,
             "comparison": comparison, "passed": holds}
 

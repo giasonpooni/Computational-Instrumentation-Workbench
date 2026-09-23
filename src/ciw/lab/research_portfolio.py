@@ -20,7 +20,7 @@ import tempfile
 
 from .. import __version__
 from .evidence import (AUTHORITY_DOMAINS, COMPUTATIONAL_DOMAINS, DOMAINS, LABELS, PHYSICAL_DOMAINS,
-                       EvidenceRefusal, finding, supported_label)
+                       EvidenceRefusal, finding, supported_label, holds as compare)
 from .registry import load_implementations, load_queue, task
 from .report import validate_report
 
@@ -41,18 +41,39 @@ def _prior_reports(ctx):
     return reports
 
 
-def _recomputed(ctx, name, value):
-    """Retain an aggregate and prove the retained bytes equal a fresh recomputation."""
+def _recomputed(ctx, name, value, build):
+    """Retain an aggregate and check it reproduces from a fresh read of the on-disk reports.
+
+    ``build`` recomputes the aggregate from reports re-read from disk. The check
+    establishes reproducibility of the retained artifact, not the correctness
+    of the aggregation code; independent cross-checks are separate findings.
+    """
     path = ctx.artifact_json(name, value)
     retained = json.loads((ctx.output_dir / path).read_text(encoding="utf-8"))
-    return path, {"reference_kind": "exact_arithmetic", "reference": f"{name} re-read from retained bytes",
-                  "observed": 0.0 if retained == json.loads(json.dumps(value)) else 1.0,
-                  "tolerance": 0.0, "passed": retained == json.loads(json.dumps(value))}
+    fresh = json.loads(json.dumps(build(_prior_reports(ctx))))
+    same = retained == fresh
+    return path, {"reference_kind": "exact_arithmetic",
+                  "reference": f"{name} recomputed from a fresh read of the retained reports",
+                  "observed": 0.0 if same else 1.0, "tolerance": 0.0, "passed": same}
+
+
+def _brief(value, limit=60):
+    """A value for prose tables that never cuts inside a number: full scalars, else a summary."""
+    if value is None or isinstance(value, (bool, int, float)):
+        return json.dumps(value)
+    text = json.dumps(value, sort_keys=True, ensure_ascii=False)
+    if len(text) <= limit:
+        return text
+    if isinstance(value, str):
+        return json.dumps(value[: max(8, limit - 12)] + "…")
+    size = len(value) if isinstance(value, (list, dict)) else 0
+    kind = "list" if isinstance(value, list) else "object"
+    return f"({kind} of {size} entries; see the source report)"
 
 
 def _check(reference, observed, tolerance=0.0, comparison="abs_le", kind="exact_arithmetic"):
     observed, tolerance = float(observed), float(tolerance)
-    holds = {"abs_le": abs(observed) <= tolerance, "le": observed <= tolerance, "ge": observed >= tolerance}[comparison]
+    holds = compare(observed, tolerance, comparison)
     return {"reference_kind": kind, "reference": reference, "observed": observed, "tolerance": tolerance,
             "comparison": comparison, "passed": holds}
 
@@ -136,12 +157,15 @@ def formal_specifications(ctx):
         "map each specification section to its tasks and count established findings.",
         "Extend the grammar with malformed bases (T168 regression) and add a machine-checked proof of the invariants.")
     invariants = label_invariants()
-    coverage = {}
-    for section, ids in SPEC_SECTIONS.items():
-        coverage[section] = {tid: sum(f["evidence_status"] != "not_established" for f in prior[tid]["findings"])
-                             if tid in prior else None for tid in ids if tid != "T155"}
+
+    def build(reports):
+        known = {r["task_id"]: r for r in reports}
+        return {section: {tid: sum(f["evidence_status"] != "not_established" for f in known[tid]["findings"])
+                          if tid in known else None for tid in ids if tid != "T155"}
+                for section, ids in SPEC_SECTIONS.items()}
+    coverage = build(list(prior.values()))
     ctx.artifact_json("label-invariants.json", invariants)
-    _, retained = _recomputed(ctx, "specification-coverage.json", coverage)
+    _, retained = _recomputed(ctx, "specification-coverage.json", coverage, build)
     uncovered = [s for s, ids in coverage.items() if not any(v for v in ids.values())]
     fields["numerical_result"] = (f"{invariants['cases']} label cases, {len(invariants['violations'])} invariant "
                                   f"violations; {len(coverage) - len(uncovered)}/{len(coverage)} specification "
@@ -157,7 +181,7 @@ def formal_specifications(ctx):
                 {"derivation": "docs/lab/SPECIFICATIONS.md#evidence-labels",
                  "checks": [_check("authority/physical/failed-check/hardware invariants", len(invariants["violations"]))]},
                 tolerance={"abs": 0, "rel": 0}),
-        finding("Specification sections exercised by established findings", "computational_pipeline",
+        finding("Specification coverage reproduces from retained reports", "computational_pipeline",
                 len(coverage) - len(uncovered),
                 {"checks": [retained, _check("sections with established findings", len(coverage) - len(uncovered),
                                              1 if prior else 0, "ge")]},
@@ -205,9 +229,11 @@ def textbook_versus_contribution(ctx):
         "Add per-finding provenance tags so the ledger is derived from findings rather than curated.")
     missing = [path for _, path in CONTRIBUTIONS
                if not (Path(__file__).resolve().parents[1] / path[len("src/ciw/"):]).is_file()]
-    ledger = {"textbook": [{"result": r, "reference": ref} for r, ref in TEXTBOOK],
-              "contributions": [{"contribution": c, "file": p, "present": p not in missing} for c, p in CONTRIBUTIONS]}
-    _, retained = _recomputed(ctx, "attribution-ledger.json", ledger)
+    def build(_reports):
+        return {"textbook": [{"result": r, "reference": ref} for r, ref in TEXTBOOK],
+                "contributions": [{"contribution": c, "file": p, "present": p not in missing} for c, p in CONTRIBUTIONS]}
+    ledger = build(None)
+    _, retained = _recomputed(ctx, "attribution-ledger.json", ledger, build)
     fields["numerical_result"] = f"{len(TEXTBOOK)} textbook results; {len(CONTRIBUTIONS)} contributions, {len(missing)} without a source file."
     fields["uncertainty"] = "Curated attribution; references identify standard sources, not exhaustive priority."
     fields["unresolved_assumptions"] = ["Novelty of contributions relative to published literature is not established by this ledger."]
@@ -231,26 +257,42 @@ def counterexample_catalogue(ctx):
         "Turn each catalogued counterexample into a named regression fixture (T168).")
     if not prior:
         return _no_prior(fields)
-    entries = [{"task_id": r["task_id"], "claim": f["claim"], "statement": f["counterexample"]["statement"],
-                "witness": f["counterexample"].get("witness"), "evidence_status": f["evidence_status"],
-                "report_id": r["report_id"]}
-               for r in prior for f in r["findings"] if f.get("counterexample")]
-    _, retained = _recomputed(ctx, "counterexamples.json", entries)
+    def build(reports):
+        return [{"task_id": r["task_id"], "claim": f["claim"], "statement": f["counterexample"]["statement"],
+                 "witness": f["counterexample"].get("witness"), "evidence_status": f["evidence_status"],
+                 "report_id": r["report_id"]}
+                for r in reports for f in r["findings"] if f.get("counterexample")]
+    entries = build(prior)
+    _, retained = _recomputed(ctx, "counterexamples.json", entries, build)
+    # Independent path: count counterexample keys in the raw report text, no traversal.
+    scanned = sum(path.read_text(encoding="utf-8").count('"counterexample": {')
+                  for path in sorted((ctx.output_dir / "reports").glob("T*.json"))
+                  if int(path.stem[1:]) < FIRST_OWN)
     lines = ["# Counterexample catalogue", "", "Generated from retained lab reports. Each entry refutes the quoted general statement.", ""]
     for entry in entries:
         lines += [f"## {entry['task_id']}: {entry['statement']}", "", f"- Finding: {entry['claim']}",
                   f"- Evidence status: `{entry['evidence_status']}`",
-                  f"- Witness: `{json.dumps(entry['witness'], sort_keys=True)[:400]}`", ""]
+                  f"- Witness: `{_brief(entry['witness'], 400)}`", ""]
     ctx.artifact_text("COUNTEREXAMPLES.md", "\n".join(lines))
     labels = Counter(e["evidence_status"] for e in entries)
     fields["numerical_result"] = f"{len(entries)} counterexamples from {len({e['task_id'] for e in entries})} tasks; labels {dict(labels)}."
     fields["uncertainty"] = "Exact aggregation; each counterexample carries its own uncertainty in its source report."
-    findings = [finding("Counterexamples catalogued from retained reports", "computational_pipeline", len(entries),
-                        {"checks": [retained]}, unit="counterexamples", tolerance={"abs": 0, "rel": 0})]
+    findings = [finding("Counterexample catalogue reproduces from retained reports", "computational_pipeline",
+                        len(entries), {"checks": [retained, _check("catalogue size minus raw-text key count",
+                                                                   len(entries) - scanned)]},
+                        unit="counterexamples", tolerance={"abs": 0, "rel": 0})]
     return {"state": "completed", "fields": fields, "findings": findings}
 
 
 # --------------------------------------------------------------- T158
+def _figure_index(ctx, reports):
+    figures = [dict(a, task_id=r["task_id"]) for r in reports for a in r["generated_artifacts"] if a["path"].endswith(".svg")]
+    for figure in figures:
+        text = (ctx.output_dir / figure["path"]).read_text(encoding="utf-8")
+        figure["well_formed"] = text.startswith("<svg") and text.rstrip().endswith("</svg>")
+    return figures
+
+
 @task("T158", changed_files=(MODULE, "src/ciw/lab/svg.py"), regression_tests=(f"{TESTS}::test_figures_are_reproducible",))
 def reproducible_figures(ctx):
     from .runner import Context, run_task
@@ -263,10 +305,7 @@ def reproducible_figures(ctx):
         "Re-execute every figure-producing task on a second platform (Windows CI) and compare hashes.")
     if not prior:
         return _no_prior(fields)
-    figures = [dict(a, task_id=r["task_id"]) for r in prior for a in r["generated_artifacts"] if a["path"].endswith(".svg")]
-    for figure in figures:
-        text = (ctx.output_dir / figure["path"]).read_text(encoding="utf-8")
-        figure["well_formed"] = text.startswith("<svg") and text.rstrip().endswith("</svg>")
+    figures = _figure_index(ctx, prior)
     producing = sorted({f["task_id"] for f in figures})[:2]
     implementations, _ = load_implementations()
     queue = {t["id"]: t for t in load_queue()["tasks"]}
@@ -280,7 +319,7 @@ def reproducible_figures(ctx):
                 compared += 1
                 if fresh.get(figure["path"]) != figure["sha256"]:
                     mismatches.append(figure["path"])
-    _, retained = _recomputed(ctx, "figure-index.json", figures)
+    _, retained = _recomputed(ctx, "figure-index.json", figures, lambda reports: _figure_index(ctx, reports))
     fields["numerical_result"] = (f"{len(figures)} retained figures from {len({f['task_id'] for f in figures})} tasks; "
                                   f"{compared} regenerated from {producing}, {len(mismatches)} byte mismatches.")
     fields["uncertainty"] = "Regeneration covers the named tasks on this platform only."
@@ -308,18 +347,21 @@ def uncertainty_budgets(ctx):
         "Require structured uncertainty components (instrument, geometry, solver) on every numerical finding.")
     if not prior:
         return _no_prior(fields)
-    rows = []
-    for report in prior:
-        task_level = report["uncertainty"] if isinstance(report["uncertainty"], str) else json.dumps(report["uncertainty"])
-        for record in report["findings"]:
-            if isinstance(record["value"], (int, float)) and not isinstance(record["value"], bool):
-                declared = record.get("uncertainty")
-                rows.append({"task_id": report["task_id"], "claim": record["claim"], "value": record["value"],
-                             "unit": record.get("unit"), "uncertainty": declared,
-                             "source": "finding" if declared is not None else "task_statement_only",
-                             "task_uncertainty": task_level, "evidence_status": record["evidence_status"]})
+    def build(reports):
+        rows = []
+        for report in reports:
+            task_level = report["uncertainty"] if isinstance(report["uncertainty"], str) else json.dumps(report["uncertainty"])
+            for record in report["findings"]:
+                if isinstance(record["value"], (int, float)) and not isinstance(record["value"], bool):
+                    declared = record.get("uncertainty")
+                    rows.append({"task_id": report["task_id"], "claim": record["claim"], "value": record["value"],
+                                 "unit": record.get("unit"), "uncertainty": declared,
+                                 "source": "finding" if declared is not None else "task_statement_only",
+                                 "task_uncertainty": task_level, "evidence_status": record["evidence_status"]})
+        return rows
+    rows = build(prior)
     declared = sum(row["source"] == "finding" for row in rows)
-    _, retained = _recomputed(ctx, "uncertainty-budget.json", rows)
+    _, retained = _recomputed(ctx, "uncertainty-budget.json", rows, build)
     lines = ["| Task | Claim | Value | Unit | Uncertainty | Source | Evidence |", "| --- | --- | --- | --- | --- | --- | --- |"]
     for row in rows:
         shown = row["uncertainty"] if row["source"] == "finding" else row["task_uncertainty"]
@@ -331,7 +373,7 @@ def uncertainty_budgets(ctx):
     fields["uncertainty"] = "Exact aggregation of declared values; undeclared per-finding uncertainty is reported, not imputed."
     if rows and declared < len(rows):
         fields["unresolved_assumptions"] = [f"{len(rows) - declared} scalar findings carry no per-finding uncertainty."]
-    findings = [finding("Scalar numerical findings with a declared per-finding uncertainty", "computational_pipeline",
+    findings = [finding("Uncertainty budget reproduces from retained reports (findings with declared uncertainty)", "computational_pipeline",
                         declared, {"checks": [retained]}, unit="findings", tolerance={"abs": 0, "rel": 0})]
     return {"state": "completed", "fields": fields, "findings": findings}
 
@@ -367,12 +409,11 @@ def _paper(task_id, ctx):
         lines += [f"### {report['task_id']} — {report['title']}", "", f"*Hypothesis.* {report['hypothesis']}", "",
                   f"*Model.* {report['mathematical_model'] if isinstance(report['mathematical_model'], str) else json.dumps(report['mathematical_model'])}", ""]
     lines += ["## Results", "", "| Task | Finding | Value | Evidence | Report |", "| --- | --- | --- | --- | --- |"]
-    cited = 0
+    cited = []
     for report in prior:
         for record in report["findings"]:
-            cited += 1
-            value = json.dumps(record["value"], sort_keys=True)
-            lines.append(f"| {report['task_id']} | {record['claim']} | {value[:60]} {record.get('unit') or ''} | "
+            cited.append((report["task_id"], record["claim"], record["evidence_status"]))
+            lines.append(f"| {report['task_id']} | {record['claim']} | {_brief(record['value'])} {record.get('unit') or ''} | "
                          f"`{record['evidence_status']}` | `{report['report_id'][:19]}` |")
     lines += ["", "## Limitations", ""]
     for report in prior:
@@ -382,12 +423,15 @@ def _paper(task_id, ctx):
         if report["state"] in ("blocked", "deferred", "partial"):
             lines.append(f"- {report['task_id']} is {report['state']}: {report['experiment'][:200]}")
     ctx.artifact_text(f"{slug}-draft.md", "\n".join(lines) + "\n")
-    fields["numerical_result"] = f"Draft cites {cited} findings from {len(prior)} reports."
+    fields["numerical_result"] = f"Draft cites {len(cited)} findings from {len(prior)} reports."
+    retained_pairs = {(r["task_id"], f["claim"], f["evidence_status"]) for r in _prior_reports(ctx) for f in r["findings"]}
+    unmatched = [pair for pair in cited if pair not in retained_pairs]
     fields["uncertainty"] = "Numbers carry the uncertainty stated in their source findings."
     fields["unresolved_assumptions"] = ["Prose beyond the generated structure, related work and peer review are outstanding."]
     findings = [
-        finding("Draft cites only retained findings", "provenance", cited,
-                {"checks": [_check("cited findings", cited, 1, "ge")]}, unit="findings", tolerance={"abs": 0, "rel": 0}),
+        finding("Draft cites only retained findings with their retained labels", "provenance", len(cited),
+                {"checks": [_check("cited (task, claim, label) triples absent from the retained reports", len(unmatched))]},
+                unit="findings", tolerance={"abs": 0, "rel": 0}),
         finding("Draft has passed external peer review", "provenance", None, {}, expected_not_established=True),
     ]
     return {"state": "partial", "fields": fields, "findings": findings}
@@ -418,7 +462,7 @@ def portfolio_demonstration(ctx):
     for report in chosen:
         lines += [f"## {report['task_id']} — {report['title']}", "", report["hypothesis"] if isinstance(report["hypothesis"], str) else "", ""]
         for record in report["findings"][:4]:
-            lines.append(f"- {record['claim']}: `{json.dumps(record['value'])[:80]}` → `{record['evidence_status']}`")
+            lines.append(f"- {record['claim']}: `{_brief(record['value'], 80)}` → `{record['evidence_status']}`")
         for artifact in report["generated_artifacts"]:
             if artifact["path"].endswith(".svg"):
                 lines.append(f"\n![{report['task_id']}](../../{artifact['path']})")
@@ -453,17 +497,43 @@ def clean_room_reproduction(ctx):
                     expected_not_established=True)]}
     record = json.loads(marker)
     wheel = str(record.get("wheel_sha256", ""))
-    fields["numerical_result"] = f"Clean-room run from wheel sha256 {wheel}."
+    import ciw as package
+    import sys
+    wheel_path = Path(str(record.get("wheel_path", "")))
+    observed = {
+        "wheel_bytes_match": wheel_path.is_file() and hashlib.sha256(wheel_path.read_bytes()).hexdigest() == wheel,
+        "isolated_interpreter": sys.prefix != sys.base_prefix,
+        "package_inside_environment": Path(package.__file__).resolve().is_relative_to(Path(sys.prefix).resolve()),
+    }
+    failures = [name for name, ok in observed.items() if not ok]
+    fields["numerical_result"] = f"Clean-room evidence for wheel {wheel[:16]}: {observed}."
     fields["uncertainty"] = "Comparison with retained reports is performed by the command after this run."
     fields["provider_runtime_identity"] = {"implementation": "ciw.lab", "wheel_sha256": wheel,
                                            "python": record.get("python"), "ciw_version": __version__}
-    valid = bool(re.fullmatch(r"[0-9a-f]{64}", wheel))
-    return {"state": "completed", "fields": fields, "findings": [
-        finding("This queue run executed inside the clean-room reproduction", "computational_pipeline", valid,
-                {"checks": [_check("wheel digest well-formed", 0 if valid else 1)]}, expected_not_established=not valid)]}
+    verified = not failures
+    return {"state": "completed" if verified else "partial", "fields": fields, "findings": [
+        finding("This queue run executed inside the clean-room reproduction", "computational_pipeline", verified,
+                {"checks": [_check("clean-room conditions failing (wheel digest, isolated venv, installed package)",
+                                   len(failures))]} if verified else {},
+                expected_not_established=not verified)]}
 
 
 # --------------------------------------------------------------- T165
+def _release(reports):
+    states = Counter(r["state"] for r in reports)
+    labels = Counter(f["evidence_status"] for r in reports for f in r["findings"])
+    providers = sorted({json.dumps(r["provider_runtime_identity"].get("provider") or r["provider_runtime_identity"].get("repository"))
+                        for r in reports if isinstance(r["provider_runtime_identity"], dict)
+                        and (r["provider_runtime_identity"].get("provider") or r["provider_runtime_identity"].get("repository"))})
+    identities = [[r["task_id"], r["report_id"]] for r in reports]
+    return {"schema": "ciw.lab-release-report.v1", "ciw_version": __version__, "tasks": len(reports),
+            "states": dict(sorted(states.items())), "labels": {label: labels.get(label, 0) for label in LABELS},
+            "providers": providers,
+            "release_digest": "sha256:" + hashlib.sha256(json.dumps(identities, separators=(",", ":")).encode()).hexdigest(),
+            "physical_validation": "not_established" if all(r["physical_validation_status"]["status"] == "not_established"
+                                                           for r in reports) else "mixed"}
+
+
 @task("T165", changed_files=(MODULE,), regression_tests=(f"{TESTS}::test_catalogue_tasks_aggregate_retained_reports",))
 def release_report(ctx):
     prior = _prior_reports(ctx)
@@ -474,18 +544,9 @@ def release_report(ctx):
         "Sign the release digest with a project key once key custody is defined.")
     if not prior:
         return _no_prior(fields)
-    states = Counter(r["state"] for r in prior)
-    labels = Counter(f["evidence_status"] for r in prior for f in r["findings"])
-    providers = sorted({json.dumps(r["provider_runtime_identity"].get("provider") or r["provider_runtime_identity"].get("repository"))
-                        for r in prior if isinstance(r["provider_runtime_identity"], dict)
-                        and (r["provider_runtime_identity"].get("provider") or r["provider_runtime_identity"].get("repository"))})
-    identities = [[r["task_id"], r["report_id"]] for r in prior]
-    release = {"schema": "ciw.lab-release-report.v1", "ciw_version": __version__, "tasks": len(prior),
-               "states": dict(sorted(states.items())), "labels": {label: labels.get(label, 0) for label in LABELS},
-               "providers": providers,
-               "release_digest": "sha256:" + hashlib.sha256(json.dumps(identities, separators=(",", ":")).encode()).hexdigest(),
-               "physical_validation": "not_established" if all(r["physical_validation_status"]["status"] == "not_established" for r in prior) else "mixed"}
-    _, retained = _recomputed(ctx, "release-report.json", release)
+    release = _release(prior)
+    states, labels = Counter(release["states"]), Counter(release["labels"])
+    _, retained = _recomputed(ctx, "release-report.json", release, _release)
     lines = ["# Lab release report", "", f"- CIW version: {__version__}", f"- Tasks reported: {len(prior)}",
              f"- Release digest: `{release['release_digest']}`", f"- Physical validation: `{release['physical_validation']}`", "",
              "| State | Tasks |", "| --- | --- |"] + [f"| {k} | {v} |" for k, v in release["states"].items()] + [
@@ -493,7 +554,7 @@ def release_report(ctx):
     ctx.artifact_text("RELEASE.md", "\n".join(lines) + "\n")
     fields["numerical_result"] = f"{len(prior)} reports; states {dict(states)}; labels {dict(labels)}."
     fields["uncertainty"] = "Exact aggregation."
-    findings = [finding("Release report reproduces from retained metadata", "provenance", len(prior),
+    findings = [finding("Release report reproduces from retained reports", "provenance", len(prior),
                         {"checks": [retained]}, unit="reports", tolerance={"abs": 0, "rel": 0})]
     return {"state": "completed", "fields": fields, "findings": findings}
 
@@ -509,19 +570,22 @@ def unresolved_assumptions(ctx):
         "Attach each assumption to the experiment that would resolve it and track closure.")
     if not prior:
         return _no_prior(fields)
-    ledger = {}
-    for report in prior:
-        for item in report["unresolved_assumptions"]:
-            ledger.setdefault(str(item), []).append(report["task_id"])
-    rows = [{"assumption": k, "tasks": v} for k, v in sorted(ledger.items())]
-    _, retained = _recomputed(ctx, "unresolved-assumptions.json", rows)
+    def build(reports):
+        ledger = {}
+        for report in reports:
+            items = report["unresolved_assumptions"]
+            for item in (items if isinstance(items, list) else [items]):
+                ledger.setdefault(str(item), []).append(report["task_id"])
+        return [{"assumption": k, "tasks": v} for k, v in sorted(ledger.items())]
+    rows = build(prior)
+    _, retained = _recomputed(ctx, "unresolved-assumptions.json", rows, build)
     ctx.artifact_text("UNRESOLVED_ASSUMPTIONS.md", "# Unresolved assumptions\n\n" + "\n".join(
         f"- {row['assumption']} ({', '.join(row['tasks'])})" for row in rows) + "\n")
     silent = [r["task_id"] for r in prior if not r["unresolved_assumptions"]]
     fields["numerical_result"] = f"{len(rows)} distinct unresolved assumptions from {len(prior)} reports; {len(silent)} reports state none."
     fields["uncertainty"] = "Exact aggregation; completeness depends on each task's honesty."
     fields["unresolved_assumptions"] = ([f"Reports stating no unresolved assumption: {', '.join(silent)}"] if silent else [])
-    findings = [finding("Distinct unresolved assumptions recorded", "provenance", len(rows),
+    findings = [finding("Unresolved-assumption ledger reproduces from retained reports", "provenance", len(rows),
                         {"checks": [retained]}, unit="assumptions", tolerance={"abs": 0, "rel": 0})]
     return {"state": "completed", "fields": fields, "findings": findings}
 
@@ -537,14 +601,20 @@ def unmeasured(ctx):
         "Execute the manufacturing measurement protocols (T126-T128) on hardware and retain raw data.")
     if not prior:
         return _no_prior(fields)
-    claims = [{"task_id": r["task_id"], "claim": f["claim"], "domain": f["domain"]}
-              for r in prior for f in r["findings"]
-              if f["domain"] in PHYSICAL_DOMAINS | AUTHORITY_DOMAINS and f["evidence_status"] == "not_established"]
-    stalled = [{"task_id": r["task_id"], "state": r["state"], "reason": r["experiment"][:300]}
-               for r in prior if r["state"] in ("blocked", "deferred")]
-    measured = [r["task_id"] for r in prior for f in r["findings"] if f["evidence_status"] == "hardware_measured"]
-    document = {"not_established_claims": claims, "blocked_or_deferred_tasks": stalled, "hardware_measured_findings": measured}
-    _, retained = _recomputed(ctx, "unmeasured.json", document)
+    def build(reports):
+        return {"not_established_claims": [{"task_id": r["task_id"], "claim": f["claim"], "domain": f["domain"]}
+                                           for r in reports for f in r["findings"]
+                                           if f["domain"] in PHYSICAL_DOMAINS | AUTHORITY_DOMAINS
+                                           and f["evidence_status"] == "not_established"],
+                "blocked_or_deferred_tasks": [{"task_id": r["task_id"], "state": r["state"],
+                                               "reason": str(r["experiment"])[:300]}
+                                              for r in reports if r["state"] in ("blocked", "deferred")],
+                "hardware_measured_findings": [r["task_id"] for r in reports for f in r["findings"]
+                                               if f["evidence_status"] == "hardware_measured"]}
+    document = build(prior)
+    claims, stalled, measured = (document["not_established_claims"], document["blocked_or_deferred_tasks"],
+                                 document["hardware_measured_findings"])
+    _, retained = _recomputed(ctx, "unmeasured.json", document, build)
     lines = ["# What remains unmeasured", "", f"Hardware-measured findings in this run: {len(measured)}.", "",
              "## Physical and authority claims not established", ""] + [
         f"- {c['task_id']} [{c['domain']}]: {c['claim']}" for c in claims] + [
@@ -553,7 +623,7 @@ def unmeasured(ctx):
     fields["numerical_result"] = f"{len(claims)} physical/authority claims not established; {len(stalled)} blocked or deferred tasks; {len(measured)} hardware-measured findings."
     fields["uncertainty"] = "Exact aggregation."
     findings = [
-        finding("Physical and authority claims recorded as not established", "provenance", len(claims),
+        finding("Unmeasured ledger reproduces from retained reports (physical and authority claims)", "provenance", len(claims),
                 {"checks": [retained]}, unit="claims", tolerance={"abs": 0, "rel": 0}),
         finding("Physical validity of the lab's computational results", "physical", None, {}),
     ]
@@ -589,18 +659,21 @@ def permanent_regression_tests(ctx):
         return {"state": "blocked", "fields": fields, "findings": []}
     known = _test_names(tests_dir)
     implementations, _ = load_implementations()
-    rows, uncovered, dangling = [], [], []
-    for report in prior:
-        implementation = implementations.get(report["task_id"])
-        nodes = list(implementation.regression_tests) if implementation else []
-        missing = [n for n in nodes if n.split("[")[0] not in known]
-        dangling += [f"{report['task_id']}: {n}" for n in missing]
-        if report["state"] in ("completed", "partial") and not nodes:
-            uncovered.append(report["task_id"])
-        rows.append({"task_id": report["task_id"], "state": report["state"], "regression_tests": nodes,
-                     "missing": missing, "passed": [t for t in report["tests_passed"] if t.startswith("pytest:")],
-                     "failed": report.get("tests_failed", [])})
-    _, retained = _recomputed(ctx, "regression-coverage.json", rows)
+
+    def build(reports):
+        rows = []
+        for report in reports:
+            implementation = implementations.get(report["task_id"])
+            nodes = list(implementation.regression_tests) if implementation else []
+            rows.append({"task_id": report["task_id"], "state": report["state"], "regression_tests": nodes,
+                         "missing": [n for n in nodes if n.split("[")[0] not in known],
+                         "passed": [t for t in report["tests_passed"] if t.startswith("pytest:")],
+                         "failed": report.get("tests_failed", [])})
+        return rows
+    rows = build(prior)
+    uncovered = [r["task_id"] for r in rows if r["state"] in ("completed", "partial") and not r["regression_tests"]]
+    dangling = [f"{r['task_id']}: {n}" for r in rows for n in r["missing"]]
+    _, retained = _recomputed(ctx, "regression-coverage.json", rows, build)
     failed = sum(len(r["failed"]) for r in rows)
     fields["numerical_result"] = (f"{len(rows)} reports; {len(uncovered)} completed/partial tasks without regression tests; "
                                   f"{len(dangling)} dangling node ids; {failed} failed test records.")

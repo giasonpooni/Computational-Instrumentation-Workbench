@@ -84,7 +84,9 @@ def test_t001_symbolic_derivations_match_surfaces(lab):
     pytest.importorskip("sympy")
     report = lab("T001")
     assert report["state"] == "completed"
-    assert report["evidence_status"]["primary"] == "independently_verified"
+    # The primary label is the weakest established one: the variational derivation is analytic.
+    assert report["evidence_status"]["primary"] == "analytic"
+    assert report["evidence_status"]["counts"]["independently_verified"] == 2
     labels = _labels(report)
     geodesic = _findings(report)["Sympy-derived metrics, Christoffel symbols and geodesic equations match "
                                  "ciw.lab.surfaces on nine charts"]
@@ -106,7 +108,7 @@ def test_t001_symbolic_derivations_match_surfaces(lab):
 def test_t001_without_sympy_is_partial(tmp_path):
     report = _run(BareContext(tmp_path), "T001")
     assert report["state"] == "partial"
-    assert report["evidence_status"]["primary"] == "numerically_verified"
+    assert report["evidence_status"]["primary"] == "analytic"
     assert report["evidence_status"]["counts"]["independently_verified"] == 0
     assert any("sympy is not installed" in item for item in report["unresolved_assumptions"])
     polar = _findings(report)["Nonzero Christoffel symbols do not imply curvature: the polar charts of the plane "
