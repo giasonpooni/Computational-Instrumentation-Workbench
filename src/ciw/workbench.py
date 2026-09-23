@@ -15,9 +15,10 @@ from threading import RLock
 
 from .adapters.protocol import AdapterRefusal
 from .adapters.subprocess import _json
-DECLARED_KINDS = frozenset({"schematic-assessment", "numerical-heat", "schematic-companions", "bim-quantity", "acquired-dataset", "residual-monitor"})
+DECLARED_KINDS = frozenset({"schematic-assessment", "numerical-heat", "schematic-companions", "bim-quantity", "acquired-dataset", "residual-monitor", "measurement-chain", "geometric-circle", "identified-stability"})
 UPSTREAM_KINDS = {"identified-design": "calibrated-observable", "schematic-companions": "schematic-assessment",
-                  "acquired-calibrated-window": "acquired-dataset"}
+                  "acquired-calibrated-window": "acquired-dataset", "identified-stability": "identified-design"}
+INSTRUMENT_ROLES = frozenset({"ppda", "tbrt", "mcur", "stfe", "gsie", "cbsr", "fdir", "oit", "sra", "scr", "cse", "rci", "fsrt", "jspt", "gte", "plsr"})
 
 SCHEMA = "ciw.retained-workbench.v1"
 SOURCE_SCHEMA = "ciw.workbench-source.v1"
@@ -33,6 +34,9 @@ OPERATIONS = {
     "acquired-dataset": "ciw.acquired-dataset.v1",
     "acquired-calibrated-window": "ciw.acquired-calibrated-window.v1",
     "residual-monitor": "ciw.residual-monitor.v1",
+    "measurement-chain": "ciw.measurement-chain.v1",
+    "geometric-circle": "ciw.geometric-circle.v1",
+    "identified-stability": "ciw.identified-stability.v1",
 }
 WORKFLOW_OPERATION_IDS = frozenset(OPERATIONS.values())
 from .candidate_evidence import OPERATIONS as CANDIDATE_OPERATIONS
@@ -62,6 +66,15 @@ def _workflow(kind):
         return acquired_window
     if kind == "residual-monitor":
         from .residual_monitor import workflow
+        return workflow
+    if kind == "measurement-chain":
+        from .measurement_chain import workflow
+        return workflow
+    if kind == "geometric-circle":
+        from .geometric_circle import workflow
+        return workflow
+    if kind == "identified-stability":
+        from .identified_stability import workflow
         return workflow
     if kind == "geographic-context":
         from . import spatial_view
@@ -136,12 +149,13 @@ def _source(payload):
 
 def _summary(record):
     native = record["native"]
+    steps = _catalog_steps(native)
     verification = native.get("verification", {})
     summary = {"bundle_id": record["bundle_id"], "kind": record["kind"],
         "source_id": record["source_id"], "upstream_bundle_id": record["upstream_bundle_id"],
         "session_id": native["session_id"], "operation_id": OPERATIONS[record["kind"]],
-        "result_ids": [s["result_id"] for s in native["steps"]],
-        "execution_ids": [s["execution_id"] for s in native["steps"]],
+        "result_ids": [s["result_id"] for s in steps],
+        "execution_ids": [s["execution_id"] for s in steps],
         "verification_id": verification.get("verification_id"),
         "retained_verification_outcome": verification.get("outcome"),
         "validation": "content_consistent", "numerical_replay": "not_performed_by_inspection",
@@ -216,7 +230,22 @@ def _claims(record):
             verification(receipt["verification"])
 
     bundle(record["native"])
+    if record["kind"] == "measurement-chain":
+        from .measurement_chain import identity_claims
+        for step in _catalog_steps(record["native"]):
+            claim(step["operation_id"], "operation", step["operation_id"])
+        for identity, (role, body) in identity_claims(record["native"]).items():
+            claim(identity, role, body)
     return claims
+
+
+def _catalog_steps(native):
+    """Expose retained native occurrences without manufacturing new results."""
+    steps = list(native["steps"])
+    if native["schema"] == "ciw.measurement-chain-session.v1":
+        from .measurement_chain import catalog_steps
+        steps.extend(catalog_steps(native))
+    return steps
 
 
 def _source_claims(source):
@@ -285,6 +314,13 @@ def _validate_links(record, bundles):
                     raise ValueError("Acquired windows must retain fresh native execution and result occurrences")
     if record["kind"] == "residual-monitor":
         _workflow(record["kind"]).validate_upstreams(native, {key: value["native"] for key, value in bundles.items()})
+    if record["kind"] == "measurement-chain":
+        from .measurement_chain import native_occurrences
+        occurrences = native_occurrences(native)
+        for other in bundles.values():
+            if other["bundle_id"] != record["bundle_id"] and other["kind"] == record["kind"]:
+                if not occurrences.isdisjoint(native_occurrences(other["native"])):
+                    raise ValueError("Measurement chains must retain fresh native execution occurrences")
     if record["kind"] == "schematic-companions":
         from .schematic_companions import native_occurrences
         occurrences = native_occurrences(native)
@@ -311,6 +347,8 @@ def _validate_links(record, bundles):
             from .schematic_companions import validate_upstream
             validate_upstream(native, upstream["native"])
         elif record["kind"] == "acquired-calibrated-window":
+            _workflow(record["kind"]).validate_upstream(native, upstream["native"])
+        elif record["kind"] == "identified-stability":
             _workflow(record["kind"]).validate_upstream(native, upstream["native"])
         elif _canonical(native["upstream"]) != _canonical(upstream["native"]):
             raise ValueError("Design upstream must exactly match a retained calibrated bundle")
@@ -496,7 +534,7 @@ class Workbench:
 
     def describe_operations(self):
         with self._lock:
-            return [{"operation_id": operation, "role": {"identified-design": "decision", "schematic-assessment": "schematic_assessment", "numerical-heat": "numerical_execution", "schematic-companions": "local_model_analysis", "bim-quantity": "construction_quantity", "acquired-dataset": "evidence_acquisition", "residual-monitor": "residual_diagnostics"}.get(kind, "state_estimator"),
+            return [{"operation_id": operation, "role": {"identified-design": "decision", "schematic-assessment": "schematic_assessment", "numerical-heat": "numerical_execution", "schematic-companions": "local_model_analysis", "bim-quantity": "construction_quantity", "acquired-dataset": "evidence_acquisition", "residual-monitor": "residual_diagnostics", "measurement-chain": "measurement_chain_testbed", "geometric-circle": "geometric_reconciliation", "identified-stability": "stability_assessment"}.get(kind, "state_estimator"),
                      "source_kind": kind, "available": kind in self._bindings,
                      "requires_upstream_bundle": kind in UPSTREAM_KINDS,
                      **({"requires_upstream_bundles": "explicit_ordered_source_selection"} if kind == "residual-monitor" else {})}
@@ -521,17 +559,17 @@ class Workbench:
                 "instrument": step["runtime_ref"], "operation_id": step["operation_id"],
                 "result_id": step["result_id"], "execution_id": step["execution_id"],
                 "view": "retained_native_result", "state_admission": "not_performed"}
-                for record in self._bundles.values() for step in record["native"]["steps"]
-                if step["runtime_ref"] in {"ppda", "tbrt", "mcur", "stfe", "gsie", "cbsr", "fdir", "oit", "sra", "scr", "cse"}])
+                for record in self._bundles.values() for step in _catalog_steps(record["native"])
+                if step["runtime_ref"] in INSTRUMENT_ROLES])
 
     def inspect_instrument(self, payload):
         _keys(payload, {"bundle_id", "instrument"})
         _text(payload["bundle_id"], "Bundle identity")
-        if payload["instrument"] not in ("ppda", "tbrt", "mcur", "stfe", "gsie", "cbsr", "fdir", "oit", "sra", "scr", "cse"):
+        if payload["instrument"] not in INSTRUMENT_ROLES:
             raise ValueError("Choose a retained instrument result")
         with self._lock:
             native = self.get_bundle(payload["bundle_id"])
-            steps = {step["runtime_ref"]: step for step in native["steps"]}
+            steps = {step["runtime_ref"]: step for step in _catalog_steps(native)}
             if payload["instrument"] not in steps:
                 raise ValueError("Instrument did not execute in this bundle; explicitly select its upstream bundle")
             record = self._bundles[payload["bundle_id"]]
@@ -829,6 +867,15 @@ class Workbench:
             if record["kind"] == "residual-monitor":
                 from .residual_view import project as project_residual
                 return project_residual(record, source, declaration, self._revision)
+            if record["kind"] == "measurement-chain":
+                from .measurement_chain_view import project as project_measurement
+                return project_measurement(record, source, declaration, self._revision)
+            if record["kind"] == "geometric-circle":
+                from .geometric_circle_view import project as project_geometry
+                return project_geometry(record, source, declaration, self._revision)
+            if record["kind"] == "identified-stability":
+                from .identified_stability_view import project as project_stability
+                return project_stability(record, source, declaration, self._revision)
             if record["kind"] == "acquired-calibrated-window":
                 declaration = _workflow(record["kind"]).mapped_source(record["native"])
             if record["kind"] in DECLARED_KINDS:
@@ -841,7 +888,7 @@ class Workbench:
         seen = set()
 
         def visit(record, native):
-            for step in native["steps"]:
+            for step in _catalog_steps(native):
                 if step["execution_id"] not in seen:
                     seen.add(step["execution_id"])
                     yield record, native, step
@@ -851,7 +898,7 @@ class Workbench:
 
         # Prefer the explicit catalog owner for original upstream occurrences.
         for record in self._bundles.values():
-            for step in record["native"]["steps"]:
+            for step in _catalog_steps(record["native"]):
                 if step["execution_id"] not in seen:
                     seen.add(step["execution_id"])
                     yield record, record["native"].get("child_window", record["native"]), step

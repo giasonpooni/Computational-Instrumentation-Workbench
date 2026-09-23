@@ -134,6 +134,27 @@ func _run() -> void:
 	check("earlier monitor response cannot replace selected replay", view.view.is_empty())
 	view.apply_view(residual_projection("monitor-replay"))
 	check("replayed residual values remain tied to fresh result identity", view._plot.panel.values == [0.5, 2.5] and view._plot.panel.provenance.result_id == "monitor-replay-fdir")
+	view.apply_snapshot(snapshot(8, [{"bundle_id": "stability", "kind": "identified-stability"}]))
+	var stability := projection("stability")
+	stability.fusion_context = null
+	stability.object_context = {"object_kind": "identified_model_stability", "status": "NUMERICAL_INCONCLUSIVE",
+		"summary": "Native PLSR: NUMERICAL_INCONCLUSIVE · state covariance retained as context", "sensor_fusion": "not_performed"}
+	stability.panels[0].title = "Selected GSIE prediction"
+	stability.panels[0].context.covariance_usage = "context_only_not_a_certificate_bound"
+	stability.panels[0].provenance.result_id = "selected-upstream-state"
+	view.apply_view(stability)
+	check("stability preserves inconclusive verdict beside selected state", view._summary.text.contains("NUMERICAL_INCONCLUSIVE") and view._plot.panel.provenance.result_id == "selected-upstream-state")
+	check("state covariance does not become a certificate uncertainty", view._plot.panel.covariance == [[.84]] and view._numbers.text.contains("context_only_not_a_certificate_bound"))
+	view.apply_snapshot(snapshot(9, [{"bundle_id": "circle-held", "kind": "geometric-circle"}]))
+	check("changing to geometry clears previous state and uncertainty", view._plot.panel.is_empty() and view._numbers.text.is_empty())
+	var geometry := projection("circle-held")
+	geometry.fusion_context = null
+	geometry.object_context = {"object_kind": "geometric_reconciliation", "summary": "Native circle candidate: held",
+		"sensor_fusion": "not_performed", "frame_authority": "declared_not_surveyed"}
+	geometry.panels[0].title = "Projected candidate coordinates"
+	geometry.panels[0].panel_id = "projected_points_m"
+	view.apply_view(geometry)
+	check("held geometry stays a candidate with declared authority", view._summary.text.contains("held") and view._plot.panel.title == "Projected candidate coordinates" and view.view.object_context.frame_authority == "declared_not_surveyed")
 	reader.status_changed.emit("disconnected", "gone")
 	check("disconnect marks retained view stale", view._status.text.begins_with("STALE") and not view.view.is_empty())
 	var replacement := snapshot(0, [])

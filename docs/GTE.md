@@ -1,5 +1,9 @@
 # Geometric Telemetry Engine: circle reference operation
 
+[`ciw.geometric-circle.v1`](REMAINING_MODULES.md) connects this pinned native
+operation to the common source catalog, Workbench desktop, result browser and
+replay history. The direct commands below remain supported.
+
 **Constraint-based geometric reconciliation and uncertainty propagation.**
 
 GTE supplies one experimental **geometric reconciliation candidate** operation,

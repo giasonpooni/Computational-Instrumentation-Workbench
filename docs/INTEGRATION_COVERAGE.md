@@ -18,7 +18,7 @@ operating point.
 
 ## Shared operating session
 
-The [Workbench desktop tab](EXPERIMENT_VIEW.md) projects all eleven shared workflow
+The [Workbench desktop tab](EXPERIMENT_VIEW.md) projects all fourteen shared workflow
 kinds through `experiment.inspect`: retained measurements, state/covariance,
 residuals, native dependencies, evidence and verification. It follows committed
 session changes and keeps replay occurrences separate. This read-only display
@@ -30,7 +30,9 @@ The live Session now hosts `ciw.telemetry.v1`, `ciw.calibrated-observable.v1` an
 `ciw.identified-design.v1`, plus `ciw.calibrated-window.v1`,
 `ciw.schematic-assessment.v1`, `ciw.numerical-heat.v1`, `ciw.schematic-companions.v1`,
 `ciw.bim-quantity.v1`, `ciw.acquired-dataset.v1`,
-`ciw.acquired-calibrated-window.v1` and `ciw.residual-monitor.v1`, through `operation.list/execute`.
+`ciw.acquired-calibrated-window.v1`, `ciw.residual-monitor.v1`,
+`ciw.measurement-chain.v1`, `ciw.geometric-circle.v1` and
+`ciw.identified-stability.v1`, through `operation.list/execute`.
 `source.*`, `bundle.*` and `fusion.list` expose retained inputs, native bundles
 and candidate contexts; result and execution lists include those native records
 alongside existing session operations. Workspace format 3 retains this content,
@@ -60,9 +62,9 @@ keep their native owners and individual ICRH contracts.
 | Retained GSIE innovations → FDIR/OIT | Shared `ciw.residual-monitor.v1`; explicit ordered windows, native residual covariance, observability gate and CUSUM transitions | ICRH `residual-monitor.v1`; scalar numerical oracle, held observability, replay aliases, unknown covariance and ambiguity checks | Diagnostic candidates only; unknown cross-window dependence blocks statistical alarm authority and unique isolation. No posterior feedback. |
 | FSRT → TBRT → MCUR → OIT → GSIE → CBSR → FDIR → SET | `ciw calibrated-observable create/inspect/replay`; two calibrated channels, retained clock uncertainty, observability gate and declared residual covariance | ICRH `calibrated-observable-telemetry.v1`; original, replay, held, ambiguous and refusal fixtures | Synthetic stationary hold; no calibrated stream window or identified dynamics in this profile. |
 | Retained calibrated experiment → SIDT → OIT → GSIE → EDSPT → YWIR | `ciw identified-design create/inspect/replay`; freshly checked upstream prior, identified point model, candidate observability, future conditional covariance, cost-constrained reduction and separate advisory token decision | ICRH [`identified-budgeted-observation.v1`](https://github.com/giasonpooni/Instrument-Conformance-and-Replay-Harness/blob/main/profiles/identified-budgeted-observation.v1.json); retained original/replay/token-denial fixtures | Parameter uncertainty remains unknown; selection is advisory and cannot dispatch acquisition or admit ESM state. |
-| RCI → FSRT → JSPT | `ciw investigation`, `covariance`, `covariance-replay`; shared investigation, full covariance provenance and declared Jacobian | CIW pinned adapter gate; no dedicated ICRH investigation profile | Connect existing typed covariance to a concrete downstream decision without replacing historical records. |
-| Declared circle → GTE | `ciw geodesic create/inspect/replay`; observations, tangent covariance and held candidate | CIW replay tests; ICRH separately runs pinned CBSR/FSRT/GTE numerical comparisons | Numerical comparisons are not a complete GTE investigation profile or a BIM frame mapping. |
-| Declared model/certificate → PLSR | `ciw plsr import/evaluate/inspect/replay`; separate retained terminal bundle | CIW adapter/source-binding tests; no dedicated ICRH PLSR profile | Bind a retained candidate dynamics model and compatible estimated state explicitly. |
+| RCI → FSRT → JSPT | Shared `ciw.measurement-chain.v1`; unchanged native investigation, raw/calibrated evidence, posterior/reconciled covariance and explicit quantity map; inner executions/results join common history | ICRH `measurement-chain.v1`; calibration, estimator and mapped covariance checks, original/replay/held/fault fixtures | Explicit independent simultaneous channels; general cross-provider state-to-quantity mapping remains separate. |
+| Declared circle → GTE | Shared `ciw.geometric-circle.v1`; observations, full joint/tangent covariance, held candidate and native replay | ICRH `geometric-circle.v1`; separate geometric/covariance oracle and binding checks | Declared circle in one plane; no surveyed BIM frame mapping or inferred constraint. |
+| Retained SIDT model + GSIE state + certificate → PLSR | Shared `ciw.identified-stability.v1`; exact retained model/state selection, discrete interval and native sealed artifact/verdict | ICRH `identified-stability.v1`; independent quadratic/discrete decrease checks, upstream identity bindings and inconclusive/held cases | Conditional on the identified point model; unknown parameter covariance remains unknown and state covariance is context, not a probabilistic certificate. |
 | PPDA/SCR exchange artifact → SET → CIW inspector | `ciw exchange inspect`; unchanged artifacts, byte digests and conformance report | Actual producer integration tests in CIW | Read-only inspection does not dispatch an SCR workload or import native state. |
 | Retained SRA assessment → SRA/JSPT/PLSR | Shared `ciw.schematic-companions.v1`, native local calls and explicit upstream result edge | ICRH `schematic-companions.v1`; scalar derivative/covariance/Lyapunov and binding checks | Local continuous linear surrogate only; no equilibrium or nonlinear region claim. |
 | IFC + declared scalar observation → CSE | Shared `ciw.bim-quantity.v1`, native conditioning, rollback and replayed ledger | ICRH `bim-quantity.v1`; conditioning oracle, ledger/world commitments and held/refused cases | Quantity-only model; surveyed-frame geometry remains separate. |
@@ -79,6 +81,9 @@ The executable sources are [`telemetry.py`](../src/ciw/telemetry.py),
 [`residual_monitor.py`](../src/ciw/residual_monitor.py),
 [`calibrated_observable.py`](../src/ciw/calibrated_observable.py),
 [`identified_design.py`](../src/ciw/identified_design.py),
+[`measurement_chain.py`](../src/ciw/measurement_chain.py),
+[`geometric_circle.py`](../src/ciw/geometric_circle.py),
+[`identified_stability.py`](../src/ciw/identified_stability.py),
 [`investigation.py`](../src/ciw/investigation.py),
 [`covariance_workflow.py`](../src/ciw/covariance_workflow.py),
 [`geodesic.py`](../src/ciw/geodesic.py), [`plsr.py`](../src/ciw/plsr.py), and
@@ -127,7 +132,12 @@ an equipment order nor starts a measurement.
 | 5 | CSE, RCI, GTE, JSPT, CBSR | Frame-bound geometry/BIM inspection using measured quantities, local covariance propagation and declared construction constraints | Explicit surveyed/design frames and source authority, units, one supported constraint and analytic oracle; retain held candidate and residuals; a complete CIW operation/profile. |
 | 6 | SIDT or JSPT, GSIE, PLSR | A selected retained model and compatible state passed to the existing Lyapunov evaluator | Bind discrete/continuous convention, sample period, state order, equilibrium, supplied certificate and margin; preserve `NUMERICAL_INCONCLUSIVE`; new ICRH profile. |
 
-These six rows describe further integration targets. The affine TBRT/MCUR/STFE
+These six rows track assembly targets and their remaining scope. Row 6 is now
+delivered for an explicitly selected discrete SIDT model and GSIE prediction,
+with a supplied quadratic certificate. The common measurement-chain and GTE
+operations also expose their native results in the shared session; surveyed
+frame composition in row 5 remains pending. See [shared module operations](REMAINING_MODULES.md).
+The affine TBRT/MCUR/STFE
 window part of row 1 is delivered through [calibrated windows](CALIBRATED_WINDOW.md);
 the [acquired stream path](ACQUIRED_STREAM.md) now adds exact PPDA record selection
 and native FDIR/OIT diagnostics over retained GSIE innovations. Physical polling,
@@ -147,7 +157,7 @@ produced and consume it.
 
 | Component | Existing capability checked in this review | Why a further integration is meaningful |
 | --- | --- | --- |
-| [SIDT](https://github.com/giasonpooni/System-Identification-Dynamics-Testbed) | `fit_lti`, `evaluate_one_step`, rank diagnostics and bound declared-identification adapter | The identified-design consumer binds training evidence and the current prior; a PLSR consumer and physical holdout validation remain separate work. |
+| [SIDT](https://github.com/giasonpooni/System-Identification-Dynamics-Testbed) | `fit_lti`, `evaluate_one_step`, rank diagnostics and bound declared-identification adapter | Identified-design binds training evidence and the current prior; identified-stability consumes the selected model/state. Physical holdout validation remains separate work. |
 | [EDSPT](https://github.com/giasonpooni/Experiment-Design-Sensor-Placement-Testbed) | Finite candidate Fisher information, D-/A-optimal ranking, coordinate checks and cost-budgeted next observation | Identified-design now binds the point model, state, reduction baseline and observation budget; multi-observation portfolio optimization is outside this operation. |
 | [YWIR](https://github.com/giasonpooni/Yield-Weighted-Inference-Runtime) | Advisory decisions, one-use reserve/settle/cancel operations and bound observation-design token adapter | Identified-design retains an advisory token receipt; it cannot certify the experiment or stand in for measurement cost, and creates no spending reservation. |
 | [CSE](https://github.com/giasonpooni/Construction-State-Estimator-for-BIM) | Native IFC quantity conditioning, invariant rollback and execution ledger | CIW runs the native session and ledger replay; measured geometry still needs surveyed-frame correspondence. |

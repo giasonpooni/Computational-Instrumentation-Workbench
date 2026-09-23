@@ -54,12 +54,19 @@ local presentation state and does not alter the scientific or oscillator selecti
 | PPDA acquired dataset | Native evidence counts, checkpoint transitions, acquisition outcomes and durable-pool identity |
 | Acquired calibrated window | Existing calibrated-window panels plus exact PPDA row/record/document lineage and separate mapping/native verification |
 | FDIR/OIT residual sequence | Retained innovations, normalized residuals, native CUSUM transitions and declared thresholds; per-window covariance, observability and ambiguous isolation remain in context |
+| RCI/FSRT/JSPT measurement chain | Raw/calibrated evidence, native estimate and eligible reconciliation, full source/mapped covariance and constraint diagnostics; inner FSRT/JSPT results are independently selectable |
+| GTE circle geometry | Observed and projected coordinates, eligible versus held candidates and radial residuals; full native joint/tangent covariance and basis remain in context |
+| Identified PLSR stability | Selected GSIE prediction and covariance context, supplied certificate, native quadratic value/decrease and verdict; unknown model uncertainty and inconclusive status remain explicit |
 
 The [declared workloads guide](DECLARED_WORKLOADS.md) provides SRA/SCR startup
 bindings and examples. These objects have `fusion_context: null`, a typed
 `object_context`, and `raw_declaration` rather than fabricated observations.
 They use the same live invalidation and occurrence selection controls.
-See [new module bindings](INTEGRATED_MODULES.md). Source-only geographic context
+See [new module bindings](INTEGRATED_MODULES.md) and the
+[measurement-chain, geometry and stability bindings](REMAINING_MODULES.md).
+These three operations use typed object context and retain their native records;
+they do not create another fusion context or feed a diagnostic back as a sensor.
+Source-only geographic context
 is inspected through GSV's read-only `/spatial` endpoint in the same session.
 The [acquired stream guide](ACQUIRED_STREAM.md) runs acquisition, three calibrated
 windows and residual monitoring through the same live server. Residual sequence

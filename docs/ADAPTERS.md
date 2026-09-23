@@ -1,5 +1,10 @@
 # Shared execution: RCI calibration and FSRT estimation
 
+For the common source/operation catalog and live Workbench inspection, use
+[`ciw.measurement-chain.v1`](REMAINING_MODULES.md). It retains this native
+investigation and its FSRT/JSPT results unchanged. The commands below remain
+available for direct investigation workflows.
+
 CIW owns the shared session, selection, identities, persistence and terminal
 representations. RCI owns the measurement chain and calibration. FSRT owns the
 declared fluid model, state estimate, covariance, residuals and domain checks.

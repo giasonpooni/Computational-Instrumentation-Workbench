@@ -181,6 +181,22 @@ enum and does not claim state-estimator semantics. Read-only source
 and result validation is built into CIW, so reopening needs no GTE runtime.
 See [GTE.md](GTE.md) for exact inputs, statuses, covariance meaning and limits.
 
+## Shared measurement, geometry and stability operations
+
+The additional shared kinds `measurement-chain`, `geometric-circle` and
+`identified-stability` use the same `source.add`, `operation.execute`,
+`bundle.replay` and `experiment.inspect` surfaces. Their operation IDs are
+`ciw.measurement-chain.v1`, `ciw.geometric-circle.v1` and
+`ciw.identified-stability.v1`. All take an exact retained `source_id`;
+identified stability additionally selects an `upstream_bundle_id` whose kind
+is `identified-design`. Its source binds the selected native model and state
+result/execution identities. The measurement chain's unchanged FSRT and JSPT
+results and execution IDs are also exposed through `result.*`, `execution.list`
+and instrument inspection, alongside the outer RCI operation. Replays create
+fresh occurrences and preserve the original evidence. These objects have typed
+object context and do not create or implicitly merge fusion contexts. See
+[shared module operations](REMAINING_MODULES.md) for input contracts and bindings.
+
 ## Shared acquired-window and residual-monitor operations
 
 These operations use the shared workbench catalog in workspace format 3;

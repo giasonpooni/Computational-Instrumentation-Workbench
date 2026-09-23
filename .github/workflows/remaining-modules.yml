@@ -1,0 +1,26 @@
+name: Remaining native modules in one bench
+
+on:
+  push:
+  pull_request:
+
+permissions:
+  contents: read
+
+jobs:
+  remaining-modules:
+    runs-on: ubuntu-latest
+    timeout-minutes: 40
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-python@v5
+        with:
+          python-version: '3.12'
+      - run: python -m pip install 'setuptools>=77' wheel
+      - name: Exercise installed common bench with exact native providers
+        run: python scripts/check_remaining_modules.py --output-dir results/remaining-modules
+      - uses: actions/upload-artifact@v4
+        if: success()
+        with:
+          name: remaining-modules-native-replay
+          path: results/remaining-modules

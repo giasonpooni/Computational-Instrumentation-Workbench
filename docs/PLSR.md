@@ -7,9 +7,12 @@ evidence → replay**. It evaluates the model and certificate supplied by the
 caller; it does not construct a model or establish that it describes a physical
 plant.
 
-This adapter is headless. PLSR runs are self-contained JSON bundles, separate
-from the oscillator's shared WebSocket session and Godot viewport. No viewport
-is needed, and PLSR results are not currently published to a live shared session.
+The general terminal adapter below retains self-contained JSON bundles.
+[`ciw.identified-stability.v1`](REMAINING_MODULES.md) additionally connects an
+explicitly selected retained SIDT discrete model and GSIE prediction to the
+native evaluator in the shared WebSocket session and Godot Workbench tab.
+Its source contract binds the model, sample period, units, frame and supplied
+certificate; it preserves unknown model uncertainty and noncertifying verdicts.
 
 ## Installation and pinned versions
 

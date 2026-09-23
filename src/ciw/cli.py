@@ -238,6 +238,12 @@ def parser() -> argparse.ArgumentParser:
     server.add_argument("--acquisition-repo", type=Path, help="Bind pinned PPDA and its scout gitlink for retained dataset acquisition")
     server.add_argument("--acquired-stream-stack-root", type=Path,
                         help="Bind pinned ppda/tbrt/mcur/stfe/gsie/set/oit/fdir for acquired calibrated windows and residual monitoring")
+    server.add_argument("--measurement-chain-stack-root", type=Path,
+                        help="Bind pinned rci/fsrt/jspt directories for native measurement-chain investigations")
+    server.add_argument("--geometry-repo", type=Path,
+                        help="Bind pinned GTE for retained circle inspection in the shared workbench")
+    server.add_argument("--stability-repo", type=Path,
+                        help="Bind pinned PLSR for explicitly selected identified model/state assessment")
     server.add_argument("--spatial-view-origin", action="append", default=[], help="Exact browser http(s) origin allowed on the read-only /spatial endpoint; repeat to allow more")
     server.add_argument("--computation-repo", type=Path, help="Bind pinned SCR numerical execution")
     server.add_argument("--computation-engine", type=Path, help="Host-built SCR execution-cli (required with --computation-repo)")
@@ -434,6 +440,13 @@ def main(argv: list[str] | None = None) -> int:
                 for kind in ("calibrated-window", "acquired-calibrated-window"):
                     session.workbench.bind_workflow(kind, {role: root / role for role in WINDOW_ROLES})
                 session.workbench.bind_workflow("residual-monitor", {role: root / role for role in ("oit", "fdir")})
+            if args.measurement_chain_stack_root is not None:
+                session.workbench.bind_workflow("measurement-chain", {
+                    role: args.measurement_chain_stack_root / role for role in ("rci", "fsrt", "jspt")})
+            if args.geometry_repo is not None:
+                session.workbench.bind_workflow("geometric-circle", {"gte": args.geometry_repo})
+            if args.stability_repo is not None:
+                session.workbench.bind_workflow("identified-stability", {"plsr": args.stability_repo})
             if (args.computation_repo is None) != (args.computation_engine is None):
                 raise ValueError("--computation-repo and --computation-engine must be supplied together")
             if args.computation_repo is not None:

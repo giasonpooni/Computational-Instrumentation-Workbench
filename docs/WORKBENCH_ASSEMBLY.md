@@ -7,7 +7,7 @@ native execution records and replay evidence. Provider repositories keep their
 scientific responsibilities while their operations and artifacts join this suite.
 
 The [Workbench desktop tab](EXPERIMENT_VIEW.md) is now implemented over that
-substrate: it links eleven retained workflows to measurement/state/covariance and
+substrate: it links fourteen retained workflows to measurement/state/covariance and
 residual panels, native input dependencies, evidence inspection and live session
 invalidation. It introduces no additional estimator or parallel result store.
 
@@ -143,10 +143,11 @@ state or run a second independent fusion of the same observations.
 | `workspace.save` | Persist the assembled workspace in format 3. |
 
 The registry also accepts `telemetry`, with an explicit window/model configuration
-at `operation.execute`. It does not import arbitrary saved workflow bundles or
-PLSR bundles. Existing
-standalone commands remain available while those artifact families gain shared
-session mappings. Execution publishes a bundle only after the existing
+at `operation.execute`. It does not import arbitrary saved workflow bundles.
+Measurement-chain, circle geometry and identified stability now have explicit
+shared source contracts; [their operating guide](REMAINING_MODULES.md) documents
+bindings, native history and replay. Existing standalone commands remain available.
+Execution publishes a bundle only after the existing
 workflow's complete validation and verification succeed.
 
 `ciw watch` emits `workbench.changed` invalidation events when shared content
@@ -165,7 +166,7 @@ normal server shutdown also saves them. A workflow that refuses before producing
 a bundle returns an error and leaves its source retained, without publishing a
 partial state. The catalog permits at most 64 sources, 128 completed bundles and
 64 MiB of retained content. Existing protocol frame limits still apply. It
-supports eleven executable source kinds and source-only geography; it is not an arbitrary bundle
+supports fourteen executable source kinds and source-only geography; it is not an arbitrary bundle
 importer or a live acquisition service.
 
 ## What shares a workspace
@@ -206,12 +207,13 @@ refuse a connection.
 | Component | Place in the assembled workbench | Current connection and remaining work |
 | --- | --- | --- |
 | CIW | Operator session, source and native-artifact registry, operation routing, result history and inspection | Shared session assembly; existing numerical workflows retain their original contracts. |
-| PPDA and RCI | Acquisition and measurement sources with original evidence, assembly, delivery and missingness | PPDA retained observation projection now executes with STFE in the shared session. RCI investigation exists separately; live sensor acquisition remains a delivery item. |
+| PPDA and RCI | Acquisition and measurement sources with original evidence, assembly, delivery and missingness | PPDA retained observation projection executes with STFE; RCI/FSRT/JSPT measurement chains share the catalog and result browser. Live sensor acquisition remains a delivery item. |
 | TBRT, MCUR and STFE | Declared clock mapping, calibration and stream-window transforms | Shared calibrated windows preserve full joint covariance. Exact PPDA record selection and native FDIR/OIT monitoring now connect bounded acquired sequences; physical polling remains separate. |
 | OIT and GSIE | Observability gate and state/covariance computation for a declared context | Calibrated process operation already binds the gate to the estimator's exact transition and observation matrices. |
 | CBSR and FDIR | Constraint-conditioned candidates and residual/isolability diagnostics | Consume retained state and declared residual covariance; hold/refusal remains visible alongside the original estimate. |
 | SRA | Authored instrument/model schematic, typed relationships and eligibility | Native assessment and selected JSPT/PLSR companion execution share retained upstream graph/result bindings. |
-| JSPT and PLSR | Local sensitivity/covariance propagation and declared-model certificate assessment | Existing CIW operations are reusable; selecting a compatible retained state/model for PLSR still requires an explicit mapping. |
+| JSPT and PLSR | Local sensitivity/covariance propagation and declared-model certificate assessment | JSPT maps an explicitly selected native FSRT covariance. PLSR consumes an explicitly selected retained SIDT model and GSIE prediction with a supplied certificate. |
+| GTE | Geometric reconciliation against declared constraints | Shared circle projection retains raw observations, full native covariance and held candidates; surveyed-frame composition remains pending. |
 | SCR | Delegated scientific computation with declared workload and execution records | Native integer diffusion now executes through the shared session with byte commitments, host-bound engine identity and ICRH oracle. |
 | CSE | BIM/project context, construction intent and domain dispositions | Native quantity conditioning and ledger replay are integrated; surveyed-frame geometry inspection remains a delivery item. |
 | GSV | Read-only spatial and temporal panels consuming selected retained context | CIW geographic sources enter its native provider and WorldStore; explicit CRS84 authority is required. |
@@ -251,9 +253,12 @@ GSIE estimate.
 CIW already exposes Session bindings for FSRT, JSPT and GTE. Calibrated-process
 and observation-design bundles now join the shared session without being
 flattened into oscillator recordings. Its telemetry workflow now shares that
-registry. The PLSR workflow supplies retained native artifacts; its shared-session
-mapping remains assembly work. Inspection should show their distinct roles and link
-the result to its exact source and execution.
+registry. Shared measurement-chain and circle operations expose their retained
+native artifacts. Identified stability binds the retained discrete model and
+prediction directly to PLSR, including sample period, coordinate order, units,
+frame and supplied certificate. Inspection links each result to its exact source
+and execution. Parameter uncertainty remains unknown; retained state covariance
+does not become a probabilistic stability certificate.
 
 GTE remains a specialized geometry provider. The curved-surface geodesic runtime
 and flat-torus reference can likewise expose bounded operations or artifacts
@@ -283,10 +288,10 @@ unknown temporal dependence retained. Row 5 has native CSE quantity
 conditioning; surveyed-frame geometry composition remains pending. See
 [declared workloads](DECLARED_WORKLOADS.md) and [new modules](INTEGRATED_MODULES.md).
 
-A later PLSR connection consumes a specifically selected compatible model and
-state, including state order, equilibrium, continuous/discrete convention,
-sample period, certificate and margin. It preserves numerical-inconclusive and
-refusal states. Next-observation advice remains advisory until a separately
+The shared PLSR connection now consumes a specifically selected compatible model
+and state, with explicit zero equilibrium, discrete sample period, certificate
+and margin. It preserves numerical-inconclusive and refusal states. See
+[shared module operations](REMAINING_MODULES.md). Next-observation advice remains advisory until a separately
 declared acquisition operation exists.
 
 ## Source and runtime availability
