@@ -123,31 +123,35 @@ def _cpu_workload():
             "wall_s": wall, "cpu_s": cpu}
 
 
-def _rapl_measurement(ctx):
-    """Background-inclusive package energy over repeated batches, or the reason it is unavailable."""
+def _rapl_measurement(ctx, repeats=3):
+    """Background-inclusive package energy over repeated fixed-step batches, or why it is unavailable."""
     if not ctx.available("hardware:rapl"):
         return None, "no readable /sys/class/powercap/intel-rapl:* energy counters (RAPL) on this host"
     domains = telemetry.rapl_domains()
+    if not domains:
+        return None, "no top-level intel-rapl package domain with an energy_uj counter"
+    surface, states = Sphere(1.0), kernels.initial_states()
     try:
-        repeats = 3
         stamp = time.time_ns()
         before = telemetry.rapl_read(domains)
         for _ in range(repeats):
-            _cpu_workload()
+            for y0 in states:
+                integrate_fixed(surface.geodesic_rhs, y0, kernels.LENGTH, STEPS, "rk4")
         after = telemetry.rapl_read(domains)
+        deltas = [telemetry.rapl_delta_uj(b, a, d["max_energy_range_uj"]) for b, a, d in zip(before, after, domains)]
     except (OSError, ValueError) as exc:
-        return None, f"RAPL counters present but unreadable: {type(exc).__name__}: {exc}"
-    deltas = [telemetry.rapl_delta_uj(b, a, d["max_energy_range_uj"]) for b, a, d in zip(before, after, domains)]
+        return None, f"RAPL counters present but unusable: {type(exc).__name__}: {exc}"
     raw = {"domains": domains, "before_uj": before, "after_uj": after, "repeats": repeats,
-           "trajectories_per_repeat": len(kernels.HEADINGS), "acquired_unix_ns": stamp}
+           "trajectories_per_repeat": len(states), "steps": STEPS, "acquired_unix_ns": stamp}
     total_uj = sum(delta for delta, _ in deltas)
     return {"raw": raw, "wrapped": [w for _, w in deltas],
-            "joules_per_trajectory": total_uj * 1e-6 / (repeats * len(kernels.HEADINGS))}, None
+            "joules_per_trajectory": total_uj * 1e-6 / (repeats * len(states))}, None
 
 
 @task("T115", changed_files=FILES, regression_tests=(
     f"{TESTS}::test_cpu_energy_task_counts_work_and_leaves_energy_unestablished",
-    f"{TESTS}::test_rapl_helpers_read_counters_and_one_wrap"))
+    f"{TESTS}::test_rapl_helpers_read_counters_and_one_wrap",
+    f"{TESTS}::test_rapl_path_divides_counter_difference_by_trajectories"))
 def cpu_energy_per_trajectory(ctx):
     work = ctx.memo("energy-gpu-cpu-workload", _cpu_workload)
     trajectories = len(work["states"])
@@ -197,8 +201,8 @@ def cpu_energy_per_trajectory(ctx):
     ctx.artifact_json("rapl-probe.json", {"available": measured is not None, "reason": reason,
                                           "domains": telemetry.rapl_domains() if measured else []})
     fields = _fields(
-        hypothesis="CPU energy per geodesic trajectory is proportional to the deterministic work of the integrator "
-                   "(right-hand-side evaluations) and can be read from package energy counters bracketing a batch.",
+        hypothesis="CPU energy per geodesic trajectory can be read from package energy counters bracketing a batch "
+                   "of fixed-step RK4 trajectories, whose deterministic work (right-hand-side evaluations) is exact.",
         mathematical_model="E_traj = (E_pkg(after) - E_pkg(before)) / (repeats * trajectories), gross and "
                            "background-inclusive; work proxy W = 4N evaluations (RK4) or the Dormand-Prince count.",
         input_data=[f"{trajectories} unit-speed geodesics on the unit sphere from the equator, headings "
@@ -207,7 +211,7 @@ def cpu_energy_per_trajectory(ctx):
                           "/sys/class/powercap when present; wall/CPU time retained only as an artifact.",
         expected_invariant="Counted RK4 evaluations equal 4 N per trajectory; endpoints match the great circle.",
         experiment=f"Integrate each geodesic with RK4 (N = {STEPS}) and adaptive DP5(4); count evaluations; "
-                   "probe RAPL; bracket three repeated batches with counter reads when RAPL is readable.",
+                   "probe RAPL; when readable, bracket three repeated fixed-step batches with counter reads.",
         numerical_result=f"{4 * STEPS} evaluations per RK4 trajectory; max endpoint error "
                          f"{float(np.max(work['fixed_errors'])):.3g}; adaptive evaluations {evaluations}; energy: "
                          + ("measured, see findings" if measured else "not measured (" + reason + ")"),
@@ -223,10 +227,11 @@ def cpu_energy_per_trajectory(ctx):
 
 
 # ----------------------------------------------------------------- T116 / T118 (GPU host only)
-RECORD = ("ciw energy record --problem examples/energy-accuracy/problem.json --output-dir runs/rtx2080-<date> "
+RUN = "runs/rtx2080-<date>"
+RECORD = (f"ciw energy record --problem examples/energy-accuracy/problem.json --output-dir {RUN}/capture "
           "--duration 10 --replicas 4096 --warmup-batches 2 --idle-duration 2 --gpu-index 0")
 SMI = ("nvidia-smi --query-gpu=timestamp,uuid,name,utilization.gpu,utilization.memory,temperature.gpu,power.draw,"
-       "clocks.sm,clocks.mem,pstate --format=csv,nounits -lms 100 -f runs/rtx2080-<date>/smi.csv")
+       f"clocks.sm,clocks.mem,pstate --format=csv,nounits -lms 100 -f {RUN}/smi.csv")
 
 PLAN_T116 = {
     "hypothesis": "Gross GPU-device energy per batch of the fixed binary64 Gaussian VI workload is measurable from "
@@ -238,9 +243,9 @@ PLAN_T116 = {
                          "batch outputs retained bitwise and scored by KL against the exact posterior.",
     "expected_invariant": "Counter monotone across phases; phases non-overlapping; sensor UUID equals workload UUID; "
                           "every batch meets the declared KL target.",
-    "experiment": "On the RTX 2080 host: (1) `ciw energy probe --gpu-index 0` must return status ok; (2) " + RECORD
-                  + "; (3) `ciw energy replay runs/rtx2080-<date>/log.json`; (4) `CIW_LAB_ENERGY_LOG=runs/rtx2080-"
-                  "<date>/log.json ciw lab run T116 T118 --output-dir <dir>`.",
+    "experiment": f"On the RTX 2080 host: (0) `mkdir -p {RUN}`; (1) `ciw energy probe --gpu-index 0` must return a "
+                  f"reading with status ok; (2) `{RECORD}`; (3) `ciw energy replay {RUN}/capture/log.json`; (4) "
+                  f"`CIW_LAB_ENERGY_LOG={RUN}/capture/log.json ciw lab run T116 T118 --output-dir <dir>`.",
     "numerical_result": "none: no NVIDIA GPU or NVML in this environment",
     "uncertainty": "NVML counter resolution, update interval and accuracy are undeclared; energy is device-wide and "
                    "includes background work; host brackets add call overhead.",
@@ -256,18 +261,20 @@ PLAN_T116 = {
 PLAN_T118 = {
     "hypothesis": "During the T116 workload the RTX 2080 power, temperature and clocks stay in a steady state and "
                   "kernel time is a stable fraction of the host-bracketed batch time.",
-    "mathematical_model": "Per-phase min/mean/max of NVML power (mW), temperature (C) and graphics clock (MHz); "
+    "mathematical_model": "Measurement-phase min/mean/max of NVML power, temperature and graphics clock; "
                           "utilization from an nvidia-smi sidecar; kernel duration from an Nsight Systems pass.",
     "input_data": ["log.json from `ciw energy record`", "smi.csv from the nvidia-smi sidecar",
                    "nsys report from a separate profiling pass"],
     "observation_model": "NVML context readings sampled after each energy read (not simultaneous with it); "
                          "nvidia-smi sampling every 100 ms; CUDA kernel spans from nsys.",
-    "expected_invariant": "Device name contains RTX 2080; the same UUID appears in log.json, smi.csv and "
-                          "`nvidia-smi -L`; power and temperature readings are present for every sample.",
-    "experiment": "On the RTX 2080 host: start `" + SMI + "` in the background; run `" + RECORD + "`; stop the "
-                  "sidecar; separately run `nsys profile --trace=cuda -o runs/rtx2080-<date>/nsys python -m ciw energy "
-                  "record ... --output-dir runs/rtx2080-<date>-nsys` and `nsys stats --report cuda_gpu_kern_sum`; then "
-                  "`CIW_LAB_ENERGY_LOG=... CIW_LAB_NVIDIA_SMI_CSV=... ciw lab run T118`.",
+    "expected_invariant": "Device name contains RTX 2080; the same UUID appears in log.json, every smi.csv row and "
+                          "this host's NVML identity; power and temperature readings are present for every sample.",
+    "experiment": f"On the RTX 2080 host: (0) `mkdir -p {RUN}`; (1) start `{SMI}` in the background; (2) `{RECORD}`; "
+                  f"(3) stop the sidecar; (4) in a separate profiling pass `nsys profile --trace=cuda -o {RUN}/nsys "
+                  f"python -m ciw energy record --problem examples/energy-accuracy/problem.json --output-dir "
+                  f"{RUN}/capture-nsys --duration 10 --gpu-index 0` and `nsys stats --report cuda_gpu_kern_sum "
+                  f"{RUN}/nsys.nsys-rep`; (5) `CIW_LAB_ENERGY_LOG={RUN}/capture/log.json "
+                  f"CIW_LAB_NVIDIA_SMI_CSV={RUN}/smi.csv ciw lab run T118 --output-dir <dir>`.",
     "numerical_result": "none: no NVIDIA GPU in this environment",
     "uncertainty": "NVML power is a vendor estimate with undeclared averaging; 100 ms sidecar sampling aliases short "
                    "batches; profiling perturbs timing and energy, so it is a separate pass.",

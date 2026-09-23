@@ -450,8 +450,9 @@ def scipy_reference(key: str, rtol: float = 1e-13, atol: float = 1e-15) -> dict:
                          rtol=rtol, atol=atol)
     if not solution.success:
         raise FloatingPointError(f"scipy DOP853 failed on {key}: {solution.message}")
+    # DOP853 reports no global error estimate; None records that rather than inventing one.
     return {"kind": "scipy", "state": [float(x) for x in solution.y[:, -1]], "nfev": int(solution.nfev),
-            "rtol": rtol, "atol": atol}
+            "rtol": rtol, "atol": atol, "error_estimate": None}
 
 
 # Pinned constant-curvature Jacobi provider (optional) ---------------------

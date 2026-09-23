@@ -556,8 +556,11 @@ def high_precision_references(ctx):
                             "and 20 macro-steps; Clairaut's integral is conserved on the torus."),
         experiment=("Build each reference, integrate the ciw joint geodesic + Jacobi system with Richardson RK4 and "
                     "with scipy DOP853, and compare end states; check the torus Clairaut integral."),
-        numerical_result=(f"Largest ciw-vs-reference gap {_fmt(worst)}; mpmath self-estimates "
-                          + ", ".join(f"{k} {_fmt(rows[k]['reference_error_estimate'])}" for k in gj.VARIABLE_KEYS)
+        numerical_result=(f"Largest ciw-vs-reference gap {_fmt(worst)}; variable-curvature references "
+                          + ", ".join(f"{k} {rows[k]['reference_kind']}"
+                                      + ("" if rows[k]["reference_error_estimate"] is None else
+                                         f" (self-estimate {_fmt(rows[k]['reference_error_estimate'])})")
+                                      for k in gj.VARIABLE_KEYS)
                           + f"; Clairaut drift of the ciw end state {_fmt(clairaut['ciw_richardson'])}."),
         uncertainty=("Reference uncertainty is the 10-vs-20 macro-step difference at 34 digits (mpmath) or rounding "
                      "of closed forms (about 1e-16); the ciw Richardson error estimate is retained per path."),
@@ -689,7 +692,8 @@ def integrator_orders(ctx):
         observation_model="Euclidean distance of the embedded end point (chart distance on the hyperbolic plane).",
         expected_invariant="Fitted log-log slopes within declared tolerances of the nominal orders.",
         experiment=("Integrate the geodesic state (u, v) with each fixed-step method at four halvings and the "
-                    "adaptive method at six tolerances; fit log-log slopes against the reference end point."),
+                    f"adaptive method at {len(ADAPTIVE_RTOL)} tolerances; fit log-log slopes against the reference "
+                    "end point."),
         numerical_result=("Fitted orders: " + "; ".join(
             f"{m} " + ", ".join(f"{k} {_fmt(v, 4)}" for k, v in orders[m].items()) for m in ORDER_STEPS)
             + "; adaptive effective orders " + ", ".join(f"{k} {_fmt(v, 3)}" for k, v in effective.items()) + "."),
@@ -1108,7 +1112,8 @@ def finite_difference_study(ctx) -> dict:
     return {"rows": rows, "roundoff": roundoff}
 
 
-@task("T006", changed_files=CHANGED, regression_tests=(_test("test_t006_finite_differences"),))
+@task("T006", changed_files=CHANGED,
+      regression_tests=(_test("test_t006_finite_differences"), _test("test_perturbation_helpers_are_geometric")))
 def finite_difference_jacobi(ctx):
     study = finite_difference_study(ctx)
     rows, roundoff = study["rows"], study["roundoff"]
@@ -1142,12 +1147,14 @@ def finite_difference_jacobi(ctx):
             gj.check("analytic", f"one-sided difference order 1, {c} column on {k}", v - 1, 0.15)
             for k, r in orders_one.items() for c, v in r.items()]}, tolerance=TOL_RATE))
     ratio = roundoff[-1] / roundoff[best]
+    # Rounding-dominated numbers vary across platforms, so the retained value is in decades.
     findings.append(finding(
-        "Shrinking the finite-difference step below about 1e-6 degrades the Jacobi estimate (cancellation)",
-        "numerical", {"best_eps": ROUNDOFF_EPS[best], "best_error": roundoff[best], "eps_1e-11_error": roundoff[-1]},
+        "Shrinking the finite-difference step far below its optimum degrades the Jacobi estimate (cancellation)",
+        "numerical", {"log10_best_eps": math.log10(ROUNDOFF_EPS[best]), "log10_error_ratio_1e-11_over_best":
+                      math.log10(ratio)},
         {"generator": dict(generator, eps=list(ROUNDOFF_EPS), surfaces=["sphere"]), "checks": [
             gj.check("invariant", "error at eps = 1e-11 over the best error", ratio, 10.0, "ge")]},
-        tolerance={"abs": 1e-6, "rel": 0.5},
+        tolerance={"abs": 1.5, "rel": 0.0},
         counterexample={"statement": "A smaller finite-difference step always gives a more accurate Jacobi estimate",
                         "witness": {"surface": "sphere", "column": "heading", "eps": 1e-11,
                                     "error": roundoff[-1], "best_eps": ROUNDOFF_EPS[best],
@@ -1275,7 +1282,8 @@ def determinant_study(ctx) -> dict:
     return ctx.memo("gj-determinant", compute)
 
 
-@task("T007", changed_files=CHANGED, regression_tests=(_test("test_t007_determinant"),))
+@task("T007", changed_files=CHANGED,
+      regression_tests=(_test("test_t007_determinant"), _test("test_t007_symbolic_step_determinants")))
 def wronskian_determinant(ctx):
     rows = determinant_study(ctx)
     curved = DET_CONSTANT + DET_VARIABLE
@@ -1307,7 +1315,9 @@ def wronskian_determinant(ctx):
                  "flat": list(DET_FLAT)}
     findings = [finding(
         "Explicit Euler multiplies det Phi by exactly 1 + h^2 K(gamma_n) per step, so it is not area-preserving "
-        "where K is nonzero", "numerical", {k: slopes["euler"][k] for k in curved},
+        "where K is nonzero", "numerical", {"variable_curvature_orders": {k: slopes["euler"][k] for k in DET_VARIABLE},
+                                            "per_step_factor_error": euler_factor,
+                                            "constant_curvature_prediction_error": prediction["euler"]},
         {"generator": generator, "checks": [
             gj.check("analytic", "per-step Euler factor 1 + h^2 K_n on every path and step", euler_factor, 1e-12),
             gj.check("analytic", "(1 + h^2 K)^n on constant-curvature paths", prediction["euler"], 1e-10)] + [
@@ -1320,6 +1330,10 @@ def wronskian_determinant(ctx):
                             0.15) for k in DET_VARIABLE]
     mid_checks += [gj.check("analytic", f"end drift / (h^2 (K(L) - K(0)) / 4) at N=200 on {k}", v - 1, 0.05)
                    for k, v in boundary.items()]
+    # The O(h^3) remainder makes |ratio - 1| shrink like h: halving h should roughly halve it.
+    mid_checks += [gj.check("self_convergence", f"|ratio - 1| at N=100 over N=200 on {k}",
+                            abs(rows[k]["midpoint"][-2]["boundary_ratio"] - 1)
+                            / abs(rows[k]["midpoint"][-1]["boundary_ratio"] - 1), 1.5, "ge") for k in DET_VARIABLE]
     findings.append(finding(
         "Midpoint determinant drift is (h^2/4)(K(L) - K(0)) + O(h^3): second order on variable curvature, third "
         "order on constant curvature", "numerical", {"orders": {k: slopes["midpoint"][k] for k in curved},
@@ -1373,7 +1387,10 @@ def wronskian_determinant(ctx):
                                                       for m in DET_STEPS)
                           + f"; Euler per-step factor error {_fmt(euler_factor)}."),
         uncertainty=("Fitted orders over four halvings; the exact per-step predictions hold to about 1e-12 "
-                     "relative (larger on the inner equator where the columns reach cosh(6.5))."),
+                     "relative (larger on the inner equator where the columns reach cosh(6.5)). Euler slopes on "
+                     "the long constant-curvature paths are not fitted claims: (1 + h^2 K)^(L/h) - 1 ~ "
+                     "exp(h L K) - 1 is not yet linear in h when h L |K| is near 1, so the exact product formula "
+                     "is checked there instead."),
         failure_modes_checked=["Euler area growth (K > 0) and shrinkage (K < 0) from 1 + h^2 K",
                                "midpoint cancellation when K(L) = K(0) (constant K gives order 3)",
                                "RK4 superconvergence of the determinant (recorded as a counterexample to the h^4 "

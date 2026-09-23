@@ -323,7 +323,8 @@ def chord_geodesic_correction(ctx):
     ]
     fields = _fields(
         hypothesis="Along a unit-speed surface geodesic the chord deficit is s - c = kappa^2 s^3/24 + O(s^4), with "
-                   "kappa the absolute normal curvature; the O(s^4) term vanishes only when kappa' = 0.",
+                   "kappa the absolute normal curvature; the s^4 term -kappa kappa' s^4/24 vanishes only when "
+                   "kappa kappa' = 0, and the circle formula 2 sin(kappa s/2)/kappa additionally needs zero torsion.",
         mathematical_model="Taylor expansion of gamma(s) - gamma(0) in the Frenet frame (T' = kappa N, "
                            "N' = -kappa T + tau B, B' = -tau N): |delta|^2 = s^2 - kappa^2 s^4/12 - kappa kappa' s^5/12 "
                            "+ O(s^6), so c = s - kappa^2 s^3/24 - kappa kappa' s^4/24 + c5 s^5. For a geodesic k_g = 0, "
@@ -551,8 +552,8 @@ def synthetic_camera_measurements(ctx):
                             _check("DLT against ray-midpoint triangulation (m)", method_gap, 1e-12,
                                    kind="self_convergence")]},
                 unit="m", tolerance={"abs": 1e-11, "rel": 0}),
-        finding("Using the camera chord as geodesic distance underestimates it by s - c(s), up to "
-                f"{worst_bias * 1e3:.2f} mm on the circumferential helix", "numerical", worst_bias,
+        finding("Using the camera chord as geodesic distance underestimates it by exactly s - c(s); the largest "
+                "bias is on the circumferential helix", "numerical", worst_bias,
                 {"checks": [_check("measured bias against s - helix_chord(s) from T047 (m)", bias_mismatch, 1e-12)]},
                 unit="m", tolerance={"abs": 1e-12, "rel": 1e-9}),
         finding("The declared cylinder model converts noise-free chords to arc lengths", "numerical",
@@ -571,7 +572,8 @@ def synthetic_camera_measurements(ctx):
     fields = _fields(
         hypothesis="A declared pinhole stereo pair observing markers on the cylinder recovers chords exactly without "
                    "noise; the chord differs from the geodesic distance by the T047 correction, which a declared "
-                   "surface model removes; pixel noise adds a random error far below the substitution bias.",
+                   "surface model removes; for long circumferential chords that bias exceeds the error caused by "
+                   "0.25 px pixel noise, while along rulings it vanishes.",
         mathematical_model="x_cam = R X + t, pixels u = f x/z + c; linear DLT triangulation on normalized "
                            "coordinates; chord = |X_i - X_j|; arc from chord by inverting the helix chord on its "
                            "monotone branch.",
@@ -1421,4 +1423,648 @@ def asynchronous_timestamps(ctx):
         unresolved_assumptions=["Clock offset is constant (no drift)", "Jitter is white and much smaller than the "
                                 "sample interval"],
         recommended_next_task="T055: add dropped observations")
+    return {"state": "completed", "fields": fields, "findings": findings}
+
+
+# --------------------------------------------------------------- T055
+DROPS = {"probability": 0.2, "good_to_bad": 0.05, "bad_to_good": 0.2, "runs": 400, "samples": 600, "burn_in": 100,
+         "walk_variance": 1e-4, "noise_variance": 1e-6}
+MEAN_EXPERIMENT = {"mean": 0.5, "sigma": 0.01, "runs": 400, "samples": 200}
+
+
+def drop_study(seed=55) -> dict:
+    rng = sig.generator(seed)
+    p = DROPS["probability"]
+    n = MEAN_EXPERIMENT["samples"]
+    values = MEAN_EXPERIMENT["mean"] + MEAN_EXPERIMENT["sigma"] * rng.standard_normal(n)
+    stream = [_encoder_record(v, "clock:daq", "epoch:run-0", 0.01 * k, k) for k, v in enumerate(values)]
+    dropped = om.bernoulli_drops(n, p, rng)
+    kept = om.with_drops(stream, dropped)
+    summary = om.admit_stream(kept)
+    position_mismatch = len(set(summary["missing"]) ^ set(np.flatnonzero(dropped).tolist()))
+    filled = om.zero_fill(kept, stream[0])
+    unbacked = list(kept)
+    first_present = next(k for k, item in enumerate(kept) if item is not None)
+    unbacked[first_present] = replace(kept[first_present], raw_ref=None)
+    stripped = [0.0 if d else float(v) for v, d in zip(values, dropped)]
+    flagged = om.detect_zero_fill(stripped, MEAN_EXPERIMENT["sigma"])
+    detection_mismatch = len(set(flagged) ^ set(np.flatnonzero(dropped).tolist()))
+    near_zero = 0.002 * rng.standard_normal(n)
+    near_zero_flagged = om.detect_zero_fill([0.0 if d else float(v) for v, d in zip(near_zero, dropped)], 0.002)
+
+    runs, mu, sigma = MEAN_EXPERIMENT["runs"], MEAN_EXPERIMENT["mean"], MEAN_EXPERIMENT["sigma"]
+    samples = mu + sigma * rng.standard_normal((runs, n))
+    received = ~(rng.random((runs, n)) < p)
+    counts = received.sum(axis=1)
+    explicit = np.sum(np.where(received, samples, 0.0), axis=1) / counts
+    zero_filled = np.sum(np.where(received, samples, 0.0), axis=1) / n
+    explicit_bias = sig.mean_z(explicit, mu)
+    filled_bias = sig.mean_z(zero_filled, mu * (1 - p))
+    explicit_variance = sig.variance_z(explicit, sigma ** 2 * float(np.mean(1.0 / counts)))
+
+    q, r = DROPS["walk_variance"], DROPS["noise_variance"]
+    shape = (DROPS["runs"], DROPS["samples"])
+    channels = {"bernoulli": (rng.random(shape) < p, p / (1 - p)),
+                "gilbert_elliott": (om.gilbert_elliott_drops(DROPS["samples"], DROPS["good_to_bad"], DROPS["bad_to_good"],
+                                                             rng, streams=DROPS["runs"]), p / DROPS["bad_to_good"])}
+    hold = {}
+    for name, (mask, expected_age) in channels.items():
+        result = sig.hold_estimates(mask, q, r, rng, DROPS["burn_in"])
+        hold[name] = {"drop_rate": float(mask.mean()), "expected_age": expected_age,
+                      "mean_age": float(result["age"].mean()), "age_z": float(sig.mean_z(result["age"], expected_age)["z"]),
+                      "mse": float(result["mse"].mean()), "predicted_mse": q * expected_age + r,
+                      "mse_z": float(sig.mean_z(result["mse"], q * expected_age + r)["z"])}
+    return {"stream": {"samples": n, "dropped": int(dropped.sum()), "present": summary["present"],
+                       "position_mismatch": position_mismatch,
+                       "zero_fill_code": refusal_code(lambda: om.admit_stream(filled)),
+                       "unbacked_code": refusal_code(lambda: om.admit_stream(unbacked)),
+                       "detection_mismatch": detection_mismatch, "near_zero_flagged": len(near_zero_flagged)},
+            "mean": {"explicit_bias_z": float(explicit_bias["z"]), "zero_filled_mean": float(filled_bias["sample_mean"]),
+                     "zero_filled_bias": float(filled_bias["sample_mean"] - mu), "predicted_bias": -p * mu,
+                     "zero_filled_bias_z": float(filled_bias["z"]), "explicit_variance_z": float(explicit_variance["z"]),
+                     "variance_inflation": float(explicit_variance["sample_variance"] / (sigma ** 2 / n))},
+            "hold": hold, "seed": seed}
+
+
+@task("T055", changed_files=(MODULE, MODES_FILE, SIGNALS_FILE), regression_tests=_tests("test_t055_dropped_observations"))
+def dropped_observations(ctx):
+    study = drop_study()
+    stream, mean, hold = study["stream"], study["mean"], study["hold"]
+    ctx.artifact_json("drop-study.json", {**study, "declared": {"drops": DROPS, "mean_experiment": MEAN_EXPERIMENT}})
+    ctx.artifact_text("hold-error-by-channel.svg", svg.line_plot(
+        [("sample MSE", [hold[k]["mean_age"] for k in ("bernoulli", "gilbert_elliott")],
+          [hold[k]["mse"] for k in ("bernoulli", "gilbert_elliott")]),
+         ("q E[age] + r", [hold[k]["expected_age"] for k in ("bernoulli", "gilbert_elliott")],
+          [hold[k]["predicted_mse"] for k in ("bernoulli", "gilbert_elliott")])],
+        title="Hold-estimate error: Bernoulli versus burst drops at rate 0.2", xlabel="mean age of held sample",
+        ylabel="mean squared error"))
+    ratio = hold["gilbert_elliott"]["mse"] / hold["bernoulli"]["mse"]
+    findings = [
+        finding("Dropped observations are retained as explicit gaps at their sequence positions",
+                "computational_pipeline", {"dropped": stream["dropped"], "present": stream["present"],
+                                           "position_mismatch": stream["position_mismatch"]},
+                {"checks": [_check("gap positions differing from the drop mask", stream["position_mismatch"], 0,
+                                   kind="exact_arithmetic"),
+                            _check("present plus dropped minus samples", stream["present"] + stream["dropped"]
+                                   - stream["samples"], 0, kind="exact_arithmetic")]},
+                tolerance={"abs": 0, "rel": 0}),
+        finding("A zero-filled stream and a value without a raw reference are refused", "computational_pipeline",
+                {"zero_fill": stream["zero_fill_code"], "unbacked": stream["unbacked_code"]},
+                {"checks": [{"reference_kind": "refusal", "reference": "admit a zero-filled stream",
+                             "expected_refusal": "zero_filled_missing", "observed_refusal": stream["zero_fill_code"],
+                             "passed": stream["zero_fill_code"] == "zero_filled_missing"},
+                            {"reference_kind": "refusal", "reference": "admit a value whose raw reference was removed",
+                             "expected_refusal": "unbacked_value", "observed_refusal": stream["unbacked_code"],
+                             "passed": stream["unbacked_code"] == "unbacked_value"}]},
+                tolerance={"abs": 0, "rel": 0}),
+        finding("Zero-filling biases the mean by -p mu while explicit gaps leave it unbiased with variance "
+                "sigma^2 E[1/N]", "numerical",
+                {"zero_filled_bias": mean["zero_filled_bias"], "predicted_bias": mean["predicted_bias"],
+                 "explicit_bias_z": mean["explicit_bias_z"], "variance_inflation": mean["variance_inflation"]},
+                {"generator": _generator("Bernoulli drops of a constant plus Gaussian noise", study["seed"],
+                                         **MEAN_EXPERIMENT, probability=DROPS["probability"]),
+                 "checks": [_z_check("explicit-gap mean against mu", mean["explicit_bias_z"]),
+                            _z_check("zero-filled mean against (1 - p) mu", mean["zero_filled_bias_z"]),
+                            _z_check("explicit-gap variance against sigma^2 E[1/N]", mean["explicit_variance_z"])]},
+                tolerance={"abs": 1e-9, "rel": 1e-6}),
+        finding("Zero-filled gaps are detectable from values only when the signal is far from zero", "numerical",
+                {"far_from_zero_mismatch": stream["detection_mismatch"], "near_zero_flagged": stream["near_zero_flagged"],
+                 "dropped": stream["dropped"]},
+                {"checks": [_check("detector flags differing from true fills (signal at 50 sigma)",
+                                   stream["detection_mismatch"], 0, kind="exact_arithmetic"),
+                            _check("fills flagged when the signal is near zero", stream["near_zero_flagged"], 0, "le",
+                                   kind="exact_arithmetic")]},
+                tolerance={"abs": 0, "rel": 0},
+                counterexample={"statement": "Zero-filled gaps can be recognized from the values alone",
+                                "witness": {"signal": "zero-mean, sigma 0.002", "dropped": stream["dropped"],
+                                            "flagged": stream["near_zero_flagged"]}}),
+        finding("Hold-estimate error follows q E[age] + r; bursts at the same drop rate raise it", "numerical",
+                {name: {"mean_age": v["mean_age"], "mse": v["mse"], "predicted_mse": v["predicted_mse"]}
+                 for name, v in hold.items()} | {"burst_to_bernoulli_mse_ratio": ratio},
+                {"generator": _generator("random walk through Bernoulli and Gilbert-Elliott channels", study["seed"],
+                                         **DROPS),
+                 "checks": [_z_check(f"{name} mean age against the analytic E[age]", v["age_z"]) for name, v in hold.items()]
+                 + [_z_check(f"{name} hold MSE against q E[age] + r", v["mse_z"]) for name, v in hold.items()]
+                 + [_check("burst over Bernoulli MSE ratio at equal drop rate", ratio, 2.0, "ge")]},
+                tolerance={"abs": 1e-12, "rel": 1e-6},
+                counterexample={"statement": "The drop rate alone determines how much estimates degrade",
+                                "witness": {"drop_rate": DROPS["probability"],
+                                            "bernoulli_mse": hold["bernoulli"]["mse"],
+                                            "burst_mse": hold["gilbert_elliott"]["mse"]}}),
+        _unestablished("Real links drop observations as Bernoulli or two-state burst processes with these rates",
+                       "sensor_performance", "No link was monitored; real loss depends on load, interference and "
+                       "buffering."),
+    ]
+    fields = _fields(
+        hypothesis="Dropped observations must stay explicit gaps: zero-filling biases estimates and cannot be "
+                   "detected reliably from values, while explicit gaps keep estimates unbiased; burst losses degrade "
+                   "hold estimates more than independent losses at the same rate.",
+        mathematical_model="Mean of received samples is unbiased with variance sigma^2 E[1/N]; zero-filled mean has "
+                           "expectation (1 - p) mu. Hold error of a random walk: E e^2 = q E[age] + r with "
+                           "E[age] = p/(1 - p) (Bernoulli) or pi_B / P(bad -> good) (Gilbert-Elliott, all samples lost "
+                           "in the bad state).",
+        input_data=[f"Declared drops {DROPS}", f"Mean experiment {MEAN_EXPERIMENT}", f"Seed {study['seed']}"],
+        observation_model="Synthetic encoder_displacement records with raw references; drops become None; a "
+                          "zero-filled copy fabricates values without raw references.",
+        expected_invariant="Gap positions preserved; zero fill refused; moments within 99.9 % Monte Carlo intervals.",
+        experiment="Retain a stream with Bernoulli drops, attempt zero fill, run the value-only detector on a far and "
+                   "a near-zero signal, then Monte Carlo the mean estimator and a sample-and-hold tracker through "
+                   "Bernoulli and burst channels.",
+        numerical_result=f"{stream['dropped']} of {stream['samples']} dropped, positions exact; zero fill refused "
+                         f"({stream['zero_fill_code']}); near-zero detector flagged {stream['near_zero_flagged']} of "
+                         f"{stream['dropped']}; zero-fill bias {mean['zero_filled_bias']:.4f} vs {mean['predicted_bias']:.4f}; "
+                         f"hold MSE {hold['bernoulli']['mse']:.3e} (Bernoulli) vs {hold['gilbert_elliott']['mse']:.3e} "
+                         f"(burst), ratio {ratio:.2f}.",
+        uncertainty="Monte Carlo z-scores use per-run statistics (runs are independent; samples within a run are "
+                    "not).",
+        failure_modes_checked=["zero-filled gaps", "value without raw reference", "value-based detection near zero",
+                               "burst versus independent loss", "start-up before the first received sample (burn-in)"],
+        unresolved_assumptions=["Drops are independent of the signal value", "Received samples are not delayed "
+                                "(delay is T056)"],
+        recommended_next_task="T056: add stale-state observations")
+    return {"state": "completed", "fields": fields, "findings": findings}
+
+
+# --------------------------------------------------------------- T056
+STALE = {"limit_s": 0.03, "samples": 400, "rate_hz": 100.0, "latency_range_s": (0.002, 0.05),
+         "processing_range_s": (0.0, 0.01), "velocity_m_per_s": 0.5}
+
+
+def _tracker_record(value, arrival, latency, sequence):
+    return om.observe("tracker_measurement", (float(value), 0.0, 0.0), unit="m", frame_id="tracker:room",
+                      clock_id="clock:tracker", clock_basis="arrival", epoch="epoch:run-0", time_s=float(arrival),
+                      calibration_ref="calibration:declared-synthetic", sequence=sequence,
+                      raw_ref=f"raw:tracker:{sequence}", latency_s=None if latency is None else float(latency))
+
+
+def stale_study(seed=56) -> dict:
+    rng = sig.generator(seed)
+    n, limit, v = STALE["samples"], STALE["limit_s"], STALE["velocity_m_per_s"]
+    acquired = np.arange(n) / STALE["rate_hz"]
+    latency = rng.uniform(*STALE["latency_range_s"], n)
+    arrival = acquired + latency
+    used = arrival + rng.uniform(*STALE["processing_range_s"], n)
+    records = [_tracker_record(v * t, a, lat, k) for k, (t, a, lat) in enumerate(zip(acquired, arrival, latency))]
+    codes = [refusal_code(lambda rec=rec, now=now: om.admit_fresh(rec, now, limit)) for rec, now in zip(records, used)]
+    age = used - acquired
+    flag_mismatch = int(np.sum((np.array(codes) == "stale_observation") != (age > limit)))
+    constant_error = float(np.max(np.abs((v * used - v * acquired) - v * age)))
+    amplitude, omega = 0.05, 2 * math.pi * 1.5
+    ages = np.geomspace(1e-3, 0.1, 9)
+    grid = np.linspace(0.5, 3.5, 601)
+    residuals, violations = [], 0
+    for a in ages:
+        error = amplitude * (np.sin(omega * grid) - np.sin(omega * (grid - a)))
+        residual = np.abs(error - amplitude * omega * np.cos(omega * grid) * a)
+        violations += int(np.sum(residual > amplitude * omega ** 2 * a ** 2 / 2 * (1 + 1e-9)))
+        residuals.append(float(residual.max()))
+    return {"stale": int(np.sum(age > limit)), "fresh": int(np.sum(age <= limit)), "flag_mismatch": flag_mismatch,
+            "codes": sorted(set(codes)), "constant_velocity_error": constant_error, "ages_s": _floats(ages),
+            "sinusoid_residual_max": residuals, "residual_slope": sig.loglog_slope(ages, residuals),
+            "bound_violations": violations, "seed": seed,
+            "age_trace": {"age_s": _floats(age[::8]), "error_m": _floats((v * age)[::8])}}
+
+
+@task("T056", changed_files=(MODULE, MODES_FILE), regression_tests=_tests("test_t056_stale_observations"))
+def stale_state_observations(ctx):
+    study = stale_study()
+    limit = STALE["limit_s"]
+    missing_latency = _tracker_record(0.1, 1.0, None, 0)
+    future = _tracker_record(0.1, 1.02, 0.01, 1)
+    late = _tracker_record(0.1, 1.0, 0.035, 2)
+    refusals = [_refusal("arrival-stamped record without a declared latency", "missing_latency",
+                         lambda: om.admit_fresh(missing_latency, 1.01, limit)),
+                _refusal("record acquired after the use time", "future_observation",
+                         lambda: om.admit_fresh(future, 1.0, limit)),
+                _refusal("record older than the validity limit", "stale_observation",
+                         lambda: om.admit_fresh(late, 1.005, limit))]
+    ctx.artifact_json("stale-study.json", {**study, "declared": STALE})
+    ctx.artifact_text("stale-error-vs-age.svg", svg.line_plot(
+        [("max |e - v a| (sinusoid)", study["ages_s"], study["sinusoid_residual_max"]),
+         ("A w^2 a^2 / 2", study["ages_s"], [0.05 * (2 * math.pi * 1.5) ** 2 * a ** 2 / 2 for a in study["ages_s"]])],
+        title="Stale observation: second-order residual", xlabel="age a (s)", ylabel="m", logx=True, logy=True))
+    findings = [
+        finding("Observations older than the validity limit are flagged exactly by acquisition-time age",
+                "computational_pipeline", {"stale": study["stale"], "fresh": study["fresh"],
+                                           "flag_mismatch": study["flag_mismatch"]},
+                {"generator": _generator("uniform latency and processing delay", study["seed"], **{
+                    k: list(v) if isinstance(v, tuple) else v for k, v in STALE.items()}),
+                 "checks": [_check("flags differing from age > limit computed independently", study["flag_mismatch"], 0,
+                                   kind="exact_arithmetic"), refusals[2]]},
+                tolerance={"abs": 0, "rel": 0}),
+        finding("Stale-state error equals velocity times age for constant velocity and to first order otherwise",
+                "numerical", {"constant_velocity_error_m": study["constant_velocity_error"],
+                              "residual_slope": study["residual_slope"], "bound_violations": study["bound_violations"]},
+                {"checks": [_check("|error - v age| at constant velocity (m)", study["constant_velocity_error"], 1e-12),
+                            _check("log-log slope of the residual minus 2", study["residual_slope"] - 2, 0.05),
+                            _check("residuals above A omega^2 a^2 / 2", study["bound_violations"], 0,
+                                   kind="invariant")]},
+                tolerance={"abs": 1e-12, "rel": 1e-9}),
+        finding("Age is refused without a declared latency for arrival stamps and for observations from the future",
+                "computational_pipeline", [check["observed_refusal"] for check in refusals[:2]],
+                {"checks": refusals[:2]}, tolerance={"abs": 0, "rel": 0}),
+        finding("A recently arrived observation can be stale", "computational_pipeline",
+                {"arrival_age_s": 0.005, "latency_s": 0.035, "acquisition_age_s": 0.04, "limit_s": limit},
+                {"checks": [refusals[2]]}, tolerance={"abs": 1e-12, "rel": 0},
+                counterexample={"statement": "An observation that arrived within the validity limit is fresh",
+                                "witness": {"arrival_s": 1.0, "used_s": 1.005, "latency_s": 0.035, "limit_s": limit}}),
+        _unestablished("Real tracker latencies and target speeds match the declared values", "physical",
+                       "No tracker was acquired; latency distributions and target dynamics are declared."),
+    ]
+    fields = _fields(
+        hypothesis="An observation used after its validity age must be flagged, with age measured from acquisition, "
+                   "not arrival; using a stale position of a moving target costs velocity x age to first order.",
+        mathematical_model="age = t_use - (t_arrival - latency); stale iff age > limit. Error x(t) - x(t - a) = v a - "
+                           "x'' a^2/2 + ..., exact v a for constant velocity; |residual| <= max|x''| a^2 / 2.",
+        input_data=[f"Declared {STALE}", "Sinusoid 50 mm at 1.5 Hz for the residual law", f"Seed {study['seed']}"],
+        observation_model="Synthetic arrival-stamped tracker_measurement records with declared latency.",
+        expected_invariant="Flags equal age > limit exactly; residual O(a^2) below the curvature bound.",
+        experiment="Admit each record at its use time; compare flags with an independent numpy age computation; "
+                   "scan error against age; refusals for undeclared latency, future records and late arrival.",
+        numerical_result=f"{study['stale']} stale / {study['fresh']} fresh, {study['flag_mismatch']} mismatches; "
+                         f"constant-velocity error {study['constant_velocity_error']:.1e} m; residual slope "
+                         f"{study['residual_slope']:.4f}; {study['bound_violations']} bound violations.",
+        uncertainty="Deterministic given the seed; flag equality is exact (no sample lies within rounding of the "
+                    "limit).",
+        failure_modes_checked=["arrival stamp without latency", "future observation", "short arrival age with long "
+                               "latency", "second-order motion"],
+        unresolved_assumptions=["Latency is known per record", "Use time is on the same clock as the stamps"],
+        recommended_next_task="T057: compare raw, filtered and smoothed measurements")
+    return {"state": "completed", "fields": fields, "findings": findings}
+
+
+# --------------------------------------------------------------- T057
+TRACK = {"dt_s": 0.1, "q": 0.5, "r": 0.25, "runs": 300, "steps": 200, "x0": [0.0, 1.0], "p0_diag": [1.0, 0.25]}
+
+
+def filter_study(seed=57) -> dict:
+    rng = sig.generator(seed)
+    transition, process = sig.constant_velocity(TRACK["dt_s"], TRACK["q"])
+    x0, p0 = np.array(TRACK["x0"]), np.diag(TRACK["p0_diag"])
+    truth, measured = sig.simulate_track(TRACK["runs"], TRACK["steps"], transition, process, x0, p0, TRACK["r"], rng)
+    result = sig.kalman_rts(measured, transition, process, TRACK["r"], x0, p0)
+    difference = result["p_filt"] - result["p_smooth"]
+    min_eig = float(min(np.linalg.eigvalsh(0.5 * (d + d.T)).min() for d in difference))
+    # P_f - P_s is only semidefinite (rank one at step N-2), so strict reduction is tested on the trace.
+    interior_trace = float(min(np.trace(d) for d in difference[:-1]))
+    filtered, smoothed = result["x_filt"] - truth, result["x_smooth"] - truth
+    rmse = {"raw": float(np.sqrt(np.mean((measured - truth[:, :, 0]) ** 2))),
+            "filtered": float(np.sqrt(np.mean(filtered[:, :, 0] ** 2))),
+            "smoothed": float(np.sqrt(np.mean(smoothed[:, :, 0] ** 2)))}
+    runs = TRACK["runs"]
+    low = sig.chi2_quantile(0.025, 2 * runs) / runs
+    high = sig.chi2_quantile(0.975, 2 * runs) / runs
+    consistency = {}
+    for name, errors, covariance in (("filtered", filtered, result["p_filt"]), ("smoothed", smoothed, result["p_smooth"])):
+        average = sig.nees(errors, covariance).mean(axis=0)
+        consistency[name] = {"inside_fraction": float(np.mean((average >= low) & (average <= high))),
+                             "mean_nees": float(average.mean()), "trace": _floats(average[::4])}
+    steady = sig.riccati_steady_state(transition, process, TRACK["r"])
+    worse = float(np.mean(np.abs(smoothed[:, :, 0]) > np.abs(filtered[:, :, 0])))
+    return {"min_eigenvalue": min_eig, "interior_min_trace": interior_trace, "rmse": rmse,
+            "nees_bounds": [low, high], "consistency": consistency, "steady_state": steady.tolist(),
+            "filter_final_prediction": result["p_pred"][-1].tolist(),
+            "steady_gap": float(np.max(np.abs(result["p_pred"][-1] - steady)) / np.max(np.abs(steady))),
+            "smoothed_worse_fraction": worse, "seed": seed,
+            "rmse_trace": {name: _floats(np.sqrt(np.mean(e ** 2, axis=0))[::4]) for name, e in
+                           (("raw", measured - truth[:, :, 0]), ("filtered", filtered[:, :, 0]),
+                            ("smoothed", smoothed[:, :, 0]))}}
+
+
+def _scipy_checks(study):
+    """Independent steady-state covariance (scipy DARE) and chi-square quantiles (scipy.stats)."""
+    import scipy
+    from scipy.linalg import solve_discrete_are
+    from scipy.stats import chi2
+
+    transition, process = sig.constant_velocity(TRACK["dt_s"], TRACK["q"])
+    dare = solve_discrete_are(transition.T, np.array([[1.0], [0.0]]), process, np.array([[TRACK["r"]]]))
+    steady = np.array(study["steady_state"])
+    dare_gap = float(np.max(np.abs(dare - steady)) / np.max(np.abs(dare)))
+    runs = TRACK["runs"]
+    exact = [chi2.ppf(0.025, 2 * runs) / runs, chi2.ppf(0.975, 2 * runs) / runs]
+    quantile_gap = float(max(abs(a - b) / b for a, b in zip(study["nees_bounds"], exact)))
+    return dare_gap, quantile_gap, scipy.__version__
+
+
+@task("T057", changed_files=(MODULE, SIGNALS_FILE), regression_tests=_tests("test_t057_filter_and_smoother"))
+def raw_filtered_smoothed(ctx):
+    study = filter_study()
+    rmse, consistency = study["rmse"], study["consistency"]
+    ctx.artifact_json("filter-study.json", {**study, "declared": TRACK})
+    steps = list(range(0, TRACK["steps"], 4))
+    ctx.artifact_text("rmse-by-step.svg", svg.line_plot(
+        [(name, steps, trace) for name, trace in study["rmse_trace"].items()],
+        title="Position RMSE across the ensemble", xlabel="step", ylabel="RMSE", markers=False))
+    ctx.artifact_text("nees-by-step.svg", svg.line_plot(
+        [(name, steps, consistency[name]["trace"]) for name in ("filtered", "smoothed")]
+        + [("95 % bounds", [0, TRACK["steps"] - 1], [study["nees_bounds"][0]] * 2),
+           ("", [0, TRACK["steps"] - 1], [study["nees_bounds"][1]] * 2)],
+        title="Ensemble-average NEES (2 dof)", xlabel="step", ylabel="NEES", markers=False))
+    steady_basis = {"checks": [_check("filter final predicted covariance against the Riccati fixed point (relative)",
+                                      study["steady_gap"], 1e-10, kind="self_convergence")]}
+    quantile_basis = {"derivation": f"{DOC}#t057-raw-filtered-and-smoothed-estimates (Wilson-Hilferty chi-square quantile)"}
+    scipy_version = None
+    if ctx.available("module:scipy"):
+        dare_gap, quantile_gap, scipy_version = _scipy_checks(study)
+        steady_basis["independent_check"] = dict(
+            _check("ciw Riccati iteration against scipy.linalg.solve_discrete_are (relative)", dare_gap, 1e-10),
+            producer=dict(PRODUCER), checker={"implementation": "scipy.linalg", "revision": scipy_version})
+        quantile_basis["independent_check"] = dict(
+            _check("Wilson-Hilferty NEES bounds against scipy.stats.chi2.ppf (relative)", quantile_gap, 1e-4),
+            producer=dict(PRODUCER), checker={"implementation": "scipy.stats", "revision": scipy_version})
+    else:
+        quantile_basis["checks"] = [_check("Wilson-Hilferty lower bound below the upper bound",
+                                           study["nees_bounds"][0] - study["nees_bounds"][1], 0.0, "le", "invariant")]
+    findings = [
+        finding("The RTS smoothed covariance never exceeds the filtered covariance in matrix order", "numerical",
+                {"min_eigenvalue_filtered_minus_smoothed": study["min_eigenvalue"],
+                 "interior_min_trace_reduction": study["interior_min_trace"]},
+                {"generator": _generator("constant-velocity track", study["seed"], **TRACK),
+                 "checks": [_check("negated min eigenvalue of P_filt - P_smooth over all steps",
+                                   -study["min_eigenvalue"], 1e-12, "le", "invariant"),
+                            _check("min trace(P_filt - P_smooth) before the final step (strict reduction)",
+                                   study["interior_min_trace"], 1e-6, "ge", "invariant")]},
+                tolerance={"abs": 1e-12, "rel": 1e-6}),
+        finding("Ensemble position RMSE orders smoothed <= filtered <= raw", "numerical", rmse,
+                {"generator": _generator("constant-velocity track", study["seed"], **TRACK),
+                 "checks": [_check("filtered minus raw RMSE", rmse["filtered"] - rmse["raw"], 0.0, "le", "invariant"),
+                            _check("smoothed minus filtered RMSE", rmse["smoothed"] - rmse["filtered"], 0.0, "le",
+                                   "invariant")]},
+                tolerance={"abs": 1e-12, "rel": 1e-6}),
+        finding("Filtered and smoothed NEES are chi-square consistent across the ensemble", "numerical",
+                {name: {"inside_fraction": v["inside_fraction"], "mean_nees": v["mean_nees"]}
+                 for name, v in consistency.items()} | {"bounds_95": study["nees_bounds"]},
+                {"checks": [_check(f"{name} fraction of steps inside the 95 % bounds", v["inside_fraction"], 0.9, "ge")
+                            for name, v in consistency.items()]
+                 + [_check(f"{name} time-averaged NEES minus 2", v["mean_nees"] - 2, 0.1) for name, v in
+                    consistency.items()]},
+                tolerance={"abs": 1e-9, "rel": 1e-6}),
+        finding("The filter's predicted covariance reaches the discrete Riccati fixed point", "numerical",
+                {"steady_state": study["steady_state"], "relative_gap": study["steady_gap"]}, steady_basis,
+                tolerance={"abs": 1e-12, "rel": 1e-9}),
+        finding("Wilson-Hilferty chi-square quantiles give the NEES consistency bounds", "numerical",
+                {"bounds_95": study["nees_bounds"]}, quantile_basis, tolerance={"abs": 1e-12, "rel": 1e-9}),
+        finding("Smoothing does not reduce the error of every individual sample", "numerical",
+                {"smoothed_worse_fraction": study["smoothed_worse_fraction"]},
+                {"checks": [_check("fraction of (run, step) samples where |smoothed error| > |filtered error|",
+                                   study["smoothed_worse_fraction"], 0.1, "ge")]},
+                tolerance={"abs": 1e-12, "rel": 0},
+                counterexample={"statement": "The smoothed estimate is closer to truth than the filtered estimate at "
+                                             "every sample",
+                                "witness": {"seed": study["seed"], "fraction_worse": study["smoothed_worse_fraction"]}}),
+        _unestablished("A real tracker's measurement noise and target motion match the constant-velocity model",
+                       "sensor_performance", "No tracker data were acquired; the model and noise are declared."),
+    ]
+    fields = _fields(
+        hypothesis="For a linear-Gaussian constant-velocity track, the RTS smoother's covariance is below the "
+                   "filter's in matrix order and the ensemble RMSE orders smoothed <= filtered <= raw, with NEES "
+                   "consistent with chi-square bounds; the ordering holds in the ensemble, not per sample.",
+        mathematical_model="x_{k+1} = F x_k + w, F = [[1, dt], [0, 1]], Q = q [[dt^3/3, dt^2/2], [dt^2/2, dt]]; "
+                           "z_k = x_k[0] + v, R = r. Kalman filter (Joseph form) and RTS: P_s = P_f + C (P_s' - P_p') C^T "
+                           "with P_s' <= P_p', so P_s <= P_f. NEES averaged over N runs ~ chi2(2N)/N.",
+        input_data=[f"Declared track {TRACK}", f"Seed {study['seed']}"],
+        observation_model="Synthetic position measurements (raw), causal filter estimates and non-causal smoothed "
+                          "estimates of the same track.",
+        expected_invariant="Matrix order P_s <= P_f; RMSE order; NEES inside 95 % bounds at about 95 % of steps.",
+        experiment="Seeded ensemble, filter and smoother, eigenvalue test of P_f - P_s, RMSE and NEES statistics, "
+                   "Riccati fixed point"
+                   + (" against scipy DARE and chi-square quantiles against scipy.stats" if scipy_version else "")
+                   + ", and a per-sample dominance counterexample search.",
+        numerical_result=f"min eig(P_f - P_s) = {study['min_eigenvalue']:.1e}, min trace reduction before the last "
+                         f"step {study['interior_min_trace']:.3e}; "
+                         f"RMSE raw {rmse['raw']:.4f}, filtered {rmse['filtered']:.4f}, smoothed {rmse['smoothed']:.4f}; "
+                         f"NEES inside bounds {consistency['filtered']['inside_fraction']:.2f} / "
+                         f"{consistency['smoothed']['inside_fraction']:.2f}; smoothed worse at "
+                         f"{study['smoothed_worse_fraction']:.1%} of samples.",
+        uncertainty="NEES bounds are 95 % two-sided per step (about 5 % of steps expected outside); RMSE values carry "
+                    "Monte Carlo error of order 1 % for 300 runs.",
+        failure_modes_checked=["final step where P_s = P_f (equality allowed)",
+                               "rank-one difference at step N-2 (semidefinite, not definite)",
+                               "covariance symmetry (Joseph form)",
+                               "per-sample versus ensemble ordering", "chi-square quantile approximation"],
+        unresolved_assumptions=["Model matches the generator exactly (no mismatch)", "Measurements are synchronous "
+                                "and none are dropped"],
+        recommended_next_task="T066: filter consistency under model mismatch (sensor-fusion section)")
+    return {"state": "completed", "fields": fields, "findings": findings}
+
+
+# --------------------------------------------------------------- T058
+def frame_clock_study() -> dict:
+    # Exactly representable values make the declared mappings checkable by exact arithmetic.
+    quarter_turn = ((0.0, -1.0, 0.0), (1.0, 0.0, 0.0), (0.0, 0.0, 1.0))
+    exact_map = om.FrameMapping("tracker:room", "tracker:cell", quarter_turn, (0.25, -0.5, 1.0),
+                                "calibration:declared-synthetic")
+    points = [(0.125, -0.25, 0.625), (1.5, 2.25, -0.75), (-3.0, 0.5, 0.0)]
+    records = [example_observation("tracker_measurement", value=p, sequence=k) for k, p in enumerate(points)]
+    mapped = [om.apply_frame(r, exact_map) for r in records]
+    by_hand = [(-p[1] + 0.25, p[0] - 0.5, p[2] + 1.0) for p in points]
+    exact_gap = max(abs(a - b) for m, h in zip(mapped, by_hand) for a, b in zip(m.value, h))
+    identity_recorded = all(m.mappings == (exact_map.identity(),) and m.frame_id == "tracker:cell" for m in mapped)
+    rotation = cam.rotation_matrix((1.0, 2.0, 2.0), 0.7)
+    general = om.FrameMapping("tracker:room", "tracker:cell", tuple(tuple(float(v) for v in row) for row in rotation),
+                              (0.1, -0.2, 0.3), "calibration:declared-synthetic")
+    round_trip = max(abs(a - b) for r in records
+                     for a, b in zip(om.apply_frame(om.apply_frame(r, general), general.inverse()).value, r.value))
+    chord_record = example_observation("camera_chord_distance")
+    rig_map = om.FrameMapping("camera_rig:stereo-0", "camera_rig:stereo-1", tuple(map(tuple, rotation)),
+                              (0.1, 0.0, 0.0), "calibration:declared-synthetic")
+    chord_invariance = abs(om.apply_frame(chord_record, rig_map).value[0] - chord_record.value[0])
+
+    base = example_observation("tracker_measurement", clock_id="clock:tracker", time_s=0.5)
+    shifted = example_observation("tracker_measurement", clock_id="clock:daq", epoch="epoch:boot-7",
+                                  clock_basis="arrival", time_s=2.015625, latency_s=0.0078125, sequence=1)
+    to_acquisition = om.ClockMapping("clock:daq", "epoch:boot-7", "arrival", "clock:daq", "epoch:boot-7",
+                                     "acquisition", 1.0, -0.0078125, "declared latency")
+    to_tracker = om.ClockMapping("clock:daq", "epoch:boot-7", "acquisition", "clock:tracker", "epoch:run-0",
+                                 "acquisition", 1.0, -1.5, "declared synchronization")
+    # A tracker record is stamped on arrival; map base to acquisition too so both share one basis.
+    base_acq = om.apply_clock(base, om.ClockMapping("clock:tracker", "epoch:run-0", "arrival", "clock:tracker",
+                                                    "epoch:run-0", "acquisition", 1.0, -0.0078125, "declared latency"))
+    other = om.apply_clock(om.apply_clock(shifted, to_acquisition), to_tracker)
+    expected_time = 2.015625 - 0.0078125 - 1.5
+    time_gap = abs(other.time_s - expected_time)
+    combined = om.combine(other, base_acq)
+    dt_gap = abs(combined["dt_s"] - (expected_time - (0.5 - 0.0078125)))
+    refusals = {
+        "frame_mismatch": refusal_code(lambda: om.combine(records[0], mapped[1])),
+        "clock_mismatch": refusal_code(lambda: om.combine(base, replace(base, clock_id="clock:daq"))),
+        "epoch_mismatch": refusal_code(lambda: om.combine(base, replace(base, epoch="epoch:run-1"))),
+        "clock_basis_mismatch": refusal_code(lambda: om.combine(base_acq, replace(base_acq, clock_basis="arrival"))),
+        "mapping_not_applicable": refusal_code(lambda: om.apply_frame(mapped[0], exact_map)),
+        "frame_kind_mismatch": refusal_code(lambda: om.apply_frame(
+            records[0], om.FrameMapping("tracker:room", "camera_rig:stereo-0", quarter_turn, (0.0, 0.0, 0.0), "c"))),
+        "epoch_mismatch_mapping": refusal_code(lambda: om.apply_clock(replace(shifted, epoch="epoch:boot-8"),
+                                                                       to_acquisition)),
+    }
+    return {"exact_gap": exact_gap, "identity_recorded": identity_recorded, "round_trip_error": round_trip,
+            "chord_invariance": chord_invariance, "time_gap": time_gap, "dt_gap": dt_gap,
+            "combined": combined, "mapped_records": [m.record() for m in mapped], "refusals": refusals,
+            "mappings": {"exact_frame": exact_map.record(), "general_frame": general.record(),
+                         "arrival_to_acquisition": to_acquisition.record(), "daq_to_tracker": to_tracker.record()},
+            "final_record": other.record()}
+
+
+@task("T058", changed_files=(MODULE, MODES_FILE), regression_tests=_tests("test_t058_frame_and_clock_basis"))
+def frame_and_clock_basis(ctx):
+    study = frame_clock_study()
+    ctx.artifact_json("frame-clock-study.json", study)
+    expected = {"frame_mismatch": "frame_mismatch", "clock_mismatch": "clock_mismatch",
+                "epoch_mismatch": "epoch_mismatch", "clock_basis_mismatch": "clock_basis_mismatch",
+                "mapping_not_applicable": "mapping_not_applicable", "frame_kind_mismatch": "frame_kind_mismatch",
+                "epoch_mismatch_mapping": "epoch_mismatch"}
+    refusal_checks = [{"reference_kind": "refusal", "reference": name.replace("_", " "), "expected_refusal": code,
+                       "observed_refusal": study["refusals"][name], "passed": study["refusals"][name] == code}
+                      for name, code in expected.items()]
+    findings = [
+        finding("Combining observations across frames, clocks, epochs or time bases without a declared mapping is "
+                "refused", "computational_pipeline", {k: study["refusals"][k] for k in list(expected)[:4]},
+                {"checks": refusal_checks[:4]}, tolerance={"abs": 0, "rel": 0}),
+        finding("A declared rigid frame mapping is applied exactly and recorded on the observation",
+                "computational_pipeline", {"exact_gap_m": study["exact_gap"], "round_trip_error_m": study["round_trip_error"],
+                                           "chord_invariance_m": study["chord_invariance"],
+                                           "identity_recorded": study["identity_recorded"]},
+                {"checks": [_check("quarter-turn mapping against the hand-written formula (dyadic values)",
+                                   study["exact_gap"], 0.0, kind="exact_arithmetic"),
+                            _check("general rotation mapping followed by its inverse (m)", study["round_trip_error"], 1e-15),
+                            _check("chord distance change under a rigid rig mapping (m)", study["chord_invariance"], 0.0,
+                                   kind="exact_arithmetic"),
+                            _check("mapping identity missing from mapped records", 0 if study["identity_recorded"] else 1,
+                                   0, kind="exact_arithmetic")]},
+                tolerance={"abs": 1e-15, "rel": 0}),
+        finding("Declared clock mappings (arrival to acquisition, then clock to clock) are applied exactly",
+                "computational_pipeline", {"time_gap_s": study["time_gap"], "combined_dt_gap_s": study["dt_gap"],
+                                           "final_clock": study["final_record"]["clock_id"],
+                                           "final_basis": study["final_record"]["clock_basis"]},
+                {"checks": [_check("mapped time against the declared affine map (dyadic values, s)", study["time_gap"],
+                                   0.0, kind="exact_arithmetic"),
+                            _check("time difference after mapping both records to one basis (s)", study["dt_gap"], 0.0,
+                                   kind="exact_arithmetic")]},
+                tolerance={"abs": 0, "rel": 0}),
+        finding("A mapping declared for another frame, frame kind or epoch is refused", "computational_pipeline",
+                {k: study["refusals"][k] for k in list(expected)[4:]}, {"checks": refusal_checks[4:]},
+                tolerance={"abs": 0, "rel": 0}),
+        _unestablished("The declared frame and clock mappings equal the real extrinsic calibration and clock "
+                       "synchronization", "calibration", "Mappings are declared synthetic values; no calibration or "
+                       "synchronization procedure was run."),
+    ]
+    fields = _fields(
+        hypothesis="Observations that carry frame id, clock id, epoch and time basis can be combined only after an "
+                   "explicit declared mapping, which is then applied exactly and recorded.",
+        mathematical_model="Frame mapping p' = R p + t between frames of one kind (distances invariant); clock mapping "
+                           "t' = rate t + offset from (clock, epoch, basis) to another; arrival -> acquisition by the "
+                           "declared latency.",
+        input_data=["Tracker records at dyadic positions", "Quarter-turn and general rotations",
+                    "Clock mappings with dyadic offsets (latency 1/128 s, offset -1.5 s)"],
+        observation_model="Synthetic tracker_measurement and camera_chord_distance records.",
+        expected_invariant="Exact agreement with hand-written maps on dyadic inputs; inverse round trip to rounding; "
+                           "refusal of every undeclared combination.",
+        experiment="Combine mismatched records; apply declared frame and clock mappings; compare with independent "
+                   "hand-written formulas; attempt mappings with the wrong source frame, kind or epoch.",
+        numerical_result=f"exact gap {study['exact_gap']}, round trip {study['round_trip_error']:.1e} m, time gap "
+                         f"{study['time_gap']} s; refusals {sorted(set(study['refusals'].values()))}.",
+        uncertainty="Exact arithmetic for dyadic inputs; general rotations to within 1e-15.",
+        failure_modes_checked=["frame, clock, epoch and basis mismatches", "mapping for another source frame",
+                               "mapping across frame kinds", "clock mapping for another epoch",
+                               "mapping identity recorded on the result"],
+        unresolved_assumptions=["Clock rates are exactly 1 (drift not modelled)", "Mappings are static"],
+        recommended_next_task="T059: retain observations without admitting them as state")
+    return {"state": "completed", "fields": fields, "findings": findings}
+
+
+# --------------------------------------------------------------- T059
+def retention_study() -> dict:
+    per_mode = {}
+    for name in sorted(om.MODES):
+        components = om.MODES[name].components
+        store = om.StateStore(name, [0.0] * components, [1.0] * components)
+        before = store.digest()
+        observations = [example_observation(name, sequence=k, raw_ref=f"raw:{name}:{k}") for k in range(3)]
+        records = [store.retain(o) for o in observations]
+        after = store.digest()
+        per_mode[name] = {
+            "state_unchanged": before == after, "retained": len(store.retained()),
+            "admission": sorted({r["state_admission"] for r in records}),
+            "retention": sorted({r["retention"] for r in records}),
+            "update_code": refusal_code(lambda s=store, r=records[0]: s.update(r, 0.5)),
+            "state_after_refusal_unchanged": store.digest() == before}
+    store = om.StateStore("intrinsic_geodesic_distance", 1.0, 0.5)
+    record = store.retain(example_observation("intrinsic_geodesic_distance", value=2.0))
+    admission = store.admit(record["observation_digest"], "declared synthetic admission")
+    updated = store.update(record, 0.5)
+    exact = {"mean": updated["mean"][0] - 1.5, "variance": updated["variance"][0] - 0.25}
+    tampered = dict(record, observation=dict(record["observation"], value=[2.5]))
+    stranger = example_observation("intrinsic_geodesic_distance", value=3.0, sequence=9)
+    chord_store = om.StateStore("intrinsic_geodesic_distance", 0.0, 1.0)
+    chord_record = chord_store.retain(example_observation("camera_chord_distance"))
+    refusals = {"admission_digest_mismatch": refusal_code(lambda: store.update(tampered, 0.5)),
+                "not_retained": refusal_code(lambda: store.admit(stranger.digest(), "declared")),
+                "mode_substitution": refusal_code(lambda: chord_store.admit(chord_record["observation_digest"],
+                                                                             "declared"))}
+    return {"per_mode": per_mode, "admission": admission, "updated_state": updated, "exact_update_gap": exact,
+            "refusals": refusals}
+
+
+@task("T059", changed_files=(MODULE, MODES_FILE), regression_tests=_tests("test_t059_retained_without_admission"))
+def retained_without_admission(ctx):
+    study = retention_study()
+    per_mode = study["per_mode"]
+    ctx.artifact_json("retention-study.json", study)
+    unchanged = sum(v["state_unchanged"] and v["state_after_refusal_unchanged"] for v in per_mode.values())
+    labelled = sum(v["admission"] == ["not_performed"] and v["retention"] == ["retained"] for v in per_mode.values())
+    findings = [
+        finding("Every observation mode can be retained without changing estimator state; retained records carry "
+                "state_admission not_performed", "computational_pipeline",
+                {"modes": len(per_mode), "state_unchanged": unchanged, "labelled_not_performed": labelled},
+                {"checks": [_check("modes whose state digest changed on retention or refusal", len(per_mode) - unchanged,
+                                   0, kind="exact_arithmetic"),
+                            _check("modes whose records lack retention retained / admission not_performed",
+                                   len(per_mode) - labelled, 0, kind="exact_arithmetic")]},
+                tolerance={"abs": 0, "rel": 0}),
+        finding("Updating state from a retained but unadmitted observation is refused for every mode",
+                "computational_pipeline", {name: v["update_code"] for name, v in per_mode.items()},
+                {"checks": [{"reference_kind": "refusal", "reference": f"update from unadmitted {name}",
+                             "expected_refusal": "not_admitted", "observed_refusal": v["update_code"],
+                             "passed": v["update_code"] == "not_admitted"} for name, v in per_mode.items()]},
+                tolerance={"abs": 0, "rel": 0}),
+        finding("An admitted, digest-bound observation updates state by the exact Kalman formula", "numerical",
+                {"mean": study["updated_state"]["mean"][0], "variance": study["updated_state"]["variance"][0]},
+                {"checks": [_check("posterior mean minus 1.5 (prior 1.0/0.5, observation 2.0/0.5)",
+                                   study["exact_update_gap"]["mean"], 0.0, kind="exact_arithmetic"),
+                            _check("posterior variance minus 0.25", study["exact_update_gap"]["variance"], 0.0,
+                                   kind="exact_arithmetic")]},
+                tolerance={"abs": 0, "rel": 0}),
+        finding("Tampered, unretained and mode-substituted admissions are refused", "computational_pipeline",
+                study["refusals"],
+                {"checks": [{"reference_kind": "refusal", "reference": name.replace("_", " "), "expected_refusal": name,
+                             "observed_refusal": code, "passed": code == name}
+                            for name, code in study["refusals"].items()]},
+                tolerance={"abs": 0, "rel": 0}),
+        _unestablished("Admission as workbench state confers authority to act on a machine", "actuator_authority",
+                       "Admission is bookkeeping inside the workbench; actuator authority is decided outside it."),
+    ]
+    fields = _fields(
+        hypothesis="Retention and admission are separate: any observation can be retained as evidence without "
+                   "changing state, and only a retained, validated, admitted observation bound by content digest can "
+                   "update state.",
+        mathematical_model="State (mean, variance) per component; retain(o) stores (o, digest(o)) with "
+                           "state_admission = not_performed; admit(digest) validates mode and references; update "
+                           "applies K = P/(P + R), m' = m + K (z - m), P' = (1 - K) P only for admitted digests.",
+        input_data=["One synthetic record per mode, three sequences each", "Prior 1.0 / 0.5 and observation "
+                    "2.0 / 0.5 for the exact update"],
+        observation_model="Synthetic records; no instrument.",
+        expected_invariant="State digest unchanged by retention and by refused updates; exact posterior on dyadic "
+                           "numbers.",
+        experiment="Retain records of all seven modes, attempt updates before admission, admit and update one "
+                   "record, then tamper with it, admit an unretained digest and admit a chord into a geodesic-"
+                   "distance store.",
+        numerical_result=f"{unchanged}/{len(per_mode)} modes unchanged by retention; all unadmitted updates refused; "
+                         f"posterior {study['updated_state']['mean'][0]} / {study['updated_state']['variance'][0]}; "
+                         f"refusals {study['refusals']}.",
+        uncertainty="Exact; no stochastic component.",
+        failure_modes_checked=["update before admission (every mode)", "record altered after admission",
+                               "admission of an unretained digest", "camera chord admitted as intrinsic distance"],
+        unresolved_assumptions=["Admission decisions are declared, not reviewed by an operator",
+                                "State is per-component independent (no cross-covariance)"],
+        recommended_next_task="T060: build the deterministic multi-sensor synthetic bench")
     return {"state": "completed", "fields": fields, "findings": findings}

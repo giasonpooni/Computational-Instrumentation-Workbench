@@ -40,9 +40,10 @@ value. Wall-clock and CPU times are retained only as artifacts
   right-hand-side evaluations per sphere geodesic (N = 256), with endpoint
   error 1.1e-9 against the exact great circle; adaptive Dormand–Prince
   (rtol 1e-9) uses 295–487 evaluations per trajectory. When a readable
-  `intel-rapl` tree exists, the task brackets three repeated batches with
-  package counter reads (one wrap allowed) and records a background-inclusive
-  `hardware_measured` finding; otherwise it stays `partial`.
+  `intel-rapl` tree exists, the task brackets three repeated fixed-step
+  batches with package counter reads (one wrap allowed) and records a
+  background-inclusive `hardware_measured` finding; otherwise it stays
+  `partial`.
 - **T117 Python/Rust.** A std-only Rust RK4 kernel is embedded as
   `energy_gpu_kernels.RUST_SOURCE`, compiled with `rustc -O` into a temporary
   directory, and exchanges JSON over stdin/stdout. Its endpoints are bitwise
@@ -101,9 +102,9 @@ strided (shared-memory style) tree, two-pass blocked, block-sequential, Kahan,
 and eight atomicAdd completion orders of 256-element block partials.
 
 - Positive data (u³·1000 + 1e-3): float32 sums spread by 4.0e-6 relative across
-  orders; the sequential fold is worst (error 15.9 on 4.1e6), trees err by
-  under 0.7. float64 spread is 6.8e-16. Every error lies inside the a priori
-  bound γ₍ₙ₋₁₎ Σ|xᵢ|.
+  orders; the sequential fold is worst (error 15.9 on 4.1e6), every other
+  order errs by under 0.7. float64 spread is 6.8e-16. Every error lies
+  inside the a priori bound γ₍ₙ₋₁₎ Σ|xᵢ|.
 - Cancellation data (±a pairs plus 64 × 2⁻⁸, exact sum +0.25, first flipping
   PCG64 seed 201): the float32 sequential sum is −0.024 while every other order
   is positive — **reduction order alone flips a sign/threshold decision**.
@@ -114,8 +115,8 @@ and eight atomicAdd completion orders of 256-element block partials.
 - A decision rule that only decides when |S − T| exceeds the a priori bound
   never contradicts itself across orders (0 contradictions over 17 thresholds
   × 4 datasets); unguarded `S > T` flips at the threshold nearest the exact
-  sum, even in float64. The guard is conservative: about half of the tested
-  decisions stay undecided.
+  sum, even in float64 on the positive data. The guard is conservative:
+  about half of the tested decisions stay undecided.
 
 None of this shows what CUB, cuBLAS or a hand-written kernel does on an RTX
 2080; that is the physical-domain finding left `not_established`, and the
@@ -124,21 +125,23 @@ follow-up is T148 (deterministic reduction policy) and T147 (CPU/GPU outputs).
 ## Protocol for the RTX 2080 host (T116, T118)
 
 The lab runner never acquires hardware data. On the GPU host the operator
-captures, then the lab analyzes:
+captures, then the lab analyzes (`R=runs/rtx2080-<date>`; `ciw energy record`
+refuses an existing output directory, so the capture goes into `$R/capture`):
 
-1. `ciw energy probe --gpu-index 0` — must return a reading with `status: ok`
-   (confirms the driver exposes `nvmlDeviceGetTotalEnergyConsumption`; NVML
-   documents it for Volta and newer, which includes Turing).
+1. `mkdir -p $R` and `ciw energy probe --gpu-index 0` — must return a reading
+   with `status: ok` (confirms the driver exposes
+   `nvmlDeviceGetTotalEnergyConsumption`; NVML documents it for Volta and
+   newer, which includes Turing).
 2. Start the utilization sidecar in the background:
-   `nvidia-smi --query-gpu=timestamp,uuid,name,utilization.gpu,utilization.memory,temperature.gpu,power.draw,clocks.sm,clocks.mem,pstate --format=csv,nounits -lms 100 -f runs/rtx2080-<date>/smi.csv`
+   `nvidia-smi --query-gpu=timestamp,uuid,name,utilization.gpu,utilization.memory,temperature.gpu,power.draw,clocks.sm,clocks.mem,pstate --format=csv,nounits -lms 100 -f $R/smi.csv`
 3. Capture:
-   `ciw energy record --problem examples/energy-accuracy/problem.json --output-dir runs/rtx2080-<date> --duration 10 --replicas 4096 --warmup-batches 2 --idle-duration 2 --gpu-index 0`
+   `ciw energy record --problem examples/energy-accuracy/problem.json --output-dir $R/capture --duration 10 --replicas 4096 --warmup-batches 2 --idle-duration 2 --gpu-index 0`
    and stop the sidecar.
-4. `ciw energy replay runs/rtx2080-<date>/log.json` — offline recomputation.
+4. `ciw energy replay $R/capture/log.json` — offline recomputation.
 5. Kernel durations in a separate pass (profiling perturbs timing and energy):
-   `nsys profile --trace=cuda -o runs/rtx2080-<date>/nsys python -m ciw energy record ... --output-dir runs/rtx2080-<date>-nsys`,
-   then `nsys stats --report cuda_gpu_kern_sum`.
-6. `CIW_LAB_ENERGY_LOG=runs/rtx2080-<date>/log.json CIW_LAB_NVIDIA_SMI_CSV=runs/rtx2080-<date>/smi.csv python -m ciw lab run T116 T118 --output-dir <dir>`
+   `nsys profile --trace=cuda -o $R/nsys python -m ciw energy record --problem examples/energy-accuracy/problem.json --output-dir $R/capture-nsys --duration 10 --gpu-index 0`,
+   then `nsys stats --report cuda_gpu_kern_sum $R/nsys.nsys-rep`.
+6. `CIW_LAB_ENERGY_LOG=$R/capture/log.json CIW_LAB_NVIDIA_SMI_CSV=$R/smi.csv python -m ciw lab run T116 T118 --output-dir <dir>`
 
 T116 then reports gross device energy per measured batch; T118 reports NVML
 power, temperature and graphics clock, host-bracketed batch durations (these

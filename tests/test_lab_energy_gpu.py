@@ -89,6 +89,22 @@ def test_rapl_helpers_read_counters_and_one_wrap(tmp_path):
         telemetry.rapl_delta_uj(10, 5, None)
 
 
+def test_rapl_path_divides_counter_difference_by_trajectories(tmp_path, monkeypatch):
+    """Simulated counters exercise the RAPL branch; the label follows the acquisition record."""
+    readings = iter([[1_000_000], [1_000_000 + 9_000_000]])
+    domain = {"zone": "intel-rapl:0", "name": "package-0", "path": "unused", "max_energy_range_uj": 262143328850}
+    monkeypatch.setattr(runner, "_probe_hardware", lambda name: name == "rapl")
+    monkeypatch.setattr(telemetry, "rapl_domains", lambda root=None, separator=":": [domain])
+    monkeypatch.setattr(telemetry, "rapl_read", lambda domains: next(readings))
+    report = validate_report(runner.run_task(QUEUE["T115"], _REGISTRY["T115"], runner.Context(tmp_path), {}))
+    energy = by_claim(report, "CPU package energy per geodesic trajectory")
+    assert energy["value"] == pytest.approx(9.0 / (3 * len(kernels.HEADINGS)))
+    assert energy["evidence_status"] == "hardware_measured" and report["state"] == "completed"
+    assert energy["basis"]["acquisition"]["calibration"].startswith("not_applied")
+    raw = json.loads((tmp_path / "artifacts" / "T115" / "rapl-raw.json").read_text())
+    assert raw["after_uj"][0] - raw["before_uj"][0] == 9_000_000
+
+
 def test_gpu_tasks_are_blocked_with_the_recording_protocol(lab):
     for task_id in ("T116", "T118"):
         report = lab(task_id)

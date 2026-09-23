@@ -309,12 +309,12 @@ def random_spd(rng, n, condition=10.0):
     return 0.5 * P + 0.5 * P.T
 
 
-def near_threshold(rng, n, kappa, P=None, skew=100.0, time="continuous"):
-    """A continuous-time A whose decrease form has max eig close to kappa * resolution.
+def _threshold_builder(rng, n, P, skew):
+    """A(top) = P^{-1}(N/2 + K): A^T P + P A = N before rounding, N = Q diag(top, rest) Q^T.
 
-    A = P^{-1}(N/2 + K) gives A^T P + P A = N exactly before rounding, for any
-    skew K; a large K makes the resolution large while N sets the spectrum.
-    The exact spectrum of the rounded A is decided separately by exact_form.
+    A large skew K makes the resolution large while N alone sets the spectrum
+    of the decrease form; the exact spectrum of the rounded A is decided
+    separately by exact_form.
     """
     P = np.eye(n) if P is None else np.asarray(P, dtype=float)
     q = random_orthogonal(rng, n)
@@ -327,5 +327,31 @@ def near_threshold(rng, n, kappa, P=None, skew=100.0, time="continuous"):
         N = 0.5 * N + 0.5 * N.T
         return np.linalg.solve(P, 0.5 * N + K)
 
-    trial = build(0.0)
-    return build(kappa * resolution(trial, P, time)), P
+    return P, build
+
+
+def near_threshold(rng, n, kappa, P=None, skew=100.0, time="continuous"):
+    """A continuous-time A whose decrease form has max eig close to kappa * resolution."""
+    P, build = _threshold_builder(rng, n, P, skew)
+    return build(kappa * resolution(build(0.0), P, time)), P
+
+
+def razor_edge(rng, n, P=None, side=-1.0, skew=100.0, iterations=48):
+    """A with |max eig(M)| / resolution just above 1 as computed in float64 (side -1: certifiable side)."""
+    P, build = _threshold_builder(rng, n, P, skew)
+    base = resolution(build(0.0), P)
+
+    def ratio(kappa):
+        A = build(side * kappa * base)
+        form = decrease_matrix(A, P)
+        return side * float(np.max(np.linalg.eigvalsh(form))) / resolution(A, P, form=form), A
+
+    low, high = 0.5, 2.0
+    for _ in range(iterations):
+        middle = 0.5 * (low + high)
+        if ratio(middle)[0] > 1.0:
+            high = middle
+        else:
+            low = middle
+    value, A = ratio(high)
+    return A, P, value

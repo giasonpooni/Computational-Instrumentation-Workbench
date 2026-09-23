@@ -95,7 +95,8 @@ def build_session_fixture(root: Path) -> dict:
 
     run = make_demo_run()
     session = Session(run, root / "session-a")
-    recording = (root / "session-a" / session.recording_file).read_bytes()
+    # Session writes in text mode, so newlines follow the platform; compare with LF normalized.
+    recording = (root / "session-a" / session.recording_file).read_bytes().replace(b"\r\n", b"\n")
     first = request(session, "operation.execute", deepcopy(STATS))
     second = request(session, "operation.execute", deepcopy(STATS))
     legacy = request(session, "analysis.stats", deepcopy(STATS["parameters"]))

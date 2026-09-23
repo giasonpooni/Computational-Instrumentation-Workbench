@@ -344,3 +344,670 @@ def near_focus_counterexamples(ctx):
                               "(conjugate-point location accuracy)",
     )
     return {"state": "completed", "fields": fields, "findings": findings}
+
+
+# ------------------------------------------------------------------ T011
+T011_CASES = (("plane", (0.3, -0.2), 0.7, 2.0), ("sphere", SPHERE_START[0], SPHERE_START[1], 2.0),
+              ("torus", (0.0, 0.5), 0.7, 3.0))
+T011_STEPS = (64, 128, 256)
+
+
+def _t011_base(key):
+    return {"plane": Plane(), "sphere": Sphere(1.0), "torus": Torus(2.0, 1.0)}[key]
+
+
+def _t011_reference(key, u0, heading, length):
+    """Endpoint X(L) and transfer matrix (j_lat, j_lat', j_head, j_head') of the base-chart geodesic."""
+    base = _t011_base(key)
+    u0 = np.asarray(u0, dtype=float)
+    t0 = base.unit_tangent(u0, heading)
+    if key == "plane":
+        return np.concatenate([base.embedding(u0 + length * t0), [1.0, 0.0, length, 1.0]]), 0.0, "analytic"
+    if key == "sphere":
+        point = base.exact_embedded_geodesic(u0, t0, [length])[0]
+        return (np.concatenate([point, [math.cos(length), -math.sin(length), math.sin(length), math.cos(length)]]),
+                0.0, "analytic")
+    fine = jacobi.transfer(base, u0, heading, length, rtol=1e-13, atol=1e-15)
+    coarse = jacobi.transfer(base, u0, heading, length, rtol=1e-12, atol=1e-14)
+    ref = np.concatenate([base.embedding(fine.states[-1, :2]), fine.states[-1, 4:8]])
+    other = np.concatenate([base.embedding(coarse.states[-1, :2]), coarse.states[-1, 4:8]])
+    return ref, float(np.max(np.abs(ref - other))), "high_precision"
+
+
+def _chart_run(surface, a0, ta, length, steps=None, rtol=None):
+    y0 = np.concatenate([a0, ta, [1.0, 0.0, 0.0, 1.0]])
+    f = jacobi.rhs(surface)
+    if rtol is not None:
+        s, states, stats = integrators.integrate_adaptive(f, y0, length, rtol=rtol, atol=rtol * 1e-2)
+    else:
+        s, states = integrators.integrate_fixed(f, y0, length, steps, "rk4")
+        stats = {"steps": steps}
+    speed = np.sqrt([surface.speed_squared(y[:2], y[2:4]) for y in states])
+    arclength = float(np.sum(0.5 * (speed[1:] + speed[:-1]) * np.diff(s)))
+    observed = np.concatenate([surface.embedding(states[-1, :2]), states[-1, 4:8]])
+    return observed, arclength - length, stats, states
+
+
+def chart_study(ctx):
+    """Every chart on every T011 surface: fixed-step errors, adaptive errors and the identity-chart bit check."""
+    def compute():
+        out = {}
+        for key, u0, heading, length in T011_CASES:
+            base = _t011_base(key)
+            ref, ref_spread, ref_kind = _t011_reference(key, u0, heading, length)
+            a0, ta = core.chart_start(base, None, u0, heading)
+            _, _, _, base_states = _chart_run(base, a0, ta, length, steps=T011_STEPS[-1])
+            middle = base_states[len(base_states) // 2, :2]
+            center = np.round(middle, 2)
+            axis = int(np.argmax(np.abs(base_states[-1, :2] - base_states[0, :2])))
+            charts = {"base": None, "polynomial-warp": core.PolynomialWarp(center, 0.3),
+                      "quadratic-shear": core.QuadraticShear(center, 0.8),
+                      "exponential-stretch": core.ExponentialStretch(center, 0.6),
+                      "near-fold mu=0.2": core.NearFold(center, 0.2, axis),
+                      "near-fold mu=0.1": core.NearFold(center, 0.1, axis)}
+            rows = {}
+            for name, chart in charts.items():
+                surface = base if chart is None else Reparametrized(base, chart)
+                a0, ta = core.chart_start(base, chart, u0, heading)
+                errors, length_errors = [], []
+                for steps in T011_STEPS:
+                    observed, length_error, _, _ = _chart_run(surface, a0, ta, length, steps=steps)
+                    errors.append(float(np.max(np.abs(observed - ref))))
+                    length_errors.append(abs(length_error))
+                adaptive, adaptive_length, stats, _ = _chart_run(surface, a0, ta, length, rtol=1e-10)
+                rows[name] = {"fixed_errors": errors, "fixed_length_errors": length_errors,
+                              # Order from the last step pair; roundoff-level errors carry no order.
+                              "order_last_pair": -core.loglog_slope(T011_STEPS[-2:], errors[-2:])
+                              if min(errors[-2:]) > 1e-13 else None,
+                              "adaptive_error": float(np.max(np.abs(adaptive - ref))),
+                              "adaptive_length_error": abs(adaptive_length),
+                              "adaptive_accepted_steps": stats["accepted_steps"]}
+            identity = Reparametrized(base, core.IdentityChart())
+            a0, ta = core.chart_start(base, core.IdentityChart(), u0, heading)
+            _, _, _, id_states = _chart_run(identity, a0, ta, length, steps=T011_STEPS[0])
+            b0, tb = core.chart_start(base, None, u0, heading)
+            _, _, _, direct = _chart_run(base, b0, tb, length, steps=T011_STEPS[0])
+            out[key] = {"center": center.tolist(), "fold_axis": axis, "reference_kind": ref_kind,
+                        "reference_spread": ref_spread, "charts": rows,
+                        "identity_max_difference": float(np.max(np.abs(id_states - direct)))}
+        return out
+    return ctx.memo("gjl-chart-study", compute)
+
+
+@task("T011", changed_files=CHANGED, regression_tests=(f"{TESTS}::test_t011_chart_invariance_and_fold_amplification",
+                                                     f"{TESTS}::test_chart_maps_have_exact_derivatives"))
+def coordinate_change_invariance(ctx):
+    study = chart_study(ctx)
+    ctx.artifact_json("chart-invariance.json", core.jsonable(study, 12))
+    series = []
+    for key in ("sphere", "torus"):
+        for name in ("base", "polynomial-warp", "near-fold mu=0.1"):
+            series.append((f"{key}: {name}", [T011_CASES[0][3] / n for n in T011_STEPS],
+                           study[key]["charts"][name]["fixed_errors"]))
+    ctx.artifact_text("chart-error.svg", svg.line_plot(series, title="RK4 endpoint/Jacobi error by chart",
+                                                       xlabel="step h (plane/sphere units)", ylabel="max error",
+                                                       logx=True, logy=True))
+    adaptive_max = max(row["adaptive_error"] for case in study.values() for row in case["charts"].values())
+    adaptive_by_kind = {kind: max(row["adaptive_error"] for case in study.values() if case["reference_kind"] == kind
+                                  for row in case["charts"].values()) for kind in ("analytic", "high_precision")}
+    length_max = max(row["adaptive_length_error"] for case in study.values() for row in case["charts"].values())
+    orders = {f"{key}: {name}": row["order_last_pair"] for key, case in study.items()
+              for name, row in case["charts"].items() if row["order_last_pair"] is not None}
+    min_order = min(orders.values())
+    factors = {key: {name: row["fixed_errors"][-1] / study[key]["charts"]["base"]["fixed_errors"][-1]
+                     for name, row in study[key]["charts"].items() if name != "base"} for key in ("sphere", "torus")}
+    fold_factor = min(factors["sphere"]["near-fold mu=0.1"], factors["torus"]["near-fold mu=0.1"])
+    smooth = [v for key in factors for name, v in factors[key].items() if not name.startswith("near-fold")]
+    plane = study["plane"]["charts"]
+    identity = max(case["identity_max_difference"] for case in study.values())
+    steps_fold = {key: study[key]["charts"]["near-fold mu=0.1"]["adaptive_accepted_steps"]
+                  / study[key]["charts"]["base"]["adaptive_accepted_steps"] for key in study}
+
+    findings = [
+        finding("Converged geodesic endpoints, lengths and Jacobi transfer matrices agree in every chart",
+                "numerical", {"max_adaptive_error": adaptive_max, "max_length_error": length_max,
+                              "by_reference": adaptive_by_kind},
+                {"generator": _gen("chart-study", charts=list(study["plane"]["charts"]), rtol=1e-10),
+                 "derivation": _derivation("t011-coordinate-change-invariance"),
+                 "checks": [core.check("analytic", "adaptive error against exact plane and sphere geodesics",
+                                       adaptive_by_kind["analytic"], 1e-8),
+                            core.check("high_precision", "adaptive error against the rtol 1e-13 torus reference",
+                                       adaptive_by_kind["high_precision"], 1e-8),
+                            core.check("invariant", "|integral of speed - L| in every chart", length_max, 1e-8)]},
+                tolerance={"abs": 1e-9, "rel": 0.5}),
+        finding("RK4 keeps fourth-order convergence in every chart, including the near-fold charts",
+                "numerical", {"min_order": min_order, "orders": orders},
+                {"generator": _gen("chart-study", steps=list(T011_STEPS)),
+                 "checks": [core.check("self_convergence", "smallest observed order between N = 128 and 256",
+                                       min_order, 3.7, "ge")]},
+                tolerance={"abs": 0.05, "rel": 0.0}),
+        finding("A geometry-preserving near-fold chart multiplies the fixed-step error by a large factor",
+                "numerical", {"error_factor_mu_0.1_at_N_256": {k: factors[k]["near-fold mu=0.1"] for k in factors},
+                              "error_factor_mu_0.2_at_N_256": {k: factors[k]["near-fold mu=0.2"] for k in factors},
+                              "smooth_chart_factor_range": [min(smooth), max(smooth)],
+                              "adaptive_step_ratio_mu_0.1": steps_fold},
+                {"generator": _gen("chart-study", steps=T011_STEPS[-1]),
+                 "checks": [core.check("self_convergence", "min over sphere and torus of error(fold 0.1)/error(base)",
+                                       fold_factor, 100.0, "ge")]},
+                tolerance={"abs": 1e-6, "rel": 1e-3},
+                counterexample={"statement": "A change of chart that preserves the geometry leaves the fixed-step "
+                                             "integration error unchanged",
+                                "witness": {"chart": "u_axis = c + mu a + a^3/3, mu = 0.1 (det J >= 0.1)",
+                                            "steps": T011_STEPS[-1], "factor_sphere": factors["sphere"]["near-fold mu=0.1"],
+                                            "factor_torus": factors["torus"]["near-fold mu=0.1"],
+                                            "plane_error_base": plane["base"]["fixed_errors"][-1],
+                                            "plane_error_fold": plane["near-fold mu=0.1"]["fixed_errors"][-1]}}),
+        finding("The identity chart reproduces the base-chart integration bit for bit", "computational_pipeline",
+                identity, {"checks": [core.check("exact_arithmetic", "max |identity-chart state - base state|",
+                                                 identity, 0.0)]},
+                tolerance={"abs": 0.0, "rel": 0.0}),
+    ]
+    torus_rows = study["torus"]["charts"]
+    fields = _fields(
+        hypothesis=("A geodesic and its Jacobi fields are geometric: the same initial point and unit tangent give the "
+                    "same embedded endpoint, length and transfer matrix in any chart, up to integration error; the "
+                    "size of that error, however, depends on the chart."),
+        mathematical_model=("Pullback metric g'(a) = J^T g(phi(a)) J with exact Hessian terms (Reparametrized); the "
+                            "initial tangent is t_a = J^{-1} t_u, so the geometric initial data coincide. RK4 local error "
+                            "~ h^5 y^(5); a near fold u = c + mu a + a^3/3 makes the chart velocity ~ 1/mu over an arclength "
+                            "window ~ mu^(3/2), so the derivatives entering the error grow as mu decreases."),
+        input_data=["Plane start (0.3, -0.2) heading 0.7, L = 2; unit sphere start (pi/2, 0) heading 1.0, L = 2; "
+                    "Torus(2, 1) start (0, 0.5) heading 0.7, L = 3",
+                    "Charts centered at the rounded chart midpoint of the base path: polynomial warp beta = 0.3, "
+                    "quadratic shear sigma = 0.8, exponential stretch lam = 0.6, near-fold mu = 0.2 and 0.1 on the "
+                    "coordinate with the largest excursion, identity",
+                    f"RK4 with N = {list(T011_STEPS)}; adaptive DP45 rtol 1e-10"],
+        observation_model=("Embedded endpoint X(L) = base embedding of phi(a(L)), transfer matrix entries at L, and the "
+                           "trapezoid length of sqrt(g(v, v)); error = max absolute deviation from the reference."),
+        expected_invariant=("All charts agree to the reference within the integrator tolerance; fixed-step order 4 in "
+                            "every chart; the error constant is chart dependent."),
+        experiment=("Integrate the joint geodesic/Jacobi system in each chart with identical geometric initial data; "
+                    "compare with exact (plane, sphere) or rtol 1e-13 (torus) references; fit orders; form error "
+                    "ratios chart/base at N = 256."),
+        numerical_result=(f"Adaptive max error {_g(adaptive_max, 3)} over all charts; min RK4 order {_g(min_order, 4)}; "
+                          f"fold mu = 0.1 multiplies the N = 256 error by {_g(factors['sphere']['near-fold mu=0.1'], 3)} "
+                          f"(sphere) and {_g(factors['torus']['near-fold mu=0.1'], 3)} (torus); smooth charts change it by "
+                          f"{_g(min(smooth), 3)}-{_g(max(smooth), 3)}x; the plane is exact to "
+                          f"{_g(plane['base']['fixed_errors'][-1], 2)} in its base chart but has error "
+                          f"{_g(plane['near-fold mu=0.1']['fixed_errors'][-1], 3)} in the fold chart; the adaptive "
+                          f"integrator spends {_g(steps_fold['torus'], 3)}x the torus base steps in the fold chart; "
+                          f"identity chart max difference {_g(identity, 2)}."),
+        uncertainty=(f"Torus reference spread (rtol 1e-13 vs 1e-12) {_g(study['torus']['reference_spread'], 2)}; torus "
+                     f"base error at N = 256 is {_g(torus_rows['base']['fixed_errors'][-1], 2)}, so torus factors are "
+                     "reliable to a few percent; orders are two-point estimates."),
+        failure_modes_checked=["chart inverse reproduces the start point (refused otherwise)",
+                               "exponential chart domain (refused outside u > c - 1/lam)",
+                               "near-fold kept strictly regular (mu > 0; mu = 0 refused)",
+                               "orientation preserved (det J > 0) so signed Jacobi fields are comparable",
+                               "pre-asymptotic orders at coarse steps reported, not hidden"],
+        unresolved_assumptions=["Chart centers are rounded midpoints of one path; other placements change the factors",
+                                "The fold amplification is measured, not derived; its scaling in mu is not fitted",
+                                "Embedded observables only; the intrinsic hyperbolic chart is not reparametrized here"],
+        recommended_next_task="T012 (frame-change invariance) and a fold-scaling study of error versus mu",
+    )
+    return {"state": "completed", "fields": fields, "findings": findings}
+
+
+# ------------------------------------------------------------------ T012
+T012_EMBEDDED = (("sphere", lambda: Sphere(1.0), SPHERE_START[0], SPHERE_START[1], 2.0),
+                 ("torus", lambda: Torus(2.0, 1.0), (0.0, 0.5), 0.7, 3.0),
+                 ("saddle", lambda: Saddle(1.0), (0.1, -0.2), 0.8, 1.5),
+                 ("gaussian-bump", lambda: GaussianBump(0.5, 1.0), (-1.2, 0.3), 0.2, 2.5))
+T012_ROTATIONS = (((1.0, 2.0, 3.0), 0.7), ((0.0, 0.0, 1.0), math.pi / 3), ((1.0, -1.0, 0.0), 2.5))
+T012_BASIS_ANGLES = (0.3, 1.1, 2.5, -2.0)
+T012_STEPS = 64
+
+
+def _state_with_tangent(surface, u0, tangent):
+    return np.concatenate([np.asarray(u0, dtype=float), tangent, [1.0, 0.0, 0.0, 1.0]])
+
+
+def frame_study():
+    """Ambient rotations, rotated reference bases and an orientation-reversing basis."""
+    rotation_rows, basis_rows = [], []
+    for key, make, u0, heading, length in T012_EMBEDDED:
+        base = make()
+        reference = jacobi.transfer(base, u0, heading, length, steps=T012_STEPS)
+        base_curvature = reference.curvature_along()
+        base_end = base.embedding(reference.states[-1, :2])
+        for axis, angle in T012_ROTATIONS:
+            rot = rotation_matrix(axis, angle)
+            rotated = Rotated(base, rot)
+            run = jacobi.transfer(rotated, u0, heading, length, steps=T012_STEPS)
+            rotation_rows.append({
+                "surface": key, "axis": list(axis), "angle": angle,
+                "max_state_difference": float(np.max(np.abs(run.states - reference.states))),
+                "endpoint_rotation_error": float(np.linalg.norm(rotated.embedding(run.states[-1, :2]) - rot @ base_end)),
+                "max_curvature_difference": float(np.max(np.abs(run.curvature_along() - base_curvature)))})
+    intrinsic = T012_EMBEDDED[:3] + (("hyperbolic-plane", lambda: HyperbolicPlane(1.0), (0.0, 1.0), 0.6, 1.5),)
+    for key, make, u0, heading, length in intrinsic:
+        surface = make()
+        reference = jacobi.transfer(surface, u0, heading, length, steps=T012_STEPS)
+        e1, e2 = surface.orthonormal_frame(np.asarray(u0, dtype=float))
+        for beta in T012_BASIS_ANGLES:
+            f1 = math.cos(beta) * e1 + math.sin(beta) * e2
+            f2 = -math.sin(beta) * e1 + math.cos(beta) * e2
+            local = heading - beta
+            tangent = math.cos(local) * f1 + math.sin(local) * f2
+            _, states = integrators.integrate_fixed(jacobi.rhs(surface), _state_with_tangent(surface, u0, tangent),
+                                                    length, T012_STEPS, "rk4")
+            basis_rows.append({"surface": key, "beta": beta,
+                               "tangent_difference": float(np.max(np.abs(tangent - reference.states[0, 2:4]))),
+                               "max_state_difference": float(np.max(np.abs(states - reference.states)))})
+    # Orientation reversal: (e1, -e2) is also orthonormal but left-handed; "+eps" turns the other way.
+    sphere = Sphere(1.0)
+    u0, heading = np.asarray(SPHERE_START[0], dtype=float), SPHERE_START[1]
+    e1, e2 = sphere.orthonormal_frame(u0)
+    eps, length = 1e-3, 2.0
+    base = jacobi.transfer(sphere, u0, heading, length, steps=T012_STEPS)
+    normal_end = core.embedded_normal(sphere, base.states[-1])
+    end = sphere.embedding(base.states[-1, :2])
+    signed = {}
+    for name, (f1, f2, local) in {"right-handed": (e1, e2, heading), "left-handed": (e1, -e2, -heading)}.items():
+        tangent = math.cos(local + eps) * f1 + math.sin(local + eps) * f2
+        _, states = integrators.integrate_fixed(sphere.geodesic_rhs, np.concatenate([u0, tangent]), length,
+                                                T012_STEPS, "rk4")
+        signed[name] = float((sphere.embedding(states[-1, :2]) - end) @ normal_end)
+    refusal = None
+    try:
+        Rotated(sphere, np.diag([1.0, 1.0, -1.0]))
+    except SurfaceRefusal as exc:
+        refusal = str(exc)
+    return {"rotations": rotation_rows, "basis_rotations": basis_rows,
+            "orientation": {"eps": eps, "signed_separation": signed, "j_head_L": float(base.states[-1, 6]),
+                            "ratio": signed["left-handed"] / signed["right-handed"]},
+            "improper_rotation_refusal": refusal}
+
+
+@task("T012", changed_files=CHANGED, regression_tests=(f"{TESTS}::test_t012_frame_invariance_and_refusal",))
+def frame_change_invariance(ctx):
+    study = ctx.memo("gjl-frame-study", frame_study)
+    ctx.artifact_json("frame-invariance.json", core.jsonable(study, 12))
+    rot_state = max(r["max_state_difference"] for r in study["rotations"])
+    rot_end = max(r["endpoint_rotation_error"] for r in study["rotations"])
+    rot_k = max(r["max_curvature_difference"] for r in study["rotations"])
+    basis_state = max(r["max_state_difference"] for r in study["basis_rotations"])
+    basis_tangent = max(r["tangent_difference"] for r in study["basis_rotations"])
+    orient = study["orientation"]
+    expected = "Frame change requires a proper rotation matrix"
+    findings = [
+        finding("Ambient rotations leave chart trajectories and Jacobi fields unchanged to roundoff", "numerical",
+                rot_state, {"generator": _gen("frame-study", rotations=len(T012_ROTATIONS), steps=T012_STEPS),
+                            "derivation": _derivation("t012-frame-change-invariance"),
+                            "checks": [core.check("invariant", "max |rotated state - base state| over all nodes",
+                                                  rot_state, 1e-11)]},
+                tolerance={"abs": 1e-11, "rel": 0.0}),
+        finding("Embedded endpoints rotate exactly with the ambient frame", "numerical", rot_end,
+                {"generator": _gen("frame-study"),
+                 "checks": [core.check("invariant", "max |X_rotated(L) - R X(L)|", rot_end, 1e-12)]},
+                tolerance={"abs": 1e-12, "rel": 0.0}),
+        finding("Gaussian curvature from the rotated second fundamental form is unchanged", "numerical", rot_k,
+                {"generator": _gen("frame-study"),
+                 "checks": [core.check("invariant", "max |K_rotated - K| along every path", rot_k, 1e-12)]},
+                tolerance={"abs": 1e-12, "rel": 0.0}),
+        finding("Rotating the reference tangent basis (heading measured from e1') leaves every result unchanged",
+                "numerical", {"max_state_difference": basis_state, "max_tangent_difference": basis_tangent},
+                {"generator": _gen("frame-study", basis_angles=list(T012_BASIS_ANGLES)),
+                 "checks": [core.check("invariant", "max |state(beta) - state(0)|", basis_state, 1e-11)]},
+                tolerance={"abs": 1e-11, "rel": 0.0}),
+        finding("An orientation-reversing tangent basis flips the sign of the heading perturbation's separation",
+                "numerical", orient["ratio"],
+                {"generator": _gen("frame-study", eps=orient["eps"]),
+                 "checks": [core.check("invariant", "left-handed / right-handed signed separation plus 1",
+                                       orient["ratio"] + 1.0, 1e-2)]},
+                tolerance={"abs": 1e-6, "rel": 0.0},
+                counterexample={"statement": "Signed Jacobi separations are invariant under every change of "
+                                             "orthonormal tangent basis",
+                                "witness": {"surface": "unit sphere", "basis": "(e1, -e2)", "eps": orient["eps"],
+                                            "signed_right_handed": orient["signed_separation"]["right-handed"],
+                                            "signed_left_handed": orient["signed_separation"]["left-handed"]}}),
+        finding("An improper rotation (reflection) is refused as a frame change", "computational_pipeline",
+                study["improper_rotation_refusal"],
+                {"checks": [core.refusal_check("Rotated(sphere, diag(1, 1, -1))", expected,
+                                               study["improper_rotation_refusal"])]}),
+    ]
+    fields = _fields(
+        hypothesis=("Geodesics and Jacobi fields are intrinsic: an ambient rotation changes only the embedded "
+                    "coordinates (which rotate exactly), and the choice of reference basis for headings is a "
+                    "relabeling; only the orientation of the basis enters, through the sign of the normal."),
+        mathematical_model=("Rotated(base, R): X' = R X, so X'_i . X'_j = X_i . X_j and the second fundamental form is "
+                            "unchanged; in exact arithmetic the chart ODE is identical. A basis (e1', e2') rotated by "
+                            "beta with heading h - beta yields the same unit tangent; a left-handed basis (e1, -e2) "
+                            "maps the heading change +eps to -eps in the right-handed convention, so J = j N flips sign."),
+        input_data=["Sphere, Torus(2, 1), Saddle(1), GaussianBump(0.5, 1) on declared paths; HyperbolicPlane(1) for "
+                    "basis changes", f"Rotations (axis, angle) = {[(list(a), g) for a, g in T012_ROTATIONS]}",
+                    f"Basis angles beta = {list(T012_BASIS_ANGLES)}; RK4 with N = {T012_STEPS}"],
+        observation_model=("Chart states (u, v, Jacobi columns) at every node, embedded endpoints, curvature along "
+                           "the path, and the signed embedded separation at L for eps = 1e-3."),
+        expected_invariant="Differences at roundoff level; exact rotation of X(L); separation ratio -1 under reflection.",
+        experiment=("Integrate each path in the base and rotated surfaces and with rotated reference bases; compare "
+                    "node by node; integrate +eps heading perturbations in right- and left-handed bases."),
+        numerical_result=(f"Rotation: max state difference {_g(rot_state, 2)}, endpoint rotation error {_g(rot_end, 2)}, "
+                          f"curvature difference {_g(rot_k, 2)}; basis rotation: max state difference "
+                          f"{_g(basis_state, 2)}; orientation reversal ratio {_g(orient['ratio'], 8)}; reflection "
+                          f"refused: {study['improper_rotation_refusal']!r}."),
+        uncertainty=("Roundoff differences depend on platform arithmetic (few 1e-15); the regression tolerances "
+                     "allow 1e-11. The reversal ratio differs from -1 by O(eps) second-order terms."),
+        failure_modes_checked=["bitwise equality is not assumed (rotation changes rounding of dot products)",
+                               "improper rotation refused by the core",
+                               "curvature recomputed from the rotated embedding, not reused",
+                               "orientation dependence of signed quantities made explicit"],
+        unresolved_assumptions=["Rotations only; translations and reflections of the embedding are not exercised",
+                                "Hyperbolic-plane isometries (Mobius maps) are not tested, only basis changes"],
+        recommended_next_task="T013 (flat/developable limit) and an isometry test for HyperbolicPlane under Mobius maps",
+    )
+    return {"state": "completed", "fields": fields, "findings": findings}
+
+
+# ------------------------------------------------------------------ T013
+T013_RADII = (2.0, 4.0, 8.0, 16.0, 32.0, 64.0, 128.0, 256.0, 512.0, 1024.0)
+T013_FIT_FROM = 16.0
+T013_LENGTH, T013_STEPS = 2.0, 64
+
+
+def flat_limit_study():
+    """Plane versus cylinder (intrinsically identical) and tori with growing major radius."""
+    u0, heading, length = (0.2, 0.1), 0.6, 3.0
+    plane, cylinder = Plane(), Cylinder(1.0)
+    run_plane = jacobi.transfer(plane, u0, heading, length, steps=60)
+    run_cyl = jacobi.transfer(cylinder, u0, heading, length, steps=60)
+    jacobi_difference = float(np.max(np.abs(run_plane.states[:, 4:8] - run_cyl.states[:, 4:8])))
+    j_minus_s = float(np.max(np.abs(run_cyl.states[:, 6] - run_cyl.s)))
+    chord_plane = float(np.linalg.norm(plane.embedding(run_plane.states[-1, :2]) - plane.embedding(np.array(u0))))
+    chord_cyl = float(np.linalg.norm(cylinder.embedding(run_cyl.states[-1, :2]) - cylinder.embedding(np.array(u0))))
+    radius = cylinder.radius
+    helix = math.hypot(2 * radius * math.sin(length * math.cos(heading) / (2 * radius)), length * math.sin(heading))
+    tori = []
+    for major in T013_RADII:
+        torus = Torus(major, 1.0)
+        run = jacobi.transfer(torus, (0.0, 0.0), 0.0, T013_LENGTH, steps=T013_STEPS)
+        curvature = 1.0 / (torus.minor * (major + torus.minor))
+        w = math.sqrt(curvature)
+        exact_j = math.sin(w * T013_LENGTH) / w
+        deviation = T013_LENGTH - float(run.states[-1, 6])
+        chord = float(np.linalg.norm(torus.embedding(run.states[-1, :2]) - torus.embedding(np.zeros(2))))
+        rho = major + torus.minor
+        tori.append({"major": major, "curvature": curvature, "deviation": deviation,
+                     "exact_deviation": T013_LENGTH - exact_j, "leading_order": curvature * T013_LENGTH ** 3 / 6,
+                     "chord_deficit": T013_LENGTH - chord,
+                     "exact_chord_deficit": T013_LENGTH - 2 * rho * math.sin(T013_LENGTH / (2 * rho))})
+    fit = [row for row in tori if row["major"] >= T013_FIT_FROM]
+    radii = [row["major"] for row in fit]
+    return {"plane_cylinder": {"jacobi_max_difference": jacobi_difference, "j_head_minus_s_max": j_minus_s,
+                               "chord_plane": chord_plane, "chord_cylinder": chord_cyl, "chord_cylinder_exact": helix,
+                               "length": length, "heading": heading},
+            "tori": tori,
+            "deviation_exponent": core.loglog_slope(radii, [r["deviation"] for r in fit]),
+            "deviation_exponent_exact": core.loglog_slope(radii, [r["exact_deviation"] for r in fit]),
+            "chord_deficit_exponent": core.loglog_slope(radii, [r["chord_deficit"] for r in fit]),
+            "max_relative_error_vs_closed_form": max(abs(r["deviation"] / r["exact_deviation"] - 1) for r in tori),
+            "max_leading_order_relative_gap": max(abs(r["deviation"] / r["leading_order"] - 1) for r in fit)}
+
+
+@task("T013", changed_files=CHANGED, regression_tests=(f"{TESTS}::test_t013_flat_limit",))
+def flat_developable_limit(ctx):
+    study = ctx.memo("gjl-flat-limit", flat_limit_study)
+    ctx.artifact_json("flat-limit.json", core.jsonable(study, 12))
+    radii = [r["major"] for r in study["tori"]]
+    ctx.artifact_text("flat-limit.svg", svg.line_plot(
+        [("L - j_head(L) (Jacobi deviation)", radii, [r["deviation"] for r in study["tori"]]),
+         ("K L^3 / 6", radii, [r["leading_order"] for r in study["tori"]]),
+         ("L - chord (extrinsic)", radii, [r["chord_deficit"] for r in study["tori"]])],
+        title="Torus outer equator, L = 2: flat limit", xlabel="major radius R (r = 1)", ylabel="deviation",
+        logx=True, logy=True))
+    pc = study["plane_cylinder"]
+    fit_bound = next(r for r in study["tori"] if r["major"] == T013_FIT_FROM)
+    findings = [
+        finding("Cylinder and plane Jacobi fields coincide exactly: j_head(s) = s", "numerical",
+                {"jacobi_max_difference": pc["jacobi_max_difference"], "j_head_minus_s_max": pc["j_head_minus_s_max"]},
+                {"generator": _gen("plane-cylinder", steps=60),
+                 "derivation": _derivation("t013-flat-and-developable-limit"),
+                 "checks": [core.check("exact_arithmetic", "max |Jacobi(cylinder) - Jacobi(plane)|",
+                                       pc["jacobi_max_difference"], 0.0),
+                            core.check("analytic", "max |j_head(s) - s|", pc["j_head_minus_s_max"], 1e-13)]},
+                tolerance={"abs": 1e-13, "rel": 0.0}),
+        finding("Equal Jacobi fields do not imply equal chords: the helix chord is shorter than the plane chord",
+                "numerical", {"chord_plane": pc["chord_plane"], "chord_cylinder": pc["chord_cylinder"]},
+                {"generator": _gen("plane-cylinder", length=pc["length"]),
+                 "checks": [core.check("analytic", "cylinder chord minus helix closed form",
+                                       pc["chord_cylinder"] - pc["chord_cylinder_exact"], 1e-9),
+                            core.check("analytic", "plane chord minus L", pc["chord_plane"] - pc["length"], 1e-12),
+                            core.check("invariant", "plane chord minus cylinder chord",
+                                       pc["chord_plane"] - pc["chord_cylinder"], 0.1, "ge")]},
+                tolerance={"abs": 1e-9, "rel": 1e-9},
+                counterexample={"statement": "Surfaces with identical Jacobi fields (intrinsic geometry) have identical "
+                                             "chords between corresponding points",
+                                "witness": {"surfaces": ["Plane", "Cylinder(1)"], "start": [0.2, 0.1], "heading": 0.6,
+                                            "length": pc["length"], "chord_plane": pc["chord_plane"],
+                                            "chord_cylinder": pc["chord_cylinder"]}}),
+        finding("Torus outer-equator Jacobi deviation L - j_head(L) matches the closed form for every major radius",
+                "numerical", study["max_relative_error_vs_closed_form"],
+                {"generator": _gen("torus-flat-limit", radii=list(T013_RADII), steps=T013_STEPS),
+                 "checks": [core.check("analytic", "max relative error of L - j_head(L) against L - sin(wL)/w",
+                                       study["max_relative_error_vs_closed_form"], 1e-7)]},
+                tolerance={"abs": 1e-9, "rel": 0.5}),
+        finding("The Jacobi deviation from flat decays like 1/R (fitted exponent near -1)", "numerical",
+                {"fitted_exponent": study["deviation_exponent"], "closed_form_exponent": study["deviation_exponent_exact"],
+                 "max_gap_to_K_L3_over_6": study["max_leading_order_relative_gap"]},
+                {"generator": _gen("torus-flat-limit", fit_radii_from=T013_FIT_FROM),
+                 "derivation": _derivation("t013-flat-and-developable-limit"),
+                 "checks": [core.check("analytic", "fitted minus closed-form exponent over the same radii",
+                                       study["deviation_exponent"] - study["deviation_exponent_exact"], 1e-4),
+                            core.check("analytic", "fitted exponent plus 1 (asymptotic)",
+                                       study["deviation_exponent"] + 1.0, 0.05),
+                            core.check("analytic", "|dev / (K L^3/6) - 1| <= K L^2/20 at the smallest fitted R",
+                                       study["max_leading_order_relative_gap"],
+                                       1.05 * fit_bound["curvature"] * T013_LENGTH ** 2 / 20, "le")]},
+                tolerance={"abs": 1e-6, "rel": 0.0}),
+        finding("The chord deficit vanishes faster (exponent near -2) than the Jacobi deviation (near -1)",
+                "numerical", study["chord_deficit_exponent"],
+                {"generator": _gen("torus-flat-limit"),
+                 "derivation": _derivation("t013-flat-and-developable-limit"),
+                 "checks": [core.check("analytic", "chord-deficit exponent plus 2", study["chord_deficit_exponent"] + 2.0,
+                                       0.1)]},
+                tolerance={"abs": 1e-4, "rel": 0.0},
+                counterexample={"statement": "Intrinsic (Jacobi) and extrinsic (chord) signatures of curvature vanish "
+                                             "at the same rate in the flat limit",
+                                "witness": {"jacobi_exponent": study["deviation_exponent"],
+                                            "chord_exponent": study["chord_deficit_exponent"]}}),
+        finding("A physical cylinder or large-radius torus workpiece shows these separations", "physical", None, {}),
+    ]
+    fields = _fields(
+        hypothesis=("Intrinsic flatness (K = 0) makes Jacobi fields identical to the plane's even when the surface is "
+                    "curved in space, while chords (extrinsic) differ; along the outer equator of a torus with "
+                    "growing major radius the Jacobi deviation from flat vanishes like K L^3/6 ~ 1/R."),
+        mathematical_model=("Cylinder: K = 0 so j_head = s exactly, but a helix of angle alpha has chord "
+                            "sqrt((2R sin(L cos(alpha)/(2R)))^2 + (L sin(alpha))^2). Torus(R, 1) outer equator: "
+                            "K = 1/(R + 1), j_head = sin(wL)/w, w = sqrt(K), L - j_head = K L^3/6 - K^2 L^5/120 + ...; "
+                            "the equator is a circle of radius R + 1, chord deficit = L^3/(24 (R + 1)^2) + ..."),
+        input_data=["Plane and Cylinder(1): start (0.2, 0.1), heading 0.6, L = 3, RK4 N = 60",
+                    f"Torus(R, 1), R in {list(T013_RADII)}, outer equator start (0, 0) heading 0, L = {T013_LENGTH}, "
+                    f"RK4 N = {T013_STEPS}; exponents fitted for R >= {T013_FIT_FROM}"],
+        observation_model="Jacobi columns at every node; embedded chord |X(L) - X(0)|; no renormalization.",
+        expected_invariant=("Cylinder and plane Jacobi columns identical; exponent of L - j_head(L) in R tends to -1, "
+                            "of the chord deficit to -2."),
+        experiment=("Integrate both flat surfaces on identical grids and compare Jacobi columns bit for bit; integrate "
+                    "the torus equator for each R, compare with closed forms and fit log-log exponents."),
+        numerical_result=(f"Plane/cylinder Jacobi difference {_g(pc['jacobi_max_difference'], 2)}; chords "
+                          f"{_g(pc['chord_plane'], 8)} (plane) versus {_g(pc['chord_cylinder'], 8)} (cylinder); torus "
+                          f"deviation exponent {_g(study['deviation_exponent'], 5)} (closed form "
+                          f"{_g(study['deviation_exponent_exact'], 5)}), chord-deficit exponent "
+                          f"{_g(study['chord_deficit_exponent'], 5)}; max relative error versus closed form "
+                          f"{_g(study['max_relative_error_vs_closed_form'], 2)}."),
+        uncertainty=("RK4 error of j_head at h = 1/32 is below 1e-10 relative; fitted exponents include the "
+                     "O(K L^2/20) correction, which is why the finite-R exponent is slightly above -1."),
+        failure_modes_checked=["flat surfaces checked for spurious curvature (K = 0 exactly, j'' = 0 integrated exactly)",
+                               "numerical deviation compared with its closed form, not only with K L^3/6",
+                               "chord deficit computed from embedded points without cancellation below 1e-9 relative"],
+        unresolved_assumptions=["Other developable surfaces (cones, tangent developables) are not in the core catalogue",
+                                "Only the outer equator (constant K) is fitted; inclined torus geodesics average K and "
+                                "are not studied",
+                                "Physical workpieces are not measured: the physical finding is not established"],
+        recommended_next_task="T046 (chord versus geodesic distance) and T018 (resolvability of weak curvature)",
+    )
+    return {"state": "completed", "fields": fields, "findings": findings}
+
+
+# ------------------------------------------------------------------ T014
+T014_CASES = (("sphere", lambda: Sphere(1.0), (1.1, 0.4), 0.9, 2.0),
+              ("torus", lambda: Torus(2.0, 1.0), (0.0, 0.5), 0.7, 3.0),
+              ("hyperbolic-plane", lambda: HyperbolicPlane(1.0), (0.0, 1.0), 0.6, 1.5))
+T014_STEPS = (20, 40, 80, 160)
+# Reversal predicts order p for odd p and p + 1 for even p (leading errors of the h and -h steps cancel).
+T014_PREDICTED = {"euler": 1, "midpoint": 3, "rk4": 5}
+# Time reversal of the joint state: velocities and Jacobi derivatives change sign.
+FLIP = np.array([1.0, 1.0, -1.0, -1.0, 1.0, -1.0, 1.0, -1.0])
+
+
+def reversal_study():
+    rows, adaptive = [], []
+    for key, make, u0, heading, length in T014_CASES:
+        surface = make()
+        f = jacobi.rhs(surface)
+        y0 = jacobi.initial_state(surface, u0, heading)
+        for method in ("euler", "midpoint", "rk4"):
+            errors = []
+            for steps in T014_STEPS:
+                _, forward = integrators.integrate_fixed(f, y0, length, steps, method)
+                _, backward = integrators.integrate_fixed(f, forward[-1] * FLIP, length, steps, method)
+                errors.append(float(np.max(np.abs(backward[-1] * FLIP - y0))))
+            rows.append({"surface": key, "method": method, "errors": errors,
+                         "order": -core.loglog_slope(T014_STEPS, errors)})
+        rtol = 1e-9
+        _, forward, stats_f = integrators.integrate_adaptive(f, y0, length, rtol=rtol, atol=1e-12)
+        _, backward, stats_b = integrators.integrate_adaptive(f, forward[-1] * FLIP, length, rtol=rtol, atol=1e-12)
+        adaptive.append({"surface": key, "rtol": rtol, "return_error": float(np.max(np.abs(backward[-1] * FLIP - y0))),
+                         "forward_steps": stats_f["accepted_steps"], "backward_steps": stats_b["accepted_steps"]})
+    return {"fixed": rows, "adaptive": adaptive}
+
+
+def truncation_study():
+    """Truncate at L1 and continue to L2 versus direct integration (torus geodesic)."""
+    torus = Torus(2.0, 1.0)
+    y0 = jacobi.initial_state(torus, (0.0, 0.5), 0.7)
+    f = jacobi.rhs(torus)
+    dyadic = {}
+    for method in ("euler", "midpoint", "rk4"):
+        _, direct = integrators.integrate_fixed(f, y0, 2.0, 256, method)
+        _, first = integrators.integrate_fixed(f, y0, 1.25, 160, method)
+        _, rest = integrators.integrate_fixed(f, first[-1], 0.75, 96, method)
+        joined = np.vstack([first, rest[1:]])
+        dyadic[method] = float(np.max(np.abs(joined - direct)))
+    # Decimal truncation lengths whose step sizes are not all the same double.
+    total, steps_total = 3.0, 300
+    h = total / steps_total
+    _, direct = integrators.integrate_fixed(f, y0, total, steps_total, "rk4")
+    witness = None
+    for n1 in range(100, 200):
+        cut = round(n1 * 0.01, 2)
+        steps_rest = steps_total - n1
+        if cut / n1 == h and (total - cut) / steps_rest == h:
+            continue
+        _, first = integrators.integrate_fixed(f, y0, cut, n1, "rk4")
+        _, rest = integrators.integrate_fixed(f, first[-1], total - cut, steps_rest, "rk4")
+        joined = np.vstack([first, rest[1:]])
+        differing = int(np.count_nonzero(joined[-1] != direct[-1]))
+        if differing:
+            witness = {"L1": cut, "N1": n1, "L2": total, "N2": steps_total, "h_direct": h, "h_first": cut / n1,
+                       "h_rest": (total - cut) / steps_rest, "differing_final_components": differing,
+                       "max_abs_difference": float(np.max(np.abs(joined - direct)))}
+            break
+    rtol = 1e-9
+    _, whole, _ = integrators.integrate_adaptive(f, y0, 2.0, rtol=rtol, atol=1e-12)
+    _, part, _ = integrators.integrate_adaptive(f, y0, 1.25, rtol=rtol, atol=1e-12)
+    _, cont, _ = integrators.integrate_adaptive(f, part[-1], 0.75, rtol=rtol, atol=1e-12)
+    return {"dyadic_max_difference": dyadic, "non_dyadic_witness": witness,
+            "adaptive_restart": {"rtol": rtol, "difference": float(np.max(np.abs(cont[-1] - whole[-1])))}}
+
+
+@task("T014", changed_files=CHANGED, regression_tests=(f"{TESTS}::test_t014_reversal_and_truncation",))
+def reversal_and_truncation(ctx):
+    rev = ctx.memo("gjl-reversal", reversal_study)
+    trunc = ctx.memo("gjl-truncation", truncation_study)
+    ctx.artifact_json("reversal.json", core.jsonable(rev, 12))
+    ctx.artifact_json("truncation.json", core.jsonable(trunc, 17))
+    ctx.artifact_text("reversal.svg", svg.line_plot(
+        [(f"{r['surface']} {r['method']}", [1.0 / n for n in T014_STEPS], r["errors"]) for r in rev["fixed"]],
+        title="Forward-then-reversed return error", xlabel="1/N", ylabel="max |return - start|", logx=True, logy=True))
+    orders = {f"{r['surface']}: {r['method']}": r["order"] for r in rev["fixed"]}
+    checks = [core.check("analytic", f"{r['surface']} {r['method']} order minus {T014_PREDICTED[r['method']]}",
+                         r["order"] - T014_PREDICTED[r["method"]], 0.2) for r in rev["fixed"]]
+    adaptive_ratio = max(r["return_error"] / r["rtol"] for r in rev["adaptive"])
+    witness = trunc["non_dyadic_witness"]
+    dyadic = max(trunc["dyadic_max_difference"].values())
+    restart_ratio = trunc["adaptive_restart"]["difference"] / trunc["adaptive_restart"]["rtol"]
+    by_method = {m: float(np.mean([r["order"] for r in rev["fixed"] if r["method"] == m])) for m in T014_PREDICTED}
+    findings = [
+        finding("Reversal error orders are 1 (Euler), 3 (midpoint) and 5 (RK4): even-order methods gain one order",
+                "numerical", orders,
+                {"generator": _gen("reversal", steps=list(T014_STEPS)),
+                 "derivation": _derivation("t014-geodesic-reversal-and-path-truncation"), "checks": checks},
+                tolerance={"abs": 0.05, "rel": 0.0},
+                counterexample={"statement": "Forward-then-reversed integration with a method of order p returns to "
+                                             "the start with error proportional to h^p",
+                                "witness": {"mean_orders": by_method, "surfaces": [c[0] for c in T014_CASES]}}),
+        finding("Adaptive forward-then-reversed integration returns to the start at tolerance level", "numerical",
+                adaptive_ratio,
+                {"generator": _gen("reversal-adaptive", rtol=1e-9),
+                 "checks": [core.check("invariant", "max return error / rtol", adaptive_ratio, 10.0, "le")]},
+                tolerance={"abs": 0.5, "rel": 0.5}),
+        finding("Truncating at L1 and continuing on the same dyadic grid reproduces direct integration bit for bit",
+                "computational_pipeline", trunc["dyadic_max_difference"],
+                {"generator": _gen("truncation", L1=1.25, L2=2.0, steps=256),
+                 "checks": [core.check("exact_arithmetic", "max |continued - direct| (Euler, midpoint, RK4)",
+                                       dyadic, 0.0)]},
+                tolerance={"abs": 0.0, "rel": 0.0}),
+        finding("With decimal truncation lengths the step sizes differ in the last bit and bitwise reproduction fails",
+                "computational_pipeline",
+                {"differs": witness is not None, "max_abs_difference": witness["max_abs_difference"] if witness else 0.0},
+                {"generator": _gen("truncation-search", L2=3.0, N2=300),
+                 "checks": [core.check("exact_arithmetic", "differing final state components",
+                                       witness["differing_final_components"] if witness else 0, 1, "ge"),
+                            core.check("invariant", "max difference stays at roundoff level",
+                                       witness["max_abs_difference"] if witness else 1.0, 1e-12, "le")]},
+                tolerance={"abs": 1e-12, "rel": 0.0},
+                counterexample={"statement": "Truncate-and-continue reproduces fixed-step integration bit for bit "
+                                             "for any truncation length", "witness": witness}),
+        finding("Adaptive restart at L1 reproduces direct adaptive integration only to tolerance level", "numerical",
+                restart_ratio,
+                {"generator": _gen("truncation-adaptive", rtol=1e-9),
+                 "checks": [core.check("invariant", "difference / rtol", restart_ratio, 10.0, "le"),
+                            core.check("invariant", "restart is not bitwise: absolute difference",
+                                       trunc["adaptive_restart"]["difference"], 1e-15, "ge")]},
+                tolerance={"abs": 0.5, "rel": 0.5}),
+    ]
+    fields = _fields(
+        hypothesis=("The geodesic flow is reversible, so integrating forward, flipping velocities and Jacobi "
+                    "derivatives, and integrating again returns to the start up to the method's global error; "
+                    "truncate-and-continue on an identical grid is the same arithmetic as direct integration."),
+        mathematical_model=("With (u, v, j, j') -> (u, -v, j, -j') the flow over L is inverted. For a one-step method "
+                            "with local error C h^(p+1), the step with -h has local error C (-h)^(p+1); the composition "
+                            "cancels at order h^(p+1) when p is even, so the return error is O(h^(p+1)) for even p and "
+                            "O(h^p) for odd p. Linear check: RK4 R(z) R(-z) = 1 + z^6/72 + ..., midpoint "
+                            "1 + z^4/4, Euler 1 - z^2."),
+        input_data=["Unit sphere (1.1, 0.4) heading 0.9 L = 2; Torus(2, 1) (0, 0.5) heading 0.7 L = 3; "
+                    "HyperbolicPlane(1) (0, 1) heading 0.6 L = 1.5",
+                    f"Fixed steps N = {list(T014_STEPS)}; DP45 rtol 1e-9, atol 1e-12",
+                    "Truncation: torus, L1 = 1.25 / N1 = 160 and L2 = 2 / N2 = 256 (h = 2^-7); decimal cuts of L2 = 3, N2 = 300"],
+        observation_model="Max absolute difference of the full joint state (geodesic and both Jacobi columns).",
+        expected_invariant="Return error orders 1, 3, 5; bitwise continuation for identical step doubles.",
+        experiment=("Forward/backward fixed-step and adaptive runs; truncated and continued runs compared with direct "
+                    "runs bit for bit; a deterministic search over decimal truncation lengths for a step-size mismatch."),
+        numerical_result=(f"Mean reversal orders {', '.join(f'{m} {_g(v, 4)}' for m, v in by_method.items())}; adaptive "
+                          f"return error up to {_g(adaptive_ratio, 3)} x rtol; dyadic continuation difference "
+                          f"{_g(dyadic, 2)}; decimal witness L1 = {witness['L1'] if witness else None} with "
+                          f"{witness['differing_final_components'] if witness else 0} differing final components "
+                          f"(max {_g(witness['max_abs_difference'], 2) if witness else 0}); adaptive restart "
+                          f"difference {_g(restart_ratio, 3)} x rtol."),
+        uncertainty=("Orders are least-squares fits over four step sizes; the RK4 return errors stay above 1e-12, "
+                     "far from roundoff. Adaptive ratios depend on the accepted step sequence."),
+        failure_modes_checked=["Jacobi derivatives flipped along with velocities (otherwise the Jacobi state does not return)",
+                               "roundoff floor kept below the smallest fitted error",
+                               "bitwise claims checked with exact equality, not tolerances",
+                               "decimal witness search is deterministic and bounded"],
+        unresolved_assumptions=["The order gain for even p is derived for smooth problems; it can fail near "
+                                "chart singularities",
+                                "Adaptive step sequences are platform-sensitive at the last-bit level"],
+        recommended_next_task="T015 (long-horizon drift) and a symmetric integrator (implicit midpoint) for exact reversal",
+    )
+    return {"state": "completed", "fields": fields, "findings": findings}

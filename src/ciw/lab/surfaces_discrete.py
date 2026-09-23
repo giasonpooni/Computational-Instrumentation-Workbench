@@ -102,6 +102,9 @@ def surface_interface(ctx):
     rigid = max(float(np.max(np.abs(rotated.metric(u) - base.metric(u)))) / float(np.max(np.abs(base.metric(u))))
                 for u in DOMAINS["torus"].sample(POINTS, SEED))
     ctx.artifact_json("conformance.json", {"thresholds": THRESHOLDS, "points_per_surface": POINTS, "seed": SEED,
+                                           "order": list(table), "domains": {k: {"low": list(DOMAINS[k].low),
+                                                                                 "high": list(DOMAINS[k].high)}
+                                                                             for k in table},
                                            "surfaces": {k: dict(row, describe=surfaces[k].describe())
                                                         for k, row in table.items()}})
     ctx.artifact_json("mutants.json", {"detection": {k: {"failed": row["failed"], "not_evaluated": row["not_evaluated"],
@@ -110,7 +113,7 @@ def surface_interface(ctx):
     series = [(name, list(range(1, len(keys) + 1)), [table[k]["worst"][name] for k in keys])
               for name in ("gauss_equation", "derivative_consistency", "mixed_partials", "compatibility")]
     ctx.artifact_text("conformance-residuals.svg", svg.line_plot(
-        series, title="Worst normalized residual per surface (1..10 as in conformance.json)",
+        series, title="Worst normalized residual per surface (index = position in conformance.json order)",
         xlabel="surface index", ylabel="normalized residual", logy=True))
     misscaled, flipped = mutants["misscaled-curvature"], mutants["sign-flipped-derivatives"]
     fields = {
@@ -387,9 +390,10 @@ def derivative_checks(ctx):
                                 "witness": {"mutant": "gaussian-bump with f_xy dropped", "normalized_error": _sig(defect)}}),
     ]
     fields = {
-        "hypothesis": ("The hand-coded metric, metric derivatives, Christoffel symbols and Gaussian curvature of every "
-                       "conformance surface equal the derivatives of its closed-form embedding (or metric) computed "
-                       "by an independent symbolic system and by forward-mode automatic differentiation."),
+        "hypothesis": ("At seeded points of every conformance surface, the hand-coded metric, metric derivatives, "
+                       "Christoffel symbols and Gaussian curvature equal the derivatives of its closed-form embedding "
+                       "(or metric) computed by an independent symbolic system and by forward-mode automatic "
+                       "differentiation; for seven surfaces the symbolic curvature equals the declared closed form."),
         "mathematical_model": ("Re-expressed X(u) per surface; g = X_i . X_j; dg by differentiation; Gamma from g and "
                                "dg; sympy K = R_1212 / det g from the Riemann tensor of its own Christoffel symbols; "
                                "dual-number K from Brioschi with exact second derivatives and from LN - M^2."),

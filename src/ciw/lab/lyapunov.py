@@ -407,3 +407,390 @@ def resolution_floor(ctx):
                              "Subnormal-range codes depend on LAPACK's handling of tiny matrices and may differ "
                              "between BLAS builds; the witness's exact class is exact rational arithmetic.")
     return _finish(fields, findings, PROVIDER_FILES, identity)
+
+
+# T102 ------------------------------------------------------------------------
+
+KAPPAS = (-3.0, -1.5, -1.1, -0.9, -0.5, 0.5, 0.9, 1.1, 1.5, 3.0)
+T102_INSIDE = ((1, 0, 0), (-7, 0, 0), (0, 13, 0), (0, -13, 0), (0, 0, 300), (0, 0, -300), (0, 0, 1000),
+               (0, 0, -1000), (20, -20, 5), (100, -60, -40), (-150, 30, 700))
+T102_OUTSIDE = ((300, 300, 0), (-300, -300, 0), (0, 520, 0), (-520, 0, 0), (480, 40, 0))
+
+
+def near_threshold_family(seed, count, kappas=KAPPAS, robust=True):
+    """Seeded continuous-time (A, P, x) whose decrease forms sit near the resolution threshold."""
+    rng = R.generator(seed)
+    family = []
+    for i in range(count):
+        n = 2 + i % 3
+        P = np.eye(n) if i % 2 == 0 else R.random_spd(rng, n, 10.0)
+        kappa = kappas[i % len(kappas)]
+        A, P = R.near_threshold(rng, n, kappa, P)
+        family.append({"n": n, "kappa": kappa, "A": A, "P": P, "x": rng.normal(size=n)})
+    if robust:
+        for kappa in (-1e6, 1e6):
+            for n in (2, 3):
+                A, P = R.near_threshold(rng, n, kappa)
+                family.append({"n": n, "kappa": kappa, "A": A, "P": P, "x": rng.normal(size=n)})
+    return family
+
+
+def razor_family(seed, count):
+    """Cases whose computed |max eig(M)| / resolution lies just above 1, on both sides of the threshold."""
+    rng = R.generator(seed)
+    family = []
+    for i in range(count):
+        side = -1.0 if i % 2 == 0 else 1.0
+        n = 2 + (i // 2) % 3
+        P = None if (i // 6) % 2 == 0 else R.random_spd(rng, n, 10.0)
+        A, P, ratio = R.razor_edge(rng, n, P, side, skew=1.0)
+        family.append({"n": n, "kappa": side * ratio, "A": A, "P": P, "x": rng.normal(size=n)})
+    return family
+
+
+def _eigvalsh_window():
+    """numpy.linalg.eigvalsh against exact power-of-two scaling, inside and outside LAPACK's window."""
+    inside, outside = [], []
+    for member in near_threshold_family(1020, 12, robust=False):
+        M = R.decrease_matrix(member["A"], member["P"])
+        base = np.linalg.eigvalsh(M)
+        for j in (-400, -100, -3, 5, 64, 400):
+            inside.append(bool(np.array_equal(np.ldexp(np.linalg.eigvalsh(np.ldexp(M, j)), -j), base)))
+        for j in (-700, -520, 520, 700):
+            outside.append(bool(np.array_equal(np.ldexp(np.linalg.eigvalsh(np.ldexp(M, j)), -j), base)))
+    return inside, outside
+
+
+@task("T102", changed_files=PROVIDER_FILES, regression_tests=(_node("test_t102_power_of_two_scaling"),
+                                                                _node("test_eigvalsh_scaling_window")))
+def power_of_two_scaling(ctx):
+    fields = _fields(
+        "Replacing (A, P, x) by (2^a A, 2^b P, 2^c x) multiplies M, max eig(M) and the resolution by 2^(a+b) "
+        "exactly, so no verdict code and no margin ratio changes while every quantity stays normal and LAPACK "
+        "does not rescale internally; outside that window rounding differs and near-threshold codes may flip.",
+        "Continuous time: M(2^a A, 2^b P) = 2^(a+b) M(A, P) and resolution likewise (homogeneous of degree one in "
+        "each of max|A|, max|P|, max|M|); PLSR divides x by a power of two before evaluating, so c never enters. "
+        "Discrete time admits only (P, x) scaling. LAPACK dsyevd rescales by a non-power-of-two factor when "
+        "max|M| lies outside [2^-485, 2^485].",
+        ["34 seeded continuous cases (PCG64 seed 102): n = 2..4, P = I or SPD (condition 10), kappa in "
+         "{+-0.5, +-0.9, +-1.1, +-1.5, +-3} plus four robust cases (kappa = +-1e6)",
+         "16 razor-edge cases (seed 1022, skew 1): computed |max eig(M)|/resolution tuned by bisection to just "
+         "above 1 on the certified and the indefinite side",
+         f"Inside-window exponent triples (a, b, c): {list(T102_INSIDE)}",
+         f"Outside-window triples: {list(T102_OUTSIDE)}",
+         "6 discrete-time cases (seed 1021) under (0, b, c) scaling; the subnormal witness scaled by 2^-1074"],
+        "PLSR code and margin ratio (margin/resolution) for each scaled case versus the unscaled case.",
+        "Inside the window: identical codes and bitwise-identical margin ratios. The subnormal witness keeps its "
+        "unit-scale code DECREASE_NOT_DEFINITE.",
+        "Evaluate base and scaled cases with PLSR in one subprocess; count code flips and ratio changes per window; "
+        "independently test numpy.linalg.eigvalsh against exact power-of-two scaling inside and outside the window.",
+        "T103: overflow and underflow of states and parameters; propose that PLSR pre-scale M by a power of two "
+        "into LAPACK's window before eigvalsh so verdicts are exactly scale-invariant.",
+        ["code flip inside the window", "margin ratio changes inside the window", "x scaling alters the sample",
+         "code flip outside the window (searched as counterexample)", "subnormal flip"],
+        ["The LAPACK window [2^-485, 2^485] is taken from reference dsyevd (RMIN, RMAX); other LAPACK builds may "
+         "rescale differently.",
+         "Near-threshold inputs are synthetic; their exact spectra are not needed for an invariance test."])
+    inside_eig, outside_eig = _eigvalsh_window()
+    offline = [finding(
+        "numpy.linalg.eigvalsh commutes exactly with power-of-two scaling while max|M| stays in [2^-485, 2^485]",
+        "numerical", {"inside_bitwise_equal": sum(inside_eig), "inside_total": len(inside_eig)},
+        {"generator": {"name": "near_threshold_family", "seed": 1020},
+         "checks": [_check("eigenvalues of 2^j M rescaled by 2^-j versus eigenvalues of M, bitwise",
+                           len(inside_eig) - sum(inside_eig), 0.0, kind="invariant")]},
+        tolerance={"abs": 0.0, "rel": 0.0})]
+    family = near_threshold_family(102, 30) + razor_family(1022, 16)
+    cases, plan = [], []
+    for i, member in enumerate(family):
+        A, P, x = member["A"], member["P"], member["x"]
+        cases.append(_verdict_case(f"c{i}:base", A, P, x))
+        for window, triples in (("inside", T102_INSIDE), ("outside", T102_OUTSIDE)):
+            for a, b, c in triples:
+                cid = f"c{i}:{a}:{b}:{c}"
+                cases.append(_verdict_case(cid, np.ldexp(A, a), np.ldexp(P, b), np.ldexp(x, c)))
+                plan.append((f"c{i}:base", cid, window, member["kappa"], (a, b, c)))
+    rng = R.generator(1021)
+    for i in range(6):
+        n = 2 + i % 2
+        A = 0.8 * R.random_orthogonal(rng, n) @ np.diag(rng.uniform(0.3, 1.0, n))
+        P = R.kron_lyapunov(A, np.eye(n), "discrete")
+        x = rng.normal(size=n)
+        cases.append(_verdict_case(f"d{i}:base", A, P, x, time="discrete"))
+        for b, c in ((13, 0), (-13, 5), (0, -700)):
+            cid = f"d{i}:{b}:{c}"
+            cases.append(_verdict_case(cid, A, np.ldexp(P, b), np.ldexp(x, c), time="discrete"))
+            plan.append((f"d{i}:base", cid, "discrete", None, (0, b, c)))
+    A, P, x = _subnormal_witness()
+    cases += [_verdict_case("w:unit", A / R.TINY, P, x), _verdict_case("w:sub", A, P, x)]
+    try:
+        bridge = _bridge(ctx, cases)
+    except _Unavailable as exc:
+        fields["numerical_result"] = (f"Provider-free: eigvalsh is bitwise power-of-two homogeneous in "
+                                      f"{sum(inside_eig)}/{len(inside_eig)} inside-window scalings and in "
+                                      f"{sum(outside_eig)}/{len(outside_eig)} outside-window scalings.")
+        fields["uncertainty"] = "Deterministic on one platform; the outside-window count depends on the LAPACK build."
+        return _finish(fields, offline, PROVIDER_FILES, blocked=str(exc))
+    identity, results = bridge["identity"], bridge["results"]
+    tally = {w: {"evaluations": 0, "code_flips": 0, "ratio_changes": 0} for w in ("inside", "outside", "discrete")}
+    flips = []
+    members = {f"c{i}:base": member for i, member in enumerate(family)}
+    unsound = 0
+    for base_id, cid, window, kappa, triple in plan:
+        base, scaled = results[base_id], results[cid]
+        tally[window]["evaluations"] += 1
+        if _code(base) != _code(scaled):
+            tally[window]["code_flips"] += 1
+            flip = {"window": window, "kappa": kappa, "abc": list(triple), "base": _code(base),
+                    "scaled": _code(scaled), "base_ratio": base["margin_ratio"], "scaled_ratio": scaled["margin_ratio"]}
+            if base_id in members and R.CERTIFYING & {flip["base"], flip["scaled"]}:
+                # Exact power-of-two scaling preserves the exact class of the declared form.
+                member = members[base_id]
+                flip["exact_class"] = R.exact_class(R.exact_form(member["A"], member["P"]))
+                unsound += flip["exact_class"] != "negative_definite"
+            flips.append(flip)
+        if base["ok"] and scaled["ok"] and base["margin_ratio"] != scaled["margin_ratio"]:
+            tally[window]["ratio_changes"] += 1
+    ctx.artifact_json("scaling-invariance.json", R.jsonable({"tally": tally, "flips": flips,
+                                                              "eigvalsh_outside_bitwise_equal": sum(outside_eig),
+                                                              "eigvalsh_outside_total": len(outside_eig)}))
+    witness_unit, witness_sub = results["w:unit"], results["w:sub"]
+    base = provider_basis(identity)
+    findings = [finding(
+        "Power-of-two scaling of (A, P, x) inside LAPACK's window never changes the PLSR code or margin ratio",
+        "numerical", tally["inside"],
+        {"provider": base, "checks": [
+            _check("code flips against the unscaled verdict", tally["inside"]["code_flips"], 0.0, kind="invariant"),
+            _check("margin ratios not bitwise equal", tally["inside"]["ratio_changes"], 0.0, kind="invariant")]},
+        tolerance={"abs": 0.0, "rel": 0.0}),
+        finding("Scaling P and x by powers of two never changes a discrete-time PLSR code", "numerical",
+                tally["discrete"],
+                {"provider": base, "checks": [_check("code flips against the unscaled verdict",
+                                                     tally["discrete"]["code_flips"], 0.0, kind="invariant")]},
+                tolerance={"abs": 0.0, "rel": 0.0})]
+    outside_flips = [flip for flip in flips if flip["window"] == "outside"]
+    if outside_flips:
+        findings.append(finding(
+            "Outside LAPACK's scaling window a power-of-two rescaling of A and P flips near-threshold PLSR codes",
+            "numerical", {"flips_observed": True},
+            {"provider": base, "checks": [_check("outside-window code flips observed", len(outside_flips), 1.0, "ge",
+                                                 kind="invariant"),
+                                          _check("flips into or out of a certifying code whose exact form is not "
+                                                 "negative definite", unsound, 0.0)]},
+            counterexample={"statement": "Power-of-two scaling of A and P never changes a PLSR verdict code while all "
+                                         "quantities stay in the binary64 normal range",
+                            "witness": outside_flips[0]}))
+    else:
+        findings.append(finding(
+            "No outside-window code flip was observed on this platform", "numerical",
+            {"flips_observed": False, "ratio_changes": tally["outside"]["ratio_changes"]},
+            {"provider": base, "checks": [_check("outside-window code flips", 0.0, 0.0, kind="invariant")]}))
+    findings.append(finding(
+        "Scaling the subnormal witness by 2^-1074 turns DECREASE_NOT_DEFINITE into CERTIFIED_WITH_MARGIN", "numerical",
+        {"unit_code": _code(witness_unit), "scaled_code": _code(witness_sub)},
+        {"provider": base, "checks": [
+            _check("unit-scale code is DECREASE_NOT_DEFINITE (1 if so)",
+                   1.0 if _code(witness_unit) == "DECREASE_NOT_DEFINITE" else 0.0, 1.0, "ge", "invariant"),
+            _check("scaled code is CERTIFIED_WITH_MARGIN (1 if so)",
+                   1.0 if _code(witness_sub) == "CERTIFIED_WITH_MARGIN" else 0.0, 1.0, "ge", "invariant")]},
+        counterexample={"statement": "Power-of-two scaling of A never changes a PLSR verdict code",
+                        "witness": {"A_unit": [[-2.0, 5.0], [0.0, -3.0]], "scale": "2^-1074", "P": "I",
+                                    "x": [1.0, 0.0]}}))
+    findings += offline
+    fields["numerical_result"] = (
+        f"Inside the window: {tally['inside']['evaluations']} scaled evaluations, {tally['inside']['code_flips']} code "
+        f"flips, {tally['inside']['ratio_changes']} ratio changes. Outside the window: "
+        f"{tally['outside']['evaluations']} evaluations, {tally['outside']['code_flips']} flips ({unsound} involving "
+        f"a certifying code on an exactly non-negative-definite form), "
+        f"{tally['outside']['ratio_changes']} ratio changes. Discrete (P, x) scaling: "
+        f"{tally['discrete']['code_flips']} flips in {tally['discrete']['evaluations']}. Subnormal witness: "
+        f"{_code(witness_unit)} -> {_code(witness_sub)}. eigvalsh bitwise homogeneous in "
+        f"{sum(inside_eig)}/{len(inside_eig)} inside and {sum(outside_eig)}/{len(outside_eig)} outside scalings.")
+    fields["uncertainty"] = ("Inside-window results are exact (bitwise). Outside-window flip counts depend on the "
+                             "LAPACK/BLAS build and on how close each case sits to the threshold; only their "
+                             "existence is retained as a finding value.")
+    return _finish(fields, findings, PROVIDER_FILES, identity)
+
+
+# T103 ------------------------------------------------------------------------
+
+DBL_MAX = float(np.finfo(float).max)
+T103_A = np.array([[-1.0, 2.0], [0.0, -3.0]])
+T103_STATES = ((1.0, 1.0), (R.TINY, 0.0), (R.TINY, R.TINY), (-R.TINY, 3 * R.TINY), (2.0 ** -1022, 2.0 ** -1022),
+               (1e-300, -1e-300), (DBL_MAX, -DBL_MAX), (DBL_MAX, R.TINY), (2.0 ** 1000, 3 * 2.0 ** 990), (0.0, 0.0))
+T103_LEVEL_P = (-1060, -1000, -500, 0, 500, 1000)
+T103_LEVEL_E = (-1074, -1000, -700, -540, -537, -300, 0, 300, 511, 512, 540, 1000, 1023)
+
+
+def level_scan():
+    """Declared (P = 2^p I, x = 2^e e1, level 2^(p+2e-+1)) with exact V = 2^(p+2e); documented-rule prediction."""
+    rows = []
+    for p in T103_LEVEL_P:
+        for e in T103_LEVEL_E:
+            for offset, exceeded in ((-1, True), (1, False)):
+                level_exponent = p + 2 * e + offset
+                if not -1074 <= level_exponent <= 1023:
+                    continue  # the level itself is not a finite positive binary64 number
+                exponent = e - 1 + 1  # frexp(2^e) = (0.5, e + 1), so PLSR divides by 2^e: unit state e1
+                documented = R.documented_level_exceeded(float(np.ldexp(1.0, p)), exponent,
+                                                         float(np.ldexp(1.0, level_exponent)))
+                rows.append({"p": p, "e": e, "log2_level": level_exponent, "log2_V": p + 2 * e,
+                             "exact_exceeded": exceeded, "documented_exceeded": documented})
+    return rows
+
+
+def _level_counts(rows, key):
+    missed = sum(r["exact_exceeded"] and not r[key] for r in rows)
+    spurious = sum(r[key] and not r["exact_exceeded"] for r in rows)
+    return missed, spurious
+
+
+@task("T103", changed_files=PROVIDER_FILES, regression_tests=(_node("test_t103_overflow_underflow"),
+                                                                _node("test_level_gate_prediction")))
+def overflow_underflow(ctx):
+    fields = _fields(
+        "States anywhere in binary64 are classified exactly through PLSR's power-of-two state scaling; matrices "
+        "whose arithmetic leaves binary64 return NUMERICAL_OVERFLOW or an input refusal; no near-limit input "
+        "yields a false certificate or a missed level-set exceedance.",
+        "V(x) = x^T P x and x^T M x are homogeneous of degree two in x, so PLSR evaluates at x / 2^e with the "
+        "unit state in [1, 2). The level gate decides V > level as scaled_value > level / s^2 and treats an "
+        "infinite s^2 as 'exceeded' and a zero s^2 as 'not exceeded'. Exact truth: V = 2^(p + 2e) for "
+        "P = 2^p I and x = 2^e e1.",
+        ["A = [[-1, 2], [0, -3]], P = I with ten states from 2^-1074 to 1.797e308 (mixed scales included) and "
+         "non-finite states", "Level scan: A = -I, P = 2^p I (p in -1060..1000), x = 2^e e1 (e in -1074..1023), "
+         "level = 2^(p + 2e -+ 1)", "Near-limit matrices: A = -2^1000 I with P = 2^30 I; A = -2^511 I or -2^512 I "
+         "with P = 2^511 I; P = 2^1022 I with x = (1.5, 1.5); affine A(theta) = -I + theta c I, theta = +-1e308",
+         "The subnormal witness A = [[-2, 5], [0, -3]] 2^-1074, P = I"],
+        "PLSR code (or raised input error) per case; exact exponent arithmetic for V against the level; exact "
+        "rational class of the witness's decrease form.",
+        "State scaling never changes the code; levels are decided exactly; overflow returns NUMERICAL_OVERFLOW; "
+        "certificates only for exactly negative definite forms.",
+        "One PLSR subprocess evaluates every case; CIW predicts the level decisions from the documented rule and "
+        "from exact exponents and recomputes where the decrease form overflows.",
+        "T104: semidefinite and skew-symmetric edge cases; propose upstream that the level gate compare exponents "
+        "(log2 V = 2 e + log2 scaled_value) instead of forming s^2, and that forming A(theta) report "
+        "NUMERICAL_OVERFLOW rather than raise.",
+        ["state scaling changes the code", "non-finite state accepted", "level gate misses an exceedance",
+         "level gate reports a spurious exceedance", "overflow not reported as NUMERICAL_OVERFLOW",
+         "overflow while forming A(theta) raises", "false certificate from subnormal arithmetic"],
+        ["Near-limit inputs are synthetic binary64 numbers chosen to reach the limits, not plant data.",
+         "The documented level rule is re-derived from the runtime source at the pinned commit."])
+    rows = level_scan()
+    predicted_missed, predicted_spurious = _level_counts(rows, "documented_exceeded")
+    offline = [finding(
+        "The documented level rule, re-derived in CIW, misses exceedances when s^2 underflows and reports spurious "
+        "ones when s^2 overflows", "numerical",
+        {"cases": len(rows), "predicted_missed": predicted_missed, "predicted_spurious": predicted_spurious},
+        {"checks": [_check("predicted missed exceedances (exact exponent comparison)", predicted_missed, 1.0, "ge"),
+                    _check("predicted spurious exceedances", predicted_spurious, 1.0, "ge")]},
+        tolerance={"abs": 0.0, "rel": 0.0})]
+    P_ok = np.eye(2)
+    cases = [_verdict_case(f"s{i}", T103_A, P_ok, state) for i, state in enumerate(T103_STATES)]
+    cases += [_verdict_case("inf", T103_A, P_ok, (math.inf, 0.0)), _verdict_case("nan", T103_A, P_ok, (math.nan, 0.0))]
+    for i, row in enumerate(rows):
+        cases.append(_verdict_case(f"L{i}", -np.eye(2), np.ldexp(np.eye(2), row["p"]),
+                                   (float(np.ldexp(1.0, row["e"])), 0.0), level=float(np.ldexp(1.0, row["log2_level"]))))
+    limits = {"A=-2^1000 I, P=2^30 I": (-np.ldexp(np.eye(2), 1000), np.ldexp(np.eye(2), 30), (1.0, 0.0)),
+              "A=-2^511 I, P=2^511 I": (-np.ldexp(np.eye(2), 511), np.ldexp(np.eye(2), 511), (1.0, 0.0)),
+              "A=-2^512 I, P=2^511 I": (-np.ldexp(np.eye(2), 512), np.ldexp(np.eye(2), 511), (1.0, 0.0)),
+              "P=2^1022 I, x=(1.5, 1.5)": (-np.ldexp(np.eye(2), -10), np.ldexp(np.eye(2), 1022), (1.5, 1.5))}
+    for name, (A, P, x) in limits.items():
+        cases.append(_verdict_case(f"M:{name}", A, P, x))
+    box = ([-1e308], [1e308])
+    cases += [_affine_case("theta:+1e308,c=1", -np.eye(2), [np.eye(2)], box, P_ok, (1.0, 0.0), [1e308]),
+              _affine_case("theta:-1e308,c=1", -np.eye(2), [np.eye(2)], box, P_ok, (1.0, 0.0), [-1e308]),
+              _affine_case("theta:+1e308,c=2", -np.eye(2), [2 * np.eye(2)], box, P_ok, (1.0, 0.0), [1e308])]
+    A, P, x = _subnormal_witness()
+    cases.append(_verdict_case("witness", A, P, x))
+    try:
+        bridge = _bridge(ctx, cases)
+    except _Unavailable as exc:
+        fields["numerical_result"] = (f"Provider-free: the documented level rule predicts {predicted_missed} missed and "
+                                      f"{predicted_spurious} spurious exceedances in {len(rows)} scan cases.")
+        fields["uncertainty"] = "Exact exponent arithmetic; no rounding enters the level scan."
+        return _finish(fields, offline, PROVIDER_FILES, blocked=str(exc))
+    identity, results = bridge["identity"], bridge["results"]
+    base = provider_basis(identity)
+    reference_code = _code(results["s0"])
+    state_codes = {str(list(state)): _code(results[f"s{i}"]) for i, state in enumerate(T103_STATES)}
+    state_mismatch = sum(code != reference_code for code in state_codes.values())
+    for i, row in enumerate(rows):
+        row["plsr_code"] = _code(results[f"L{i}"])
+        row["plsr_exceeded"] = row["plsr_code"] == "OUTSIDE_LEVEL_SET"
+    missed, spurious = _level_counts(rows, "plsr_exceeded")
+    disagreement = sum(r["plsr_exceeded"] != r["documented_exceeded"] for r in rows)
+    first_missed = next(r for r in rows if r["exact_exceeded"] and not r["plsr_exceeded"]) if missed else None
+    first_spurious = next(r for r in rows if r["plsr_exceeded"] and not r["exact_exceeded"]) if spurious else None
+    limit_codes = {name: _code(results[f"M:{name}"]) for name in limits}
+    predicted_limits = {name: R.documented_code(A, P, x)["code"] for name, (A, P, x) in limits.items()}
+    theta_codes = {cid: _code(results[cid]) for cid in ("theta:+1e308,c=1", "theta:-1e308,c=1", "theta:+1e308,c=2")}
+    ctx.artifact_json("near-limits.json", R.jsonable({"states": state_codes, "level_scan": rows,
+                                                       "limits": limit_codes, "limits_predicted": predicted_limits,
+                                                       "theta": theta_codes,
+                                                       "theta_details": {k: results[k].get("error") for k in theta_codes},
+                                                       "witness": results["witness"]}))
+    findings = [
+        finding("PLSR decides the level gate exactly as the documented rule predicts across the near-limit scan",
+                "numerical", {"cases": len(rows), "disagreements": disagreement},
+                {"provider": base, "independent_check": _independent(
+                    _check("documented level rule re-derived in CIW", disagreement, 0.0, kind="analytic"), identity)},
+                tolerance={"abs": 0.0, "rel": 0.0}),
+        finding("States from 2^-1074 to the largest binary64 number leave the PLSR code of a fixed negative definite "
+                "form unchanged", "numerical", {"states": len(state_codes), "mismatches": state_mismatch,
+                                                 "code": reference_code},
+                {"provider": base, "checks": [_check("codes differing from the unit-state code", state_mismatch, 0.0,
+                                                     kind="invariant")]},
+                tolerance={"abs": 0.0, "rel": 0.0}),
+        finding("Non-finite states are refused as input errors, not classified", "numerical",
+                {"inf": _code(results["inf"]), "nan": _code(results["nan"])},
+                {"provider": base, "checks": [_refusal("x = (inf, 0)", "raises ValueError", _code(results["inf"])),
+                                              _refusal("x = (nan, 0)", "raises ValueError", _code(results["nan"]))]}),
+        finding("Matrices whose decrease form or scaled V leaves binary64 return NUMERICAL_OVERFLOW as predicted",
+                "numerical", limit_codes,
+                {"provider": base, "checks": [_check("codes differing from the CIW re-derived prediction",
+                                                     sum(limit_codes[k] != predicted_limits[k] for k in limits), 0.0,
+                                                     kind="analytic")]}),
+    ]
+    if missed:
+        findings.append(finding(
+            "The PLSR level gate misses exceedances when s^2 underflows: V > level is certified", "numerical",
+            {"missed": missed, "cases": len(rows)},
+            {"provider": base, "checks": [_check("scan cases with exact V > level and code != OUTSIDE_LEVEL_SET",
+                                                 missed, 1.0, "ge")]},
+            tolerance={"abs": 0.0, "rel": 0.0},
+            counterexample={"statement": "OUTSIDE_LEVEL_SET is returned whenever V(x) exceeds the declared level",
+                            "witness": dict(first_missed, A="-I", P=f"2^{first_missed['p']} I",
+                                            x=f"(2^{first_missed['e']}, 0)")}))
+    if spurious:
+        findings.append(finding(
+            "The PLSR level gate reports OUTSIDE_LEVEL_SET for V below the level when s^2 overflows", "numerical",
+            {"spurious": spurious, "cases": len(rows)},
+            {"provider": base, "checks": [_check("scan cases with exact V < level and code OUTSIDE_LEVEL_SET",
+                                                 spurious, 1.0, "ge")]},
+            tolerance={"abs": 0.0, "rel": 0.0},
+            counterexample={"statement": "The level gate is decided exactly through the power-of-two scaling",
+                            "witness": dict(first_spurious, A="-I", P=f"2^{first_spurious['p']} I",
+                                            x=f"(2^{first_spurious['e']}, 0)")}))
+    raised = theta_codes["theta:+1e308,c=2"]
+    findings.append(finding(
+        "A finite in-box theta whose A(theta) overflows raises an input error instead of NUMERICAL_OVERFLOW",
+        "numerical", theta_codes,
+        {"provider": base, "checks": [_refusal("theta = 1e308, A1 = 2I (A(theta) = inf)", "raises ValueError", raised),
+                                      _refusal("theta = 1e308, A1 = I (A finite, M overflows)", "NUMERICAL_OVERFLOW",
+                                               theta_codes["theta:+1e308,c=1"])]},
+        counterexample={"statement": "Every finite in-box sample yields a runtime-status-v1 code",
+                        "witness": {"A0": "-I", "A1": "2I", "box": [-1e308, 1e308], "theta": 1e308,
+                                    "error": results["theta:+1e308,c=2"].get("error")}}))
+    findings.append(_witness_finding(
+        results["witness"], identity,
+        "No binary64 input near the representable limits yields a false certificate",
+        "A subnormal plant matrix yields CERTIFIED_WITH_MARGIN for an exactly indefinite decrease form"))
+    findings += offline
+    fields["numerical_result"] = (
+        f"{len(state_codes)} states from 2^-1074 to 1.797e308: {state_mismatch} code changes (all {reference_code}). "
+        f"Level scan ({len(rows)} cases): {missed} missed exceedances (certified with V > level, s^2 underflowed), "
+        f"{spurious} spurious exceedances (s^2 overflowed), {disagreement} disagreements with the documented rule. "
+        f"Near-limit matrices: {limit_codes}. theta overflow: {theta_codes}. Subnormal witness: "
+        f"{_code(results['witness'])}.")
+    fields["uncertainty"] = ("The level scan and the overflow cases involve only exact powers of two, so they are "
+                             "platform-independent; the witness depends on LAPACK's subnormal handling.")
+    return _finish(fields, findings, PROVIDER_FILES, identity)

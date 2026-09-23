@@ -432,7 +432,8 @@ def _w_energy_runtime(session, fixture):
     first = session.workbench.list_bundles()[0]["bundle_id"]
     runtime = session.workbench.get_bundle(first)["runtimes"]["energy"]
     replay = attempt(session, "bundle.replay", {"bundle_id": first})
-    return {"retained_runtime": {key: runtime[key] for key in ("code_sha256", "python_version")},
+    return {"retained_runtime_forged": {"code_sha256": runtime["code_sha256"] == FORGED_CODE,
+                                        "python_version": runtime["python_version"] == "3.99.0"},
             "replay_after_reopen": {"outcome": replay["outcome"], "message": replay.get("message")}}
 
 
@@ -1066,7 +1067,7 @@ def identity_matrix_task(ctx):
         experiment=T077_PLAN["experiment"] + " " + COMPARISON + " Matrix retained as identity-matrix.json/.md.",
         numerical_result=f"{len(rows)} identities ({len(exercised)} exercised offline); {held}/{properties} predicted "
                          f"properties held; classes {classes}",
-        uncertainty="Exact equality tests on digests and UUID draws; a uuid4 collision among the <30 fresh "
+        uncertainty="Exact equality tests on digests and UUID draws; a uuid4 collision among the ~40 fresh "
                     "identities has probability below 1e-33. Properties are sampled on one fixture, not proved for "
                     "all inputs.",
         failure_modes_checked=["digest recomputation mismatch", "identity reused across occurrences",
@@ -1142,7 +1143,8 @@ def exact_source_bytes(ctx):
         finding("The oscillator recording path retains canonical content, not caller bytes: its file is a CIW "
                 "re-serialization named by a content digest", "provenance",
                 {"recording_file_is_reserialization": recording["is_reserialization"]},
-                {"checks": [_exact("recording file differs from json.dumps(run, indent=2) re-serialization",
+                {"checks": [_exact("recording file (newlines LF-normalized) differs from the json.dumps(run, indent=2) "
+                                   "re-serialization",
                                    0 if recording["is_reserialization"] else 1)]}, tolerance=EXACT),
         finding("The retained energy logs are real GPU energy measurements", "physical",
                 {"origins": sorted({"synthetic_fixture"})},
@@ -1568,7 +1570,7 @@ MUTATION_TASKS = {
              "survivors": {"receipt-replayed.reidentified-bundle": "Surviving mutant receipt-replayed.reidentified-"
                            "bundle: a backdated, re-sessioned replay bundle with recomputed digests reopens"},
              "next": "T086 (mutate verification subject)"},
-    "T086": {"subject": "Verification subject", "stem": "verification-subject-mutations",
+    "T086": {"validators": True, "subject": "Verification subject", "stem": "verification-subject-mutations",
              "survivors": {"receipt-subject.rebound-with-source": "Surviving mutant receipt-subject.rebound-with-"
                            "source: subject and source moved together to a sibling execution reopen"},
              "next": "T087 (mutate verification method)"},
@@ -1576,13 +1578,13 @@ MUTATION_TASKS = {
              "survivors": {"oscillator-method.injected": "Surviving mutant oscillator-method.injected: a sealed "
                            "result carrying an injected verification_method reopens"},
              "next": "T088 (mutate independence flag)"},
-    "T088": {"subject": "Independence flag", "stem": "independence-mutations",
+    "T088": {"validators": True, "subject": "Independence flag", "stem": "independence-mutations",
              "survivors": {"oscillator-independent.injected": "Surviving mutant oscillator-independent.injected: "
                            "sealed records carrying an injected independent: true reopen",
                            "exchange.verification-independent": "Surviving mutant exchange.verification-independent: "
                            "a recomputed exchange identity accepts a forged independence claim"},
              "next": "T089 (mutate admission status)"},
-    "T089": {"subject": "Admission status", "stem": "admission-mutations",
+    "T089": {"validators": True, "subject": "Admission status", "stem": "admission-mutations",
              "survivors": {"oscillator-admission.injected": "Surviving mutant oscillator-admission.injected: a "
                            "sealed result carrying an injected state_admission reopens"},
              "next": "T090 (mutate provider runtime identity)"},
@@ -1610,7 +1612,8 @@ def _mutation_plan(task_id: str) -> dict:
         "Every predicted refusal is observed with its exact message; every predicted survivor is accepted; an "
         "unedited workspace reopens and the forger's recomputation reproduces CIW's digests exactly.",
         f"Edit the saved workspace ({spec['subject'].lower()}), recompute none, local or all unkeyed digests, write it "
-        "and reopen with Session.from_workspace; pure validators are run on synthetic ESM and exchange records.",
+        "and reopen with Session.from_workspace"
+        + ("; pure validators are also run on synthetic ESM and exchange records." if spec.get("validators") else "."),
         "not run", "not run", [], [], spec["next"])
 
 
@@ -1654,8 +1657,8 @@ def _mutation_task(ctx, task_id: str) -> dict:
         unresolved_assumptions=[
             "The forger model recomputes only unkeyed SHA-256 digests with CIW's public canonicalization; no key "
             "exists to steal.",
-            "Pure-validator rows exercise candidate_evidence.validate_response and exchange._identity without an ESM "
-            "process or the pinned exchange validator.",
+            *(["Pure-validator rows exercise candidate_evidence.validate_response and exchange._identity without an "
+               "ESM process or the pinned exchange validator."] if spec.get("validators") else []),
             "Whether a reader of a forged workspace would be misled depends on how the record is displayed; not "
             "assessed."])
     return {"state": _state(findings), "fields": fields, "findings": findings}
