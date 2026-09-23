@@ -189,9 +189,13 @@ and records; the numerical core does not depend on it or on an LLM.
 | Authorized | A separate operational policy permits a bounded action |
 
 These classifications are a cross-workspace design requirement. Existing
-operations already preserve several scoped authority distinctions; a universal
-claim and deployment policy is not yet implemented. A successful optimizer is
-not a stability proof, and a verified computation does not authorize actuation.
+operations already preserve several scoped authority distinctions. The
+[scientific foundation](docs/SCIENCE_FOUNDATION.md) enforces them for its own
+evidence ledger: a claim is admitted only when the ledger holds the evidence its
+class requires, and synthetic observations can never support a measured claim.
+A deployment policy that dispatches equipment actions is not implemented. A
+successful optimizer is not a stability proof, and a verified computation does
+not authorize actuation.
 
 Planned assistance begins with three reusable roles: asset/evidence retrieval, signal
 binding and candidate configuration, and verification/challenge. Their outputs
@@ -205,8 +209,11 @@ The planned execution modes are **Explore** (models and simulations),
 and **Operate** (explicitly enabled equipment operations). Enforcing those
 capabilities and process/device restrictions is implementation work; the mode
 names are not a claim that arbitrary Julia or plugin code is sandboxed today.
-Evidence retention, scientific admission and equipment authorization remain
-separate decisions.
+The science layer's read-only authority gate evaluates proposals against these
+modes and records every unmet requirement. It never dispatches an action and
+always refuses equipment actions, because no control path is bound. Evidence
+retention, scientific admission and equipment authorization remain separate
+decisions.
 
 ## What runs today
 
@@ -237,6 +244,24 @@ and posterior-accuracy records. Its shared operation analyzes retained logs
 without acquiring new measurements.
 See the [assembly guide](docs/WORKBENCH_ASSEMBLY.md) for host bindings and
 the [integration coverage matrix](docs/INTEGRATION_COVERAGE.md) for exact scope.
+
+The [scientific foundation](docs/SCIENCE_FOUNDATION.md) (`ciw science`) is a native, dependency-light
+layer for computational experiments.
+
+- **Records and experiments.** Quantities carry units, frames and clocks, and calibrated transforms carry
+  uncertainty. Declarative experiment specifications compile into jobs for six declared solvers: geodesics,
+  Jacobi fields, log maps, extrinsic geodesics, mesh distances and Kalman fusion.
+- **Checks and evidence.** Eighteen reference oracles test each result. A hash-chained evidence ledger retains
+  exact bytes, and replay detects provider drift.
+- **Measurement.** Observation models separate what an instrument measures, for example camera chords versus
+  intrinsic distance. Sensor fusion keeps each stage separate up to state admission.
+- **Decisions and planning.** Claims and a read-only authority gate govern decisions. Active experiment design,
+  use-case compilation and a governance council support planning.
+- **Hardware and offline use.** An observation-only FPGA telemetry boundary decodes captures. Signed offline
+  evidence bundles and Markdown/LaTeX reports make evidence portable.
+
+`ciw science bench` runs the whole define → simulate → compare → retain → decide loop into one ledger. Every
+observation it produces is labelled synthetic; no physical coupon has been measured yet.
 
 The executable prototype includes a synthetic damped oscillator, numerical
 statistics and periodogram analysis, a shared local session, saved-workspace
@@ -499,6 +524,7 @@ and source pins remain unchanged.
 - Calibrated observable process experiment: [`docs/CALIBRATED_OBSERVABLE.md`](docs/CALIBRATED_OBSERVABLE.md)
 - Identified and budgeted observation selection: [`docs/IDENTIFIED_DESIGN.md`](docs/IDENTIFIED_DESIGN.md)
 - Executable integration coverage and next connections: [`docs/INTEGRATION_COVERAGE.md`](docs/INTEGRATION_COVERAGE.md)
+- Scientific foundation, experiment specifications, evidence ledger and capability map: [`docs/SCIENCE_FOUNDATION.md`](docs/SCIENCE_FOUNDATION.md)
 - Architecture: [`docs/ARCHITECTURE.md`](docs/ARCHITECTURE.md)
 - Earlier contract audit (revision `617ca62`): [`docs/RECONCILIATION.md`](docs/RECONCILIATION.md)
 - Protocol: [`docs/PROTOCOL.md`](docs/PROTOCOL.md)

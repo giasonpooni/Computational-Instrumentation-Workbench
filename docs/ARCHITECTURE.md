@@ -12,6 +12,7 @@ and their qualifications are listed in [INSTRUMENTS.md](INSTRUMENTS.md).
 | Component | Implemented responsibility |
 | --- | --- |
 | `src/ciw/core/` | Structural scientific-record validation, content identities and typed covariance artifacts |
+| `src/ciw/science/` | [Scientific foundation](SCIENCE_FOUNDATION.md): units, frames/clocks, experiment specifications and compiler, native geometry/mesh/fusion solvers with oracles, hash-chained evidence ledger and replay, claims, read-only authority gate, design, hardware observation boundary, signed bundles and reports |
 | `src/ciw/adapters/` | Declared manifests, explicit adapter registry, offline payload readers and bounded pinned subprocess execution |
 | `src/ciw/operations/` | Versioned operation registration, captured inputs and selections, retained execution/refusal and result envelopes |
 | `src/ciw/session.py` | Shared selection, immutable retained results, workspace save/reopen and dependency validation |

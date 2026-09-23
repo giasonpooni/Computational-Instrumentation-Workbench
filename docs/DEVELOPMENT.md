@@ -43,6 +43,7 @@ and transport semantics.
 | Path | Contents |
 | --- | --- |
 | `src/ciw/core/` | Record, identity and covariance contracts |
+| `src/ciw/science/` | Native scientific foundation: specifications, solvers, oracles, evidence ledger, claims and authority ([guide](SCIENCE_FOUNDATION.md)) |
 | `src/ciw/adapters/` | Adapter bindings and trusted saved-payload validators, including RCI provenance and covariance dependency checks |
 | `src/ciw/operations/` | Operation registry, execution records and schema dispatch |
 | `src/ciw/session.py`, `server.py`, `cli.py` | Shared state, transport and terminal commands |
@@ -67,6 +68,14 @@ relevant compatibility and replay checks. The covariance examples in `examples/a
 python -m pip install -e '.[dev]'
 python -m pytest -q
 python scripts/check_adapters.py
+```
+
+The [scientific foundation](SCIENCE_FOUNDATION.md) needs no external provider. Its gate runs the full synthetic
+bench, replays every experiment and checks a signed offline round trip on Linux and Windows:
+
+```sh
+python -m pytest -q tests/test_science_*.py -W error::RuntimeWarning
+python scripts/check_science.py
 ```
 
 The adapter script clones the explicitly pinned current and historical
