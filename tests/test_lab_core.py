@@ -140,3 +140,21 @@ def test_oversized_artifacts_are_refused(tmp_path):
         ctx.artifact_text("large.txt", "x" * (runner.MAX_ARTIFACT_BYTES + 1))
     with pytest.raises(ValueError, match="single file names"):
         ctx.artifact_text("../escape.txt", "x")
+
+
+def test_regression_comparison_flags_unretained_tasks_and_changed_findings(tmp_path):
+    task = load_queue()["tasks"][0]
+    record = finding("rate", "numerical", 4.0, {"generator": {"name": "g"}, "checks": [CHECK]})
+    extra = finding("extra", "numerical", 1.0, {"generator": {"name": "g"}, "checks": [CHECK]})
+    for name, findings in (("old", [record]), ("new", [record, extra])):
+        directory = tmp_path / name / "reports"
+        directory.mkdir(parents=True)
+        (directory / "T001.json").write_text(runner.dumps(report.build_report(task, "completed", {}, findings)))
+    second = load_queue()["tasks"][1]
+    (tmp_path / "new" / "reports" / "T002.json").write_text(
+        runner.dumps(report.build_report(second, "completed", {}, [record])))
+    problems = runner.compare(tmp_path / "old", tmp_path / "new")["problems"]
+    assert "T002: not retained" in problems
+    assert any("finding claims differ" in p and "extra" in p for p in problems)
+    assert any("finding count 1 -> 2" in p for p in problems)
+    assert runner.compare(tmp_path / "empty", tmp_path / "new")["passed"]

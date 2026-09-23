@@ -57,9 +57,13 @@ Rules that are never relaxed:
    counterexample is a claim that the counterexample exists, with a check that
    passes when the violation is observed, plus `counterexample={"statement":
    "<refuted general statement>", "witness": {...}}`.
-3. A finding that honestly records an unestablished computational claim in a
+3. Claims are deterministic text: never embed fresh identities (execution or
+   result UUIDs, temporary paths, timestamps) in a claim, because the
+   regression gate matches findings across runs by claim. Put such values in
+   artifacts or in the finding's value when they are stable.
+4. A finding that honestly records an unestablished computational claim in a
    completed task sets `expected_not_established=True`.
-4. Give every numerical finding a `tolerance={"abs": a, "rel": r}` for the
+5. Give every numerical finding a `tolerance={"abs": a, "rel": r}` for the
    regression gate. Values must be JSON (floats, lists, dicts, strings, bools).
    Choose tolerances that survive Linux/Windows and NumPy BLAS differences
    (typically `rel` 1e-6 for converged quantities; looser for orders/rates).

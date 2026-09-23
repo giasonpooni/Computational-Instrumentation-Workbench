@@ -343,6 +343,9 @@ def compare(retained_dir, fresh_dir) -> dict:
     retained = {r["task_id"]: r for r in load_reports(retained_dir)}
     fresh = {r["task_id"]: r for r in load_reports(fresh_dir)}
     problems = []
+    if retained:
+        # New evidence must be reviewed and retained, not slip in through a gate run.
+        problems += [f"{task_id}: not retained" for task_id in sorted(set(fresh) - set(retained))]
     for task_id, old in retained.items():
         new = fresh.get(task_id)
         if new is None:
@@ -353,7 +356,10 @@ def compare(retained_dir, fresh_dir) -> dict:
         old_findings = {f["claim"]: f for f in old["findings"]}
         new_findings = {f["claim"]: f for f in new["findings"]}
         if old_findings.keys() != new_findings.keys():
-            problems.append(f"{task_id}: finding claims differ")
+            changed = sorted(set(old_findings) ^ set(new_findings))
+            problems.append(f"{task_id}: finding claims differ: {changed[:4]}")
+        if len(old["findings"]) != len(new["findings"]):
+            problems.append(f"{task_id}: finding count {len(old['findings'])} -> {len(new['findings'])}")
         for claim, record in old_findings.items():
             other = new_findings.get(claim)
             if other is None:
