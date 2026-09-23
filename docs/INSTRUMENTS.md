@@ -1,7 +1,8 @@
 # Instruments: instructions and specifications
 
 For the current public component inventory and integration boundaries, see the
-[Notation Systems stack map](STACK.md) and [this component's role](STACK_ROLE.md).
+[systems catalog](SYSTEMS_CATALOG.md), [Notation Systems stack map](STACK.md)
+and [this component's role](STACK_ROLE.md).
 
 This catalogue records tools that can be used through the workbench and the
 contracts needed to reproduce their results. An external tool is listed as
@@ -356,7 +357,7 @@ state admission or a dedicated independent ICRH conformance receipt.
 
 ## Related components
 
-The [related stack catalogue](../README.md#related-stack-components) records the
+The [related stack catalogue](SYSTEMS_CATALOG.md) records the
 current technical names and responsibilities of Scientific Computation Runtime,
 Provenance-Preserving Data Acquisition, Geospatial State Visualization, State
 Estimation Evaluation Testbed, Evidence and State Management, and Constraint-Based
@@ -378,3 +379,4 @@ setup and workbench commands, input ordering/units/time conventions, versioned
 output and status semantics, saved-evidence and replay instructions, verification
 state and limits, and links to validation evidence. A successful installation or
 standalone example alone does not establish a completed workbench integration.
+

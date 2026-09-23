@@ -1,5 +1,9 @@
 # Notation Systems computational instrumentation stack
 
+The concise provider and loose-tool map is [SYSTEMS_CATALOG.md](SYSTEMS_CATALOG.md).
+This page remains the detailed responsibility, boundary and numerical-foundation
+reference.
+
 Notation Systems develops computational instrumentation and evidence infrastructure for industrial and cyber-physical systems. The engineering mandate is to connect source observations, explicit mathematical models, computation, inspection and governed state while retaining the evidence needed to reproduce and challenge a result.
 
 The public repositories are components of this stack. Their scientific and engineering functions define their names. The existing physical-economy corpus, acquisition, policy and information-delivery capabilities remain part of the architecture; adding instruments does not replace them.
@@ -159,3 +163,4 @@ Current entry points describe engineering roles, executable behavior, contracts,
 Public documentation describes reusable interfaces. Customer state, private deployment configuration, proprietary calibration knowledge and internal generative planning remain outside that interface documentation. Existing licenses and source rights control reuse; this stack map neither relicenses repositories nor changes visibility.
 
 When an integration changes, update the producer's role page, the consumer's operating guide and this map together. Identify the supported source pins, exact input/output contract, failure behavior and validation scope. An architecture arrow or a related-repository link alone is not an implemented integration.
+

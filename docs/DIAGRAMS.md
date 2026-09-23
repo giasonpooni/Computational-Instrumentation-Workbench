@@ -16,7 +16,7 @@ calculation, a content digest and a verification receipt answer different questi
 
 | View | What it explains |
 | --- | --- |
-| [Workbench overview](../README.md#workbench-at-a-glance) | Capture, execution, retained outcomes and inspection |
+| [Workbench overview](WORKBENCH_OVERVIEW.md) | Capture, execution, retained outcomes and inspection |
 | [Implemented stack paths](STACK.md#how-to-read-the-stack) | Which external workflows share a container |
 | [Retained scalar telemetry](TELEMETRY.md#retained-data-and-calculation-flow) | Full covariance, declared models and optional reconciliation |
 | [Operation admission](ARCHITECTURE.md#admission-and-retained-outcomes) | Pre-admission rejection versus retained execution refusal |
@@ -175,3 +175,4 @@ the corresponding contract. Preserve historical evidence and frozen identities.
 Use graphs of measured performance only when the plotted values have a retained
 source, units and experimental conditions; these architecture diagrams make no
 empirical performance claims.
+

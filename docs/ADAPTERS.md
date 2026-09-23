@@ -246,7 +246,7 @@ multi-run journal and calibrated external-instrument viewport are not supplied.
 
 ## Related component boundaries
 
-The [related stack catalogue](../README.md#related-stack-components) records
+The [related stack catalogue](SYSTEMS_CATALOG.md) records
 canonical repository names separately from the integrated tools. These
 components have no registered CIW adapter:
 
@@ -263,3 +263,4 @@ Historical `STE` and `DAF` labels may remain in retained records and package
 names. Repository renames do not change operation IDs, schemas, runtime pins,
 or separate evidence, execution, result and verification identities. Related
 repositories do not transfer their scientific authority to CIW.
+
