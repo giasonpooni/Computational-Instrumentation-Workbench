@@ -81,8 +81,24 @@ ciw lab run --all --output-dir results/lab \
     --provider ftr=/trusted/references/ftr \
     --provider plsr-python=/path/to/python3.12   # interpreter with the pinned PLSR
 ciw lab report T010 --retained lab               # the nineteen answers for one task
+ciw lab report T010 --retained lab --schema      # also check task-report.schema.json
+ciw lab next --retained lab                      # rank the next experiments; runs nothing
+ciw lab queue --retained lab --section geodesic-jacobi --state partial
 ciw lab verify --retained lab --fresh results/lab
 ```
+
+`ciw lab next` is the persistent-queue view: it ranks implemented tasks that
+were never reported, blocked tasks whose requirements have become available,
+partial tasks with their own next step, and completed tasks' recommended
+follow-up research questions. Hardware-blocked tasks stay listed as blocked
+until the hardware is bound. `ciw lab run --budget-seconds N` lists tasks that
+exceed a time budget; elapsed times go to `run-log.json`, never into reports,
+because timing is not a reproducible finding.
+
+`src/ciw/lab/task-report.schema.json` is the structural JSON Schema of
+`ciw.lab-task-report.v1` for consumers in other languages. Passing it does not
+make a report valid: labels, derived statuses and the report identity are
+checked by `ciw.lab.report.validate_report`.
 
 `--provider ROLE=PATH` binds a pinned provider checkout or interpreter; tasks
 verify the checkout revision and tree against CIW's own pins before using it
