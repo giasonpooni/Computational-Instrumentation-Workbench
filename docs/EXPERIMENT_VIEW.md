@@ -52,6 +52,8 @@ local presentation state and does not alter the scientific or oscillator selecti
 | SRA/JSPT/PLSR companions | Selected graph, native call events, before/after eligibility and local model scope |
 | CSE BIM quantity | Full prior/posterior quantities and covariance, held/refused status, invariants and replayed ledger |
 | PPDA acquired dataset | Native evidence counts, checkpoint transitions, acquisition outcomes and durable-pool identity |
+| Acquired calibrated window | Existing calibrated-window panels plus exact PPDA row/record/document lineage and separate mapping/native verification |
+| FDIR/OIT residual sequence | Retained innovations, normalized residuals, native CUSUM transitions and declared thresholds; per-window covariance, observability and ambiguous isolation remain in context |
 
 The [declared workloads guide](DECLARED_WORKLOADS.md) provides SRA/SCR startup
 bindings and examples. These objects have `fusion_context: null`, a typed
@@ -59,6 +61,12 @@ bindings and examples. These objects have `fusion_context: null`, a typed
 They use the same live invalidation and occurrence selection controls.
 See [new module bindings](INTEGRATED_MODULES.md). Source-only geographic context
 is inspected through GSV's read-only `/spatial` endpoint in the same session.
+The [acquired stream guide](ACQUIRED_STREAM.md) runs acquisition, three calibrated
+windows and residual monitoring through the same live server. Residual sequence
+panels have no joint covariance or cross-window confidence bars: temporal dependence
+is unknown. OIT-held windows do not advance the CUSUM state. Native threshold
+crossings remain diagnostic candidates, with physical drift and alarm probabilities
+unestablished.
 
 Every panel carries source/evidence and, where applicable, result/execution IDs.
 The dependency tree uses native `input_refs`, with external references explicitly

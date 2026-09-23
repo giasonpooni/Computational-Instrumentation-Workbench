@@ -7,7 +7,7 @@ native execution records and replay evidence. Provider repositories keep their
 scientific responsibilities while their operations and artifacts join this suite.
 
 The [Workbench desktop tab](EXPERIMENT_VIEW.md) is now implemented over that
-substrate: it links nine retained workflows to measurement/state/covariance and
+substrate: it links eleven retained workflows to measurement/state/covariance and
 residual panels, native input dependencies, evidence inspection and live session
 invalidation. It introduces no additional estimator or parallel result store.
 
@@ -15,8 +15,9 @@ The [SRA/SCR assembly](DECLARED_WORKLOADS.md) now adds typed schematic assessmen
 and native deterministic integer numerical execution to that same catalog,
 inspection view and replay history. [Native module integration](INTEGRATED_MODULES.md)
 adds actual SRA/JSPT/PLSR calls, PPDA incremental acquisition, CSE quantity
-conditioning and GSV geographic inspection. Hardware acquisition scheduling and
-calibrated-stream composition remain next. Algebraic and topological providers
+conditioning and GSV geographic inspection. [Acquired calibrated streams](ACQUIRED_STREAM.md)
+now bind exact PPDA records to calibrated windows and native FDIR/OIT monitoring.
+Hardware acquisition scheduling remains separate. Algebraic and topological providers
 should enter as declared operations on explicit domains, bases, chain complexes
 or filtrations, with exact versus numerical arithmetic and verification scope
 retained. Topological outputs require an explicit observation model and uncertainty
@@ -164,7 +165,7 @@ normal server shutdown also saves them. A workflow that refuses before producing
 a bundle returns an error and leaves its source retained, without publishing a
 partial state. The catalog permits at most 64 sources, 128 completed bundles and
 64 MiB of retained content. Existing protocol frame limits still apply. It
-supports nine executable source kinds and source-only geography; it is not an arbitrary bundle
+supports eleven executable source kinds and source-only geography; it is not an arbitrary bundle
 importer or a live acquisition service.
 
 ## What shares a workspace
@@ -206,7 +207,7 @@ refuse a connection.
 | --- | --- | --- |
 | CIW | Operator session, source and native-artifact registry, operation routing, result history and inspection | Shared session assembly; existing numerical workflows retain their original contracts. |
 | PPDA and RCI | Acquisition and measurement sources with original evidence, assembly, delivery and missingness | PPDA retained observation projection now executes with STFE in the shared session. RCI investigation exists separately; live sensor acquisition remains a delivery item. |
-| TBRT, MCUR and STFE | Declared clock mapping, calibration and stream-window transforms | Shared `ciw.calibrated-window.v1` composes one affine profile and a nominal-grid mean with full joint covariance. Live acquisition and downstream drift assessment remain the manufacturing-cycle work. |
+| TBRT, MCUR and STFE | Declared clock mapping, calibration and stream-window transforms | Shared calibrated windows preserve full joint covariance. Exact PPDA record selection and native FDIR/OIT monitoring now connect bounded acquired sequences; physical polling remains separate. |
 | OIT and GSIE | Observability gate and state/covariance computation for a declared context | Calibrated process operation already binds the gate to the estimator's exact transition and observation matrices. |
 | CBSR and FDIR | Constraint-conditioned candidates and residual/isolability diagnostics | Consume retained state and declared residual covariance; hold/refusal remains visible alongside the original estimate. |
 | SRA | Authored instrument/model schematic, typed relationships and eligibility | Native assessment and selected JSPT/PLSR companion execution share retained upstream graph/result bindings. |
@@ -276,8 +277,9 @@ manufacturing-cycle or geometry/BIM demonstrations.
 
 Row 2 now includes selected native companion calls. Row 3's bounded integer
 heat dispatch is implemented with native replay and an ICRH oracle. Row 4 has
-an explicit source-only geographic view. Row 1 has bounded PPDA acquisition;
-its calibrated-stream handoff remains pending. Row 5 has native CSE quantity
+an explicit source-only geographic view. Row 1 now connects bounded PPDA acquisition
+to calibrated windows and residual monitoring, with fixed reference priors and
+unknown temporal dependence retained. Row 5 has native CSE quantity
 conditioning; surveyed-frame geometry composition remains pending. See
 [declared workloads](DECLARED_WORKLOADS.md) and [new modules](INTEGRATED_MODULES.md).
 

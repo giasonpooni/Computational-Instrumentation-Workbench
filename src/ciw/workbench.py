@@ -15,8 +15,9 @@ from threading import RLock
 
 from .adapters.protocol import AdapterRefusal
 from .adapters.subprocess import _json
-DECLARED_KINDS = frozenset({"schematic-assessment", "numerical-heat", "schematic-companions", "bim-quantity", "acquired-dataset"})
-UPSTREAM_KINDS = {"identified-design": "calibrated-observable", "schematic-companions": "schematic-assessment"}
+DECLARED_KINDS = frozenset({"schematic-assessment", "numerical-heat", "schematic-companions", "bim-quantity", "acquired-dataset", "residual-monitor"})
+UPSTREAM_KINDS = {"identified-design": "calibrated-observable", "schematic-companions": "schematic-assessment",
+                  "acquired-calibrated-window": "acquired-dataset"}
 
 SCHEMA = "ciw.retained-workbench.v1"
 SOURCE_SCHEMA = "ciw.workbench-source.v1"
@@ -30,6 +31,8 @@ OPERATIONS = {
     "schematic-companions": "ciw.schematic-companions.v1",
     "bim-quantity": "ciw.bim-quantity.v1",
     "acquired-dataset": "ciw.acquired-dataset.v1",
+    "acquired-calibrated-window": "ciw.acquired-calibrated-window.v1",
+    "residual-monitor": "ciw.residual-monitor.v1",
 }
 WORKFLOW_OPERATION_IDS = frozenset(OPERATIONS.values())
 from .candidate_evidence import OPERATIONS as CANDIDATE_OPERATIONS
@@ -53,6 +56,12 @@ def _workflow(kind):
         return workflow
     if kind == "acquired-dataset":
         from .acquired_dataset import workflow
+        return workflow
+    if kind == "acquired-calibrated-window":
+        from . import acquired_window
+        return acquired_window
+    if kind == "residual-monitor":
+        from .residual_monitor import workflow
         return workflow
     if kind == "geographic-context":
         from . import spatial_view
@@ -128,7 +137,7 @@ def _source(payload):
 def _summary(record):
     native = record["native"]
     verification = native.get("verification", {})
-    return {"bundle_id": record["bundle_id"], "kind": record["kind"],
+    summary = {"bundle_id": record["bundle_id"], "kind": record["kind"],
         "source_id": record["source_id"], "upstream_bundle_id": record["upstream_bundle_id"],
         "session_id": native["session_id"], "operation_id": OPERATIONS[record["kind"]],
         "result_ids": [s["result_id"] for s in native["steps"]],
@@ -137,6 +146,10 @@ def _summary(record):
         "retained_verification_outcome": verification.get("outcome"),
         "validation": "content_consistent", "numerical_replay": "not_performed_by_inspection",
         "state_admission": "not_performed"}
+    if record["kind"] == "residual-monitor":
+        summary["upstream_bundle_ids"] = _workflow(record["kind"]).requested_upstream_ids(
+            base64.b64decode(native["source"]["evidence"][0]["bytes_b64"], validate=True))
+    return summary
 
 
 def _claims(record):
@@ -166,21 +179,35 @@ def _claims(record):
         for evidence in value["source"]["evidence"]:
             claim(evidence["artifact_ref"], "evidence", evidence["bytes_b64"])
         for step in value["steps"]:
+            step_owner = value.get("child_window", value)["bundle_digest"]
             claim(step["operation_id"], "operation", step["operation_id"])
             declared = value["schema"] in {"ciw." + kind + "-session.v1" for kind in DECLARED_KINDS}
-            claim(step["execution_id"], "execution", {"step": step} if declared else {"bundle_id": owner, "step": step})
+            claim(step["execution_id"], "execution", {"step": step} if declared else {"bundle_id": step_owner, "step": step})
             if value["schema"] == "ciw.telemetry-session.v1" and step["runtime_ref"] == "ppda":
                 # A replay reprojects the same acquired evidence. Its batch ID
                 # stays stable while every execution occurrence remains fresh.
                 claim(step["result_id"], "observation_batch", step["result"])
             else:
-                claim(step["result_id"], "result", {"result": step["result"]} if declared else {"bundle_id": owner, "result": step["result"]})
+                claim(step["result_id"], "result", {"result": step["result"]} if declared else {"bundle_id": step_owner, "result": step["result"]})
             claim(step["numerical_result_id"], "numerical_result", step["numerical_result"])
         if "verification" in value:
             verification(value["verification"])
         for receipt in value.get("replay_receipts", []):
             claim(receipt["replay_id"], "replay", receipt)
             verification(receipt["verification"])
+        if "child_window" in value:
+            # Exposed native steps retain the child's ownership and SET scope.
+            # The mapping wrapper has its own source and verification identity.
+            child = value["child_window"]
+            claim(child["bundle_digest"], "bundle", {k: v for k, v in child.items()
+                                                     if k not in {"verification", "replay_receipts"}})
+            claim(child["session_id"], "session", child["bundle_digest"])
+            for evidence in child["source"]["evidence"]:
+                claim(evidence["artifact_ref"], "evidence", evidence["bytes_b64"])
+            verification(child["verification"])
+            for receipt in child.get("replay_receipts", []):
+                claim(receipt["replay_id"], "replay", receipt)
+                verification(receipt["verification"])
         if "upstream" in value:
             bundle(value["upstream"])
             bundle(value["upstream_replay"]["session"])
@@ -249,6 +276,15 @@ def _validate_receipts(native, kind):
 
 def _validate_links(record, bundles):
     native = record["native"]
+    if record["kind"] == "acquired-calibrated-window":
+        occurrences = {step[key] for step in native["steps"] for key in ("execution_id", "result_id")}
+        for other in bundles.values():
+            if other["bundle_id"] != record["bundle_id"] and other["kind"] == record["kind"]:
+                used = {step[key] for step in other["native"]["steps"] for key in ("execution_id", "result_id")}
+                if not occurrences.isdisjoint(used):
+                    raise ValueError("Acquired windows must retain fresh native execution and result occurrences")
+    if record["kind"] == "residual-monitor":
+        _workflow(record["kind"]).validate_upstreams(native, {key: value["native"] for key, value in bundles.items()})
     if record["kind"] == "schematic-companions":
         from .schematic_companions import native_occurrences
         occurrences = native_occurrences(native)
@@ -274,6 +310,8 @@ def _validate_links(record, bundles):
         if record["kind"] == "schematic-companions":
             from .schematic_companions import validate_upstream
             validate_upstream(native, upstream["native"])
+        elif record["kind"] == "acquired-calibrated-window":
+            _workflow(record["kind"]).validate_upstream(native, upstream["native"])
         elif _canonical(native["upstream"]) != _canonical(upstream["native"]):
             raise ValueError("Design upstream must exactly match a retained calibrated bundle")
     for receipt in native.get("replay_receipts", []):
@@ -283,6 +321,8 @@ def _validate_links(record, bundles):
                 original["upstream_bundle_id"] != upstream_id):
             raise ValueError("Replay source must already belong to this workbench")
         old_steps, new_steps = original["native"]["steps"], native["steps"]
+        if record["kind"] == "acquired-calibrated-window":
+            _workflow(record["kind"]).validate_replay(original["native"], native, receipt)
         if record["kind"] in DECLARED_KINDS:
             workflow = _workflow(record["kind"])
             raw = workflow._validate(original["native"])
@@ -309,7 +349,7 @@ def _validate_links(record, bundles):
 
 def _context(record, sources):
     native = record["native"]
-    if record["kind"] in {"telemetry", "calibrated-window"}:
+    if record["kind"] in {"telemetry", "calibrated-window", "acquired-calibrated-window"}:
         return _telemetry_context(record, sources)
     calibrated = record["kind"] == "calibrated-observable"
     step = native["steps"][4 if calibrated else 2]
@@ -367,16 +407,18 @@ def _context(record, sources):
 
 def _telemetry_context(record, sources):
     native = record["native"]
-    window = record["kind"] == "calibrated-window"
+    window = record["kind"] in {"calibrated-window", "acquired-calibrated-window"}
     step = next(s for s in native["steps"] if s["runtime_ref"] == "gsie")
     state = step["result"]["result_artifact"]
     source = sources[record["source_id"]]
     declaration = _json(base64.b64decode(source["bytes_b64"], validate=True))
-    configuration = native["configuration"]
+    if record["kind"] == "acquired-calibrated-window":
+        declaration = _workflow(record["kind"]).mapped_source(native)
+    configuration = native.get("child_window", native)["configuration"]
     cbsr = next((s for s in native["steps"] if s["runtime_ref"] == "cbsr"), None)
     context = {"context_id": "context:" + _digest({"bundle_id": record["bundle_id"], "result_id": step["result_id"]}),
         "bundle_id": record["bundle_id"], "source_id": record["source_id"], "evidence_id": source["evidence_id"],
-        "upstream_bundle_id": None, "owner": "gsie", "state_kind": "window_feature_posterior",
+        "upstream_bundle_id": record["upstream_bundle_id"], "owner": "gsie", "state_kind": "window_feature_posterior",
         "state_id": state["state_id"], "result_id": step["result_id"], "execution_id": step["execution_id"],
         "event_time": state["observation_binding"]["elapsed_seconds"], "epoch": declaration["epoch"],
         "mean": [item["value"] for item in state["components"]], "covariance": state["covariance"]["matrix"],
@@ -402,6 +444,12 @@ def _telemetry_context(record, sources):
             uncertainty_scope="first_order_conditional_on_declared_nominal_grid",
             calibration_feature_compatibility=deepcopy(native["steps"][1]["result"]["data"]["compatibility"]),
             observability={"status": "unresolved", "reason": "not_evaluated_by_calibrated_window_profile"})
+    if record["kind"] == "acquired-calibrated-window":
+        context.update(acquisition_binding=deepcopy(native["acquisition_binding"]),
+                       native_window_bundle_id=native["child_window"]["bundle_digest"],
+                       numerical_verification_id=native["child_window"]["verification"]["verification_id"],
+                       reference_prior_policy="explicit_per_window_no_posterior_feedback",
+                       inter_window_covariance="not_declared_by_this_window")
     return context
 
 
@@ -448,9 +496,10 @@ class Workbench:
 
     def describe_operations(self):
         with self._lock:
-            return [{"operation_id": operation, "role": {"identified-design": "decision", "schematic-assessment": "schematic_assessment", "numerical-heat": "numerical_execution", "schematic-companions": "local_model_analysis", "bim-quantity": "construction_quantity", "acquired-dataset": "evidence_acquisition"}.get(kind, "state_estimator"),
+            return [{"operation_id": operation, "role": {"identified-design": "decision", "schematic-assessment": "schematic_assessment", "numerical-heat": "numerical_execution", "schematic-companions": "local_model_analysis", "bim-quantity": "construction_quantity", "acquired-dataset": "evidence_acquisition", "residual-monitor": "residual_diagnostics"}.get(kind, "state_estimator"),
                      "source_kind": kind, "available": kind in self._bindings,
-                     "requires_upstream_bundle": kind in UPSTREAM_KINDS}
+                     "requires_upstream_bundle": kind in UPSTREAM_KINDS,
+                     **({"requires_upstream_bundles": "explicit_ordered_source_selection"} if kind == "residual-monitor" else {})}
                     for kind, operation in OPERATIONS.items()] + [
                         {"operation_id": operation, "role": "candidate_evidence", "requires_bundle": "explicit_retained_native_bundle",
                          "available": any(action == "inspect" or adapter.capture_available for adapter in self._candidate_adapters.values()),
@@ -698,6 +747,12 @@ class Workbench:
                 if upstream_id not in self._bundles or self._bundles[upstream_id]["kind"] != UPSTREAM_KINDS[kind]:
                     raise ValueError("Select a retained upstream bundle of the declared kind")
                 upstream = deepcopy(self._bundles[upstream_id]["native"])
+            if kind == "residual-monitor":
+                raw = base64.b64decode(source["bytes_b64"], validate=True)
+                requested = _workflow(kind).requested_upstream_ids(raw)
+                if any(identity not in self._bundles for identity in requested):
+                    raise ValueError("Select window bundles already retained in this workbench")
+                upstream = {identity: deepcopy(self._bundles[identity]["native"]) for identity in requested}
             bindings, reserved = self._reserve(kind)
         try:
             raw = base64.b64decode(source["bytes_b64"], validate=True)
@@ -771,6 +826,11 @@ class Workbench:
                 raise ValueError("Unknown retained workbench bundle")
             source = self._sources[record["source_id"]]
             declaration = _json(base64.b64decode(source["bytes_b64"], validate=True))
+            if record["kind"] == "residual-monitor":
+                from .residual_view import project as project_residual
+                return project_residual(record, source, declaration, self._revision)
+            if record["kind"] == "acquired-calibrated-window":
+                declaration = _workflow(record["kind"]).mapped_source(record["native"])
             if record["kind"] in DECLARED_KINDS:
                 from .workload_view import project as project_workload
                 return project_workload(record, source, declaration, self._revision)
@@ -794,7 +854,7 @@ class Workbench:
             for step in record["native"]["steps"]:
                 if step["execution_id"] not in seen:
                     seen.add(step["execution_id"])
-                    yield record, record["native"], step
+                    yield record, record["native"].get("child_window", record["native"]), step
         for record in self._bundles.values():
             yield from visit(record, record["native"])
 
@@ -825,8 +885,10 @@ class Workbench:
         with self._lock:
             return deepcopy([{**{k: step[k] for k in ("execution_id", "operation_id", "runtime_ref", "input_refs", "result_id")},
                 "bundle_id": record["bundle_id"], "native_bundle_id": native["bundle_digest"],
-                "source_id": (record["source_id"] if native["bundle_digest"] == record["bundle_id"]
+                "source_id": (record["source_id"] if native["bundle_digest"] == record["bundle_id"] or record["kind"] == "acquired-calibrated-window"
                               else self._bundles[record["upstream_bundle_id"]]["source_id"]),
+                **({"native_source_evidence_id": native["source"]["evidence"][0]["artifact_ref"]}
+                   if record["kind"] == "acquired-calibrated-window" else {}),
                 "status": "completed"}
                 for record, native, step in self._native_steps()])
 

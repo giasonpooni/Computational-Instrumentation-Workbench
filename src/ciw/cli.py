@@ -236,6 +236,8 @@ def parser() -> argparse.ArgumentParser:
     server.add_argument("--schematic-companions-root", type=Path, help="Bind pinned sra/jspt/plsr directories for selected schematic companion calls")
     server.add_argument("--construction-repo", type=Path, help="Bind pinned CSE quantity conditioning and ledger replay")
     server.add_argument("--acquisition-repo", type=Path, help="Bind pinned PPDA and its scout gitlink for retained dataset acquisition")
+    server.add_argument("--acquired-stream-stack-root", type=Path,
+                        help="Bind pinned ppda/tbrt/mcur/stfe/gsie/set/oit/fdir for acquired calibrated windows and residual monitoring")
     server.add_argument("--spatial-view-origin", action="append", default=[], help="Exact browser http(s) origin allowed on the read-only /spatial endpoint; repeat to allow more")
     server.add_argument("--computation-repo", type=Path, help="Bind pinned SCR numerical execution")
     server.add_argument("--computation-engine", type=Path, help="Host-built SCR execution-cli (required with --computation-repo)")
@@ -425,6 +427,13 @@ def main(argv: list[str] | None = None) -> int:
                 session.workbench.bind_workflow("bim-quantity", {"cse": args.construction_repo})
             if args.acquisition_repo is not None:
                 session.workbench.bind_workflow("acquired-dataset", {"ppda": args.acquisition_repo})
+            if args.acquired_stream_stack_root is not None:
+                root = args.acquired_stream_stack_root
+                from .calibrated_window import ROLES as WINDOW_ROLES
+                session.workbench.bind_workflow("acquired-dataset", {"ppda": root / "ppda"})
+                for kind in ("calibrated-window", "acquired-calibrated-window"):
+                    session.workbench.bind_workflow(kind, {role: root / role for role in WINDOW_ROLES})
+                session.workbench.bind_workflow("residual-monitor", {role: root / role for role in ("oit", "fdir")})
             if (args.computation_repo is None) != (args.computation_engine is None):
                 raise ValueError("--computation-repo and --computation-engine must be supplied together")
             if args.computation_repo is not None:

@@ -1,6 +1,6 @@
 # Executable integration coverage
 
-Reviewed 2026-09-22 against CIW source, its runtime manifests, ICRH profiles,
+Reviewed 2026-09-23 against CIW source, its runtime manifests, ICRH profiles,
 and the public repository catalog. This matrix distinguishes an executable
 handoff from a matching schema, a digest attachment, or a documentation link.
 The public catalog contains 29 repositories including CIW and ICRH. Integration
@@ -18,7 +18,7 @@ operating point.
 
 ## Shared operating session
 
-The [Workbench desktop tab](EXPERIMENT_VIEW.md) projects all nine shared workflow
+The [Workbench desktop tab](EXPERIMENT_VIEW.md) projects all eleven shared workflow
 kinds through `experiment.inspect`: retained measurements, state/covariance,
 residuals, native dependencies, evidence and verification. It follows committed
 session changes and keeps replay occurrences separate. This read-only display
@@ -29,7 +29,8 @@ topological workload dispatch remain pending.
 The live Session now hosts `ciw.telemetry.v1`, `ciw.calibrated-observable.v1` and
 `ciw.identified-design.v1`, plus `ciw.calibrated-window.v1`,
 `ciw.schematic-assessment.v1`, `ciw.numerical-heat.v1`, `ciw.schematic-companions.v1`,
-`ciw.bim-quantity.v1` and `ciw.acquired-dataset.v1`, through `operation.list/execute`.
+`ciw.bim-quantity.v1`, `ciw.acquired-dataset.v1`,
+`ciw.acquired-calibrated-window.v1` and `ciw.residual-monitor.v1`, through `operation.list/execute`.
 `source.*`, `bundle.*` and `fusion.list` expose retained inputs, native bundles
 and candidate contexts; result and execution lists include those native records
 alongside existing session operations. Workspace format 3 retains this content,
@@ -54,7 +55,9 @@ keep their native owners and individual ICRH contracts.
 | --- | --- | --- | --- |
 | PPDA → STFE → GSIE → SET | Shared `ciw.telemetry.v1` operation and existing standalone commands; exact source bytes, full temporal covariance, causal scalar mean, predict/update and ESM candidate handoff | ICRH `telemetry-to-state.v1`, original/replay/adversarial fixtures | This scalar path does not yet consume TBRT/MCUR transformations or evaluate observability. |
 | PPDA → STFE → GSIE → CBSR → SET | Same telemetry session with optional affine-exact reconciliation receipt | ICRH `telemetry-reconciled.v1` | New decisions must preserve accepted/held/refused distinctions. |
-| TBRT → MCUR → STFE → GSIE → SET | Shared `ciw.calibrated-window.v1`; raw device samples, affine map/profile, full joint time/value/parameter covariance, native compatibility check and window-state context | ICRH `calibrated-window-to-state.v1`; actual original/replay and resealed covariance/validity/compatibility faults | Scalar stationary hold on a nominal grid; live acquisition, window observability, drift assessment and ESM handoff remain separate work. |
+| TBRT → MCUR → STFE → GSIE → SET | Shared `ciw.calibrated-window.v1`; raw device samples, affine map/profile, full joint time/value/parameter covariance, native compatibility check and window-state context | ICRH `calibrated-window-to-state.v1`; actual original/replay and resealed covariance/validity/compatibility faults | Scalar stationary hold on a nominal grid; hardware acquisition and ESM handoff remain separate work. |
+| PPDA retained records → calibrated window | Shared `ciw.acquired-calibrated-window.v1`; exact observation/record/document/snapshot-row selection, typed declaration, unchanged native child and separate mapping verification | ICRH `acquired-calibrated-window.v1`; independent PPDA lineage and child-window checks with original/replay pairs | Bounded retained snapshots; no implicit ordering, missing clock inference or hardware polling. |
+| Retained GSIE innovations → FDIR/OIT | Shared `ciw.residual-monitor.v1`; explicit ordered windows, native residual covariance, observability gate and CUSUM transitions | ICRH `residual-monitor.v1`; scalar numerical oracle, held observability, replay aliases, unknown covariance and ambiguity checks | Diagnostic candidates only; unknown cross-window dependence blocks statistical alarm authority and unique isolation. No posterior feedback. |
 | FSRT → TBRT → MCUR → OIT → GSIE → CBSR → FDIR → SET | `ciw calibrated-observable create/inspect/replay`; two calibrated channels, retained clock uncertainty, observability gate and declared residual covariance | ICRH `calibrated-observable-telemetry.v1`; original, replay, held, ambiguous and refusal fixtures | Synthetic stationary hold; no calibrated stream window or identified dynamics in this profile. |
 | Retained calibrated experiment → SIDT → OIT → GSIE → EDSPT → YWIR | `ciw identified-design create/inspect/replay`; freshly checked upstream prior, identified point model, candidate observability, future conditional covariance, cost-constrained reduction and separate advisory token decision | ICRH [`identified-budgeted-observation.v1`](https://github.com/giasonpooni/Instrument-Conformance-and-Replay-Harness/blob/main/profiles/identified-budgeted-observation.v1.json); retained original/replay/token-denial fixtures | Parameter uncertainty remains unknown; selection is advisory and cannot dispatch acquisition or admit ESM state. |
 | RCI → FSRT → JSPT | `ciw investigation`, `covariance`, `covariance-replay`; shared investigation, full covariance provenance and declared Jacobian | CIW pinned adapter gate; no dedicated ICRH investigation profile | Connect existing typed covariance to a concrete downstream decision without replacing historical records. |
@@ -63,7 +66,7 @@ keep their native owners and individual ICRH contracts.
 | PPDA/SCR exchange artifact → SET → CIW inspector | `ciw exchange inspect`; unchanged artifacts, byte digests and conformance report | Actual producer integration tests in CIW | Read-only inspection does not dispatch an SCR workload or import native state. |
 | Retained SRA assessment → SRA/JSPT/PLSR | Shared `ciw.schematic-companions.v1`, native local calls and explicit upstream result edge | ICRH `schematic-companions.v1`; scalar derivative/covariance/Lyapunov and binding checks | Local continuous linear surrogate only; no equilibrium or nonlinear region claim. |
 | IFC + declared scalar observation → CSE | Shared `ciw.bim-quantity.v1`, native conditioning, rollback and replayed ledger | ICRH `bim-quantity.v1`; conditioning oracle, ledger/world commitments and held/refused cases | Quantity-only model; surveyed-frame geometry remains separate. |
-| Retained snapshots → PPDA/SCOUT | Shared `ciw.acquired-dataset.v1`, native incremental acquisition, evidence pool and checkpoints | ICRH `acquired-dataset.v1`; lineage/cursor/pool reconstruction and replay bindings | Offline snapshots; calibrated stream conversion and hardware polling remain separate. |
+| Retained snapshots → PPDA/SCOUT | Shared `ciw.acquired-dataset.v1`, native incremental acquisition, evidence pool and checkpoints | ICRH `acquired-dataset.v1`; lineage/cursor/pool reconstruction and replay bindings | Calibrated conversion now uses explicit retained selection; hardware polling remains separate. |
 | Declared geographic context → GSV | `spatial.inspect`, exact source bytes through native GSV provider/WorldStore | ICRH geographic declaration checks; actual CIW WebSocket/provider tests | Source-only CRS84 nodes with declared constant states; no inferred geometry or estimator. |
 
 “Independent harness” means a separately implemented conformance checker. It
@@ -72,6 +75,8 @@ the scientific algorithm. SET's replay receipts retain their declared scope.
 
 The executable sources are [`telemetry.py`](../src/ciw/telemetry.py),
 [`calibrated_window.py`](../src/ciw/calibrated_window.py),
+[`acquired_window.py`](../src/ciw/acquired_window.py),
+[`residual_monitor.py`](../src/ciw/residual_monitor.py),
 [`calibrated_observable.py`](../src/ciw/calibrated_observable.py),
 [`identified_design.py`](../src/ciw/identified_design.py),
 [`investigation.py`](../src/ciw/investigation.py),
@@ -124,7 +129,10 @@ an equipment order nor starts a measurement.
 
 These six rows describe further integration targets. The affine TBRT/MCUR/STFE
 window part of row 1 is delivered through [calibrated windows](CALIBRATED_WINDOW.md);
-its live acquisition and drift consumer remain outstanding. The typed assessment
+the [acquired stream path](ACQUIRED_STREAM.md) now adds exact PPDA record selection
+and native FDIR/OIT diagnostics over retained GSIE innovations. Physical polling,
+cross-window covariance and qualified physical drift diagnosis remain outstanding.
+The typed assessment
 portion of row 2 and native integer heat workload in row 3 are delivered through
 [shared SRA/SCR workloads](DECLARED_WORKLOADS.md), with two ICRH profiles. SRA
 companion execution is now delivered through [integrated modules](INTEGRATED_MODULES.md),

@@ -180,3 +180,33 @@ The existing `backend` role identifies this geometric result within the generic
 enum and does not claim state-estimator semantics. Read-only source
 and result validation is built into CIW, so reopening needs no GTE runtime.
 See [GTE.md](GTE.md) for exact inputs, statuses, covariance meaning and limits.
+
+## Shared acquired-window and residual-monitor operations
+
+These operations use the shared workbench catalog in workspace format 3;
+protocol version remains 1. Bind the eight exact provider checkouts with
+`serve --acquired-stream-stack-root /path/to/providers`. The
+[acquired stream guide](ACQUIRED_STREAM.md) contains the complete declarations,
+pins, runnable client and refusal conditions.
+
+`source.add` accepts kinds `acquired-calibrated-window` and `residual-monitor`
+with their versioned source schemas. `operation.execute` uses
+`ciw.acquired-calibrated-window.v1` with parameters
+`{source_id, upstream_bundle_id}`. The upstream must be a retained
+`acquired-dataset` occurrence. Every selected PPDA observation, record, document
+and first-acquisition snapshot row is bound explicitly. Native calibrated-window
+steps retain their child bundle identity and SET receipt; the outer mapping has
+its own verification scope.
+
+`ciw.residual-monitor.v1` takes `{source_id}`. Its source declares an ordered
+`window_bundle_ids` list of retained calibrated windows, including acquired
+windows. The monitor consumes their exact GSIE innovations and covariance.
+It retains native OIT/FDIR results, unknown cross-window covariance and separate
+reference priors. Replayed windows cannot count as additional observations.
+OIT-held rows retain detection results but do not advance CUSUM. Threshold
+crossings cannot grant statistical alarm authority or unique fault isolation.
+
+Both paths use `bundle.get`, `bundle.replay`, `experiment.inspect` and
+`workbench.changed` in the existing live session. Replay creates fresh execution
+and result occurrences while preserving the selected upstream evidence.
+Inspection and reopening neither execute providers nor admit canonical state.

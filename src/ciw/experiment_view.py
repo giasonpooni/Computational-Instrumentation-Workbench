@@ -43,8 +43,8 @@ def project(record, source, declaration, context, revision):
     add("gsie", "state", "GSIE state", context["state_names"], context["mean"],
         context["units"], context["covariance"], **state_basis)
 
-    if record["kind"] in {"telemetry", "calibrated-window"}:
-        calibrated = record["kind"] == "calibrated-window"
+    if record["kind"] in {"telemetry", "calibrated-window", "acquired-calibrated-window"}:
+        calibrated = record["kind"] in {"calibrated-window", "acquired-calibrated-window"}
         feature = steps["stfe"]["result"]
         numerical = feature["numerical_result"]
         config = numerical["config"]
@@ -60,7 +60,7 @@ def project(record, source, declaration, context, revision):
         add("stfe", "feature", "STFE window mean", [c["name"] for c in components],
             [c["value"] for c in components], [c["unit"] for c in components],
             feature["result_artifact"]["covariance"]["matrix"],
-            window=native["configuration"]["window"], clock_frame=config["clock_basis"],
+            window=native.get("child_window", native)["configuration"]["window"], clock_frame=config["clock_basis"],
             epoch=declaration["epoch"], frame_id=feature["result_artifact"]["covariance"]["frame"]["id"])
         diagnostics = steps["gsie"]["result"]["result_artifact"]["diagnostics"]
         add("gsie", "innovation", "GSIE prior innovation", diagnostics["measurement_variables"],
@@ -135,4 +135,9 @@ def project(record, source, declaration, context, revision):
             "verification": native["verification"], "runtimes": native["runtimes"],
             "authority": {"read_only": True, "numerical_replay": "not_performed_by_inspection",
                           "state_admission": "not_performed"}}
+    if record["kind"] == "acquired-calibrated-window":
+        view["acquisition_binding"] = native["acquisition_binding"]
+        view["native_window_bundle_id"] = native["child_window"]["bundle_digest"]
+        view["native_window_verification"] = native["child_window"]["verification"]
+        view["derived_window_declaration"] = declaration
     return deepcopy(view)

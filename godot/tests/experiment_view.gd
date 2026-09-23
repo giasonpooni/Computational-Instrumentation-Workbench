@@ -43,6 +43,22 @@ func projection(id: String) -> Dictionary:
 			"context": {"frame_id": "fixture"}, "provenance": {"result_id": id}}]}
 
 
+func residual_projection(id: String) -> Dictionary:
+	# UI fixture only: native scientific values are checked in Python.
+	var value := projection(id)
+	value.fusion_context = null
+	value.object_context = {"object_kind": "residual_sequence",
+		"summary": "Declared residual monitor · inter-window covariance unknown · isolation ambiguous",
+		"sensor_fusion": "not_performed", "upstream_bundle_ids": ["window-a", "window-b"]}
+	value.panels = [{"panel_id": "cusum-positive", "title": "FDIR positive CUSUM",
+		"values": [0.5, 2.5], "units": ["1", "1"], "labels": ["1.5 s", "3.5 s"],
+		"covariance": null, "marginal_standard_deviation": null,
+		"context": {"event_times": [1.5, 3.5], "threshold": 2.0,
+			"inter_window_cross_covariance": "unknown", "false_alarm_confidence": "not_declared"},
+		"provenance": {"result_id": id + "-fdir", "execution_id": id + "-execution"}}]
+	return value
+
+
 func _initialize() -> void:
 	_run.call_deferred()
 
@@ -108,6 +124,16 @@ func _run() -> void:
 	numerical.panels[0].marginal_standard_deviation = null
 	view.apply_view(numerical)
 	check("numerical field has no fabricated uncertainty", view._plot.panel.covariance == null and view._summary.text.contains("integer_numerical_field"))
+	view.apply_snapshot(snapshot(6, [bundle("third"), {"bundle_id": "monitor", "kind": "residual-monitor"}]))
+	view.apply_view(residual_projection("monitor"))
+	check("residual monitor preserves event labels and no joint confidence", view._plot.panel.labels == ["1.5 s", "3.5 s"] and view._plot.panel.covariance == null and view._plot.panel.marginal_standard_deviation == null)
+	check("monitor exposes declared threshold and ambiguous isolation", view._numbers.text.contains('"threshold":') and view._plot.panel.context.threshold == 2.0 and view._summary.text.contains("isolation ambiguous") and view._summary.text.contains("fusion: not performed"))
+	view.apply_snapshot(snapshot(7, [{"bundle_id": "monitor", "kind": "residual-monitor"}, {"bundle_id": "monitor-replay", "kind": "residual-monitor"}]))
+	check("monitor replay clears earlier residual provenance while loading", view._plot.panel.is_empty() and view._numbers.text.is_empty())
+	view.apply_view(residual_projection("monitor"))
+	check("earlier monitor response cannot replace selected replay", view.view.is_empty())
+	view.apply_view(residual_projection("monitor-replay"))
+	check("replayed residual values remain tied to fresh result identity", view._plot.panel.values == [0.5, 2.5] and view._plot.panel.provenance.result_id == "monitor-replay-fdir")
 	reader.status_changed.emit("disconnected", "gone")
 	check("disconnect marks retained view stale", view._status.text.begins_with("STALE") and not view.view.is_empty())
 	var replacement := snapshot(0, [])
