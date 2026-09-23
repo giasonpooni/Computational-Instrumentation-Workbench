@@ -29,7 +29,12 @@ UNIT_SPHERE = Sphere(1.0)
 STARTS = (((1.1, 0.3), 0.7), ((0.8, 2.0), 2.1), ((1.9, 4.0), -1.3), ((1.4, 5.5), 0.2), ((0.6, 1.0), 2.9),
           ((2.3, 3.1), -2.4))
 TRACE_LENGTH = 2.0
+TRACE_LEVELS = (1, 2, 3, 4, 5, 6, 7)
 VALENCE5_LIMIT = 4.5 - 1.5 * math.sqrt(5.0)  # 3 / (4 cos^2(pi / 5)) for a regular valence-5 star
+EDGE_GRAPH_FLOOR = math.sqrt(5.0) - 2.0      # 1 / cos(pi / 5) - 1: two hops between rows 72 degrees apart
+# Declared marker geodesic for T043/T044: STARTS[5] has the largest vertex margin of the six on
+# icosphere-3, so it is the best case for a fixed face corridor; corridor_study reports all six.
+MARKER_START = 5
 
 
 def optional_version(name: str) -> str | None:
@@ -69,7 +74,7 @@ def great_circle_errors(start, end_point, length):
             "along_track": float(math.atan2(e @ ahead, e @ smooth)), "length_defect": _angle(x0, e) - length}
 
 
-def sphere_trace_study(levels=(1, 2, 3, 4, 5, 6), starts=STARTS, length=TRACE_LENGTH):
+def sphere_trace_study(levels=TRACE_LEVELS, starts=STARTS, length=TRACE_LENGTH):
     rows = []
     for level in levels:
         mesh = G.icosphere(level)
@@ -103,7 +108,14 @@ def sphere_trace_study(levels=(1, 2, 3, 4, 5, 6), starts=STARTS, length=TRACE_LE
 
 # ---------------------------------------------------------------- cylinder helices
 def cylinder_study(ns=(8, 16, 32, 64, 128), radius=1.0, height=4.0, alpha=0.5, length=3.0, z0=0.5, sector=1):
-    """Prism cylinder helices against the exact mesh development and the smooth helix."""
+    """Prism cylinder helices against the exact mesh development and the smooth helix.
+
+    The endpoint lies on the development at chord i, fraction t, so its azimuth
+    is 2 a i + a + atan((2t - 1) tan a) with a = pi / n. Against the smooth
+    azimuth this gives the exact error R |(L cos(alpha) / R)(a / sin a - 1) +
+    atan(s tan a) - s a|, s = 2t - 1: a development deficit ~ L cos(alpha) a^2 / 6
+    plus a chord-position term bounded by 2 a^3 / (9 sqrt 3) (1 + O(a^2)).
+    """
     rows = []
     leading = length * math.cos(alpha) * math.pi ** 2 / 6.0
     for n in ns:
@@ -130,9 +142,15 @@ def cylinder_study(ns=(8, 16, 32, 64, 128), radius=1.0, height=4.0, alpha=0.5, l
         end = tr.end_point
         dphi = (math.atan2(end[1], end[0]) - phi + math.pi) % (2 * math.pi) - math.pi
         error = math.hypot(radius * dphi, end[2] - (z0 + length * math.sin(alpha)))
+        a = math.pi / n
+        deficit = length * math.cos(alpha) * (a / math.sin(a) - 1)
+        s = 2 * t - 1
+        chord_term = radius * (math.atan(s * math.tan(a)) - s * a)
         rows.append({"n": n, "rings": m + 1, "h": mesh.mean_edge(), "status": tr.status,
                      "development_error": float(np.max(np.abs(end - developed))), "helix_error": error,
-                     "circumference_prediction": length * math.cos(alpha) * (math.pi / (n * math.sin(math.pi / n)) - 1),
+                     "circumference_prediction": deficit, "chord_position_term": chord_term,
+                     "exact_prediction": abs(deficit + chord_term), "chord_fraction": t,
+                     "chord_term_bound": radius * 2 * a ** 3 / (9 * math.sqrt(3)),
                      "scaled_error": error * n * n, "z_error": abs(end[2] - (z0 + length * math.sin(alpha)))})
     return {"radius": radius, "alpha": alpha, "length": length, "leading_constant": leading, "rows": rows}
 
@@ -178,14 +196,18 @@ def distance_study(levels=(1, 2, 3, 4), ks=(1, 3), heat_levels=(1, 2, 3)):
         true = np.arccos(np.clip(mesh.vertices @ mesh.vertices[0], -1, 1))
         others = np.arange(n) != 0
         row = {"level": level, "h": mesh.mean_edge(), "vertices": n}
-        edge = G.edge_distances(mesh, 0)
-        row["edge_max_rel"] = float(np.max(edge[others] / true[others] - 1))
-        row["edge_mean_rel"] = float(np.mean(edge[others] / true[others] - 1))
+        # Signed relative errors can be negative (the inscribed mesh is shorter than the sphere);
+        # the *_max_abs_rel fields are magnitudes for log plots and floors.
+        edge = G.edge_distances(mesh, 0)[others] / true[others] - 1
+        row["edge_max_signed_rel"] = float(np.max(edge))
+        row["edge_max_abs_rel"] = float(np.max(np.abs(edge)))
+        row["edge_mean_signed_rel"] = float(np.mean(edge))
         for k in ks:
             (indptr, indices, weights), _, _ = G.steiner_graph(mesh, k)
-            d = G.dijkstra(indptr, indices, weights, 0)[:n]
-            row[f"steiner{k}_max_rel"] = float(np.max(d[others] / true[others] - 1))
-            row[f"steiner{k}_min_rel"] = float(np.min(d[others] / true[others] - 1))
+            d = G.dijkstra(indptr, indices, weights, 0)[:n][others] / true[others] - 1
+            row[f"steiner{k}_max_signed_rel"] = float(np.max(d))
+            row[f"steiner{k}_min_signed_rel"] = float(np.min(d))
+            row[f"steiner{k}_max_abs_rel"] = float(np.max(np.abs(d)))
         if level in heat_levels:
             heat = G.heat_distance(mesh, 0)
             row["heat_max_abs"] = float(np.max(np.abs(heat - true)))
@@ -263,10 +285,13 @@ def smooth_jacobi(starts=STARTS, length=TRACE_LENGTH, steps=200):
             "max_error": float(max(abs(v - math.sin(length)) for v in values))}
 
 
-def jacobi_study(levels=(2, 3, 4, 5, 6), deltas=(0.1, 0.03, 0.01, 1e-5), starts=STARTS, length=TRACE_LENGTH):
+def jacobi_study(levels=TRACE_LEVELS[1:], deltas=(0.1, 0.03, 0.01, 1e-5), starts=STARTS, length=TRACE_LENGTH):
     """Central finite-difference heading Jacobi field |X+ - X-| / (2 sin delta) from paired traces.
 
     On the smooth unit sphere this estimator equals sin(L) exactly for every delta.
+    ``swept_vertices`` = 2 delta (1 - cos L) V / (4 pi) is the expected number of
+    vertices inside the thin wedge between a pair (a heuristic for uniformly spread
+    vertices); a pair shares its face sequence only when no vertex lies in the wedge.
     """
     reference = smooth_jacobi(starts, length)
     rows = []
@@ -288,6 +313,7 @@ def jacobi_study(levels=(2, 3, 4, 5, 6), deltas=(0.1, 0.03, 0.01, 1e-5), starts=
                     identical += 1
                     flat.append(abs(j - length))
             rows.append({"level": level, "h": mesh.mean_edge(), "delta": delta, "pairs": len(errors),
+                         "swept_vertices": 2 * delta * (1 - math.cos(length)) * len(mesh.vertices) / (4 * math.pi),
                          "refused": sum(s != "completed" for s in statuses),
                          "mean_abs_error": float(np.mean(np.abs(errors))),
                          "max_abs_error": float(np.max(np.abs(errors))),
@@ -296,7 +322,29 @@ def jacobi_study(levels=(2, 3, 4, 5, 6), deltas=(0.1, 0.03, 0.01, 1e-5), starts=
     return {"length": length, "smooth": reference, "flat_value": length, "rows": rows}
 
 
-def curvature_study(levels=(1, 2, 3, 4, 5, 6), torus_sizes=(8, 16, 32, 64)):
+def icosahedral_mirror_classes(vertices, tolerance=1e-12):
+    """Masks of unit-sphere vertices on the projected base-icosahedron edges and on the rest of its mirror planes.
+
+    The 15 mirror planes each contain two opposite base edges; inside a base face
+    they run along its medians. Midpoint subdivision keeps vertices exactly on
+    these great circles (up to rounding), so a small absolute tolerance suffices.
+    """
+    base, faces = G.icosahedron()
+    arcs = sorted({tuple(sorted((int(f[k]), int(f[(k + 1) % 3])))) for f in faces for k in range(3)})
+    on_edge = np.zeros(len(vertices), dtype=bool)
+    on_mirror = np.zeros(len(vertices), dtype=bool)
+    for a, b in arcs:
+        pa, pb = base[a], base[b]
+        normal = np.cross(pa, pb)
+        normal /= np.linalg.norm(normal)
+        on = np.abs(vertices @ normal) <= tolerance
+        span = np.arccos(np.clip(vertices @ pa, -1, 1)) + np.arccos(np.clip(vertices @ pb, -1, 1))
+        on_mirror |= on
+        on_edge |= on & (np.abs(span - math.acos(float(pa @ pb))) <= 1e-9)
+    return on_edge, on_mirror & ~on_edge
+
+
+def curvature_study(levels=TRACE_LEVELS, torus_sizes=(8, 16, 32, 64)):
     sphere_rows = []
     for level in levels:
         mesh = G.icosphere(level)
@@ -305,12 +353,21 @@ def curvature_study(levels=(1, 2, 3, 4, 5, 6), torus_sizes=(8, 16, 32, 64)):
         voronoi = defect / G.mixed_voronoi_area(mesh)
         valence = np.bincount(mesh.faces.ravel())
         five, six = valence == 5, valence == 6
+        edge_arc, median = icosahedral_mirror_classes(mesh.vertices)
+        off = six & ~edge_arc & ~median
+        error = np.abs(k - 1)
+
+        def worst(mask, values=error):
+            return float(np.max(values[mask])) if mask.any() else None
         sphere_rows.append({
             "level": level, "h": mesh.mean_edge(), "vertices": len(mesh.vertices),
             "gauss_bonnet_residual": float(defect.sum() - 4 * math.pi),
             "valence5_value": float(np.mean(k[five])), "valence5_spread": float(np.ptp(k[five])),
-            "valence6_max_error": float(np.max(np.abs(k[six] - 1))) if six.any() else None,
-            "rms_error": float(np.sqrt(np.mean((k - 1) ** 2))), "max_error": float(np.max(np.abs(k - 1))),
+            "valence6_max_error": worst(six),
+            "valence6_base_edge_max_error": worst(six & edge_arc), "valence6_median_max_error": worst(six & median),
+            "valence6_off_mirror_max_error": worst(off),
+            "voronoi_valence6_mirror_max_error": worst(six & (edge_arc | median), np.abs(voronoi - 1)),
+            "rms_error": float(np.sqrt(np.mean((k - 1) ** 2))), "max_error": float(np.max(error)),
             "voronoi_valence5_error": float(np.max(np.abs(voronoi[five] - 1))),
             "voronoi_max_error": float(np.max(np.abs(voronoi - 1)))})
     torus_rows = []
@@ -513,6 +570,14 @@ def refusal_study():
     open_plane = G.plane_mesh(3, 3)
     cases.append({"case": "curvature-at-boundary-vertex", "stage": "query", "expected": "boundary_vertex_curvature",
                   "observed": _code(lambda: G.angle_defect_curvature(open_plane, 0))})
+    small = G.icosphere(1)
+    cases.append({"case": "heat-method-above-size-limit", "stage": "query", "expected": "mesh_too_large",
+                  "observed": _code(lambda: G.heat_distance(small, 0, max_vertices=12))})
+    # Faces 0 and 2 of the 4 x 4 grid share no edge, so they cannot be unfolded as a strip.
+    cases.append({"case": "strip-faces-not-adjacent", "stage": "query", "expected": "invalid_strip",
+                  "observed": _code(lambda: G.strip_unfold_distance(
+                      plane.vertices[None], [tuple(plane.faces[0]), tuple(plane.faces[2])],
+                      np.full(3, 1 / 3), np.full(3, 1 / 3)))})
 
     controls = []
     for mesh, closed in ((G.icosphere(2), True), (G.cylinder_mesh(12, 6), False),
@@ -548,21 +613,50 @@ def _fd_jacobian(function, base, tau=1e-6):
     return (values[0::2] - values[1::2]) / (2 * tau)
 
 
-def marker_strip(mesh, starts=STARTS, length=1.0):
-    """The traced strip with the largest vertex margin: markers A (start) and B (end) attached barycentrically."""
-    best = None
-    for index, (u0, heading) in enumerate(starts):
-        s = sphere_start(mesh, u0, heading)
-        tr = G.trace(mesh, s["face"], s["point"], s["direction"], length)
-        if tr.completed and (best is None or tr.min_vertex_margin > best[1].min_vertex_margin):
-            best = (index, tr, s)
-    index, tr, s = best
+def marker_strip(mesh, index=MARKER_START, length=1.0, starts=STARTS):
+    """Markers A (start) and B (end) of a declared traced geodesic, attached barycentrically to their faces."""
+    u0, heading = starts[index]
+    s = sphere_start(mesh, u0, heading)
+    tr = G.trace(mesh, s["face"], s["point"], s["direction"], length)
+    if not tr.completed:
+        raise G.MeshRefusal(tr.status, f"The declared marker geodesic {index} did not complete: {tr.message}")
     ids = np.array(sorted(set(mesh.faces[tr.faces].ravel().tolist())))
     local = {int(v): i for i, v in enumerate(ids)}
     strip = [tuple(local[int(v)] for v in mesh.faces[f]) for f in tr.faces]
     return {"start_index": index, "ids": ids, "strip": strip, "length": tr.length,
             "margin": float(tr.min_vertex_margin), "faces": len(tr.faces),
             "a": mesh.barycentric(tr.faces[0], s["point"]), "b": mesh.barycentric(tr.end_face, tr.end_point)}
+
+
+def strip_distance(strip):
+    """Batched fixed-corridor marker distance and corridor margin for a marker strip."""
+    def distance(positions):
+        return G.strip_unfold_distance(positions, strip["strip"], strip["a"], strip["b"])[0]
+
+    def margin(positions):
+        return G.strip_unfold_distance(positions, strip["strip"], strip["a"], strip["b"])[1]
+    return distance, margin
+
+
+def gradient_split(strip, base, gradient):
+    """|grad d| split by direction (normal / tangential to the unit sphere) and by vertex group.
+
+    Marker vertices are those of the first and last strip faces (the barycentric
+    markers move with them); the others are interior strip vertices.
+    """
+    gradient = gradient.reshape(base.shape)
+    normal = base / np.linalg.norm(base, axis=1)[:, None]
+    along = np.einsum("ij,ij->i", gradient, normal)
+    tangential = gradient - along[:, None] * normal
+    marker = np.zeros(len(base), dtype=bool)
+    marker[sorted(set(strip["strip"][0]) | set(strip["strip"][-1]))] = True
+
+    def norm(values):
+        return float(np.sqrt(np.sum(values ** 2)))
+    return {"total": norm(gradient), "normal": norm(along), "tangential": norm(tangential),
+            "marker": norm(gradient[marker]), "interior": norm(gradient[~marker]),
+            "interior_normal": norm(along[~marker]), "marker_vertices": int(marker.sum()),
+            "interior_vertices": int((~marker).sum())}
 
 
 def far_valence6_vertex(mesh) -> int:
@@ -582,7 +676,10 @@ def _normal_observable(ring_faces, reference):
     def tangential(positions):
         n = G.batch_vertex_normal(positions, ring_faces)
         return np.stack([n @ t1, n @ t2], axis=1)
-    return tangential
+
+    def alignment(positions):
+        return G.batch_vertex_normal(positions, ring_faces) @ reference
+    return tangential, alignment
 
 
 def propagate(mesh, observable, sigmas, samples, seed):
@@ -609,22 +706,28 @@ def propagate(mesh, observable, sigmas, samples, seed):
                "bias": bias, "linear_sd": math.sqrt(linear)}
         if "validity" in observable:
             row["invalid_fraction"] = float(np.mean(observable["validity"](base[None] + noise) < 0))
+        if "alignment" in observable:
+            # A tangential-component observable cannot see a normal that flipped sign; count flips directly.
+            dots = observable["alignment"](base[None] + noise)
+            row["min_normal_dot"] = float(np.min(dots))
+            row["flipped_normals"] = int(np.sum(dots < 0))
         rows.append(row)
     return {"observable": observable["name"], "value": float(np.ravel(value0)[0]) if kind != "vector" else 0.0,
             "gradient_norm": float(np.sqrt(np.sum(jac ** 2))), "rows": rows}
 
 
-def observables(mesh, starts=STARTS, strip_length=1.0):
-    strip = marker_strip(mesh, starts, strip_length)
-    result = [{"name": "marker geodesic distance", "kind": "scalar", "ids": strip["ids"],
-               "function": lambda p: G.strip_unfold_distance(p, strip["strip"], strip["a"], strip["b"])[0],
-               "validity": lambda p: G.strip_unfold_distance(p, strip["strip"], strip["a"], strip["b"])[1]}]
+def observables(mesh, index=MARKER_START, strip_length=1.0):
+    strip = marker_strip(mesh, index, strip_length)
+    distance, margin = strip_distance(strip)
+    result = [{"name": "marker geodesic distance", "kind": "scalar", "ids": strip["ids"], "function": distance,
+               "validity": margin}]
     far = far_valence6_vertex(mesh)
     for label, vertex in (("valence-5 vertex 0", 0), ("valence-6 vertex far from valence 5", far)):
         ids, ring = G.one_ring(mesh, vertex)
         normal0 = G.batch_vertex_normal(mesh.vertices[ids][None], ring)[0]
+        function, alignment = _normal_observable(ring, normal0)
         result.append({"name": f"vertex normal at {label}", "kind": "vector", "ids": ids,
-                       "function": _normal_observable(ring, normal0), "vertex": vertex})
+                       "function": function, "alignment": alignment, "vertex": vertex})
         result.append({"name": f"angle-defect curvature at {label}", "kind": "scalar", "ids": ids,
                        "function": (lambda r: (lambda p: G.batch_angle_defect_curvature(p, 0, r)))(ring),
                        "vertex": vertex})
@@ -641,20 +744,50 @@ def uncertainty_study(level=3, sigmas=(1e-4, 1e-3, 3e-3, 1e-2), samples=4000, se
             "observables": rows}
 
 
-def scaling_study(levels=(2, 3, 4, 5)):
-    """Linearized sensitivity |d observable / d vertices| against mean edge length."""
+def corridor_study(level=3, sigmas=(1e-4, 1e-3, 3e-3, 1e-2), samples=4000, length=1.0, seed=SEED + 30):
+    """Fraction of noisy samples whose unfolded marker segment leaves its corridor, for all six declared strips."""
+    mesh = G.icosphere(level)
+    rng = np.random.Generator(np.random.PCG64(seed))
+    rows = []
+    for index in range(len(STARTS)):
+        strip = marker_strip(mesh, index, length)
+        _, margin = strip_distance(strip)
+        base = mesh.vertices[strip["ids"]]
+        fractions = []
+        for sigma in sigmas:
+            noise = rng.standard_normal((samples,) + base.shape) * sigma
+            fractions.append(float(np.mean(margin(base[None] + noise) < 0)))
+        rows.append({"start_index": index, "vertex_margin": strip["margin"],
+                     "margin_times_h": strip["margin"] * mesh.mean_edge(), "faces": strip["faces"],
+                     "left_fraction": fractions})
+    return {"level": level, "h": mesh.mean_edge(), "sigmas": list(sigmas), "samples": samples, "rows": rows}
+
+
+def scaling_study(levels=(2, 3, 4, 5), index=MARKER_START):
+    """Linearized sensitivity |d observable / d vertices| against mean edge length.
+
+    The marker distance follows one declared geodesic at every level, and its
+    gradient is split into marker-face and interior strip vertices.
+    """
     rows = []
     for level in levels:
         mesh = G.icosphere(level)
-        _, items = observables(mesh)
-        row = {"level": level, "h": mesh.mean_edge()}
+        strip, items = observables(mesh, index)
+        row = {"level": level, "h": mesh.mean_edge(), "strip_vertex_margin": strip["margin"]}
         for item in items:
             base = mesh.vertices[item["ids"]]
-            row[item["name"]] = float(np.sqrt(np.sum(_fd_jacobian(item["function"], base) ** 2)))
+            jac = _fd_jacobian(item["function"], base)
+            row[item["name"]] = float(np.sqrt(np.sum(jac ** 2)))
+            if item["name"] == "marker geodesic distance":
+                split = gradient_split(strip, base, jac)
+                row["marker-face part"], row["interior part"] = split["marker"], split["interior"]
         rows.append(row)
-    names = [k for k in rows[0] if k not in ("level", "h")]
-    slopes = {name: fitted_order([r["h"] for r in rows], [r[name] for r in rows]) for name in names}
-    return {"rows": rows, "slopes": slopes}
+    names = [k for k in rows[0] if k not in ("level", "h", "strip_vertex_margin")]
+    hs = [r["h"] for r in rows]
+    slopes = {name: fitted_order(hs, [r[name] for r in rows]) for name in names}
+    local = {name: [math.log(a[name] / b[name]) / math.log(a["h"] / b["h"]) for a, b in zip(rows, rows[1:])]
+             for name in names}
+    return {"start_index": index, "rows": rows, "slopes": slopes, "local_slopes": local}
 
 
 def refinement_noise_study(levels=(2, 3, 4, 5), sigma=1e-3, samples=2000, seed=SEED + 50):
@@ -677,20 +810,22 @@ def refinement_noise_study(levels=(2, 3, 4, 5), sigma=1e-3, samples=2000, seed=S
 
 # ---------------------------------------------------------------- geometry versus sensor variance
 def variance_split_study(level=3, geometry_sigmas=(1e-4, 1e-3), sensor_sigmas=(1e-4, 5e-4, 2e-3), outer=1000,
-                         inner=16, fresh=20000, repeats=(1, 4, 16, 64), repeat_case=(1e-3, 2e-3), seed=SEED + 100):
-    """Residual r = y - d(V_nominal), y = d(V_nominal + eta) + eps: nested and fresh Monte Carlo."""
+                         inner=16, fresh=20000, repeats=(1, 4, 16, 64), repeat_case=(1e-3, 2e-3),
+                         normal_case=(1e-3, 5e-4), seed=SEED + 100):
+    """Residual r = y - d(V_nominal), y = d(V_nominal + eta) + eps: nested and fresh Monte Carlo.
+
+    eta is isotropic per vertex coordinate unless stated; the normal-only case
+    moves each vertex along its unit-sphere normal (shape noise without the
+    tangential re-parameterisation that drags barycentric markers).
+    """
     mesh = G.icosphere(level)
     strip = marker_strip(mesh)
     base = mesh.vertices[strip["ids"]]
-
-    def distance(positions):
-        return G.strip_unfold_distance(positions, strip["strip"], strip["a"], strip["b"])[0]
-
-    def corridor(positions):
-        return G.strip_unfold_distance(positions, strip["strip"], strip["a"], strip["b"])[1]
-
+    distance, corridor = strip_distance(strip)
     nominal = float(distance(base[None])[0])
-    gain = float(np.sqrt(np.sum(_fd_jacobian(distance, base) ** 2)))
+    jac = _fd_jacobian(distance, base)
+    split = gradient_split(strip, base, jac)
+    gain = split["total"]
     rng = np.random.Generator(np.random.PCG64(seed))
     scenarios = []
     for sigma_g in geometry_sigmas:
@@ -728,6 +863,18 @@ def variance_split_study(level=3, geometry_sigmas=(1e-4, 1e-3), sensor_sigmas=(1
         variance = float(np.var(built + mean_sensor, ddof=1))
         averaging.append({"repeats": count, "variance": variance, "predicted": predicted, "ratio": variance / predicted,
                           "geometry_share": (gain * sigma_g) ** 2 / predicted})
-    return {"level": level, "nominal_distance": nominal, "gain": gain, "outer": outer, "inner": inner, "fresh": fresh,
+    sigma_g, sigma_s = normal_case
+    normals = base / np.linalg.norm(base, axis=1)[:, None]
+    shape = distance(base[None] + rng.standard_normal((fresh, len(base)))[:, :, None] * sigma_g * normals) - nominal
+    readings = shape + rng.standard_normal(fresh) * sigma_s
+    geometry_normal = (split["normal"] * sigma_g) ** 2
+    normal_only = {"sigma_geometry": sigma_g, "sigma_sensor": sigma_s, "gain": split["normal"],
+                   "geometry_variance_linear": geometry_normal, "geometry_variance_mc": float(np.var(shape, ddof=1)),
+                   "total_mc": float(np.var(readings, ddof=1)), "predicted_total": geometry_normal + sigma_s ** 2,
+                   "geometry_share": geometry_normal / (geometry_normal + sigma_s ** 2),
+                   "crossover_sensor_sigma": split["normal"] * sigma_g}
+    return {"level": level, "nominal_distance": nominal, "gain": gain, "gain_split": split, "outer": outer,
+            "inner": inner, "fresh": fresh, "strip_start_index": strip["start_index"],
             "strip_vertex_margin": strip["margin"], "scenarios": scenarios,
-            "averaging": {"sigma_geometry": sigma_g, "sigma_sensor": sigma_s, "rows": averaging}}
+            "averaging": {"sigma_geometry": repeat_case[0], "sigma_sensor": repeat_case[1], "rows": averaging},
+            "normal_only": normal_only}

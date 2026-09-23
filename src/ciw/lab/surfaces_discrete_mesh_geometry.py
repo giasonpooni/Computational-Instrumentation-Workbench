@@ -5,9 +5,9 @@ prism cylinder, Schwarz lantern, planar grid, torus grid), a validator that
 names every structural defect it refuses, straightest geodesics traced by
 unfolding across edges (Polthier-Schmies: straight inside a face, equal angles
 on both sides of an edge), graph distances on the edge graph and on a
-Steiner-point graph, a dense heat-method distance for small meshes,
-angle-defect Gaussian curvature, vertex normals and the planar unfolding of a
-face strip.
+Steiner-point graph, a direct heat-method distance for small meshes,
+angle-defect Gaussian curvature, batched one-ring vertex normals and the
+planar unfolding of a face strip.
 
 Declared rules: a traced geodesic that reaches a vertex (within a relative
 edge-parameter tolerance) is refused with ``vertex_hit`` rather than continued
@@ -38,7 +38,7 @@ MESH_CODES = ("invalid_shape", "empty_mesh", "nonfinite_vertex", "invalid_face_i
               "unreferenced_vertex", "disconnected_components", "open_boundary")
 TRACE_CODES = ("point_outside_face", "invalid_direction", "boundary_reached", "vertex_hit",
                "step_budget_exceeded")
-QUERY_CODES = ("unreachable_target", "boundary_vertex_curvature")
+QUERY_CODES = ("unreachable_target", "boundary_vertex_curvature", "mesh_too_large", "invalid_strip")
 
 
 class MeshRefusal(ValueError):
@@ -371,7 +371,8 @@ def uv_sphere(n_lat: int, n_lon: int, radius: float = 1.0, twist: float = 0.0) -
             faces.append([ring(j, i), ring(j + 1, i), ring(j + 1, i + 1)])
             faces.append([ring(j, i), ring(j + 1, i + 1), ring(j, i + 1)])
     faces += [[south, ring(n_lat - 1, i + 1), ring(n_lat - 1, i)] for i in range(n_lon)]
-    return TriMesh(radius * vertices, np.array(faces), f"uv-sphere-{n_lat}x{n_lon}",
+    name = f"uv-sphere-{n_lat}x{n_lon}" + (f"-t{twist:g}" if twist else "")
+    return TriMesh(radius * vertices, np.array(faces), name,
                    {"n_lat": n_lat, "n_lon": n_lon, "twist": twist, "radius": radius})
 
 
@@ -428,18 +429,6 @@ def torus_mesh(n_phi: int, n_theta: int, major: float = 2.0, minor: float = 1.0)
             faces += [[v(i, j), v(i + 1, j), v(i + 1, j + 1)], [v(i, j), v(i + 1, j + 1), v(i, j + 1)]]
     return TriMesh(vertices, np.array(faces), f"torus-{n_phi}x{n_theta}",
                    {"n_phi": n_phi, "n_theta": n_theta, "major": major, "minor": minor})
-
-
-def jittered(mesh: TriMesh, amplitude: float, seed: int, radius: float = 1.0) -> TriMesh:
-    """Tangential Gaussian jitter of a sphere mesh (std amplitude * mean edge), re-projected to the sphere."""
-    rng = np.random.Generator(np.random.PCG64(seed))
-    x = mesh.vertices / radius
-    noise = rng.standard_normal(x.shape) * amplitude * mesh.mean_edge() / radius
-    noise -= np.einsum("ij,ij->i", noise, x)[:, None] * x
-    moved = x + noise
-    moved = radius * moved / np.linalg.norm(moved, axis=1)[:, None]
-    return TriMesh.build(moved, mesh.faces, f"{mesh.name}-jitter{amplitude:g}-s{seed}",
-                         params={**mesh.params, "jitter": amplitude, "seed": seed})
 
 
 # ---------------------------------------------------------------- tracing
@@ -638,15 +627,6 @@ def steiner_graph(mesh: TriMesh, k: int, extra=()):
     return _csr(len(nodes), src[keep], dst[keep], weights[keep]), extra_ids, n_edges * k
 
 
-def point_distance(mesh: TriMesh, k: int, start, end) -> float:
-    """Steiner-graph distance between two (face, point) locations; refuses unreachable targets."""
-    (indptr, indices, weights), (s, t), _ = steiner_graph(mesh, k, extra=(start, end))
-    value = float(dijkstra(indptr, indices, weights, s, t)[t])
-    if not math.isfinite(value):
-        raise MeshRefusal("unreachable_target", "The target lies in another component of the mesh")
-    return value
-
-
 def vertex_distance(mesh: TriMesh, source: int, target: int) -> float:
     value = float(edge_distances(mesh, source)[target])
     if not math.isfinite(value):
@@ -748,7 +728,8 @@ def heat_distance(mesh: TriMesh, source: int, t_factor: float = 1.0, max_vertice
     """
     n = len(mesh.vertices)
     if n > max_vertices:
-        raise MeshRefusal("invalid_shape", f"Dense heat method limited to {max_vertices} vertices, mesh has {n}")
+        raise MeshRefusal("mesh_too_large", f"The direct heat method is limited to {max_vertices} vertices, "
+                          f"the mesh has {n}")
     rows, cols, vals = cotangent_laplacian(mesh)
     lap = np.zeros((n, n))
     np.add.at(lap, (rows, cols), vals)
@@ -818,15 +799,6 @@ def mixed_voronoi_area(mesh: TriMesh) -> np.ndarray:
     return np.bincount(mesh.faces.ravel(), weights=contribution.ravel(), minlength=len(mesh.vertices))
 
 
-def vertex_normals(mesh: TriMesh) -> np.ndarray:
-    """Area-weighted vertex normals (sum of face cross products)."""
-    weighted = mesh.face_normals * (2 * mesh.face_areas)[:, None]
-    normals = np.zeros_like(mesh.vertices)
-    for k in range(3):
-        np.add.at(normals, mesh.faces[:, k], weighted)
-    return normals / np.linalg.norm(normals, axis=1)[:, None]
-
-
 # ---------------------------------------------------------------- batched local functions
 def batch_angle_defect_curvature(positions, center_index, ring_faces):
     """Angle-defect curvature at one vertex for a batch of one-ring positions (N, r, 3).
@@ -886,7 +858,7 @@ def strip_unfold_distance(positions, strip, start_bary, end_bary):
     for previous, current in zip(strip[:-1], strip[1:]):
         common = [v for v in current if v in previous]
         if len(common) != 2:
-            raise MeshRefusal("invalid_shape", "Consecutive strip faces must share exactly one edge")
+            raise MeshRefusal("invalid_strip", "Consecutive strip faces must share exactly one edge")
         old = [v for v in previous if v not in common][0]
         new = [v for v in current if v not in common][0]
         prev_layer = layers[-1]
