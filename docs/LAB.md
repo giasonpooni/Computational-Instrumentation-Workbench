@@ -128,6 +128,10 @@ ciw lab mcp --retained lab --workdir results/lab-mcp --provider csg=/trusted/ref
 | `ciw_lab_classify_workspace` | Labels results in a saved CIW workspace |
 | `ciw_lab_explain_labels` | The label definitions and the boundary table |
 
+[`lab/mcp_evaluation.xml`](lab/mcp_evaluation.xml) holds ten read-only
+evaluation questions with stable answers; `tests/test_lab_mcp.py` checks each
+answer through the tools themselves.
+
 No tool accepts a label, finding, report or physical result: an assistant can
 design, run and read experiments, but evidence status comes only from the
 validator, and retained reports are never modified through the adapter.

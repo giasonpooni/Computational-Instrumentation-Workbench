@@ -1,0 +1,44 @@
+<evaluation>
+  <!-- Read-only questions for ciw_lab_mcp. Answers come from the packaged queue
+       definition and the label specification, so they do not change between runs. -->
+  <qa_pair>
+    <question>In the queue's sensor-fusion work, one task checks that residuals are normalized using the estimator's own uncertainty rather than the raw sensor uncertainty. What is its task identifier?</question>
+    <answer>T066</answer>
+  </qa_pair>
+  <qa_pair>
+    <question>How many tasks belong to the queue section about CIW exchange artifacts and provenance?</question>
+    <answer>24</answer>
+  </qa_pair>
+  <qa_pair>
+    <question>Which task asks for a reproducible Rust build pinned by its lockfile? Answer as section-key:task-id.</question>
+    <answer>exchange-provenance:T099</answer>
+  </qa_pair>
+  <qa_pair>
+    <question>How many queue tasks mention field-programmable gate arrays by their usual abbreviation in the title?</question>
+    <answer>2</answer>
+  </qa_pair>
+  <qa_pair>
+    <question>According to the server's own label definitions, which evidence label requires agreement between two implementations of different origin?</question>
+    <answer>independently_verified</answer>
+  </qa_pair>
+  <qa_pair>
+    <question>What is the identifier of the final task in the section on flat tori and topology?</question>
+    <answer>T032</answer>
+  </qa_pair>
+  <qa_pair>
+    <question>Which task immediately follows the one about following straight-line paths across identified polygon edges?</question>
+    <answer>T029</answer>
+  </qa_pair>
+  <qa_pair>
+    <question>In the server's table of what computation can and cannot establish alone, what is paired with GPU/CPU agreement?</question>
+    <answer>Industrial readiness</answer>
+  </qa_pair>
+  <qa_pair>
+    <question>How many tasks in the energy section mention the graphics processor (by the abbreviation GPU or the RTX model name) in their titles?</question>
+    <answer>4</answer>
+  </qa_pair>
+  <qa_pair>
+    <question>Three queue tasks explicitly mention counterexamples in their titles. What is the identifier of the one outside the geometry sections?</question>
+    <answer>T157</answer>
+  </qa_pair>
+</evaluation>

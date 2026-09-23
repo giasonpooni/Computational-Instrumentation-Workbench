@@ -87,3 +87,34 @@ def test_stdio_entry_point_serves_the_queue(tmp_path):
             return names, json.loads(result.content[0].text)
     names, listing = asyncio.run(go())
     assert names == EXPECTED and listing["total"] == 168 and listing["has_more"] is True
+
+
+def test_evaluation_answers_hold_through_the_tools(tmp_path):
+    import xml.etree.ElementTree as ET
+    from pathlib import Path
+
+    pairs = ET.parse(Path(__file__).resolve().parents[1] / "docs" / "lab" / "mcp_evaluation.xml").getroot()
+    answers = [pair.find("answer").text for pair in pairs.iter("qa_pair")]
+    server = build_server(None, tmp_path / "work")
+    tasks = []
+    for offset in (0, 50, 100, 150):
+        error, text = _call(server, "ciw_lab_list_tasks", {"offset": offset, "limit": 50, "response_format": "json"})
+        assert not error
+        tasks += json.loads(text)["items"]
+    assert len(tasks) == 168
+    titles = {t["task_id"]: t for t in tasks}
+    _, labels = _call(server, "ciw_lab_explain_labels")
+    derived = [
+        next(t["task_id"] for t in tasks if "filter covariance" in t["title"]),
+        str(sum(t["section"] == "exchange-provenance" for t in tasks)),
+        next(f"{t['section']}:{t['task_id']}" for t in tasks if "cargo build --locked" in t["title"]),
+        str(sum("FPGA" in t["title"] for t in tasks)),
+        "independently_verified" if "``independently_verified``\n    Agreement between two computations whose implementations have distinct" in labels else "?",
+        [t["task_id"] for t in tasks if t["section"] == "flat-torus-topology"][-1],
+        "T%03d" % (int(next(t["task_id"] for t in tasks if "glued edges" in t["title"])[1:]) + 1),
+        "Industrial readiness" if "| GPU/CPU agreement | Industrial readiness |" in labels else "?",
+        str(sum(t["section"] == "energy-gpu" and ("GPU" in t["title"] or "RTX" in t["title"]) for t in tasks)),
+        next(t["task_id"] for t in tasks if "counterexample" in t["title"].lower()
+             and t["section"] not in ("geodesic-jacobi", "flat-torus-topology")),
+    ]
+    assert derived == answers and titles["T029"]["title"].startswith("Detect cone")
