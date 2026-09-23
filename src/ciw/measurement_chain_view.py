@@ -42,7 +42,7 @@ def project(record, source, declaration, revision):
         "label": source["label"], "source_id": source["source_id"], "evidence_id": source["evidence_id"], "upstream_bundle_id": None,
         "replay_source_bundle_ids": [r["source_bundle_digest"] for r in bundle.get("replay_receipts", [])],
         "experiment_id": declaration["experiment_id"], "fusion_context": None,
-        "object_context": {"kind": "measurement-chain-testbed", "summary": "RCI calibration, FSRT snapshot and JSPT declared covariance map",
+        "object_context": {"object_kind": "measurement-chain-testbed", "summary": "RCI calibration, FSRT snapshot and JSPT declared covariance map",
             "scope": declaration["configuration"], "diagnostics": fsrt["data"]["diagnostics"], "native_run_id": run["run_id"],
             "native_evidence_id": run["evidence_id"], "native_result_ids": [r["result_id"] for r in workspace["results"]]},
         "panels": panels, "graph": {"nodes": nodes}, "raw_observations": declaration["investigation"]["sensors"],

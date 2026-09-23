@@ -105,6 +105,7 @@ def test_one_catalog_resolves_all_retained_occurrences_and_native_views(retained
         view = retained["result"]["views"][kind]
         assert view["kind"] == kind
         assert view["fusion_context"] is None
+        assert isinstance(view["object_context"]["object_kind"], str)
         assert view["authority"]["read_only"] is True
         assert view["authority"]["state_admission"] == "not_performed"
         for step in bundle["steps"]:

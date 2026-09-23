@@ -138,6 +138,9 @@ without waiting for heartbeat, unchanged oscillator behavior, selection/reply
 races, explicit following, replay separation and stale/disconnect behavior.
 `godot/tests/capture_view.gd` can capture a running retained experiment with a
 graphics driver for visual inspection.
+`godot --headless --path godot --script res://tests/retained_views.gd -- view.json`
+checks every panel of actual `experiment.inspect` projections, including the
+required typed context used by the desktop. Multiple projection paths are accepted.
 
 This is event-driven visualization of **committed bounded experiments**, not
 continuous physical acquisition. No cross-bundle averaging, uncertainty reduction,

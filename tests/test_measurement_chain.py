@@ -116,7 +116,7 @@ def test_view_uses_native_covariances_without_gsie_state(original, declared):
     source = {"source_id": "source:measurement", "evidence_id": original["source"]["evidence"][0]["artifact_ref"], "label": "Declared measurement chain"}
     view = project(record, source, declared, 1)
     assert view["fusion_context"] is None
-    assert view["object_context"]["kind"] == "measurement-chain-testbed"
+    assert view["object_context"]["object_kind"] == "measurement-chain-testbed"
     panel = next(p for p in view["panels"] if p["panel_id"] == "posterior")
     assert panel["covariance"] == original["steps"][0]["result"]["data"]["native_workspace"]["results"][0]["data"]["unprojected_estimate"]["covariance"]
     panel["covariance"][0][0] = -999
