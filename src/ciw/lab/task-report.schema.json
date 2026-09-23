@@ -132,7 +132,7 @@
    "required": ["reference_kind", "reference", "passed"],
    "properties": {
     "reference_kind": {"enum": ["analytic", "high_precision", "invariant", "self_convergence",
-                                "exact_arithmetic", "refusal"]},
+                                "exact_arithmetic", "refusal", "cross_implementation"]},
     "reference": {"type": "string", "minLength": 1},
     "observed": true,
     "tolerance": {"type": "number"},

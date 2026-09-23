@@ -158,3 +158,37 @@ def test_regression_comparison_flags_unretained_tasks_and_changed_findings(tmp_p
     assert any("finding claims differ" in p and "extra" in p for p in problems)
     assert any("finding count 1 -> 2" in p for p in problems)
     assert runner.compare(tmp_path / "empty", tmp_path / "new")["passed"]
+
+
+def test_repository_root_honours_the_clean_room_override(tmp_path, monkeypatch):
+    monkeypatch.setenv("CIW_LAB_REPOSITORY_ROOT", str(tmp_path))
+    assert runner.repository_path("examples", "x.json") == tmp_path / "examples" / "x.json"
+    monkeypatch.delenv("CIW_LAB_REPOSITORY_ROOT")
+    root = runner.repository_root()
+    assert root is None or (root / "examples").is_dir()
+
+
+def test_blocked_plan_can_record_unestablished_claims(tmp_path):
+    from ciw.lab.registry import Implementation
+
+    def run(ctx):
+        raise AssertionError("a blocked task must not run")
+    run.plan = {"hypothesis": "h", "experiment": "measure on hardware",
+                "findings": [finding("GPU energy per batch", "physical", None, {})]}
+    item = {t["id"]: t for t in load_queue()["tasks"]}["T116"]
+    built = runner.run_task(item, Implementation("T116", run, requires=("hardware:no-such-device",)),
+                            runner.Context(tmp_path), {})
+    assert built["state"] == "blocked" and built["findings"][0]["evidence_status"] == "not_established"
+
+
+def test_cross_implementation_agreement_is_verified_not_independent():
+    check = dict(CHECK, reference_kind="cross_implementation", reference="ciw Rust kernel vs ciw Python")
+    assert supported_label({"checks": [check]}, "numerical") == "numerically_verified"
+
+
+def test_section_implementations_loads_one_section():
+    from ciw.lab.registry import section_implementations
+    loaded = section_implementations("research-portfolio")
+    assert set(loaded) == {f"T{n}" for n in range(155, 169)}
+    with pytest.raises(ValueError, match="Unknown lab section"):
+        section_implementations("no-such-section")

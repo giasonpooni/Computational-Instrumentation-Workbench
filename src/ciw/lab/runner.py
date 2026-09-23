@@ -12,6 +12,7 @@ import hashlib
 import importlib.util
 import json
 import math
+import os
 from pathlib import Path
 import platform
 import shutil
@@ -35,6 +36,26 @@ MAX_ARTIFACT_BYTES = 2 * 1024 * 1024
 
 def dumps(value) -> str:
     return json.dumps(value, indent=1, sort_keys=True, ensure_ascii=False, allow_nan=False) + "\n"
+
+
+def repository_root() -> Path | None:
+    """Directory holding the repository's ``examples/`` and ``tests/`` for tasks that read them.
+
+    ``CIW_LAB_REPOSITORY_ROOT`` wins (the clean-room reproduction points it at
+    copies); otherwise a source checkout around the package is used. Returns
+    None in an installed package without either, and such tasks report blocked.
+    """
+    declared = os.environ.get("CIW_LAB_REPOSITORY_ROOT")
+    if declared:
+        return Path(declared)
+    candidate = PACKAGE_ROOT.parents[1]
+    return candidate if (candidate / "examples").is_dir() else None
+
+
+def repository_path(*parts: str) -> Path | None:
+    """A path under :func:`repository_root`, or None when no repository files are reachable."""
+    root = repository_root()
+    return None if root is None else root.joinpath(*parts)
 
 
 def source_digest(relative: str) -> str | None:
@@ -126,7 +147,14 @@ def _probe_hardware(name: str) -> bool:
             return False
         return result.returncode == 0 and "GPU" in result.stdout
     if name == "rapl":
-        return any(Path("/sys/class/powercap").glob("intel-rapl:*/energy_uj"))
+        # The counters often exist but are readable only by root.
+        for path in Path("/sys/class/powercap").glob("intel-rapl:*/energy_uj"):
+            try:
+                int(path.read_text().strip())
+                return True
+            except (OSError, ValueError):
+                continue
+        return False
     return False
 
 
@@ -204,6 +232,8 @@ def run_task(task, implementation, ctx: Context, junit: dict, import_error: str 
             if plan:
                 fields.update({k: v for k, v in plan.items() if k in FIELD_NAMES})
                 fields["experiment"] = reason + " Planned: " + str(plan.get("experiment", ""))
+                # A blocked task may still record the claims it cannot establish.
+                findings = [validate_finding(record) for record in plan.get("findings", [])]
         else:
             try:
                 outcome = implementation.run(ctx)

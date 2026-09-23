@@ -44,8 +44,11 @@ AUTHORITY_DOMAINS = frozenset({"machine_safety", "industrial_readiness", "custom
                                "actuator_authority", "production_acceptance"})
 DOMAINS = COMPUTATIONAL_DOMAINS | PHYSICAL_DOMAINS | AUTHORITY_DOMAINS
 
+# ``cross_implementation`` is agreement between two implementations of the
+# same origin (for example ciw Python and a ciw Rust kernel): a passing check,
+# never independence.
 REFERENCE_KINDS = frozenset({"analytic", "high_precision", "invariant", "self_convergence",
-                             "exact_arithmetic", "refusal"})
+                             "exact_arithmetic", "refusal", "cross_implementation"})
 
 # What a computational experiment may establish, and what it cannot establish
 # alone. The right-hand claims require hardware, calibration procedures,

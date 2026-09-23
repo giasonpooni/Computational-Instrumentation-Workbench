@@ -31,11 +31,16 @@ computed from the basis; authors never state it.
 | `not_established` | anything else, any failed check, and every authority-domain claim |
 
 Check objects: `{"reference_kind": "analytic" | "high_precision" | "invariant" |
-"self_convergence" | "exact_arithmetic" | "refusal", "reference": "<what was
+"self_convergence" | "exact_arithmetic" | "refusal" | "cross_implementation",
+"reference": "<what was
 compared>", "observed": <float>, "tolerance": <float>, "comparison": "abs_le" |
 "le" | "ge", "passed": <bool>}`. The validator recomputes `passed` from
 `observed` and `tolerance`; a mismatch is refused. Refusal checks use
 `expected_refusal`/`observed_refusal` strings instead of numbers.
+
+`cross_implementation` records agreement between two implementations of the
+same origin (a ciw Rust kernel against ciw Python): numerically verified, never
+independent.
 
 `independent_check` = a check object plus `producer` and `checker`, each
 `{"implementation": "...", "revision": "..."}`. `ciw.*` code checking `ciw.*`
@@ -97,7 +102,13 @@ planned parts could not run here; say which), `blocked` (a hard requirement is
 unavailable), `deferred` (not attempted). `requires=("module:scipy",)`,
 `("provider:csg",)`, `("tool:cargo",)`, `("hardware:nvidia-gpu",)` are hard
 requirements; pass `plan={...}` with the static report fields so a blocked
-report is still informative. Soft optional checks use `ctx.available(...)`.
+report is still informative; `plan["findings"]` may carry the physical or
+authority claims the blocked task cannot establish (they must validate as
+`not_established`-producing findings). Soft optional checks use
+`ctx.available(...)`. Tasks that read repository files (`examples/`,
+`tests/fixtures/`) locate them with `ciw.lab.runner.repository_path(...)`,
+which honours `CIW_LAB_REPOSITORY_ROOT` in the clean-room run and returns None
+in an installed package without them (report blocked in that case).
 
 ## Code and tests
 

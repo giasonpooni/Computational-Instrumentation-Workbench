@@ -137,3 +137,16 @@ def load_implementations() -> tuple[dict, dict]:
     if stray:
         raise ValueError(f"Implementations for unknown lab tasks: {sorted(stray)}")
     return dict(_REGISTRY), errors
+
+
+def section_implementations(section_key: str) -> dict:
+    """Import only one section's modules and return its registered implementations."""
+    queue = load_queue()
+    ids = {t["id"] for t in queue["tasks"] if t["section_key"] == section_key}
+    if not ids:
+        raise ValueError(f"Unknown lab section: {section_key}")
+    prefix = section_key.replace("-", "_")
+    for name in SECTION_MODULES:
+        if name.startswith(prefix):
+            import_module(f"ciw.lab.{name}")
+    return {task_id: implementation for task_id, implementation in _REGISTRY.items() if task_id in ids}

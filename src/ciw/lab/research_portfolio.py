@@ -573,7 +573,9 @@ def permanent_regression_tests(ctx):
         "Resolve every registered node id against test function definitions; count passed/failed outcomes from the "
         "JUnit record when supplied.",
         "Run scripts/check_lab.py in CI so ciw lab verify guards every retained finding.")
-    tests_dir = next((d for d in (Path.cwd() / "tests", REPO_ROOT / "tests") if d.is_dir()), REPO_ROOT / "tests")
+    from .runner import repository_path
+    tests_dir = next((d for d in (repository_path("tests"), Path.cwd() / "tests") if d is not None and d.is_dir()),
+                     Path.cwd() / "tests")
     if not prior:
         return _no_prior(fields)
     if not tests_dir.is_dir():

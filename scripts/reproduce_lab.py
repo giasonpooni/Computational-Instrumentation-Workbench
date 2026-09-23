@@ -60,8 +60,15 @@ def main() -> int:
         tests.mkdir()
         for path in sorted((ROOT / "tests").glob("test_lab_*.py")):
             shutil.copy2(path, tests / path.name)
+        if (ROOT / "tests" / "fixtures" / "lab").is_dir():
+            shutil.copytree(ROOT / "tests" / "fixtures" / "lab", tests / "fixtures" / "lab")
+        # Tasks that read example inputs find these copies, never the checkout.
+        shutil.copytree(ROOT / "examples", work / "examples")
+        for name in ("docs",):
+            shutil.copytree(ROOT / name, work / name)
         environment = {key: value for key, value in os.environ.items() if key not in ("PYTHONPATH", "PYTEST_ADDOPTS")}
         environment["PYTHONDONTWRITEBYTECODE"] = "1"
+        environment["CIW_LAB_REPOSITORY_ROOT"] = str(work)
         located = subprocess.run([python, "-c", "import ciw, sys; print(ciw.__file__)"], check=True,
                                  capture_output=True, text=True, cwd=work, env=environment).stdout.strip()
         if Path(located).resolve().is_relative_to(ROOT):
