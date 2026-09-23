@@ -4,6 +4,7 @@ from __future__ import annotations
 import base64
 import json
 import os
+import subprocess
 from pathlib import Path
 
 import pytest
@@ -100,8 +101,14 @@ def test_native_exchange_survives_save_reopen_and_replay(monkeypatch, tmp_path):
 
 
 def test_provider_revision_mismatch_is_refused(tmp_path):
+    # A standalone checkout at another commit, so the refusal cannot depend on
+    # whether the temporary directory happens to sit inside a Git work tree.
     fake = tmp_path / "provider"
     fake.mkdir()
+    git = ["git", "-C", str(fake), "-c", "user.name=CIW", "-c", "user.email=ciw@example.invalid",
+           "-c", "commit.gpgsign=false"]
+    subprocess.run(git + ["init", "-q"], check=True)
+    subprocess.run(git + ["commit", "-q", "--allow-empty", "-m", "unpinned"], check=True)
     with pytest.raises(ValueError, match="revision"):
         adapter._runtime(fake)
 
