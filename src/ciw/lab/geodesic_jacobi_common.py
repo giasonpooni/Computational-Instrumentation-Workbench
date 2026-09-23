@@ -277,8 +277,9 @@ def derive(key: str) -> dict:
     """Metric, Christoffel symbols, geodesic equations and Brioschi curvature, all symbolic.
 
     The curvature uses the Brioschi formula (first fundamental form only), so
-    it is an intrinsic route distinct from the second-fundamental-form
-    curvature that ``ciw.lab.surfaces`` evaluates for embedded surfaces.
+    it is an intrinsic route. ``ciw.lab.surfaces`` returns closed-form
+    curvatures for the catalogue; its generic second-fundamental-form route
+    is ``EmbeddedSurface.gaussian_curvature``, which T001 calls unbound.
     """
     import sympy as sp
 
@@ -318,23 +319,36 @@ def lambdified(derived: dict, modules="math") -> dict:
 
 
 def latex_block(key: str, derived: dict) -> str:
-    """LaTeX for the derived metric, nonzero Christoffel symbols, geodesic equations and curvature."""
+    """LaTeX section with the derived metric, nonzero Christoffel symbols, geodesic equations and curvature.
+
+    Every equation is in display math, so the blocks joined by
+    :func:`latex_document` compile as one document.
+    """
     sp = derived["sympy"]
     names = {derived["coords"][0]: "u", derived["coords"][1]: "v", derived["velocity"][0]: r"\dot{u}",
              derived["velocity"][1]: r"\dot{v}"}
     idx = ("u", "v")
-    lines = [f"% {key}: coordinates (u, v) = {describe(key).get('chart', '(u, v)')}",
-             r"g = " + sp.latex(derived["metric"], symbol_names=names)]
+    equations = [r"g = " + sp.latex(derived["metric"], symbol_names=names)]
     for k in range(2):
         for i in range(2):
             for j in range(i, 2):
                 value = derived["christoffel"][k][i][j]
                 if value != 0:
-                    lines.append(rf"\Gamma^{{{idx[k]}}}_{{{idx[i]}{idx[j]}}} = " + sp.latex(value, symbol_names=names))
+                    equations.append(rf"\Gamma^{{{idx[k]}}}_{{{idx[i]}{idx[j]}}} = "
+                                     + sp.latex(value, symbol_names=names))
     for k in range(2):
-        lines.append(rf"\ddot{{{idx[k]}}} = " + sp.latex(derived["acceleration"][k], symbol_names=names))
-    lines.append("K = " + sp.latex(derived["curvature"], symbol_names=names))
+        equations.append(rf"\ddot{{{idx[k]}}} = " + sp.latex(derived["acceleration"][k], symbol_names=names))
+    equations.append("K = " + sp.latex(derived["curvature"], symbol_names=names))
+    chart = str(describe(key).get("chart", "(u, v)")).replace("_", r"\_")
+    lines = [rf"\section*{{{key}}}", rf"Coordinates $(u, v)$: \texttt{{{chart}}}."]
+    lines += [rf"\[ {equation} \]" for equation in equations]
     return "\n".join(lines) + "\n"
+
+
+def latex_document(blocks) -> str:
+    """A minimal standalone LaTeX document around :func:`latex_block` sections."""
+    return ("\\documentclass{article}\n\\usepackage{amsmath}\n\\begin{document}\n"
+            + "\n".join(blocks) + "\\end{document}\n")
 
 
 def text_block(key: str, derived: dict) -> str:
@@ -490,6 +504,13 @@ class ProviderRefusal(ValueError):
         self.code = code
 
 
+# Refusal codes by stage: pin verification before execution, then execution itself.
+PIN_REFUSALS = ("CSG_CHECKOUT_UNREADABLE", "CSG_REVISION_MISMATCH", "CSG_TREE_MISMATCH", "CSG_CHECKOUT_DIRTY")
+EXECUTION_REFUSALS = ("CSG_EXECUTION_FAILED", "CSG_CHANGED_DURING_EXECUTION")
+# Directories a provider run may create inside its checkout; they hold no importable sources.
+RUNTIME_CACHES = (".venv", "venv", "__pycache__", ".pytest_cache", ".mypy_cache", ".ruff_cache")
+
+
 def csg_pin() -> dict:
     """The pin shared with ciw.geodesic_reference (single source of truth)."""
     from ..geodesic_reference import PINS
@@ -498,8 +519,52 @@ def csg_pin() -> dict:
     return {"revision": pin["revision"], "source_tree": pin["source_tree"], "source_root": pin["source_root"]}
 
 
+def _git(checkout, *args) -> str:
+    import subprocess
+
+    return subprocess.run(["git", "-C", str(checkout), *args], check=True, capture_output=True,
+                          text=True).stdout.strip()
+
+
+def untracked_sources(checkout) -> list:
+    """Untracked files under the provider source root, ignored ones included, other than bytecode caches.
+
+    The bootstrap puts ``<checkout>/<source_root>`` first on sys.path, so any
+    such file (an ignored ``numpy.py``, a stray module) could shadow pinned
+    code on import even when ``git status`` reads clean.
+    """
+    listing = _git(checkout, "ls-files", "--others", "--", csg_pin()["source_root"]).splitlines()
+    return sorted(path for path in listing if path and "__pycache__" not in path.split("/"))
+
+
+def predict_csg_refusal(checkout) -> str:
+    """Pin-stage refusal code a checkout calls for, or "none", from direct git queries.
+
+    Computed before and independently of :func:`verify_csg_checkout` (which
+    goes through ``ciw.lab.runner.git_identity``), so a refusal finding can
+    compare an expected code with the observed one instead of copying it.
+    """
+    import subprocess
+
+    pin = csg_pin()
+    try:
+        head = _git(checkout, "rev-parse", "--verify", "HEAD")
+        tree = _git(checkout, "rev-parse", "HEAD^{tree}")
+        status = _git(checkout, "status", "--porcelain", "--untracked-files=all").splitlines()
+        stray = untracked_sources(checkout)
+    except (OSError, subprocess.CalledProcessError):
+        return "CSG_CHECKOUT_UNREADABLE"
+    if head != pin["revision"]:
+        return "CSG_REVISION_MISMATCH"
+    if tree != pin["source_tree"]:
+        return "CSG_TREE_MISMATCH"
+    changed = [line for line in status
+               if not set(line[3:].strip('"').split("/")) & set(RUNTIME_CACHES)]
+    return "CSG_CHECKOUT_DIRTY" if changed or stray else "none"
+
+
 def verify_csg_checkout(checkout) -> dict:
-    """Refuse a checkout that is unreadable, dirty or not at the pinned revision and tree."""
+    """Refuse a checkout that is unreadable, dirty, shadowable or not at the pinned revision and tree."""
     from pathlib import Path
     import subprocess
 
@@ -508,21 +573,46 @@ def verify_csg_checkout(checkout) -> dict:
     pin = csg_pin()
     try:
         identity = git_identity(Path(checkout))
+        stray = untracked_sources(checkout)
     except (OSError, subprocess.CalledProcessError) as exc:
-        raise ProviderRefusal("CSG_CHECKOUT_UNREADABLE", f"Provider checkout is not a readable git repository: {exc}")
+        raise ProviderRefusal("CSG_CHECKOUT_UNREADABLE",
+                              f"Provider checkout is not a readable git repository ({type(exc).__name__})")
     if identity["revision"] != pin["revision"]:
         raise ProviderRefusal("CSG_REVISION_MISMATCH",
                               f"Provider revision {identity['revision']} differs from pin {pin['revision']}")
     if identity["source_tree"] != pin["source_tree"]:
         raise ProviderRefusal("CSG_TREE_MISMATCH", "Provider source tree differs from the pinned tree")
-    if identity["dirty"]:
-        raise ProviderRefusal("CSG_CHECKOUT_DIRTY", "Provider checkout has uncommitted tracked changes")
+    if identity["dirty"] or stray:
+        raise ProviderRefusal("CSG_CHECKOUT_DIRTY", "Provider checkout has uncommitted changes or untracked "
+                              f"files under its source root ({len(stray)} untracked source files)")
     return {"repository": CSG_REPOSITORY, "revision": identity["revision"], "source_tree": identity["source_tree"],
             "dirty": False, "entry": CSG_ENTRY}
 
 
+def _check_csg_output(data, cases) -> None:
+    """Refuse provider output that does not answer every requested case in the expected shape."""
+    if not isinstance(data, dict) or not isinstance(data["python"], str) or not isinstance(data["numpy"], str):
+        raise TypeError("provider identity fields")
+    traces, maps = data["traces"], data["maps"]
+    if not (isinstance(traces, list) and isinstance(maps, list) and len(traces) == len(maps) == len(cases)):
+        raise ValueError("provider returned a different number of cases")
+    for case, entry in zip(cases, maps, strict=True):
+        nodes = len(case["arclength"])
+        for source in ("numeric", "closed_form"):
+            summary = entry[source]
+            if len(summary["matrices"]) != nodes or len(summary["determinant"]) != nodes:
+                raise ValueError("provider transfer matrices do not match the requested grid")
+            for column in ("a", "b"):
+                for event in summary["focus_events"][column]:
+                    float(event["arc_length"])
+
+
 def run_csg_jacobi(checkout, cases, timeout: float = 120.0) -> dict:
-    """Integrate declared (arclength grid, constant K) cases with the pinned provider in a subprocess."""
+    """Integrate declared (arclength grid, constant K) cases with the pinned provider in a subprocess.
+
+    Anything other than a complete, well-formed answer is refused as
+    ``CSG_EXECUTION_FAILED`` so callers never compare truncated output.
+    """
     from pathlib import Path
     import json
     import subprocess
@@ -533,10 +623,14 @@ def run_csg_jacobi(checkout, cases, timeout: float = 120.0) -> dict:
         result = subprocess.run([sys.executable, "-c", _CSG_BOOTSTRAP, str(root)], input=json.dumps(cases),
                                 capture_output=True, text=True, timeout=timeout, check=False)
     except (OSError, subprocess.TimeoutExpired) as exc:
-        raise ProviderRefusal("CSG_EXECUTION_FAILED", f"Provider subprocess did not complete: {exc}")
+        raise ProviderRefusal("CSG_EXECUTION_FAILED", f"Provider subprocess did not complete ({type(exc).__name__})")
     if result.returncode != 0:
-        raise ProviderRefusal("CSG_EXECUTION_FAILED", result.stderr.strip()[-400:] or "provider exited nonzero")
-    data = json.loads(result.stdout)
-    if len(data.get("traces", [])) != len(cases):
-        raise ProviderRefusal("CSG_EXECUTION_FAILED", "Provider returned a different number of traces")
+        raise ProviderRefusal("CSG_EXECUTION_FAILED", "Provider exited with a nonzero status: "
+                              + (result.stderr.strip().splitlines() or ["no error output"])[-1][:300])
+    try:
+        data = json.loads(result.stdout)
+        _check_csg_output(data, cases)
+    except (ValueError, KeyError, TypeError, IndexError) as exc:
+        raise ProviderRefusal("CSG_EXECUTION_FAILED",
+                              f"Provider output is not the expected document ({type(exc).__name__}: {exc})")
     return data

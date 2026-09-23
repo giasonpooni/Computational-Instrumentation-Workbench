@@ -18,28 +18,21 @@ import math
 
 import numpy as np
 
-from . import integrators, jacobi
-from .surfaces import ChartMap, SurfaceRefusal
+from . import evidence, integrators, jacobi
+from .surfaces import ChartMap, EmbeddedSurface, SurfaceRefusal
 
 
 # Checks whose pass flag is derived from their numbers ---------------------
 def check(kind: str, reference: str, observed, tolerance, comparison: str = "abs_le") -> dict:
-    """A check object with the documented comparisons; ``le`` bounds a nonnegative magnitude."""
+    """A check object whose ``passed`` flag is computed by :func:`ciw.lab.evidence.holds`.
+
+    ``le``/``ge`` bound a nonnegative magnitude; signed differences use
+    ``signed_le``/``signed_ge``. The evidence validator refuses a check whose
+    comparison does not fit its observed value.
+    """
     observed, tolerance = float(observed), float(tolerance)
-    if comparison in ("abs_le", "le") and tolerance < 0:
-        raise ValueError(f"{comparison} needs a nonnegative tolerance")
-    if comparison == "le" and observed < 0:
-        raise ValueError("le bounds a nonnegative magnitude; phrase a signed bound with abs_le")
-    if comparison == "abs_le":
-        passed = abs(observed) <= tolerance
-    elif comparison == "le":
-        passed = observed <= tolerance
-    elif comparison == "ge":
-        passed = observed >= tolerance
-    else:
-        raise ValueError(f"Unsupported comparison: {comparison}")
     return {"reference_kind": kind, "reference": reference, "observed": observed, "tolerance": tolerance,
-            "comparison": comparison, "passed": bool(passed)}
+            "comparison": comparison, "passed": bool(evidence.holds(observed, tolerance, comparison))}
 
 
 def refusal_check(reference: str, expected: str, observed: str | None) -> dict:
@@ -92,6 +85,40 @@ def jsonable(value, digits: int | None = None):
             return value
         return float(f"{value:.{digits}g}")
     return value
+
+
+class SecondFormCurvature(EmbeddedSurface):
+    """An embedded surface whose K is recomputed from its second fundamental form.
+
+    Core surfaces such as Plane and Cylinder return a closed-form K = 0; this
+    wrapper delegates only the embedding derivatives, so a Jacobi integration on
+    it tests the geometry of the embedding instead of a literal constant.
+    """
+
+    def __init__(self, base: EmbeddedSurface):
+        self.base = base
+        self.name = f"{base.name}(second-form K)"
+
+    def embedding(self, u):
+        return self.base.embedding(u)
+
+    def first(self, u):
+        return self.base.first(u)
+
+    def second(self, u):
+        return self.base.second(u)
+
+
+def x_minus_sin(x: float) -> float:
+    """x - sin(x) without cancellation (Taylor series below 0.1, where the direct form loses digits)."""
+    if abs(x) >= 0.1:
+        return x - math.sin(x)
+    # Alternating terms x^(2n+1) / (2n+1)! from x^3/6 to x^13/13!; the first omitted one is < 1e-23 x^3.
+    total, term = 0.0, x ** 3 / 6.0
+    for n in range(1, 7):
+        total += term
+        term *= -x * x / ((2 * n + 2) * (2 * n + 3))
+    return total
 
 
 # Chart maps a -> u = phi(a), orientation preserving (det J > 0) -------------
@@ -347,7 +374,36 @@ def step_matrix(method: str, curvature, h) -> np.ndarray:
         if abs(np.linalg.det(left)) < 1e-14:
             raise FloatingPointError("Implicit midpoint step is singular at this step size")
         return np.linalg.solve(left, eye + 0.5 * z)
+    if method == "gauss-legendre-2":
+        # Two-stage Gauss collocation: the (2, 2) Pade approximant of exp, order 4 and A-stable;
+        # 1 - z/2 + z^2/12 has no real zero, so the step is never singular for real eigenvalues.
+        quadratic = z @ z / 12.0
+        return np.linalg.solve(eye - 0.5 * z + quadratic, eye + 0.5 * z + quadratic)
     raise ValueError(f"Unsupported Jacobi step method: {method}")
+
+
+# Scalar stability functions R(z) of the same one-step methods (y' = lambda y, z = h lambda).
+IMPLICIT_ORDERS = {"implicit-midpoint": 2, "gauss-legendre-2": 4}
+
+
+def stability_function(method: str, z: float) -> float:
+    """R(z) with y_{n+1} = R(h lambda) y_n; an independent evaluation path to :func:`step_matrix`."""
+    if method in integrators.ORDERS:
+        return sum(z ** j / math.factorial(j) for j in range(integrators.ORDERS[method] + 1))
+    if method == "implicit-midpoint":
+        return (1.0 + 0.5 * z) / (1.0 - 0.5 * z)
+    if method == "gauss-legendre-2":
+        return (1.0 + 0.5 * z + z * z / 12.0) / (1.0 - 0.5 * z + z * z / 12.0)
+    raise ValueError(f"Unsupported Jacobi step method: {method}")
+
+
+def hyperbolic_j_head_by_modes(method: str, k: float, length: float, steps: int) -> float:
+    """Numerical j_head(L) on K = -k^2 from the eigenmodes (1, +k) and (1, -k) of the Jacobi generator.
+
+    (0, 1) = ((1, k) - (1, -k)) / (2k), so after N steps j = (R(kh)^N - R(-kh)^N) / (2k).
+    """
+    z = k * length / steps
+    return (stability_function(method, z) ** steps - stability_function(method, -z) ** steps) / (2.0 * k)
 
 
 def constant_curvature_transfer(method: str, curvature, length, steps) -> np.ndarray:

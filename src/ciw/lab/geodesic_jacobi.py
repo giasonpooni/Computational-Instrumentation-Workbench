@@ -52,6 +52,11 @@ def _test(name: str) -> str:
     return f"{TESTS}::{name}"
 
 
+# Section-wide contract tests (per-finding uncertainty, figure legibility) cover every task.
+SECTION_TESTS = (_test("test_every_numerical_finding_declares_uncertainty_and_tolerance"),
+                 _test("test_figures_fit_their_legend_and_title_space"))
+
+
 def _plain(value):
     """JSON-ready copy of nested numbers (numpy scalars become Python numbers, full precision)."""
     return gj.rounded(value, 17)
@@ -78,14 +83,39 @@ def _fine_transfer(ctx, key):
 
 
 def _constant_curvature_of(key: str) -> float:
-    """Declared constant curvature of a constant-curvature path (exact from surface parameters)."""
+    """Declared constant curvature of a constant-curvature path, from surface parameters only.
+
+    Never evaluated through ``gaussian_curvature``: the integrated Jacobi
+    equation uses that method, so a reference built from it could not detect
+    a wrong curvature.
+    """
     spec = gj.path(key)
     surf = gj.surface(spec.surface)
     if key == "torus-outer-equator":
         return 1.0 / (surf.minor * (surf.major + surf.minor))
     if key == "torus-inner-equator":
         return -1.0 / (surf.minor * (surf.major - surf.minor))
-    return float(surf.gaussian_curvature(np.asarray(spec.u0, dtype=float)))
+    if spec.surface == "sphere":
+        return 1.0 / surf.radius ** 2
+    if spec.surface == "hyperbolic-plane":
+        return -surf.k ** 2
+    if spec.surface in ("plane", "cylinder") + gj.POLAR_KEYS:
+        return 0.0  # the plane, and the cylinder's development, are flat
+    raise ValueError(f"Path {key} has no declared constant curvature")
+
+
+def _unc(kind: str, value, basis: str) -> dict:
+    """Per-finding uncertainty object (AUTHORING rule 5)."""
+    return {"kind": kind, "value": float(value), "basis": basis}
+
+
+def _fit_spread(pairwise: dict, fitted: dict) -> float:
+    """Largest distance of a pairwise log-log slope from its least-squares fit."""
+    return max(abs(v - fitted[k]) for k, values in pairwise.items() for v in values)
+
+
+def _pairwise(entries, x, y) -> list:
+    return [gj.slope([a[x], b[x]], [a[y], b[y]]) for a, b in zip(entries, entries[1:])]
 
 
 def _speed_drift(surf, states) -> np.ndarray:
@@ -96,18 +126,11 @@ def _speed_drift(surf, states) -> np.ndarray:
 # T001: symbolic re-derivation
 # ---------------------------------------------------------------------------
 T001_CHARTS = gj.CATALOGUE_KEYS + gj.POLAR_KEYS
+EMBEDDED_CHARTS = ("plane", "sphere", "cylinder", "saddle", "torus", "gaussian-bump")
 SAMPLES_PER_CHART = 8
-SAMPLE_BOXES = {
-    "plane": ((-2.0, 2.0), (-2.0, 2.0)),
-    "sphere": ((0.3, math.pi - 0.3), (-math.pi, math.pi)),
-    "cylinder": ((-math.pi, math.pi), (-2.0, 2.0)),
-    "saddle": ((-1.5, 1.5), (-1.5, 1.5)),
-    "torus": ((-math.pi, math.pi), (-math.pi, math.pi)),
-    "gaussian-bump": ((-2.5, 2.5), (-2.5, 2.5)),
-    "hyperbolic-plane": ((-2.0, 2.0), (0.3, 3.0)),
-    "plane-polar": ((0.5, 2.5), (-math.pi, math.pi)),
-    "cylinder-polar": ((0.5, 2.5), (-math.pi, math.pi)),
-}
+# The catalogue's declared boxes plus the polar charts (r >= 0.5 keeps clear of r = 0).
+SAMPLE_BOXES = {**surfaces.SAMPLING_DOMAINS, "plane-polar": ((0.5, 2.5), (-math.pi, math.pi)),
+                "cylinder-polar": ((0.5, 2.5), (-math.pi, math.pi))}
 
 
 def sample_points(key: str):
@@ -122,6 +145,75 @@ def sample_points(key: str):
 def _discrepancy(value, reference) -> float:
     value, reference = np.asarray(value, dtype=float), np.asarray(reference, dtype=float)
     return float(np.max(np.abs(value - reference) / np.maximum(1.0, np.abs(reference))))
+
+
+def _monge(fx, fy, fxx, fxy, fyy):
+    """Monge-patch metric and Christoffel symbols: g = I + grad f grad f^T, Gamma^k_ij = f_k f_ij / W^2."""
+    grad, hess = np.array([fx, fy]), np.array([[fxx, fxy], [fxy, fyy]])
+    w2 = 1.0 + fx * fx + fy * fy
+    return np.eye(2) + np.outer(grad, grad), np.einsum("k,ij->kij", grad, hess) / w2, w2
+
+
+def hand_geometry(key: str, u, v) -> dict:
+    """Metric, Christoffel symbols, geodesic acceleration and K from the hand table of the section doc (T001).
+
+    Coded from the closed forms written in docs/lab/GEODESIC_JACOBI.md, using
+    only the surface parameters, so a comparison with ``ciw.lab.surfaces``
+    tests the table and the implementation against each other. ``gamma[k, i,
+    j]`` is Gamma^k_ij, as in ``ciw.lab.surfaces``.
+    """
+    surf = gj.surface(key)
+    x, y = float(u[0]), float(u[1])
+    gamma = np.zeros((2, 2, 2))
+    acceleration = None
+    if key == "plane":
+        g, curvature = np.eye(2), 0.0
+    elif key == "cylinder":
+        g, curvature = np.diag([surf.radius ** 2, 1.0]), 0.0
+    elif key == "sphere":
+        g = surf.radius ** 2 * np.diag([1.0, math.sin(x) ** 2])
+        gamma[0, 1, 1] = -math.sin(x) * math.cos(x)
+        gamma[1, 0, 1] = gamma[1, 1, 0] = math.cos(x) / math.sin(x)
+        curvature = 1.0 / surf.radius ** 2
+    elif key == "saddle":
+        c = surf.c
+        g, gamma, w2 = _monge(c * x, -c * y, c, 0.0, -c)
+        curvature = -c * c / (1.0 + c * c * (x * x + y * y)) ** 2
+    elif key == "gaussian-bump":
+        h, s2 = surf.h, surf.sigma ** 2
+        rho2 = x * x + y * y
+        f = h * math.exp(-rho2 / (2 * s2))
+        g, gamma, w2 = _monge(-x * f / s2, -y * f / s2, (x * x / s2 - 1) * f / s2, x * y * f / s2 ** 2,
+                              (y * y / s2 - 1) * f / s2)
+        curvature = h * h * math.exp(-rho2 / s2) * (1 - rho2 / s2) / (s2 ** 2 * w2 ** 2)
+    elif key == "torus":
+        big, r = surf.major, surf.minor
+        rho = big + r * math.cos(y)
+        g = np.diag([rho ** 2, r ** 2])
+        gamma[0, 0, 1] = gamma[0, 1, 0] = -r * math.sin(y) / rho
+        gamma[1, 0, 0] = rho * math.sin(y) / r
+        curvature = math.cos(y) / (r * rho)
+        # The doc's explicit geodesic equations, written out rather than read from Gamma.
+        acceleration = np.array([2 * r * math.sin(y) * v[0] * v[1] / rho, -rho * math.sin(y) * v[0] ** 2 / r])
+    elif key == "hyperbolic-plane":
+        g = np.eye(2) / (surf.k * y) ** 2
+        gamma[0, 0, 1] = gamma[0, 1, 0] = -1.0 / y
+        gamma[1, 0, 0] = 1.0 / y
+        gamma[1, 1, 1] = -1.0 / y
+        curvature = -surf.k ** 2
+        acceleration = np.array([2 * v[0] * v[1] / y, (v[1] ** 2 - v[0] ** 2) / y])
+    elif key in gj.POLAR_KEYS:
+        if key == "cylinder-polar" and surf.base.radius != 1.0:
+            raise ValueError("The hand table covers the polar chart of the unit cylinder only")
+        g = np.diag([1.0, x * x])
+        gamma[0, 1, 1] = -x
+        gamma[1, 0, 1] = gamma[1, 1, 0] = 1.0 / x
+        curvature = 0.0
+    else:
+        raise KeyError(f"No hand derivation for {key}")
+    if acceleration is None:
+        acceleration = -np.einsum("kij,i,j->k", gamma, v, v)
+    return {"metric": g, "christoffel": gamma, "acceleration": acceleration, "curvature": curvature}
 
 
 def _derived(ctx, key):
@@ -170,6 +262,9 @@ def intrinsic_curvature(surf, u, delta=1e-4) -> float:
     return float(g[0] @ upper / np.linalg.det(g))
 
 
+SHORT = {"saddle": "saddle", "torus": "torus", "gaussian-bump": "bump"}
+
+
 def _curvature_figure(ctx, have_sympy):
     series = []
     for key in gj.VARIABLE_KEYS:
@@ -177,20 +272,25 @@ def _curvature_figure(ctx, have_sympy):
         stride = max(1, len(tr.s) // 40)
         s = tr.s[::stride]
         pts = tr.points[::stride]
-        series.append((f"{key} ciw", s, [gj.surface(key).gaussian_curvature(u) for u in pts]))
+        series.append((f"{SHORT[key]} ciw", s, [gj.surface(key).gaussian_curvature(u) for u in pts]))
         if have_sympy:
             curvature = _lambdas(ctx, key)["curvature"]
-            series.append((f"{key} sympy", s, [float(curvature(*u)) for u in pts]))
+            series.append((f"{SHORT[key]} sympy", s, [float(curvature(*u)) for u in pts]))
         else:
-            series.append((f"{key} intrinsic FD", s, [intrinsic_curvature(gj.surface(key), u) for u in pts]))
+            series.append((f"{SHORT[key]} intrinsic FD", s, [intrinsic_curvature(gj.surface(key), u) for u in pts]))
     return svg.line_plot(series, title="Gaussian curvature along the standard paths",
                          xlabel="arclength s", ylabel="K(gamma(s))", markers=False)
+
+
+def extrinsic_curvature(surf, u) -> float:
+    """(LN - M^2) / det g through the generic EmbeddedSurface route (the catalogue overrides it with closed forms)."""
+    return surfaces.EmbeddedSurface.gaussian_curvature(surf, u)
 
 
 @task("T001", changed_files=CHANGED,
       regression_tests=(_test("test_t001_symbolic_derivations_match_surfaces"),
                         _test("test_t001_without_sympy_is_partial"),
-                        _test("test_t001_self_consistency_helpers")))
+                        _test("test_t001_self_consistency_helpers")) + SECTION_TESTS)
 def rederive_geodesic_equations(ctx):
     have_sympy = ctx.available("module:sympy")
     rows, texts, latex = {}, [], []
@@ -198,7 +298,10 @@ def rederive_geodesic_equations(ctx):
         surf = gj.surface(key)
         points, velocities = sample_points(key)
         row = {"symmetry": 0.0, "compatibility": 0.0, "metric_derivatives": 0.0, "intrinsic_curvature": 0.0,
-               "max_abs_christoffel": 0.0, "max_abs_intrinsic_curvature": 0.0}
+               "max_abs_christoffel": 0.0, "max_abs_intrinsic_curvature": 0.0, "hand_metric": 0.0,
+               "hand_christoffel": 0.0, "hand_acceleration": 0.0, "hand_curvature": 0.0}
+        if key in EMBEDDED_CHARTS:
+            row.update(extrinsic_vs_closed_form=0.0, extrinsic_vs_intrinsic=0.0)
         if have_sympy:
             functions = _lambdas(ctx, key)
             derived = _derived(ctx, key)
@@ -206,26 +309,40 @@ def rederive_geodesic_equations(ctx):
             latex.append(gj.latex_block(key, derived))
             row.update(metric=0.0, christoffel=0.0, acceleration=0.0, curvature=0.0,
                        symbolic_curvature_is_zero=bool(derived["sympy"].simplify(derived["curvature"]) == 0))
+            if key in EMBEDDED_CHARTS:
+                row["extrinsic_vs_brioschi"] = 0.0
         for u, v in zip(points, velocities):
             surf.check(u)
             gamma = surf.christoffel(u)
             k_ciw = surf.gaussian_curvature(u)
             k_intrinsic = intrinsic_curvature(surf, u)
+            acc_ciw = surf.geodesic_rhs(np.concatenate([u, v]))[2:]
+            hand = hand_geometry(key, u, v)
             row["symmetry"] = max(row["symmetry"], float(np.max(np.abs(gamma - gamma.transpose(0, 2, 1)))))
             row["compatibility"] = max(row["compatibility"], compatibility_residual(surf, u))
             row["metric_derivatives"] = max(row["metric_derivatives"], metric_derivative_residual(surf, u))
             row["intrinsic_curvature"] = max(row["intrinsic_curvature"], _discrepancy(k_intrinsic, k_ciw))
             row["max_abs_christoffel"] = max(row["max_abs_christoffel"], float(np.max(np.abs(gamma))))
             row["max_abs_intrinsic_curvature"] = max(row["max_abs_intrinsic_curvature"], abs(k_intrinsic))
+            for name, ours in (("metric", surf.metric(u)), ("christoffel", gamma), ("acceleration", acc_ciw),
+                               ("curvature", k_ciw)):
+                row[f"hand_{name}"] = max(row[f"hand_{name}"], _discrepancy(ours, hand[name]))
+            if key in EMBEDDED_CHARTS:
+                k_ext = extrinsic_curvature(surf, u)
+                row["extrinsic_vs_closed_form"] = max(row["extrinsic_vs_closed_form"], _discrepancy(k_ext, k_ciw))
+                row["extrinsic_vs_intrinsic"] = max(row["extrinsic_vs_intrinsic"], _discrepancy(k_ext, k_intrinsic))
             if have_sympy:
                 g_sym = np.array(functions["metric"](*u), dtype=float).reshape(2, 2)
                 gamma_sym = np.array(functions["christoffel"](*u), dtype=float).reshape(2, 2, 2)
                 acc_sym = np.array(functions["rhs"](u[0], u[1], v[0], v[1]), dtype=float)[2:]
-                acc_ciw = surf.geodesic_rhs(np.concatenate([u, v]))[2:]
+                k_sym = float(functions["curvature"](*u))
                 row["metric"] = max(row["metric"], _discrepancy(surf.metric(u), g_sym))
                 row["christoffel"] = max(row["christoffel"], _discrepancy(gamma, gamma_sym))
                 row["acceleration"] = max(row["acceleration"], _discrepancy(acc_ciw, acc_sym))
-                row["curvature"] = max(row["curvature"], _discrepancy(k_ciw, float(functions["curvature"](*u))))
+                row["curvature"] = max(row["curvature"], _discrepancy(k_ciw, k_sym))
+                if key in EMBEDDED_CHARTS:
+                    row["extrinsic_vs_brioschi"] = max(row["extrinsic_vs_brioschi"],
+                                                       _discrepancy(extrinsic_curvature(surf, u), k_sym))
         rows[key] = row
     cylinder = gj.surface("cylinder")
     u_cyl = sample_points("cylinder")[0][0]
@@ -237,11 +354,14 @@ def rederive_geodesic_equations(ctx):
     ctx.artifact_json("comparison.json", _plain(table))
     if have_sympy:
         ctx.artifact_text("derivations.txt", "\n".join(texts))
-        ctx.artifact_text("derivations.tex", "\n".join(latex))
+        ctx.artifact_text("derivations.tex", gj.latex_document(latex))
     ctx.artifact_text("curvature-along-paths.svg", _curvature_figure(ctx, have_sympy))
 
     generator = {"name": "seeded chart samples", "seed": gj.SEED, "samples_per_chart": SAMPLES_PER_CHART,
                  "charts": list(T001_CHARTS)}
+    roundoff = _unc("roundoff", 1e-15, "binary64 evaluation of both sides, relative to max(1, |value|)")
+    fd_intrinsic = max(r["intrinsic_curvature"] for r in rows.values())
+    fd_basis = "central differences of Christoffel symbols with step 1e-4 (O(step^2) truncation plus rounding)"
     findings = []
     if have_sympy:
         sympy_version = gj.optional_version("sympy")
@@ -253,7 +373,7 @@ def rederive_geodesic_equations(ctx):
                 gj.check("analytic", "sympy symbolic metric, Christoffel symbols and geodesic accelerations "
                          "(max relative discrepancy over nine charts)", geodesic, 1e-10),
                 "ciw.lab.surfaces", "sympy", checker_revision=sympy_version)},
-            uncertainty={"floating_point": "binary64 evaluation of both sides"}, tolerance=TOL_SMALL))
+            uncertainty=roundoff, tolerance=TOL_SMALL))
         curvature = max(r["curvature"] for r in rows.values())
         findings.append(finding(
             "Intrinsic Brioschi curvature from sympy matches the ciw Gaussian curvature on nine charts",
@@ -261,24 +381,56 @@ def rederive_geodesic_equations(ctx):
             {"generator": generator, "independent_check": gj.independent(
                 gj.check("analytic", "sympy Brioschi formula (first fundamental form only)", curvature, 1e-10),
                 "ciw.lab.surfaces", "sympy", checker_revision=sympy_version)},
-            tolerance=TOL_SMALL))
+            uncertainty=roundoff, tolerance=TOL_SMALL))
+    hand = {k: {name: r[f"hand_{name}"] for name in ("metric", "christoffel", "acceleration", "curvature")}
+            for k, r in rows.items()}
+    findings.append(finding(
+        "The hand-derived metrics, Christoffel symbols, geodesic equations and curvatures of the section doc match "
+        "ciw.lab.surfaces on nine charts", "mathematical", hand,
+        {"derivation": f"{DOC}, section T001 (metric, Christoffel symbols and curvature of each chart by hand)",
+         "generator": generator, "checks": [
+             gj.check("analytic", f"hand-derived {name} (doc table) against ciw.lab.surfaces, all charts",
+                      max(h[name] for h in hand.values()), 1e-12)
+             for name in ("metric", "christoffel", "acceleration", "curvature")]},
+        uncertainty=roundoff, tolerance=TOL_SMALL))
     consistency = {k: {name: r[name] for name in ("symmetry", "compatibility", "metric_derivatives")}
                    for k, r in rows.items()}
+    fd_metric = max(r["metric_derivatives"] for r in rows.values())
     findings.append(finding(
         "ciw.lab.surfaces Christoffel symbols are symmetric and metric-compatible and its exact metric derivatives "
         "match finite differences", "numerical", consistency,
         {"generator": generator, "checks": [
             gj.check("invariant", "Gamma^k_ij - Gamma^k_ji", max(r["symmetry"] for r in rows.values()), 1e-14),
             gj.check("invariant", "nabla g = 0 residual", max(r["compatibility"] for r in rows.values()), 1e-12),
-            gj.check("self_convergence", "central differences of g with step 1e-5",
-                     max(r["metric_derivatives"] for r in rows.values()), 1e-6)]},
+            gj.check("self_convergence", "central differences of g with step 1e-5", fd_metric, 1e-6)]},
+        uncertainty=_unc("truncation_bound", fd_metric, "the metric-derivative residual is the truncation and "
+                         "rounding of central differences with step 1e-5; symmetry and compatibility are rounding"),
         tolerance={"abs": 1e-7, "rel": 0.0}))
     findings.append(finding(
         "Intrinsic curvature from finite-differenced Christoffel symbols matches the ciw Gaussian curvature",
         "numerical", {k: r["intrinsic_curvature"] for k, r in rows.items()},
         {"generator": generator, "checks": [gj.check(
             "self_convergence", "Riemann tensor from central differences (step 1e-4) of ciw Christoffel symbols",
-            max(r["intrinsic_curvature"] for r in rows.values()), 1e-6)]},
+            fd_intrinsic, 1e-6)]},
+        uncertainty=_unc("truncation_bound", fd_intrinsic, fd_basis), tolerance={"abs": 1e-6, "rel": 0.0}))
+    egregium = {k: {name: rows[k][name] for name in ("extrinsic_vs_closed_form", "extrinsic_vs_intrinsic",
+                                                     "extrinsic_vs_brioschi") if name in rows[k]}
+                for k in EMBEDDED_CHARTS}
+    egregium_basis = {"generator": dict(generator, charts=list(EMBEDDED_CHARTS)), "checks": [
+        gj.check("analytic", "generic (LN - M^2)/det g against the closed-form curvatures",
+                 max(e["extrinsic_vs_closed_form"] for e in egregium.values()), 1e-12),
+        gj.check("self_convergence", "generic (LN - M^2)/det g against the finite-difference Riemann curvature",
+                 max(e["extrinsic_vs_intrinsic"] for e in egregium.values()), 1e-6)]}
+    if have_sympy:
+        egregium_basis["independent_check"] = gj.independent(
+            gj.check("analytic", "sympy Brioschi curvature (first fundamental form only) against the generic "
+                     "second-fundamental-form curvature", max(e["extrinsic_vs_brioschi"] for e in egregium.values()),
+                     1e-10), "ciw.lab.surfaces.EmbeddedSurface.gaussian_curvature", "sympy",
+            checker_revision=gj.optional_version("sympy"))
+    findings.append(finding(
+        "The second-fundamental-form curvature (LN - M^2)/det g equals the intrinsic curvature on the six embedded "
+        "charts (Theorema Egregium)", "numerical", egregium, egregium_basis,
+        uncertainty=_unc("truncation_bound", max(e["extrinsic_vs_intrinsic"] for e in egregium.values()), fd_basis),
         tolerance={"abs": 1e-6, "rel": 0.0}))
     polar = {k: {"max_abs_christoffel": rows[k]["max_abs_christoffel"],
                  "max_abs_intrinsic_curvature": rows[k]["max_abs_intrinsic_curvature"]} for k in gj.POLAR_KEYS}
@@ -294,6 +446,8 @@ def rederive_geodesic_equations(ctx):
     findings.append(finding(
         "Nonzero Christoffel symbols do not imply curvature: the polar charts of the plane and cylinder are flat",
         "mathematical", polar, {"generator": generator, "checks": polar_checks},
+        uncertainty=_unc("truncation_bound", max(p["max_abs_intrinsic_curvature"] for p in polar.values()),
+                         "finite-difference curvature of a flat chart is pure truncation and rounding"),
         tolerance={"abs": 1e-6, "rel": 1e-9},
         counterexample={"statement": "A chart with nonzero Christoffel symbols describes a curved surface",
                         "witness": {"chart": "plane-polar", "christoffel": "Gamma^r_tt = -r, Gamma^t_rt = 1/r",
@@ -313,52 +467,53 @@ def rederive_geodesic_equations(ctx):
                      rows["cylinder"]["max_abs_christoffel"], 1e-15),
             gj.check("invariant", "|II(e_phi, e_phi)| / g_phiphi of the unit cylinder", abs(normal_curvature), 0.5,
                      "ge")]},
-        tolerance=TOL_VALUE,
+        uncertainty=roundoff, tolerance=TOL_VALUE,
         counterexample={"statement": "A surface that bends in space has nonzero Christoffel symbols in every chart",
                         "witness": {"chart": "cylinder (phi, z)", "normal_curvature_phi": normal_curvature}}))
-    findings.append(finding(
-        "The geodesic equation u''^k = -Gamma^k_ij u'^i u'^j and its catalogue specializations follow from the "
-        "first variation of length", "mathematical", "derived",
-        {"derivation": f"{DOC}, section T001 (metric, Christoffel symbols and curvature of each chart by hand)"}))
 
     state = "completed" if have_sympy else "partial"
     worst = max(max(r.get("metric", 0), r.get("christoffel", 0), r.get("acceleration", 0), r.get("curvature", 0))
                 for r in rows.values())
+    worst_hand = max(max(h.values()) for h in hand.values())
     return _outcome(
         state, findings,
-        hypothesis=("The metric, Christoffel symbols, geodesic equations and Gaussian curvature derived symbolically "
-                    "from each chart's embedding (or intrinsic metric) coincide with the exact-derivative "
-                    "implementation in ciw.lab.surfaces."),
+        hypothesis=("The metric, Christoffel symbols, geodesic equations and Gaussian curvature derived by hand (doc "
+                    "table) and symbolically from each chart's embedding (or intrinsic metric) coincide with the "
+                    "exact-derivative implementation in ciw.lab.surfaces, and the extrinsic and intrinsic "
+                    "curvatures agree."),
         mathematical_model=("g_ij = X_i . X_j (or the declared intrinsic metric), Gamma^k_ij = 1/2 g^kl (d_i g_jl + "
-                            "d_j g_il - d_l g_ij), u''^k = -Gamma^k_ij u'^i u'^j, K from the Brioschi formula "
-                            "(sympy) and from the Riemann tensor of finite-differenced Christoffel symbols."),
+                            "d_j g_il - d_l g_ij), u''^k = -Gamma^k_ij u'^i u'^j (first variation of length), K from "
+                            "the second fundamental form (LN - M^2)/det g, from the Brioschi formula (sympy) and from "
+                            "the Riemann tensor of finite-differenced Christoffel symbols."),
         input_data=[f"Charts: {', '.join(T001_CHARTS)} with catalogue parameters",
-                    f"{SAMPLES_PER_CHART} seeded points and velocities per chart (PCG64 seed {gj.SEED} + 1000 i)"],
+                    f"{SAMPLES_PER_CHART} seeded points and velocities per chart (PCG64 seed {gj.SEED} + 1000 i) in "
+                    "ciw.lab.surfaces.SAMPLING_DOMAINS plus r in [0.5, 2.5] on the polar charts"],
         observation_model=("Relative discrepancy max |a - b| / max(1, |b|) over samples and components, evaluated in "
                            "binary64."),
-        expected_invariant=("Symbolic and numeric quantities agree to rounding; Gamma is symmetric; nabla g = 0; "
-                            "the intrinsic curvature equals the second-fundamental-form curvature (Theorema "
-                            "Egregium)."),
-        experiment=("Derive each chart with sympy (when installed), lambdify, and compare with ciw.lab.surfaces at "
-                    "seeded points; independently check symmetry, metric compatibility, metric derivatives and "
-                    "intrinsic curvature from ciw alone; record the flat polar charts and the cylinder as "
-                    "counterexamples separating Christoffel symbols from curvature."),
-        numerical_result=(f"Largest sympy/ciw discrepancy {_fmt(worst)}; largest intrinsic-curvature discrepancy "
-                          f"{_fmt(max(r['intrinsic_curvature'] for r in rows.values()))}."
-                          if have_sympy else
-                          "sympy unavailable: symbolic comparison not run; self-consistency and intrinsic-curvature "
-                          f"checks passed (largest intrinsic discrepancy "
-                          f"{_fmt(max(r['intrinsic_curvature'] for r in rows.values()))})."),
-        uncertainty=("Binary64 rounding of both sides (about 1e-15 relative); finite-difference checks carry a "
-                     "truncation error near 1e-8."),
+        expected_invariant=("Hand, symbolic and numeric quantities agree to rounding; Gamma is symmetric; nabla g = 0; "
+                            "the generic second-fundamental-form curvature equals the intrinsic (finite-difference "
+                            "Riemann and Brioschi) curvature on every embedded chart (Theorema Egregium)."),
+        experiment=("Evaluate the hand table and (when installed) the sympy derivation at seeded points and compare "
+                    "with ciw.lab.surfaces; check symmetry, metric compatibility and metric derivatives of ciw alone; "
+                    "compare the generic extrinsic curvature with the intrinsic ones; record the flat polar charts and "
+                    "the cylinder as counterexamples separating Christoffel symbols from curvature."),
+        numerical_result=((f"Largest sympy/ciw discrepancy {_fmt(worst)}; " if have_sympy else
+                           "sympy unavailable: symbolic comparison not run; ")
+                          + f"largest hand-table/ciw discrepancy {_fmt(worst_hand)}; largest intrinsic-curvature "
+                          f"discrepancy {_fmt(fd_intrinsic)}; largest extrinsic-intrinsic discrepancy "
+                          f"{_fmt(max(e['extrinsic_vs_intrinsic'] for e in egregium.values()))}."),
+        uncertainty=("Binary64 rounding of both sides (about 1e-15 relative) for the hand and symbolic comparisons; "
+                     "finite-difference checks carry a truncation error near 1e-8."),
         failure_modes_checked=["Christoffel index order (symmetry and compatibility)",
                                "sign convention of the Riemann tensor (sphere K = +1, hyperbolic plane K = -1)",
                                "chart singularities excluded from the sampling boxes",
-                               "intrinsic versus extrinsic curvature (cylinder, polar charts)"],
+                               "intrinsic versus extrinsic curvature (cylinder, polar charts, Theorema Egregium)",
+                               "hand table transcription errors (every row evaluated against the implementation)"],
         unresolved_assumptions=(["sympy simplification is trusted to be correct; it is an independent implementation, "
                                  "not a proof checker"] if have_sympy else
-                                ["sympy is not installed: the symbolic derivation relies on the hand derivation in "
-                                 f"{DOC}"]) + ["Only 8 sample points per chart are compared"],
+                                ["sympy is not installed: the derivation is checked only through the hand table in "
+                                 f"{DOC} and ciw self-consistency"])
+        + ["Only 8 sample points per chart are compared", "The hand table covers the unit-radius polar cylinder only"],
         recommended_next_task="T002: build high-precision reference solutions on the same equations")
 
 
@@ -435,7 +590,8 @@ def _clairaut_mp(ref, surf):
 
 
 @task("T002", changed_files=CHANGED,
-      regression_tests=(_test("test_t002_references_agree"), _test("test_t002_without_optional_modules")))
+      regression_tests=(_test("test_t002_references_agree"), _test("test_t002_without_optional_modules"))
+      + SECTION_TESTS)
 def high_precision_references(ctx):
     have_scipy = ctx.available("module:scipy")
     have_mp = ctx.available("module:sympy") and ctx.available("module:mpmath")
@@ -472,69 +628,93 @@ def high_precision_references(ctx):
         drift = [abs(torus.clairaut(y[:2], y[2:4]) - c0) for y in tr.states]
         clairaut[f"ciw_rk4_{steps}_max"] = float(max(drift))
         curves.append((f"RK4 N={steps}", tr.s, drift))
+    order = list(rows)
     ctx.artifact_json("references.json", _plain({
         "richardson_steps": [RICHARDSON_STEPS, 2 * RICHARDSON_STEPS], "mp_dps": gj.MP_DPS,
         "mp_macro_steps": list(gj.MP_MACRO_STEPS), "paths": {k: gj.path(k).as_dict() for k in gj.STANDARD},
+        "figure_path_index": {str(i + 1): k for i, k in enumerate(order)},
         "rows": rows, "clairaut": clairaut, "clairaut_initial": c0}))
-    series = [("ciw Richardson vs reference", range(1, len(rows) + 1),
-               [max(r["ciw_vs_reference"]["max"], 1e-17) for r in rows.values()])]
+    series = [("ciw Richardson", range(1, len(rows) + 1), [max(rows[k]["ciw_vs_reference"]["max"], 1e-17)
+                                                           for k in order])]
     if have_scipy:
-        series.append(("scipy DOP853 vs reference", range(1, len(rows) + 1),
-                       [max(r["scipy_vs_reference"]["max"], 1e-17) for r in rows.values()]))
+        series.append(("scipy DOP853", range(1, len(rows) + 1),
+                       [max(rows[k]["scipy_vs_reference"]["max"], 1e-17) for k in order]))
     ctx.artifact_text("agreement.svg", svg.line_plot(
-        series, title="End-state agreement with the reference (1 = " + ", ".join(rows) + ")",
-        xlabel="path index", ylabel="max(position, transfer) gap", logy=True))
+        series, title="End-state gap to the reference (paths: references.json)",
+        xlabel="path index (figure_path_index)", ylabel="max(position, transfer) gap", logy=True))
     ctx.artifact_text("clairaut.svg", svg.line_plot(
         [(n, s, np.maximum(d, 1e-17)) for n, s, d in curves], title="Torus Clairaut drift |C(s) - C(0)|",
         xlabel="arclength s", ylabel="|rho^2 phi' - C0|", logy=True, markers=False))
 
     findings = []
+    # Without extrapolation the RK4 end state misses the reference by about the Richardson estimate itself, so a
+    # gap far below it shows that the extrapolation (not just a fine step) produced the agreement.
+    extrapolated = {k: rows[k]["ciw_vs_reference"]["max"] / rows[k]["richardson_error_estimate"]
+                    for k in gj.STANDARD if rows[k]["richardson_error_estimate"] >= 1e-13}
     closed = [k for k in gj.STANDARD if rows[k]["reference_kind"] == "closed_form"]
     closed_basis = {"checks": [gj.check("analytic", f"closed-form geodesic and constant-curvature transfer on {k}",
-                                        rows[k]["ciw_vs_reference"]["max"], 1e-10) for k in closed]}
+                                        rows[k]["ciw_vs_reference"]["max"], 1e-12) for k in closed]
+                    + [gj.check("self_convergence", "gap over the Richardson error estimate on the curved "
+                                "closed-form charts (about 1 without extrapolation)",
+                                max(v for k, v in extrapolated.items() if k in closed), 0.1, "le")]}
     if have_scipy:
         closed_basis["independent_check"] = gj.independent(
             gj.check("high_precision", "scipy DOP853 rtol 1e-13 on the same right-hand side",
-                     max(rows[k]["ciw_vs_scipy"]["max"] for k in closed), 1e-9),
+                     max(rows[k]["ciw_vs_scipy"]["max"] for k in closed), 1e-12),
             "ciw.lab.integrators.richardson_rk4", "scipy.integrate.solve_ivp(DOP853)",
             checker_revision=gj.optional_version("scipy"))
     findings.append(finding(
         "ciw Richardson RK4 end states match closed-form geodesics and transfer matrices on the six closed-form charts",
-        "numerical", {k: rows[k]["ciw_vs_reference"]["max"] for k in closed}, closed_basis, tolerance=TOL_SMALL))
+        "numerical", {k: rows[k]["ciw_vs_reference"]["max"] for k in closed}, closed_basis,
+        uncertainty=_unc("reference_error", 1e-15, "closed forms evaluated in binary64; the retained ciw Richardson "
+                         "error estimates are up to "
+                         + _fmt(max(rows[k]["richardson_error_estimate"] for k in closed))),
+        tolerance=TOL_SMALL))
     for key in gj.VARIABLE_KEYS:
         row = rows[key]
         gap = row["ciw_vs_reference"]["max"]
         value = {"reference_end_state": reference(ctx, key)["state"], "ciw_minus_reference": gap}
+        extrapolation = gj.check("self_convergence", f"gap over the Richardson error estimate on {key} (about 1 "
+                                 "without extrapolation)", gap / row["richardson_error_estimate"], 0.1, "le")
         if row["reference_kind"] == "mpmath":
             checks = [gj.check("high_precision", "mpmath macro-step 10 vs 20 at 34 digits",
-                               row["reference_error_estimate"], 1e-18)]
+                               row["reference_error_estimate"], 1e-18), extrapolation]
             if have_scipy:
                 checks.append(gj.check("high_precision", "scipy DOP853 vs the mpmath reference",
-                                       row["scipy_vs_reference"]["max"], 1e-10))
+                                       row["scipy_vs_reference"]["max"], 1e-11))
             basis = {"checks": checks, "independent_check": gj.independent(
                 gj.check("high_precision", f"34-digit Gragg-Bulirsch-Stoer reference on sympy-derived {key} equations",
-                         gap, 1e-9),
+                         gap, 1e-12),
                 "ciw.lab.integrators.richardson_rk4", "mpmath", checker_revision=gj.optional_version("mpmath"))}
             claim = f"ciw Richardson RK4 matches the 34-digit mpmath reference on the {key} path"
+            uncertainty = _unc("reference_error", row["reference_error_estimate"],
+                               "mpmath 10 vs 20 macro-steps at 34 digits; the ciw Richardson estimate on this path "
+                               f"is {_fmt(row['richardson_error_estimate'])}")
         elif row["reference_kind"] == "scipy":
-            basis = {"independent_check": gj.independent(
-                gj.check("high_precision", f"scipy DOP853 rtol 1e-13 on {key}", gap, 1e-9),
+            basis = {"checks": [extrapolation], "independent_check": gj.independent(
+                gj.check("high_precision", f"scipy DOP853 rtol 1e-13 on {key} (ciw right-hand side)", gap, 1e-12),
                 "ciw.lab.integrators.richardson_rk4", "scipy.integrate.solve_ivp(DOP853)",
                 checker_revision=gj.optional_version("scipy"))}
             claim = f"ciw Richardson RK4 matches scipy DOP853 on the {key} path (mpmath reference unavailable)"
+            uncertainty = _unc("reference_error", 1e-13, "requested DOP853 tolerance; scipy returns no global error "
+                               "estimate, and it integrates the ciw equations, so only the integrator is independent")
         else:
             basis = {"checks": [gj.check("self_convergence", f"ciw Richardson RK4 at 800 vs 200 steps on {key}",
-                                         gap, 1e-9)]}
+                                         gap, 1e-12)]}
             claim = f"ciw Richardson RK4 is self-convergent on the {key} path (no independent reference available)"
-        findings.append(finding(claim, "numerical", value, basis, tolerance=TOL_VALUE))
+            uncertainty = _unc("truncation_bound", reference(ctx, key)["error_estimate"],
+                               "Richardson error estimate of the 800-step reference")
+        findings.append(finding(claim, "numerical", value, basis, uncertainty=uncertainty, tolerance=TOL_VALUE))
     clairaut_checks = [gj.check("invariant", "Clairaut drift of the ciw Richardson end state",
-                                clairaut["ciw_richardson"], 1e-10)]
+                                clairaut["ciw_richardson"], 1e-12)]
     if "mpmath_reference" in clairaut:
         clairaut_checks.append(gj.check("invariant", "Clairaut drift of the mpmath reference end state",
                                         clairaut["mpmath_reference"], 1e-20))
     findings.append(finding(
         "Clairaut's integral rho^2 phi' is conserved along the torus reference path", "numerical",
-        {name: clairaut[name] for name in sorted(clairaut)}, {"checks": clairaut_checks}, tolerance=TOL_SMALL))
+        {name: clairaut[name] for name in sorted(clairaut)}, {"checks": clairaut_checks},
+        uncertainty=_unc("roundoff", 1e-15 * max(1.0, abs(c0)), "binary64 evaluation of rho^2 phi'"),
+        tolerance=TOL_SMALL))
 
     state = "completed" if (have_scipy and have_mp) else "partial"
     missing = [name for name, ok in (("scipy", have_scipy), ("sympy+mpmath", have_mp)) if not ok]
@@ -567,8 +747,11 @@ def high_precision_references(ctx):
         failure_modes_checked=["reference and integrator start from the same binary64 state",
                                "reference equations derived independently of ciw.lab.surfaces (sympy)",
                                "extrapolation self-consistency (macro-step halving)",
+                               "missing or wrong Richardson extrapolation (gap must be far below the RK4 estimate)",
                                "Clairaut invariant on the torus"],
         unresolved_assumptions=(["Unavailable optional modules: " + ", ".join(missing)] if missing else [])
+        + ([] if have_mp else ["Without sympy the variable-curvature references integrate the ciw equations "
+                               "(scipy) or reuse ciw RK4: the integrator may be independent, the equations are not"])
         + ["The mpmath reference is an extrapolated integration, not a closed form; its error estimate is empirical"],
         recommended_next_task="T003: measure Euler, midpoint, RK4 and adaptive orders against these references")
 
@@ -583,7 +766,7 @@ DRIFT_TOLERANCE = {"euler": 0.1, "midpoint": 0.15, "rk4": 0.3}
 
 
 def convergence_study(ctx) -> dict:
-    """Endpoint error and speed drift of every method, step and standard path (geodesic state only)."""
+    """Endpoint error and speed drift of every fixed-step method, step and standard path (geodesic state only)."""
     def compute():
         table, curves = {}, {}
         for key in gj.STANDARD:
@@ -603,14 +786,6 @@ def convergence_study(ctx) -> dict:
                     if key == "sphere" and steps == counts[1]:
                         curves[method] = (s, np.abs(drift))
                 row[method] = entries
-            adaptive = []
-            for rtol in ADAPTIVE_RTOL:
-                _, states, stats = integrators.integrate_adaptive(surf.geodesic_rhs, y0, spec.length, rtol=rtol,
-                                                                  atol=rtol)
-                adaptive.append({"rtol": rtol, "atol": rtol, **stats,
-                                 "error": float(np.linalg.norm(gj.position(spec.surface, states[-1, :2]) - target)),
-                                 "max_speed_drift": float(np.max(np.abs(_speed_drift(surf, states))))})
-            row["adaptive"] = adaptive
             table[key] = row
         return {"table": table, "sphere_drift_curves": curves}
     return ctx.memo("gj-convergence", compute)
@@ -620,33 +795,106 @@ def _slopes(entries, quantity):
     return gj.slope([e["h"] for e in entries], [e[quantity] for e in entries])
 
 
-@task("T003", changed_files=CHANGED, regression_tests=(_test("test_t003_integrator_orders"),))
+# Order 5 (local extrapolation, error ~ tol) and order 4 (advancing with y4, error ~ tol^0.8) are the two
+# hypotheses the adaptive checks must separate; the thresholds sit half-way between them.
+ADAPTIVE_ORDER_THRESHOLD = 4.5
+ADAPTIVE_EXPONENT_THRESHOLD = 0.9
+
+
+def dormand_prince_y4(f, y0, length, rtol=1e-8, atol=1e-10):
+    """Deliberately faulty comparison: DP5(4) that advances with its fourth-order solution.
+
+    Same tableau, error norm and controller as ``integrators.integrate_adaptive``;
+    only the accepted state differs (y4 instead of y5, so no local
+    extrapolation and no first-same-as-last reuse).
+    """
+    tableau, b5, b4 = integrators._A, integrators._B5, integrators._B4
+    y = np.array(y0, dtype=float)
+    s, h = 0.0, min(length, 0.01 * max(length, 1e-12))
+    nodes, states = [0.0], [y.copy()]
+    accepted = rejected = 0
+    k1 = f(y)
+    evaluations = 1
+    while s < length:
+        h = min(h, length - s)
+        k = [k1]
+        for stage in range(1, 7):
+            k.append(f(y + h * sum(a * kj for a, kj in zip(tableau[stage], k))))
+        evaluations += 6
+        y5 = y + h * sum(b * kj for b, kj in zip(b5, k))
+        y4 = y + h * sum(b * kj for b, kj in zip(b4, k))
+        error = math.sqrt(float(np.mean(((y5 - y4) / (atol + rtol * np.maximum(np.abs(y), np.abs(y5)))) ** 2)))
+        if error <= 1.0:
+            s = length if length - (s + h) < 1e-14 * max(1.0, length) else s + h
+            y = y4
+            k1 = f(y)
+            evaluations += 1
+            nodes.append(s)
+            states.append(y.copy())
+            accepted += 1
+            factor = 5.0 if error == 0 else min(5.0, max(0.2, 0.9 * error ** -0.2))
+        else:
+            rejected += 1
+            factor = max(0.2, 0.9 * error ** -0.2)
+        h *= factor
+    stats = {"accepted_steps": accepted, "rejected_steps": rejected, "function_evaluations": evaluations}
+    return np.array(nodes), np.array(states), stats
+
+
+def adaptive_summary(ctx, name: str, integrate) -> dict:
+    """Per-chart effective order (error vs evaluations) and tolerance exponent (error vs rtol), and their medians."""
+    def compute():
+        charts = {}
+        for key in CURVED_CHARTS:
+            spec = gj.path(key)
+            surf = gj.surface(spec.surface)
+            target = np.asarray(reference(ctx, key)["position"])
+            rows = []
+            for rtol in ADAPTIVE_RTOL:
+                _, states, stats = integrate(surf.geodesic_rhs, gj.start_state(key)[:4], spec.length, rtol=rtol,
+                                             atol=rtol)
+                rows.append({"rtol": rtol, **stats,
+                             "error": float(np.linalg.norm(gj.position(spec.surface, states[-1, :2]) - target))})
+            charts[key] = {"rows": rows,
+                           "effective_order": -gj.slope([r["function_evaluations"] for r in rows],
+                                                        [r["error"] for r in rows]),
+                           "tolerance_exponent": gj.slope([r["rtol"] for r in rows], [r["error"] for r in rows])}
+        orders = [c["effective_order"] for c in charts.values()]
+        exponents = [c["tolerance_exponent"] for c in charts.values()]
+        return {"charts": charts, "median_effective_order": float(np.median(orders)),
+                "median_tolerance_exponent": float(np.median(exponents)),
+                "order_mad": float(np.median(np.abs(np.array(orders) - np.median(orders)))),
+                "exponent_mad": float(np.median(np.abs(np.array(exponents) - np.median(exponents))))}
+    return ctx.memo(("gj-adaptive-summary", name), compute)
+
+
+@task("T003", changed_files=CHANGED, regression_tests=(_test("test_t003_integrator_orders"),
+                                                       _test("test_adaptive_checks_reject_fourth_order_variant"))
+      + SECTION_TESTS)
 def integrator_orders(ctx):
     study = convergence_study(ctx)["table"]
     orders = {method: {k: _slopes(study[k][method], "error") for k in CURVED_CHARTS} for method in ORDER_STEPS}
-    pairwise = {method: {k: [gj.slope([a["h"], b["h"]], [a["error"], b["error"]])
-                             for a, b in zip(study[k][method], study[k][method][1:])] for k in CURVED_CHARTS}
+    pairwise = {method: {k: _pairwise(study[k][method], "h", "error") for k in CURVED_CHARTS}
                 for method in ORDER_STEPS}
-    effective = {k: -gj.slope([e["function_evaluations"] for e in study[k]["adaptive"]],
-                              [e["error"] for e in study[k]["adaptive"]]) for k in CURVED_CHARTS}
-    proportional = {k: gj.slope([e["rtol"] for e in study[k]["adaptive"]], [e["error"] for e in study[k]["adaptive"]])
-                    for k in CURVED_CHARTS}
+    adaptive = adaptive_summary(ctx, "dp54", integrators.integrate_adaptive)
+    variant = adaptive_summary(ctx, "dp54-y4", dormand_prince_y4)
+    effective = {k: c["effective_order"] for k, c in adaptive["charts"].items()}
     flat = {k: max(e["error"] for m in ORDER_STEPS for e in study[k][m]) for k in FLAT_CARTESIAN}
-    ctx.artifact_json("orders.json", _plain({"steps": ORDER_STEPS, "adaptive_rtol": ADAPTIVE_RTOL,
-                                             "fitted_orders": orders, "pairwise_orders": pairwise,
-                                             "adaptive_effective_order": effective,
-                                             "adaptive_tolerance_exponent": proportional,
-                                             "flat_cartesian_max_error": flat, "table": study}))
+    ctx.artifact_json("orders.json", _plain({
+        "steps": ORDER_STEPS, "adaptive_rtol": ADAPTIVE_RTOL, "fitted_orders": orders, "pairwise_orders": pairwise,
+        "adaptive": adaptive,
+        "adaptive_y4_variant": variant, "flat_cartesian_max_error": flat, "table": study}))
     for key in CURVED_CHARTS:
         ctx.artifact_text(f"orders-{key}.svg", svg.line_plot(
             [(m, [e["h"] for e in study[key][m]], [e["error"] for e in study[key][m]]) for m in ORDER_STEPS],
             title=f"Global endpoint error on {key}", xlabel="step h", ylabel="endpoint error", logx=True, logy=True))
     ctx.artifact_text("adaptive.svg", svg.line_plot(
-        [(k, [e["function_evaluations"] for e in study[k]["adaptive"]], [e["error"] for e in study[k]["adaptive"]])
-         for k in CURVED_CHARTS], title="Dormand-Prince error against function evaluations",
+        [(k, [r["function_evaluations"] for r in c["rows"]], [r["error"] for r in c["rows"]])
+         for k, c in adaptive["charts"].items()], title="Dormand-Prince error against function evaluations",
         xlabel="function evaluations", ylabel="endpoint error", logx=True, logy=True))
 
     generator = {"name": "declared standard geodesics", "paths": list(gj.STANDARD)}
+    adaptive_generator = dict(generator, rtol=list(ADAPTIVE_RTOL), charts=list(CURVED_CHARTS))
     findings = []
     names = {"euler": "Explicit Euler", "midpoint": "Explicit midpoint", "rk4": "Classical RK4"}
     for method, p in NOMINAL_ORDER.items():
@@ -655,26 +903,53 @@ def integrator_orders(ctx):
             orders[method], {"generator": generator, "checks": [
                 gj.check("analytic", f"nominal order {p} on {k} (steps {ORDER_STEPS[method]})",
                          orders[method][k] - p, ORDER_TOLERANCE[method]) for k in CURVED_CHARTS]},
-            uncertainty={"fit": "least-squares log-log slope over four halvings; pairwise slopes retained"},
+            uncertainty=_unc("fit", _fit_spread(pairwise[method], orders[method]),
+                             "largest distance of a pairwise (halving) slope from the least-squares slope"),
             tolerance=TOL_RATE))
+    # Per-chart effective orders move by up to about 0.3 when one step is accepted or rejected differently,
+    # so the claims are about the medians over the seven charts; per-chart values stay in orders.json.
+    median_order, median_exponent = adaptive["median_effective_order"], adaptive["median_tolerance_exponent"]
     findings.append(finding(
-        "Adaptive Dormand-Prince error falls with function evaluations at an effective order near 5", "numerical",
-        effective, {"generator": generator, "checks": [
-            gj.check("analytic", f"effective order 5 on {k} (rtol 1e-8..1e-12)", effective[k] - 5, 1.0)
-            for k in CURVED_CHARTS] + [gj.check("analytic", "median effective order across charts",
-                                                float(np.median(list(effective.values()))) - 5, 0.6)]},
-        uncertainty={"fit": "the start-step ramp of the controller biases loose tolerances upward, so only "
-                            "rtol <= 1e-8 is fitted; per-chart orders scatter by about 0.6"},
-        tolerance={"abs": 0.05, "rel": 0.0}))
+        "Adaptive Dormand-Prince error falls with function evaluations at a median effective order near 5",
+        "numerical", median_order, {"generator": adaptive_generator, "checks": [
+            gj.check("analytic", "median effective order over seven charts, at least half-way from 4 to 5 (rtol "
+                     "1e-8..1e-12)", median_order, ADAPTIVE_ORDER_THRESHOLD, "signed_ge"),
+            gj.check("analytic", "median effective order over seven charts, at most 6", median_order, 6.0,
+                     "signed_le")]},
+        uncertainty=_unc("fit", adaptive["order_mad"], "median absolute deviation of the seven per-chart effective "
+                         "orders; the controller's start-step ramp biases loose tolerances upward"),
+        tolerance={"abs": 0.35, "rel": 0.0}))
     findings.append(finding(
-        "Adaptive Dormand-Prince endpoint error is proportional to the requested tolerance", "numerical",
-        proportional, {"generator": generator, "checks": [
-            gj.check("analytic", f"error ~ rtol^1 on {k}", proportional[k] - 1, 0.3) for k in CURVED_CHARTS]},
-        tolerance={"abs": 0.05, "rel": 0.0}))
+        "Adaptive Dormand-Prince endpoint error is proportional to the requested tolerance (median over charts)",
+        "numerical", median_exponent, {"generator": adaptive_generator, "checks": [
+            gj.check("analytic", "median exponent of error ~ rtol^q, at least half-way from 0.8 to 1",
+                     median_exponent, ADAPTIVE_EXPONENT_THRESHOLD, "signed_ge"),
+            gj.check("analytic", "median exponent of error ~ rtol^q, at most 1.1", median_exponent, 1.1,
+                     "signed_le")]},
+        uncertainty=_unc("fit", adaptive["exponent_mad"], "median absolute deviation of the seven per-chart "
+                         "tolerance exponents"),
+        tolerance={"abs": 0.1, "rel": 0.0}))
+    findings.append(finding(
+        "The adaptive-order checks reject a Dormand-Prince variant that advances with its fourth-order solution",
+        "numerical", {"median_effective_order": variant["median_effective_order"],
+                      "median_tolerance_exponent": variant["median_tolerance_exponent"]},
+        {"generator": dict(adaptive_generator, variant="accepted state y4, no local extrapolation"), "checks": [
+            gj.check("analytic", "variant median effective order below the acceptance threshold",
+                     variant["median_effective_order"], ADAPTIVE_ORDER_THRESHOLD, "signed_le"),
+            gj.check("analytic", "variant median tolerance exponent below the acceptance threshold",
+                     variant["median_tolerance_exponent"], ADAPTIVE_EXPONENT_THRESHOLD, "signed_le")]},
+        uncertainty=_unc("fit", max(variant["order_mad"], variant["exponent_mad"]),
+                         "median absolute deviation over the seven charts"),
+        tolerance={"abs": 0.35, "rel": 0.0},
+        counterexample={"statement": "An effective order near 5 is observed whatever solution a DP5(4) pair advances",
+                        "witness": {"variant": "advance with y4", "median_effective_order":
+                                    variant["median_effective_order"], "median_tolerance_exponent":
+                                    variant["median_tolerance_exponent"]}}))
     findings.append(finding(
         "No convergence order is observable on flat Cartesian charts: every method is exact to rounding there",
         "numerical", flat, {"generator": generator, "checks": [
             gj.check("analytic", f"straight-line geodesic on {k} (Gamma = 0)", flat[k], 1e-12) for k in FLAT_CARTESIAN]},
+        uncertainty=_unc("roundoff", max(flat.values()), "accumulated binary64 rounding over at most 512 steps"),
         tolerance=TOL_SMALL,
         counterexample={"statement": "Every integrator exhibits its nominal convergence order on every surface",
                         "witness": {"charts": list(FLAT_CARTESIAN), "max_endpoint_error": flat,
@@ -683,33 +958,50 @@ def integrator_orders(ctx):
         "completed", findings,
         hypothesis=("On charts with nonzero Christoffel symbols the global endpoint error of Euler, midpoint and RK4 "
                     "scales like h^1, h^2 and h^4, and the Dormand-Prince error scales like (evaluations)^-5 and "
-                    "like the requested tolerance."),
+                    "like the requested tolerance, which distinguishes it from a pair advancing with y4 "
+                    "((evaluations)^-4, tol^0.8)."),
         mathematical_model=("Global error e(h) = C h^p + O(h^(p+1)) for a p-th order one-step method on a smooth "
-                            "ODE; for DP5(4) with per-step error control, h ~ tol^(1/5) and e ~ tol."),
+                            "ODE; for DP5(4) with per-step error control and local extrapolation, h ~ tol^(1/5) and "
+                            "e ~ h^5 ~ tol; advancing with y4 gives e ~ h^4 ~ tol^(4/5)."),
         input_data=[f"Standard paths on {', '.join(gj.STANDARD)}",
                     f"Steps {ORDER_STEPS}; adaptive rtol = atol in {list(ADAPTIVE_RTOL)}",
                     "References from T002 (closed form or mpmath)"],
         observation_model="Euclidean distance of the embedded end point (chart distance on the hyperbolic plane).",
-        expected_invariant="Fitted log-log slopes within declared tolerances of the nominal orders.",
+        expected_invariant=("Fitted log-log slopes within declared tolerances of the nominal orders; adaptive medians "
+                            f"above the half-way thresholds {ADAPTIVE_ORDER_THRESHOLD} (order) and "
+                            f"{ADAPTIVE_EXPONENT_THRESHOLD} (tolerance exponent), which the y4 variant fails."),
         experiment=("Integrate the geodesic state (u, v) with each fixed-step method at four halvings and the "
-                    f"adaptive method at {len(ADAPTIVE_RTOL)} tolerances; fit log-log slopes against the reference "
-                    "end point."),
+                    f"adaptive method and its y4 variant at {len(ADAPTIVE_RTOL)} tolerances; fit log-log slopes "
+                    "against the reference end point."),
         numerical_result=("Fitted orders: " + "; ".join(
             f"{m} " + ", ".join(f"{k} {_fmt(v, 4)}" for k, v in orders[m].items()) for m in ORDER_STEPS)
-            + "; adaptive effective orders " + ", ".join(f"{k} {_fmt(v, 3)}" for k, v in effective.items()) + "."),
-        uncertainty=("Slopes are least-squares fits over four points; the pre-asymptotic bias is visible in the "
-                     "retained pairwise slopes (largest on RK4 at the coarsest step)."),
+            + "; adaptive effective orders " + ", ".join(f"{k} {_fmt(v, 3)}" for k, v in effective.items())
+            + f" (median {_fmt(median_order, 3)}), tolerance-exponent median {_fmt(median_exponent, 3)}; y4 variant "
+            f"medians {_fmt(variant['median_effective_order'], 3)} and "
+            f"{_fmt(variant['median_tolerance_exponent'], 3)}."),
+        uncertainty=("Fixed-step slopes are least-squares fits over four points; the pre-asymptotic bias is the "
+                     "retained spread of pairwise slopes. Adaptive slopes depend on accept/reject decisions, so "
+                     "only their medians over seven charts are claimed."),
         failure_modes_checked=["flat Cartesian charts where every method is exact (recorded as a counterexample)",
                                "RK4 errors kept above the rounding floor (smallest near 1e-12)",
-                               "reference accuracy exceeds the smallest measured error by several digits"],
+                               "reference accuracy exceeds the smallest measured error by several digits",
+                               "a DP5(4) pair advancing with y4 (rejected by the median checks)",
+                               "single accept/reject flips (per-chart orders are not claimed)"],
         unresolved_assumptions=["The adaptive effective order depends on the step-size controller and its start "
-                                "step; the retained numbers are for integrators.integrate_adaptive only"],
+                                "step; the retained numbers are for integrators.integrate_adaptive only",
+                                "The half-way thresholds separate order 5 from order 4; they do not certify the "
+                                "exact order of the pair"],
         recommended_next_task="T004: measure unit-speed drift of the same integrations without renormalization")
 
 
 # T004 -----------------------------------------------------------------------
 NORMALIZING_CALLS = frozenset({"norm", "normalize", "normalized", "speed_squared", "unit_tangent", "orthonormal_frame",
-                               "normal", "inner", "hypot"})
+                               "normal", "inner", "hypot", "sqrt", "rsqrt"})
+# Operations that produce a magnitude: a name bound to one taints later divisions by that name.
+MAGNITUDE_CALLS = frozenset({"sqrt", "norm", "hypot"})
+# Justified uses, by function: the adaptive controller's RMS error norm scales the step size, never the state.
+ALLOWED_CALLS = frozenset({("integrate_adaptive", "sqrt")})
+RENORM_STEPS = (64, 128, 256, 512)
 
 
 def state_update_code():
@@ -719,25 +1011,78 @@ def state_update_code():
             surfaces.Surface.geodesic_rhs, surfaces.Surface.christoffel)
 
 
+def _called(node) -> str | None:
+    return node.func.attr if isinstance(node.func, ast.Attribute) else getattr(node.func, "id", None)
+
+
+def _constant(node):
+    """Value of a numeric constant expression (+, -, *, / of literals), else None."""
+    if isinstance(node, ast.Constant) and type(node.value) in (int, float):
+        return float(node.value)
+    if isinstance(node, ast.UnaryOp) and isinstance(node.op, (ast.USub, ast.UAdd)):
+        value = _constant(node.operand)
+        return None if value is None else (-value if isinstance(node.op, ast.USub) else value)
+    if isinstance(node, ast.BinOp) and isinstance(node.op, (ast.Add, ast.Sub, ast.Mult, ast.Div)):
+        left, right = _constant(node.left), _constant(node.right)
+        if left is None or right is None:
+            return None
+        if isinstance(node.op, ast.Add):
+            return left + right
+        if isinstance(node.op, ast.Sub):
+            return left - right
+        if isinstance(node.op, ast.Mult):
+            return left * right
+        return left / right if right else None
+    return None
+
+
+def _half_power(node) -> bool:
+    """True for an exponent that is a constant expression equal to +0.5 or -0.5."""
+    value = _constant(node)
+    return value is not None and abs(abs(value) - 0.5) < 1e-12
+
+
+def _is_magnitude(node) -> bool:
+    return any((isinstance(n, ast.Call) and _called(n) in MAGNITUDE_CALLS)
+               or (isinstance(n, ast.BinOp) and isinstance(n.op, ast.Pow) and _half_power(n.right))
+               for n in ast.walk(node))
+
+
 def normalization_calls(functions=None) -> list:
-    """Calls that could renormalize a state, and divisions by a computed magnitude, in the given source."""
+    """Operations in the given source that could renormalize a state.
+
+    Flags norm-like and square-root calls (except the allow-listed error
+    norm), any power of +-0.5, divisions by sqrt/norm/hypot/abs expressions,
+    and divisions by names previously bound to a sqrt, norm, hypot or
+    half-power expression.
+    """
     found = []
     for function in functions or state_update_code():
+        where = function.__qualname__
         tree = ast.parse(textwrap.dedent(inspect.getsource(function)))
+        tainted = set()
         for node in ast.walk(tree):
-            if isinstance(node, ast.Call):
-                name = node.func.attr if isinstance(node.func, ast.Attribute) else getattr(node.func, "id", None)
-                if name in NORMALIZING_CALLS:
-                    found.append(f"{function.__qualname__}: call {name}")
+            if isinstance(node, (ast.Assign, ast.AnnAssign, ast.AugAssign)) and node.value is not None \
+                    and _is_magnitude(node.value):
+                targets = node.targets if isinstance(node, ast.Assign) else [node.target]
+                tainted |= {n.id for target in targets for n in ast.walk(target) if isinstance(n, ast.Name)}
+        for node in ast.walk(tree):
+            if isinstance(node, ast.Call) and _called(node) in NORMALIZING_CALLS \
+                    and (function.__name__, _called(node)) not in ALLOWED_CALLS:
+                found.append(f"{where}: call {_called(node)}")
+            if isinstance(node, ast.BinOp) and isinstance(node.op, ast.Pow) and _half_power(node.right):
+                found.append(f"{where}: power of 0.5 or -0.5")
             divisor = None
-            if isinstance(node, ast.BinOp) and isinstance(node.op, ast.Div):
+            if isinstance(node, ast.BinOp) and isinstance(node.op, (ast.Div, ast.FloorDiv)):
                 divisor = node.right
-            elif isinstance(node, ast.AugAssign) and isinstance(node.op, ast.Div):
+            elif isinstance(node, ast.AugAssign) and isinstance(node.op, (ast.Div, ast.FloorDiv)):
                 divisor = node.value
-            if isinstance(divisor, ast.Call):
-                name = divisor.func.attr if isinstance(divisor.func, ast.Attribute) else getattr(divisor.func, "id", None)
-                if name in ("sqrt", "norm", "hypot", "abs"):
-                    found.append(f"{function.__qualname__}: division by {name}")
+            if divisor is None:
+                continue
+            if isinstance(divisor, ast.Call) and _called(divisor) in MAGNITUDE_CALLS | {"abs"}:
+                found.append(f"{where}: division by {_called(divisor)}")
+            elif isinstance(divisor, ast.Name) and divisor.id in tainted:
+                found.append(f"{where}: division by the magnitude {divisor.id}")
     return found
 
 
@@ -753,13 +1098,25 @@ def renormalized_euler(surf, y0, length, steps):
     return np.array(states)
 
 
+def speed_probe(surf, y0, length, method: str) -> np.ndarray:
+    """g(v, v) along a path started at the given (possibly non-unit) speed, for a fixed or adaptive method."""
+    if method == "adaptive":
+        _, states, _ = integrators.integrate_adaptive(surf.geodesic_rhs, y0, length, rtol=1e-10, atol=1e-12)
+    else:
+        _, states = integrators.integrate_fixed(surf.geodesic_rhs, y0, length, 128, method)
+    return np.array([surf.speed_squared(y[:2], y[2:4]) for y in states])
+
+
 @task("T004", changed_files=CHANGED,
       regression_tests=(_test("test_t004_speed_drift_and_no_renormalization"),
-                        _test("test_integrator_code_path_has_no_normalization")))
+                        _test("test_integrator_code_path_has_no_normalization")) + SECTION_TESTS)
 def unit_speed_drift(ctx):
     study = convergence_study(ctx)
     table = study["table"]
     drift_orders = {m: {k: _slopes(table[k][m], "max_speed_drift") for k in CURVED_CHARTS} for m in ORDER_STEPS}
+    drift_pairwise = {f"{m}/{k}": _pairwise(table[k][m], "h", "max_speed_drift")
+                      for m in ORDER_STEPS for k in CURVED_CHARTS}
+    drift_fit = _fit_spread(drift_pairwise, {f"{m}/{k}": v for m, r in drift_orders.items() for k, v in r.items()})
     flat_drift = {k: max(e["max_speed_drift"] for m in ORDER_STEPS for e in table[k][m]) for k in FLAT_CARTESIAN}
 
     speed, speed2 = 1.3, 1.69
@@ -770,9 +1127,8 @@ def unit_speed_drift(ctx):
         y0 = gj.start_state(key)[:4].copy()
         y0[2:4] *= speed
         row = {}
-        for method, steps in (("rk4", 128), ("euler", 128)):
-            _, states = integrators.integrate_fixed(surf.geodesic_rhs, y0, spec.length, steps, method)
-            g = np.array([surf.speed_squared(y[:2], y[2:4]) for y in states])
+        for method in ("rk4", "adaptive", "midpoint", "euler"):
+            g = speed_probe(surf, y0, spec.length, method)
             row[method] = {"max_abs_g_minus_1.69": float(np.max(np.abs(g - speed2))),
                            "min_abs_g_minus_1": float(np.min(np.abs(g - 1.0))), "final_g": float(g[-1])}
         nonunit[key] = row
@@ -789,16 +1145,24 @@ def unit_speed_drift(ctx):
     sphere = gj.surface("sphere")
     spec = gj.path("sphere")
     target = np.asarray(reference(ctx, "sphere")["position"])
-    faulty = renormalized_euler(sphere, gj.start_state("sphere")[:4], spec.length, 128)
-    plain = [e for e in table["sphere"]["euler"] if e["steps"] == 128][0]
-    counter = {"steps": 128, "renormalized_max_speed_drift": float(np.max(np.abs(_speed_drift(sphere, faulty)))),
-               "renormalized_endpoint_error": float(np.linalg.norm(sphere.embedding(faulty[-1, :2]) - target)),
+    renorm = []
+    for steps in RENORM_STEPS:
+        faulty = renormalized_euler(sphere, gj.start_state("sphere")[:4], spec.length, steps)
+        renorm.append({"steps": steps, "h": spec.length / steps,
+                       "max_speed_drift": float(np.max(np.abs(_speed_drift(sphere, faulty)))),
+                       "error": float(np.linalg.norm(sphere.embedding(faulty[-1, :2]) - target))})
+    renorm_order = _slopes(renorm, "error")
+    at128 = next(e for e in renorm if e["steps"] == 128)
+    plain = next(e for e in table["sphere"]["euler"] if e["steps"] == 128)
+    counter = {"steps": 128, "renormalized_max_speed_drift": max(e["max_speed_drift"] for e in renorm),
+               "renormalized_endpoint_error": at128["error"], "renormalized_error_order": renorm_order,
                "plain_endpoint_error": plain["error"], "plain_max_speed_drift": plain["max_speed_drift"]}
 
     ctx.artifact_json("speed-drift.json", _plain({
-        "drift_orders": drift_orders, "flat_cartesian_max_drift": flat_drift, "nonunit_start": nonunit,
-        "exponential_growth_relative_error": growth, "normalization_calls": calls,
+        "drift_orders": drift_orders, "pairwise_drift_orders": drift_pairwise, "flat_cartesian_max_drift": flat_drift,
+        "nonunit_start": nonunit, "exponential_growth_relative_error": growth, "normalization_calls": calls,
         "scanned_functions": [f"{f.__module__}.{f.__qualname__}" for f in state_update_code()],
+        "allowed_calls": sorted(map(list, ALLOWED_CALLS)), "renormalized_euler": renorm,
         "renormalized_euler_counterexample": counter,
         "table": {k: {m: [{"h": e["h"], "max_speed_drift": e["max_speed_drift"], "final_speed_drift":
                            e["final_speed_drift"]} for e in table[k][m]] for m in ORDER_STEPS} for k in gj.STANDARD}}))
@@ -819,32 +1183,46 @@ def unit_speed_drift(ctx):
         "numerical", drift_orders, {"generator": generator, "checks": [
             gj.check("analytic", f"drift order {NOMINAL_ORDER[m]} for {m} on {k}",
                      drift_orders[m][k] - NOMINAL_ORDER[m], DRIFT_TOLERANCE[m])
-            for m in ORDER_STEPS for k in CURVED_CHARTS]}, tolerance=TOL_RATE)]
+            for m in ORDER_STEPS for k in CURVED_CHARTS]},
+        uncertainty=_unc("fit", drift_fit, "largest distance of a pairwise (halving) slope from the least-squares "
+                         "slope"), tolerance=TOL_RATE)]
+    accurate = ("rk4", "adaptive")
+    nonunit_drift = max(v[m]["max_abs_g_minus_1.69"] for v in nonunit.values() for m in accurate)
     findings.append(finding(
         "A non-unit initial speed stays non-unit: g(v,v) remains 1.69 to integrator accuracy", "numerical",
-        {k: v["rk4"]["max_abs_g_minus_1.69"] for k, v in nonunit.items()},
-        {"generator": {"name": "declared standard geodesics with speed 1.3", "paths": list(nonunit)}, "checks": [
-            gj.check("invariant", f"RK4 N=128 |g - 1.69| on {k}", v["rk4"]["max_abs_g_minus_1.69"], 1e-7)
-            for k, v in nonunit.items()] + [
-            gj.check("invariant", f"distance of g from 1 on {k} (a renormalizer would drive it to 0)",
-                     min(v[m]["min_abs_g_minus_1"] for m in v), 0.6, "ge") for k, v in nonunit.items()]},
-        tolerance=TOL_SMALL))
+        {k: {m: v[m]["max_abs_g_minus_1.69"] for m in accurate} for k, v in nonunit.items()},
+        {"generator": {"name": "declared standard geodesics with speed 1.3", "paths": list(nonunit),
+                       "methods": ["rk4 N=128", "adaptive rtol 1e-10", "midpoint N=128", "euler N=128"]}, "checks": [
+            gj.check("invariant", f"{m} |g - 1.69| on {k}", v[m]["max_abs_g_minus_1.69"], 1e-7)
+            for k, v in nonunit.items() for m in accurate] + [
+            gj.check("invariant", f"distance of g from 1 on {k}, all four methods (a renormalizer would drive it "
+                     "to 0)", min(v[m]["min_abs_g_minus_1"] for m in v), 0.6, "ge") for k, v in nonunit.items()]},
+        uncertainty=_unc("truncation_bound", nonunit_drift, "RK4 (N = 128) and adaptive (rtol 1e-10) truncation of "
+                         "the speed invariant"), tolerance=TOL_SMALL))
     findings.append(finding(
         "The integrator and geodesic/Jacobi right-hand-side code paths contain no state normalization",
         "computational_pipeline", {"normalization_calls": len(calls), "exponential_growth": growth},
-        {"checks": [gj.check("invariant", "normalizing calls or divisions by a computed magnitude in "
+        {"checks": [gj.check("invariant", "normalizing calls, half powers or divisions by a computed magnitude in "
                              f"{len(state_update_code())} scanned functions", len(calls), 0.0),
                     gj.check("analytic", "RK4 N=64 growth |y(2)|/|y0| against e^2 for y' = y", growth["rk4_64"], 1e-6),
                     gj.check("analytic", "adaptive rtol 1e-10 growth against e^2 for y' = y",
                              growth["adaptive_1e-10"], 1e-8)]},
+        uncertainty=_unc("truncation_bound", max(growth.values()), "global error of the y' = y probes; the "
+                         "normalization count is exact"),
         tolerance={"abs": 1e-8, "rel": 0.0}))
     findings.append(finding(
         "Unit speed does not certify an accurate path: renormalized Euler keeps |g - 1| at rounding with a "
         "first-order endpoint error", "numerical", counter,
-        {"generator": {"name": "renormalized Euler on the standard sphere path", "steps": 128}, "checks": [
-            gj.check("invariant", "renormalized Euler speed drift", counter["renormalized_max_speed_drift"], 1e-13),
-            gj.check("analytic", "renormalized Euler endpoint error against the great circle",
-                     counter["renormalized_endpoint_error"], 1e-3, "ge")]},
+        {"generator": {"name": "renormalized Euler on the standard sphere path", "steps": list(RENORM_STEPS)},
+         "checks": [
+            gj.check("invariant", "renormalized Euler speed drift, all steps", counter["renormalized_max_speed_drift"],
+                     1e-13),
+            gj.check("analytic", "renormalized Euler endpoint error against the great circle at N = 128",
+                     counter["renormalized_endpoint_error"], 1e-3, "ge"),
+            gj.check("analytic", f"renormalized Euler endpoint error order 1 (N = {RENORM_STEPS[0]}.."
+                     f"{RENORM_STEPS[-1]})", renorm_order - 1, 0.1)]},
+        uncertainty=_unc("fit", max(abs(v - renorm_order) for v in _pairwise(renorm, "h", "error")),
+                         "largest distance of a pairwise slope from the fitted order"),
         tolerance={"abs": 1e-9, "rel": 1e-6},
         counterexample={"statement": "A computed geodesic whose speed stays exactly 1 is accurate",
                         "witness": {"surface": "sphere", "method": "Euler with per-step speed renormalization",
@@ -852,7 +1230,8 @@ def unit_speed_drift(ctx):
     findings.append(finding(
         "Speed drift is at rounding on flat Cartesian charts, where every method is exact", "numerical", flat_drift,
         {"generator": generator, "checks": [gj.check("analytic", f"constant metric on {k}", flat_drift[k], 1e-13)
-                                            for k in FLAT_CARTESIAN]}, tolerance=TOL_SMALL))
+                                            for k in FLAT_CARTESIAN]},
+        uncertainty=_unc("roundoff", max(flat_drift.values()), "accumulated binary64 rounding"), tolerance=TOL_SMALL))
     return _outcome(
         "completed", findings,
         hypothesis=("Without renormalization the speed invariant g(v, v) drifts at the global order of each method, "
@@ -860,22 +1239,30 @@ def unit_speed_drift(ctx):
         mathematical_model=("g(v, v) is a first integral of the geodesic flow; for a p-th order method its global "
                             "defect is O(h^p). A renormalizing step would force g(v, v) = 1 whatever the initial "
                             "speed."),
-        input_data=[f"The T003 integrations (steps {ORDER_STEPS}, adaptive rtol {list(ADAPTIVE_RTOL)})",
-                    "Speed-1.3 starts on the sphere, torus and hyperbolic plane; y' = y growth probes"],
+        input_data=[f"The T003 fixed-step integrations (steps {ORDER_STEPS})",
+                    "Speed-1.3 starts on the sphere, torus and hyperbolic plane (RK4, midpoint and Euler with 128 "
+                    "steps, adaptive rtol 1e-10); y' = y growth probes",
+                    f"Renormalized Euler on the sphere path with {list(RENORM_STEPS)} steps"],
         observation_model="max over nodes of |g(v, v) - 1| (or |g - 1.69|) evaluated with the exact metric.",
-        expected_invariant="Drift slopes near p; g stays at 1.69; zero normalizing calls in the state-update path.",
-        experiment=("Measure drift for every method and step; restart with speed 1.3; scan the state-update source "
-                    "for normalizing calls; integrate y' = y; compare a deliberately renormalized Euler."),
+        expected_invariant=("Drift slopes near p; g stays at 1.69; zero normalizing operations in the state-update "
+                            "path."),
+        experiment=("Measure drift for every method and step; restart with speed 1.3 under all four methods; scan "
+                    "the state-update source for normalizing calls, half powers and divisions by magnitudes; "
+                    "integrate y' = y; compare a deliberately renormalized Euler at four step counts."),
         numerical_result=("Drift orders: " + "; ".join(
             f"{m} " + ", ".join(f"{k} {_fmt(v, 3)}" for k, v in drift_orders[m].items()) for m in ORDER_STEPS)
-            + f"; renormalized Euler endpoint error {_fmt(counter['renormalized_endpoint_error'])} with speed drift "
-            f"{_fmt(counter['renormalized_max_speed_drift'])}."),
+            + f"; speed-1.3 starts keep |g - 1.69| <= {_fmt(nonunit_drift)} (RK4, adaptive); renormalized Euler "
+            f"endpoint error {_fmt(counter['renormalized_endpoint_error'])} at N = 128 (order "
+            f"{_fmt(renorm_order, 3)}) with speed drift {_fmt(counter['renormalized_max_speed_drift'])}."),
         uncertainty="Slopes are least-squares fits over four halvings; RK4 sphere drift is still slightly pre-asymptotic.",
-        failure_modes_checked=["hidden renormalization (static scan, speed-1.3 start, y' = y growth)",
+        failure_modes_checked=["hidden renormalization (static scan, speed-1.3 start under every method, y' = y "
+                               "growth)",
+                               "normalization through an intermediate name or a -0.5 power (scanner probes)",
                                "speed drift mistaken for accuracy (renormalized Euler counterexample)",
                                "flat charts where drift is identically at rounding"],
         unresolved_assumptions=["The static scan covers the listed functions only; code outside them (for example "
-                                "initial-state construction, which normalizes the start by design) is not scanned"],
+                                "initial-state construction, which normalizes the start by design, and the metric "
+                                "evaluations called from the right-hand side) is not scanned"],
         recommended_next_task="T005: verify the Jacobi separation law on constant-curvature paths")
 
 
@@ -884,8 +1271,14 @@ def unit_speed_drift(ctx):
 # ---------------------------------------------------------------------------
 CONSTANT_PATHS = ("sphere-great-circle", "plane", "cylinder", "hyperbolic-long", "torus-outer-equator",
                   "torus-inner-equator")
-CSG_REFUSALS = frozenset({"CSG_CHECKOUT_UNREADABLE", "CSG_REVISION_MISMATCH", "CSG_TREE_MISMATCH",
-                          "CSG_CHECKOUT_DIRTY", "CSG_EXECUTION_FAILED", "CSG_CHANGED_DURING_EXECUTION"})
+# Figure legends stay within the 20 characters the SVG legend column shows.
+CONSTANT_SHORT = {"sphere-great-circle": "sphere", "plane": "plane", "cylinder": "cylinder",
+                  "hyperbolic-long": "hyperbolic", "torus-outer-equator": "outer eq",
+                  "torus-inner-equator": "inner eq"}
+SEPARATION_PATHS = ("sphere-great-circle", "hyperbolic-long")
+SEPARATION_EPS = (0.04, 0.02, 0.01)
+SEPARATION_NODES = 141
+CSG_REFUSALS = frozenset(gj.PIN_REFUSALS + gj.EXECUTION_REFUSALS)
 
 
 def _model_error(tr, k):
@@ -896,22 +1289,83 @@ def _model_error(tr, k):
             "lateral": _discrepancy(y[:, 4], a), "lateral_rate": _discrepancy(y[:, 5], ap)}
 
 
+def geodesic_distance(key: str, a, b) -> np.ndarray:
+    """Exact intrinsic distance between matched points of two closed-form geodesics (sphere or half-plane).
+
+    Sphere: 2 R asin(chord / 2R) of embedded points; half-plane with
+    g = I/(k^2 y^2): (2/k) asinh(|a - b| / (2 sqrt(y_a y_b))) of chart points.
+    """
+    surf = gj.surface(gj.path(key).surface)
+    if isinstance(surf, surfaces.Sphere):
+        chord = np.linalg.norm(a - b, axis=1)
+        return 2 * surf.radius * np.arcsin(np.minimum(1.0, chord / (2 * surf.radius)))
+    if isinstance(surf, surfaces.HyperbolicPlane):
+        return 2 / surf.k * np.arcsinh(np.linalg.norm(a - b, axis=1) / (2 * np.sqrt(a[:, 1] * b[:, 1])))
+    raise ValueError(f"No closed-form distance on {key}")
+
+
+def separation_study(key: str) -> dict:
+    """Distance of perturbed closed-form geodesics per unit perturbation against |cn_K| and |sn_K|.
+
+    Uses no integrated Jacobi field: the base and perturbed geodesics are the
+    surface's closed forms (the lateral start is the exact normal-geodesic
+    offset of ``jacobi.perturbed_start``), and K comes from the parameters.
+    """
+    spec = gj.path(key)
+    surf = gj.surface(spec.surface)
+    s = np.linspace(0.0, spec.length, SEPARATION_NODES)
+    u0 = np.asarray(spec.u0, dtype=float)
+    t0 = surf.unit_tangent(u0, spec.heading)
+
+    def curve(u, t):
+        if isinstance(surf, surfaces.Sphere):
+            return surf.exact_embedded_geodesic(u, t, s)
+        return surf.exact_geodesic(u, t, s)
+
+    base = curve(u0, t0)
+    k = _constant_curvature_of(key)
+    cn, _, sn, _ = jacobi.constant_curvature(k, s)
+    out = {"curvature": k}
+    for column, model in (("lateral", np.abs(cn)), ("heading", np.abs(sn))):
+        errors = []
+        for eps in SEPARATION_EPS:
+            args = {"lateral": eps} if column == "lateral" else {"heading_change": eps}
+            y = jacobi.perturbed_start(surf, spec.u0, spec.heading, **args)
+            ratio = geodesic_distance(key, curve(y[:2], y[2:]), base) / eps
+            errors.append(_discrepancy(ratio, model))
+        out[column] = {"errors": errors, "order": gj.slope(SEPARATION_EPS, errors)}
+    return out
+
+
 def _csg(ctx):
-    """Run the pinned CSG provider once per context on the constant-curvature grids (memoized)."""
+    """Run the pinned CSG provider once per context on the constant-curvature grids (memoized).
+
+    The expected pin-stage refusal is predicted from direct git queries before
+    verification, so a refusal finding compares a prediction with the outcome.
+    """
     def compute():
         checkout = ctx.providers["csg"]
+        predicted = gj.predict_csg_refusal(checkout)
+        stage = "pin"
         try:
             identity = gj.verify_csg_checkout(checkout)
+            stage = "execution"
             cases = [{"arclength": _fine_transfer(ctx, key).s.tolist(), "gaussian_curvature": _constant_curvature_of(key)}
                      for key in CONSTANT_PATHS]
             data = gj.run_csg_jacobi(checkout, cases)
-            if gj.verify_csg_checkout(checkout) != identity:
+            try:
+                unchanged = gj.verify_csg_checkout(checkout) == identity
+            except gj.ProviderRefusal:
+                unchanged = False
+            if not unchanged:
                 raise gj.ProviderRefusal("CSG_CHANGED_DURING_EXECUTION", "Provider checkout changed during execution")
         except gj.ProviderRefusal as exc:
-            return {"refusal": exc.code, "message": str(exc)}
+            # The checkout path is machine-specific; retained messages name it generically.
+            message = str(exc).replace(str(checkout), "<checkout>")
+            return {"refusal": exc.code, "stage": stage, "predicted": predicted, "message": message}
         identity = dict(identity, implementation=gj.CSG_IMPLEMENTATION, python=data["python"], numpy=data["numpy"],
                         subprocess=True)
-        return {"identity": identity, "data": data, "paths": list(CONSTANT_PATHS)}
+        return {"identity": identity, "data": data, "paths": list(CONSTANT_PATHS), "predicted": predicted}
     return ctx.memo("gj-csg", compute)
 
 
@@ -921,9 +1375,39 @@ def _provider_identity(csg):
     return {"provider": csg["identity"], "ciw": builtin_identity(CHANGED)}
 
 
+def _refusal_record(ctx, csg) -> tuple:
+    """Refusal finding, fixed report sentence and retained detail for a refused CSG binding."""
+    ctx.artifact_json("provider-refusal.json", {key: csg[key] for key in ("refusal", "stage", "predicted", "message")})
+    code = csg["refusal"]
+    if csg["stage"] == "pin":
+        record = finding(
+            "A bound CSG checkout whose git state differs from the pin is refused with the code that state predicts",
+            "provenance", {"predicted": csg["predicted"], "observed": code},
+            {"checks": [{"reference_kind": "refusal", "reference": "code predicted from direct git queries "
+                         "(rev-parse, status, ls-files) before verify_csg_checkout ran",
+                         "expected_refusal": csg["predicted"], "observed_refusal": code,
+                         "passed": code == csg["predicted"]}]},
+            uncertainty=_unc("exact", 0.0, "refusal codes are exact strings"))
+    else:
+        expected = code if code in gj.EXECUTION_REFUSALS else gj.EXECUTION_REFUSALS[0]
+        record = finding(
+            "A pinned CSG provider whose execution fails or whose checkout changes during execution is refused "
+            "rather than compared", "provenance", {"predicted_pin_stage": csg["predicted"], "observed": code},
+            {"checks": [
+                {"reference_kind": "refusal", "reference": "pin stage predicted clean by direct git queries and "
+                 "verified clean", "expected_refusal": csg["predicted"], "observed_refusal": "none",
+                 "passed": csg["predicted"] == "none"},
+                {"reference_kind": "refusal", "reference": "membership: the observed code is an execution-stage "
+                 "refusal (" + ", ".join(gj.EXECUTION_REFUSALS) + ")", "expected_refusal": expected,
+                 "observed_refusal": code, "passed": code == expected}]},
+            uncertainty=_unc("exact", 0.0, "refusal codes are exact strings"))
+    return record, f"CSG provider refused ({code}); the comparison did not run (detail in provider-refusal.json)"
+
+
 @task("T005", changed_files=CHANGED,
       regression_tests=(_test("test_t005_separation_law"), _test("test_t005_csg_provider_agreement"),
-                        _test("test_csg_checkout_refusals")))
+                        _test("test_csg_checkout_refusals"), _test("test_csg_output_is_refused_unless_complete"))
+      + SECTION_TESTS)
 def separation_law(ctx):
     rows = {}
     for key in CONSTANT_PATHS:
@@ -936,17 +1420,19 @@ def separation_law(ctx):
                "coarse_errors": err_coarse,
                "curvature_drift": float(np.max(np.abs(fine.curvature_along() - k))),
                "max_error": max(err_fine.values()), "j_head_end": float(fine.states[-1, 6]),
-               "j_lat_end": float(fine.states[-1, 4])}
+               "j_lat_end": float(fine.states[-1, 4]),
+               "halving_estimate": abs(max(err_coarse.values()) - max(err_fine.values())) / 15}
         if key.startswith("torus"):
             row["theta_drift"] = float(np.max(np.abs(fine.points[:, 1] - spec.u0[1])))
         if k != 0:
             row["observed_order"] = math.log2(max(err_coarse.values()) / max(err_fine.values()))
         rows[key] = row
+    separation = {key: separation_study(key) for key in SEPARATION_PATHS}
     csg = _csg(ctx) if ctx.available("provider:csg") else None
     provider_rows = None
     if csg and "data" in csg:
         provider_rows = {}
-        for key, trace, maps in zip(csg["paths"], csg["data"]["traces"], csg["data"]["maps"]):
+        for key, trace, maps in zip(csg["paths"], csg["data"]["traces"], csg["data"]["maps"], strict=True):
             fine = _fine_transfer(ctx, key)
             ciw_phi = np.stack([np.array([[y[4], y[6]], [y[5], y[7]]]) for y in fine.states])
             csg_numeric = np.asarray(maps["numeric"]["matrices"])
@@ -959,18 +1445,19 @@ def separation_law(ctx):
                                   "csg_determinant_drift": float(np.max(np.abs(
                                       np.asarray(maps["numeric"]["determinant"]) - 1.0)))}
     ctx.artifact_json("separation-law.json", _plain({"paths": {k: gj.path(k).as_dict() for k in CONSTANT_PATHS},
-                                                     "rows": rows, "provider": provider_rows,
+                                                     "rows": rows, "closed_form_separation": separation,
+                                                     "separation_eps": SEPARATION_EPS, "provider": provider_rows,
                                                      "provider_status": None if csg is None else
                                                      csg.get("refusal", "compared")}))
     head_series, error_series = [], []
     for key in CONSTANT_PATHS:
         fine = _fine_transfer(ctx, key)
         stride = max(1, len(fine.s) // 60)
-        head_series.append((f"{key} (K={_fmt(_constant_curvature_of(key))})", fine.s[::stride],
+        head_series.append((f"{CONSTANT_SHORT[key]} K={_fmt(_constant_curvature_of(key), 2)}", fine.s[::stride],
                             fine.states[::stride, 6]))
         _, _, b, _ = jacobi.constant_curvature(_constant_curvature_of(key), fine.s)
-        error_series.append((key, fine.s[1::stride], np.maximum(np.abs(fine.states[1::stride, 6] - b[1::stride]),
-                                                                1e-17)))
+        error_series.append((CONSTANT_SHORT[key], fine.s[1::stride],
+                             np.maximum(np.abs(fine.states[1::stride, 6] - b[1::stride]), 1e-17)))
     ctx.artifact_text("heading-column.svg", svg.line_plot(head_series, title="Heading column j_head(s) = sn_K(s)",
                                                           xlabel="arclength s", ylabel="j_head", markers=False))
     ctx.artifact_text("heading-error.svg", svg.line_plot(error_series, title="|j_head - sn_K| along the paths",
@@ -979,18 +1466,40 @@ def separation_law(ctx):
 
     generator = {"name": "declared constant-curvature geodesics", "paths": list(CONSTANT_PATHS),
                  "steps": {k: _fine(k) for k in CONSTANT_PATHS}}
+    halving = max(r["halving_estimate"] for r in rows.values())
+    truncation = _unc("truncation_bound", halving, "RK4 step halving: |error(h) - error(h/2)| / 15, largest over "
+                      "the paths; curvature references come from the surface parameters")
     findings = [finding(
         "The heading Jacobi column follows sin(sqrt(K)s)/sqrt(K), s and sinh(sqrt(-K)s)/sqrt(-K) on positive, zero "
         "and negative curvature", "numerical", {k: rows[k]["errors"]["heading"] for k in CONSTANT_PATHS},
         {"generator": generator, "checks": [
             gj.check("analytic", f"sn_K with K = {_fmt(rows[k]['curvature'], 6)} on {k}", rows[k]["errors"]["heading"],
-                     1e-7) for k in CONSTANT_PATHS]}, tolerance=TOL_SMALL)]
+                     1e-7) for k in CONSTANT_PATHS]}, uncertainty=truncation, tolerance=TOL_SMALL)]
     findings.append(finding(
         "The full integrated transfer matrix (lateral column and both rates) follows the model-space law cn_K, sn_K",
         "numerical", {k: rows[k]["max_error"] for k in CONSTANT_PATHS},
         {"generator": generator, "checks": [gj.check("analytic", f"cn_K, -K sn_K, sn_K, cn_K on {k}",
                                                      rows[k]["max_error"], 1e-7) for k in CONSTANT_PATHS]},
-        tolerance=TOL_SMALL))
+        uncertainty=truncation, tolerance=TOL_SMALL))
+    sep_value = {k: {c: {"error_at_smallest_eps": v[c]["errors"][-1], "order": v[c]["order"]}
+                     for c in ("lateral", "heading")} for k, v in separation.items()}
+    sep_checks = []
+    for key, v in separation.items():
+        for column in ("lateral", "heading"):
+            model = "|cn_K|" if column == "lateral" else "|sn_K|"
+            sep_checks.append(gj.check("self_convergence", f"{column} d(gamma_eps, gamma_0)/eps against {model} on "
+                                       f"{key}: remainder order 2 in eps", v[column]["order"] - 2, 0.15))
+            sep_checks.append(gj.check("analytic", f"{column} d(gamma_eps, gamma_0)/eps against {model} on {key} at "
+                                       f"eps = {SEPARATION_EPS[-1]}", v[column]["errors"][-1], 5e-3, "le"))
+    findings.append(finding(
+        "Neighbouring closed-form geodesics on the sphere and hyperbolic plane separate as |sn_K| (heading) and "
+        "|cn_K| (lateral) per unit perturbation", "numerical", sep_value,
+        {"generator": {"name": "closed-form perturbed geodesics", "paths": list(SEPARATION_PATHS),
+                       "eps": list(SEPARATION_EPS), "nodes": SEPARATION_NODES}, "checks": sep_checks},
+        uncertainty=_unc("truncation_bound", max(v[c]["errors"][-1] for v in separation.values()
+                                                 for c in ("lateral", "heading")),
+                         f"O(eps^2) remainder of the separation ratio at eps = {SEPARATION_EPS[-1]}"),
+        tolerance={"abs": 1e-6, "rel": 1e-4}))
     torus = gj.surface("torus")
     equators = {k: {"curvature": rows[k]["curvature"], "curvature_drift": rows[k]["curvature_drift"],
                     "theta_drift": rows[k]["theta_drift"], "max_error": rows[k]["max_error"]}
@@ -1003,13 +1512,14 @@ def separation_law(ctx):
                 gj.check("invariant", f"K(gamma(s)) - K0 along {k}", e["curvature_drift"], 1e-12),
                 gj.check("invariant", f"theta stays on {k}", e["theta_drift"], 1e-9),
                 gj.check("analytic", f"transfer matrix against cn_K, sn_K on {k}", e["max_error"], 1e-7))]},
-        tolerance=TOL_VALUE))
+        uncertainty=truncation, tolerance=TOL_VALUE))
     orders = {k: rows[k]["observed_order"] for k in CONSTANT_PATHS if "observed_order" in rows[k]}
     findings.append(finding(
         "Residuals against the model-space law are fourth-order RK4 discretization error", "numerical", orders,
         {"generator": generator, "checks": [gj.check("self_convergence", f"error ratio at h and 2h on {k}",
                                                      v - 4, 0.3) for k, v in orders.items()]},
-        tolerance=TOL_RATE))
+        uncertainty=_unc("fit", max(orders.values()) - min(orders.values()), "spread of the two-point step-halving "
+                         "orders across the curved paths"), tolerance=TOL_RATE))
     state = "completed"
     identity = None
     notes = ["Paths of constant curvature only; variable curvature is covered by T006-T009"]
@@ -1024,25 +1534,24 @@ def separation_law(ctx):
              "checks": [
                  gj.check("analytic", "CSG constant_curvature_transfer against ciw.lab.jacobi.constant_curvature",
                           max(r["ciw_closed_form_vs_csg_closed_form"] for r in provider_rows.values()), 1e-12),
-                 # Same method (classical RK4) on the same grid in two code bases: agreement of implementations.
+                 # Recorded under the same-origin kind until the contract has one for two origins running the
+                 # same method; the label does not depend on it (the independent check below sets it).
                  gj.check("cross_implementation", "CSG integrate_jacobi RK4 trace against the ciw RK4 transfer on "
-                          "the same grid", max(r["ciw_rk4_vs_csg_rk4"] for r in provider_rows.values()), 1e-9)],
+                          "the same grid (same method, different origin; not a same-origin comparison)",
+                          max(r["ciw_rk4_vs_csg_rk4"] for r in provider_rows.values()), 1e-9)],
              "independent_check": gj.independent(
                  gj.check("analytic", "CSG closed-form constant_curvature_transfer at the ciw nodes",
                           max(r["ciw_rk4_vs_csg_closed_form"] for r in provider_rows.values()), 1e-7),
                  "ciw.lab.jacobi", f"{gj.CSG_IMPLEMENTATION}@{rev}", checker_revision=rev)},
+            uncertainty=_unc("truncation_bound", max(r["ciw_rk4_vs_csg_closed_form"] for r in provider_rows.values()),
+                             "ciw RK4 truncation at the fine step; the provider closed form is exact to rounding"),
             tolerance=TOL_SMALL))
         identity = _provider_identity(csg)
     elif csg is not None:
         state = "partial"
-        known = csg["refusal"] in CSG_REFUSALS
-        findings.append(finding(
-            "A bound CSG provider that fails pin verification or execution is refused rather than compared",
-            "provenance", csg["refusal"], {"checks": [{
-                "reference_kind": "refusal", "reference": "verify_csg_checkout and run_csg_jacobi",
-                "expected_refusal": csg["refusal"] if known else "a known CSG refusal code",
-                "observed_refusal": csg["refusal"], "passed": known}]}))
-        notes.append(f"CSG provider refused: {csg['message']}")
+        record, sentence = _refusal_record(ctx, csg)
+        findings.append(record)
+        notes.append(sentence)
     else:
         notes.append("The optional CSG provider comparison did not run (bind --provider csg=<checkout>)")
     findings.append(finding(
@@ -1054,15 +1563,24 @@ def separation_law(ctx):
                     "exponentially (K < 0); the torus equators realize K = 1/(r(R+r)) and K = -1/(r(R-r))."),
         mathematical_model=("j'' + K j = 0 with j(0) = 0, j'(0) = 1 (heading) and j(0) = 1, j'(0) = 0 (lateral); on "
                             "a torus of radii R > r the equators theta = 0 and theta = pi are geodesics with "
-                            "K = cos(theta)/(r(R + r cos(theta)))."),
+                            "K = cos(theta)/(r(R + r cos(theta))); on constant curvature d(gamma_eps(s), gamma_0(s)) = "
+                            "|eps| |j(s)| (1 + O(eps^2)), e.g. sin(d/2) = sin(eps/2) |sin s| on the unit sphere."),
         input_data=[f"{k}: K = {_fmt(rows[k]['curvature'], 6)}, L = {rows[k]['length']}, {rows[k]['steps']} RK4 steps"
-                    for k in CONSTANT_PATHS],
-        observation_model="Relative error max |j - model| / max(1, |model|) over all nodes, per column and rate.",
-        expected_invariant="Integrated columns equal sn_K and cn_K to RK4 accuracy; K stays constant along the path.",
+                    for k in CONSTANT_PATHS] + [f"Closed-form perturbed geodesics on {', '.join(SEPARATION_PATHS)} "
+                                                f"with eps in {list(SEPARATION_EPS)}"],
+        observation_model=("Relative error max |j - model| / max(1, |model|) over all nodes, per column and rate; "
+                           "exact intrinsic distance of matched points of closed-form geodesics."),
+        expected_invariant=("Integrated columns equal sn_K and cn_K to RK4 accuracy with K from the surface "
+                            "parameters; K stays constant along the path; closed-form separations approach "
+                            "eps |sn_K| and eps |cn_K|."),
         experiment=("Integrate geodesic and Jacobi columns jointly on each surface, compare with the model-space "
-                    "closed forms at h and 2h, and (when bound) with the pinned CSG provider in a subprocess."),
+                    "closed forms at h and 2h; measure the separation of closed-form perturbed geodesics on the "
+                    "sphere and hyperbolic plane; compare (when bound) with the pinned CSG provider in a subprocess."),
         numerical_result=("Largest model-space error " + _fmt(max(r["max_error"] for r in rows.values()))
                           + "; observed orders " + ", ".join(f"{k} {_fmt(v, 3)}" for k, v in orders.items())
+                          + "; closed-form separation error at eps = 0.01 "
+                          + ", ".join(f"{k} {_fmt(max(v[c]['errors'][-1] for c in ('lateral', 'heading')))}"
+                                      for k, v in separation.items())
                           + ("" if provider_rows is None else "; ciw vs CSG closed form "
                              + _fmt(max(r["ciw_rk4_vs_csg_closed_form"] for r in provider_rows.values()))
                              + ", ciw vs CSG RK4 "
@@ -1070,6 +1588,8 @@ def separation_law(ctx):
                           + "."),
         uncertainty="RK4 discretization error (about 1e-8 relative at the fine step), confirmed by step halving.",
         failure_modes_checked=["sign of K (oscillation versus exponential growth)",
+                               "curvature reference taken from the surface parameters, not from gaussian_curvature",
+                               "separation law on actual geodesics, not only on the scalar equation",
                                "torus equator stays on the equator (theta drift)",
                                "flat charts where the columns are exactly 1 and s",
                                "provider checkout identity verified before and after execution"],
@@ -1116,7 +1636,9 @@ def finite_difference_study(ctx) -> dict:
                 one.append(float(np.max(np.abs(plus / eps - base.states[:, index]))))
                 central.append(float(np.max(np.abs((plus - minus) / (2 * eps) - base.states[:, index]))))
             row[column] = {"one_sided": one, "central": central, "one_sided_order": gj.slope(FD_EPS, one),
-                           "central_order": gj.slope(FD_EPS, central)}
+                           "central_order": gj.slope(FD_EPS, central),
+                           "one_sided_pairwise": [gj.slope(FD_EPS[i:i + 2], one[i:i + 2]) for i in range(3)],
+                           "central_pairwise": [gj.slope(FD_EPS[i:i + 2], central[i:i + 2]) for i in range(3)]}
         rows[key] = row
     base = gj.transfer(ctx, "sphere", "rk4", FD_STEPS)
     roundoff = [float(np.max(np.abs(_perturbed_separation(ctx, "sphere", 0.0, eps) / eps - base.states[:, 6])))
@@ -1125,7 +1647,8 @@ def finite_difference_study(ctx) -> dict:
 
 
 @task("T006", changed_files=CHANGED,
-      regression_tests=(_test("test_t006_finite_differences"), _test("test_perturbation_helpers_are_geometric")))
+      regression_tests=(_test("test_t006_finite_differences"), _test("test_perturbation_helpers_are_geometric"))
+      + SECTION_TESTS)
 def finite_difference_jacobi(ctx):
     study = finite_difference_study(ctx)
     rows, roundoff = study["rows"], study["roundoff"]
@@ -1134,17 +1657,20 @@ def finite_difference_jacobi(ctx):
                                                          "roundoff_eps": ROUNDOFF_EPS, "roundoff_errors": roundoff}))
     for key in FD_SURFACES:
         ctx.artifact_text(f"fd-{key}.svg", svg.line_plot(
-            [(f"{c} {kind}", FD_EPS, rows[key][c][kind]) for c in ("lateral", "heading")
+            [(f"{c} {kind.replace('_', '-')}", FD_EPS, rows[key][c][kind]) for c in ("lateral", "heading")
              for kind in ("one_sided", "central")], title=f"Finite differences vs Jacobi columns on {key}",
             xlabel="perturbation eps", ylabel="max |FD - column|", logx=True, logy=True))
     ctx.artifact_text("fd-roundoff.svg", svg.line_plot(
-        [("sphere heading one-sided", ROUNDOFF_EPS, roundoff)], title="Truncation versus cancellation (sphere)",
+        [("heading one-sided", ROUNDOFF_EPS, roundoff)], title="Truncation versus cancellation (sphere)",
         xlabel="perturbation eps", ylabel="max |FD - column|", logx=True, logy=True))
 
     generator = {"name": "perturbed geodesics", "surfaces": list(FD_SURFACES), "eps": list(FD_EPS),
                  "steps": FD_STEPS}
     orders_one = {k: {c: rows[k][c]["one_sided_order"] for c in ("lateral", "heading")} for k in FD_SURFACES}
     orders_central = {k: {c: rows[k][c]["central_order"] for c in ("lateral", "heading")} for k in FD_SURFACES}
+    fit = {kind: max(abs(v - rows[k][c][f"{kind}_order"]) for k in FD_SURFACES for c in ("lateral", "heading")
+                     for v in rows[k][c][f"{kind}_pairwise"]) for kind in ("one_sided", "central")}
+    fit_basis = "largest distance of a pairwise (eps-halving) slope from the least-squares slope"
     findings = [finding(
         "Central finite differences of perturbed geodesics converge to the integrated Jacobi columns at second order",
         "numerical", orders_central, {"generator": generator, "checks": [
@@ -1152,12 +1678,13 @@ def finite_difference_jacobi(ctx):
             for k, r in orders_central.items() for c, v in r.items()] + [
             gj.check("self_convergence", "largest central-difference error at eps = 0.01",
                      max(rows[k][c]["central"][-1] for k in FD_SURFACES for c in ("lateral", "heading")), 1e-3)]},
-        tolerance=TOL_RATE)]
+        uncertainty=_unc("fit", fit["central"], fit_basis), tolerance=TOL_RATE)]
     findings.append(finding(
         "One-sided finite differences converge to the integrated Jacobi columns at first order", "numerical",
         orders_one, {"generator": generator, "checks": [
             gj.check("analytic", f"one-sided difference order 1, {c} column on {k}", v - 1, 0.15)
-            for k, r in orders_one.items() for c, v in r.items()]}, tolerance=TOL_RATE))
+            for k, r in orders_one.items() for c, v in r.items()]},
+        uncertainty=_unc("fit", fit["one_sided"], fit_basis), tolerance=TOL_RATE))
     ratio = roundoff[-1] / roundoff[best]
     # Rounding-dominated numbers vary across platforms, so the retained value is in decades.
     findings.append(finding(
@@ -1166,6 +1693,8 @@ def finite_difference_jacobi(ctx):
                       math.log10(ratio)},
         {"generator": dict(generator, eps=list(ROUNDOFF_EPS), surfaces=["sphere"]), "checks": [
             gj.check("invariant", "error at eps = 1e-11 over the best error", ratio, 10.0, "ge")]},
+        uncertainty=_unc("roundoff", 1.0, "cancellation errors depend on platform rounding; values are decades "
+                         "(log10) and are uncertain to about one decade"),
         tolerance={"abs": 1.5, "rel": 0.0},
         counterexample={"statement": "A smaller finite-difference step always gives a more accurate Jacobi estimate",
                         "witness": {"surface": "sphere", "column": "heading", "eps": 1e-11,
@@ -1296,13 +1825,17 @@ def determinant_study(ctx) -> dict:
 
 
 @task("T007", changed_files=CHANGED,
-      regression_tests=(_test("test_t007_determinant"), _test("test_t007_symbolic_step_determinants")))
+      regression_tests=(_test("test_t007_determinant"), _test("test_t007_symbolic_step_determinants"))
+      + SECTION_TESTS)
 def wronskian_determinant(ctx):
     rows = determinant_study(ctx)
     curved = DET_CONSTANT + DET_VARIABLE
     slopes = {m: {k: _slopes(rows[k][m], "max_drift") for k in curved} for m in DET_STEPS}
     adaptive = {k: gj.slope([e["rtol"] for e in rows[k]["adaptive"]], [e["max_drift"] for e in rows[k]["adaptive"]])
                 for k in curved}
+    median_adaptive = float(np.median(list(adaptive.values())))
+    pairwise = {m: {k: _pairwise(rows[k][m], "h", "max_drift") for k in curved} for m in DET_STEPS}
+    fit_basis = "largest distance of a pairwise (halving) slope from the least-squares slope"
     euler_factor = max(e["per_step_factor_error"] for k in rows for e in rows[k]["euler"])
     prediction = {m: max(e["prediction_error"] for k in DET_CONSTANT + DET_FLAT for e in rows[k][m])
                   for m in DET_STEPS}
@@ -1312,10 +1845,13 @@ def wronskian_determinant(ctx):
     ctx.artifact_json("determinant.json", _plain({"steps": DET_STEPS, "rtol": DET_RTOL, "rows": rows,
                                                   "drift_orders": slopes, "adaptive_tolerance_exponent": adaptive,
                                                   "symbolic_step_determinants": symbolic}))
+    # One figure per method and curvature class keeps each within the palette's eight distinct colours.
     for method in DET_STEPS:
-        ctx.artifact_text(f"det-{method}.svg", svg.line_plot(
-            [(k, [e["h"] for e in rows[k][method]], [e["max_drift"] for e in rows[k][method]]) for k in curved],
-            title=f"max |det Phi - 1|, {method}", xlabel="step h", ylabel="max |det Phi - 1|", logx=True, logy=True))
+        for kind, keys in (("constant", DET_CONSTANT), ("variable", DET_VARIABLE)):
+            ctx.artifact_text(f"det-{method}-{kind}.svg", svg.line_plot(
+                [(k, [e["h"] for e in rows[k][method]], [e["max_drift"] for e in rows[k][method]]) for k in keys],
+                title=f"max |det Phi - 1|, {method}, {kind} curvature", xlabel="step h", ylabel="max |det Phi - 1|",
+                logx=True, logy=True))
     along = []
     for method in DET_STEPS:
         tr = gj.transfer(ctx, "sphere-great-circle", method, DET_STEPS[method][1])
@@ -1335,7 +1871,10 @@ def wronskian_determinant(ctx):
             gj.check("analytic", "per-step Euler factor 1 + h^2 K_n on every path and step", euler_factor, 1e-12),
             gj.check("analytic", "(1 + h^2 K)^n on constant-curvature paths", prediction["euler"], 1e-10)] + [
             gj.check("analytic", f"Euler determinant drift order 1 on variable-curvature {k}", slopes["euler"][k] - 1,
-                     0.1) for k in DET_VARIABLE]}, tolerance=TOL_RATE)]
+                     0.1) for k in DET_VARIABLE]},
+        uncertainty=_unc("fit", _fit_spread({k: pairwise["euler"][k] for k in DET_VARIABLE}, slopes["euler"]),
+                         fit_basis + " (variable-curvature paths); the per-step factors hold to rounding"),
+        tolerance=TOL_RATE)]
     mid_checks = [gj.check("analytic", "(1 + h^4 K^2 / 4)^n on constant-curvature paths", prediction["midpoint"], 1e-10)]
     mid_checks += [gj.check("analytic", f"midpoint drift order 3 on constant-curvature {k}", slopes["midpoint"][k] - 3,
                             0.15) for k in DET_CONSTANT]
@@ -1350,14 +1889,16 @@ def wronskian_determinant(ctx):
                             / abs(rows[k]["midpoint"][-1]["boundary_ratio"] - 1), 1.5, "ge") for k in DET_VARIABLE]
     extrapolated = {k: 2 * rows[k]["midpoint"][-1]["boundary_ratio"] - rows[k]["midpoint"][-2]["boundary_ratio"]
                     for k in DET_VARIABLE}
-    mid_checks += [gj.check("self_convergence", f"extrapolated ratio 2 r(N=200) - r(N=100) on {k}", v - 1, 0.005)
+    mid_checks += [gj.check("self_convergence", f"extrapolated ratio 2 r(N=200) - r(N=100) on {k}", v - 1, 1e-3)
                    for k, v in extrapolated.items()]
     findings.append(finding(
         "Midpoint determinant drift is (h^2/4)(K(L) - K(0)) + O(h^3): second order on variable curvature, third "
         "order on constant curvature", "numerical", {"orders": {k: slopes["midpoint"][k] for k in curved},
                                                       "boundary_ratio": boundary,
                                                       "extrapolated_boundary_ratio": extrapolated},
-        {"generator": generator, "checks": mid_checks}, tolerance=TOL_RATE))
+        {"generator": generator, "checks": mid_checks},
+        uncertainty=_unc("fit", _fit_spread(pairwise["midpoint"], slopes["midpoint"]), fit_basis),
+        tolerance=TOL_RATE))
     rk4_checks = [gj.check("analytic", "(1 - h^6 K^3/72 + h^8 K^4/576)^n on constant-curvature paths",
                            prediction["rk4"], 1e-10)]
     rk4_checks += [gj.check("analytic", f"RK4 determinant drift order 5 on {k}", v - 5, 0.2)
@@ -1369,20 +1910,24 @@ def wronskian_determinant(ctx):
     findings.append(finding(
         "RK4 determinant drift is O(h^5), one order above its O(h^4) global error, on constant and variable curvature",
         "numerical", {k: slopes["rk4"][k] for k in curved}, {"generator": generator, "checks": rk4_checks},
-        tolerance=TOL_RATE,
+        uncertainty=_unc("fit", _fit_spread(pairwise["rk4"], slopes["rk4"]), fit_basis), tolerance=TOL_RATE,
         counterexample={"statement": "The RK4 transfer-matrix determinant drifts at the method's global order h^4",
                         "witness": {"orders": {k: slopes["rk4"][k] for k in curved},
                                     "per_step_defect": "-h^6 K^3/72 + O(h^7) (constant K); O(h^6) for smooth K(s)"}}))
+    # Per-path slopes shift with single accept/reject decisions; the claim is about their median.
     findings.append(finding(
-        "Adaptive Dormand-Prince determinant drift decreases roughly in proportion to the tolerance or faster",
-        "numerical", adaptive, {"generator": dict(generator, rtol=list(DET_RTOL)), "checks": [
-            gj.check("analytic", f"log-log slope of drift against rtol on {k} (at least 0.8)", v, 0.8, "ge")
-            for k, v in adaptive.items()]}, tolerance={"abs": 0.05, "rel": 0.0}))
+        "Adaptive Dormand-Prince determinant drift decreases in proportion to the tolerance or faster (median over "
+        "paths)", "numerical", median_adaptive, {"generator": dict(generator, rtol=list(DET_RTOL)), "checks": [
+            gj.check("analytic", "median log-log slope of drift against rtol, at least half-way from 0.8 (a y4-"
+                     "advancing pair) to 1", median_adaptive, ADAPTIVE_EXPONENT_THRESHOLD, "signed_ge")]},
+        uncertainty=_unc("fit", float(np.median(np.abs(np.array(list(adaptive.values())) - median_adaptive))),
+                         "median absolute deviation of the nine per-path slopes"),
+        tolerance={"abs": 0.15, "rel": 0.0}))
     findings.append(finding(
         "Where K = 0 every method preserves det Phi = 1 exactly, Euler included", "numerical", flat,
         {"generator": generator, "checks": [gj.check("analytic", "max |det Phi - 1| on plane and cylinder, all methods",
                                                      flat, 1e-14)]},
-        tolerance=TOL_SMALL,
+        uncertainty=_unc("roundoff", flat, "binary64 rounding of j_lat j_head' - j_lat' j_head"), tolerance=TOL_SMALL,
         counterexample={"statement": "Explicit Euler never preserves the transfer-matrix determinant",
                         "witness": {"charts": list(DET_FLAT), "max_drift": flat, "per_step_factor": "1 + h^2 K = 1"}}))
     return _outcome(
@@ -1397,14 +1942,17 @@ def wronskian_determinant(ctx):
                     f"{list(DET_FLAT)}", f"Steps {DET_STEPS}; adaptive rtol = atol in {list(DET_RTOL)}"],
         observation_model="max over nodes of |det Phi - 1| with det = j_lat j_head' - j_lat' j_head.",
         expected_invariant=("Exact per-step factors on constant K; fitted drift orders 1 (Euler), 2 or 3 (midpoint), "
-                            "5 (RK4)."),
+                            "5 (RK4); adaptive drift proportional to the tolerance or faster (median slope >= "
+                            f"{ADAPTIVE_EXPONENT_THRESHOLD})."),
         experiment=("Integrate geodesic and Jacobi columns jointly with each method and step, compare the "
                     "determinant with the per-step predictions, fit drift orders, and derive the step determinants "
                     "symbolically."),
         numerical_result=("Drift orders: " + "; ".join(f"{m} " + ", ".join(f"{k} {_fmt(v, 3)}"
                                                                           for k, v in slopes[m].items())
                                                       for m in DET_STEPS)
-                          + f"; Euler per-step factor error {_fmt(euler_factor)}."),
+                          + f"; Euler per-step factor error {_fmt(euler_factor)}; midpoint boundary ratio "
+                          f"{_fmt(min(boundary.values()), 4)}..{_fmt(max(boundary.values()), 4)} at N = 200; "
+                          f"adaptive median drift slope {_fmt(median_adaptive, 3)}."),
         uncertainty=("Fitted orders over four halvings; the exact per-step predictions hold to rounding once "
                      "scaled by |a b'| + |a' b| (the columns reach cosh(6.5) on the inner equator). Euler slopes on "
                      "the long constant-curvature paths are not fitted claims: (1 + h^2 K)^(L/h) - 1 ~ "
@@ -1444,25 +1992,46 @@ def _location_errors(tr, k):
             "counts_match": bool(ok), "max_error": float(error)}
 
 
+# Declared bump chords through the summit region: long enough for the positive-curvature cap to focus them, so
+# the bump's Sturm bound is exercised (seeded bump geodesics leave the cap before any conjugate point).
+BUMP_CHORDS = ((-8.0, 0.0), (-8.0, 0.2), (-10.0, 0.0), (-10.0, 0.2))
+BUMP_CHORD_LENGTH = 30.0
+STURM_RTOL = (1e-9, 1e-10)
+
+
 def sturm_study(ctx):
+    """Seeded torus and bump geodesics plus declared bump chords, with zeros at two tolerances."""
     def compute():
         rng = np.random.Generator(np.random.PCG64(gj.SEED + 8))
-        rows = []
+        starts = []
         for name, count, box, length in (("torus", STURM_TORUS, ((0, 2 * math.pi), (-math.pi, math.pi)), 12.0),
                                          ("gaussian-bump", STURM_BUMP, ((-1.0, 1.0), (-1.0, 1.0)), 10.0)):
-            surf = gj.surface(name)
             for _ in range(count):
                 u0 = (float(rng.uniform(*box[0])), float(rng.uniform(*box[1])))
-                heading = float(rng.uniform(-math.pi, math.pi))
-                tr = jacobi.transfer(surf, u0, heading, length, rtol=1e-9, atol=1e-11)
-                rows.append({"surface": name, "u0": list(u0), "heading": heading, "length": length,
-                             "conjugate": tr.conjugate_points(), "focal": tr.focal_points(),
-                             "max_curvature_on_path": float(tr.curvature_along().max())})
+                starts.append((name, "seeded", u0, float(rng.uniform(-math.pi, math.pi)), length))
+        starts += [("gaussian-bump", "declared chord", u0, 0.0, BUMP_CHORD_LENGTH) for u0 in BUMP_CHORDS]
+        rows = []
+        for name, origin, u0, heading, length in starts:
+            surf = gj.surface(name)
+            tr = jacobi.transfer(surf, u0, heading, length, rtol=STURM_RTOL[0], atol=1e-11)
+            row = {"surface": name, "origin": origin, "u0": list(u0), "heading": heading, "length": length,
+                   "conjugate": tr.conjugate_points(), "focal": tr.focal_points(),
+                   "max_curvature_on_path": float(tr.curvature_along().max())}
+            if row["conjugate"] or row["focal"]:
+                # Zero locations at a ten times tighter tolerance bound their integration error.
+                tight = jacobi.transfer(surf, u0, heading, length, rtol=STURM_RTOL[1], atol=1e-12)
+                pairs = list(zip(row["conjugate"], tight.conjugate_points())) + list(zip(row["focal"],
+                                                                                          tight.focal_points()))
+                row["location_change"] = max(abs(a - b) for a, b in pairs) if pairs else 0.0
+                row["count_change"] = int(len(tight.conjugate_points()) != len(row["conjugate"])
+                                          or len(tight.focal_points()) != len(row["focal"]))
+            rows.append(row)
         return rows
     return ctx.memo("gj-sturm", compute)
 
 
-@task("T008", changed_files=CHANGED, regression_tests=(_test("test_t008_conjugate_and_focal_points"),))
+@task("T008", changed_files=CHANGED, regression_tests=(_test("test_t008_conjugate_and_focal_points"),
+                                                       _test("test_csg_checkout_refusals")) + SECTION_TESTS)
 def conjugate_focal_points(ctx):
     torus = gj.surface("torus")
     bump = gj.surface("gaussian-bump")
@@ -1478,23 +2047,26 @@ def conjugate_focal_points(ctx):
     for key in ("torus-inner-equator", "hyperbolic-long"):
         tr = _fine_transfer(ctx, key)
         negative[key] = {"conjugate": tr.conjugate_points(), "focal": tr.focal_points(),
-                         "max_s_minus_j_head": float(np.max(tr.s - tr.states[:, 6])),
-                         "max_1_minus_j_lat": float(np.max(1.0 - tr.states[:, 4]))}
+                         "max_s_minus_j_head": float(np.max(tr.s[1:] - tr.states[1:, 6])),
+                         "max_1_minus_j_lat": float(np.max(1.0 - tr.states[1:, 4])),
+                         "model_error": max(_model_error(tr, _constant_curvature_of(key)).values())}
     sturm = sturm_study(ctx)
-    k_max_torus = 1.0 / (torus.minor * (torus.major + torus.minor))
+    # K_max from the parameters (torus outer equator; bump summit h^2/sigma^4), confirmed on a grid for the bump.
+    k_max = {"torus": 1.0 / (torus.minor * (torus.major + torus.minor)), "gaussian-bump": bump.h ** 2 / bump.sigma ** 4}
     grid = np.linspace(-4, 4, 161)
-    k_max_bump = max(bump.gaussian_curvature(np.array([x, y])) for x in grid for y in grid)
-    bounds = {"torus": math.pi / math.sqrt(k_max_torus), "gaussian-bump": math.pi / math.sqrt(k_max_bump)}
-    firsts = {name: [r["conjugate"][0] for r in sturm if r["surface"] == name and r["conjugate"]]
-              for name in bounds}
-    margin = min(min(v) - bounds[n] for n, v in firsts.items() if v)
-    witness = next(r for r in sturm if r["conjugate"] and r["focal"]
-                   and abs(r["focal"][0] - r["conjugate"][0] / 2) > 0.3)
+    k_grid_bump = max(bump.gaussian_curvature(np.array([x, y])) for x in grid for y in grid)
+    bounds = {name: math.pi / math.sqrt(k) for name, k in k_max.items()}
+    firsts = {name: [r["conjugate"][0] for r in sturm if r["surface"] == name and r["conjugate"]] for name in bounds}
+    margins = {name: min(v) - bounds[name] for name, v in firsts.items() if v}
+    located_change = max([r.get("location_change", 0.0) for r in sturm])
+    count_changes = sum(r.get("count_change", 0) for r in sturm)
+    witness = next((r for r in sturm if r["surface"] == "torus" and r["conjugate"] and r["focal"]
+                    and abs(r["focal"][0] - r["conjugate"][0] / 2) > 0.3), None)
     csg = _csg(ctx) if ctx.available("provider:csg") else None
     provider = None
     if csg and "data" in csg:
         provider = {}
-        for key, maps in zip(csg["paths"], csg["data"]["maps"]):
+        for key, maps in zip(csg["paths"], csg["data"]["maps"], strict=True):
             if key not in ("sphere-great-circle", "torus-outer-equator", "torus-inner-equator", "hyperbolic-long"):
                 continue
             tr = _fine_transfer(ctx, key)
@@ -1510,8 +2082,8 @@ def conjugate_focal_points(ctx):
             provider[key] = row
     ctx.artifact_json("conjugate-focal.json", _plain({
         "located": located, "sphere_radius_2": sphere2, "negative_curvature": negative,
-        "sturm": {"bounds": bounds, "k_max": {"torus": k_max_torus, "gaussian-bump": k_max_bump}, "paths": sturm},
-        "provider": provider}))
+        "sturm": {"bounds": bounds, "k_max": k_max, "k_max_bump_grid": k_grid_bump, "rtol": STURM_RTOL,
+                  "paths": sturm}, "provider": provider}))
     ctx.artifact_text("location-accuracy.svg", svg.line_plot(
         [(k, [e["h"] for e in v["entries"]], [e["max_error"] for e in v["entries"]]) for k, v in located.items()],
         title="Conjugate/focal point location error", xlabel="step h", ylabel="max location error", logx=True,
@@ -1519,11 +2091,18 @@ def conjugate_focal_points(ctx):
     tr = _fine_transfer(ctx, "torus-outer-equator")
     ctx.artifact_text("columns-outer-equator.svg", svg.line_plot(
         [("j_head", tr.s, tr.states[:, 6]), ("j_lat", tr.s, tr.states[:, 4])],
-        title="Torus outer equator: zeros are conjugate (j_head) and focal (j_lat) points", xlabel="arclength s",
+        title="Torus outer equator: conjugate (j_head) and focal (j_lat) zeros", xlabel="arclength s",
         ylabel="j", markers=False))
 
     findings = []
     sphere = located["sphere-great-circle"]
+    outer = located["torus-outer-equator"]
+
+    def location_uncertainty(entries):
+        change = abs(entries[-2]["max_error"] - entries[-1]["max_error"])
+        return _unc("truncation_bound", entries[-1]["max_error"], "location error against the pi multiples at the "
+                    f"finest step; halving the step changed it by {_fmt(change)}")
+
     findings.append(finding(
         "Sphere conjugate points lie at pi R and 2 pi R and focal points at pi R/2 and 3 pi R/2 (R = 1 and R = 2)",
         "numerical", {"R1": {"conjugate": sphere["entries"][-1]["conjugate"], "focal": sphere["entries"][-1]["focal"]},
@@ -1534,8 +2113,7 @@ def conjugate_focal_points(ctx):
             gj.check("analytic", "location error order 4 (RK4 plus cubic Hermite)", sphere["order"] - 4, 0.3),
             gj.check("exact_arithmetic", "zero counts match pi multiples",
                      float(not (sphere["entries"][-1]["counts_match"] and sphere2["counts_match"])), 0.0)]},
-        tolerance=TOL_VALUE))
-    outer = located["torus-outer-equator"]
+        uncertainty=location_uncertainty(sphere["entries"]), tolerance=TOL_VALUE))
     findings.append(finding(
         "On the torus outer equator conjugate points lie at pi sqrt(r(R+r)) multiples and focal points half-way",
         "numerical", {"conjugate": outer["entries"][-1]["conjugate"], "focal": outer["entries"][-1]["focal"],
@@ -1545,7 +2123,7 @@ def conjugate_focal_points(ctx):
             gj.check("analytic", "location error order 4", outer["order"] - 4, 0.3),
             gj.check("exact_arithmetic", "zero counts match",
                      float(not outer["entries"][-1]["counts_match"]), 0.0)]},
-        tolerance=TOL_VALUE))
+        uncertainty=location_uncertainty(outer["entries"]), tolerance=TOL_VALUE))
     findings.append(finding(
         "No conjugate or focal point occurs on the torus inner equator or the hyperbolic plane (K < 0)", "numerical",
         {k: {"conjugate_count": len(v["conjugate"]), "focal_count": len(v["focal"]),
@@ -1554,29 +2132,54 @@ def conjugate_focal_points(ctx):
         {"generator": {"name": "negative-curvature paths", "paths": list(negative)}, "checks": [
             check for k, v in negative.items() for check in (
                 gj.check("exact_arithmetic", f"zeros found on {k}", len(v["conjugate"]) + len(v["focal"]), 0.0),
-                gj.check("invariant", f"Sturm comparison: largest s - j_head on {k}", v["max_s_minus_j_head"], 1e-9,
-                         "signed_le"),
-                gj.check("invariant", f"Sturm comparison: largest 1 - j_lat on {k}", v["max_1_minus_j_lat"], 1e-9,
-                         "signed_le"))]},
+                gj.check("invariant", f"Sturm comparison: largest s - j_head for s > 0 on {k}",
+                         v["max_s_minus_j_head"], 1e-9, "signed_le"),
+                gj.check("invariant", f"Sturm comparison: largest 1 - j_lat for s > 0 on {k}",
+                         v["max_1_minus_j_lat"], 1e-9, "signed_le"))]},
+        uncertainty=_unc("truncation_bound", max(v["model_error"] for v in negative.values()),
+                         "RK4 error of the columns against cosh and sinh at the fine step; counts are exact"),
         tolerance=TOL_VALUE))
+    sturm_checks = [gj.check("invariant", f"{name} geodesics that reach a conjugate point", len(v), 1.0, "ge")
+                    for name, v in firsts.items()]
+    sturm_checks += [gj.check("invariant", f"first conjugate point minus pi/sqrt(K_max) on {name}", m, 0.0,
+                              "signed_ge") for name, m in margins.items()]
+    sturm_checks += [gj.check("analytic", "grid maximum of the bump curvature minus h^2/sigma^4",
+                              k_grid_bump - k_max["gaussian-bump"], 1e-12, "signed_le"),
+                     gj.check("self_convergence", "zero-count changes between rtol 1e-9 and 1e-10", count_changes, 0.0)]
     findings.append(finding(
-        "Sturm comparison bound holds: no conjugate point before pi/sqrt(max K) on seeded torus and bump geodesics",
-        "numerical", {"bounds": bounds, "first_conjugate_points": firsts, "margin": margin,
-                      "paths_with_conjugate_point": {n: len(v) for n, v in firsts.items()}},
-        {"generator": {"name": "seeded geodesics", "seed": gj.SEED + 8, "torus": STURM_TORUS, "bump": STURM_BUMP},
-         "checks": [gj.check("invariant", "min first conjugate point minus pi/sqrt(K_max)", margin, 0.0, "ge")]},
+        "Sturm comparison bound holds on every seeded torus geodesic and declared bump chord that reaches a conjugate "
+        "point: none occurs before pi/sqrt(max K)", "numerical",
+        {"bounds": bounds, "first_conjugate_points": firsts, "margins": margins,
+         "paths_with_conjugate_point": {n: len(v) for n, v in firsts.items()}},
+        {"generator": {"name": "seeded geodesics and declared bump chords", "seed": gj.SEED + 8, "torus": STURM_TORUS,
+                       "bump": STURM_BUMP, "bump_chords": [list(c) for c in BUMP_CHORDS],
+                       "chord_length": BUMP_CHORD_LENGTH}, "checks": sturm_checks},
+        uncertainty=_unc("truncation_bound", located_change, "largest change of a zero location between adaptive "
+                         "rtol 1e-9 and 1e-10"),
         tolerance={"abs": 1e-6, "rel": 1e-6}))
-    findings.append(finding(
-        "On variable curvature the first focal point is not half the first conjugate distance", "numerical",
-        {"focal": witness["focal"][0], "conjugate": witness["conjugate"][0]},
-        {"generator": {"name": "seeded torus geodesic", "u0": witness["u0"], "heading": witness["heading"]},
-         "checks": [gj.check("invariant", "|first focal - first conjugate / 2|",
-                             abs(witness["focal"][0] - witness["conjugate"][0] / 2), 0.3, "ge")]},
-        tolerance={"abs": 1e-6, "rel": 1e-6},
-        counterexample={"statement": "The first focal point lies at half the first conjugate distance",
-                        "witness": {"surface": witness["surface"], "u0": witness["u0"], "heading": witness["heading"],
-                                    "first_focal": witness["focal"][0], "first_conjugate": witness["conjugate"][0]}}))
+    if witness is not None:
+        findings.append(finding(
+            "On variable curvature the first focal point is not half the first conjugate distance", "numerical",
+            {"focal": witness["focal"][0], "conjugate": witness["conjugate"][0]},
+            {"generator": {"name": "seeded torus geodesic", "u0": witness["u0"], "heading": witness["heading"]},
+             "checks": [gj.check("invariant", "|first focal - first conjugate / 2|",
+                                 abs(witness["focal"][0] - witness["conjugate"][0] / 2), 0.3, "ge")]},
+            uncertainty=_unc("truncation_bound", witness["location_change"], "change of the zero locations between "
+                             "adaptive rtol 1e-9 and 1e-10"),
+            tolerance={"abs": 1e-6, "rel": 1e-6},
+            counterexample={"statement": "The first focal point lies at half the first conjugate distance",
+                            "witness": {"surface": witness["surface"], "u0": witness["u0"],
+                                        "heading": witness["heading"], "first_focal": witness["focal"][0],
+                                        "first_conjugate": witness["conjugate"][0]}}))
+    else:
+        findings.append(finding(
+            "On variable curvature the first focal point is not half the first conjugate distance", "numerical",
+            None, {"generator": {"name": "seeded torus geodesics", "seed": gj.SEED + 8}},
+            expected_not_established=True))
     state, notes, identity = "completed", [], None
+    if witness is None:
+        notes.append("No seeded torus geodesic separated its first focal point from half its first conjugate "
+                     "distance by more than 0.3; the counterexample was not found in this sample")
     if provider is not None:
         rev = csg["identity"]["revision"]
         findings.append(finding(
@@ -1589,44 +2192,63 @@ def conjugate_focal_points(ctx):
                  gj.check("exact_arithmetic", "zero-count mismatches against CSG (closed form and RK4 trace)",
                           sum(v["closed_form_count_mismatch"] + v["numeric_count_mismatch"] for v in provider.values()),
                           0.0),
-                 gj.check("cross_implementation", "CSG focus_events on its RK4 trace (same method, same grid)",
+                 # Same-origin kind pending a contract kind for two origins running the same method.
+                 gj.check("cross_implementation", "CSG focus_events on its RK4 trace (same method and grid, "
+                          "different origin; not a same-origin comparison)",
                           max(v["numeric_gap"] for v in provider.values()), 1e-8)],
              "independent_check": gj.independent(
                  gj.check("analytic", "CSG focus_events of the closed-form constant_curvature_transfer",
                           max(v["closed_form_gap"] for v in provider.values()), 1e-7),
                  "ciw.lab.jacobi", f"{gj.CSG_IMPLEMENTATION}@{rev}", checker_revision=rev)},
-            tolerance=TOL_SMALL))
+            uncertainty=_unc("truncation_bound", max(v["closed_form_gap"] for v in provider.values()),
+                             "ciw RK4 + Hermite location error at the fine step; the provider closed form is exact "
+                             "to rounding"), tolerance=TOL_SMALL))
         identity = _provider_identity(csg)
     elif csg is not None:
         state = "partial"
-        notes.append(f"CSG provider refused: {csg['message']}")
+        record, sentence = _refusal_record(ctx, csg)
+        findings.append(record)
+        notes.append(sentence)
     else:
         notes.append("The optional CSG focus-event comparison did not run (bind --provider csg=<checkout>)")
+    chords = [r for r in sturm if r["origin"] == "declared chord"]
+    seeded_bump = sum(1 for r in sturm if r["surface"] == "gaussian-bump" and r["origin"] == "seeded"
+                      and r["conjugate"])
     fields = dict(
         hypothesis=("Zeros of the heading column are conjugate points and zeros of the lateral column are focal "
-                    "points; on constant K > 0 they sit at multiples of pi/sqrt(K) and half-way between, and "
-                    "none exist where K <= 0."),
+                    "points; on constant K > 0 they sit at multiples of pi/sqrt(K) and half-way between, none exist "
+                    "where K <= 0, and on variable curvature none occurs before pi/sqrt(max K)."),
         mathematical_model=("j_head = sn_K, j_lat = cn_K on constant K; Sturm comparison: K <= K_max gives no "
                             "conjugate point before pi/sqrt(K_max), and K <= 0 gives j_head >= s, j_lat >= 1."),
         input_data=[f"Sphere great circles (R = 1, L = 7; R = 2, L = 14); torus outer equator (L = 11.5, K = 1/3); "
-                    f"inner equator and hyperbolic plane; {STURM_TORUS} torus and {STURM_BUMP} bump seeded geodesics"],
+                    f"inner equator and hyperbolic plane; {STURM_TORUS} torus and {STURM_BUMP} bump seeded geodesics "
+                    f"(seed {gj.SEED + 8}); {len(BUMP_CHORDS)} bump chords from {[list(c) for c in BUMP_CHORDS]} "
+                    f"heading 0, L = {BUMP_CHORD_LENGTH}"],
         observation_model="Cubic-Hermite zeros of sampled columns (ciw.lab.jacobi.Transfer.conjugate_points/focal_points).",
         expected_invariant="Locations to RK4 + Hermite accuracy (order 4), zero counts exact, Sturm bounds respected.",
         experiment=("Locate zeros at 40..320 steps, compare with pi multiples, check absence on K < 0, check the "
-                    "Sturm bound on seeded variable-curvature geodesics, and compare with CSG when bound."),
+                    "Sturm bound on every seeded or declared variable-curvature geodesic that reaches a conjugate "
+                    "point, and compare with CSG when bound."),
         numerical_result=(f"Sphere location error {_fmt(sphere['entries'][-1]['max_error'])} (order "
                           f"{_fmt(sphere['order'], 3)}); outer equator {_fmt(outer['entries'][-1]['max_error'])} "
-                          f"(order {_fmt(outer['order'], 3)}); Sturm margin {_fmt(margin)} with "
-                          f"{len(firsts['torus'])} of {STURM_TORUS} torus and {len(firsts['gaussian-bump'])} of "
-                          f"{STURM_BUMP} bump geodesics reaching a conjugate point (the bump bound is vacuous when "
-                          f"none does); witness focal {_fmt(witness['focal'][0], 5)} vs conjugate/2 "
-                          f"{_fmt(witness['conjugate'][0] / 2, 5)}."),
-        uncertainty="Location error below 1e-7 at the finest steps; adaptive seeded runs use rtol 1e-9.",
-        failure_modes_checked=["trivial zero of j_head at s = 0 excluded", "zero counts, not only locations",
+                          f"(order {_fmt(outer['order'], 3)}); Sturm margins "
+                          + ", ".join(f"{n} {_fmt(m, 3)}" for n, m in margins.items())
+                          + f" with {len(firsts['torus'])} of {STURM_TORUS} seeded torus geodesics, "
+                          f"{seeded_bump} of {STURM_BUMP} seeded bump geodesics and "
+                          f"{sum(1 for r in chords if r['conjugate'])} of "
+                          f"{len(chords)} bump chords reaching a conjugate point (the bump bound 2 pi is far from "
+                          "tight on the chords)"
+                          + ("" if witness is None else f"; witness focal {_fmt(witness['focal'][0], 5)} vs "
+                             f"conjugate/2 {_fmt(witness['conjugate'][0] / 2, 5)}") + "."),
+        uncertainty=("Location error below 1e-7 at the finest fixed steps; adaptive zero locations move by at most "
+                     f"{_fmt(located_change)} between rtol 1e-9 and 1e-10."),
+        failure_modes_checked=["trivial zero of j_head at s = 0 excluded (also from the Sturm lower bounds)",
+                               "zero counts, not only locations",
                                "negative curvature (no zeros) and Sturm lower bounds",
+                               "vacuous Sturm bound (each surface must have a geodesic that reaches a conjugate point)",
                                "focal/conjugate relation on variable curvature (counterexample)"],
-        unresolved_assumptions=notes + ["The bump Sturm bound uses K_max sampled on a 161 x 161 grid (attained at "
-                                        "the summit, K = 0.25)"],
+        unresolved_assumptions=notes + ["The bump Sturm bound is exercised only on chords through the summit region, "
+                                        "where the first conjugate point lies far beyond 2 pi"],
         recommended_next_task="T009: compare lateral and heading columns separately; T010: near-focus counterexamples")
     if identity:
         fields["provider_runtime_identity"] = identity
@@ -1640,7 +2262,13 @@ COLUMN_PATHS = tuple(gj.STANDARD) + ("sphere-great-circle", "hyperbolic-long", "
                                      "torus-inner-equator", "bump-radial", "torus-outer-to-inner",
                                      "torus-inner-to-outer")
 WITNESS_PAIR = ("torus-outer-to-inner", "torus-inner-to-outer")
+WITNESS_SHORT = {"torus-outer-to-inner": "out>in", "torus-inner-to-outer": "in>out"}
+REVERSAL_PATHS = WITNESS_PAIR + ("gaussian-bump", "saddle")
 CONFIRM_EPS = 1e-3
+# First-order kernel experiment: a small Gaussian curvature bump on a flat background of length 3.
+KERNEL_LENGTH, KERNEL_AMPLITUDE, KERNEL_WIDTH = 3.0, 1e-3, 0.3
+KERNEL_CENTERS = (0.5, 1.5, 2.5)
+KERNEL_STEPS = 600
 
 
 def _endpoint_confirmation(ctx, key):
@@ -1676,7 +2304,57 @@ def _kendall(xs, ys):
     return (concordant - discordant) / (n * (n - 1) / 2), pairs
 
 
-@task("T009", changed_files=CHANGED, regression_tests=(_test("test_t009_columns_rank_paths_differently"),))
+def kernel_study() -> dict:
+    """Endpoint response of both columns to a small curvature bump at early, middle and late arclength.
+
+    Direct: RK4 on j'' + dK(s) j = 0 (flat background). First order:
+    delta j(L) = -int (L - s) j0(s) dK(s) ds with j0 = 1 (lateral) or s
+    (heading), i.e. the kernels sn(L - s) cn(s) and sn(L - s) sn(s) at K = 0.
+    """
+    length = KERNEL_LENGTH
+    nodes = np.linspace(0.0, length, 3001)
+    out = {}
+    for center in KERNEL_CENTERS:
+        def bump(s, c=center):
+            return KERNEL_AMPLITUDE * math.exp(-((s - c) / KERNEL_WIDTH) ** 2)
+
+        def f(y, bump=bump):
+            k = bump(y[0])
+            return np.array([1.0, y[2], -k * y[1], y[4], -k * y[3]])
+
+        _, states = integrators.integrate_fixed(f, np.array([0.0, 1.0, 0.0, 0.0, 1.0]), length, KERNEL_STEPS, "rk4")
+        dk = np.array([bump(s) for s in nodes])
+        weights = np.full(len(nodes), nodes[1] - nodes[0])
+        weights[[0, -1]] /= 2  # trapezoid rule
+        out[str(center)] = {"direct": {"lateral": float(states[-1, 1] - 1.0), "heading": float(states[-1, 3] - length)},
+                            "first_order": {"lateral": float(-np.sum(weights * (length - nodes) * dk)),
+                                            "heading": float(-np.sum(weights * (length - nodes) * nodes * dk))}}
+    return out
+
+
+def reversal_study(ctx, key) -> dict:
+    """Transfer matrix of the reversed geodesic against the reciprocity prediction D Phi(L)^-1 D, D = diag(1, -1).
+
+    The reversed path starts at the forward end point with the velocity
+    negated, so it sees the curvature profile K(L - s).
+    """
+    spec = gj.path(key)
+    surf = gj.surface(spec.surface)
+    forward = _fine_transfer(ctx, key)
+    end = forward.states[-1]
+    start = np.concatenate([end[:2], -end[2:4], [1.0, 0.0, 0.0, 1.0]])
+    _, states = integrators.integrate_fixed(jacobi.rhs(surf), start, spec.length, _fine(key), "rk4")
+    reversed_phi = np.array([[states[-1, 4], states[-1, 6]], [states[-1, 5], states[-1, 7]]])
+    flip = np.diag([1.0, -1.0])
+    predicted = flip @ np.linalg.inv(forward.matrix()) @ flip
+    return {"forward": forward.matrix().tolist(), "reversed": reversed_phi.tolist(),
+            "prediction_error": float(np.max(np.abs(reversed_phi - predicted))),
+            "heading_change": float(abs(reversed_phi[0, 1] - forward.matrix()[0, 1])),
+            "return_gap": float(np.linalg.norm(states[-1, :2] - np.asarray(spec.u0)))}
+
+
+@task("T009", changed_files=CHANGED,
+      regression_tests=(_test("test_t009_columns_rank_paths_differently"),) + SECTION_TESTS)
 def lateral_heading_columns(ctx):
     rows = {}
     for key in COLUMN_PATHS:
@@ -1699,29 +2377,60 @@ def lateral_heading_columns(ctx):
     reversal = min(lateral[b] - lateral[a], heading[a] - heading[b])
     model = {}
     for key in ("plane", "hyperbolic-long", "sphere-great-circle"):
-        kk = _constant_curvature_of(key)
-        length = gj.path(key).length
-        _, _, sn, _ = jacobi.constant_curvature(kk, [length])
-        cn = jacobi.constant_curvature(kk, [length])[0]
+        cn, _, sn, _ = jacobi.constant_curvature(_constant_curvature_of(key), [gj.path(key).length])
         model[key] = {"ratio_head_over_lat": rows[key]["j_head_end"] / rows[key]["j_lat_end"],
                       "model_ratio": float(sn[0] / cn[0])}
+    kernels = kernel_study()
+    kernel_error = max(abs(v["direct"][c] / v["first_order"][c] - 1) for v in kernels.values()
+                       for c in ("lateral", "heading"))
+    early, middle, late = (kernels[str(c)]["direct"] for c in KERNEL_CENTERS)
+    heading_asymmetry = abs(early["heading"] - late["heading"]) / abs(middle["heading"])
+    lateral_ratio = early["lateral"] / late["lateral"]
+    reversals = {key: reversal_study(ctx, key) for key in REVERSAL_PATHS}
+    # Witness-path kernels from the integrated columns: G(L, s) = j_lat(s) j_head(L) - j_head(s) j_lat(L).
+    witness_kernels = {}
+    for key in WITNESS_PAIR:
+        tr = _fine_transfer(ctx, key)
+        green = tr.states[:, 4] * tr.states[-1, 6] - tr.states[:, 6] * tr.states[-1, 4]
+        stride = max(1, len(tr.s) // 50)
+        witness_kernels[key] = {"s": tr.s[::stride].tolist(), "lateral": (green * tr.states[:, 4])[::stride].tolist(),
+                                "heading": (green * tr.states[:, 6])[::stride].tolist(),
+                                "curvature": tr.curvature_along()[::stride].tolist()}
+    rank_order = sorted(COLUMN_PATHS, key=lambda k: lateral[k])
     ctx.artifact_json("columns.json", _plain({"rows": rows, "kendall_tau": tau, "discordant_pairs": discordant,
+                                              "rank_order_by_lateral": rank_order,
                                               "witness_pair": list(WITNESS_PAIR), "fd_confirmation": confirm,
-                                              "fd_eps": CONFIRM_EPS, "model_ratios": model}))
-    order = sorted(COLUMN_PATHS, key=lambda k: lateral[k])
+                                              "fd_eps": CONFIRM_EPS, "model_ratios": model,
+                                              "kernel_experiment": {"length": KERNEL_LENGTH,
+                                                                    "amplitude": KERNEL_AMPLITUDE,
+                                                                    "width": KERNEL_WIDTH, "responses": kernels},
+                                              "reversal": reversals, "witness_kernels": witness_kernels}))
     ctx.artifact_text("ranking.svg", svg.line_plot(
-        [("|j_lat(L)|", range(1, len(order) + 1), [lateral[k] for k in order]),
-         ("|j_head(L)|", range(1, len(order) + 1), [heading[k] for k in order])],
-        title="Paths ordered by lateral sensitivity (" + ", ".join(order) + ")", xlabel="rank by |j_lat(L)|",
+        [("|j_lat(L)|", range(1, len(rank_order) + 1), [lateral[k] for k in rank_order]),
+         ("|j_head(L)|", range(1, len(rank_order) + 1), [heading[k] for k in rank_order])],
+        title="Paths ordered by |j_lat(L)| (order: columns.json)", xlabel="rank by |j_lat(L)| (rank_order_by_lateral)",
         ylabel="endpoint sensitivity", logy=True))
     series = []
     for key in WITNESS_PAIR:
         tr = _fine_transfer(ctx, key)
-        series += [(f"{key} j_lat", tr.s, tr.states[:, 4]), (f"{key} j_head", tr.s, tr.states[:, 6])]
-    ctx.artifact_text("witness-columns.svg", svg.line_plot(series, title="Equal-length torus paths: columns along s",
-                                                           xlabel="arclength s", ylabel="j", markers=False))
+        series += [(f"{WITNESS_SHORT[key]} lat", tr.s, tr.states[:, 4]), (f"{WITNESS_SHORT[key]} head", tr.s,
+                                                                         tr.states[:, 6])]
+    ctx.artifact_text("witness-columns.svg", svg.line_plot(
+        series, title="Witness pair out>in, in>out (torus, L = 3): columns along s", xlabel="arclength s",
+        ylabel="j", markers=False))
+    s = np.linspace(0.0, KERNEL_LENGTH, 61)
+    kernel_series = [("flat lat (L-s)", s, KERNEL_LENGTH - s), ("flat head s(L-s)", s, s * (KERNEL_LENGTH - s))]
+    for key in WITNESS_PAIR:
+        w = witness_kernels[key]
+        kernel_series += [(f"{WITNESS_SHORT[key]} lat", w["s"], w["lateral"]),
+                          (f"{WITNESS_SHORT[key]} head", w["s"], w["heading"])]
+    ctx.artifact_text("kernels.svg", svg.line_plot(
+        kernel_series, title="First-order weight of curvature at s on j(L)", xlabel="arclength s",
+        ylabel="G(L, s) j(s)", markers=False))
 
     generator = {"name": "declared geodesics", "paths": list(COLUMN_PATHS)}
+    fd_unc = _unc("truncation_bound", confirm_error, "central-difference confirmation (eps 1e-3) of the witness "
+                  "sensitivities; columns carry RK4 error near 1e-8")
     findings = [finding(
         "Endpoint sensitivities to lateral offset (|j_lat(L)|) and heading error (|j_head(L)|) per path",
         "numerical", {k: {"lateral": lateral[k], "heading": heading[k]} for k in COLUMN_PATHS},
@@ -1732,42 +2441,88 @@ def lateral_heading_columns(ctx):
                      v["ratio_head_over_lat"] - v["model_ratio"], 1e-6) for k, v in model.items()] + [
             gj.check("self_convergence", "central-difference endpoint separation (eps 1e-3) against the columns",
                      confirm_error, 1e-4)]},
-        tolerance=TOL_VALUE)]
+        uncertainty=fd_unc, tolerance=TOL_VALUE)]
     findings.append(finding(
         "Lateral and heading sensitivities rank paths differently", "numerical",
         {"kendall_tau": tau, "discordant_pairs": len(discordant), "witness_reversal_margin": reversal},
         {"generator": generator, "checks": [
-            gj.check("invariant", f"reversal margin for the equal-length pair {a} / {b}", reversal, 0.5, "ge"),
+            gj.check("invariant", f"reversal margin for the equal-length pair {a} / {b}", reversal, 0.5, "signed_ge"),
             gj.check("invariant", "discordant path pairs", len(discordant), 1.0, "ge")]},
-        tolerance={"abs": 1e-6, "rel": 1e-6},
+        uncertainty=fd_unc, tolerance={"abs": 1e-6, "rel": 1e-6},
         counterexample={"statement": "Ranking paths by sensitivity to heading error gives the same order as ranking "
                                      "by sensitivity to lateral offset",
                         "witness": {"paths": list(WITNESS_PAIR), "length": gj.path(a).length,
                                     "lateral": {a: lateral[a], b: lateral[b]},
                                     "heading": {a: heading[a], b: heading[b]}}}))
     findings.append(finding(
+        "To first order, curvature at arclength s moves j_lat(L) with weight sn(L-s) cn(s) (early-weighted) and "
+        "j_head(L) with weight sn(L-s) sn(s) (symmetric about mid-path)", "mathematical",
+        {"responses": {c: v["direct"] for c, v in kernels.items()}, "first_order_relative_error": kernel_error,
+         "heading_early_late_asymmetry": heading_asymmetry, "lateral_early_over_late": lateral_ratio},
+        {"derivation": f"{DOC}, section T009 (variation of j'' + K j = 0 with its Green function)",
+         "generator": {"name": "curvature bump on a flat background", "length": KERNEL_LENGTH,
+                       "amplitude": KERNEL_AMPLITUDE, "width": KERNEL_WIDTH, "centers": list(KERNEL_CENTERS),
+                       "steps": KERNEL_STEPS}, "checks": [
+            gj.check("analytic", "direct RK4 response against the first-order kernel integral (relative)",
+                     kernel_error, 1e-3),
+            gj.check("analytic", "heading response to a bump at s = 0.5 versus s = 2.5, over the mid-path response",
+                     heading_asymmetry, 1e-6, "le"),
+            gj.check("analytic", "lateral response to a bump at s = 0.5 over s = 2.5 (first order about 4.9)",
+                     lateral_ratio, 3.0, "ge")]},
+        uncertainty=_unc("truncation_bound", kernel_error, "second-order terms in the bump amplitude 1e-3"),
+        tolerance={"abs": 1e-9, "rel": 1e-6}))
+    reversal_error = max(v["prediction_error"] for v in reversals.values())
+    findings.append(finding(
+        "Reversing a geodesic leaves j_head(L) unchanged and exchanges j_lat(L) with j_head'(L) (transfer matrix "
+        "D Phi(L)^-1 D)", "numerical",
+        {k: {"prediction_error": v["prediction_error"], "heading_change": v["heading_change"]}
+         for k, v in reversals.items()},
+        {"derivation": f"{DOC}, section T009 (reciprocity of j'' + K(s) j = 0 under s -> L - s)",
+         "generator": {"name": "declared geodesics and their reversals", "paths": list(REVERSAL_PATHS)}, "checks": [
+            gj.check("analytic", f"reversed transfer matrix against D Phi^-1 D on {k}", v["prediction_error"], 1e-8)
+            for k, v in reversals.items()] + [
+            gj.check("invariant", "reversed path returns to the start",
+                     max(v["return_gap"] for v in reversals.values()), 1e-8)]},
+        uncertainty=_unc("truncation_bound", reversal_error, "RK4 error of forward and reversed integrations"),
+        tolerance=TOL_SMALL))
+    findings.append(finding(
         "Which starting error dominates the endpoint error of real tool or vehicle paths on physical curved parts",
         "physical", None, {}))
     return _outcome(
         "completed", findings,
-        hypothesis=("The lateral column (curvature weighted early) and the heading column (curvature weighted late, "
-                    "j ~ s at the start) respond differently to where curvature sits along a path, so they can "
-                    "order paths differently."),
-        mathematical_model=("Endpoint normal displacement = j_lat(L) delta_perp + j_head(L) delta_alpha; model "
-                            "spaces give j_head/j_lat = tan(sqrt(K)L)/sqrt(K), L, tanh(sqrt(-K)L)/sqrt(-K)."),
+        hypothesis=("A curvature change at arclength s moves j_lat(L) with weight sn(L-s) cn(s), which is largest "
+                    "for early curvature, and j_head(L) with weight sn(L-s) sn(s), which is symmetric about "
+                    "mid-path and vanishes at both ends; exactly, reversing the curvature profile leaves j_head(L) "
+                    "unchanged. The two columns therefore respond differently to where curvature sits along a path "
+                    "and can order paths differently."),
+        mathematical_model=("Endpoint normal displacement = j_lat(L) delta_perp + j_head(L) delta_alpha; "
+                            "delta j(L) = -int G(L, s) j(s) delta K(s) ds with G(L, s) = j_lat(s) j_head(L) - "
+                            "j_head(s) j_lat(L); reversal maps Phi(L) to D Phi(L)^-1 D; model spaces give "
+                            "j_head/j_lat = tan(sqrt(K)L)/sqrt(K), L, tanh(sqrt(-K)L)/sqrt(-K)."),
         input_data=[f"{len(COLUMN_PATHS)} declared paths: {', '.join(COLUMN_PATHS)}",
-                    f"Witness pair {a} / {b}: same torus, same length 3, curvature order reversed"],
+                    f"Witness pair {a} / {b}: same torus, same length 3, curvature order reversed but not mirror "
+                    "profiles", f"Curvature bump of amplitude {KERNEL_AMPLITUDE}, width {KERNEL_WIDTH} at s in "
+                    f"{list(KERNEL_CENTERS)} on a flat path of length {KERNEL_LENGTH}"],
         observation_model=("|j(L)| per unit perturbation; confirmed on the witness pair by central differences of "
-                           f"perturbed geodesics (eps = {CONFIRM_EPS})."),
-        expected_invariant="det Phi(L) = 1; model-space ratios; a reversal on the witness pair.",
+                           f"perturbed geodesics (eps = {CONFIRM_EPS}); reversed paths start at the end point with "
+                           "negated velocity."),
+        expected_invariant=("det Phi(L) = 1; model-space ratios; first-order kernels; reversal reciprocity; a ranking "
+                            "reversal on the witness pair."),
         experiment=("Integrate both columns on every path, rank paths by each column, count discordant pairs "
-                    "(Kendall tau), and confirm the witness numbers by finite differences."),
+                    "(Kendall tau), confirm the witness numbers by finite differences, measure the response to a "
+                    "curvature bump at three positions, and integrate reversed paths."),
         numerical_result=(f"Kendall tau {_fmt(tau, 3)} with {len(discordant)} discordant pairs; witness lateral "
                           f"{_fmt(lateral[a], 4)} vs {_fmt(lateral[b], 4)}, heading {_fmt(heading[a], 4)} vs "
-                          f"{_fmt(heading[b], 4)}; finite-difference confirmation error {_fmt(confirm_error)}."),
+                          f"{_fmt(heading[b], 4)}; finite-difference confirmation error {_fmt(confirm_error)}; bump "
+                          f"response lateral early/late {_fmt(lateral_ratio, 3)}, heading early/late asymmetry "
+                          f"{_fmt(heading_asymmetry)}; reversal reciprocity error {_fmt(reversal_error)}."),
         uncertainty="Column values carry RK4 error near 1e-8; the reversal margin exceeds it by eight orders.",
         failure_modes_checked=["sign of the columns (magnitudes ranked)", "equal-length comparison for the witness",
-                               "finite-difference confirmation of the endpoint sensitivities"],
+                               "finite-difference confirmation of the endpoint sensitivities",
+                               "mechanism: heading is not late-weighted (bump symmetry and exact reversal "
+                               "reciprocity)"],
         unresolved_assumptions=["Rankings are over declared paths of unequal lengths except the witness pair",
+                                "The witness heading difference comes from the two curvature profiles not being "
+                                "mirror images; the first-order kernels explain it only qualitatively",
                                 "No physical platform, tool or perturbation statistics were measured"],
         recommended_next_task="T010: generate near-focus and post-focus counterexamples")
