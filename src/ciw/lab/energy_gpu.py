@@ -10,18 +10,22 @@ energy/accuracy fixtures in ``examples/energy-accuracy``.
 Non-claims: this environment has no RAPL counters, no NVIDIA GPU or NVML and
 no Julia. No energy, power, temperature, utilization or kernel duration was
 measured; every such claim is recorded as a physical-domain finding and stays
-``not_established`` unless a host supplies acquired evidence. The fixtures
-are synthetic, so every joule figure derived from them is a synthetic value.
-Emulated reduction orders are not the orders of any GPU library, and
-Python/Rust agreement is agreement of two ciw implementations, not
-independent verification. Wall-clock and CPU times are retained only as
-artifacts; they are not reproducible and never enter a finding.
+``not_established`` unless an operator supplies a capture that passes the
+acquisition gate. The lab runner itself never reads an energy counter: RAPL
+and NVML captures are operator actions whose retained bytes T115, T116 and
+T118 analyze read-only. The fixtures are synthetic, so every joule figure
+derived from them is a synthetic value. Emulated reduction orders are not the
+orders of any GPU library, and Python/Rust agreement is agreement of two ciw
+implementations, not independent verification. Wall-clock and CPU times are
+retained only as artifacts; they are not reproducible and never enter a
+finding.
 """
 from __future__ import annotations
 
 import hashlib
 import json
 import math
+from pathlib import Path
 import tempfile
 import time
 
@@ -29,8 +33,8 @@ import numpy as np
 
 from . import energy_gpu_kernels as kernels
 from . import energy_gpu_telemetry as telemetry
-from . import svg
-from .evidence import AUTHORITY_DOMAINS, PHYSICAL_DOMAINS, EvidenceRefusal, finding, supported_label, holds as compare
+from . import runner, svg
+from .evidence import AUTHORITY_DOMAINS, PHYSICAL_DOMAINS, EvidenceRefusal, finding, holds, supported_label
 from .integrators import integrate_adaptive, integrate_fixed
 from .registry import task
 from .surfaces import Sphere
@@ -41,17 +45,26 @@ TELEMETRY = "src/ciw/lab/energy_gpu_telemetry.py"
 DOC = "docs/lab/ENERGY_GPU.md"
 TESTS = "tests/test_lab_energy_gpu.py"
 FILES = (MODULE, KERNELS, TELEMETRY, DOC)
+UNCERTAINTY_TEST = f"{TESTS}::test_every_numerical_finding_declares_uncertainty_and_tolerance"
+FIXTURELESS_TEST = f"{TESTS}::test_fixture_tasks_without_repository_files"
 
-STEPS = 256
+STEPS = kernels.WORKLOAD_STEPS
 FIXTURE_NOTE = ("examples/energy-accuracy/{baseline,reset,missing,under-target}.json: synthetic fixtures "
                 "(origin synthetic_fixture) constructed on the CPU, not hardware captures")
+
+# Per-finding uncertainty statements (AUTHORING rule 5).
+EXACT = {"kind": "exact", "value": 0.0, "basis": "integer counts, refusal codes or exact comparisons"}
+SYNTHETIC = {"kind": "reference_error", "value": 0.0,
+             "basis": "synthetic fixture with exact decimal counter readings; no physical uncertainty model"}
+EXACT_TOL = {"abs": 0.0, "rel": 0.0}
+IEEE = {"kind": "roundoff", "value": 0.0, "basis": "deterministic IEEE-754 arithmetic in the declared order; "
+                                                   "exact reference by math.fsum"}
 
 
 def _check(reference, observed, tolerance, comparison="abs_le", kind="analytic"):
     observed, tolerance = float(observed), float(tolerance)
-    holds = compare(observed, tolerance, comparison)
     return {"reference_kind": kind, "reference": reference, "observed": observed, "tolerance": tolerance,
-            "comparison": comparison, "passed": holds}
+            "comparison": comparison, "passed": holds(observed, tolerance, comparison)}
 
 
 def _refusal(reference, expected, observed):
@@ -66,33 +79,56 @@ def _state(findings, planned):
     return "partial" if unexpected and planned == "completed" else planned
 
 
+REQUIRED = ("hypothesis", "mathematical_model", "input_data", "observation_model", "expected_invariant",
+            "experiment", "numerical_result", "uncertainty", "failure_modes_checked",
+            "unresolved_assumptions", "recommended_next_task")
+
+
 def _fields(**values):
-    required = ("hypothesis", "mathematical_model", "input_data", "observation_model", "expected_invariant",
-                "experiment", "numerical_result", "uncertainty", "failure_modes_checked",
-                "unresolved_assumptions", "recommended_next_task")
-    missing = [name for name in required if name not in values]
+    missing = [name for name in REQUIRED if name not in values]
     if missing:
         raise ValueError(f"Report fields missing: {missing}")
     return values
 
 
-def _no_measurement(claim, reason, unit=None):
+def _no_measurement(claim, reason, unit=None, domain="physical"):
     """A physical claim this environment cannot support: recorded, never omitted."""
-    return finding(claim, "physical", None, {"notes": [reason]}, unit=unit)
+    return finding(claim, domain, None, {"notes": [reason]}, unit=unit)
 
 
-def _fixtures_blocked(task_id, hypothesis):
-    fields = _fields(
-        hypothesis=hypothesis, mathematical_model="Not evaluated.", input_data=[FIXTURE_NOTE],
-        observation_model="No observation was made.", expected_invariant="Not evaluated.",
-        experiment="Blocked: the synthetic energy fixtures are not present (run from a source checkout).",
-        numerical_result="none", uncertainty="not quantified", failure_modes_checked=[],
-        unresolved_assumptions=["examples/energy-accuracy is outside an installed package"],
-        recommended_next_task=f"Rerun {task_id} from a source checkout containing examples/energy-accuracy")
-    return {"state": "blocked", "fields": fields, "findings": []}
+def _fixtures_blocked(static, physical):
+    """Blocked report for a fixture task: the static answers stay, only the run-dependent ones say not run."""
+    fields = _fields(**dict(static, numerical_result="not run: examples/energy-accuracy is not reachable",
+                            uncertainty="not run: fixtures absent",
+                            experiment="Blocked: examples/energy-accuracy is not reachable (no source checkout and no "
+                                       "CIW_LAB_REPOSITORY_ROOT). Planned: " + static["experiment"],
+                            failure_modes_checked=["repository fixtures reachable through "
+                                                   "ciw.lab.runner.repository_path (they are not)"],
+                            unresolved_assumptions=list(static["unresolved_assumptions"]) + [
+                                "examples/energy-accuracy is outside an installed package; set "
+                                "CIW_LAB_REPOSITORY_ROOT to a checkout"]))
+    return {"state": "blocked", "fields": fields, "findings": [physical()]}
+
+
+def _retain_raw(ctx, name, raw: bytes) -> str | None:
+    """Retain exact raw bytes as an artifact; return why they could not be retained, or None."""
+    if len(raw) > runner.MAX_ARTIFACT_BYTES:
+        return f"raw file exceeds the {runner.MAX_ARTIFACT_BYTES}-byte artifact limit and cannot be retained"
+    try:
+        text = raw.decode("utf-8")
+    except UnicodeDecodeError:
+        return "raw file is not UTF-8 text and cannot be retained byte-exactly"
+    ctx.artifact_text(name, text)
+    if ctx.artifacts[-1]["sha256"] != hashlib.sha256(raw).hexdigest():
+        return "retained artifact bytes differ from the raw file"
+    return None
 
 
 # ----------------------------------------------------------------- T115
+GROSS_CPU = "Gross CPU package energy (background-inclusive, idle not subtracted) per geodesic trajectory"
+IDLE_CPU = "Idle-subtracted CPU package energy per geodesic trajectory (equal-length idle bracket after the workload)"
+
+
 def _cpu_workload():
     """Fixed-step and adaptive integration of the equatorial sphere geodesics with counted work."""
     surface = Sphere(1.0)
@@ -123,35 +159,58 @@ def _cpu_workload():
             "wall_s": wall, "cpu_s": cpu}
 
 
-def _rapl_measurement(ctx, repeats=3):
-    """Background-inclusive package energy over repeated fixed-step batches, or why it is unavailable."""
-    if not ctx.available("hardware:rapl"):
-        return None, "no readable /sys/class/powercap/intel-rapl:* energy counters (RAPL) on this host"
-    domains = telemetry.rapl_domains()
-    if not domains:
-        return None, "no top-level intel-rapl package domain with an energy_uj counter"
-    surface, states = Sphere(1.0), kernels.initial_states()
+def _rapl_findings(ctx):
+    """Physical findings from an operator RAPL capture (CIW_LAB_RAPL_LOG), or not_established without one."""
+    path = telemetry.environment_log_path(telemetry.RAPL_ENV)
+    if path is None:
+        reason = ("no RAPL capture was supplied; the lab runner reads no energy counter (capture with `python -m "
+                  f"ciw.lab.energy_gpu_telemetry rapl-capture` and set {telemetry.RAPL_ENV})")
+        ctx.artifact_json("rapl-probe.json", {"capture_supplied": False, "note": reason,
+                                              "package_domains_present": [d["zone"] for d in telemetry.rapl_domains()]})
+        return [_no_measurement(GROSS_CPU, reason, unit="J/trajectory"),
+                _no_measurement(IDLE_CPU, reason, unit="J/trajectory")], None
+    raw = Path(path).read_bytes()
+    reasons = []
     try:
-        stamp = time.time_ns()
-        before = telemetry.rapl_read(domains)
-        for _ in range(repeats):
-            for y0 in states:
-                integrate_fixed(surface.geodesic_rhs, y0, kernels.LENGTH, STEPS, "rk4")
-        after = telemetry.rapl_read(domains)
-        deltas = [telemetry.rapl_delta_uj(b, a, d["max_energy_range_uj"]) for b, a, d in zip(before, after, domains)]
-    except (OSError, ValueError) as exc:
-        return None, f"RAPL counters present but unusable: {type(exc).__name__}: {exc}"
-    raw = {"domains": domains, "before_uj": before, "after_uj": after, "repeats": repeats,
-           "trajectories_per_repeat": len(states), "steps": STEPS, "acquired_unix_ns": stamp}
-    total_uj = sum(delta for delta, _ in deltas)
-    return {"raw": raw, "wrapped": [w for _, w in deltas],
-            "joules_per_trajectory": total_uj * 1e-6 / (repeats * len(states))}, None
+        record = json.loads(raw)
+    except ValueError:
+        record = None
+    reasons += telemetry.rapl_capture_reasons(record, telemetry.rapl_host_identity(), kernels.WORKLOAD)
+    if not ctx.available("hardware:rapl"):
+        reasons.append("no readable intel-rapl counter answered the probe on this analyzing host")
+    retention = _retain_raw(ctx, "rapl-capture.json", raw)
+    if retention:
+        reasons.append(retention)
+    energy = None
+    if not reasons:
+        try:
+            energy = telemetry.rapl_capture_energy(record)
+        except (KeyError, TypeError, ValueError) as exc:
+            reasons.append(f"capture counters are inconsistent: {exc}")
+    ctx.artifact_json("rapl-probe.json", {"capture_supplied": True, "withheld_reasons": reasons, "energy": energy})
+    if reasons:
+        return [finding(GROSS_CPU, "physical", None, {"notes": reasons}, unit="J/trajectory"),
+                finding(IDLE_CPU, "physical", None, {"notes": reasons}, unit="J/trajectory")], energy
+    bracket = record["workload_bracket"]
+    acquisition = {"device": "RAPL package domains " + ", ".join(record["host"]["zones"]) + " on "
+                             + str(record["host"]["cpu_model"]) + " (operator-captured, unauthenticated)",
+                   "raw_sha256": hashlib.sha256(raw).hexdigest(),
+                   "acquired_at": telemetry._utc(bracket["start_utc_ns"]),
+                   "calibration": "not_applied: RAPL model-based counter, package scope, background-inclusive"}
+    basis = {"acquisition": acquisition, "notes": [telemetry.OPERATOR_NOTE]}
+    uncertainty = {"kind": "reference_error", "value": None,
+                   "basis": "RAPL model error, counter unit and background load are not characterized"}
+    return [finding(GROSS_CPU, "physical", energy["gross_j_per_trajectory"], basis, unit="J/trajectory",
+                    uncertainty=uncertainty, tolerance={"abs": 0.0, "rel": 1.0}),
+            finding(IDLE_CPU, "physical", energy["idle_subtracted_j_per_trajectory"], basis, unit="J/trajectory",
+                    uncertainty=uncertainty, tolerance={"abs": 0.0, "rel": 1.0})], energy
 
 
 @task("T115", changed_files=FILES, regression_tests=(
     f"{TESTS}::test_cpu_energy_task_counts_work_and_leaves_energy_unestablished",
     f"{TESTS}::test_rapl_helpers_read_counters_and_one_wrap",
-    f"{TESTS}::test_rapl_path_divides_counter_difference_by_trajectories"))
+    f"{TESTS}::test_rapl_capture_is_analyzed_read_only_and_gated",
+    f"{TESTS}::test_lab_run_never_reads_energy_counters", UNCERTAINTY_TEST))
 def cpu_energy_per_trajectory(ctx):
     work = ctx.memo("energy-gpu-cpu-workload", _cpu_workload)
     trajectories = len(work["states"])
@@ -161,35 +220,33 @@ def cpu_energy_per_trajectory(ctx):
                  "length": kernels.LENGTH, "seed": None}
     findings = [
         finding(f"Fixed-step RK4 spends exactly 4N = {4 * STEPS} right-hand-side evaluations per trajectory "
-                f"(N = {STEPS})", "numerical", 4 * STEPS,
+                f"(N = {STEPS})", "numerical", list(work["fixed_counts"]),
                 {"generator": dict(generator, steps=STEPS),
                  "checks": [_check("counted evaluations minus 4 N T", counted - 4 * STEPS * trajectories, 0.0,
                                    kind="exact_arithmetic")]},
-                unit="evaluations/trajectory", tolerance={"abs": 0.0, "rel": 0.0}),
+                unit="evaluations/trajectory", uncertainty=EXACT, tolerance={"abs": 0.0, "rel": 0.0}),
         finding("The fixed-step trajectories are accepted results: embedded endpoint error against the exact "
                 "great circle is below 1e-8", "numerical", float(np.max(work["fixed_errors"])),
                 {"generator": dict(generator, steps=STEPS),
                  "checks": [_check("great circle cos(L) X0 + sin(L) T0", float(np.max(work["fixed_errors"])), 1e-8)]},
-                unit="normalized length", tolerance={"abs": 1e-12, "rel": 1e-3}),
+                unit="normalized length",
+                uncertainty={"kind": "reference_error", "value": 1e-15,
+                             "basis": "closed-form great-circle endpoint evaluated in binary64 (a few ulp)"},
+                tolerance={"abs": 1e-12, "rel": 1e-3}),
         finding("Adaptive Dormand-Prince 5(4) (rtol 1e-9) reaches every great-circle endpoint within 1e-7 with "
                 "these right-hand-side evaluation counts per trajectory",
                 "numerical", evaluations,
                 {"generator": dict(generator, rtol=1e-9, atol=1e-12),
                  "checks": [_check("great circle endpoint", float(np.max(work["adaptive_errors"])), 1e-7)]},
-                unit="evaluations/trajectory", tolerance={"abs": 14.0, "rel": 0.05}),
+                unit="evaluations/trajectory",
+                uncertainty={"kind": "exact", "value": 0.0, "basis": "integer counts; step acceptance near the "
+                                                                     "tolerance may shift a count by a few stages "
+                                                                     "across platforms"},
+                tolerance={"abs": 14.0, "rel": 0.05}),
     ]
-    measured, reason = _rapl_measurement(ctx)
-    if measured is None:
-        findings.append(_no_measurement("CPU package energy per geodesic trajectory", reason, unit="J/trajectory"))
-    else:
-        raw_path = ctx.artifact_json("rapl-raw.json", measured["raw"])
-        acquisition = {"device": "RAPL package domains " + ",".join(d["zone"] for d in measured["raw"]["domains"]),
-                       "raw_sha256": ctx.artifacts[-1]["sha256"],
-                       "acquired_at": telemetry._utc(str(measured["raw"]["acquired_unix_ns"])),
-                       "calibration": "not_applied: RAPL model-based counter, background-inclusive"}
-        findings.append(finding("CPU package energy per geodesic trajectory", "physical",
-                                measured["joules_per_trajectory"], {"acquisition": acquisition, "inputs": [raw_path]},
-                                unit="J/trajectory", tolerance={"abs": 0.0, "rel": 1.0}))
+    physical, energy = _rapl_findings(ctx)
+    findings += physical
+    measured = all(f["evidence_status"] == "hardware_measured" for f in physical)
     ctx.artifact_json("work-proxies.json", {
         "steps": STEPS, "trajectories": trajectories, "fixed_step_evaluations": work["fixed_counts"],
         "fixed_step_endpoint_errors": work["fixed_errors"].tolist(), "adaptive_stats": work["adaptive_stats"],
@@ -198,30 +255,39 @@ def cpu_energy_per_trajectory(ctx):
         "note": "Elapsed and process CPU time of this run only; not reproducible and not an energy measurement.",
         "clock": "time.perf_counter / time.process_time", "wall_s_per_trajectory": work["wall_s"],
         "cpu_s_per_trajectory": work["cpu_s"]})
-    ctx.artifact_json("rapl-probe.json", {"available": measured is not None, "reason": reason,
-                                          "domains": telemetry.rapl_domains() if measured else []})
+    energy_text = ("gross and idle-subtracted package energy from the supplied capture, see findings" if measured
+                   else "not measured (no accepted RAPL capture; the runner reads no counters)")
     fields = _fields(
-        hypothesis="CPU energy per geodesic trajectory can be read from package energy counters bracketing a batch "
-                   "of fixed-step RK4 trajectories, whose deterministic work (right-hand-side evaluations) is exact.",
-        mathematical_model="E_traj = (E_pkg(after) - E_pkg(before)) / (repeats * trajectories), gross and "
-                           "background-inclusive; work proxy W = 4N evaluations (RK4) or the Dormand-Prince count.",
+        hypothesis="The deterministic work of a fixed-step RK4 geodesic trajectory is exactly 4N right-hand-side "
+                   "evaluations; its CPU energy can be read only from package counters bracketing a batch, which "
+                   "an operator captures outside the lab runner.",
+        mathematical_model="E_gross = sum over package domains of (E(after) - E(before)) / (repeats * trajectories), "
+                           "one wrap allowed; E_idle-subtracted = (E_gross_total - E_idle * t_work / t_idle) / "
+                           "(repeats * trajectories); work proxy W = 4N evaluations (RK4) or the Dormand-Prince count.",
         input_data=[f"{trajectories} unit-speed geodesics on the unit sphere from the equator, headings "
-                    f"{list(kernels.HEADINGS)} rad, length {kernels.LENGTH}"],
-        observation_model="Evaluations counted by wrapping Surface.geodesic_rhs; RAPL energy_uj read from "
-                          "/sys/class/powercap when present; wall/CPU time retained only as an artifact.",
-        expected_invariant="Counted RK4 evaluations equal 4 N per trajectory; endpoints match the great circle.",
-        experiment=f"Integrate each geodesic with RK4 (N = {STEPS}) and adaptive DP5(4); count evaluations; "
-                   "probe RAPL; when readable, bracket three repeated fixed-step batches with counter reads.",
+                    f"{list(kernels.HEADINGS)} rad, length {kernels.LENGTH}",
+                    f"optional operator capture named by {telemetry.RAPL_ENV}"],
+        observation_model="Evaluations counted by wrapping Surface.geodesic_rhs; a supplied capture is read-only "
+                          "input whose raw bytes are retained; wall/CPU time retained only as an artifact.",
+        expected_invariant="Counted RK4 evaluations equal 4 N per trajectory; endpoints match the great circle; a "
+                           "capture must name this workload and this host's CPU model and RAPL zones.",
+        experiment=f"Integrate each geodesic with RK4 (N = {STEPS}) and adaptive DP5(4); count evaluations; when "
+                   f"{telemetry.RAPL_ENV} names a capture from `python -m ciw.lab.energy_gpu_telemetry rapl-capture` "
+                   "(repeated fixed-step batches, three by default, then an idle interval of equal length), gate and "
+                   "analyze it.",
         numerical_result=f"{4 * STEPS} evaluations per RK4 trajectory; max endpoint error "
                          f"{float(np.max(work['fixed_errors'])):.3g}; adaptive evaluations {evaluations}; energy: "
-                         + ("measured, see findings" if measured else "not measured (" + reason + ")"),
+                         + energy_text,
         uncertainty="Work counts are exact; a RAPL energy would carry model error, background load and a "
                     "model-dependent counter unit (commonly 2^-16 J), none characterized here.",
         failure_modes_checked=["evaluation count differs from 4N", "endpoint error exceeds 1e-8",
-                               "RAPL absent or unreadable (permission)", "RAPL counter wrap (one wrap allowed)"],
+                               "capture absent, malformed, for another workload or another host (regression tests)",
+                               "RAPL counter wrap (one wrap allowed; regression test)"],
         unresolved_assumptions=["Evaluation counts are a work proxy, not an energy measurement",
-                                "Package energy is not attributed to this process and idle power is not subtracted"],
-        recommended_next_task="Run T115 on a Linux host with readable intel-rapl counters, then T120 to relate "
+                                "Package energy is not attributed to this process; idle subtraction assumes the idle "
+                                "interval after the workload represents the background during it",
+                                "A capture is an operator record: identity binding is checked, authenticity is not"],
+        recommended_next_task="Capture T115 on a Linux host with readable intel-rapl counters, then T120 to relate "
                               "precision to measured energy")
     return {"state": "completed" if measured else "partial", "fields": fields, "findings": findings}
 
@@ -230,8 +296,37 @@ def cpu_energy_per_trajectory(ctx):
 RUN = "runs/rtx2080-<date>"
 RECORD = (f"ciw energy record --problem examples/energy-accuracy/problem.json --output-dir {RUN}/capture "
           "--duration 10 --replicas 4096 --warmup-batches 2 --idle-duration 2 --gpu-index 0")
-SMI = ("nvidia-smi --query-gpu=timestamp,uuid,name,utilization.gpu,utilization.memory,temperature.gpu,power.draw,"
-       f"clocks.sm,clocks.mem,pstate --format=csv,nounits -lms 100 -f {RUN}/smi.csv")
+SMI = ("TZ=UTC nvidia-smi --query-gpu=timestamp,uuid,name,utilization.gpu,utilization.memory,temperature.gpu,"
+       f"power.draw,clocks.sm,clocks.mem,pstate --format=csv,nounits -lms 100 -f {RUN}/smi.csv")
+NO_GPU = "no NVIDIA GPU or NVML in this environment"
+
+GPU_ENERGY = "GPU-domain gross energy per measured batch"
+NVML_ACCURACY = "The NVML total-energy counter of the RTX 2080 has a characterized accuracy and resolution"
+NVML_ACCURACY_NOTE = ("NVML declares no accuracy or resolution for this counter and no external power meter was "
+                      "compared; the counter is used uncalibrated")
+POWER = "RTX 2080 power draw during the measurement phase (NVML)"
+TEMPERATURE = "RTX 2080 temperature during the measurement phase (NVML)"
+CLOCK = "RTX 2080 graphics clock during the measurement phase (NVML)"
+DURATION = "Host-bracketed batch solve duration (launch, sync and copy included)"
+UTILIZATION = "RTX 2080 GPU utilization during the measurement phase (nvidia-smi rows inside the measurement window)"
+POWER_STEADY = "RTX 2080 power draw is steady over the measurement phase (coefficient of variation <= 0.10)"
+TEMPERATURE_STEADY = "RTX 2080 temperature drifts by at most 5 C over the measurement phase"
+KERNEL_ONLY = "RTX 2080 kernel-only duration of the Gaussian VI kernel"
+KERNEL_NOTE = ("log.json brackets launch, synchronization and copy; kernel spans need an Nsight Systems report, "
+               "which this section does not ingest")
+POWER_CV_LIMIT, TEMPERATURE_DRIFT_LIMIT = 0.10, 5.0
+T118_UNITS = {POWER: "W", TEMPERATURE: "C", CLOCK: "MHz", DURATION: "ms", UTILIZATION: "%", POWER_STEADY: "ratio",
+              TEMPERATURE_STEADY: "C", KERNEL_ONLY: "ms"}
+
+
+def _gpu_plan_findings(task_id):
+    """The physical claims a GPU task exists to test, recorded as not_established where no GPU answers."""
+    if task_id == "T116":
+        return [_no_measurement(GPU_ENERGY, NO_GPU, unit="J/batch"),
+                _no_measurement(NVML_ACCURACY, NVML_ACCURACY_NOTE, domain="sensor_performance")]
+    return [_no_measurement(claim, KERNEL_NOTE if claim == KERNEL_ONLY else NO_GPU, unit=unit)
+            for claim, unit in T118_UNITS.items()]
+
 
 PLAN_T116 = {
     "hypothesis": "Gross GPU-device energy per batch of the fixed binary64 Gaussian VI workload is measurable from "
@@ -246,46 +341,59 @@ PLAN_T116 = {
     "experiment": f"On the RTX 2080 host: (0) `mkdir -p {RUN}`; (1) `ciw energy probe --gpu-index 0` must return a "
                   f"reading with status ok; (2) `{RECORD}`; (3) `ciw energy replay {RUN}/capture/log.json`; (4) "
                   f"`CIW_LAB_ENERGY_LOG={RUN}/capture/log.json ciw lab run T116 T118 --output-dir <dir>`.",
-    "numerical_result": "none: no NVIDIA GPU or NVML in this environment",
+    "numerical_result": "none: " + NO_GPU,
     "uncertainty": "NVML counter resolution, update interval and accuracy are undeclared; energy is device-wide and "
                    "includes background work; host brackets add call overhead.",
     "failure_modes_checked": ["hardware:nvidia-gpu probe (nvidia-smi -L): no device here",
                               "acquisition gate exercised by regression tests on synthetic logs: synthetic origin, "
-                              "absent or differing host NVML identity",
+                              "absent or differing host NVML identity, raw bytes retained",
                               "planned on a captured log (energy_records.analyze): counter reset or wrap, missing "
                               "endpoint brackets, sensor/workload UUID mismatch, KL target, minimum duration"],
-    "unresolved_assumptions": ["Blocked here: no NVIDIA GPU or NVML", "The RTX 2080 driver exposes the total-energy "
-                               "counter (NVML documents it for Volta and newer); confirm with `ciw energy probe`"],
-    "recommended_next_task": "T118: record utilization, temperature, power and kernel duration in the same session",
+    "unresolved_assumptions": ["Blocked here: no NVIDIA GPU or NVML",
+                               "NVML documents the total-energy counter for Volta-or-newer fully supported devices; "
+                               "GeForce support is not documented, so `ciw energy probe` must confirm it on this "
+                               "RTX 2080",
+                               "An operator log is an unauthenticated record; the gate binds it to this host's NVML "
+                               "identity but cannot prove the capture genuine"],
+    "recommended_next_task": "T118: record utilization, temperature and power in the same session",
+    "findings": _gpu_plan_findings("T116"),
 }
 PLAN_T118 = {
-    "hypothesis": "During the T116 workload the RTX 2080 power, temperature and clocks stay in a steady state and "
-                  "kernel time is a stable fraction of the host-bracketed batch time.",
-    "mathematical_model": "Measurement-phase min/mean/max of NVML power, temperature and graphics clock; "
-                          "utilization from an nvidia-smi sidecar; kernel duration from an Nsight Systems pass.",
-    "input_data": ["log.json from `ciw energy record`", "smi.csv from the nvidia-smi sidecar",
-                   "nsys report from a separate profiling pass"],
+    "hypothesis": "During the T116 workload the RTX 2080 power draw is steady (coefficient of variation <= 0.10 over "
+                  "the measurement phase) and its temperature drifts by at most 5 C; kernel-only time is out of "
+                  "scope until an Nsight Systems report is ingested.",
+    "mathematical_model": "Measurement-phase min/mean/max of NVML power, temperature and graphics clock; power CV = "
+                          "population standard deviation / mean; temperature drift = max - min; utilization from "
+                          "nvidia-smi rows whose UTC timestamps fall inside the measurement window.",
+    "input_data": ["log.json from `ciw energy record`", "smi.csv from the nvidia-smi sidecar (run with TZ=UTC)",
+                   "nsys report from a separate profiling pass (retained by the operator, not ingested)"],
     "observation_model": "NVML context readings sampled after each energy read (not simultaneous with it); "
-                         "nvidia-smi sampling every 100 ms; CUDA kernel spans from nsys.",
-    "expected_invariant": "Device name contains RTX 2080; the same UUID appears in log.json, every smi.csv row and "
-                          "this host's NVML identity; power and temperature readings are present for every sample.",
+                         "nvidia-smi sampling every 100 ms in local wall time, converted with the declared UTC "
+                         "offset; CUDA kernel spans from nsys.",
+    "expected_invariant": "Device name contains RTX 2080; the same UUID appears in log.json, every in-window smi.csv "
+                          "row and this host's NVML identity; power and temperature readings are present for every "
+                          "sample.",
     "experiment": f"On the RTX 2080 host: (0) `mkdir -p {RUN}`; (1) start `{SMI}` in the background; (2) `{RECORD}`; "
                   f"(3) stop the sidecar; (4) in a separate profiling pass `nsys profile --trace=cuda -o {RUN}/nsys "
                   f"python -m ciw energy record --problem examples/energy-accuracy/problem.json --output-dir "
                   f"{RUN}/capture-nsys --duration 10 --gpu-index 0` and `nsys stats --report cuda_gpu_kern_sum "
                   f"{RUN}/nsys.nsys-rep`; (5) `CIW_LAB_ENERGY_LOG={RUN}/capture/log.json "
-                  f"CIW_LAB_NVIDIA_SMI_CSV={RUN}/smi.csv ciw lab run T118 --output-dir <dir>`.",
-    "numerical_result": "none: no NVIDIA GPU in this environment",
+                  f"CIW_LAB_NVIDIA_SMI_CSV={RUN}/smi.csv {telemetry.SMI_OFFSET_ENV}=+00:00 ciw lab run T118 "
+                  "--output-dir <dir>`.",
+    "numerical_result": "none: " + NO_GPU,
     "uncertainty": "NVML power is a vendor estimate with undeclared averaging; 100 ms sidecar sampling aliases short "
                    "batches; profiling perturbs timing and energy, so it is a separate pass.",
     "failure_modes_checked": ["hardware:nvidia-gpu probe (nvidia-smi -L): no device here",
                               "acquisition gate exercised by regression tests on synthetic logs: device is not an "
-                              "RTX 2080, synthetic origin",
+                              "RTX 2080, synthetic origin, sidecar rows outside the window or without a declared "
+                              "UTC offset",
                               "planned on a captured log: context readings unavailable (retained error codes), "
                               "sidecar missing or naming another UUID"],
     "unresolved_assumptions": ["Blocked here: no NVIDIA GPU", "Batch windows in log.json include launch, "
-                               "synchronization and copy; they are not kernel durations"],
+                               "synchronization and copy; they are not kernel durations",
+                               "The steady-state limits (CV 0.10, 5 C) are declared protocol criteria, not derived"],
     "recommended_next_task": "T147: compare CPU and GPU outputs of the same workload on the RTX 2080 host",
+    "findings": _gpu_plan_findings("T118"),
 }
 
 
@@ -296,7 +404,61 @@ def _stats(values):
     return {"min": min(values), "mean": math.fsum(values) / len(values), "max": max(values), "count": len(values)}
 
 
-def operator_log_outcome(ctx, task_id, raw, log, analysis, host_identity, smi_text=None):
+def _physical(claim, value, basis, reasons, unit, checks=()):
+    """A physical finding: the acquisition basis only when nothing withholds it and a value exists."""
+    if value is None or reasons:
+        return finding(claim, "physical", value, {"notes": list(reasons) or ["no reading available"]}, unit=unit,
+                       tolerance={"abs": 0.0, "rel": 1.0})
+    return finding(claim, "physical", value, dict(basis, checks=list(checks)) if checks else basis, unit=unit,
+                   uncertainty={"kind": "reference_error", "value": None,
+                                "basis": "vendor sensor; accuracy, resolution and averaging undeclared"},
+                   tolerance={"abs": 0.0, "rel": 1.0})
+
+
+def _t118_findings(ctx, log, basis, reasons, smi_raw, offset_ns):
+    samples = log["phases"][3]["samples"]
+    watts = [s["power_mw"] / 1000 if s["power_mw"] is not None else None for s in samples]
+    temperatures = [s["temperature_c"] for s in samples]
+    power, temperature = _stats(watts), _stats(temperatures)
+    clock = _stats(s["graphics_clock_mhz"] for s in samples)
+    durations = _stats((b["end_ns"] - b["start_ns"]) / 1e6 for b in log["phases"][3]["batches"])
+    present = [w for w in watts if w is not None]
+    cv = float(np.std(present) / np.mean(present)) if len(present) >= 2 and np.mean(present) > 0 else None
+    known = [t for t in temperatures if t is not None]
+    drift = float(max(known) - min(known)) if len(known) >= 2 else None
+    findings = [_physical(POWER, power, basis, reasons, "W"), _physical(TEMPERATURE, temperature, basis, reasons, "C"),
+                _physical(CLOCK, clock, basis, reasons, "MHz"), _physical(DURATION, durations, basis, reasons, "ms")]
+    smi_reasons, utilization, smi_basis = [], None, None
+    if smi_raw is None:
+        smi_reasons.append("no nvidia-smi sidecar was supplied")
+    else:
+        retention = _retain_raw(ctx, "nvidia-smi.csv", smi_raw)
+        if retention:
+            smi_reasons.append(retention)
+        else:
+            rows, window_reasons = telemetry.smi_window(smi_raw.decode("utf-8"), int(samples[0]["utc_start_ns"]),
+                                                        int(samples[-1]["utc_end_ns"]), offset_ns)
+            smi_reasons += window_reasons
+            if rows and {row.get("uuid", "").lower() for row in rows} != {log["sensor"]["device_uuid"].lower()}:
+                smi_reasons.append("sidecar rows in the window do not all name the log's device UUID")
+            key = next((k for k in (rows[0] if rows else {}) if k.startswith("utilization.gpu")), None)
+            utilization = _stats(telemetry.number(row[key]) for row in rows) if key else None
+            if "acquisition" in basis:
+                smi_basis = {"acquisition": dict(basis["acquisition"], raw_sha256=hashlib.sha256(smi_raw).hexdigest(),
+                                                 device=basis["acquisition"]["device"] + " via nvidia-smi sidecar"),
+                             "notes": [telemetry.OPERATOR_NOTE]}
+    findings.append(_physical(UTILIZATION, utilization, smi_basis or {}, reasons + smi_reasons, "%"))
+    findings.append(_physical(POWER_STEADY, cv, basis, reasons, "ratio",
+                              [_check("declared steady-state limit on the power coefficient of variation", cv or 0.0,
+                                      POWER_CV_LIMIT, "le", kind="analytic")]))
+    findings.append(_physical(TEMPERATURE_STEADY, drift, basis, reasons, "C",
+                              [_check("declared steady-state limit on the temperature range", drift or 0.0,
+                                      TEMPERATURE_DRIFT_LIMIT, "le", kind="analytic")]))
+    findings.append(_no_measurement(KERNEL_ONLY, KERNEL_NOTE, unit="ms"))
+    return findings, smi_reasons
+
+
+def operator_log_outcome(ctx, task_id, raw, log, analysis, host_identity, smi_raw=None, smi_offset_ns=None):
     """Findings from an operator-captured NVML log; physical labels only through the acquisition gate."""
     from ciw import energy_records
     from ciw.telemetry import canonical
@@ -306,117 +468,129 @@ def operator_log_outcome(ctx, task_id, raw, log, analysis, host_identity, smi_te
                        "computational_pipeline", recomputed,
                        {"inputs": [hashlib.sha256(raw).hexdigest()],
                         "checks": [_check("second energy_records.analyze of the same bytes", 0.0 if recomputed else 1.0,
-                                          0.0, kind="exact_arithmetic")]})
+                                          0.0, kind="exact_arithmetic")]}, uncertainty=EXACT, tolerance=EXACT_TOL)
     findings = [pipeline]
+    basis, reasons = telemetry.physical_basis(raw, log, analysis, host_identity,
+                                              required_name="RTX 2080" if task_id == "T118" else None)
+    retention = _retain_raw(ctx, "operator-log.json", raw)
+    if retention:
+        reasons = reasons + [retention]
+    smi_reasons = []
     if task_id == "T116":
-        basis, reasons = telemetry.physical_basis(raw, log, analysis, host_identity)
         batches = measurement["batch_count"]
         value = (measurement["gross_energy_j"] / batches) if measurement["gross_energy_j"] is not None and batches else None
-        if value is None:
-            basis, reasons = {"notes": reasons + ["gross energy withheld by the analysis"]}, reasons
-        findings.append(finding("GPU-domain gross energy per measured batch", "physical", value, basis,
-                                unit="J/batch", tolerance={"abs": 0.0, "rel": 1.0}))
+        findings.append(_physical(GPU_ENERGY, value, basis, reasons + ([] if value is not None else
+                                                                        ["gross energy withheld by the analysis"]),
+                                  "J/batch"))
+        findings.append(_no_measurement(NVML_ACCURACY, NVML_ACCURACY_NOTE, domain="sensor_performance"))
         if measurement["max_kl_nats"] is not None:
             findings.append(finding("Every measured batch output meets the declared KL target", "numerical",
                                     measurement["max_kl_nats"],
                                     {"inputs": [log["log_digest"]],
                                      "checks": [_check("declared target_kl_nats", measurement["max_kl_nats"],
                                                        measurement["target_kl_nats"], comparison="le")]},
-                                    unit="nat", tolerance={"abs": 1e-12, "rel": 1e-6}))
+                                    unit="nat", uncertainty={"kind": "roundoff", "value": 1e-15,
+                                                             "basis": "binary64 Gaussian KL of retained outputs"},
+                                    tolerance={"abs": 1e-12, "rel": 1e-6}))
     else:
-        basis, reasons = telemetry.physical_basis(raw, log, analysis, host_identity, required_name="RTX 2080")
-        samples = log["phases"][3]["samples"]
-        power = _stats(s["power_mw"] / 1000 if s["power_mw"] is not None else None for s in samples)
-        temperature = _stats(s["temperature_c"] for s in samples)
-        clock = _stats(s["graphics_clock_mhz"] for s in samples)
-        durations = _stats((b["end_ns"] - b["start_ns"]) / 1e6 for b in log["phases"][3]["batches"])
-        for claim, value, unit in (("RTX 2080 power draw during the measurement phase (NVML)", power, "W"),
-                                   ("RTX 2080 temperature during the measurement phase (NVML)", temperature, "C"),
-                                   ("RTX 2080 graphics clock during the measurement phase (NVML)", clock, "MHz"),
-                                   ("Host-bracketed batch solve duration (launch, sync and copy included)", durations, "ms")):
-            findings.append(finding(claim, "physical", value, basis if value is not None else {"notes": reasons},
-                                    unit=unit, tolerance={"abs": 0.0, "rel": 1.0}))
-        utilization, smi_reasons = None, [] if smi_text else ["no nvidia-smi sidecar was supplied"]
-        if smi_text:
-            columns = telemetry.smi_columns(smi_text)
-            key = next((k for k in columns if k.startswith("utilization.gpu")), None)
-            utilization = _stats(telemetry.numbers(columns[key])) if key else None
-            if {value.lower() for value in columns.get("uuid", [])} != {log["sensor"]["device_uuid"].lower()}:
-                smi_reasons.append("sidecar rows do not all name the log's device UUID")
-        smi_basis = {"notes": reasons + smi_reasons}
-        if utilization is not None and not reasons and not smi_reasons:
-            smi_basis = {"acquisition": dict(basis["acquisition"],
-                                             raw_sha256=hashlib.sha256(smi_text.encode()).hexdigest(),
-                                             device=basis["acquisition"]["device"] + " via nvidia-smi sidecar")}
-        findings.append(finding("RTX 2080 GPU utilization during the measurement phase (nvidia-smi)", "physical",
-                                utilization, smi_basis, unit="%", tolerance={"abs": 0.0, "rel": 1.0}))
-        findings.append(_no_measurement("RTX 2080 kernel-only duration of the Gaussian VI kernel",
-                                        "log.json brackets launch, synchronization and copy; kernel spans need an "
-                                        "Nsight Systems pass", unit="ms"))
+        t118, smi_reasons = _t118_findings(ctx, log, basis, reasons, smi_raw, smi_offset_ns)
+        findings += t118
     ctx.artifact_json("operator-log-analysis.json", {"analysis": analysis, "withheld_reasons": reasons,
+                                                     "sidecar_withheld_reasons": smi_reasons,
                                                      "host_sensor_identity": host_identity})
     plan = PLAN_T116 if task_id == "T116" else PLAN_T118
-    measured = all(f["evidence_status"] == "hardware_measured" for f in findings if f["domain"] == "physical")
-    fields = _fields(**{k: v for k, v in plan.items()})
+    # Claims no capture can support here (calibration, kernel-only time) do not decide the state.
+    structural = {NVML_ACCURACY, KERNEL_ONLY}
+    measured = all(f["evidence_status"] == "hardware_measured" for f in findings
+                   if f["domain"] in PHYSICAL_DOMAINS and f["claim"] not in structural)
+    fields = _fields(**{k: v for k, v in plan.items() if k != "findings"})
     fields["experiment"] = "Analyzed the operator-captured log named by CIW_LAB_ENERGY_LOG. Protocol: " + plan["experiment"]
-    fields["numerical_result"] = f"gross measurement energy {measurement['gross_energy_j']} J over " \
-                                 f"{measurement['batch_count']} batches; physical findings withheld: {reasons or 'none'}"
+    batches = measurement["batch_count"]
+    fields["numerical_result"] = (f"gross measurement energy {measurement['gross_energy_j']} J over {batches} measured "
+                                  f"batch{'es' if batches != 1 else ''}; physical findings withheld: {reasons or 'none'}")
     fields["failure_modes_checked"] = [
         "energy_records.validate_log structure and digest", "analysis recomputed from the retained bytes",
         "analysis eligibility: counter reset or wrap, endpoint brackets, sensor/workload UUID, KL target, durations",
-        "acquisition gate: declared origin and host NVML identity (UUID, name, driver, NVML version, library digest)"]
+        "acquisition gate: declared origin and host NVML identity (UUID, name, driver, NVML version, library digest)",
+        "raw log bytes retained byte-exactly"]
     if task_id == "T118":
-        fields["failure_modes_checked"] += ["device name contains RTX 2080", "sidecar rows name the same UUID"]
+        fields["failure_modes_checked"] += ["device name contains RTX 2080", "sidecar rows restricted to the "
+                                            "measurement window with a declared UTC offset",
+                                            "in-window sidecar rows name the same UUID"]
     fields["unresolved_assumptions"] = ["A sealed log proves internal integrity, not that the capture was genuine",
-                                        *reasons]
-    return {"state": "completed" if measured else "partial", "fields": fields, "findings": findings}
+                                        *[item for item in plan["unresolved_assumptions"]
+                                          if not item.startswith("Blocked here")], *reasons, *smi_reasons]
+    state = "completed" if measured and task_id == "T116" else "partial"
+    return {"state": state, "fields": fields, "findings": findings}
 
 
 def _operator_log_task(ctx, task_id):
     plan = PLAN_T116 if task_id == "T116" else PLAN_T118
+    fields = _fields(**{k: v for k, v in plan.items() if k != "findings"})
     path = telemetry.environment_log_path()
+    reason = None
     if path is None:
-        fields = _fields(**plan)
-        fields["experiment"] = ("Blocked: a GPU is present but the lab runner never acquires hardware data; set "
-                                f"{telemetry.LOG_ENV} to a log.json captured by `ciw energy record`. Planned: "
-                                + plan["experiment"])
-        return {"state": "blocked", "fields": fields, "findings": []}
-    raw, log, analysis = telemetry.read_operator_log(path)
+        reason = (f"a GPU is present but the lab runner never acquires hardware data; set {telemetry.LOG_ENV} to a "
+                  "log.json captured by `ciw energy record`")
+    else:
+        try:
+            raw, log, analysis = telemetry.read_operator_log(path)
+        except (OSError, ValueError) as exc:
+            reason = f"the operator log named by {telemetry.LOG_ENV} is unreadable or invalid: {exc}"
+    if reason:
+        fields["experiment"] = f"Blocked: {reason}. Planned: " + plan["experiment"]
+        fields["unresolved_assumptions"] = [reason, *plan["unresolved_assumptions"]]
+        return {"state": "blocked", "fields": fields, "findings": _gpu_plan_findings(task_id)}
     smi_path = telemetry.environment_log_path(telemetry.SMI_ENV)
-    smi_text = open(smi_path, encoding="utf-8").read() if smi_path else None
+    smi_raw = Path(smi_path).read_bytes() if smi_path else None
+    offset = telemetry.utc_offset_ns(telemetry.environment_log_path(telemetry.SMI_OFFSET_ENV))
     host = telemetry.host_sensor_identity(log["sensor"]["device_uuid"])
-    return operator_log_outcome(ctx, task_id, raw, log, analysis, host, smi_text)
+    return operator_log_outcome(ctx, task_id, raw, log, analysis, host, smi_raw, offset)
 
 
 @task("T116", changed_files=FILES, requires=("hardware:nvidia-gpu",), plan=PLAN_T116, regression_tests=(
     f"{TESTS}::test_gpu_tasks_are_blocked_with_the_recording_protocol",
     f"{TESTS}::test_operator_log_gate_withholds_physical_labels_from_synthetic_logs",
-    f"{TESTS}::test_operator_log_gate_trust_boundary_is_the_host_identity"))
+    f"{TESTS}::test_operator_log_gate_trust_boundary_is_the_host_identity", UNCERTAINTY_TEST))
 def gpu_energy_per_batch(ctx):
     return _operator_log_task(ctx, "T116")
 
 
 @task("T118", changed_files=FILES, requires=("hardware:nvidia-gpu",), plan=PLAN_T118, regression_tests=(
     f"{TESTS}::test_gpu_tasks_are_blocked_with_the_recording_protocol",
-    f"{TESTS}::test_operator_log_gate_withholds_physical_labels_from_synthetic_logs"))
+    f"{TESTS}::test_operator_log_gate_withholds_physical_labels_from_synthetic_logs",
+    f"{TESTS}::test_t118_sidecar_rows_are_restricted_to_the_measurement_window", UNCERTAINTY_TEST))
 def rtx2080_telemetry(ctx):
     return _operator_log_task(ctx, "T118")
 
 
 # ----------------------------------------------------------------- T117
+RUST_REFUSALS = {"malformed": ([[1.0, 0.0, 1.0]], "Rust kernel refused its input: states must be a list of 4-vectors"),
+                 # theta = 0 is the chart pole: cot(theta) is infinite and the state becomes NaN.
+                 "nonfinite": ([[0.0, 0.0, 1.0, 0.0]], "Rust kernel refused its input: nonfinite state")}
+
+
 def _rust_run(states):
     with tempfile.TemporaryDirectory() as scratch:
         try:
             wall0 = time.perf_counter()
             identity = kernels.build_rust_kernel(scratch)
             build_s = time.perf_counter() - wall0
+            executable = identity.pop("executable")
             wall0 = time.perf_counter()
-            result = kernels.run_rust_kernel(identity.pop("executable"), states, kernels.LENGTH, STEPS)
+            result = kernels.run_rust_kernel(executable, states, kernels.LENGTH, STEPS)
             run_s = time.perf_counter() - wall0
         except kernels.NativeKernelUnavailable as exc:
             return {"unavailable": str(exc)}
+        refusals = {}
+        for name, (bad, _) in RUST_REFUSALS.items():
+            try:
+                kernels.run_rust_kernel(executable, bad, kernels.LENGTH, 4)
+                refusals[name] = None
+            except kernels.NativeKernelUnavailable as exc:
+                refusals[name] = str(exc)
     return {"identity": identity, "states": np.array(result["states"]), "evaluations": result["evaluations"],
-            "build_wall_s": build_s, "run_wall_s_including_process_start": run_s}
+            "refusals": refusals, "build_wall_s": build_s, "run_wall_s_including_process_start": run_s}
 
 
 def _python_runs(states):
@@ -441,9 +615,15 @@ def independence_refusal() -> str | None:
     return None
 
 
+AGREE = "Rust and Python closed-form RK4 kernels agree on every endpoint to 1e-12"
+RUST_ERROR = "Rust kernel endpoint error against the exact great circle is below 1e-8"
+RUST_REFUSES = "The compiled Rust kernel refuses malformed and nonfinite inputs"
+ANGLE_UNIT = "radians or radians per unit length"
+
+
 @task("T117", changed_files=FILES, regression_tests=(
     f"{TESTS}::test_rust_kernel_matches_python_kernel",
-    f"{TESTS}::test_cross_language_agreement_is_not_independent"))
+    f"{TESTS}::test_cross_language_agreement_is_not_independent", UNCERTAINTY_TEST))
 def compare_implementations(ctx):
     states = kernels.initial_states()
     python = ctx.memo("energy-gpu-python-kernels", lambda: _python_runs(states))
@@ -452,46 +632,56 @@ def compare_implementations(ctx):
     generator = {"name": "equatorial unit-sphere geodesics", "headings_rad": list(kernels.HEADINGS),
                  "length": kernels.LENGTH, "steps": STEPS, "seed": None}
     generic_gap = float(np.max(np.abs(generic - closed)))
+    roundoff = {"kind": "roundoff", "value": 1e-15, "basis": "libm sin/cos may differ by an ulp across platforms; "
+                                                              "differences propagate through 256 steps"}
     findings = []
     if "unavailable" in rust:
-        findings.append(finding("Rust and Python closed-form RK4 kernels agree on every endpoint to 1e-12",
-                                "numerical", None, {"notes": [rust["unavailable"]]}, expected_not_established=True))
-        findings.append(finding("Rust kernel endpoint error against the exact great circle is below 1e-8",
-                                "numerical", None, {"notes": [rust["unavailable"]]}, expected_not_established=True))
+        note = {"notes": [rust["unavailable"]]}
+        findings += [finding(AGREE, "numerical", None, note, unit=ANGLE_UNIT, expected_not_established=True),
+                     finding(RUST_ERROR, "numerical", None, note, unit="normalized length",
+                             expected_not_established=True),
+                     finding(RUST_REFUSES, "computational_pipeline", None, note, expected_not_established=True)]
         rust_row = {"available": False, "reason": rust["unavailable"]}
     else:
         gap = float(np.max(np.abs(rust["states"] - closed)))
         rust_errors = kernels.endpoint_errors(states, rust["states"], kernels.LENGTH)
         findings.append(finding(
-            "Rust and Python closed-form RK4 kernels agree on every endpoint to 1e-12", "numerical", gap,
+            AGREE, "numerical", gap,
             {"generator": generator,
              "checks": [_check("Python ciw.lab.integrators.step_rk4 with the same closed-form right-hand side and "
-                               "operation order", gap, 1e-12, kind="invariant"),
-                        _check("Rust evaluation count minus 4 N T", rust["evaluations"] - 4 * STEPS * len(states), 0.0,
-                               kind="exact_arithmetic")]},
-            unit="radians or radians per unit length", tolerance={"abs": 1e-12, "rel": 0.0}))
+                               "operation order", gap, 1e-12, kind="cross_implementation"),
+                        _check("right-hand-side calls counted inside the Rust rhs() minus 4 N T",
+                               rust["evaluations"] - 4 * STEPS * len(states), 0.0, kind="exact_arithmetic")]},
+            unit=ANGLE_UNIT, uncertainty=roundoff, tolerance={"abs": 1e-12, "rel": 0.0}))
         findings.append(finding(
-            "Rust kernel endpoint error against the exact great circle is below 1e-8", "numerical",
-            float(np.max(rust_errors)),
+            RUST_ERROR, "numerical", float(np.max(rust_errors)),
             {"generator": generator, "checks": [_check("great circle cos(L) X0 + sin(L) T0", float(np.max(rust_errors)), 1e-8)]},
-            unit="normalized length", tolerance={"abs": 1e-12, "rel": 1e-3}))
+            unit="normalized length",
+            uncertainty={"kind": "reference_error", "value": 1e-15, "basis": "closed-form endpoint in binary64"},
+            tolerance={"abs": 1e-12, "rel": 1e-3}))
+        findings.append(finding(
+            RUST_REFUSES, "computational_pipeline", rust["refusals"],
+            {"checks": [_refusal(f"Rust kernel on the {name} input {bad}", expected, rust["refusals"][name])
+                        for name, (bad, expected) in RUST_REFUSALS.items()]}, uncertainty=EXACT, tolerance=EXACT_TOL))
         rust_row = {"available": True, "identity": rust["identity"], "evaluations": rust["evaluations"],
                     "endpoints": rust["states"].tolist(), "max_abs_difference_to_python": gap,
                     "max_ulp_distance_to_python": kernels.ulp_distance(rust["states"], closed),
                     "bitwise_identical_to_python": bool(np.array_equal(rust["states"], closed)),
-                    "endpoint_errors": rust_errors.tolist()}
+                    "endpoint_errors": rust_errors.tolist(), "refusals": rust["refusals"]}
     findings.append(finding(
         "Generic Christoffel-symbol RK4 (ciw.lab.surfaces) and the closed-form kernel agree to 1e-12", "numerical",
         generic_gap, {"generator": generator, "checks": [_check("closed-form sphere Christoffel symbols",
-                                                                generic_gap, 1e-12, kind="invariant")]},
-        unit="radians or radians per unit length", tolerance={"abs": 1e-12, "rel": 0.0}))
+                                                                generic_gap, 1e-12, kind="cross_implementation")]},
+        unit=ANGLE_UNIT, uncertainty=roundoff, tolerance={"abs": 1e-12, "rel": 0.0}))
     refusal = independence_refusal()
     expected = "independent_check producer and checker share an implementation origin"
     findings.append(finding(
         "Declaring the Rust kernel an independent check of the Python kernel is refused (both are ciw code)",
         "provenance", {"producer_origin": "ciw", "checker_origin": "ciw"},
-        {"checks": [_refusal("ciw.lab.evidence.supported_label with a ciw producer and a ciw checker",
-                             expected, refusal)]}))
+        {"checks": [_refusal("ciw.lab.evidence.supported_label with producer ciw.lab.integrators and checker "
+                             "ciw.lab.energy_gpu_kernels.RUST_SOURCE (the origin is read from the declared "
+                             "implementation name, so the declaration must name the kernel's true origin)",
+                             expected, refusal)]}, uncertainty=EXACT, tolerance=EXACT_TOL))
     julia = ctx.available("tool:julia")
     findings.append(finding("A Julia implementation agrees with the Python kernel", "numerical", None,
                             {"notes": ["julia is not on PATH" if not julia else
@@ -514,8 +704,12 @@ def compare_implementations(ctx):
         "python_generic_wall_s": python["python-generic-christoffel-wall_s"],
         "rust_build_wall_s": rust.get("build_wall_s"), "rust_run_wall_s": rust.get("run_wall_s_including_process_start")})
     rust_text = (f"Rust-Python max difference {rust_row['max_abs_difference_to_python']:.3g} "
-                 f"(bitwise identical: {rust_row['bitwise_identical_to_python']})" if rust_row["available"]
-                 else "Rust skipped: " + rust_row["reason"])
+                 f"(bitwise identical: {rust_row['bitwise_identical_to_python']}); Rust refusals "
+                 f"{sorted(rust_row['refusals'])}" if rust_row["available"] else "Rust skipped: " + rust_row["reason"])
+    identity = dict(runner.builtin_identity(FILES), rust=(
+        {"rustc": rust_row["identity"]["rustc"], "flags": rust_row["identity"]["flags"],
+         "source_sha256": rust_row["identity"]["source_sha256"], "binary_sha256": rust_row["identity"]["binary_sha256"]}
+        if rust_row["available"] else {"available": False, "reason": rust_row["reason"]}))
     fields = _fields(
         hypothesis="Implementations of the same RK4 geodesic kernel in Python and Rust agree to rounding error, and "
                    "all agree with the exact great circle to the RK4 truncation error.",
@@ -524,73 +718,151 @@ def compare_implementations(ctx):
         input_data=[f"{len(states)} equatorial geodesics, headings {list(kernels.HEADINGS)} rad, L = {kernels.LENGTH}, "
                     f"N = {STEPS}"],
         observation_model="Endpoints exchanged as JSON with shortest round-trip float text; the Rust source is "
-                          "embedded in energy_gpu_kernels and compiled with rustc -O into a temporary directory.",
+                          "embedded in energy_gpu_kernels and compiled with rustc -O (one codegen unit, scratch path "
+                          "remapped) into a temporary directory; the Rust rhs() counts its own calls.",
         expected_invariant="Python closed-form and Rust endpoints agree to 1e-12 (bitwise where libm agrees); "
                            "generic Christoffel path agrees to 1e-12; every endpoint within 1e-8 of the great circle.",
         experiment="Integrate the same initial states with the generic Python path, the closed-form Python path and "
-                   "the compiled Rust kernel; compare endpoints, evaluation counts and exact endpoints; probe Julia "
-                   "and GPU availability.",
+                   "the compiled Rust kernel; compare endpoints, counted evaluations and exact endpoints; send the "
+                   "Rust kernel a malformed and a nonfinite input; probe Julia and GPU availability.",
         numerical_result=f"{rust_text}; generic-closed-form max difference {generic_gap:.3g}.",
         uncertainty="Agreement is limited by libm sin/cos differences across platforms; both kernels are ciw code, "
                     "so shared modelling errors would not be detected.",
-        failure_modes_checked=["rustc absent or failing (reported, not hidden)", "Rust refuses malformed input",
-                               "nonfinite state", "evaluation count mismatch",
+        failure_modes_checked=["rustc absent or failing (reported, not hidden)",
+                               "Rust refuses malformed and nonfinite inputs (run in the task when rustc works)",
+                               "evaluation count mismatch (counted inside the Rust rhs)",
                                "independence declaration between ciw implementations"],
         unresolved_assumptions=["Julia and GPU implementations were not run (toolchain/hardware unavailable)",
                                 "Cross-platform bitwise identity is not claimed"],
         recommended_next_task="T147: compare CPU and GPU outputs of this kernel on the RTX 2080 host; T146 for "
-                              "one canonical float serialization across languages")
+                              "one canonical float serialization across languages",
+        provider_runtime_identity=identity)
     return {"state": "partial", "fields": fields, "findings": findings}
 
 
 # ----------------------------------------------------------------- T119
+def _textbook_posterior(problem):
+    """Exact Gaussian posterior in information form, written here independently of free_energy_math."""
+    prior = np.asarray(problem["prior_covariance"], dtype=float)
+    h = np.asarray(problem["observation_matrix"], dtype=float)
+    noise = np.asarray(problem["noise_covariance"], dtype=float)
+    precision = np.linalg.inv(prior) + h.T @ np.linalg.solve(noise, h)
+    covariance = np.linalg.inv(precision)
+    mean = covariance @ (np.linalg.solve(prior, np.asarray(problem["prior_mean"], dtype=float))
+                         + h.T @ np.linalg.solve(noise, np.asarray(problem["observations"], dtype=float)))
+    return mean, covariance
+
+
+def _textbook_kl(mean_q, cov_q, mean_p, cov_p):
+    """KL(q || p) = (tr(P^-1 Q) + d^T P^-1 d - k + ln det P - ln det Q) / 2 for Gaussians."""
+    delta = mean_p - mean_q
+    solve = np.linalg.solve(cov_p, cov_q)
+    return 0.5 * (float(np.trace(solve)) + float(delta @ np.linalg.solve(cov_p, delta)) - len(mean_q)
+                  + float(np.linalg.slogdet(cov_p)[1] - np.linalg.slogdet(cov_q)[1]))
+
+
 def _accepted_energy(log, analysis):
-    """Recompute the measurement-phase counter delta and accepted solves from raw readings."""
-    from ciw import energy_records, free_energy_math
+    """Recompute the measurement-phase counter delta and accepted solves from raw readings and raw outputs."""
     phase = log["phases"][3]
     readings = [int(s["energy_mj"]) for s in phase["samples"] if s["status"] == "ok"]
-    reference = free_energy_math.gaussian_reference(log["plan"]["problem"])
-    accepted = 0
+    mean_p, cov_p = _textbook_posterior(log["plan"]["problem"])
+    accepted_replicas, accepted_batches, kl_gap = 0, 0, 0.0
+    reported = {row["batch_index"]: row["kl_nats"] for row in analysis["phases"][3]["batches"]}
     for batch in phase["batches"]:
-        mean, covariance = energy_records._result(batch["result"], log["plan"]["replicas"])
-        kl = free_energy_math.gaussian_kl(mean, covariance, reference["mean"], reference["covariance"])
-        accepted += batch["result"]["replicas"] if kl <= log["plan"]["target_kl_nats"] else 0
+        # ciw.constant-float64-row.v1: one row [mean_0, mean_1, cov_00, cov_01, cov_10, cov_11] for every replica.
+        values = np.asarray(batch["result"]["values"], dtype=float)
+        kl = _textbook_kl(values[:2], values[2:].reshape(2, 2), mean_p, cov_p)
+        kl_gap = max(kl_gap, abs(kl - reported[batch["batch_index"]]))
+        if kl <= log["plan"]["target_kl_nats"]:
+            accepted_replicas += batch["result"]["replicas"]
+            accepted_batches += 1
     delta_j = (readings[-1] - readings[0]) / 1000 if len(readings) >= 2 else None
     all_readings = [int(s["energy_mj"]) for p in log["phases"] for s in p["samples"] if s["status"] == "ok"]
-    return {"delta_j": delta_j, "accepted": accepted, "executed": sum(b["result"]["replicas"] for b in phase["batches"]),
+    return {"delta_j": delta_j, "accepted": accepted_replicas, "accepted_batches": accepted_batches,
+            "executed": sum(b["result"]["replicas"] for b in phase["batches"]),
+            "replicas_per_batch": log["plan"]["replicas"], "max_kl_difference_to_analysis": kl_gap,
             "span_j": (all_readings[-1] - all_readings[0]) / 1000,
             "analysis_value": analysis["measurement"]["amortized_domain_energy_j_per_qualified_solve"],
             "reasons": analysis["comparison"]["reasons"], "gross_energy_j": analysis["measurement"]["gross_energy_j"]}
 
 
-@task("T119", changed_files=FILES, regression_tests=(f"{TESTS}::test_energy_per_accepted_result_on_fixtures",))
+STATIC_T119 = {
+    "hypothesis": "Energy per accepted result is well defined only when counter brackets are valid and every "
+                  "counted solve meets the declared accuracy target; otherwise it must be withheld. Its denominator "
+                  "must say whether it counts replica solves or distinct results.",
+    "mathematical_model": "E_acc = Delta E_measurement / #{replica solves with KL(q || p) <= target}; replicas in a "
+                          "batch are bitwise-identical copies of one result (constant-row encoding), so E per distinct "
+                          "accepted result = Delta E / #{accepted batch outputs}; boundary-dependent (measurement "
+                          "phase only, gross, no idle subtraction).",
+    "input_data": [FIXTURE_NOTE],
+    "observation_model": "Counter readings and retained batch outputs from each fixture; outputs decoded directly "
+                         "from the constant-row values and scored with a textbook Gaussian KL against an "
+                         "information-form posterior written in this module.",
+    "expected_invariant": "Recomputation equals energy_records.analyze; the metric is withheld for reset, missing "
+                          "bracket and under-target fixtures.",
+    "experiment": "Analyze all four fixtures; recompute the baseline metric from raw readings and raw outputs; compare "
+                  "with the naive gross/executed ratio, with the per-distinct-result denominator and with a whole-run "
+                  "boundary.",
+    "failure_modes_checked": ["counter reset", "missing endpoint brackets", "accuracy target not met",
+                              "naive division by executed solves", "replica copies counted as distinct results",
+                              "boundary choice"],
+    "unresolved_assumptions": ["The physical measurement part (T116) could not run here",
+                               "Idle subtraction and first-attainment accounting are intentionally not applied",
+                               "The recomputation shares its origin (ciw) with energy_records, so it is a "
+                               "cross-implementation check, not independent verification"],
+    "recommended_next_task": "T116 on the RTX 2080 host, then rerun T119 on the captured log",
+}
+
+
+def _t119_physical():
+    return _no_measurement("Physical GPU energy per accepted numerical result",
+                           "the fixtures are synthetic and no GPU counter was read here", unit="J/accepted solve")
+
+
+@task("T119", changed_files=FILES, regression_tests=(
+    f"{TESTS}::test_energy_per_accepted_result_on_fixtures", f"{TESTS}::test_textbook_kl_matches_closed_form_values",
+    FIXTURELESS_TEST, UNCERTAINTY_TEST))
 def energy_per_accepted_result(ctx):
     from ciw import energy_records
     raws = telemetry.fixture_bytes()
     if raws is None:
-        return _fixtures_blocked("T119", "Energy per accepted result is computable from retained fixtures.")
+        return _fixtures_blocked(STATIC_T119, _t119_physical)
     rows = {}
     for name, raw in raws.items():
         log = json.loads(raw)
         rows[name] = _accepted_energy(log, energy_records.analyze(log))
     base = rows["baseline"]
     recomputed = base["delta_j"] / base["accepted"]
+    per_distinct = base["delta_j"] / base["accepted_batches"]
     generator = {"name": "examples/energy-accuracy synthetic fixtures", "origin": "synthetic_fixture", "seed": None}
     withheld = {name: row["reasons"] for name, row in rows.items() if row["analysis_value"] is None}
     under = rows["under-target"]
     naive = under["gross_energy_j"] / under["executed"]
     ratio = (base["span_j"] / base["accepted"]) / recomputed
     findings = [
-        finding("Energy per accepted result of the synthetic baseline fixture, recomputed from its raw counter "
-                "readings and re-scored outputs, equals the CIW analysis value", "numerical", recomputed,
+        finding("Energy per accepted replica solve of the synthetic baseline fixture, recomputed from raw counter "
+                "readings, directly decoded outputs and a textbook Gaussian KL, equals the CIW analysis value",
+                "numerical", recomputed,
                 {"generator": dict(generator, fixture="baseline"),
                  "checks": [_check("energy_records.analyze amortized_domain_energy_j_per_qualified_solve",
-                                   recomputed - base["analysis_value"], 1e-15, kind="exact_arithmetic")]},
-                unit="J per accepted solve (synthetic fixture values)", tolerance={"abs": 1e-12, "rel": 0.0}),
+                                   recomputed - base["analysis_value"], 1e-15, kind="cross_implementation"),
+                            _check("largest per-batch KL difference to energy_records.analyze",
+                                   base["max_kl_difference_to_analysis"], 1e-12, kind="cross_implementation")]},
+                unit="J per accepted replica solve (synthetic fixture values)", uncertainty=SYNTHETIC,
+                tolerance={"abs": 1e-12, "rel": 0.0}),
+        finding("Energy per distinct accepted result (one batch output; its replicas are bitwise copies) of the "
+                "synthetic baseline fixture", "numerical", per_distinct,
+                {"generator": dict(generator, fixture="baseline"),
+                 "checks": [_check("accepted replica solves minus replicas per batch times accepted batch outputs",
+                                   base["accepted"] - base["replicas_per_batch"] * base["accepted_batches"], 0.0,
+                                   kind="exact_arithmetic")]},
+                unit="J per distinct accepted result (synthetic fixture values)", uncertainty=SYNTHETIC,
+                tolerance={"abs": 1e-12, "rel": 0.0}),
         finding("The metric is withheld for the reset, missing-bracket and under-target fixtures", "computational_pipeline",
                 withheld, {"generator": generator,
                            "checks": [_check("three fixtures with a declared defect", len(withheld) - 3, 0.0,
-                                             kind="exact_arithmetic")]}, tolerance={"abs": 0.0, "rel": 0.0}),
+                                             kind="exact_arithmetic")]},
+                uncertainty=EXACT, tolerance={"abs": 0.0, "rel": 0.0}),
         finding("Dividing gross energy by executed solves reports a finite energy per result for the under-target "
                 "fixture although no result is accepted", "numerical",
                 {"gross_energy_j": under["gross_energy_j"], "executed_solves": under["executed"],
@@ -598,7 +870,7 @@ def energy_per_accepted_result(ctx):
                 {"generator": dict(generator, fixture="under-target"),
                  "checks": [_check("accepted solves in the under-target fixture", under["accepted"], 0.0,
                                    kind="exact_arithmetic")]},
-                tolerance={"abs": 1e-12, "rel": 0.0},
+                uncertainty=SYNTHETIC, tolerance={"abs": 1e-12, "rel": 0.0},
                 counterexample={"statement": "Gross energy divided by executed solves is an energy per accepted "
                                              "numerical result",
                                 "witness": {"fixture": "under-target", "naive_j_per_solve": naive, "accepted_solves": 0}}),
@@ -606,37 +878,24 @@ def energy_per_accepted_result(ctx):
                 "accepted result by 7", "numerical", ratio,
                 {"generator": dict(generator, fixture="baseline"),
                  "checks": [_check("(2400 - 1000) mJ / (2100 - 1900) mJ", ratio - 7.0, 1e-12, kind="exact_arithmetic")]},
-                unit="ratio", tolerance={"abs": 1e-12, "rel": 0.0}),
-        _no_measurement("Physical GPU energy per accepted numerical result",
-                        "the fixtures are synthetic and no GPU counter was read here", unit="J/accepted solve"),
+                unit="ratio", uncertainty=SYNTHETIC, tolerance={"abs": 1e-12, "rel": 0.0}),
+        _t119_physical(),
     ]
     ctx.artifact_json("energy-per-accepted-result.json", {
-        "definition": "E_acc = (counter(last measurement read) - counter(first measurement read)) / accepted solves; "
-                      "a solve is accepted when its batch output has KL <= target_kl_nats; undefined when the analysis "
-                      "is ineligible or no solve is accepted.",
+        "definition": "E_acc = (counter(last measurement read) - counter(first measurement read)) / accepted replica "
+                      "solves; a replica solve is accepted when its batch output has KL <= target_kl_nats; undefined "
+                      "when the analysis is ineligible or no solve is accepted. The denominator counts replica solves "
+                      "(identical thread work on one declared problem), not distinct numerical results: every "
+                      "replica of a batch is a bitwise copy of one output. E per distinct accepted result divides by "
+                      "accepted batch outputs instead.",
         "fixtures": rows, "origin": "synthetic_fixture"})
-    fields = _fields(
-        hypothesis="Energy per accepted result is well defined only when counter brackets are valid and every "
-                   "counted solve meets the declared accuracy target; otherwise it must be withheld.",
-        mathematical_model="E_acc = Delta E_measurement / #{solves with KL(q || p) <= target}; boundary-dependent "
-                           "(measurement phase only, gross, no idle subtraction).",
-        input_data=[FIXTURE_NOTE],
-        observation_model="Counter readings and retained batch outputs from each fixture; KL rescored with "
-                          "free_energy_math.gaussian_kl against the exact Gaussian reference.",
-        expected_invariant="Recomputation equals energy_records.analyze; the metric is withheld for reset, missing "
-                           "bracket and under-target fixtures.",
-        experiment="Analyze all four fixtures; recompute the baseline metric from raw readings; compare with the naive "
-                   "gross/executed ratio and with a whole-run boundary.",
-        numerical_result=f"baseline E_acc = {recomputed} J per accepted solve (synthetic); withheld for "
-                         f"{sorted(withheld)}; naive under-target ratio {naive} J/solve with 0 accepted; "
-                         f"whole-run boundary ratio {ratio:.6g}.",
+    fields = _fields(**dict(
+        STATIC_T119,
+        numerical_result=f"baseline E_acc = {recomputed} J per accepted replica solve and {per_distinct} J per distinct "
+                         f"accepted result (synthetic); withheld for {sorted(withheld)}; naive under-target ratio "
+                         f"{naive} J/solve with 0 accepted; whole-run boundary ratio {ratio:.6g}.",
         uncertainty="Synthetic values carry no physical uncertainty model; a real NVML counter has undeclared "
-                    "resolution and background-inclusive scope.",
-        failure_modes_checked=["counter reset", "missing endpoint brackets", "accuracy target not met",
-                               "naive division by executed solves", "boundary choice"],
-        unresolved_assumptions=["The physical measurement part (T116) could not run here",
-                                "Idle subtraction and first-attainment accounting are intentionally not applied"],
-        recommended_next_task="T116 on the RTX 2080 host, then rerun T119 on the captured log")
+                    "resolution and background-inclusive scope."))
     return {"state": "partial", "fields": fields, "findings": findings}
 
 
@@ -659,17 +918,23 @@ def _precision_study():
 
 def _slope(steps, errors):
     x = np.log(np.asarray(steps, dtype=float))
-    return float(-np.polyfit(x, np.log(np.asarray(errors)), 1)[0])
+    coefficients, residuals, *_ = np.polyfit(x, np.log(np.asarray(errors)), 1, full=True)
+    rms = float(np.sqrt(residuals[0] / len(x))) if len(residuals) else 0.0
+    return float(-coefficients[0]), rms
 
 
-@task("T120", changed_files=FILES, regression_tests=(f"{TESTS}::test_precision_study_float32_floor_and_counterexample",))
+@task("T120", changed_files=FILES, regression_tests=(
+    f"{TESTS}::test_precision_study_float32_floor_and_counterexample", UNCERTAINTY_TEST))
 def precision_versus_cost(ctx):
     table = ctx.memo("energy-gpu-precision", _precision_study)
     f32, f64 = table["float32"], table["float64"]
     fit = [i for i, n in enumerate(PRECISION_GRID) if n <= 256]
-    order64 = _slope([PRECISION_GRID[i] for i in fit], [f64[i] for i in fit])
-    floor32 = min(f32)
+    order64, fit_rms = _slope([PRECISION_GRID[i] for i in fit], [f64[i] for i in fit])
+    best = int(np.argmin(f32))
+    min32 = f32[best]
+    plateau = float(np.median([e for n, e in zip(PRECISION_GRID, f32) if n >= 128]))
     ops = kernels.rk4_operation_count()
+    counted = kernels.counted_operations_per_step()
     reach = {}
     for target in TARGETS:
         reach[f"{target:g}"] = {name: next((n for n, e in zip(PRECISION_GRID, errs) if e <= target), None)
@@ -677,65 +942,90 @@ def precision_versus_cost(ctx):
     generator = {"name": "equatorial unit-sphere geodesics", "headings_rad": list(kernels.HEADINGS),
                  "length": kernels.LENGTH, "grid": list(PRECISION_GRID), "seed": None}
     reached64 = sum(row["float64"] is not None for row in reach.values())
+    float32_scatter = {"kind": "roundoff", "value": None,
+                       "basis": "float32 sin/cos implementations differ by platform; plateau errors vary by tens of "
+                                "percent (regression tolerance rel 1.0)"}
     findings = [
         finding("float64 RK4 endpoint error converges at order 4 on the sphere geodesics (N = 16..256)", "numerical",
                 order64, {"generator": generator,
                           "checks": [_check("RK4 global order 4", order64 - 4.0, 0.3)]},
-                unit="order", tolerance={"abs": 0.05, "rel": 0.0}),
-        finding("float32 RK4 endpoint error saturates at a roundoff floor between 1e-7 and 1e-5", "numerical", floor32,
+                unit="order", uncertainty={"kind": "fit_residual", "value": fit_rms,
+                                           "basis": "rms residual of the least-squares log-log fit (natural log)"},
+                tolerance={"abs": 0.05, "rel": 0.0}),
+        finding("float32 RK4 endpoint error stops improving: its minimum is a truncation/roundoff crossover inside the "
+                "step grid, followed by a roundoff-dominated plateau above it", "numerical",
+                {"crossover_min_error": min32, "crossover_steps": PRECISION_GRID[best],
+                 "plateau_median_error_n_ge_128": plateau, "error_at_2048": f32[-1], "float64_error_at_2048": f64[-1]},
                 {"generator": generator,
-                 "checks": [_check("upper bound: truncation error at N = 64 in float64 is 2e-7", floor32, 1e-5, "le"),
-                            _check("lower bound: unit roundoff 2^-24 = 6e-8 per operation", floor32, 1e-7, "ge")]},
-                unit="normalized length", tolerance={"abs": 0.0, "rel": 1.0}),
-        finding("Steps needed to reach each accuracy target, by precision (None: not reached for N <= 2048)",
-                "numerical", reach,
+                 "checks": [_check("grid positions after the float32 minimum", len(f32) - 1 - best, 1.0, "ge",
+                                   kind="exact_arithmetic"),
+                            _check("float32 error at N = 2048 over its minimum", f32[-1] / min32, 2.0, "ge",
+                                   kind="self_convergence"),
+                            _check("float32 over float64 error at N = 2048 (roundoff, not truncation)",
+                                   f32[-1] / f64[-1], 1e4, "ge", kind="high_precision"),
+                            _check("float32 minimum above the unit roundoff 2^-24 = 6.0e-8", min32, 1e-7, "ge")]},
+                unit="normalized length", uncertainty=float32_scatter, tolerance={"abs": 1e-12, "rel": 1.0}),
+        finding("Smallest grid N (>= 16) meeting each accuracy target, by precision (None: not reached for N <= 2048; "
+                "16 is censored at the grid minimum)", "numerical", reach,
                 {"generator": generator,
                  "checks": [_check("float64 reaches all five targets", reached64 - len(TARGETS), 0.0,
                                    kind="exact_arithmetic")]},
+                uncertainty={"kind": "grid_resolution", "value": 2.0,
+                             "basis": "the true minimal N lies within a factor 2 below the tabulated grid value"},
                 tolerance={"abs": 0.0, "rel": 1.0}),
         finding("Lowering precision to float32 cannot reach a 1e-7 endpoint accuracy at any step count up to 2048, "
-                "while float64 reaches it", "numerical", {"float32_min_error": floor32, "float64_steps": reach["1e-07"]["float64"]},
+                "while float64 reaches it", "numerical", {"float32_min_error": min32, "float64_steps": reach["1e-07"]["float64"]},
                 {"generator": generator,
                  "checks": [_check("grid points where float32 meets 1e-7", sum(e <= 1e-7 for e in f32), 0.0,
                                    kind="exact_arithmetic")]},
-                tolerance={"abs": 0.0, "rel": 1.0},
+                uncertainty=float32_scatter, tolerance={"abs": 0.0, "rel": 1.0},
                 counterexample={"statement": "Halving floating-point precision reaches every accuracy target at no "
                                              "greater operation count",
-                                "witness": {"target": 1e-7, "float32_min_error": floor32,
+                                "witness": {"target": 1e-7, "float32_min_error": min32,
                                             "float64_steps": reach["1e-07"]["float64"]}}),
-        finding("Per RK4 step the kernel performs the same arithmetic in both precisions; only the state width differs",
-                "numerical", dict(ops, state_bytes={"float32": 16, "float64": 32}),
-                {"derivation": "Counted from energy_gpu_kernels.sphere_rhs_batch and rk4_batch: 4 x (6 mul + 1 div + "
-                               "2 trig) + 3 x 4 x 2 stage flops + 4 x 5 + 4 x 2 combine flops"},
-                tolerance={"abs": 0.0, "rel": 0.0}),
+        finding("Per RK4 step the kernel performs the same counted arithmetic in both precisions (the float32 and "
+                "float64 transcendental implementations differ)",
+                "numerical", dict(ops, state_bytes={"float32": 16, "float64": 32}, instrumented=counted),
+                {"generator": dict(generator, instrumented_trajectories=1),
+                 "checks": [_check("instrumented flops minus the count derived from the source: 4 x (6 mul + 1 div) "
+                                   "+ 3 x 4 x 2 stage + 4 x 5 + 4 x 2 combine", counted["flops"] - ops["flops_per_step"],
+                                   0.0, kind="exact_arithmetic"),
+                            _check("instrumented sin/cos calls minus 4 x 2", counted["transcendentals"]
+                                   - ops["transcendentals_per_step"], 0.0, kind="exact_arithmetic")]},
+                uncertainty=EXACT, tolerance={"abs": 0.0, "rel": 0.0}),
         _no_measurement("float32 lowers the energy per accepted trajectory relative to float64 on real CPU or GPU "
                         "hardware", "no energy counter is available; operation counts are only a proxy",
                         unit="J/trajectory"),
     ]
     ctx.artifact_json("precision.json", {"grid": list(PRECISION_GRID), "max_endpoint_error": table,
-                                         "targets": reach, "operation_count": ops})
+                                         "targets": reach, "operation_count": ops,
+                                         "float64_order_fit": {"order": order64, "rms_residual": fit_rms}})
     ctx.artifact_text("precision.svg", svg.line_plot(
         [(name, list(PRECISION_GRID), errs) for name, errs in table.items()],
         title="RK4 sphere geodesic: endpoint error vs steps", xlabel="steps N", ylabel="max endpoint error",
         logx=True, logy=True))
     fields = _fields(
         hypothesis="float32 RK4 matches float64 until truncation error reaches float32 roundoff, after which more "
-                   "steps cannot buy accuracy; operation count per step is precision-independent.",
+                   "steps cannot buy accuracy; the counted operations per step are precision-independent.",
         mathematical_model="Global error ~ C h^4 + c N u with u = 2^-24 (float32) or 2^-53 (float64); cost ~ 4 N "
-                           "right-hand-side evaluations of fixed arithmetic.",
+                           "right-hand-side evaluations of fixed counted arithmetic.",
         input_data=[f"{len(kernels.HEADINGS)} equatorial sphere geodesics, L = {kernels.LENGTH}, N in {list(PRECISION_GRID)}"],
         observation_model="Endpoints computed entirely in the declared dtype, mapped to R^3 and compared in float64 "
                           "with the exact great circle; maximum over trajectories.",
-        expected_invariant="float64 order near 4; float32 error floor above float32 roundoff; op count per step equal.",
-        experiment="Vectorized RK4 in float32 and float64 across the step grid; minimal N per accuracy target; "
-                   "operation counts derived from the kernel source.",
-        numerical_result=f"float64 order {order64:.3f}; float32 floor {floor32:.3g}; steps to target {reach}.",
+        expected_invariant="float64 order near 4; float32 minimum inside the grid, above float32 roundoff and followed "
+                           "by a roundoff plateau; counted operations per step equal.",
+        experiment="Vectorized RK4 in float32 and float64 across the step grid; smallest grid N per accuracy target; "
+                   "operation counts derived from the kernel source and checked by running one step of the same code "
+                   "on counting scalars.",
+        numerical_result=f"float64 order {order64:.3f}; float32 crossover minimum {min32:.3g} at N = "
+                         f"{PRECISION_GRID[best]}, plateau median {plateau:.3g} for N >= 128; smallest grid N per "
+                         f"target {reach}.",
         uncertainty="float32 errors depend on the platform's float32 sin/cos and vary by tens of percent; "
                     "float64 order fit is stable to about 0.05.",
-        failure_modes_checked=["dtype promotion to float64 (asserted)", "roundoff floor mistaken for convergence",
-                               "target unreachable at any N (counterexample)"],
+        failure_modes_checked=["dtype promotion to float64 (asserted)", "roundoff floor mistaken for convergence "
+                               "(minimum must lie inside the grid)", "target unreachable at any N (counterexample)"],
         unresolved_assumptions=["Energy cost was not measured; operation counts do not capture memory traffic, "
-                                "vector width or GPU float32 throughput"],
+                                "vector width, transcendental cost or GPU float32 throughput"],
         recommended_next_task="T115/T116 energy measurement of both precisions on hardware; T148 for deterministic "
                               "reduction policies")
     return {"state": "partial", "fields": fields, "findings": findings}
@@ -744,19 +1034,46 @@ def precision_versus_cost(ctx):
 # ----------------------------------------------------------------- T121
 REDUCTION_N = 1 << 14
 REDUCTION_SEED = 20260923
+# The float32 recipe shifted by float64's 29 extra mantissa bits, so partial sums again swamp 2^-8.
+NATIVE64_SCALE = 2048.0 * 2.0 ** 29
+ACCEPTANCE_TOLERANCE = 0.01
 
 
 def _atomic_orders(generator, count):
     return [generator.permutation(REDUCTION_N // kernels.BLOCK) for _ in range(count)]
 
 
-def _cancellation_data(seed):
-    """Pairs +a, -a (float32) plus 64 terms of 2^-8: the exact sum is 0.25, the partial sums are large."""
+def _cancellation_data(seed, dtype=np.float32, scale=2048.0):
+    """Pairs +a, -a plus 64 terms of 2^-8: the exact sum is 0.25, the partial sums are large."""
     generator = np.random.Generator(np.random.PCG64(seed))
     half = (REDUCTION_N - 64) // 2
-    a = ((generator.random(half) - 0.5) * 2048.0).astype(np.float32)
-    values = np.concatenate([a, -a[generator.permutation(half)], np.full(64, 2.0 ** -8, dtype=np.float32)])
+    a = ((generator.random(half) - 0.5) * scale).astype(dtype)
+    values = np.concatenate([a, -a[generator.permutation(half)], np.full(64, 2.0 ** -8, dtype=dtype)])
     return values[generator.permutation(REDUCTION_N)]
+
+
+def _first_sign_flip(dtype, scale):
+    """First seed whose sequential, strided-tree and adjacent-tree sums disagree in sign (only these are searched)."""
+    for seed in range(1, 400):
+        candidate = _cancellation_data(seed, dtype, scale)
+        signs = {np.sign(kernels.sum_sequential(candidate)), np.sign(kernels.sum_tree_strided(candidate)),
+                 np.sign(kernels.sum_tree_adjacent(candidate))}
+        if len(signs) > 1:
+            return seed, candidate
+    raise ValueError("No reduction-order sign counterexample was found in the searched seeds")
+
+
+def _entry(data, dtype, atomic):
+    x = data.astype(dtype)
+    exact = math.fsum(float(v) for v in data)
+    sums = kernels.reduction_orders(x, atomic)
+    bounds = kernels.order_bounds(x, dtype)
+    errors = {k: v - exact for k, v in sums.items()}
+    fractions = {k: abs(e) / kernels.bound_for(k, bounds) for k, e in errors.items()}
+    worst = max(fractions, key=lambda k: (fractions[k], k))
+    return {"exact": exact, "sums": sums, "errors": errors, "bound": kernels.summation_bound(x, dtype),
+            "order_bounds": bounds, "fraction_of_order_bound": fractions, "worst_order": worst,
+            "worst_fraction": fractions[worst], "exact_zero_errors": sum(e == 0 for e in errors.values())}
 
 
 def _reduction_study():
@@ -764,140 +1081,176 @@ def _reduction_study():
     u = generator.random(REDUCTION_N)
     positive = (u * u * u * 1000.0 + 1e-3).astype(np.float32)
     atomic = _atomic_orders(generator, 8)
-    witness_seed, cancellation = None, None
-    for seed in range(1, 400):
-        candidate = _cancellation_data(seed)
-        signs = {np.sign(kernels.sum_sequential(candidate)), np.sign(kernels.sum_tree_strided(candidate)),
-                 np.sign(kernels.sum_tree_adjacent(candidate))}
-        if len(signs) > 1:
-            witness_seed, cancellation = seed, candidate
-            break
-    if cancellation is None:
-        raise ValueError("No reduction-order sign counterexample was found in the searched seeds")
+    seed32, cancellation = _first_sign_flip(np.float32, 2048.0)
+    seed64, native = _first_sign_flip(np.float64, NATIVE64_SCALE)
     study = {}
     for label, data in (("positive", positive), ("cancellation", cancellation)):
-        exact = math.fsum(float(v) for v in data)
         for dtype in (np.float32, np.float64):
-            x = data.astype(dtype)
-            sums = kernels.reduction_orders(x, atomic)
-            bound = kernels.summation_bound(x, dtype)
-            study[f"{label}-{np.dtype(dtype).name}"] = {"exact": exact, "sums": sums, "bound": bound,
-                                                        "errors": {k: v - exact for k, v in sums.items()}}
+            study[f"{label}-{np.dtype(dtype).name}"] = _entry(data, dtype, atomic)
+    study["cancellation-native-float64"] = _entry(native, np.float64, atomic)
     maxima = {float(np.max(positive[generator.permutation(REDUCTION_N)])) for _ in range(8)}
-    return {"study": study, "witness_seed": witness_seed, "max_values": sorted(maxima),
-            "n": REDUCTION_N, "block": kernels.BLOCK, "atomic_orders": len(atomic)}
+    zeros = [np.array([0.0, -0.0]), np.array([-0.0, 0.0])]
+    signed_zero = [bool(np.signbit(np.max(pair))) for pair in zeros]
+    return {"study": study, "witness_seed": seed32, "native_float64_seed": seed64, "max_values": sorted(maxima),
+            "signed_zero_max_signbits": signed_zero, "n": REDUCTION_N, "block": kernels.BLOCK,
+            "atomic_orders": len(atomic), "order_depths": kernels.order_depths(REDUCTION_N)}
 
 
-def guard_contradictions(entry, steps=17):
-    """Decide S > T only when |S - T| exceeds the a priori bound; count contradicting order pairs."""
-    exact, bound, sums = entry["exact"], entry["bound"], list(entry["sums"].values())
-    contradictions, undecided, naive_flips = 0, 0, 0
-    for k in range(steps):
-        threshold = exact + (k - steps // 2) * bound / 4
-        decisions = [1 if s - threshold > bound else -1 if threshold - s > bound else 0 for s in sums]
-        contradictions += 1 in decisions and -1 in decisions
-        undecided += decisions.count(0)
-        naive = {s > threshold for s in sums}
-        naive_flips += len(naive) > 1
-    return {"thresholds": steps, "contradictions": int(contradictions),
-            "undecided_fraction": undecided / (steps * len(sums)), "naive_flipping_thresholds": naive_flips}
+def guarded_sign(entry) -> dict:
+    """Decide the sign of S only when |S| exceeds the order's own a priori bound; count decided orders."""
+    decided = {k: abs(s) > kernels.bound_for(k, entry["order_bounds"]) for k, s in entry["sums"].items()}
+    return {"decided_orders": sum(decided.values()), "orders": len(decided),
+            "smallest_order_bound": min(kernels.bound_for(k, entry["order_bounds"]) for k in decided),
+            "largest_abs_sum": max(abs(s) for s in entry["sums"].values())}
 
 
-@task("T121", changed_files=FILES, regression_tests=(f"{TESTS}::test_reduction_orders_bound_and_sign_counterexample",))
+def _bound_finding(claim, entry, generator):
+    values = list(entry["sums"].values())
+    value = {"relative_spread": (max(values) - min(values)) / abs(entry["exact"]),
+             "worst_fraction_of_order_bound": entry["worst_fraction"], "worst_order": entry["worst_order"]}
+    return finding(claim, "numerical", value,
+                   {"generator": generator,
+                    "checks": [_check("order-specific a priori bounds gamma_d sum|x| (Higham 4.2; Kahan 4.3, "
+                                      "leading order)", entry["worst_fraction"], 1.0, "le")]},
+                   unit="relative", uncertainty=IEEE, tolerance={"abs": 1e-15, "rel": 0.5})
+
+
+@task("T121", changed_files=FILES, regression_tests=(
+    f"{TESTS}::test_reduction_orders_bound_and_sign_counterexample", UNCERTAINTY_TEST))
 def reduction_order_conclusions(ctx):
     result = ctx.memo("energy-gpu-reductions", _reduction_study)
     study = result["study"]
     generator = {"name": "seeded reduction datasets", "seed": REDUCTION_SEED, "n": REDUCTION_N,
-                 "cancellation_seed": result["witness_seed"], "bit_generator": "PCG64"}
-
-    def spread(entry):
-        values = list(entry["sums"].values())
-        return (max(values) - min(values)) / abs(entry["exact"])
-
-    def worst(entry):
-        return max(abs(e) for e in entry["errors"].values()) / entry["bound"]
-
+                 "cancellation_seed": result["witness_seed"], "native_float64_seed": result["native_float64_seed"],
+                 "bit_generator": "PCG64"}
     cancel32, cancel64 = study["cancellation-float32"], study["cancellation-float64"]
+    native = study["cancellation-native-float64"]
     signs32 = {k: int(np.sign(v)) for k, v in cancel32["sums"].items()}
-    wrong64 = sum(np.sign(v) != np.sign(cancel64["exact"]) for v in cancel64["sums"].values())
-    guards = {key: guard_contradictions(entry) for key, entry in study.items()}
+    signs_native = {k: int(np.sign(v)) for k, v in native["sums"].items()}
+    atomic_cancel = {k: v for k, v in cancel32["sums"].items() if k.startswith("atomic-")}
+    decisions = {k: abs(v - cancel32["exact"]) <= ACCEPTANCE_TOLERANCE for k, v in atomic_cancel.items()}
     atomic32 = {v for k, v in study["positive-float32"]["sums"].items() if k.startswith("atomic-")}
+    guards = {key: guarded_sign(study[key]) for key in ("cancellation-float32", "cancellation-native-float64")}
     findings = [
-        finding("Every emulated float32 summation order of the positive dataset stays within gamma_(n-1) sum|x|; "
-                "relative spread across orders", "numerical", spread(study["positive-float32"]),
-                {"generator": generator,
-                 "checks": [_check("a priori bound for any summation order (Higham 4.2)", worst(study["positive-float32"]),
-                                   1.0, "le")]}, unit="relative", tolerance={"abs": 0.0, "rel": 0.5}),
-        finding("Every emulated float64 summation order of the same data stays within its bound; relative spread",
-                "numerical", spread(study["positive-float64"]),
-                {"generator": generator,
-                 "checks": [_check("a priori bound for any summation order (Higham 4.2)", worst(study["positive-float64"]),
-                                   1.0, "le")]}, unit="relative", tolerance={"abs": 1e-15, "rel": 1.0}),
-        finding("Reduction order alone flips the sign of a float32 sum whose exact value is +0.25", "numerical",
+        _bound_finding("Every emulated float32 summation order of the positive dataset stays within its "
+                       "order-specific a priori error bound; relative spread across orders",
+                       study["positive-float32"], generator),
+        _bound_finding("Every emulated float64 summation order of the same data stays within its order-specific "
+                       "bound; relative spread", study["positive-float64"], generator),
+        finding("Reduction order alone flips the sign of a float32 sum whose exact value is +0.25 (the one-thread "
+                "sequential CPU fold against the GPU-style orders)", "numerical",
                 signs32, {"generator": generator,
                           "checks": [_check("distinct signs across emulated orders", len(set(signs32.values())), 2.0,
                                             "ge", kind="exact_arithmetic")]},
-                tolerance={"abs": 0.0, "rel": 0.0},
+                uncertainty=IEEE, tolerance={"abs": 0.0, "rel": 0.0},
                 counterexample={"statement": "The sign of a float32 reduction (a pass/fail decision at threshold 0) "
                                              "does not depend on the reduction order",
-                                "witness": {"seed": result["witness_seed"], "exact_sum": cancel32["exact"],
-                                            "sums": cancel32["sums"]}}),
-        finding("float64 reductions of the same cancellation data give the correct sign in every emulated order",
-                "numerical", {k: int(np.sign(v)) for k, v in cancel64["sums"].items()},
+                                "witness": {"seed": result["witness_seed"], "found_by": "first flipping seed of 1..399 "
+                                            "comparing sequential, strided-tree and adjacent-tree sums",
+                                            "exact_sum": cancel32["exact"], "sums": cancel32["sums"]}}),
+        finding("float64 accumulation of these float32-valued cancellation inputs is exact in every emulated order "
+                "(all errors 0), hence sign-correct", "numerical",
+                {"max_abs_error": max(abs(e) for e in cancel64["errors"].values()),
+                 "exact_zero_errors": cancel64["exact_zero_errors"]},
                 {"generator": generator,
-                 "checks": [_check("orders with the wrong sign", wrong64, 0.0, kind="exact_arithmetic")]},
-                tolerance={"abs": 0.0, "rel": 0.0}),
-        finding("Threshold decisions guarded by the a priori bound never contradict across emulated orders "
-                "(unguarded decisions S > T do flip at some thresholds)", "numerical", guards,
+                 "checks": [_check("largest |float64 sum - exact| over orders",
+                                   max(abs(e) for e in cancel64["errors"].values()), 0.0, kind="exact_arithmetic")]},
+                uncertainty=EXACT, tolerance={"abs": 0.0, "rel": 0.0}),
+        finding("Reduction order alone flips the sign of a float64 sum of float64-native cancellation data whose "
+                "exact value is +0.25 (the sequential fold against the GPU-style orders)", "numerical", signs_native,
                 {"generator": generator,
-                 "checks": [_check("contradicting decisions over 17 thresholds x 4 datasets",
-                                   sum(g["contradictions"] for g in guards.values()), 0.0, kind="exact_arithmetic")]},
-                tolerance={"abs": 0.0, "rel": 0.0}),
+                 "checks": [_check("distinct signs across emulated float64 orders", len(set(signs_native.values())),
+                                   2.0, "ge", kind="exact_arithmetic")]},
+                uncertainty=IEEE, tolerance={"abs": 0.0, "rel": 0.0},
+                counterexample={"statement": "float64 reductions are order-robust for sign decisions",
+                                "witness": {"seed": result["native_float64_seed"], "scale": NATIVE64_SCALE,
+                                            "exact_sum": native["exact"], "sums": native["sums"]}}),
+        finding(f"Atomic completion order alone changes a float32 pass/fail test |S - 0.25| <= {ACCEPTANCE_TOLERANCE} "
+                "on identical inputs", "numerical", {k: bool(v) for k, v in decisions.items()},
+                {"generator": generator,
+                 "checks": [_check("distinct pass/fail outcomes over 8 atomic completion orders",
+                                   len(set(decisions.values())), 2.0, "ge", kind="exact_arithmetic")]},
+                uncertainty=IEEE, tolerance={"abs": 0.0, "rel": 0.0},
+                counterexample={"statement": "Atomic completion order cannot change a float32 pass/fail decision on "
+                                             "identical inputs",
+                                "witness": {"tolerance": ACCEPTANCE_TOLERANCE, "exact_sum": cancel32["exact"],
+                                            "failing": {k: v for k, v in atomic_cancel.items() if not decisions[k]},
+                                            "passing": {k: v for k, v in atomic_cancel.items() if decisions[k]}}}),
         finding("Emulated atomicAdd completion orders of identical float32 block partials give distinct sums",
                 "numerical", len(atomic32),
                 {"generator": generator,
                  "checks": [_check("distinct float32 results over 8 completion orders", len(atomic32), 2.0, "ge",
                                    kind="exact_arithmetic")]},
-                unit="distinct results", tolerance={"abs": 0.0, "rel": 0.0},
+                unit="distinct results", uncertainty=EXACT, tolerance={"abs": 0.0, "rel": 0.0},
                 counterexample={"statement": "Accumulating the same block partials yields the same float32 result "
                                              "whatever the atomic completion order",
                                 "witness": {"distinct_results": sorted(atomic32)}}),
-        finding("Max reductions are order-invariant (bitwise identical over 8 permutations)", "numerical",
-                len(result["max_values"]),
+        finding("The bound-guarded sign test (decide only when |S| exceeds the order's own a priori bound) cannot "
+                "contradict across orders but leaves both cancellation sums undecided in every emulated order",
+                "numerical", guards,
+                {"generator": generator,
+                 "checks": [_check("orders whose guarded sign test decides",
+                                   sum(g["decided_orders"] for g in guards.values()), 0.0, kind="exact_arithmetic")]},
+                uncertainty=IEEE, tolerance={"abs": 1e-12, "rel": 1e-6}),
+        finding("Max reductions of this NaN-free, zero-free positive data are bitwise order-invariant over 8 "
+                "permutations", "numerical", len(result["max_values"]),
                 {"generator": generator,
                  "checks": [_check("distinct maxima minus one", len(result["max_values"]) - 1, 0.0,
                                    kind="exact_arithmetic")]},
-                unit="distinct results", tolerance={"abs": 0.0, "rel": 0.0}),
+                unit="distinct results", uncertainty=EXACT, tolerance={"abs": 0.0, "rel": 0.0}),
+        finding("The IEEE maximum of +0.0 and -0.0 depends on operand order (numpy max)", "numerical",
+                result["signed_zero_max_signbits"],
+                {"checks": [_check("distinct sign bits of max over the two operand orders",
+                                   len(set(result["signed_zero_max_signbits"])), 2.0, "ge", kind="exact_arithmetic")]},
+                uncertainty=EXACT, tolerance={"abs": 0.0, "rel": 0.0},
+                counterexample={"statement": "Max reductions are bitwise order-invariant for all IEEE inputs",
+                                "witness": {"orders": ["[0.0, -0.0]", "[-0.0, 0.0]"],
+                                            "signbits": result["signed_zero_max_signbits"]}}),
         _no_measurement("Reductions on the RTX 2080 (CUB, cuBLAS or atomicAdd) reproduce these emulated spreads and "
                         "sign flips", "no GPU was available; the orders are CPU emulations"),
     ]
-    ctx.artifact_json("reductions.json", {**result, "guards": guards})
     names = list(study["positive-float32"]["sums"])
+    ctx.artifact_json("reductions.json", {**result, "figure_order": names, "guarded_sign": guards,
+                                          "atomic_pass_fail": decisions})
     ctx.artifact_text("reduction-errors.svg", svg.line_plot(
-        [(key, list(range(len(names))), [max(abs(entry["errors"][n]), 1e-30) for n in names])
-         for key, entry in study.items()],
-        title="Absolute error by emulated reduction order", xlabel="order index (see reductions.json)",
-        ylabel="|sum - exact|", logy=True))
+        [(key, list(range(len(names))), [abs(entry["errors"][n]) for n in names]) for key, entry in study.items()],
+        title="Absolute error by emulated reduction order (exact zeros omitted)",
+        xlabel="order index (figure_order in reductions.json)", ylabel="|sum - exact|", logy=True))
+    spread = findings[0]["value"]["relative_spread"], findings[1]["value"]["relative_spread"]
     fields = _fields(
-        hypothesis="GPU-style reduction orders change float32 sums by up to the a priori bound, enough to flip a "
-                   "threshold decision near its boundary, while float64 or guard-banded decisions are order-robust.",
-        mathematical_model="|fl(sum x) - sum x| <= gamma_(n-1) sum|x_i|, gamma_k = k u / (1 - k u), for every "
-                           "summation order; max is exactly associative and commutative.",
-        input_data=[f"n = {REDUCTION_N}: positive data (u^3 * 1000 + 1e-3 from PCG64 seed {REDUCTION_SEED}); "
-                    f"cancellation data (+a, -a pairs plus 64 x 2^-8, first flipping seed {result['witness_seed']})"],
+        hypothesis="GPU-style reduction orders keep float32 sums within their order-specific a priori bounds, yet the "
+                   "order differences suffice to flip sign and pass/fail decisions near their boundary; float64 "
+                   "suffers the same with data scaled to its precision.",
+        mathematical_model="|fl(sum x) - sum x| <= gamma_d sum|x_i|, gamma_d = d u / (1 - d u), where d is the "
+                           "largest number of additions any input passes through (n - 1 sequential, log2 n trees, "
+                           "block height plus partial fold otherwise); Kahan (2u + n u^2) sum|x| to leading order.",
+        input_data=[f"n = {REDUCTION_N}: positive data (u^3 * 1000 + 1e-3 from PCG64 seed {REDUCTION_SEED}); float32 "
+                    f"cancellation data (+a, -a pairs plus 64 x 2^-8, first flipping seed {result['witness_seed']}); "
+                    f"float64-native cancellation data (scale 2^40, first flipping seed "
+                    f"{result['native_float64_seed']})"],
         observation_model="Sums in sequential, adjacent tree, strided tree, two-pass blocked, block-sequential, "
                           "Kahan and 8 atomic completion orders; exact reference by math.fsum.",
-        expected_invariant="Every error within gamma_(n-1) sum|x|; guard-banded decisions consistent; max invariant.",
-        experiment="Emulate the orders in float32 and float64; search seeds for a sign flip; sweep 17 thresholds.",
-        numerical_result=f"float32 relative spread {spread(study['positive-float32']):.3g}; float64 "
-                         f"{spread(study['positive-float64']):.3g}; cancellation float32 signs {signs32}; "
-                         f"{len(atomic32)} distinct atomic-order results.",
+        expected_invariant="Every error within its order-specific bound; guarded decisions cannot contradict (if "
+                           "|S_i - s| <= b and |S_j - s| <= b, then S_i - T > b and T - S_j > b would need S_i - S_j > "
+                           "2b, which the triangle inequality excludes); max of NaN-free, zero-free data "
+                           "order-invariant.",
+        experiment="Emulate the orders in float32 and float64; search seeds for a sign flip among the sequential and "
+                   "two tree orders; test a pass/fail tolerance across atomic orders; test the guarded sign "
+                   "decision; compare max reductions, including signed zeros.",
+        numerical_result=f"float32 relative spread {spread[0]:.3g}; float64 {spread[1]:.3g}; float32 cancellation "
+                         f"signs {signs32}; float64-native cancellation signs {signs_native}; atomic pass/fail "
+                         f"{decisions}; {len(atomic32)} distinct atomic-order results on positive data.",
         uncertainty="Deterministic IEEE arithmetic; the emulated orders are a sample of plausible GPU orders, not "
-                    "those of a specific library.",
-        failure_modes_checked=["error exceeds the a priori bound", "no sign counterexample in 399 seeds (would raise)",
-                               "guard-band contradiction", "max reduction order dependence"],
+                    "those of a specific library; the witnesses were found by search, so they show existence, not "
+                    "frequency.",
+        failure_modes_checked=["error exceeds its order-specific bound", "no sign counterexample in 399 seeds "
+                               "(would raise)", "atomic-order pass/fail flip", "guarded sign test deciding wrongly",
+                               "max reduction order dependence (including signed zeros)"],
         unresolved_assumptions=["Real GPU reduction orders, FMA contraction and warp-shuffle trees were not observed",
-                                "The guard band is conservative (worst case), so many decisions stay undecided"],
+                                "The pass/fail tolerance 0.01 was chosen inside the observed atomic spread; it shows "
+                                "that such flips exist, not how often they occur",
+                                "The a priori guard is sound but so conservative that it decides none of the "
+                                "cancellation signs"],
         recommended_next_task="T148: adopt a deterministic reduction policy (fixed tree or compensated) and T147 to "
                               "compare against RTX 2080 outputs")
     return {"state": "partial", "fields": fields, "findings": findings}
@@ -934,7 +1287,8 @@ def _raw_posterior(run):
             reference["log_evidence"] - run["normalized"]["normalization"]["log_observation_jacobian"])
 
 
-@task("T122", changed_files=FILES, regression_tests=(f"{TESTS}::test_bounded_free_energy_identity_and_counterexamples",))
+@task("T122", changed_files=FILES, regression_tests=(
+    f"{TESTS}::test_bounded_free_energy_identity_and_counterexamples", UNCERTAINTY_TEST))
 def bounded_free_energy(ctx):
     runs = ctx.memo("energy-gpu-free-energy", lambda: {
         "declared": _fit(DECLARED_SCALES), "unit": _fit(UNIT_SCALES), "alternate": _fit(ALTERNATE_SCALES),
@@ -953,13 +1307,15 @@ def bounded_free_energy(ctx):
     unit = runs["unit"]
     generator = {"name": "declared two-latent linear-Gaussian problem", "raw_problem": RAW_PROBLEM,
                  "scales": DECLARED_SCALES, "seed": None}
+    roundoff = {"kind": "roundoff", "value": residual,
+                "basis": "largest binary64 residual of F + log Z - KL over the retained trace"}
     findings = [
         finding("The variational free-energy identity F + log Z = KL(q || p) holds at every iterate to 1e-10 nats",
                 "numerical", residual,
                 {"generator": generator,
                  "checks": [_check("F from free_energy, log Z from observation-space conditioning, KL from the "
                                    "whitened Gaussian formula", residual, 1e-10, kind="invariant")]},
-                unit="nat", tolerance={"abs": 1e-10, "rel": 0.0}),
+                unit="nat", uncertainty=roundoff, tolerance={"abs": 1e-10, "rel": 0.0}),
         finding("KL to the exact posterior decreases monotonically and ends below 1e-12 nats within the "
                 "512-iteration bound", "numerical",
                 {"iterations": fit["iterations"], "final_kl_nats": kl[-1], "initial_kl_nats": kl[0],
@@ -969,18 +1325,22 @@ def bounded_free_energy(ctx):
                             _check("largest KL increase between iterates", increase, 1e-15, "signed_le", kind="invariant"),
                             _check("iterations within the declared bound", fit["iterations"], 512, "le",
                                    kind="exact_arithmetic")]},
-                tolerance={"abs": 1e-12, "rel": 0.05}),
+                uncertainty=roundoff, tolerance={"abs": 1e-12, "rel": 0.05}),
         finding("The raw-unit posterior and log evidence are invariant under the choice of normalization scales",
                 "numerical", invariance,
                 {"generator": generator,
                  "checks": [_check("posterior mapped back by x_raw = D x_norm, log Z_raw = log Z_norm - sum log T",
                                    invariance, 1e-10, kind="invariant")]},
+                uncertainty={"kind": "roundoff", "value": invariance, "basis": "binary64 back-transformation"},
                 tolerance={"abs": 1e-10, "rel": 0.0}),
         finding("A mean step 1.2 times the stability bound makes KL grow instead of converge", "numerical",
                 {"alpha": unstable["alpha"], "spectral_radius": unstable["fit"]["stability"]["spectral_radius"],
                  "kl_initial": unstable_kl[0], "kl_final": unstable_kl[-1]},
                 {"generator": generator,
                  "checks": [_check("KL growth factor over 60 iterations", unstable_kl[-1] / unstable_kl[0], 1e3, "ge")]},
+                uncertainty={"kind": "roundoff", "value": None, "basis": "geometric growth amplifies roundoff; the "
+                                                                        "final KL is reproducible to about 1e-3 "
+                                                                        "relative"},
                 tolerance={"abs": 0.0, "rel": 1e-3},
                 counterexample={"statement": "Gradient descent on the variational free energy converges for every "
                                              "positive step size",
@@ -991,6 +1351,7 @@ def bounded_free_energy(ctx):
                               "iterations": unit["fit"]["iterations"], "condition_number": unit["condition"]},
                 {"generator": dict(generator, scales=UNIT_SCALES),
                  "checks": [_check("final KL with unit scales", unit["fit"]["trace"][-1]["kl_to_reference"], 1e-3, "ge")]},
+                uncertainty={"kind": "roundoff", "value": 1e-12, "basis": "binary64 iteration of a contraction"},
                 tolerance={"abs": 1e-9, "rel": 1e-4},
                 counterexample={"statement": "Coordinate normalization changes only units, not bounded convergence",
                                 "witness": {"declared_iterations": fit["iterations"],
@@ -1049,44 +1410,55 @@ def numeric_fields(value, key=None):
 
 
 def classify_field(name: str) -> str | None:
-    tokens = name.lower().split("_")
-    if {"j", "mj", "mw", "joule", "joules"} & set(tokens):
+    """Dimension of a field from its unit token: energy (J), power (W) or information (nat)."""
+    tokens = set(name.lower().split("_"))
+    if {"j", "mj", "kj", "joule", "joules"} & tokens:
         return "energy"
-    if {"nats", "nat", "kl"} & set(tokens) or name in ("free_energy", "log_evidence", "negative_log_evidence") \
+    if {"w", "mw", "watt", "watts"} & tokens:
+        return "power"
+    if {"nats", "nat", "kl"} & tokens or name in ("free_energy", "log_evidence", "negative_log_evidence") \
             or name.endswith("_entropy") or name.startswith("free_energy"):
         return "information"
     return None
 
 
+REFUSAL_ATTEMPTS = {
+    "add": (lambda Q: Q(8.5, "nat") + Q(0.2, "J"), "Cannot add information and energy"),
+    "compare": (lambda Q: Q(8.5, "nat") < Q(0.2, "J"), "Cannot compare information and energy"),
+    "equal": (lambda Q: Q(8.5, "nat") == Q(0.2, "J"), "Cannot compare information and energy"),
+    "convert": (lambda Q: Q(0.2, "J").to("nat"), "Cannot express energy in nat"),
+    "untyped": (lambda Q: Q(8.5, "nat") + 3.0, "Cannot add a quantity and an untyped number"),
+    "untyped_left": (lambda Q: 3.0 + Q(8.5, "nat"), "Cannot add a quantity and an untyped number"),
+    "power_plus_energy": (lambda Q: Q(1.0, "W") + Q(0.2, "J"), "Cannot add energy/time and energy"),
+}
+
+
 def typed_refusals() -> dict:
     """Attempt forbidden combinations; return each refusal message (None when accepted)."""
-    free = kernels.Quantity(8.5, "nat")
-    energy = kernels.Quantity(0.2, "J")
-    attempts = {"add": lambda: free + energy, "compare": lambda: free < energy,
-                "convert": lambda: energy.to("nat"), "untyped": lambda: free + 3.0}
     out = {}
-    for name, attempt in attempts.items():
+    for name, (attempt, _) in REFUSAL_ATTEMPTS.items():
         try:
-            attempt()
+            attempt(kernels.Quantity)
             out[name] = None
         except kernels.QuantityRefusal as exc:
             out[name] = str(exc)
     return out
 
 
-@task("T123", changed_files=FILES, regression_tests=(f"{TESTS}::test_typed_quantities_refuse_nats_plus_joules",))
+@task("T123", changed_files=FILES, regression_tests=(
+    f"{TESTS}::test_typed_quantities_refuse_nats_plus_joules", FIXTURELESS_TEST, UNCERTAINTY_TEST))
 def free_energy_distinct_from_energy(ctx):
     from ciw import energy_records, free_energy_math
     Q = kernels.Quantity
     refusals = typed_refusals()
-    expected = {"add": "Cannot add information and energy", "compare": "Cannot compare information and energy",
-                "convert": "Cannot express energy in nat", "untyped": "Cannot add a quantity and an untyped number"}
     run = ctx.memo("energy-gpu-free-energy-declared", lambda: _fit(DECLARED_SCALES))
     last = run["fit"]["trace"][-1]
     log_z = run["fit"]["reference"]["log_evidence"]
     identity = (Q(last["free_energy"], "nat") + Q(log_z, "nat") - Q(last["kl_to_reference"], "nat")).to("nat")
     joules = (Q(0.2, "J") + Q(100, "mJ")).to("J") - 0.3
+    watts = Q(1000, "mW").to("W") - 1.0
     bits = Q(1, "bit").to("nat") - math.log(2.0)
+    equal_across_units = Q(1, "J") == Q(1000, "mJ")
     per_solve = (Q(0.2, "J") / Q(4, "solve")).describe()
     raws = telemetry.fixture_bytes()
     energy_sources = [energy_records.analyze(json.loads(raws["baseline"])), json.loads(raws["baseline"])] if raws else []
@@ -1095,12 +1467,13 @@ def free_energy_distinct_from_energy(ctx):
     energy_numbers = {k for source in energy_sources for k in numeric_fields(source)}
     vi_numbers = {k for source in vi_sources for k in numeric_fields(source)}
     joule_fields = sorted(k for k in energy_numbers if classify_field(k) == "energy")
+    power_fields = sorted(k for k in energy_numbers if classify_field(k) == "power")
     nat_fields = sorted(k for k in energy_numbers if classify_field(k) == "information")
     vi_fields = sorted(k for k in vi_numbers if classify_field(k) == "information")
     # An energy-named number without a joule-family unit token is ambiguous in an energy record.
     ambiguous = sorted(k for k in energy_numbers if "energy" in k and classify_field(k) != "energy")
     free_in_energy = sorted(k for k in energy_numbers if k.startswith("free_energy"))
-    joules_in_vi = sorted(k for k in vi_numbers if classify_field(k) == "energy")
+    physical_in_vi = sorted(k for k in vi_numbers if classify_field(k) in ("energy", "power"))
     vi_energy_named = sorted(k for k in vi_numbers if "energy" in k and classify_field(k) != "information")
     panels = {}
     if raws:
@@ -1108,35 +1481,49 @@ def free_energy_distinct_from_energy(ctx):
         panels = {p["panel_id"]: sorted(set(p["units"])) for p in view["panels"]}
     mixed_panels = sum(len(units) != 1 for units in panels.values())
     f_nats, e_joules = last["free_energy"], 0.2
+    with_joules, with_millijoules = f_nats + e_joules, f_nats + 1000 * e_joules
+    audit_claim = "CIW energy records and free-energy records keep joules, watts and nats in distinct unit-bearing fields"
+    audit_value = {"energy_record_joule_fields": joule_fields, "energy_record_power_fields": power_fields,
+                   "energy_record_nat_fields": nat_fields, "variational_nat_fields": vi_fields, "panel_units": panels}
+    if raws:
+        audit = finding(audit_claim, "provenance", audit_value, {"checks": [
+            _check("energy-named numbers in energy records without a J/mJ unit token", len(ambiguous), 0.0,
+                   kind="exact_arithmetic"),
+            _check("free_energy fields in energy records", len(free_in_energy), 0.0, kind="exact_arithmetic"),
+            _check("J/mJ or W/mW fields in variational records", len(physical_in_vi), 0.0, kind="exact_arithmetic"),
+            _check("energy-named variational numbers outside the free-energy (nat) family", len(vi_energy_named), 0.0,
+                   kind="exact_arithmetic"),
+            _check("experiment view panels mixing units", mixed_panels, 0.0, kind="exact_arithmetic")]},
+            uncertainty=EXACT, tolerance=EXACT_TOL)
+    else:
+        audit = finding(audit_claim, "provenance", audit_value,
+                        {"notes": ["examples/energy-accuracy is not reachable, so no energy record was audited"]},
+                        expected_not_established=True)
     findings = [
-        finding("Typed arithmetic refuses to add, compare or convert nats of variational free energy with joules",
+        finding("Typed arithmetic refuses to add, compare (including ==) or convert nats of variational free energy "
+                "with joules, watts with joules, and quantities with untyped numbers",
                 "computational_pipeline", refusals,
-                {"checks": [_refusal(f"Quantity {name}", expected[name], refusals[name]) for name in expected]}),
-        finding("Typed arithmetic within one dimension is exact: 0.2 J + 100 mJ = 0.3 J, 1 bit = ln 2 nat, "
-                "F + log Z - KL = 0 nat", "numerical", {"joules": joules, "bits": bits, "identity_nats": identity,
-                                                         "energy_per_solve_dimension": per_solve},
-                {"checks": [_check("0.3 J", joules, 1e-15, kind="exact_arithmetic"),
-                            _check("ln 2", bits, 1e-15, kind="exact_arithmetic"),
+                {"checks": [_refusal(f"Quantity {name}", expected, refusals[name])
+                            for name, (_, expected) in REFUSAL_ATTEMPTS.items()]}, uncertainty=EXACT, tolerance=EXACT_TOL),
+        finding("Typed arithmetic within one dimension agrees with hand-converted values to binary64 rounding: "
+                "0.2 J + 100 mJ = 0.3 J, 1000 mW = 1 W, 1 bit = ln 2 nat, 1 J == 1000 mJ, F + log Z - KL = 0 nat",
+                "numerical", {"joules": joules, "watts": watts, "bits": bits, "identity_nats": identity,
+                              "one_joule_equals_1000_millijoules": equal_across_units,
+                              "energy_per_solve_dimension": per_solve},
+                {"checks": [_check("0.3 J", joules, 1e-15), _check("1 W", watts, 1e-15), _check("ln 2", bits, 1e-15),
+                            _check("1 J == 1000 mJ in base units (0 = equal)", 0.0 if equal_across_units else 1.0,
+                                   0.0, kind="exact_arithmetic"),
                             _check("F + log Z = KL", identity, 1e-10, kind="invariant")]},
+                uncertainty={"kind": "roundoff", "value": 1e-15, "basis": "binary64 unit scales such as 1e-3 are "
+                                                                          "inexact"},
                 tolerance={"abs": 1e-10, "rel": 0.0}),
-        finding("CIW energy records and free-energy records keep joules and nats in distinct unit-bearing fields",
-                "provenance", {"energy_record_joule_fields": joule_fields, "energy_record_nat_fields": nat_fields,
-                               "variational_nat_fields": vi_fields, "panel_units": panels},
-                {"checks": [_check("fixtures available (1 = missing)", 0.0 if raws else 1.0, 0.0, kind="exact_arithmetic"),
-                            _check("energy-named numbers in energy records without a J/mJ/mW unit token",
-                                   len(ambiguous), 0.0, kind="exact_arithmetic"),
-                            _check("free_energy fields in energy records", len(free_in_energy), 0.0,
-                                   kind="exact_arithmetic"),
-                            _check("J/mJ/mW fields in variational records", len(joules_in_vi), 0.0,
-                                   kind="exact_arithmetic"),
-                            _check("energy-named variational numbers outside the free-energy (nat) family",
-                                   len(vi_energy_named), 0.0, kind="exact_arithmetic"),
-                            _check("experiment view panels mixing units", mixed_panels, 0.0, kind="exact_arithmetic")]}),
+        audit,
         finding("An untyped sum of free energy and physical energy changes when the energy unit changes", "numerical",
-                {"free_energy_nats": f_nats, "energy_j": e_joules, "sum_with_joules": f_nats + e_joules,
-                 "sum_with_millijoules": f_nats + 1000 * e_joules},
-                {"checks": [_check("difference between the two untyped sums", 999 * e_joules, 1.0, "ge",
-                                   kind="exact_arithmetic")]},
+                {"free_energy_nats": f_nats, "energy_j": e_joules, "sum_with_joules": with_joules,
+                 "sum_with_millijoules": with_millijoules},
+                {"checks": [_check("difference between the two computed untyped sums", with_millijoules - with_joules,
+                                   1.0, "ge", kind="exact_arithmetic")]},
+                uncertainty={"kind": "roundoff", "value": 1e-13, "basis": "binary64 sums"},
                 tolerance={"abs": 1e-9, "rel": 0.0},
                 counterexample={"statement": "Adding variational free energy to physical energy yields a "
                                              "unit-independent quantity",
@@ -1145,41 +1532,84 @@ def free_energy_distinct_from_energy(ctx):
                         "by the computation", "relating nats to joules needs a declared physical system and "
                         "temperature (for example k_B T per nat) and a measured device"),
     ]
-    ctx.artifact_json("field-audit.json", {"energy_record_joule_fields": joule_fields,
-                                           "energy_record_nat_fields": nat_fields, "variational_nat_fields": vi_fields,
-                                           "ambiguous_energy_numbers": ambiguous, "free_energy_in_energy_records":
-                                           free_in_energy, "joules_in_variational_records": joules_in_vi,
-                                           "panel_units": panels, "refusals": refusals})
+    ctx.artifact_json("field-audit.json", {**audit_value, "ambiguous_energy_numbers": ambiguous,
+                                           "free_energy_in_energy_records": free_in_energy,
+                                           "physical_units_in_variational_records": physical_in_vi,
+                                           "refusals": refusals, "fixtures_reachable": raws is not None})
     fields = _fields(
         hypothesis="Variational free energy (nats, information) and device energy (joules) are different dimensions; "
                    "a typed check refuses to combine them, and CIW records already keep them in disjoint fields.",
-        mathematical_model="Quantities carry a dimension vector over {information, energy, time, count}; addition and "
-                           "comparison require equal vectors; multiplication and division combine them.",
+        mathematical_model="Quantities carry a dimension vector over {information, energy, time, count}; power is "
+                           "energy/time; addition, subtraction and comparison (including equality) require equal "
+                           "vectors; multiplication and division combine them.",
         input_data=["ciw.free_energy_math trace of the T122 declared problem", FIXTURE_NOTE],
         observation_model="Refusal messages of the typed algebra; field names of energy_records logs/analyses, "
                           "variational traces and the workbench energy view.",
-        expected_invariant="nat + J, nat < J and J -> nat refused; same-dimension arithmetic exact; no field or panel "
-                           "mixes the two dimensions.",
-        experiment="Exercise the typed algebra; classify every field name by unit token; inspect experiment panels.",
-        numerical_result=f"refusals {refusals}; joule fields {joule_fields}; nat fields in energy records "
-                         f"{nat_fields}; variational nat fields {vi_fields}; panel units {panels}.",
+        expected_invariant="nat + J, nat < J, nat == J, J -> nat, W + J and untyped mixing refused; same-dimension "
+                           "arithmetic agrees to binary64 rounding; no field or panel mixes dimensions.",
+        experiment="Exercise the typed algebra; classify every field name by unit token (J, W or nat family); "
+                   "inspect experiment panels.",
+        numerical_result=f"refusals {refusals}; joule fields {joule_fields}; power fields {power_fields}; nat fields "
+                         f"in energy records {nat_fields}; variational nat fields {vi_fields}; panel units {panels}."
+                         + ("" if raws else " Energy-record audit not run: fixtures unreachable."),
         uncertainty="Field classification is by naming convention (unit tokens); a field without a unit token is "
                     "not classified.",
-        failure_modes_checked=["implicit nat/J addition", "cross-dimension comparison", "silent conversion",
-                               "untyped number mixed with a quantity", "unit-dependent untyped sum"],
+        failure_modes_checked=["implicit nat/J addition", "cross-dimension comparison and equality",
+                               "silent conversion", "untyped number on either side of a quantity",
+                               "power added to energy", "unit-dependent untyped sum"],
         unresolved_assumptions=["The Landauer relation (k_B T ln 2 per bit) is a physical bound on erasure, not an "
-                                "estimate of what this computation dissipated"],
+                                "estimate of what this computation dissipated"]
+        + ([] if raws else ["examples/energy-accuracy is not reachable; the energy-record field audit did not run"]),
         recommended_next_task="T146: carry units in one canonical serialization across languages")
-    return {"state": _state(findings, "completed"), "fields": fields, "findings": findings}
+    return {"state": _state(findings, "completed" if raws else "partial"), "fields": fields, "findings": findings}
 
 
 # ----------------------------------------------------------------- T124
-@task("T124", changed_files=FILES, regression_tests=(f"{TESTS}::test_raw_telemetry_retention_and_tampering",))
+STATIC_T124 = {
+    "hypothesis": "Every retained energy log keeps raw timestamped counter readings with device and runtime identity "
+                  "fields, and the validator refuses edits to them unless the log is deliberately resealed.",
+    "mathematical_model": "log_digest = sha256(canonical(log without digest)); structural profile of "
+                          "energy_records.validate_log; analysis eligibility rules of energy_records.analyze.",
+    "input_data": [FIXTURE_NOTE],
+    "observation_model": "Field inventory of each sealed fixture (identity fields present, and how many hold "
+                         "placeholder values); validation outcome of each mutated copy.",
+    "expected_invariant": "All readings carry monotonic and UTC brackets; identity fields present; each tampering "
+                          "class refused with its specific message.",
+    "experiment": f"Validate the four fixtures; apply {len(telemetry.TAMPERING)} mutations (with or without "
+                  "resealing); validate a resealed doubling, an origin relabelling and a UUID mismatch.",
+    "failure_modes_checked": [name for name, *_ in telemetry.TAMPERING] + [
+        "resealed modification", "origin relabelling", "sensor/workload UUID mismatch",
+        "placeholder identity values counted as identification"],
+    "unresolved_assumptions": ["Sealing is integrity, not authenticity: no signature binds a log to the device",
+                               "Hardware provenance of every fixture is not established",
+                               "The fixtures' identity fields are present but mostly placeholders"],
+    "recommended_next_task": "T125: replay the retained logs through a Session; later, signed capture on the RTX "
+                             "2080 host (T116)",
+}
+
+
+def _t124_physical():
+    return _no_measurement("The fixtures' counter readings were produced by a physical GPU and NVML counter",
+                           "the fixtures declare origin synthetic_fixture and carry placeholder library and "
+                           "executable digests")
+
+
+def _validation_outcome(log) -> str | None:
+    from ciw import energy_records
+    try:
+        energy_records.validate_log(log)
+    except ValueError as exc:
+        return str(exc)
+    return None
+
+
+@task("T124", changed_files=FILES, regression_tests=(
+    f"{TESTS}::test_raw_telemetry_retention_and_tampering", FIXTURELESS_TEST, UNCERTAINTY_TEST))
 def retain_raw_telemetry(ctx):
     from ciw import energy_records
     raws = telemetry.fixture_bytes()
     if raws is None:
-        return _fixtures_blocked("T124", "Raw telemetry and device/runtime identity are retained in every fixture.")
+        return _fixtures_blocked(STATIC_T124, _t124_physical)
     logs = {name: json.loads(raw) for name, raw in raws.items()}
     for log in logs.values():
         energy_records.validate_log(log)
@@ -1195,6 +1625,7 @@ def retain_raw_telemetry(ctx):
                 sample["energy_mj"] = str(2 * int(sample["energy_mj"]))
 
     resealed = telemetry.reseal(_mutated(base, doubled))
+    resealed_outcome = _validation_outcome(resealed)
     relabelled = telemetry.reseal(_mutated(base, lambda log: log.update(origin="physical_measurement")))
     mismatch = telemetry.reseal(_mutated(base, lambda log: log["sensor"].update(
         device_uuid="GPU-11111111-2222-3333-4444-555555555555")))
@@ -1204,24 +1635,27 @@ def retain_raw_telemetry(ctx):
     missing_time = sum(row["samples"] - row["timestamped_samples"] for row in inventory.values())
     missing_identity = sum(identity_fields - row["identity_fields_present"] for row in inventory.values())
     findings = [
-        finding(f"Every fixture retains raw timestamped counter readings and {identity_fields} device/runtime "
-                "identity fields", "provenance",
+        finding(f"Every fixture retains raw timestamped counter readings and the {identity_fields} device/runtime "
+                "identity fields (placeholder values in these synthetic fixtures)", "provenance",
                 {name: {"samples": row["samples"], "raw_counter_readings": row["raw_counter_readings"],
-                        "batches": row["batches"]} for name, row in inventory.items()},
+                        "batches": row["batches"], "identity_fields_present": row["identity_fields_present"],
+                        "placeholder_values": row["placeholder_values"]} for name, row in inventory.items()},
                 {"generator": generator,
                  "checks": [_check("readings without monotonic and UTC brackets", missing_time, 0.0, kind="exact_arithmetic"),
                             _check("missing identity fields", missing_identity, 0.0, kind="exact_arithmetic")]},
-                tolerance={"abs": 0.0, "rel": 0.0}),
+                uncertainty=EXACT, tolerance={"abs": 0.0, "rel": 0.0}),
         finding(f"The energy-log validator refuses {len(telemetry.TAMPERING)} classes of tampering", "provenance",
                 sorted(outcomes),
                 {"generator": generator,
-                 "checks": [_refusal(name, expected, outcomes[name]) for name, _, _, expected in telemetry.TAMPERING]}),
+                 "checks": [_refusal(name, expected, outcomes[name]) for name, _, _, expected in telemetry.TAMPERING]},
+                uncertainty=EXACT, tolerance=EXACT_TOL),
         finding("A log whose counter readings were doubled and then resealed passes validation", "provenance",
                 {"gross_energy_j_original": energy_records.analyze(base)["measurement"]["gross_energy_j"],
                  "gross_energy_j_resealed": energy_records.analyze(resealed)["measurement"]["gross_energy_j"]},
                 {"generator": generator,
-                 "checks": [_check("validation refusals of the resealed log", 0.0, 0.0, kind="exact_arithmetic")]},
-                tolerance={"abs": 1e-12, "rel": 0.0},
+                 "checks": [_check("energy_records.validate_log refusals of the resealed log (0 = accepted)",
+                                   0.0 if resealed_outcome is None else 1.0, 0.0, kind="exact_arithmetic")]},
+                uncertainty=SYNTHETIC, tolerance={"abs": 1e-12, "rel": 0.0},
                 counterexample={"statement": "A valid log digest shows that the retained readings are unmodified "
                                              "hardware output",
                                 "witness": {"mutation": "every energy_mj doubled, then energy_records.seal",
@@ -1234,6 +1668,7 @@ def retain_raw_telemetry(ctx):
                  "checks": [_check("eligible after relabelling (1 = yes)",
                                    1.0 if relabelled_analysis["comparison"]["eligible"] else 0.0, 1.0, "ge",
                                    kind="exact_arithmetic")]},
+                uncertainty=EXACT, tolerance=EXACT_TOL,
                 counterexample={"statement": "The declared origin of a retained energy log authenticates a physical "
                                              "measurement",
                                 "witness": {"origin": "physical_measurement", "run_id": base["run_id"]}}),
@@ -1242,37 +1677,25 @@ def retain_raw_telemetry(ctx):
                 {"generator": generator,
                  "checks": [_check("workload_sensor_device_mismatch reported (1 = yes)",
                                    1.0 if "workload_sensor_device_mismatch" in mismatch_reasons else 0.0, 1.0, "ge",
-                                   kind="exact_arithmetic")]}),
-        _no_measurement("The fixtures' counter readings were produced by a physical GPU and NVML counter",
-                        "the fixtures declare origin synthetic_fixture and carry placeholder library and executable "
-                        "digests"),
+                                   kind="exact_arithmetic")]},
+                uncertainty=EXACT, tolerance=EXACT_TOL),
+        _t124_physical(),
     ]
     ctx.artifact_json("inventory.json", inventory)
     ctx.artifact_json("tampering.json", {"outcomes": outcomes, "resealed_doubled_digest": resealed["log_digest"],
+                                         "resealed_doubled_validation": resealed_outcome or "accepted",
                                          "relabelled_analysis_comparison": relabelled_analysis["comparison"],
                                          "uuid_mismatch_reasons": mismatch_reasons})
     ctx.artifact_json("baseline-measurement-samples.json", base["phases"][3]["samples"])
-    fields = _fields(
-        hypothesis="Every retained energy log keeps raw timestamped counter readings with device and runtime "
-                   "identity, and the validator refuses edits to them unless the log is deliberately resealed.",
-        mathematical_model="log_digest = sha256(canonical(log without digest)); structural profile of "
-                           "energy_records.validate_log; analysis eligibility rules of energy_records.analyze.",
-        input_data=[FIXTURE_NOTE],
-        observation_model="Field inventory of each sealed fixture; validation outcome of each mutated copy.",
-        expected_invariant="All readings carry monotonic and UTC brackets; identity fields present; each tampering "
-                           "class refused with its specific message.",
-        experiment=f"Validate the four fixtures; apply {len(telemetry.TAMPERING)} mutations (with or without "
-                   "resealing); test resealed doubling, origin relabelling and UUID mismatch.",
-        numerical_result=f"{sum(r['samples'] for r in inventory.values())} raw readings retained; refusals "
-                         f"{outcomes}; resealed doubling accepted; relabelled fixture classified "
+    placeholders = sum(row["placeholder_values"] for row in inventory.values())
+    fields = _fields(**dict(
+        STATIC_T124,
+        numerical_result=f"{sum(r['samples'] for r in inventory.values())} raw readings retained; {identity_fields} "
+                         f"identity fields per fixture, {placeholders} placeholder values over the four fixtures; "
+                         f"refusals {outcomes}; resealed doubling "
+                         f"{'accepted' if resealed_outcome is None else 'refused'}; relabelled fixture classified "
                          f"{relabelled_analysis['comparison']['classification']}.",
-        uncertainty="Exact (structural checks).",
-        failure_modes_checked=[name for name, *_ in telemetry.TAMPERING] + [
-            "resealed modification", "origin relabelling", "sensor/workload UUID mismatch"],
-        unresolved_assumptions=["Sealing is integrity, not authenticity: no signature binds a log to the device",
-                                "Hardware provenance of every fixture is not established"],
-        recommended_next_task="T125: replay the retained logs through a Session; later, signed capture on the RTX "
-                              "2080 host (T116)")
+        uncertainty="Exact (structural checks)."))
     return {"state": _state(findings, "completed"), "fields": fields, "findings": findings}
 
 
@@ -1284,11 +1707,40 @@ def _mutated(log, mutation):
 
 
 # ----------------------------------------------------------------- T125
-@task("T125", changed_files=FILES, regression_tests=(f"{TESTS}::test_session_replay_keeps_numerical_result_id",))
+STATIC_T125 = {
+    "hypothesis": "Replaying a retained energy analysis through a ciw Session recomputes the same numerical result "
+                  "(stable numerical_result_id) under fresh execution and result identities.",
+    "mathematical_model": "numerical_result_id = digest({operation_id, data = energy_records.analyze(log)}); "
+                          "execution and result identities include a fresh occurrence UUID.",
+    "input_data": [FIXTURE_NOTE],
+    "observation_model": "Session protocol: source.add, operation.execute, bundle.replay, bundle.get, "
+                         "experiment.inspect, workspace.save and Session.from_workspace.",
+    "expected_invariant": "One numerical_result_id per fixture; four execution ids, two result ids and two bundle "
+                          "digests per fixture; restored workspace equal; edited bundles refused.",
+    "experiment": "Run every fixture through one Session, replay it, compare identities, save and restore the "
+                  "workspace, and replay an edited copy of the baseline bundle with stale and with recomputed digests.",
+    "failure_modes_checked": ["numerical id drift between original and replay", "reused execution identity",
+                              "receipt claims independence or admission", "edited retained result",
+                              "workspace restore mismatch"],
+    "unresolved_assumptions": ["Replay determinism is not independent verification by another party",
+                               "The retained readings are synthetic",
+                               "Resealing an edited bundle uses ciw.telemetry._bundle_digest (internal; pinned by "
+                               "the regression test)"],
+    "recommended_next_task": "T146: canonical serialization so numerical ids agree across platforms and languages",
+}
+
+
+def _t125_physical():
+    return _no_measurement("Replayed energy values are physically valid measurements",
+                           "replay recomputes the same retained synthetic readings; it acquires nothing")
+
+
+@task("T125", changed_files=FILES, regression_tests=(
+    f"{TESTS}::test_session_replay_keeps_numerical_result_id", FIXTURELESS_TEST, UNCERTAINTY_TEST))
 def replay_energy_reports(ctx):
     raws = telemetry.fixture_bytes()
     if raws is None:
-        return _fixtures_blocked("T125", "Session replay of retained energy logs preserves numerical_result_id.")
+        return _fixtures_blocked(STATIC_T125, _t125_physical)
     replay = ctx.memo("energy-gpu-session", lambda: telemetry.session_replay(raws))
     rows = replay["fixtures"]
     distinct_numerical = {name: len(set(row["numerical_result_ids"])) for name, row in rows.items()}
@@ -1309,17 +1761,17 @@ def replay_energy_reports(ctx):
                                    sum(distinct_numerical.values()) - len(distinct_numerical), 0.0, kind="exact_arithmetic"),
                             _check("ids differing from digest(operation, energy_records.analyze(log))", direct_mismatch,
                                    0.0, kind="exact_arithmetic")]},
-                tolerance={"abs": 0.0, "rel": 0.0}),
+                uncertainty=EXACT, tolerance={"abs": 0.0, "rel": 0.0}),
         finding("Each replay is a fresh analysis occurrence with new execution, result and bundle identities",
                 "computational_pipeline", fresh,
                 {"generator": generator,
                  "checks": [_check("missing fresh identities", fresh_deficit, 0.0, kind="exact_arithmetic")]},
-                tolerance={"abs": 0.0, "rel": 0.0}),
+                uncertainty=EXACT, tolerance={"abs": 0.0, "rel": 0.0}),
         finding("Replay receipts record a numerical match, no state admission, a non-independent method and no fresh "
                 "hardware measurement", "provenance", sorted({row["verification_method"] for row in rows.values()}),
                 {"generator": generator,
                  "checks": [_check("fixtures with a receipt or view outside policy", receipts_bad, 0.0,
-                                   kind="exact_arithmetic")]}),
+                                   kind="exact_arithmetic")]}, uncertainty=EXACT, tolerance=EXACT_TOL),
         finding("Saving and restoring the Session workspace reproduces the retained workbench exactly", "provenance",
                 {"bundles": replay["bundle_count"], "restored_equal": replay["restored_equal"]},
                 {"generator": generator,
@@ -1327,7 +1779,7 @@ def replay_energy_reports(ctx):
                                    kind="exact_arithmetic"),
                             _check("bundles retained minus 2 per fixture", replay["bundle_count"] - 2 * len(rows), 0.0,
                                    kind="exact_arithmetic")]},
-                tolerance={"abs": 0.0, "rel": 0.0}),
+                uncertainty=EXACT, tolerance={"abs": 0.0, "rel": 0.0}),
         finding("Replaying a retained bundle whose numerical result was edited is refused, with or without "
                 "resealed envelopes", "provenance", replay["refusals"],
                 {"generator": generator,
@@ -1336,33 +1788,16 @@ def replay_energy_reports(ctx):
                                      replay["refusals"].get("edited_bundle")),
                             _refusal("replay_session on an edited bundle with recomputed digests",
                                      "Retained energy analysis binding differs",
-                                     replay["refusals"].get("edited_and_resealed_bundle"))]}),
-        _no_measurement("Replayed energy values are physically valid measurements",
-                        "replay recomputes the same retained synthetic readings; it acquires nothing"),
+                                     replay["refusals"].get("edited_and_resealed_bundle"))]}, uncertainty=EXACT, tolerance=EXACT_TOL),
+        _t125_physical(),
     ]
     ctx.artifact_json("session-replay.json", {"fixtures": rows, "refusals": replay["refusals"],
                                               "restored_equal": replay["restored_equal"],
                                               "bundle_count": replay["bundle_count"]})
-    fields = _fields(
-        hypothesis="Replaying a retained energy analysis through a ciw Session recomputes the same numerical result "
-                   "(stable numerical_result_id) under fresh execution and result identities.",
-        mathematical_model="numerical_result_id = digest({operation_id, data = energy_records.analyze(log)}); "
-                           "execution and result identities include a fresh occurrence UUID.",
-        input_data=[FIXTURE_NOTE],
-        observation_model="Session protocol: source.add, operation.execute, bundle.replay, bundle.get, "
-                          "experiment.inspect, workspace.save and Session.from_workspace.",
-        expected_invariant="One numerical_result_id per fixture; four execution ids, two result ids and two bundle "
-                           "digests per fixture; restored workspace equal; edited bundles refused.",
-        experiment="Run every fixture through one Session, replay it, compare identities, save and restore the "
-                   "workspace, and replay an edited copy of the baseline bundle.",
+    fields = _fields(**dict(
+        STATIC_T125,
         numerical_result=f"distinct numerical ids {distinct_numerical}; fresh identities {fresh}; restored equal "
                          f"{replay['restored_equal']}; edited replays refused: {replay['refusals']}.",
         uncertainty="Exact; the numerical ids themselves may differ across platforms if float results differ in the "
-                    "last bit, so only their stability within a run is asserted.",
-        failure_modes_checked=["numerical id drift between original and replay", "reused execution identity",
-                               "receipt claims independence or admission", "edited retained result",
-                               "workspace restore mismatch"],
-        unresolved_assumptions=["Replay determinism is not independent verification by another party",
-                                "The retained readings are synthetic"],
-        recommended_next_task="T146: canonical serialization so numerical ids agree across platforms and languages")
+                    "last bit, so only their stability within a run is asserted."))
     return {"state": _state(findings, "completed"), "fields": fields, "findings": findings}

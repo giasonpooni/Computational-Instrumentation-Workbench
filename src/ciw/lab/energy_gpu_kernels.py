@@ -67,21 +67,84 @@ def sphere_rhs_batch(y, dtype):
     return np.stack([y[2], y[3], s * c * y[3] * y[3], dtype(-2.0) * (c / s) * y[2] * y[3]])
 
 
+def rk4_step(y, h, dtype):
+    """One RK4 step on a (4, batch) array with every operation in ``dtype``."""
+    half, sixth, two = dtype(0.5) * h, h / dtype(6.0), dtype(2.0)
+    k1 = sphere_rhs_batch(y, dtype)
+    k2 = sphere_rhs_batch(y + half * k1, dtype)
+    k3 = sphere_rhs_batch(y + half * k2, dtype)
+    k4 = sphere_rhs_batch(y + h * k3, dtype)
+    return y + sixth * (k1 + two * k2 + two * k3 + k4)
+
+
 def rk4_batch(states, length, steps, dtype=np.float64) -> np.ndarray:
     """Fixed-step RK4 with every operation in ``dtype`` (NumPy 2 keeps float32 closed)."""
     dtype = np.dtype(dtype).type
     y = np.asarray(states, dtype=dtype).T.copy()
     h = dtype(length / steps)
-    half, sixth, two = dtype(0.5) * h, h / dtype(6.0), dtype(2.0)
     for _ in range(steps):
-        k1 = sphere_rhs_batch(y, dtype)
-        k2 = sphere_rhs_batch(y + half * k1, dtype)
-        k3 = sphere_rhs_batch(y + half * k2, dtype)
-        k4 = sphere_rhs_batch(y + h * k3, dtype)
-        y = y + sixth * (k1 + two * k2 + two * k3 + k4)
+        y = rk4_step(y, h, dtype)
     if y.dtype != np.dtype(dtype) or not np.all(np.isfinite(y)):
         raise FloatingPointError("RK4 left its declared precision or the finite domain")
     return y.T
+
+
+class _Counting:
+    """A float that counts the arithmetic and transcendental operations applied to it."""
+
+    __slots__ = ("value", "counts")
+
+    def __init__(self, value, counts):
+        self.value, self.counts = float(value), counts
+
+    def _apply(self, other, operation):
+        self.counts["flops"] += 1
+        other = other.value if isinstance(other, _Counting) else float(other)
+        return _Counting(operation(self.value, other), self.counts)
+
+    def __add__(self, other):
+        return self._apply(other, lambda a, b: a + b)
+
+    def __radd__(self, other):
+        return self._apply(other, lambda a, b: b + a)
+
+    def __sub__(self, other):
+        return self._apply(other, lambda a, b: a - b)
+
+    def __rsub__(self, other):
+        return self._apply(other, lambda a, b: b - a)
+
+    def __mul__(self, other):
+        return self._apply(other, lambda a, b: a * b)
+
+    def __rmul__(self, other):
+        return self._apply(other, lambda a, b: b * a)
+
+    def __truediv__(self, other):
+        return self._apply(other, lambda a, b: a / b)
+
+    def __rtruediv__(self, other):
+        return self._apply(other, lambda a, b: b / a)
+
+    def sin(self):
+        self.counts["transcendentals"] += 1
+        return _Counting(math.sin(self.value), self.counts)
+
+    def cos(self):
+        self.counts["transcendentals"] += 1
+        return _Counting(math.cos(self.value), self.counts)
+
+
+def counted_operations_per_step() -> dict:
+    """Instrumented count: run :func:`rk4_step` once on one trajectory of counting scalars.
+
+    The step code is the one rk4_batch executes for every precision; only the
+    scalar type differs, so the count applies to float32 and float64 alike.
+    """
+    counts = {"flops": 0, "transcendentals": 0}
+    y = np.array([[_Counting(v, counts)] for v in initial_states()[0]], dtype=object)
+    rk4_step(y, LENGTH / WORKLOAD_STEPS, np.object_)
+    return counts
 
 
 def embed(theta, phi) -> np.ndarray:

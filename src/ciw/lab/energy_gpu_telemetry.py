@@ -150,7 +150,8 @@ def rapl_capture_reasons(record, host_identity: dict, workload: dict) -> list:
         bracket = record.get(name) or {}
         if len(bracket.get("before_uj") or []) != len(domains) or len(bracket.get("after_uj") or []) != len(domains) \
                 or not domains or not isinstance(bracket.get("elapsed_monotonic_ns"), int) \
-                or bracket["elapsed_monotonic_ns"] <= 0:
+                or bracket["elapsed_monotonic_ns"] <= 0 \
+                or not all(str(bracket.get(key, "")).isdigit() for key in ("start_utc_ns", "end_utc_ns")):
             reasons.append(f"capture {name} is malformed")
     return reasons
 
@@ -255,8 +256,26 @@ def tamper_outcome(log, mutation, resealed) -> str | None:
     return None
 
 
+def is_placeholder(value) -> bool:
+    """A fixture-style stand-in rather than an identification.
+
+    Digests and UUIDs whose hex digits are one repeated character or the
+    ascending run 0123456789abcdef, and text naming a fixture or synthetic
+    source, identify nothing.
+    """
+    if not isinstance(value, str):
+        return False
+    text = value.lower()
+    if "fixture" in text or "synthetic" in text:
+        return True
+    digits = text.removeprefix("gpu-").removeprefix("sha256:").replace("-", "")
+    if len(digits) < 16 or not re.fullmatch(r"[0-9a-f]+", digits):
+        return False
+    return len(set(digits)) == 1 or digits == "0123456789abcdef" * (len(digits) // 16)
+
+
 def raw_inventory(log) -> dict:
-    """Count retained raw readings and the identity fields a log carries."""
+    """Count retained raw readings, the identity fields a log carries and how many hold placeholders."""
     samples = [sample for phase in log["phases"] for sample in phase["samples"]]
     timestamped = [s for s in samples if all(s.get(k) is not None for k in
                                              ("read_start_ns", "read_end_ns", "utc_start_ns", "utc_end_ns"))]
@@ -276,6 +295,8 @@ def raw_inventory(log) -> dict:
     return {"samples": len(samples), "timestamped_samples": len(timestamped),
             "raw_counter_readings": len(raw_counters), "batches": sum(len(p["batches"]) for p in log["phases"]),
             "identity_fields": identity, "identity_fields_present": sum(v not in (None, "") for v in identity.values()),
+            "placeholder_values": sum(is_placeholder(v) for v in identity.values()),
+            "placeholder_fields": sorted(k for k, v in identity.items() if is_placeholder(v)),
             "origin": log["origin"], "log_digest": log["log_digest"]}
 
 
