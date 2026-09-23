@@ -1,0 +1,132 @@
+name: Proved heat with real SP1
+
+on:
+  push:
+  pull_request:
+  workflow_dispatch:
+
+permissions:
+  contents: read
+
+concurrency:
+  group: proved-heat-${{ github.ref }}
+  cancel-in-progress: true
+
+jobs:
+  native-proof:
+    runs-on: ubuntu-24.04
+    timeout-minutes: 180
+    env:
+      CARGO_BUILD_JOBS: '2'
+      CARGO_NET_GIT_FETCH_WITH_CLI: 'true'
+      CARGO_INCREMENTAL: '0'
+      SP1_CIRCUIT_MODE: release
+      PYTHONDONTWRITEBYTECODE: '1'
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-python@v5
+        with:
+          python-version: '3.12'
+      - name: Check Linux resource budget
+        run: |
+          python - <<'PY'
+          import json, os, pathlib, shutil
+          memory = {k: int(v.split()[0]) * 1024 for k, v in (line.split(':', 1) for line in pathlib.Path('/proc/meminfo').read_text().splitlines())}
+          info = {'available_memory_bytes': memory['MemAvailable'], 'free_disk_bytes': shutil.disk_usage(os.environ['RUNNER_TEMP']).free}
+          output = pathlib.Path('results/proved-heat')
+          output.mkdir(parents=True)
+          (output / 'resources.json').write_text(json.dumps(info, indent=2) + '\n')
+          if info['available_memory_bytes'] < 7 * 1024**3 or info['free_disk_bytes'] < 20 * 1024**3:
+              raise SystemExit('Real SP1 gate needs at least 7 GiB available RAM and 20 GiB free disk; no mock fallback')
+          PY
+      - name: Install native build dependencies
+        run: |
+          sudo apt-get update
+          sudo apt-get install -y build-essential clang libclang-dev libssl-dev pkg-config protobuf-compiler
+          python -m pip install 'setuptools>=77' wheel
+          rustup toolchain install 1.94.0 --profile minimal
+      - name: Check out exact SCR and upstream SP1 sources
+        run: |
+          stack="$RUNNER_TEMP/proved-heat-stack"
+          mkdir -p "$stack/notationsystems"
+          git -c core.autocrlf=false clone --no-checkout https://github.com/giasonpooni/Scientific-Computation-Runtime.git "$stack/scr"
+          git -C "$stack/scr" -c core.autocrlf=false checkout --detach a59aba283b0304faeeb3e5d305087e7709e171ca
+          git -c core.autocrlf=false clone --no-checkout https://github.com/succinctlabs/sp1.git "$stack/notationsystems/SP1-zero-knowledge-virtual-machine"
+          git -C "$stack/notationsystems/SP1-zero-knowledge-virtual-machine" -c core.autocrlf=false checkout --detach b38b61209e45e969289e70d5cf79dc763460bc41
+      - name: Restore exact pinned host builds and Cargo downloads
+        id: native-build-cache
+        uses: actions/cache/restore@v4
+        with:
+          # No prefix fallback: a host cache belongs to this complete build pin.
+          key: proved-heat-host-v1-${{ runner.os }}-${{ runner.arch }}-ubuntu24.04-rust1.94.0-scr-a59aba283b0304faeeb3e5d305087e7709e171ca-sp1-b38b61209e45e969289e70d5cf79dc763460bc41
+          path: |
+            ${{ runner.temp }}/proved-heat-stack/proof-target
+            ${{ runner.temp }}/proved-heat-stack/native-target
+            ~/.cargo/registry
+            ~/.cargo/git
+      - name: Install the recipe's exact Succinct compiler archive
+        run: |
+          archive="$RUNNER_TEMP/succinct-1.94.0-64bit.tar.gz"
+          curl --fail --location --retry 3 --output "$archive" https://github.com/succinctlabs/rust/releases/download/succinct-1.94.0-64bit/rust-toolchain-x86_64-unknown-linux-gnu.tar.gz
+          echo "12c94435d41bfe4e20131bbcce40b35abd32270ad792befc653af4e3fabc192f  $archive" | sha256sum --check --strict
+          mkdir "$RUNNER_TEMP/succinct-1.94.0-64bit"
+          tar -xzf "$archive" -C "$RUNNER_TEMP/succinct-1.94.0-64bit"
+          rustup toolchain link succinct "$RUNNER_TEMP/succinct-1.94.0-64bit"
+          rustc +succinct -vV
+      - name: Rebuild and verify the committed heat ELF recipe
+        run: |
+          python -B - <<'PY'
+          import dataclasses, json, os, pathlib, shutil, sys
+          stack = pathlib.Path(os.environ['RUNNER_TEMP']) / 'proved-heat-stack'
+          sys.path.insert(0, str(pathlib.Path('scripts').resolve()))
+          from provider_checkouts import validate_checkout
+          scr = validate_checkout(stack / 'scr', 'a59aba283b0304faeeb3e5d305087e7709e171ca')
+          validate_checkout(stack / 'notationsystems/SP1-zero-knowledge-virtual-machine', 'b38b61209e45e969289e70d5cf79dc763460bc41')
+          sys.path.insert(0, str(scr))
+          from execution.build import load_recipe, verify_build
+          recipe = load_recipe(scr / 'zk/recipes/sp1-heat.recipe')
+          if recipe.identity() != '6e5d1687bcc55243d712553a2b7768b6c587a76418bb48a7a2c44224470d423d':
+              raise SystemExit('Committed heat recipe identity changed')
+          artifact = verify_build(recipe, 'a14e3750da7e221d31842bd6cf983fcc8c0f530b2811537e2a9a9fe803dacf82', repo_root=scr)
+          destination = stack / 'artifacts'
+          destination.mkdir()
+          shutil.copyfile(artifact.elf_path, destination / 'sp1-heat.elf')
+          report = {**dataclasses.asdict(artifact), 'toolchain_identity': recipe.toolchain_id,
+                    'compiler_archive_sha256': '12c94435d41bfe4e20131bbcce40b35abd32270ad792befc653af4e3fabc192f',
+                    'sp1_revision': recipe.fork_commit, 'guest_build': 'verified_against_committed_registry'}
+          pathlib.Path('results/proved-heat/build.json').write_text(json.dumps(report, indent=2) + '\n')
+          PY
+      - name: Build native execution and CPU proving hosts
+        if: steps.native-build-cache.outputs.cache-hit != 'true'
+        run: |
+          stack="$RUNNER_TEMP/proved-heat-stack"
+          cargo +1.94.0 build --release --locked --offline --manifest-path "$stack/scr/crates/Cargo.toml" --target-dir "$stack/native-target" -p execution-cli
+          cargo +1.94.0 build --release --locked --manifest-path "$stack/scr/zk/Cargo.toml" --target-dir "$stack/proof-target" -p sp1-adapter --bin sp1-host
+      - name: Save completed pinned hosts before running proof tests
+        if: steps.native-build-cache.outputs.cache-hit != 'true'
+        uses: actions/cache/save@v4
+        with:
+          key: ${{ steps.native-build-cache.outputs.cache-primary-key }}
+          path: |
+            ${{ runner.temp }}/proved-heat-stack/proof-target
+            ${{ runner.temp }}/proved-heat-stack/native-target
+            ~/.cargo/registry
+            ~/.cargo/git
+      # The guest recipe rebuild above and all proof checks below are mandatory
+      # even on a host-cache hit. No proof, verdict or acceptance receipt is cached.
+      - name: Exercise actual proofs through an isolated installed CIW wheel
+        run: |
+          stack="$RUNNER_TEMP/proved-heat-stack"
+          python scripts/check_proved_heat.py \
+            --scr-repo "$stack/scr" \
+            --sp1-repo "$stack/notationsystems/SP1-zero-knowledge-virtual-machine" \
+            --engine "$stack/native-target/release/execution-cli" \
+            --prover "$stack/proof-target/release/sp1-host" \
+            --guest "$stack/artifacts/sp1-heat.elf" \
+            --output-dir results/proved-heat/gate
+      - uses: actions/upload-artifact@v4
+        if: always()
+        with:
+          name: proved-heat-native-evidence
+          path: results/proved-heat
+          if-no-files-found: error

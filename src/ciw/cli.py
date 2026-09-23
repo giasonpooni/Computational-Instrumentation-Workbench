@@ -100,7 +100,7 @@ def load_run(path: Path | None) -> dict:
 async def request_remote(url: str, kind: str, payload: dict, *, timeout_s: float = 15) -> dict:
     request_id = uuid.uuid4().hex
     async with asyncio.timeout(timeout_s):
-        async with connect(url, max_size=8_388_608, open_timeout=min(5, timeout_s), close_timeout=1,
+        async with connect(url, max_size=33_554_432, open_timeout=min(5, timeout_s), close_timeout=1,
                            proxy=None) as socket:
             await socket.send(json.dumps({"protocol_version": 1, "request_id": request_id,
                                           "type": kind, "payload": payload}, allow_nan=False))
@@ -251,6 +251,8 @@ def parser() -> argparse.ArgumentParser:
     server.add_argument("--spatial-view-origin", action="append", default=[], help="Exact browser http(s) origin allowed on the read-only /spatial endpoint; repeat to allow more")
     server.add_argument("--computation-repo", type=Path, help="Bind pinned SCR numerical execution")
     server.add_argument("--computation-engine", type=Path, help="Host-built SCR execution-cli (required with --computation-repo)")
+    server.add_argument("--sp1-prover", type=Path, help="Explicit SCR sp1-host binary; requires computation bindings and --sp1-heat-guest")
+    server.add_argument("--sp1-heat-guest", type=Path, help="Exact registered SP1 heat guest ELF; requires --sp1-prover")
     server.add_argument("--python", dest="python_executable", type=Path,
                         help="Python for FSRT/JSPT/GTE adapters; workbench stacks use this running interpreter")
     health = commands.add_parser("health", help="Check a live session with a bounded read-only request")
@@ -266,6 +268,15 @@ def parser() -> argparse.ArgumentParser:
     watch.add_argument("--url", default="ws://127.0.0.1:8765")
     inspect = commands.add_parser("inspect", help="Inspect a saved result/workspace without executing it")
     inspect.add_argument("path", type=Path)
+    proof = commands.add_parser("proof", help="Freshly verify a retained registered SCR heat proof")
+    proof_actions = proof.add_subparsers(dest="proof_command", required=True)
+    proof_verify = proof_actions.add_parser("verify", help="Run the full registered-ELF verifier without producing a new proof")
+    proof_verify.add_argument("path", type=Path, help="Retained ciw.proved-heat-session.v1 JSON bundle")
+    proof_verify.add_argument("--computation-repo", type=Path, required=True)
+    proof_verify.add_argument("--computation-engine", type=Path, required=True)
+    proof_verify.add_argument("--sp1-prover", type=Path, required=True)
+    proof_verify.add_argument("--sp1-heat-guest", type=Path, required=True)
+    proof_verify.add_argument("--output", type=Path, required=True, help="New verification report file")
     exchange = commands.add_parser("exchange", help="Inspect external exchange artifacts without admission")
     exchange_actions = exchange.add_subparsers(dest="exchange_command", required=True)
     exchange_inspect = exchange_actions.add_parser("inspect", help="Read-only pinned contract conformance")
@@ -459,6 +470,13 @@ def main(argv: list[str] | None = None) -> int:
                 raise ValueError("--computation-repo and --computation-engine must be supplied together")
             if args.computation_repo is not None:
                 session.workbench.bind_workflow("numerical-heat", {"scr": args.computation_repo, "engine": args.computation_engine})
+            if (args.sp1_prover is None) != (args.sp1_heat_guest is None):
+                raise ValueError("--sp1-prover and --sp1-heat-guest must be supplied together")
+            if args.sp1_prover is not None:
+                if args.computation_repo is None:
+                    raise ValueError("SP1 requires --computation-repo and --computation-engine")
+                session.workbench.bind_workflow("proved-heat", {"scr": args.computation_repo,
+                    "engine": args.computation_engine, "prover": args.sp1_prover, "guest": args.sp1_heat_guest})
             if args.esm_telemetry_binding is not None:
                 configuration = read_json(args.esm_telemetry_binding)
                 if "ppda" not in configuration.get("runtime", {}).get("repositories", {}):
@@ -481,6 +499,17 @@ def main(argv: list[str] | None = None) -> int:
             asyncio.run(watch_remote(args.url))
         elif args.command == "inspect":
             print_json(read_json(args.path))
+        elif args.command == "proof":
+            from .adapters.subprocess import _json
+            from .exchange import _read
+            from .proved_heat import ProvedHeatWorkflow, MAX_BYTES
+            if args.output.exists():
+                raise ValueError("Use a new verification report path to preserve previous occurrences")
+            report = ProvedHeatWorkflow().verify_session(_json(_read(args.path, MAX_BYTES)), {
+                "scr": args.computation_repo, "engine": args.computation_engine,
+                "prover": args.sp1_prover, "guest": args.sp1_heat_guest})
+            write_json(args.output, report)
+            print_json({"verification_file": str(args.output), "verification": report})
         elif args.command == "exchange":
             from .exchange import inspect_exchange
             print_json(inspect_exchange(args.paths, validator_repo=args.validator_repo))

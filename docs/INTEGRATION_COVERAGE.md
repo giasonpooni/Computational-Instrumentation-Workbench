@@ -18,7 +18,7 @@ operating point.
 
 ## Shared operating session
 
-The [Workbench desktop tab](EXPERIMENT_VIEW.md) projects all sixteen shared workflow
+The [Workbench desktop tab](EXPERIMENT_VIEW.md) projects all seventeen shared workflow
 kinds through `experiment.inspect`: retained measurements, state/covariance,
 residuals, native dependencies, evidence and verification. It follows committed
 session changes and keeps replay occurrences separate. This read-only display
@@ -73,6 +73,7 @@ keep their native owners; the table below distinguishes implemented ICRH profile
 | Declared geographic context → GSV | `spatial.inspect`, exact source bytes through native GSV provider/WorldStore | ICRH geographic declaration checks; actual CIW WebSocket/provider tests | Source-only CRS84 nodes with declared constant states; no inferred geometry or estimator. |
 | Flat lattice and winding → FTR | Shared `ciw.flat-torus-reference.v1`; native trajectory, geometry digest and fresh replay | ICRH `flat-torus-reference.v1`; analytic lattice/closure and retained pair checks | Area-one flat quotient; no embedded torus, physical units or observed uncertainty. |
 | Declared constant curvature → CSG | Shared `ciw.curved-path-transfer.v1`; native Jacobi transfer, separation and declared covariance propagation | ICRH `curved-path-transfer.v1`; constant-curvature oracle, covariance and replay binding checks | Curvature profile only; no embedded path, surveyed geometry or calibrated sensor claim. |
+| Declared integer field → SCR/SP1 | Shared `ciw.proved-heat.v1`; native execution, registered guest proof, full-ELF verification, exact retained proof bytes and fresh replay | Separate verifier invocation through pinned SCR/SP1; installed-wheel real-proof gate with corrupted-proof rejection; no separate ICRH proved-heat profile | Bounded integer arithmetic only. Offline consistency is not fresh cryptographic verification; Julia and F2 topology remain planned. |
 
 “Independent harness” means a separately implemented conformance checker. It
 does not mean an independent physical measurement or independent validation of

@@ -49,6 +49,7 @@ local presentation state and does not alter the scientific or oscillator selecti
 | Identified observation design | GSIE conditional prediction; model, candidate assessment and budget decisions remain available in native results and context |
 | SRA schematic assessment | Declared node/edge tree; native eligibility, stale certificates and retrieval in object context |
 | SCR integer diffusion | Initial and final integer fields, unit `1`, null covariance, native specification and execution commitments |
+| SCR/SP1 proved heat | Integer fields, retained proof identity and historical verifier report, runtime and stage timings; inspecting the view does not reverify the proof |
 | SRA/JSPT/PLSR companions | Selected graph, native call events, before/after eligibility and local model scope |
 | CSE BIM quantity | Full prior/posterior quantities and covariance, held/refused status, invariants and replayed ledger |
 | PPDA acquired dataset | Native evidence counts, checkpoint transitions, acquisition outcomes and durable-pool identity |

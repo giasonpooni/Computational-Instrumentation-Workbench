@@ -25,6 +25,7 @@ existing benches.
 | GTE circle investigation | Pinned projection, local covariance, held candidate and replay | `python -m ciw geodesic create`, `inspect`, `replay`; [guide](GTE.md) |
 | Flat Torus Geodesic Reference | Pinned native area-one lattice and winding trajectory, shared inspection/replay | `ciw serve --flat-torus-repo /trusted/ftr`; [contract](GEODESIC_REFERENCES.md) |
 | Curved Surface Geodesic Sensitivity | Pinned native constant-curvature Jacobi transfer and declared covariance | `ciw serve --curved-surface-repo /trusted/csg`; [contract](GEODESIC_REFERENCES.md) |
+| SCR/SP1 registered heat computation | Bounded integer execution and proof verification; exact Linux runtime required | `ciw serve --computation-repo ... --computation-engine ... --sp1-prover ... --sp1-heat-guest ...`; [full setup and contract](PROVED_HEAT.md) |
 
 ## Identified model and budgeted next observation
 
@@ -337,8 +338,11 @@ current technical names and responsibilities of Scientific Computation Runtime,
 Provenance-Preserving Data Acquisition, Geospatial State Visualization, State
 Estimation Evaluation Testbed, Evidence and State Management, and Constraint-Based
 State Reconciliation. PPDA, SET and CBSR participate in the scoped executable
-paths above. SCR has read-only exchange inspection; GSV has no CIW projection
-adapter; ESM remains at separately requested candidate-evidence retention.
+paths above. SCR provides shared integer execution and a separately selected
+[registered SP1 proof operation](PROVED_HEAT.md), as well as exchange inspection.
+GSV provides the read-only declared geographic projection; ESM remains at
+separately requested candidate-evidence retention. Julia and exact F2 topology
+have [planned contracts](JULIA_SP1.md), with no available operation yet.
 These distinct integration states are recorded in the
 [coverage matrix](INTEGRATION_COVERAGE.md). Their boundaries retain existing
 evidence, operation, execution, result, verification and runtime identities.

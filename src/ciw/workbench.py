@@ -15,7 +15,8 @@ from threading import RLock
 
 from .adapters.protocol import AdapterRefusal
 from .adapters.subprocess import _json
-DECLARED_KINDS = frozenset({"schematic-assessment", "numerical-heat", "schematic-companions", "bim-quantity", "acquired-dataset", "residual-monitor", "measurement-chain", "geometric-circle", "identified-stability", "flat-torus-reference", "curved-path-transfer"})
+DECLARED_KINDS = frozenset({"schematic-assessment", "numerical-heat", "proved-heat", "schematic-companions", "bim-quantity", "acquired-dataset", "residual-monitor", "measurement-chain", "geometric-circle", "identified-stability", "flat-torus-reference", "curved-path-transfer"})
+REPRODUCED_KINDS = DECLARED_KINDS - {"proved-heat"}
 UPSTREAM_KINDS = {"identified-design": "calibrated-observable", "schematic-companions": "schematic-assessment",
                   "acquired-calibrated-window": "acquired-dataset", "identified-stability": "identified-design"}
 INSTRUMENT_ROLES = frozenset({"ppda", "tbrt", "mcur", "stfe", "gsie", "cbsr", "fdir", "oit", "sra", "scr", "cse", "rci", "fsrt", "jspt", "gte", "plsr", "ftr", "csg"})
@@ -29,6 +30,7 @@ OPERATIONS = {
     "calibrated-window": "ciw.calibrated-window.v1",
     "schematic-assessment": "ciw.schematic-assessment.v1",
     "numerical-heat": "ciw.numerical-heat.v1",
+    "proved-heat": "ciw.proved-heat.v1",
     "schematic-companions": "ciw.schematic-companions.v1",
     "bim-quantity": "ciw.bim-quantity.v1",
     "acquired-dataset": "ciw.acquired-dataset.v1",
@@ -51,6 +53,9 @@ _OVERHEAD = 4096
 
 def _workflow(kind):
     # Lazy imports avoid the existing workflows' Session persistence dependency.
+    if kind == "proved-heat":
+        from .proved_heat import ProvedHeatWorkflow
+        return ProvedHeatWorkflow()
     if kind in {"flat-torus-reference", "curved-path-transfer"}:
         from .geodesic_reference import GeodesicReferenceWorkflow
         return GeodesicReferenceWorkflow(kind)
@@ -165,6 +170,9 @@ def _summary(record):
         "retained_verification_outcome": verification.get("outcome"),
         "validation": "content_consistent", "numerical_replay": "not_performed_by_inspection",
         "state_admission": "not_performed"}
+    if record["kind"] == "proved-heat":
+        summary["cryptographic_verification"] = "not_performed_by_inspection"
+        summary["verification_trust_scope"] = verification["trust_scope"]
     if record["kind"] == "residual-monitor":
         summary["upstream_bundle_ids"] = _workflow(record["kind"]).requested_upstream_ids(
             base64.b64decode(native["source"]["evidence"][0]["bytes_b64"], validate=True))
@@ -184,6 +192,8 @@ def _claims(record):
 
     def verification(value):
         claim(value["verification_id"], "verification", value)
+        if value.get("schema") == "ciw.proved-heat-verification.v1":
+            claim(value["verification_operation_id"], "verification_execution", value)
         if value.get("schema") == "ciw.declared-workload-verification.v1":
             step = value["reproduction"]
             claim(step["execution_id"], "execution", {"step": step})
@@ -334,12 +344,14 @@ def _validate_links(record, bundles):
                     and not occurrences.isdisjoint(native_occurrences(other["native"]))):
                 raise ValueError("Companion bundles must retain fresh native execution occurrences")
     if record["kind"] in DECLARED_KINDS:
-        occurrences = {native["steps"][0]["execution_id"], native["verification"]["reproduction"]["execution_id"]}
+        occurrences = {native["steps"][0]["execution_id"]}
+        if record["kind"] in REPRODUCED_KINDS:
+            occurrences.add(native["verification"]["reproduction"]["execution_id"])
         for other in bundles.values():
             if other["bundle_id"] == record["bundle_id"]:
                 continue
             used = {s["execution_id"] for s in other["native"]["steps"]}
-            if other["kind"] in DECLARED_KINDS:
+            if other["kind"] in REPRODUCED_KINDS:
                 used.add(other["native"]["verification"]["reproduction"]["execution_id"])
             if not occurrences.isdisjoint(used):
                 raise ValueError("Declared workload bundles must have distinct execution and reproduction occurrences")
@@ -366,7 +378,9 @@ def _validate_links(record, bundles):
         old_steps, new_steps = original["native"]["steps"], native["steps"]
         if record["kind"] == "acquired-calibrated-window":
             _workflow(record["kind"]).validate_replay(original["native"], native, receipt)
-        if record["kind"] in DECLARED_KINDS:
+        if record["kind"] == "proved-heat":
+            _workflow("proved-heat").validate_replay(original["native"], native, receipt)
+        if record["kind"] in REPRODUCED_KINDS:
             workflow = _workflow(record["kind"])
             raw = workflow._validate(original["native"])
             workflow._check_verification(original["native"], receipt["verification"], workflow._source(raw),
@@ -539,7 +553,7 @@ class Workbench:
 
     def describe_operations(self):
         with self._lock:
-            return [{"operation_id": operation, "role": {"identified-design": "decision", "schematic-assessment": "schematic_assessment", "numerical-heat": "numerical_execution", "schematic-companions": "local_model_analysis", "bim-quantity": "construction_quantity", "acquired-dataset": "evidence_acquisition", "residual-monitor": "residual_diagnostics", "measurement-chain": "measurement_chain_testbed", "geometric-circle": "geometric_reconciliation", "identified-stability": "stability_assessment", "flat-torus-reference": "geometric_reference", "curved-path-transfer": "geometric_sensitivity"}.get(kind, "state_estimator"),
+            return [{"operation_id": operation, "role": {"identified-design": "decision", "schematic-assessment": "schematic_assessment", "numerical-heat": "numerical_execution", "proved-heat": "proved_numerical_execution", "schematic-companions": "local_model_analysis", "bim-quantity": "construction_quantity", "acquired-dataset": "evidence_acquisition", "residual-monitor": "residual_diagnostics", "measurement-chain": "measurement_chain_testbed", "geometric-circle": "geometric_reconciliation", "identified-stability": "stability_assessment", "flat-torus-reference": "geometric_reference", "curved-path-transfer": "geometric_sensitivity"}.get(kind, "state_estimator"),
                      "source_kind": kind, "available": kind in self._bindings,
                      "requires_upstream_bundle": kind in UPSTREAM_KINDS,
                      **({"requires_upstream_bundles": "explicit_ordered_source_selection"} if kind == "residual-monitor" else {})}

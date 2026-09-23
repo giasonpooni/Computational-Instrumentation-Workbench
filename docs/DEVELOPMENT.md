@@ -1,5 +1,14 @@
 # Development guide
 
+The [proved heat guide](PROVED_HEAT.md) gives the exact Linux build and
+`scripts/check_proved_heat.py` acceptance command for SCR/SP1. The native gate
+requires a real original proof, fresh proved replay, retained-proof reverification
+and corrupted-proof rejection from an installed CIW wheel; skipped tests fail it.
+`tests/test_proved_heat.py` separately exercises structural/refusal boundaries
+with explicit test doubles. Such tests never count as cryptographic evidence.
+The [Julia and SP1 contract](JULIA_SP1.md) records the later persistent-worker,
+oscillator, F2 checker and benchmark requirements.
+
 Public documentation describes implemented behavior, executable contracts,
 reproducible examples and measured limitations. The [architecture](ARCHITECTURE.md)
 identifies current components; [PROTOCOL.md](PROTOCOL.md) specifies exact record

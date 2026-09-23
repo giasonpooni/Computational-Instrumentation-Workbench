@@ -10,7 +10,7 @@ def project(record, source, declaration, revision):
     kind = record["kind"]
     schematic = kind in {"schematic-assessment", "schematic-companions"}
     object_kinds = {"schematic-assessment": "declared_schematic", "schematic-companions": "local_model_analysis",
-                    "numerical-heat": "integer_numerical_field", "bim-quantity": "construction_quantity",
+                    "numerical-heat": "integer_numerical_field", "proved-heat": "proved_integer_numerical_field", "bim-quantity": "construction_quantity",
                     "acquired-dataset": "acquired_evidence"}
     context = {"object_kind": object_kinds[kind],
                "owner": step["runtime_ref"], "configuration": native["configuration"],
@@ -46,10 +46,20 @@ def project(record, source, declaration, revision):
                        restored_pool_fingerprint=data["restored_pool_fingerprint"], scope=data["scope"])
         panels.append(_panel("evidence-counts", "PPDA retained evidence", list(counts), list(counts.values()),
                              ["count"] * len(counts), None, provenance, temporal_order="not_inferred"))
-    elif kind == "numerical-heat":
+    elif kind in {"numerical-heat", "proved-heat"}:
+        if kind == "proved-heat":
+            context.update(proof={k: v for k, v in data["proof"].items() if k != "bytes_b64"},
+                           verifier=data["verifier"], timings=data["timings"],
+                           verification_trust_scope=native["verification"]["trust_scope"],
+                           cryptographic_verification="not_performed_by_inspection",
+                           proof_claim="Registered integer heat guest: exact input/output commitments and exit code",
+                           proof_policy="required_before_result")
+            data = data["native"]
         labels = ["cell " + str(i) for i in range(len(data["values"]))]
         context.update(steps=declaration["steps"], specification_identity=data["specification_identity"],
                        computation_identity=data["computation_identity"], summary="Native integer execution; dimensionless values")
+        if kind == "proved-heat":
+            context["summary"] = "Retained SP1 heat proof and verifier report; inspection does not reverify"
         provenance = {"source_id": source["source_id"], "evidence_id": source["evidence_id"]}
         panels.append(_panel("initial", "Declared integer field", labels, declaration["initial_values"],
                              ["1"] * len(labels), None, provenance, **context))
@@ -63,4 +73,5 @@ def project(record, source, declaration, revision):
         "graph": {"nodes": [{"role": step["runtime_ref"], **{k: step[k] for k in ("operation_id", "result_id", "execution_id", "numerical_result_id", "input_refs")}}]},
         "raw_observations": [], "raw_declaration": declaration,
         "verification": native["verification"], "runtimes": native["runtimes"],
-        "authority": {"read_only": True, "numerical_replay": "not_performed_by_inspection", "state_admission": "not_performed"}})
+        "authority": {"read_only": True, "numerical_replay": "not_performed_by_inspection", "state_admission": "not_performed",
+                      **({"cryptographic_verification": "not_performed_by_inspection"} if kind == "proved-heat" else {})}})
