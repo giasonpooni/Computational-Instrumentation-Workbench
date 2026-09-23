@@ -445,6 +445,10 @@ def parser() -> argparse.ArgumentParser:
     lab_dashboard = lab_actions.add_parser("dashboard", help="Write a self-contained HTML view of retained reports")
     lab_dashboard.add_argument("--retained", type=Path, required=True)
     lab_dashboard.add_argument("--output", type=Path, required=True)
+    lab_mcp = lab_actions.add_parser("mcp", help="Serve the queue to MCP clients over stdio (needs the mcp extra)")
+    lab_mcp.add_argument("--retained", type=Path, help="Retained reports, read only")
+    lab_mcp.add_argument("--workdir", type=Path, required=True, help="Directory that receives runs requested by clients")
+    lab_mcp.add_argument("--provider", action="append", default=[], metavar="ROLE=PATH")
     lab_next = lab_actions.add_parser("next", help="Rank the next experiments from retained state; runs nothing")
     lab_next.add_argument("--retained", type=Path)
     lab_next.add_argument("--provider", action="append", default=[], metavar="ROLE=PATH")
@@ -752,6 +756,9 @@ def main(argv: list[str] | None = None) -> int:
                     print_json(report)
                 else:
                     print(render_markdown(report), end="")
+            elif args.lab_command == "mcp":
+                from .lab.mcp_server import serve
+                serve(args.retained, args.workdir, _lab_providers(args.provider))
             elif args.lab_command == "dashboard":
                 from .lab.dashboard import render
                 args.output.parent.mkdir(parents=True, exist_ok=True)

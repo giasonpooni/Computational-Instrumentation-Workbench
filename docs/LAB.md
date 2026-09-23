@@ -108,6 +108,30 @@ Only an energy log that declares `physical_measurement` with device, digest,
 clock and calibration fields yields `hardware_measured`, and that recorder
 assertion remains unauthenticated.
 
+## Assistant access over MCP
+
+`ciw lab mcp` serves the queue to MCP clients over stdio (install the `mcp`
+extra). It is the lab-scoped part of the planned MCP adapter:
+
+```sh
+python -m pip install -e '.[lab,mcp]'
+ciw lab mcp --retained lab --workdir results/lab-mcp --provider csg=/trusted/references/csg
+```
+
+| Tool | Effect |
+| --- | --- |
+| `ciw_lab_list_tasks` | Paginated task list with state and primary label |
+| `ciw_lab_get_report` | One revalidated nineteen-question report |
+| `ciw_lab_plan_next` | The ranked next experiments; runs nothing |
+| `ciw_lab_run_tasks` | Runs up to 20 tasks into the server's work directory |
+| `ciw_lab_verify_run` | Compares the work directory with retained reports |
+| `ciw_lab_classify_workspace` | Labels results in a saved CIW workspace |
+| `ciw_lab_explain_labels` | The label definitions and the boundary table |
+
+No tool accepts a label, finding, report or physical result: an assistant can
+design, run and read experiments, but evidence status comes only from the
+validator, and retained reports are never modified through the adapter.
+
 `src/ciw/lab/task-report.schema.json` is the structural JSON Schema of
 `ciw.lab-task-report.v1` for consumers in other languages. Passing it does not
 make a report valid: labels, derived statuses and the report identity are

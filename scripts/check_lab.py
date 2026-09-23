@@ -62,7 +62,8 @@ def main() -> int:
                       f"https://github.com/giasonpooni/{repository}.git", path])
                 call(["git", "-C", path, "-c", "core.autocrlf=false", "checkout", "--quiet", "--detach", revisions[role]])
             providers[role] = validate_checkout(path, revisions[role])
-        command = [sys.executable, ROOT / "scripts" / "reproduce_lab.py", "--output-dir", args.output_dir]
+        command = [sys.executable, ROOT / "scripts" / "reproduce_lab.py", "--output-dir", args.output_dir,
+                   "--extras", "dev,lab,mcp"]
         if args.temporary_root:
             command += ["--temporary-root", args.temporary_root]
         if args.no_compare:
@@ -71,7 +72,7 @@ def main() -> int:
             command += ["--provider", f"{role}={path}"]
         if sys.version_info >= (3, 12):
             # PLSR and FTR require Python 3.12; the clean-room interpreter hosts both.
-            command += ["--extras", "dev,lab,plsr", "--provider", "plsr-python=@venv", "--provider", "ftr-python=@venv"]
+            command += ["--extras", "dev,lab,mcp,plsr", "--provider", "plsr-python=@venv", "--provider", "ftr-python=@venv"]
         call(command)
     return 0
 
