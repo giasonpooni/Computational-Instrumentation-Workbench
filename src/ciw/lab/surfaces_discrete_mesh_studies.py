@@ -111,9 +111,10 @@ def cylinder_study(ns=(8, 16, 32, 64, 128), radius=1.0, height=4.0, alpha=0.5, l
         mesh = G.cylinder_mesh(n, m, radius, height)
         mid = 2 * math.pi * (sector + 0.5) / n
         # Chord midpoint: the chord is parallel to the smooth tangent there, so the heading is exact.
-        point = np.array([radius * math.cos(math.pi / n) * math.cos(mid), radius * math.cos(math.pi / n) * math.sin(mid), z0])
+        inset = radius * math.cos(math.pi / n)
+        point = np.array([inset * math.cos(mid), inset * math.sin(mid), z0])
         face, _ = mesh.locate(point)
-        direction = math.cos(alpha) * np.array([-math.sin(mid), math.cos(mid), 0.0]) + math.sin(alpha) * np.array([0, 0, 1.0])
+        direction = np.array([-math.cos(alpha) * math.sin(mid), math.cos(alpha) * math.cos(mid), math.sin(alpha)])
         tr = G.trace(mesh, face, point, direction, length)
         chord = 2 * radius * math.sin(math.pi / n)
         x = ((sector + 0.5) * chord + length * math.cos(alpha)) % (n * chord)
@@ -164,7 +165,12 @@ def plane_study(shears=(0.0, 0.5, 1.0, 1.5), size=8, length=0.2, angles=(0.3, 1.
 
 
 # ---------------------------------------------------------------- graph and heat distances
-def distance_study(levels=(1, 2, 3, 4), ks=(1, 3), heat_levels=(1, 2, 3, 4)):
+def distance_study(levels=(1, 2, 3, 4), ks=(1, 3), heat_levels=(1, 2, 3)):
+    """Graph and heat-method distances from vertex 0 against great-circle distances.
+
+    The dense heat method stops at level 3 (642 vertices) so that a direct solve
+    stays cheap even when the machine's BLAS threads are contended.
+    """
     rows = []
     for level in levels:
         mesh = G.icosphere(level)
@@ -270,8 +276,9 @@ def jacobi_study(levels=(2, 3, 4, 5, 6), deltas=(0.1, 0.03, 0.01, 1e-5), starts=
             errors, identical, flat, statuses = [], 0, [], []
             for (u0, heading), smooth in zip(starts, reference["j_head"]):
                 s = sphere_start(mesh, u0, heading)
-                plus = G.trace(mesh, s["face"], s["point"], mesh.rotate_in_face(s["face"], s["direction"], delta), length)
-                minus = G.trace(mesh, s["face"], s["point"], mesh.rotate_in_face(s["face"], s["direction"], -delta), length)
+                plus, minus = (G.trace(mesh, s["face"], s["point"],
+                                       mesh.rotate_in_face(s["face"], s["direction"], angle), length)
+                               for angle in (delta, -delta))
                 statuses += [plus.status, minus.status]
                 if not (plus.completed and minus.completed):
                     continue
@@ -282,7 +289,8 @@ def jacobi_study(levels=(2, 3, 4, 5, 6), deltas=(0.1, 0.03, 0.01, 1e-5), starts=
                     flat.append(abs(j - length))
             rows.append({"level": level, "h": mesh.mean_edge(), "delta": delta, "pairs": len(errors),
                          "refused": sum(s != "completed" for s in statuses),
-                         "mean_abs_error": float(np.mean(np.abs(errors))), "max_abs_error": float(np.max(np.abs(errors))),
+                         "mean_abs_error": float(np.mean(np.abs(errors))),
+                         "max_abs_error": float(np.max(np.abs(errors))),
                          "identical_face_sequences": identical,
                          "max_flat_deviation": float(max(flat)) if flat else None})
     return {"length": length, "smooth": reference, "flat_value": length, "rows": rows}
@@ -372,7 +380,8 @@ def _jitter_unvalidated(mesh, amplitude, seed):
     noise -= np.einsum("ij,ij->i", noise, x)[:, None] * x
     moved = x + noise
     moved /= np.linalg.norm(moved, axis=1)[:, None]
-    return G.TriMesh(moved, mesh.faces, f"{mesh.name}-jitter{amplitude:g}-s{seed}", {"amplitude": amplitude, "seed": seed})
+    return G.TriMesh(moved, mesh.faces, f"{mesh.name}-jitter{amplitude:g}-s{seed}",
+                     {"amplitude": amplitude, "seed": seed})
 
 
 def lantern_study(q=0.25, ns=(4, 8, 16, 32, 64), radius=1.0, height=1.0, folded_q=1.0, folded_n=8, samples=4):
@@ -399,7 +408,8 @@ def lantern_study(q=0.25, ns=(4, 8, 16, 32, 64), radius=1.0, height=1.0, folded_
         radial = centroid * np.array([1.0, 1.0, 0.0])
         radial /= np.linalg.norm(radial, axis=1)[:, None]
         tilt = np.degrees(np.arccos(np.clip(np.einsum("ij,ij->i", mesh.face_normals, radial), -1, 1)))
-        rows.append({"n": n, "bands": m, "faces": len(mesh.faces), "area_ratio": mesh.area() / (2 * math.pi * radius * height),
+        rows.append({"n": n, "bands": m, "faces": len(mesh.faces),
+                     "area_ratio": mesh.area() / (2 * math.pi * radius * height),
                      "area_closed_form_error": float(mesh.area() - closed_area), "hausdorff_sampled": gap,
                      "hausdorff_closed_form": sag, "trace_status": tr.status, "traced_height": tr.length,
                      "height_closed_form": closed_height, "max_interior_curvature": float(np.max(np.abs(k[interior]))),
@@ -407,9 +417,11 @@ def lantern_study(q=0.25, ns=(4, 8, 16, 32, 64), radius=1.0, height=1.0, folded_
                      "issues": [c for c, _ in G.inspect(mesh.vertices, mesh.faces)]})
     folded = G.cylinder_mesh(folded_n, int(round(folded_q * folded_n ** 2)), radius, height, lantern=True)
     limit = math.sqrt(1 + (math.pi ** 2 * radius * q / (2 * height)) ** 2)
-    return {"q": q, "limit_area_ratio": limit, "limit_tilt_deg": math.degrees(math.atan(math.pi ** 2 * radius * q / (2 * height))),
+    tilt = math.degrees(math.atan(math.pi ** 2 * radius * q / (2 * height)))
+    folded_issues = [c for c, _ in G.inspect(folded.vertices, folded.faces)]
+    return {"q": q, "limit_area_ratio": limit, "limit_tilt_deg": tilt,
             "smooth_total_abs_mean_curvature": math.pi * height, "rows": rows,
-            "folded": {"q": folded_q, "n": folded_n, "issues": [c for c, _ in G.inspect(folded.vertices, folded.faces)]}}
+            "folded": {"q": folded_q, "n": folded_n, "issues": folded_issues}}
 
 
 def _dihedral(mesh) -> float:
@@ -464,7 +476,8 @@ def refusal_study():
     fold[3] = [0.8, 0.2, 0.0]
     build_case("fold-over", "folded_face", fold, np.array([[0, 1, 2], [0, 2, 3]]))
     build_case("unreferenced-vertex", "unreferenced_vertex", np.vstack([octa_v, [[3, 3, 3]]]), octa_f)
-    build_case("two-components", "disconnected_components", np.vstack([octa_v, octa_v + 5]), np.vstack([octa_f, octa_f + 6]))
+    build_case("two-components", "disconnected_components", np.vstack([octa_v, octa_v + 5]),
+               np.vstack([octa_f, octa_f + 6]))
     build_case("hole-when-closed-required", "open_boundary", octa_v, octa_f[1:], require_closed=True)
     build_case("empty", "empty_mesh", octa_v, np.zeros((0, 3), dtype=int))
     build_case("planar-coordinates", "invalid_shape", octa_v[:, :2], octa_f)
@@ -502,8 +515,8 @@ def refusal_study():
                   "observed": _code(lambda: G.angle_defect_curvature(open_plane, 0))})
 
     controls = []
-    for mesh, closed in ((G.icosphere(2), True), (G.cylinder_mesh(12, 6), False), (G.plane_mesh(5, 5, shear=0.4), False),
-                         (G.torus_mesh(16, 8), True)):
+    for mesh, closed in ((G.icosphere(2), True), (G.cylinder_mesh(12, 6), False),
+                         (G.plane_mesh(5, 5, shear=0.4), False), (G.torus_mesh(16, 8), True)):
         controls.append({"mesh": mesh.name, "issues": [c for c, _ in G.inspect(mesh.vertices, mesh.faces,
                                                                                 require_closed=closed)]})
     several = octa_v.copy()
@@ -557,7 +570,8 @@ def far_valence6_vertex(mesh) -> int:
     special = mesh.vertices[valence == 5]
     separation = np.min(np.arccos(np.clip(mesh.vertices @ special.T, -1, 1)), axis=1)
     separation[valence != 6] = -1.0
-    return int(np.argmax(separation))
+    # Symmetric vertices tie mathematically; rounding makes the lowest index win on every platform.
+    return int(np.argmax(np.round(separation, 9)))
 
 
 def _normal_observable(ring_faces, reference):
@@ -605,7 +619,8 @@ def observables(mesh, starts=STARTS, strip_length=1.0):
     result = [{"name": "marker geodesic distance", "kind": "scalar", "ids": strip["ids"],
                "function": lambda p: G.strip_unfold_distance(p, strip["strip"], strip["a"], strip["b"])[0],
                "validity": lambda p: G.strip_unfold_distance(p, strip["strip"], strip["a"], strip["b"])[1]}]
-    for label, vertex in (("valence-5 vertex 0", 0), ("valence-6 vertex far from valence 5", far_valence6_vertex(mesh))):
+    far = far_valence6_vertex(mesh)
+    for label, vertex in (("valence-5 vertex 0", 0), ("valence-6 vertex far from valence 5", far)):
         ids, ring = G.one_ring(mesh, vertex)
         normal0 = G.batch_vertex_normal(mesh.vertices[ids][None], ring)[0]
         result.append({"name": f"vertex normal at {label}", "kind": "vector", "ids": ids,
@@ -652,7 +667,8 @@ def refinement_noise_study(levels=(2, 3, 4, 5), sigma=1e-3, samples=2000, seed=S
         ids, ring = G.one_ring(mesh, vertex)
         base = mesh.vertices[ids]
         clean = float(G.batch_angle_defect_curvature(base[None], 0, ring)[0])
-        noisy = G.batch_angle_defect_curvature(base[None] + rng.standard_normal((samples,) + base.shape) * sigma, 0, ring)
+        noise = rng.standard_normal((samples,) + base.shape) * sigma
+        noisy = G.batch_angle_defect_curvature(base[None] + noise, 0, ring)
         rows.append({"level": level, "h": mesh.mean_edge(), "discretization_error": clean - 1.0,
                      "total_rms_error": float(np.sqrt(np.mean((noisy - 1.0) ** 2))),
                      "noise_sd": float(np.std(noisy, ddof=1))})

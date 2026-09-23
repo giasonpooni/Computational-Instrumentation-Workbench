@@ -327,8 +327,8 @@ def stale_clock(ctx):
     error_z = float(np.max(np.abs(one["position_error_mean_z_vs_zero"])))
     findings = [
         finding("With a correctly clocked tracker fused alongside, an unmodelled one-tick camera lag biases the "
-                "whitened innovations of both sensors; a mean test detects it and the bias equals the exact "
-                "linear prediction", "numerical",
+                "whitened innovations of both sensors; a mean test detects it and the bias matches the exact "
+                "linear prediction within sampling error", "numerical",
                 as_json({"max_abs_mean_z": detected, "max_abs_z_vs_predicted": agree, "z_critical": zc,
                          "camera_whitened_mean": two["camera_whitened_mean"],
                          "tracker_whitened_mean": two["tracker_whitened_mean"],
@@ -350,7 +350,7 @@ def stale_clock(ctx):
                 tolerance=TOL_MC),
         finding("With the stale camera as the only position sensor the lag is invisible to the innovations: the "
                 "lagged constant-velocity path is itself a constant-velocity path, so the estimate is biased by "
-                "-tau v while the mean test passes", "numerical",
+                "about -tau E[v] while the mean test passes", "numerical",
                 as_json({"camera_mean_z": one["camera_mean_z"], "position_error_mean": one["position_error_mean"],
                          "position_error_mean_z_vs_zero": one["position_error_mean_z_vs_zero"],
                          "predicted_position_error_mean": one["position_error_predicted_mean"],
@@ -486,15 +486,16 @@ def frame_mismatch(ctx):
     codes = study["api_codes"]
     findings = [
         finding("Fusing a tracker expressed in a frame rotated by 2 degrees with a world-frame camera inflates NIS "
-                "as the target moves away from the rotation centre, exactly as predicted by the mismatched-filter "
-                "moments", "numerical", _frame_summary(mixed),
+                "as the target moves away from the rotation centre, matching the exact mismatched-filter moments "
+                "within sampling error", "numerical", _frame_summary(mixed),
                 {**generator_basis(seed, runs=study["runs"], ticks=study["ticks"]), "checks": [
                     check("analytic", "fraction of ticks 51-100 above the 99% upper bound",
                           mixed["late"]["fraction_above"], 0.9, "ge"),
                     check("analytic", "late grand NIS against the exact prediction (run-level z)",
                           mixed["late_z_vs_predicted"], zc)]},
                 tolerance=TOL_MC),
-        finding("Near the rotation centre (ticks 1-20) the same mismatch is invisible to the NIS test", "numerical",
+        finding("Near the rotation centre (ticks 1-20) the same mismatch goes undetected by the per-tick NIS test at "
+                "this sample size; its predicted inflation there is only about 2%", "numerical",
                 {"early_fraction_inside": mixed["early"]["fraction_inside"],
                  "early_predicted_nis": float(np.mean(mixed["predicted_nis"][:20]))},
                 {**generator_basis(seed), "checks": [

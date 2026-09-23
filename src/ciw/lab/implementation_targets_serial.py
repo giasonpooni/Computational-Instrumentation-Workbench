@@ -453,7 +453,11 @@ fn main() {
     let mut out = io::BufWriter::new(io::stdout());
     for line in stdin.lock().lines() {
         let line = line.expect("stdin is readable");
-        let result = match mode.as_str() { "canon" => canon(&line), "rk4" => rk4(&line), _ => "REFUSED unknown_mode".to_string() };
+        let result = match mode.as_str() {
+            "canon" => canon(&line),
+            "rk4" => rk4(&line),
+            _ => "REFUSED unknown_mode".to_string(),
+        };
         writeln!(out, "{}", result).expect("stdout is writable");
     }
 }

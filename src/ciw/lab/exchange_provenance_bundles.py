@@ -25,17 +25,17 @@ from copy import deepcopy
 from hashlib import sha256
 import inspect
 import json
-import os
 from pathlib import Path
-import shutil
+import subprocess
 import tempfile
 
 from .. import __version__
 from .evidence import AUTHORITY_DOMAINS, LABELS, PHYSICAL_DOMAINS, EvidenceRefusal, finding, validate_finding
 from .registry import task
-from .report import render_markdown, validate_report
-from .exchange_provenance_bundles_fixtures import (GOLDEN_MANIFEST, Client, ExecutionForbidden, build_energy_session,
-                                                   example_bytes, exchange_result_artifact, execution_guard,
+from .report import build_report, render_markdown, validate_report
+from .svg import line_plot
+from .exchange_provenance_bundles_fixtures import (EXECUTION_PATHS, GOLDEN_MANIFEST, Client, ExecutionForbidden,
+                                                   build_energy_session, example_bytes, execution_guard,
                                                    fabricated_heat_catalog, fixture_root, heat_reference,
                                                    malformed_fixtures, merge_catalogs, source_payload)
 from . import exchange_provenance_bundles_providers as providers
@@ -186,9 +186,7 @@ def save_reopen_without_providers(ctx):
                                       "reopen_attempts": reopen_attempts, "recomputations": recomputations,
                                       "guard_control": control, "binding_keys_in_saved_workspace": binding_keys,
                                       "saved_workspace_sha256": sha256(saved_bytes).hexdigest(),
-                                      "guarded_paths": [".".join(filter(None, p)) for p in
-                                                        __import__("ciw.lab.exchange_provenance_bundles_fixtures",
-                                                                   fromlist=["EXECUTION_PATHS"]).EXECUTION_PATHS]})
+                                      "guarded_paths": [".".join(filter(None, p)) for p in EXECUTION_PATHS]})
     analyze_calls = recomputations.get("ciw.energy_records.analyze", 0)
     findings = [
         finding("A saved workspace with oscillator results and an energy-accuracy original and replay reopens "
@@ -219,7 +217,7 @@ def save_reopen_without_providers(ctx):
         "A CIW workspace saved with retained oscillator results and an energy-accuracy original and replay can be "
         "reopened with no provider binding and without reaching any execution entry point.",
         "Reopen = validate(saved JSON) then construct; the guard replaces "
-        f"{len(observed) and len(reopen_attempts) or 'every'} execution entry point (workflow steps, sessions, "
+        f"{len(EXECUTION_PATHS)} execution entry points (workflow steps, sessions, "
         "provider adapters, subprocesses, recording operations) with a refusing recorder.",
         ["ciw.instruments.make_demo_run (synthetic analytic oscillator)",
          "examples/energy-accuracy/baseline.json bytes (synthetic_fixture origin), embedded"],
@@ -238,7 +236,8 @@ def save_reopen_without_providers(ctx):
          "guard insensitivity (control replay must be intercepted)"],
         ["The guard covers the execution entry points listed in reopen.json; a new entry point added to CIW "
          "must be added to EXECUTION_PATHS.",
-         "Validation recomputation (energy analysis) is not execution: it creates no occurrence and no result."],
+         "Validation recomputation (energy analysis) is counted separately from execution because it creates no "
+         "occurrence and no result; the counterexample finding records it."],
         "T092: refuse replay of provider kinds without a binding in the reopened session.")
     return {"state": "completed", "fields": fields, "findings": findings}
 
@@ -366,8 +365,8 @@ def replay_refusal_without_binding(ctx):
         ["client-supplied repositories in replay/execute payloads", "client binding request",
          "unknown bundle", "unversioned and unregistered operation identities", "ESM without adapter",
          "provider adapter constructed before refusal"],
-        ["The five unbound kinds are representative of the seventeen declared workflow kinds; others share "
-         "Workbench._reserve.",
+        ["The five unbound kinds stand for every registered workflow kind except energy-accuracy (the only one "
+         "bound by default); all of them pass through Workbench._reserve.",
          "The fabricated bundle's runtime identity is syntactically valid but names no real checkout."],
         "T093: show these refusals leave the saved workspace and in-memory state unchanged.")
     return {"state": "completed", "fields": fields, "findings": findings}
@@ -1228,22 +1227,18 @@ def exact_provider_integrations(ctx):
             blocked.append("SCR engine: neither scr-engine binding nor cargo is available")
         else:
             path = providers.materialize(engine["binary"], scratch)
-            survey = json.dumps({"schema": "ciw.numerical-heat-source.v1", "experiment_id": "ciw-lab-survey-heat",
-                                 "configuration": json.loads(example_bytes("declared-workloads/numerical-heat.json"))[
-                                     "configuration"], "initial_values": [0, 0, 1000, 0, 0], "steps": 3},
-                                sort_keys=True).encode()
             workbench = providers.scr_workbench_integration(ctx.providers["scr"], path, scratch / "workbench", [
-                ("Declared integer heat workload (example)", example_bytes("declared-workloads/numerical-heat.json")),
-                ("Survey heat workload", survey)])
+                ("Declared integer heat workload (example)", example_bytes("declared-workloads/numerical-heat.json"))])
             api = providers.run_heat_kernel(ctx.providers["scr"], path, SURVEY_CASES)
             parts["workbench"], parts["api"] = workbench, api
     pins = providers.ciw_pins()
-    optional = {}
+    optional, trees = {}, {}
     for role in ("set", "ppda", "scr-exchange"):
         if role in ctx.providers:
             try:
-                optional[role] = providers.compare_with_pins(role, providers.checkout_identity(ctx.providers[role]), pins)
-            except (ValueError, OSError, __import__("subprocess").SubprocessError) as exc:
+                bound = providers.checkout_identity(ctx.providers[role])
+                optional[role], trees[role] = providers.compare_with_pins(role, bound, pins), bound["tree"]
+            except (ValueError, OSError, subprocess.SubprocessError) as exc:
                 optional[role] = {"accepted": False, "error": str(exc)}
     set_ready = optional.get("set", {}).get("accepted") and "ciw/exchange-runtime.json" in optional["set"]["matched"]
     with tempfile.TemporaryDirectory(prefix="ciw-lab-t097-exchange-") as scratch:
@@ -1262,23 +1257,24 @@ def exact_provider_integrations(ctx):
         "parts": {name: value for name, value in parts.items()}})
     if "workbench" in parts:
         workbench, api = parts["workbench"], parts["api"]
-        runs = {run["label"]: run for run in workbench["runs"]}
-        demo, survey_run = runs["Declared integer heat workload (example)"], runs["Survey heat workload"]
+        demo = workbench["runs"][0]
+        survey = api["cases"][0]
         mismatch = sum(sum(a != b for a, b in zip(run["values"], heat_reference(run["initial_values"], run["steps"])))
                        for run in workbench["runs"])
         mismatch += sum(sum(a != b for a, b in zip(case["values"], heat_reference(values, steps)))
                         for case, (steps, values) in zip(api["cases"], SURVEY_CASES))
         from ..declared_workload import HEAT_DESCRIPTOR
         descriptor_equal = api["descriptor_sha256"] == sha256(HEAT_DESCRIPTOR).hexdigest()
-        ctx.artifact_text("heat-fields.svg", __import__("ciw.lab.svg", fromlist=["line_plot"]).line_plot(
-            [("initial field", list(range(5)), survey_run["initial_values"]),
-             ("SCR after 3 steps", list(range(5)), survey_run["values"]),
-             ("integer reference", list(range(5)), heat_reference(survey_run["initial_values"], survey_run["steps"]))],
+        steps, initial = SURVEY_CASES[0]
+        ctx.artifact_text("heat-fields.svg", line_plot(
+            [("initial field", list(range(5)), initial), ("SCR after 3 steps", list(range(5)), survey["values"]),
+             ("integer reference", list(range(5)), heat_reference(initial, steps))],
             title="SCR integer heat kernel versus reference", xlabel="cell index", ylabel="integer field value"))
         findings += [
-            finding("SCR numerical-heat execution through CIW's shared workbench returns the declared integer heat "
-                    "field", "numerical", {"example": demo["values"], "survey": survey_run["values"]},
-                    _provider_basis(identity, engine["sha256"]), unit="1", tolerance=EXACT),
+            finding("SCR executed through CIW's shared numerical-heat workflow and through its own Python API returns "
+                    "the declared integer heat fields", "numerical",
+                    {"workbench_example": demo["values"], "api_cases": [case["values"] for case in api["cases"]]},
+                    _provider_basis(identity, engine["sha256"]), tolerance=EXACT),
             finding("SCR heat outputs from the workbench and from SCR's Python API equal an independent integer "
                     "reference", "numerical", {"cases": len(workbench["runs"]) + len(api["cases"]),
                                                "mismatched_cells": mismatch},
@@ -1338,7 +1334,7 @@ def exact_provider_integrations(ctx):
              "verification_outcome": parts["roundtrip"]["verification_outcome"],
              "changed_result_refusal": parts["roundtrip"]["changed_result_refusal"]},
             {"provider": {"repository": providers.REPOSITORIES["ppda"], "revision": providers.EXCHANGE_WORKFLOW_PINS["ppda"],
-                          "source_tree": "recorded in integration.json", "executed": True}},
+                          "source_tree": trees["ppda"], "executed": True}},
             tolerance=EXACT))
     else:
         blocked.append("PPDA/SCR/SET producer roundtrip: needs ppda@a29845e, scr-exchange@5f04097 and set@542e672")
@@ -1354,19 +1350,23 @@ def exact_provider_integrations(ctx):
     heat = parts.get("workbench", {}).get("runs", [])
     fields.update(
         input_data=["examples/declared-workloads/numerical-heat.json (embedded)",
-                    "survey source [0, 0, 1000, 0, 0], 3 steps", f"SCR checkout {identity['head']}",
+                    f"API cases (steps, initial field): {SURVEY_CASES}", f"SCR checkout {identity['head']}",
                     f"engine: {None if engine is None else engine['origin']}"],
-        experiment=("Bind SCR and its engine in a fresh session, add both sources, execute, replay, save, reopen "
-                    "unbound under the guard and request replay; run four cases through SCR's own Python API; when "
+        experiment=("Bind SCR and its engine in a fresh session, add the example source, execute, replay, save, "
+                    "reopen unbound under the guard and request replay; run four cases (including [0, 0, 1000, 0, 0] "
+                    "for 3 steps) through SCR's own Python API; when "
                     "bound, validate a synthetic observation with SET and run the PPDA/SCR/SET producer roundtrip."),
-        numerical_result=("; ".join(f"{run['label']}: {run['initial_values']} x{run['steps']} -> {run['values']}"
-                                    for run in heat) or "SCR not executed")
-                         + f"; blocked parts: {blocked or 'none'}",
+        numerical_result=("; ".join([f"workbench {run['initial_values']} x{run['steps']} -> {run['values']}"
+                                     for run in heat] + [f"API {values} x{steps} -> {case['values']}" for case,
+                                     (steps, values) in zip(parts.get("api", {}).get("cases", []), SURVEY_CASES)])
+                          or "SCR not executed") + f"; blocked parts: {blocked or 'none'}",
         uncertainty="Exact integer arithmetic; no tolerance.",
         failure_modes_checked=["pin mismatch", "engine drift", "replay identity drift", "binding recovered from "
                                "saved data", "descriptor drift between SCR and CIW"],
-        unresolved_assumptions=blocked + ["The engine is operator-asserted, not attested: CIW records its digest "
-                                          "but does not prove it was built from the pinned source.",
+        unresolved_assumptions=blocked + ["CIW records the engine digest as operator_asserted_not_attested; this "
+                                          "run's engine origin is "
+                                          f"{None if engine is None else engine['origin']}, which CIW itself does "
+                                          "not verify.",
                                           "The PPDA telemetry stack (ppda, stfe, gsie, set, cbsr at "
                                           "src/ciw/telemetry-runtimes.json pins) is a separate integration."],
         recommended_next_task="T098: record the identities of every bound provider checkout.",
@@ -1418,7 +1418,7 @@ def provider_identities(ctx):
     for role in roles:
         try:
             identities[role] = providers.checkout_identity(ctx.providers[role])
-        except (ValueError, OSError, __import__("subprocess").SubprocessError) as exc:
+        except (ValueError, OSError, subprocess.SubprocessError) as exc:
             errors[role] = str(exc)
             continue
         comparisons[role] = providers.compare_with_pins(role, identities[role], pins)
@@ -1496,8 +1496,9 @@ def provider_identities(ctx):
             {"checks": [_refusal(f"{role} checkout", "refused", "refused") for role in rejected]}, tolerance=EXACT))
     if liveness is not None:
         findings.append(finding(
-            "The SCR engine recorded for this run executes the heat descriptor from its locked source",
-            "numerical", {"cargo_lock_sha256": identities["scr"]["cargo_locks"].get("crates/Cargo.lock"),
+            "The SCR engine recorded for this run executes the SCR heat descriptor on the survey input",
+            "numerical", {"engine_origin": engine["origin"],
+                          "cargo_lock_sha256": identities["scr"]["cargo_locks"].get("crates/Cargo.lock"),
                           "survey_output": liveness["cases"][0]["values"],
                           "descriptor_sha256": liveness["descriptor_sha256"]},
             _provider_basis(identities["scr"], engine["sha256"]), tolerance=EXACT))
@@ -1530,7 +1531,7 @@ def provider_identities(ctx):
 
 def _git_version() -> str:
     try:
-        return __import__("subprocess").run(["git", "--version"], capture_output=True, text=True,
+        return subprocess.run(["git", "--version"], capture_output=True, text=True,
                                             timeout=30).stdout.strip() or "unknown"
     except OSError:
         return "unknown"
@@ -1611,7 +1612,7 @@ def locked_cargo_build(ctx):
                         "producer": {"implementation": "Scientific-Computation-Runtime execution-cli (locked build)",
                                      "revision": identity["head"]},
                         "checker": {"implementation": "ciw.lab.exchange_provenance_bundles_fixtures.heat_reference",
-                                    "revision": __version__}}}, unit="1", tolerance=EXACT),
+                                    "revision": __version__}}}, tolerance=EXACT),
         ]
     else:
         findings.append(finding("cargo build --locked --offline of SCR execution-cli failed", "computational_pipeline",
@@ -1683,6 +1684,7 @@ def _audit_reports(ctx):
         if f"`{report['physical_validation_status']['status']}`" not in markdown:
             violations.append(f"{report['task_id']}: physical validation status not rendered")
         rows.append({"task_id": report["task_id"], "findings": len(report["findings"]),
+                     "pipe_claims": sum("|" in f["claim"] or "\n" in f["claim"] for f in report["findings"]),
                      "labels": sorted({f["evidence_status"] for f in report["findings"]}),
                      "physical_or_authority": sum(f["domain"] in PHYSICAL_DOMAINS | AUTHORITY_DOMAINS
                                                   for f in report["findings"])})
@@ -1765,10 +1767,10 @@ def visibly_distinct_results(ctx):
         forged = "accepted"
     except EvidenceRefusal as exc:
         forged = str(exc)
-    # Rendering counterexample: an unescaped '|' in a claim shifts the label column.
+    # Rendering counterexample: an unescaped pipe in a claim shifts the label column.
     witness = finding("claim with a | pipe", "numerical", 1.0, {"generator": {"name": "rendering probe"}})
     from .registry import load_queue
-    probe = __import__("ciw.lab.report", fromlist=["build_report"]).build_report(
+    probe = build_report(
         load_queue()["tasks"][99], "partial", {}, [witness])
     row = render_markdown(probe).splitlines()[-1]
     shifted = row.count(" | ") != 2
@@ -1794,9 +1796,9 @@ def visibly_distinct_results(ctx):
                 {"checks": [_refusal("validate_finding on a physical finding relabelled synthetic",
                                      "Evidence label refused: basis supports not_established, finding states synthetic",
                                      forged)]}, tolerance=EXACT),
-        finding("An unescaped '|' in a finding claim shifts the rendered label out of its Markdown column",
+        finding("An unescaped pipe character in a finding claim shifts the rendered label out of its Markdown column",
                 "computational_pipeline", {"row_cells": row.count(" | ") + 1, "label_column_shifted": shifted},
-                {"checks": [_check("rendered rows keeping three cells for a claim containing '|'", int(not shifted))]},
+                {"checks": [_check("rendered rows keeping three cells for a claim containing a pipe", int(not shifted))]},
                 tolerance=EXACT, counterexample={
                     "statement": "render_markdown keeps every finding's label in the label column for any claim text",
                     "witness": {"claim": witness["claim"], "row": row}}),
@@ -1854,7 +1856,7 @@ def visibly_distinct_results(ctx):
         "validate_report, per-finding label/domain rules, rendered Markdown rows; CIW analysis/refusal outputs.",
         "Zero violations; relabels refused where detectable; physical claims not established.",
         "Audit every retained report below T100; forge a relabelled physical finding; render a claim containing "
-        "'|'; relabel the energy fixture unsealed, resealed in the same occurrence and resealed in a fresh "
+        "a pipe character; relabel the energy fixture unsealed, resealed in the same occurrence and resealed in a fresh "
         "occurrence; relabel free-energy source policies; inspect the free-energy truth panel basis.",
         f"{len(rows)} reports audited with {len(violations)} violations; resealed energy relabel classified "
         f"{energy['resealed_relabel']['classification']}; same-occurrence relabel: {energy['same_occurrence_collision']}.",
@@ -1864,7 +1866,8 @@ def visibly_distinct_results(ctx):
          "free-energy policy relabel"],
         ["The report audit covers only reports present in the output directory when T100 runs (a full run "
          "retains T001-T099); stale reports from earlier runs in the same directory are included if present.",
-         f"Retained claims containing '|': {pipe_claims}; the rendering counterexample uses a synthetic claim."],
+         f"Retained claims containing a pipe or newline: {pipe_claims}; the rendering counterexample uses a "
+         "synthetic claim."],
         "Escape claim text in ciw.lab.report.render_markdown; authenticate energy-log origin at acquisition "
         "(outside the workbench).")
     return {"state": "completed" if audited else "partial", "fields": fields, "findings": findings}

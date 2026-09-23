@@ -53,8 +53,9 @@ FLOAT = {"abs": 1e-9, "rel": 1e-7}
 ROUTE = {"abs": 1e-6, "rel": 1e-5}
 
 
-def _t(name):
-    return f"{TESTS}::{name}"
+def _tests(*names):
+    """Regression node ids; every task is also covered by the section-wide completion test."""
+    return tuple(f"{TESTS}::{name}" for name in names + ("test_every_task_is_registered_and_completes",))
 
 
 # ---------------------------------------------------------------- shared helpers
@@ -169,7 +170,7 @@ def _provider_refused_finding(run):
                    {"checks": [_refusal("flat_torus_topology_provider.run_ftr", run["refusal"], run["refusal"])]})
 
 
-def _provider_note(run, fields, findings):
+def _provider_note(run, fields, findings, changed_files):
     """Attach provider identity or the reason it did not run; return the resulting task state."""
     if run is None:
         fields["unresolved_assumptions"].append(
@@ -180,7 +181,10 @@ def _provider_note(run, fields, findings):
         findings.append(_provider_refused_finding(run))
         fields["unresolved_assumptions"].append(f"FTR provider refused: {run['message']}")
         return "partial"
-    fields["provider_runtime_identity"] = dict(run["identity"], producer=PRODUCER, ciw_version=__version__)
+    from .runner import builtin_identity
+
+    fields["provider_runtime_identity"] = {"provider": run["identity"], "ciw": builtin_identity(changed_files),
+                                           "producer": PRODUCER}
     return "completed"
 
 
@@ -292,8 +296,10 @@ def sympy_enumeration_check(bound=2):
 
 
 @task("T019", changed_files=(MODULE, LATTICE, PROVIDER, DOC),
-      regression_tests=(_t("test_t019_reduction_and_refusals"), _t("test_gauss_reduction_is_exact"),
-                        _t("test_ftr_provider_agreement")))
+      regression_tests=_tests("test_t019_reduction_and_refusals",
+                              "test_gauss_reduction_is_exact",
+                              "test_ftr_refusal_makes_task_partial",
+                              "test_ftr_provider_agreement"))
 def enumerate_lattice_representatives(ctx):
     study = ctx.memo("t019-enumeration", enumeration_study)
     ctx.artifact_json("lattice-reduction.json", study)
@@ -351,7 +357,8 @@ def enumerate_lattice_representatives(ctx):
          "checks": [_check("count mismatches against prediction", count_mismatch)]}, tolerance=EXACT))
     findings.append(finding(
         "Integer matrices with det != 1 are refused as SL(2,Z) basis changes", "mathematical", codes,
-        {"checks": [_refusal("lat.transform with det 2", "BASIS_CHANGE_NOT_UNIMODULAR", codes["det 2 (index-2 sublattice)"]),
+        {"checks": [_refusal("lat.transform with det 2", "BASIS_CHANGE_NOT_UNIMODULAR",
+                             codes["det 2 (index-2 sublattice)"]),
                     _refusal("lat.transform with det -1", "BASIS_CHANGE_REVERSES_ORIENTATION",
                              codes["det -1 (orientation reversal)"]),
                     _refusal("lat.transform with a non-integer entry", "BASIS_CHANGE_NOT_INTEGER", codes["non-integer"]),
@@ -380,7 +387,7 @@ def enumerate_lattice_representatives(ctx):
                  _check("FTR reduced tau", cmp["max_tau_difference"], 1e-9, kind="high_precision"),
                  ftr.checker_identity(identity)["implementation"], identity["revision"])},
             tolerance={"abs": 1e-9, "rel": 0}))
-    state = _provider_note(run, fields, findings)
+    state = _provider_note(run, fields, findings, (MODULE, LATTICE, PROVIDER))
     return {"state": state, "fields": fields, "findings": findings}
 
 
@@ -466,8 +473,9 @@ def length_comparison(run):
 
 
 @task("T020", changed_files=(MODULE, LATTICE, PROVIDER, DOC),
-      regression_tests=(_t("test_t020_winding_classification"), _t("test_winding_flow_and_intersections"),
-                        _t("test_ftr_provider_agreement")))
+      regression_tests=_tests("test_t020_winding_classification",
+                              "test_winding_flow_and_intersections",
+                              "test_ftr_provider_agreement"))
 def classify_by_winding(ctx):
     study = ctx.memo("t020-windings", winding_study)
     gaps = golden_returns()
@@ -487,7 +495,7 @@ def classify_by_winding(ctx):
     log2_denominator = d.bit_length() - 1
     fields = _fields(
         "Closed geodesics of a flat torus are exactly the straight lines in nonzero lattice directions: primitive "
-        "(m, n) gives a simple closed geodesic of length |m w1 + n w2|, (k m', k n') its k-fold cover, and "
+        "(m, n) gives a closed geodesic traversed once with length |m w1 + n w2|, (k m', k n') its k-fold cover, and "
         "irrational directions never close although their return gaps shrink.",
         "Lattice-coordinate flow alpha = alpha0 + m t, beta = beta0 + n t on R^2 / Z^2 with metric Q(m, n) = "
         "a m^2 + 2 b m n + c n^2; first return at t = 1/gcd(m, n); intersection number |det(v, w)|; "
@@ -513,12 +521,12 @@ def classify_by_winding(ctx):
          "Primitive fraction approaches 6/pi^2 only asymptotically; no rate is claimed."],
         "T023: compute heading sensitivity of closure across all starting headings")
     findings = [
-        finding("Closed geodesics correspond to nonzero lattice vectors; primitive classes close once with "
-                "|m| + |n| edge crossings and k-fold classes return at t = 1/k with length k times the primitive",
+        finding("Every winding with |m|, |n| <= 6 closes at t = 1/gcd after (|m| + |n|)/gcd edge crossings, with "
+                "length gcd times that of its primitive class",
                 "mathematical", {"classes": len(study["rows"]), "failures": study["failures"]},
                 {"checks": [_check("closure time, crossings and length scaling mismatches", study["failures"])]},
                 tolerance=EXACT),
-        finding("Transverse intersections of two primitive closed geodesics number |det(v, w)|", "mathematical",
+        finding("For 120 pairs of primitive classes the transverse intersections number |det(v, w)|", "mathematical",
                 {"pairs": len(study["intersections"]), "failures": study["intersection_failures"]},
                 {"checks": [_check("intersection count mismatches (exact rational solve)",
                                    study["intersection_failures"])]}, tolerance=EXACT),
@@ -570,7 +578,7 @@ def classify_by_winding(ctx):
                  _check("FTR loop_length", cmp["max_relative_difference"], 1e-12, kind="high_precision"),
                  ftr.checker_identity(identity)["implementation"], identity["revision"])},
             tolerance={"abs": 1e-12, "rel": 0}))
-    state = _provider_note(run, fields, findings)
+    state = _provider_note(run, fields, findings, (MODULE, LATTICE, PROVIDER))
     return {"state": state, "fields": fields, "findings": findings}
 
 
@@ -626,7 +634,8 @@ def flat_route_study():
     return {"z": [_frac(z[0]), _frac(z[1])], "routes": out, "discordant_pairs": discordant}
 
 
-@task("T021", changed_files=(MODULE, LATTICE, DOC), regression_tests=(_t("test_t021_shortest_is_least_sensitive"),))
+@task("T021", changed_files=(MODULE, LATTICE, DOC),
+      regression_tests=_tests("test_t021_shortest_is_least_sensitive", "test_regeneration_is_within_tolerance"))
 def shortest_versus_least_sensitive(ctx):
     study = flat_route_study()
     ctx.artifact_json("flat-routes.json", study)
@@ -653,10 +662,12 @@ def shortest_versus_least_sensitive(ctx):
         ["The equivalence is special to zero curvature; T032 records curved-surface counterexamples."],
         "T022: detect degenerate (tied) shortest representatives")
     findings = [
-        finding("Shortest and least heading-sensitive routes coincide on a flat torus (j_head(L) = L)",
+        finding("On the test flat torus every route's heading amplification equals its length (ciw.lab.jacobi), so "
+                "the length and amplification orders coincide",
                 "numerical", {"routes": len(rs), "max_relative_j_head_error": j_err,
                               "discordant_pairs": study["discordant_pairs"]},
-                {"derivation": "K = 0: j'' = 0 with j(0) = 0, j'(0) = 1 gives j_head(s) = s (docs/lab/FLAT_TORUS_TOPOLOGY.md)",
+                {"derivation": "K = 0: j'' = 0 with j(0) = 0, j'(0) = 1 gives j_head(s) = s "
+                               "(docs/lab/FLAT_TORUS_TOPOLOGY.md)",
                  "checks": [_check("|j_head(L)/L - 1| from ciw.lab.jacobi", j_err, 1e-12, kind="analytic"),
                             _check("|j_lat(L) - 1|", lat_err, 1e-12, kind="analytic"),
                             _check("endpoint equals p + translate", end_err, 1e-12, kind="invariant"),
@@ -665,11 +676,11 @@ def shortest_versus_least_sensitive(ctx):
         finding("For every flat torus and every pair of points the least-sensitive geodesic is a shortest one",
                 "mathematical", True,
                 {"derivation": "j_head(s) = s is strictly increasing, so ordering routes by |j_head(L)| equals "
-                               "ordering by L (ties included)"}),
+                               "ordering by L (ties included)"}, tolerance=EXACT),
         finding("With nonzero curvature the amplification |j_head(s)| is not monotone in s (e.g. sin s on the unit "
                 "sphere), so the equivalence can fail", "mathematical", True,
                 {"derivation": "Constant K > 0: j_head(s) = sin(sqrt K s)/sqrt K; K < 0: sinh(sqrt(-K) s)/sqrt(-K) "
-                               "(ciw.lab.jacobi.constant_curvature); witnesses in T032"}),
+                               "(ciw.lab.jacobi.constant_curvature); witnesses in T032"}, tolerance=EXACT),
         finding("The shortest route on a physical flat workpiece is the safest route to execute", "machine_safety",
                 None, {}),
     ]
@@ -714,7 +725,8 @@ def degeneracy_study(n_grid=12, rel_tol=1e-9):
             "tolerance_band": band, "rel_tol": rel_tol, "false_unique": false_unique}
 
 
-@task("T022", changed_files=(MODULE, LATTICE, DOC), regression_tests=(_t("test_t022_degenerate_representatives"),))
+@task("T022", changed_files=(MODULE, LATTICE, DOC),
+      regression_tests=_tests("test_t022_degenerate_representatives", "test_regeneration_is_within_tolerance"))
 def degenerate_shortest_representatives(ctx):
     study = degeneracy_study()
     ctx.artifact_json("degeneracy.json", study)
@@ -752,7 +764,8 @@ def degenerate_shortest_representatives(ctx):
                 "mathematical", study["census"],
                 {"checks": [_check("census deviation from {1: n^2 - 2n + 1, 2: 2(n - 1), 4: 1}", census_mismatch)]},
                 tolerance=EXACT),
-        finding("Cut-locus vertices satisfy sum over vertices of (k_v - 2) = 2 (Euler characteristic 0)",
+        finding("On six lattices the cut-locus vertices satisfy sum over vertices of (k_v - 2) = 2 (Euler "
+                "characteristic 0)",
                 "mathematical", {k: v["sum_k_minus_2"] for k, v in study["cut_locus"].items()},
                 {"derivation": "E = sum k_v / 2 and V - E + F = 0 with F = 1 give sum (k_v - 2) = 2",
                  "checks": [_check("lattices violating the identity", vertex_mismatch)]}, tolerance=EXACT),
@@ -825,7 +838,8 @@ def heading_study(epsilon=0.02, delta=1e-4):
             "epsilon": epsilon, "discordant": discordant, "sample": sample}
 
 
-@task("T023", changed_files=(MODULE, LATTICE, DOC), regression_tests=(_t("test_t023_heading_sensitivity"),))
+@task("T023", changed_files=(MODULE, LATTICE, DOC),
+      regression_tests=_tests("test_t023_heading_sensitivity"))
 def sensitivity_across_headings(ctx):
     study = heading_study()
     ctx.artifact_json("heading-sensitivity.json", study)
@@ -857,11 +871,12 @@ def sensitivity_across_headings(ctx):
          "exponents, zero here) would rank headings differently."],
         "T024: add focus-margin-aware route ranking on curved surfaces")
     findings = [
-        finding("Zeros of the return distance are exactly the primitive lattice directions with |v| <= L",
+        finding("Zeros of the return distance (tau = 0.31 + 1.07i, L = 3) are exactly the primitive lattice "
+                "directions with |v| <= L",
                 "numerical", {"found": len(study["found"]), "predicted": len(study["predicted"])},
                 {"checks": [_check("missing plus extra closure directions",
                                    len(study["missing"]) + len(study["extra"]))]}, tolerance=EXACT),
-        finding("Closing error grows with slope |v| (the loop length) away from each closing heading",
+        finding("Near each closing heading the closing error grows at rate |v| (the loop length) per radian",
                 "numerical", {"max_relative_slope_error": study["slope_relative_error"]},
                 {"derivation": "r = |v| sin|theta - theta_v| near theta_v",
                  "checks": [_check("|r / sin(delta) - |v|| / |v| at delta = 1e-4", study["slope_relative_error"],
@@ -909,7 +924,8 @@ def _route_table(found):
              "focus_margin": r["focus_margin"], "margin_lower_bound": r["margin_lower_bound"]} for r in found]
 
 
-@task("T024", changed_files=(MODULE, ROUTES, DOC), regression_tests=(_t("test_t024_t025_route_ranking_and_front"),))
+@task("T024", changed_files=(MODULE, ROUTES, DOC),
+      regression_tests=_tests("test_t024_t025_route_ranking_and_front"))
 def focus_margin_ranking(ctx):
     data = ctx.memo("t024-routes", torus_routes)
     found = data["routes"]
@@ -980,7 +996,8 @@ def focus_margin_ranking(ctx):
     return {"state": "completed", "fields": fields, "findings": findings}
 
 
-@task("T025", changed_files=(MODULE, ROUTES, DOC), regression_tests=(_t("test_t024_t025_route_ranking_and_front"),))
+@task("T025", changed_files=(MODULE, ROUTES, DOC),
+      regression_tests=_tests("test_t024_t025_route_ranking_and_front"))
 def pareto_fronts(ctx):
     data = ctx.memo("t024-routes", torus_routes)
     found = data["routes"]
@@ -1078,13 +1095,16 @@ def invariance_study(words=60, word_length=10):
                        "same_canonical": lat.gauss_reduce(mirror)[0] == lat.gauss_reduce(generic)[0]},
             "sublattice": {"gram": [str(x) for x in doubled], "area_sq_ratio": _frac(Fraction(lat.det_form(doubled),
                                                                                              lat.det_form(generic))),
-                           "systole_sq": _frac(lat.systole_sq(doubled)), "original_systole_sq": _frac(lat.systole_sq(generic)),
+                           "systole_sq": _frac(lat.systole_sq(doubled)),
+                           "original_systole_sq": _frac(lat.systole_sq(generic)),
                            "same_spectrum": lat.length_spectrum(doubled, SPECTRUM_RADIUS_SQ) == spectra["generic"]},
             "spectra": {k: [[_frac(q), mult] for q, mult in v[:8]] for k, v in spectra.items()}}
 
 
 @task("T026", changed_files=(MODULE, LATTICE, PROVIDER, DOC),
-      regression_tests=(_t("test_t026_modular_invariance"), _t("test_ftr_provider_agreement")))
+      regression_tests=_tests("test_t026_modular_invariance",
+                              "test_gauss_reduction_is_exact",
+                              "test_ftr_provider_agreement"))
 def modular_reduction_invariance(ctx):
     study = invariance_study()
     ctx.artifact_json("modular-invariance.json", study)
@@ -1115,7 +1135,8 @@ def modular_reduction_invariance(ctx):
         ["Spectra are compared up to R^2 = 60, not over the whole lattice (a finite truncation)."],
         "T027: build polygonal translation-surface examples")
     findings = [
-        finding("Length spectrum, area and systole are exactly invariant under SL(2,Z) and reduction", "mathematical",
+        finding("Length spectrum (R^2 <= 60), area and systole are exactly invariant under every tested SL(2,Z) "
+                "change of basis and under reduction", "mathematical",
                 {"matrices": study["matrices"], "failures": failures},
                 {"checks": [_check("exact spectrum/area/systole/winding-transport failures", sum(failures.values()))]},
                 tolerance=EXACT),
@@ -1160,7 +1181,7 @@ def modular_reduction_invariance(ctx):
                  _check("FTR fold length_pair against ciw lengths", cmp["max_length_relative_difference"], 1e-9,
                         kind="high_precision"), ftr.checker_identity(identity)["implementation"], identity["revision"])},
             tolerance={"abs": 1e-9, "rel": 0}))
-    state = _provider_note(run, fields, findings)
+    state = _provider_note(run, fields, findings, (MODULE, LATTICE, PROVIDER))
     return {"state": state, "fields": fields, "findings": findings}
 
 
@@ -1192,7 +1213,10 @@ def horizontal_cylinders():
             "octagon_outer": outer, "octagon_middle": middle, "octagon_area": O.area(), "octagon_cylinder_area": total}
 
 
-@task("T027", changed_files=(MODULE, SURFACES, DOC), regression_tests=(_t("test_t027_t029_surfaces_and_cones"),))
+@task("T027", changed_files=(MODULE, SURFACES, DOC),
+      regression_tests=_tests("test_t027_t029_surfaces_and_cones",
+                              "test_surface_helpers_exact",
+                              "test_regeneration_is_within_tolerance"))
 def translation_surface_examples(ctx):
     examples = example_surfaces()
     records = {}
@@ -1208,7 +1232,8 @@ def translation_surface_examples(ctx):
     O = examples["octagon"]
     area_error = O.area() - surf.Surd(2, 2)
     cyl_error = cyl["octagon_cylinder_area"] - O.area()
-    circ_error = (cyl["octagon_outer"] - surf.Surd(2, 1)).sign() != 0 or (cyl["octagon_middle"] - surf.Surd(1, 1)).sign() != 0
+    circ_error = (cyl["octagon_outer"] - surf.Surd(2, 1)).sign() != 0 \
+        or (cyl["octagon_middle"] - surf.Surd(1, 1)).sign() != 0
     codes = {"octagon adjacent pairing": _refusal_code(lambda: surf.octagon_adjacent_pairing().require_translation()),
              "pillowcase": _refusal_code(examples["pillowcase"].require_translation),
              "mismatched edge lengths": _refusal_code(
@@ -1255,10 +1280,11 @@ def translation_surface_examples(ctx):
                                    0 if cyl_error.sign() == 0 else 1)]}, tolerance=TIGHT),
         finding("Pairings that are not translations, or glue unequal edges, are refused as translation surfaces",
                 "mathematical", codes,
-                {"checks": [_refusal("octagon adjacent pairing", "GLUING_NOT_TRANSLATION", codes["octagon adjacent pairing"]),
+                {"checks": [_refusal("octagon adjacent pairing", "GLUING_NOT_TRANSLATION",
+                                     codes["octagon adjacent pairing"]),
                             _refusal("pillowcase (half-translation)", "GLUING_NOT_TRANSLATION", codes["pillowcase"]),
                             _refusal("edges of length 1 and 2 glued", "EDGE_LENGTH_MISMATCH",
-                                     codes["mismatched edge lengths"])]}),
+                                     codes["mismatched edge lengths"])]}, tolerance=EXACT),
     ]
     return {"state": "completed", "fields": fields, "findings": findings}
 
@@ -1309,6 +1335,7 @@ def octagon_flows():
     exact_code = _refusal_code(O.flow, 0, (S(Fraction(1, 2)), S(Fraction(1, 2))), (S(-1), S(-1)), 10)
     start_code = _refusal_code(F.flow, 0, (0.5, 1e-12), (1.0, 0.3), 10)
     return {"exact_closed": exact["closed"], "exact_time": exact["time"], "exact_crossings": len(exact["crossings"]),
+            "exact_length": float(exact["time"]) * math.hypot(3.0, 1 + math.sqrt(2)),
             "float_closed": floated["closed"], "float_time": floated["time"],
             "same_crossing_sequence": exact["crossings"] == floated["crossings"],
             "time_difference": abs(float(exact["time"]) - floated["time"]),
@@ -1318,7 +1345,8 @@ def octagon_flows():
             "tolerance": F.tol}
 
 
-@task("T028", changed_files=(MODULE, SURFACES, DOC), regression_tests=(_t("test_t028_glued_edge_flow"),))
+@task("T028", changed_files=(MODULE, SURFACES, DOC),
+      regression_tests=_tests("test_t028_glued_edge_flow", "test_surface_helpers_exact"))
 def trace_across_glued_edges(ctx):
     lflows = l_shape_flows()
     oflows = octagon_flows()
@@ -1343,7 +1371,8 @@ def trace_across_glued_edges(ctx):
         "termination near vertices.",
         f"L-shape: {closed} closed, {saddles} saddle connections, {lflows['undecided']} undecided, "
         f"{lflows['bad_multiplier']} bad multipliers; octagon (3, 1 + sqrt 2): exact closure time "
-        f"{oflows['exact_time']} after {oflows['exact_crossings']} crossings, float difference "
+        f"{oflows['exact_time']} (units of the direction vector; length {oflows['exact_length']:.12f}) after "
+        f"{oflows['exact_crossings']} crossings, float difference "
         f"{oflows['time_difference']:.1e}; generic theta: {oflows['generic_crossings']} crossings, min vertex "
         f"clearance {oflows['generic_min_clearance']:.3e}.",
         "Exact for rational and Q(sqrt 2) data; float trajectories carry rounding growing with crossings (declared "
@@ -1353,7 +1382,8 @@ def trace_across_glued_edges(ctx):
         ["A generic float direction is never certified non-periodic; only its first 400 crossings are traced."],
         "T029: detect cone singularities")
     findings = [
-        finding("Every rational trajectory on the L-shape closes (multiplier 1-3) or ends in a saddle connection",
+        finding("All 96 tested rational trajectories on the L-shape close (multiplier 1-3) or end in a saddle "
+                "connection",
                 "mathematical", {"closed": closed, "saddle_connections": saddles, "undecided": lflows["undecided"]},
                 {"derivation": "Veech dichotomy for square-tiled surfaces: rational directions are completely periodic",
                  "checks": [_check("undecided trajectories", lflows["undecided"]),
@@ -1367,7 +1397,8 @@ def trace_across_glued_edges(ctx):
                             _refusal("octagon exact centre-to-vertex", "SADDLE_CONNECTION", oflows["exact_vertex_code"]),
                             _refusal("octagon float pass 1e-12 from a vertex", "NEAR_VERTEX_WITHIN_TOLERANCE",
                                      oflows["near_vertex_code"]),
-                            _refusal("float start 1e-12 from an edge", "START_NOT_INTERIOR", oflows["start_code"])]}),
+                            _refusal("float start 1e-12 from an edge", "START_NOT_INTERIOR", oflows["start_code"])]},
+                tolerance=EXACT),
         finding("Float octagon flow reproduces the exact Q(sqrt 2) trajectory (same crossings, closure time)",
                 "numerical", {"time_difference": oflows["time_difference"], "crossings": oflows["exact_crossings"]},
                 {"checks": [_check("crossing sequences differ", 0 if oflows["same_crossing_sequence"] else 1),
@@ -1381,7 +1412,8 @@ def trace_across_glued_edges(ctx):
     return {"state": "completed", "fields": fields, "findings": findings}
 
 
-@task("T029", changed_files=(MODULE, SURFACES, DOC), regression_tests=(_t("test_t027_t029_surfaces_and_cones"),))
+@task("T029", changed_files=(MODULE, SURFACES, DOC),
+      regression_tests=_tests("test_t027_t029_surfaces_and_cones", "test_regeneration_is_within_tolerance"))
 def detect_cone_singularities(ctx):
     examples = example_surfaces()
     rows, defects, commutator_mismatch = {}, 0, 0
@@ -1441,7 +1473,8 @@ def detect_cone_singularities(ctx):
 
 
 # ================================================================ T030
-@task("T030", changed_files=(MODULE, DISCRETE, DOC), regression_tests=(_t("test_t030_grid_metrication"),))
+@task("T030", changed_files=(MODULE, DISCRETE, DOC),
+      regression_tests=_tests("test_t030_grid_metrication"))
 def smooth_versus_discrete(ctx):
     scipy_version = _version("scipy")
     rows = grid.refinement_study(with_scipy=bool(scipy_version))
@@ -1603,12 +1636,14 @@ def sympy_threshold(delta):
     return Fraction(int(sympy.numer(solution)), int(sympy.denom(solution)))
 
 
-@task("T031", changed_files=(MODULE, LATTICE, DOC), regression_tests=(_t("test_t031_route_switch"),))
+@task("T031", changed_files=(MODULE, LATTICE, DOC),
+      regression_tests=_tests("test_t031_route_switch", "test_regeneration_is_within_tolerance"))
 def metric_perturbation_routes(ctx):
     study = perturbation_study()
     ctx.artifact_json("metric-perturbation.json", study)
     ctx.artifact_text("route-switch.svg", svg.line_plot(
-        [("shortest-route heading (deg)", [s["eps"] for s in study["sweep"]], [s["heading_deg"] for s in study["sweep"]])],
+        [("shortest-route heading (deg)", [s["eps"] for s in study["sweep"]],
+          [s["heading_deg"] for s in study["sweep"]])],
         title="Shortest route heading under g = I + eps h", xlabel="eps", ylabel="heading (deg)", markers=False))
     eps_star = Fraction(study["eps_star"])
     scaling_error = sum(Fraction(r["ratio"]) != 4 for r in study["scaling"])
@@ -1643,8 +1678,8 @@ def metric_perturbation_routes(ctx):
     findings = [
         finding("The shortest route switches at eps* = 4 delta, which vanishes as the unperturbed gap vanishes",
                 "mathematical", {"eps_star": study["eps_star"], "scaling": study["scaling"]}, basis, tolerance=EXACT),
-        finding("A 0.4% metric perturbation turns the shortest-route heading by about 127 deg while its length "
-                "changes continuously", "numerical",
+        finding("A metric perturbation just above eps* = 1/250 (0.4%) turns the shortest-route heading by about "
+                "127 deg while the minimal length changes continuously", "numerical",
                 {"heading_jump_deg": study["heading_jump_deg"], "length_jump": study["length_jump"]},
                 {"checks": [_check("heading jump (deg)", study["heading_jump_deg"], 90.0, "ge", kind="invariant"),
                             _check("length change across the switch", study["length_jump"], 1e-3, "le",
@@ -1688,7 +1723,8 @@ def counterexample_library():
         "surface": BUMP.describe(), "p": [-2.5, 0.0], "q": [2.5, 0.0], "shortest": bump[0],
         "alternative": top, "top_heading": top["heading"], "routes": len(bump)}
     delta = 0.05
-    witnesses["sphere-near-antipodal"] = {"separation": math.pi - delta, "routes": routes.sphere_route_pair(math.pi - delta),
+    witnesses["sphere-near-antipodal"] = {"separation": math.pi - delta,
+                                          "routes": routes.sphere_route_pair(math.pi - delta),
                                           "transfer": routes.sphere_transfer_check(math.pi - delta)}
     witnesses["saddle-unique-route"] = {"surface": SADDLE.describe(), "p": [-1.5, -0.5], "q": [1.5, 0.8],
                                         "routes": saddle}
@@ -1719,7 +1755,8 @@ def _brief(route):
             "focus_margin": route["focus_margin"], "margin_lower_bound": route["margin_lower_bound"]}
 
 
-@task("T032", changed_files=(MODULE, ROUTES, DOC), regression_tests=(_t("test_t032_counterexample_library"),))
+@task("T032", changed_files=(MODULE, ROUTES, DOC),
+      regression_tests=_tests("test_t032_counterexample_library"))
 def shortest_is_not_safest(ctx):
     lib = counterexample_library()
     ctx.artifact_json("counterexample-library.json", lib)

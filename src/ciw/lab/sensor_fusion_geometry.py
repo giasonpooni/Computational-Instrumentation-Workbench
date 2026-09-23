@@ -411,9 +411,9 @@ def jacobi_study(seed: int = T064_SEED) -> dict:
             "monte_carlo_geodesics": MC_GEODESICS, "sweep_samples": SWEEP_SAMPLES}
 
 
-@task("T064", changed_files=files("sensor_fusion_geometry") + ("src/ciw/lab/jacobi.py", "src/ciw/lab/integrators.py"),
-      regression_tests=(f"{TESTS}::test_jacobi_transfer_covariance_collapse_and_breakdown",
-                        f"{TESTS}::test_section_reports_labels_and_states"))
+@task("T064", changed_files=files("sensor_fusion_geometry"), regression_tests=(
+    f"{TESTS}::test_jacobi_transfer_covariance_collapse_and_breakdown",
+    f"{TESTS}::test_section_reports_labels_and_states"))
 def jacobi_transfer_covariance(ctx):
     study = ctx.memo("sensor_fusion.jacobi", jacobi_study)
     sphere, hyper = study["cases"]["sphere"], study["cases"]["hyperbolic"]
@@ -505,7 +505,8 @@ def jacobi_transfer_covariance(ctx):
                           max(sphere["closed_form_error"], hyper["closed_form_error"]), 1e-6)]},
                 tolerance=TOL_MC),
         finding("The heading standard deviation at which the first-order variance is 10% too large is about "
-                "ten times smaller on the hyperbolic plane at s = 3 than on the sphere near its conjugate point",
+                "ten times smaller on the hyperbolic plane at s = 3 than on the sphere near its conjugate point "
+                "(s = 0.9 pi)",
                 "numerical", breakdown,
                 {**generator_basis(seed), "checks": [
                     check("analytic", "hyperbolic breakdown sigma at the 10% level", breakdown["hyperbolic"] or 1.0,

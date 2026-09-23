@@ -743,8 +743,8 @@ def typed_admission(ctx):
     ]
     fields = {
         "hypothesis": "Keeping observations, candidate states and admitted states as separate types, with a single "
-                      "explicit gate whose every check is load-bearing, prevents a candidate from becoming state "
-                      "by accident, tampering or omission.",
+                      "explicit gate whose every check is load-bearing, guards against a candidate becoming state "
+                      "by accident, naive tampering or omission.",
         "mathematical_model": "Admission = ordered conjunction of declared checks (declared, writable, typed, "
                               "finite, covariance, integrity, provenance, frame, fresh, track, uncertainty, "
                               "innovation, calibration); fail closed on any exception. Mutation m_i removes check i.",

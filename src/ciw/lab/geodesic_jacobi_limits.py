@@ -132,6 +132,10 @@ def _torus_summary(family):
 def near_focus_counterexamples(ctx):
     equator, generic = torus_family(ctx, "equator"), torus_family(ctx, "generic")
     eq, gen = _torus_summary(equator), _torus_summary(generic)
+    # Grid check on the smallest separation: the same equator run on a grid with half the steps.
+    coarse = core.separation_family(Torus(2.0, 1.0), *TORUS_PATHS["equator"], equator["s_star"] * 290 / 200, 290,
+                                    (EPS[0],))
+    grid_difference = abs(coarse["runs"][EPS[0]]["chord"][200] / eq["chord_at_s_star"][0] - 1.0)
     torus = Torus(2.0, 1.0)
     analytic_s_star = math.pi * math.sqrt(torus.minor * (torus.major + torus.minor))
 
@@ -202,7 +206,7 @@ def near_focus_counterexamples(ctx):
     findings = [
         finding("On the torus outer equator the separation at the conjugate point scales as eps^3, not eps^2",
                 "numerical", {"chord_exponent": eq["chord_exponent"], "signed_exponent": eq["signed_exponent"],
-                              "chord_at_s_star": eq["chord_at_s_star"]},
+                              "chord_at_s_star": eq["chord_at_s_star"], "grid_relative_difference": grid_difference},
                 {"generator": _gen("torus-equator-family", eps=list(EPS), steps=TORUS_STEPS),
                  "derivation": _derivation("t010-near-focus-and-post-focus-counterexamples"),
                  "checks": [core.check("analytic", "numerical conjugate point minus pi sqrt(r (R + r))",
@@ -210,7 +214,9 @@ def near_focus_counterexamples(ctx):
                             core.check("analytic", "first-order prediction |eps j(s*)| (vanishes at s*)",
                                        eq["first_order_at_s_star"], 1e-9),
                             core.check("self_convergence", "fitted chord exponent minus 3 (reflection symmetry)",
-                                       eq["chord_exponent"] - 3.0, 0.05)]},
+                                       eq["chord_exponent"] - 3.0, 0.05),
+                            core.check("self_convergence", "smallest chord at s*: 200- versus 400-step grid "
+                                       "(relative)", grid_difference, 1e-3)]},
                 tolerance={"abs": 1e-10, "rel": 1e-4},
                 counterexample={"statement": "The separation at a conjugate point is of exact order eps^2",
                                 "witness": {"surface": "Torus(2, 1)", "path": "outer equator, heading 0",
@@ -328,9 +334,10 @@ def near_focus_counterexamples(ctx):
                           f"chord(s*)/chord(s*/2) = {_g(monotone_ratio, 3)}; sphere relative error uniform "
                           f"{_g(uniform, 4)} (max deviation {_g(sphere_uniform_dev, 2)}); sphere combined perturbation "
                           f"chord(3pi/4) = {_g(mixed_coefficient, 5)} eps^2."),
-        uncertainty=("RK4 grid errors in the separations are below 1e-11 (the ratio of separations at two grid "
-                     "resolutions agrees to that level); exponents are least-squares fits over eps in "
-                     "[0.005, 0.04] and include higher-order terms (few 1e-2 for the generic path)."),
+        uncertainty=(f"Halving the grid changes the smallest separation (equator, eps = 0.005, 8.5e-8) by a relative "
+                     f"{_g(grid_difference, 2)}, so the 400-step values are accurate to about a sixteenth of that; "
+                     "exponents are least-squares fits over eps in [0.005, 0.04] and include higher-order terms "
+                     "(a few 1e-2 for the generic path)."),
         failure_modes_checked=["numerical conjugate point versus pi sqrt(3) on the equator",
                                "first-order prediction at s* is at integrator noise level, not zero by construction",
                                "sphere numerical separations versus exact great circles at every node",
@@ -558,7 +565,7 @@ T012_BASIS_ANGLES = (0.3, 1.1, 2.5, -2.0)
 T012_STEPS = 64
 
 
-def _state_with_tangent(surface, u0, tangent):
+def _state_with_tangent(u0, tangent):
     return np.concatenate([np.asarray(u0, dtype=float), tangent, [1.0, 0.0, 0.0, 1.0]])
 
 
@@ -589,7 +596,7 @@ def frame_study():
             f2 = -math.sin(beta) * e1 + math.cos(beta) * e2
             local = heading - beta
             tangent = math.cos(local) * f1 + math.sin(local) * f2
-            _, states = integrators.integrate_fixed(jacobi.rhs(surface), _state_with_tangent(surface, u0, tangent),
+            _, states = integrators.integrate_fixed(jacobi.rhs(surface), _state_with_tangent(u0, tangent),
                                                     length, T012_STEPS, "rk4")
             basis_rows.append({"surface": key, "beta": beta,
                                "tangent_difference": float(np.max(np.abs(tangent - reference.states[0, 2:4]))),
@@ -999,8 +1006,8 @@ def reversal_and_truncation(ctx):
                           f"{witness['differing_final_components'] if witness else 0} differing final components "
                           f"(max {_g(witness['max_abs_difference'], 2) if witness else 0}); adaptive restart "
                           f"difference {_g(restart_ratio, 3)} x rtol."),
-        uncertainty=("Orders are least-squares fits over four step sizes; the RK4 return errors stay above 1e-12, "
-                     "far from roundoff. Adaptive ratios depend on the accepted step sequence."),
+        uncertainty=("Orders are least-squares fits over four step sizes; the smallest RK4 return errors (about "
+                     "8e-12) stay far above roundoff. Adaptive ratios depend on the accepted step sequence."),
         failure_modes_checked=["Jacobi derivatives flipped along with velocities (otherwise the Jacobi state does not return)",
                                "roundoff floor kept below the smallest fitted error",
                                "bitwise claims checked with exact equality, not tolerances",
@@ -1620,9 +1627,10 @@ def validity_domains(ctx):
                           f"{_g(min(near.values()), 4)} (C3 relative error {_g(sph_c3, 2)}); hyperbolic eps_max "
                           f"{[round(r['eps_max'], 4) for r in hyp]} (max relative deviation {_g(hyp_eps, 2)}); sphere "
                           f"lateral+heading C2(s0) = {_g(mixed[1.0]['C2'], 4)}; equator max |C2| = {_g(eq_c2, 2)}."),
-        uncertainty=("C2 and C3 absorb higher-order terms from eps up to 0.04 (for the hyperbolic plane at s = 2.5 the "
-                     "eps^5 term changes C3 by about 1-3 percent); eps_max beyond the fitted eps range is an "
-                     "extrapolation of the quadratic model; torus chords carry RK4 errors below 1e-11."),
+        uncertainty=("C2 and C3 absorb higher-order terms from eps up to 0.04 (on the hyperbolic plane the fitted C3 "
+                     "differs from its closed form by up to 0.8 percent at s = 2.5, and the fitted C2 is not exactly "
+                     "zero); eps_max beyond the fitted eps range is an extrapolation of the quadratic model; torus "
+                     "chords carry RK4 errors below 1e-11."),
         failure_modes_checked=["fitted C2 compared with its analytic zero on isotropic surfaces",
                                "predicted boundary probed by new integrations on both sides",
                                "exact first-order zeros handled (eps_max = 0 when j = 0)",
@@ -1640,21 +1648,40 @@ def validity_domains(ctx):
 T018_LENGTH = 2.0
 T018_STEPS = (4, 8, 16, 32, 64, 128)
 T018_METHODS = ("euler", "midpoint", "rk4")
-RESOLVED = 10.0   # curvature signal at least ten times the integrator error
+RESOLVED = 10.0          # curvature signal at least ten times the integrator error
+ROUNDOFF_SIGNAL = 1e-9   # signals below this are within ~1e6 ulps of L = 2 and limited by roundoff
 
 
 def _t018_cases():
     """(key, surface, start, heading, constant curvature along the path or None)."""
+    sphere_start, sphere_heading = SPHERE_START
     return (("plane", Plane(), (0.3, -0.2), 0.7, 0.0),
             ("cylinder", Cylinder(1.0), (0.2, 0.1), 0.6, 0.0),
-            ("sphere R=1", Sphere(1.0), SPHERE_START[0], SPHERE_START[1], 1.0),
-            ("sphere R=10", Sphere(10.0), SPHERE_START[0], SPHERE_START[1], 0.01),
+            ("sphere R=1", Sphere(1.0), sphere_start, sphere_heading, 1.0),
+            ("sphere R=10", Sphere(10.0), sphere_start, sphere_heading, 1e-2),
+            ("sphere R=100", Sphere(100.0), sphere_start, sphere_heading, 1e-4),
+            ("sphere R=1e4", Sphere(1e4), sphere_start, sphere_heading, 1e-8),
+            ("sphere R=1e7", Sphere(1e7), sphere_start, sphere_heading, 1e-14),
+            ("sphere R=1e8", Sphere(1e8), sphere_start, sphere_heading, 1e-16),
             ("torus R=2", Torus(2.0, 1.0), (0.0, 0.5), 0.7, None),
             ("torus R=64 equator", Torus(64.0, 1.0), (0.0, 0.0), 0.0, 1.0 / 65.0),
             ("saddle c=1", Saddle(1.0), (0.1, -0.2), 0.8, None),
             ("bump h=0.5", GaussianBump(0.5, 1.0), (-1.2, 0.3), 0.2, None),
             ("bump h=0.05", GaussianBump(0.05, 1.0), (-1.2, 0.3), 0.2, None),
             ("hyperbolic k=1", HyperbolicPlane(1.0), (0.0, 1.0), 0.6, -1.0))
+
+
+def flat_deviation(curvature, length):
+    """j_head(L) - L for constant K, evaluated without cancellation (series for small sqrt|K| L)."""
+    if curvature == 0.0:
+        return 0.0
+    w = math.sqrt(abs(curvature))
+    x = w * length
+    if x < 1e-2:
+        # x - sin x = x^3/6 - x^5/120 + x^7/5040 - ...; sinh x - x has the same terms with + signs.
+        sign = -1.0 if curvature > 0 else 1.0
+        return sign * (x ** 3 / 6 + sign * x ** 5 / 120 + x ** 7 / 5040) / w
+    return (math.sin(x) if curvature > 0 else math.sinh(x)) / w - length
 
 
 def _scipy_reference(surface, u0, heading, length):
@@ -1675,88 +1702,126 @@ def resolvability_study():
     rows = []
     for key, surface, u0, heading, curvature in _t018_cases():
         if curvature is not None:
-            reference = float(jacobi.constant_curvature(curvature, [T018_LENGTH])[2][0])
-            spread, kind = 0.0, "analytic"
+            true_deviation, spread, kind = flat_deviation(curvature, T018_LENGTH), 0.0, "analytic"
         else:
             fine = jacobi.transfer(surface, u0, heading, T018_LENGTH, rtol=1e-12, atol=1e-14)
             coarse = jacobi.transfer(surface, u0, heading, T018_LENGTH, rtol=1e-11, atol=1e-13)
-            reference, kind = float(fine.states[-1, 6]), "high_precision"
-            spread = abs(reference - float(coarse.states[-1, 6]))
-        signal = abs(reference - T018_LENGTH)
+            true_deviation, kind = float(fine.states[-1, 6]) - T018_LENGTH, "high_precision"
+            spread = abs(float(fine.states[-1, 6]) - float(coarse.states[-1, 6]))
+        signal = abs(true_deviation)
         methods = {}
         for method in T018_METHODS:
-            errors = []
+            errors, computed = [], []
             for steps in T018_STEPS:
                 run = jacobi.transfer(surface, u0, heading, T018_LENGTH, steps=steps, method=method)
-                errors.append(abs(float(run.states[-1, 6]) - reference))
+                # j_head(L) is within a factor 2 of L, so this subtraction is exact (Sterbenz).
+                deviation = float(run.states[-1, 6]) - T018_LENGTH
+                computed.append(deviation)
+                errors.append(abs(deviation - true_deviation))
             ratios = [None if e == 0.0 else signal / e for e in errors]
             resolved_from = None
-            for i in range(len(T018_STEPS)):
-                if all(r is None and signal > 0 or (r is not None and r >= RESOLVED) for r in ratios[i:]) and signal > 0:
-                    resolved_from = T018_STEPS[i]
-                    break
-            methods[method] = {"errors": errors, "ratios": ratios, "resolved_from_steps": resolved_from}
-        rows.append({"surface": key, "reference_kind": kind, "reference_j_head": reference, "reference_spread": spread,
-                     "curvature_signal": signal, "flat_prediction_K_L3_over_6": None if curvature is None
-                     else abs(curvature) * T018_LENGTH ** 3 / 6, "methods": methods,
-                     "scipy": _scipy_reference(surface, u0, heading, T018_LENGTH) if curvature is None else None})
+            if signal > 0:
+                for i in range(len(T018_STEPS)):
+                    if all(r is None or r >= RESOLVED for r in ratios[i:]):
+                        resolved_from = T018_STEPS[i]
+                        break
+            methods[method] = {"computed_deviation": computed, "errors": errors, "ratios": ratios,
+                               "resolved_from_steps": resolved_from}
+        rows.append({"surface": key, "curvature": curvature, "reference_kind": kind, "true_deviation": true_deviation,
+                     "reference_spread": spread, "curvature_signal": signal, "methods": methods,
+                     "scipy": _scipy_reference(surface, u0, heading, T018_LENGTH) if curvature is None else None,
+                     "reference_j_head": T018_LENGTH + true_deviation})
     return rows
 
 
 @task("T018", changed_files=CHANGED, regression_tests=(f"{TESTS}::test_t018_resolvability_report",))
 def curvature_versus_integrator_error(ctx):
     rows = ctx.memo("gjl-resolvability", resolvability_study)
+    by_name = {r["surface"]: r for r in rows}
     ctx.artifact_json("resolvability.json", core.jsonable(rows, 12))
-    table = ["| surface | signal |j_head(L) - L| | " + " | ".join(f"{m} N for ratio >= {RESOLVED:g}" for m in T018_METHODS)
-             + " |", "| --- | --- | " + " | ".join("---" for _ in T018_METHODS) + " |"]
+    table = ["| surface | K | signal |j_head(L) - L| | " + " | ".join(f"{m}: ratio at N = 4 / 16 / 128; resolved from N"
+                                                             for m in T018_METHODS) + " |",
+             "| --- | --- | --- | " + " | ".join("---" for _ in T018_METHODS) + " |"]
     for row in rows:
-        cells = [str(row["methods"][m]["resolved_from_steps"] or ("no signal" if row["curvature_signal"] == 0
-                                                                   else f"> {T018_STEPS[-1]}")) for m in T018_METHODS]
-        table.append(f"| {row['surface']} | {_g(row['curvature_signal'], 4)} | " + " | ".join(cells) + " |")
-    ctx.artifact_text("resolvability.md", "# Curvature signal versus integrator error (L = 2)\n\n" + "\n".join(table) + "\n")
+        cells = []
+        for m in T018_METHODS:
+            ratios = row["methods"][m]["ratios"]
+            shown = " / ".join("-" if ratios[T018_STEPS.index(n)] is None else _g(ratios[T018_STEPS.index(n)], 3)
+                               for n in (4, 16, 128))
+            resolved = row["methods"][m]["resolved_from_steps"]
+            cells.append(f"{shown}; {resolved if resolved else ('no signal' if row['curvature_signal'] == 0 else 'never')}")
+        curvature = "varies" if row["curvature"] is None else _g(row["curvature"], 3)
+        table.append(f"| {row['surface']} | {curvature} | {_g(row['curvature_signal'], 4)} | " + " | ".join(cells) + " |")
+    ctx.artifact_text("resolvability.md", "# Curvature signal versus integrator error (L = 2)\n\n"
+                      f"Ratio = signal / |computed - true deviation|; resolved when >= {RESOLVED:g} for every finer step.\n\n"
+                      + "\n".join(table) + "\n")
     curved = [r for r in rows if r["curvature_signal"] > 0]
     ctx.artifact_text("resolvability-rk4.svg", svg.line_plot(
-        [(r["surface"], list(T018_STEPS), [v if v is not None else float("nan") for v in r["methods"]["rk4"]["ratios"]])
-         for r in curved], title="RK4 resolvability ratio |j_head(L) - L| / error", xlabel="steps N (h = 2/N)",
+        [(r["surface"], list(T018_STEPS), [math.nan if v is None else v for v in r["methods"]["rk4"]["ratios"]])
+         for r in curved],
+        title="RK4 resolvability ratio (signal / error), L = 2", xlabel="steps N (h = 2/N)",
         ylabel="signal / error", logx=True, logy=True))
     ctx.artifact_text("resolvability-euler.svg", svg.line_plot(
-        [(r["surface"], list(T018_STEPS), r["methods"]["euler"]["ratios"]) for r in curved],
-        title="Euler resolvability ratio", xlabel="steps N (h = 2/N)", ylabel="signal / error", logx=True, logy=True))
+        [(r["surface"], list(T018_STEPS), [math.nan if v is None else v for v in r["methods"]["euler"]["ratios"]])
+         for r in curved],
+        title="Euler resolvability ratio (signal / error), L = 2", xlabel="steps N (h = 2/N)",
+        ylabel="signal / error", logx=True, logy=True))
+    # Signals within a few thousand ulps of L are limited by roundoff, not by the step.
+    truncation = [r for r in curved if r["curvature_signal"] >= ROUNDOFF_SIGNAL]
     at16 = T018_STEPS.index(16)
-    rk4_min16 = min(r["methods"]["rk4"]["ratios"][at16] for r in curved)
-    weakest = min(curved, key=lambda r: r["curvature_signal"])
-    unresolved = [{"surface": r["surface"], "method": m, "steps": n, "ratio": ratio}
-                  for r in curved for m in T018_METHODS
-                  for n, ratio in zip(T018_STEPS, r["methods"][m]["ratios"]) if ratio is not None and ratio < 1.0]
-    euler_unresolved = [u for u in unresolved if u["method"] == "euler"]
-    witness = min(euler_unresolved, key=lambda u: u["ratio"]) if euler_unresolved else None
-    sphere = next(r for r in rows if r["surface"] == "sphere R=1")
+    rk4_min16 = min(r["methods"]["rk4"]["ratios"][at16] for r in truncation)
+    hardest = min(truncation, key=lambda r: r["methods"]["rk4"]["ratios"][at16])
+    weakest = min(truncation, key=lambda r: r["curvature_signal"])
+    weak_pair = {m: by_name["sphere R=1e4"]["methods"][m]["ratios"][at16] / by_name["sphere R=10"]["methods"][m]["ratios"][at16]
+                 for m in ("euler", "midpoint")}
+    rk4_gain = by_name["sphere R=100"]["methods"]["rk4"]["ratios"][at16] / by_name["sphere R=10"]["methods"]["rk4"]["ratios"][at16]
+    floor = by_name["sphere R=1e8"]
+    floor_ratio = max(v for m in T018_METHODS for v in floor["methods"][m]["ratios"] if v is not None)
+    floor_nonzero = sum(1 for m in T018_METHODS for v in floor["methods"][m]["computed_deviation"] if v != 0.0)
+    marginal = by_name["sphere R=1e7"]["methods"]["rk4"]["ratios"]
+    sphere = by_name["sphere R=1"]
     orders = {m: -core.loglog_slope(T018_STEPS[2:], sphere["methods"][m]["errors"][2:]) for m in T018_METHODS}
     flat = [r for r in rows if r["curvature_signal"] == 0.0]
     flat_error = max(max(r["methods"][m]["errors"]) for r in flat for m in T018_METHODS)
     spread = max(r["reference_spread"] for r in rows)
-    scipy_rows = [r["scipy"] for r in rows if r["scipy"] is not None]
-    scipy_gap = max((abs(r["scipy"]["j_head"] - r["reference_j_head"]) for r in rows if r["scipy"]), default=None)
+    scipy_rows = [r for r in rows if r["scipy"] is not None]
+    scipy_gap = max((abs(r["scipy"]["j_head"] - r["reference_j_head"]) for r in scipy_rows), default=None)
     resolved_from = {r["surface"]: {m: r["methods"][m]["resolved_from_steps"] for m in T018_METHODS} for r in curved}
     findings = [
-        finding("RK4 resolves the curvature signal on every curved test surface from N = 16 (h = 1/8)", "numerical",
-                {"min_ratio_rk4_N16": rk4_min16, "weakest_signal_surface": weakest["surface"],
-                 "weakest_signal": weakest["curvature_signal"]},
+        finding("RK4 resolves every truncation-limited curvature signal from N = 16 (h = 1/8)", "numerical",
+                {"min_ratio_rk4_N16": rk4_min16, "min_ratio_surface": hardest["surface"],
+                 "weakest_signal_surface": weakest["surface"], "weakest_signal": weakest["curvature_signal"]},
                 {"generator": _gen("resolvability", steps=list(T018_STEPS), length=T018_LENGTH),
                  "derivation": _derivation("t018-curvature-signal-versus-integrator-error"),
-                 "checks": [core.check("self_convergence", "min over curved surfaces of signal / RK4 error at N = 16",
-                                       rk4_min16, RESOLVED, "ge"),
+                 "checks": [core.check("self_convergence", "min over truncation-limited surfaces of signal / RK4 error "
+                                       "at N = 16", rk4_min16, RESOLVED, "ge"),
                             core.check("high_precision", "max reference spread (rtol 1e-12 vs 1e-11)", spread, 1e-9)]},
-                tolerance={"abs": 1e-9, "rel": 1e-3}),
-        finding("A computed deviation of j_head(L) from L is not by itself a curvature measurement", "numerical",
-                {"unresolved_cases": len(unresolved), "euler_unresolved_cases": len(euler_unresolved),
-                 "worst_euler_ratio": witness["ratio"] if witness else None},
-                {"generator": _gen("resolvability", method="euler"),
-                 "checks": [core.check("invariant", "number of Euler cases with signal / error < 1",
-                                       len(euler_unresolved), 1, "ge")]},
-                tolerance={"abs": 0.0, "rel": 1e-3},
-                counterexample={"statement": "A nonzero computed deviation j_head(L) - L measures the intrinsic "
-                                             "curvature along the path", "witness": witness}),
+                tolerance={"abs": 1e-9, "rel": 0.05}),
+        finding("Weak curvature is not harder to resolve: Euler and midpoint ratios are independent of K",
+                "numerical", {"ratio_K_1e-8_over_K_1e-2_at_N16": weak_pair, "rk4_ratio_K_1e-4_over_K_1e-2_at_N16": rk4_gain},
+                {"generator": _gen("resolvability", surfaces=["sphere R=10", "sphere R=100", "sphere R=1e4"]),
+                 "derivation": _derivation("t018-curvature-signal-versus-integrator-error"),
+                 "checks": [core.check("analytic", f"{m}: ratio(K = 1e-8) / ratio(K = 1e-2) minus 1", v - 1.0, 0.05)
+                            for m, v in weak_pair.items()]
+                 + [core.check("analytic", "RK4 ratio grows like 1/K: ratio(K = 1e-4)/ratio(K = 1e-2) in [50, 200] "
+                               "(distance from 100)", abs(math.log10(rk4_gain) - 2.0), math.log10(2.0), "le")]},
+                tolerance={"abs": 1e-6, "rel": 0.02},
+                counterexample={"statement": "Weaker intrinsic curvature is harder to resolve at a fixed step size",
+                                "witness": {"method_ratios_at_N16": {m: {k: by_name[k]["methods"][m]["ratios"][at16]
+                                                                         for k in ("sphere R=10", "sphere R=100",
+                                                                                   "sphere R=1e4")}
+                                                                     for m in T018_METHODS}}}),
+        finding("Below the floating-point resolution of L no step size resolves the curvature signal", "numerical",
+                {"max_ratio_K_1e-16": floor_ratio, "nonzero_computed_deviations_K_1e-16": floor_nonzero},
+                {"generator": _gen("resolvability", surfaces=["sphere R=1e7", "sphere R=1e8"]),
+                 "checks": [core.check("invariant", "max ratio over methods and N for K = 1e-16", floor_ratio, 1.0, "le"),
+                            core.check("exact_arithmetic", "nonzero computed deviations for K = 1e-16", floor_nonzero,
+                                       0.0)]},
+                tolerance={"abs": 1e-12, "rel": 0.0},
+                counterexample={"statement": "Refining the step size always makes a nonzero curvature effect resolvable",
+                                "witness": {"surface": "Sphere(1e8), K = 1e-16", "signal": floor["curvature_signal"],
+                                            "computed_deviation": 0.0, "steps": list(T018_STEPS),
+                                            "rk4_ratios_sphere_1e7": marginal}}),
         finding("Resolvability ratios improve like h^-p with p = 1, 2, 4 (sphere R = 1)", "numerical", orders,
                 {"generator": _gen("resolvability", surface="sphere R=1"),
                  "checks": [core.check("analytic", f"{m} order minus {integrators.ORDERS[m]}",
@@ -1771,32 +1836,45 @@ def curvature_versus_integrator_error(ctx):
     ]
     fields = _fields(
         hypothesis=("A curvature effect in a numerical Jacobi field is meaningful only where it exceeds the integrator "
-                    "error: the deviation |j_head(L) - L| ~ |K| L^3/6 must dominate |j_head,h(L) - j_head(L)| ~ C h^p; "
-                    "weak curvature with low-order methods and coarse steps is not resolvable."),
-        mathematical_model=("Signal S = |j_head(L) - L| (zero exactly on flat surfaces; K L^3/6 for small constant K). "
-                            "Error E(h) = |j_head,h(L) - j_head(L)| ~ C_method h^p, p = 1, 2, 4. Resolvability ratio "
-                            f"S / E; resolved when >= {RESOLVED:g}."),
+                    "error; the working expectation was that weak curvature (small |K| L^3/6) is the hard case for "
+                    "coarse steps and low-order methods."),
+        mathematical_model=("Signal S = |j_head(L) - L| (zero on flat surfaces; |K| L^3/6 for small constant K). "
+                            "Truncation error E(h) ~ C h^p. For j'' + K j = 0 the Euler and midpoint errors are "
+                            "themselves proportional to K (the K-free part j = s is integrated exactly), so S/E is "
+                            "independent of K as K -> 0; the RK4 error enters at O(K^2 h^4), so S/E grows like 1/K. The "
+                            "limit is floating point: when S approaches ulp(L) = 4.4e-16 the computed deviation is "
+                            f"rounded away. Resolved when S/E >= {RESOLVED:g} for every finer step."),
         input_data=[f"{len(rows)} declared paths of length {T018_LENGTH}: " + ", ".join(r["surface"] for r in rows),
                     f"Euler, midpoint, RK4 with N = {list(T018_STEPS)}",
-                    "References: closed forms for constant curvature, DP45 rtol 1e-12 otherwise"],
-        observation_model="j_head(L) of the joint geodesic/Jacobi integration; no renormalization.",
-        expected_invariant="Flat surfaces: S = E = 0; curved surfaces: ratio grows like h^-p.",
-        experiment=("Integrate each path with each method and step count, compare j_head(L) with its reference, form "
-                    "ratios and the smallest N from which every finer step keeps the ratio above the threshold."),
-        numerical_result=(f"Min RK4 ratio at N = 16: {_g(rk4_min16, 4)} (weakest signal {weakest['surface']}, "
-                          f"S = {_g(weakest['curvature_signal'], 3)}); {len(unresolved)} (method, N) cases with ratio "
-                          f"< 1, {len(euler_unresolved)} of them Euler, worst {witness['surface'] if witness else None} "
-                          f"N = {witness['steps'] if witness else None} ratio {_g(witness['ratio'], 3) if witness else None}; "
+                    "References: cancellation-free closed forms for constant curvature, DP45 rtol 1e-12 otherwise",
+                    f"Signals below {ROUNDOFF_SIGNAL:g} are classed as roundoff-limited (declared)"],
+        observation_model=("Computed deviation j_head,h(L) - L (an exact floating-point subtraction) against the true "
+                           "deviation; no renormalization."),
+        expected_invariant="Flat surfaces: S = E = 0; truncation-limited curved surfaces: ratio grows like h^-p.",
+        experiment=("Integrate each path with each method and step count; form ratios; find the smallest N from which "
+                    "every finer step keeps the ratio above the threshold; compare curvature scales 1e-2 ... 1e-16."),
+        numerical_result=(f"Min RK4 ratio at N = 16 over truncation-limited surfaces {_g(rk4_min16, 4)} "
+                          f"({hardest['surface']}); the weakest truncation-limited signal ({weakest['surface']}, "
+                          f"S = {_g(weakest['curvature_signal'], 3)}) is resolved from N = "
+                          f"{weakest['methods']['rk4']['resolved_from_steps']} with RK4; ratio(K = 1e-8)/ratio(K = 1e-2) "
+                          f"at N = 16: Euler {_g(weak_pair['euler'], 4)}, midpoint {_g(weak_pair['midpoint'], 4)}; RK4 "
+                          f"ratio gain from K = 1e-2 to 1e-4: {_g(rk4_gain, 3)}; K = 1e-16: computed deviation 0 for all "
+                          f"runs (max ratio {_g(floor_ratio, 3)}); K = 1e-14 RK4 ratios {[round(v, 1) for v in marginal]}; "
                           f"orders {', '.join(f'{m} {_g(v, 3)}' for m, v in orders.items())}; flat max |j - L| "
-                          f"{_g(flat_error, 2)}; resolved-from N by surface {resolved_from}; scipy DOP853 cross-check "
+                          f"{_g(flat_error, 2)}; resolved-from N {resolved_from}; scipy DOP853 cross-check "
                           + (f"max |j_scipy - j_ref| = {_g(scipy_gap, 2)} over {len(scipy_rows)} references (artifact only)"
                              if scipy_rows else "not run (scipy unavailable)") + "."),
-        uncertainty=(f"Reference spread up to {_g(spread, 2)}; ratios below about 1e9 are unaffected by it. The "
-                     "threshold 10 is a declared convention, not a derived requirement."),
+        uncertainty=(f"Reference spread up to {_g(spread, 2)}; ratios near the roundoff floor (K = 1e-14) depend on "
+                     "the rounding sequence and are reported in the artifacts only, not as regression values. The "
+                     "threshold 10 is a declared convention."),
         failure_modes_checked=["exact zero errors on flat surfaces kept as 'no signal', not as infinite ratios",
                                "resolution required to persist for every finer step, not just one lucky step",
-                               "adaptive references checked by tightening rtol"],
+                               "true deviation computed without cancellation (series for small sqrt|K| L)",
+                               "adaptive references checked by tightening rtol",
+                               "the a priori expectation (weak curvature is harder) tested and refuted"],
         unresolved_assumptions=["Only j_head(L) is compared; the lateral column and conjugate-point locations are not",
+                                "Variable-curvature paths add geodesic-position error to K(gamma(s)); its K-scaling is "
+                                "not separated here",
                                 "Measurement noise of any real observation is absent; sensor-level resolvability is "
                                 "not established"],
         recommended_next_task="T005 (Jacobi separation law) with resolvability-aware step selection, and T046",

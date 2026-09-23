@@ -77,10 +77,21 @@ def test_solver_task_report(reports):
     scipy_present = S.optional_version("scipy") is not None
     assert labels["Heap Dijkstra edge-graph distances agree with an independent shortest-path implementation"] == (
         "independently_verified" if scipy_present else "numerically_verified")
-    assert labels["Straightest geodesics on sheared planar meshes coincide with straight lines"] == "numerically_verified"
+    plane_claim = "Straightest geodesics on sheared planar meshes coincide with straight lines"
+    assert labels[plane_claim] == "numerically_verified"
     physical = [f for f in report["findings"] if f["domain"] == "physical"]
     assert physical and physical[0]["evidence_status"] == "not_established"
     assert any(a["path"].endswith("sphere-traces.json") for a in report["generated_artifacts"])
+
+
+def test_dijkstra_check_falls_back_without_scipy(monkeypatch, tmp_path):
+    monkeypatch.setattr(S, "optional_version", lambda name: None)
+    result = S.dijkstra_independent(level=1)
+    assert "scipy_max_abs" not in result and result["floyd_max_abs"] <= 1e-12
+    queue = {t["id"]: t for t in load_queue()["tasks"]}
+    report = runner.run_task(queue["T038"], _REGISTRY["T038"], runner.Context(tmp_path), {})
+    claim = "Heap Dijkstra edge-graph distances agree with an independent shortest-path implementation"
+    assert _labels(validate_report(report))[claim] == "numerically_verified"
 
 
 # ---------------------------------------------------------------- T039
@@ -157,11 +168,13 @@ def test_quality_task_report(reports):
     report = reports["T041"]
     _completed_with_unestablished_physics(report)
     labels = _labels(report)
-    assert labels["Spearman rank correlation of minimum angle with each error over valid 642-vertex meshes"] == "synthetic"
+    spearman = "Spearman rank correlation of minimum angle with each error over valid 642-vertex meshes"
+    assert labels[spearman] == "synthetic"  # descriptive statistic without a reference check
     counterexamples = [f for f in report["findings"] if "counterexample" in f]
     assert len(counterexamples) >= 5
     folded = _value(report, "Jittered meshes with folded faces")
-    assert all(c["observed_refusal"] == "folded_face" for c in folded["basis"]["checks"] if c["reference_kind"] == "refusal")
+    refusals = [c for c in folded["basis"]["checks"] if c["reference_kind"] == "refusal"]
+    assert refusals and all(c["observed_refusal"] == "folded_face" for c in refusals)
     authority = [f for f in report["findings"] if f["domain"] == "production_acceptance"]
     assert authority and authority[0]["evidence_status"] == "not_established"
 

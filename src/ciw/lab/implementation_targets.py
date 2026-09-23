@@ -101,30 +101,29 @@ def kernel_profile() -> dict:
 
     diffs = {"geodesic_rhs": 0.0, "jacobi_rhs": 0.0, "rk4_step": 0.0, "jacobi_transfer": 0.0, "kalman_update": 0.0}
     counts, count_sets = {}, {name: [] for name in diffs}
+
+    def record(name, counted, reference):
+        out, tally = counted
+        diffs[name] = max(diffs[name], float(np.max(np.abs(kernels.values(out) - reference))))
+        count_sets[name].append(tally)
+
     for trial in range(2):
         y = np.concatenate([rng.uniform(-2.0, 2.0, 2), rng.uniform(-1.0, 1.0, 2)])
         y8 = np.concatenate([y, rng.uniform(-1.0, 1.0, 4)])
-        out, c = kernels.count_ops(kernels.torus_geodesic_rhs, scal(y))
-        diffs["geodesic_rhs"] = max(diffs["geodesic_rhs"], float(np.max(np.abs(kernels.values(out) - torus.geodesic_rhs(y)))))
-        count_sets["geodesic_rhs"].append(c)
-        out, c = kernels.count_ops(kernels.torus_jacobi_rhs, scal(y8))
-        diffs["jacobi_rhs"] = max(diffs["jacobi_rhs"], float(np.max(np.abs(kernels.values(out) - f(y8)))))
-        count_sets["jacobi_rhs"].append(c)
-        out, c = kernels.count_ops(kernels.rk4_step, kernels.torus_jacobi_rhs, scal(y8), S(0.01))
-        diffs["rk4_step"] = max(diffs["rk4_step"], float(np.max(np.abs(kernels.values(out) - integrators.step_rk4(f, y8, 0.01)))))
-        count_sets["rk4_step"].append(c)
-        out, c = kernels.count_ops(kernels.transfer, kernels.torus_jacobi_rhs, scal(y8), 1.0, 10)
-        _, states = integrators.integrate_fixed(f, y8, 1.0, 10)
-        diffs["jacobi_transfer"] = max(diffs["jacobi_transfer"], float(np.max(np.abs(kernels.values(out) - states[-1]))))
-        count_sets["jacobi_transfer"].append(c)
+        record("geodesic_rhs", kernels.count_ops(kernels.torus_geodesic_rhs, scal(y)), torus.geodesic_rhs(y))
+        record("jacobi_rhs", kernels.count_ops(kernels.torus_jacobi_rhs, scal(y8)), f(y8))
+        record("rk4_step", kernels.count_ops(kernels.rk4_step, kernels.torus_jacobi_rhs, scal(y8), S(0.01)),
+               integrators.step_rk4(f, y8, 0.01))
+        record("jacobi_transfer", kernels.count_ops(kernels.transfer, kernels.torus_jacobi_rhs, scal(y8), 1.0, 10),
+               integrators.integrate_fixed(f, y8, 1.0, 10)[1][-1])
         x, P, z, H, R = kernels.kalman_case(seed=142 + trial)
         x_ref, P_ref = kernels.kalman_update(x, P, z, H, R)
-        (x_s, P_s), c = kernels.count_ops(kernels.kalman_update_scalar, scal(x), [scal(r) for r in P], scal(z),
-                                          [scal(r) for r in H], [scal(r) for r in R])
+        (x_s, P_s), tally = kernels.count_ops(kernels.kalman_update_scalar, scal(x), [scal(r) for r in P], scal(z),
+                                              [scal(r) for r in H], [scal(r) for r in R])
         P_s = np.array([[v.v for v in row] for row in P_s])
-        diffs["kalman_update"] = max(diffs["kalman_update"], float(np.max(np.abs(kernels.values(x_s) - x_ref))),
-                                     float(np.max(np.abs(P_s - P_ref) / np.max(np.abs(P_ref)))))
-        count_sets["kalman_update"].append(c)
+        # The covariance is compared relative to its largest entry.
+        record("kalman_update", (x_s, tally), x_ref)
+        diffs["kalman_update"] = max(diffs["kalman_update"], float(np.max(np.abs(P_s - P_ref)) / np.max(np.abs(P_ref))))
     for name, sets in count_sets.items():
         counts[name] = sets[0]
     count_drift = sum(sets[0] != sets[1] for sets in count_sets.values())
@@ -144,7 +143,8 @@ def kernel_profile() -> dict:
     per_step = (transfer_d[20] - transfer_d[10]) // 10
     dispatches = {"geodesic_rhs": measured(torus.geodesic_rhs, y), "jacobi_rhs": measured(f, y8),
                   "rk4_step": measured(integrators.step_rk4, f, y8, 0.01), "jacobi_transfer_per_step": per_step,
-                  "jacobi_transfer_fixed": transfer_d[10] - 10 * per_step, "kalman_update": measured(kernels.kalman_update, x, P, z, H, R)}
+                  "jacobi_transfer_fixed": transfer_d[10] - 10 * per_step,
+                  "kalman_update": measured(kernels.kalman_update, x, P, z, H, R)}
     linearity = (transfer_d[30] - transfer_d[20]) - (transfer_d[20] - transfer_d[10])
     return {"counts": counts, "agreement": diffs, "count_drift": count_drift, "rk4_formula": rk4_formula,
             "transfer_formula": transfer_formula, "dispatches": dispatches, "transfer_dispatches": transfer_d,
@@ -176,7 +176,8 @@ def kernel_ranking(profile: dict) -> list:
         {"kernel": "rk4_step alone (right-hand side stays in Python)", "calls_per_experiment": REFERENCE_STEPS,
          "flops_per_call": kernels.rk4_combination_ops(8), "dispatches_per_call": d["rk4_step"],
          "removable_dispatches": REFERENCE_STEPS * max(0, d["rk4_step"] - 1 - 4 * d["jacobi_rhs"]),
-         "determinism_need": "high", "determinism_note": "stage combination order; negligible alone"},
+         "determinism_need": "high", "determinism_note": "stage combination order; negligible alone",
+         "dispatch_note": "dispatches per call include the four right-hand-side callbacks, which a lone port keeps"},
     ]
     for row in rows:
         row["flops_per_dispatch"] = row["flops_per_call"] / max(row["dispatches_per_call"], 1)
@@ -408,9 +409,9 @@ def python_orchestration(ctx):
     mutation_checks = []
     for name, text, rule in forged:
         rules = {v[0] for v in arch.violations(arch.mutated_scan(scan, name, text)) if v[1] == name}
+        observed = rule if rule in rules else (",".join(sorted(rules)) or None)
         mutation_checks.append({"reference_kind": "refusal", "reference": f"forged {name} ({rule})",
-                                "expected_refusal": rule, "observed_refusal": rule if rule in rules else ",".join(sorted(rules)) or None,
-                                "passed": rule in rules})
+                                "expected_refusal": rule, "observed_refusal": observed, "passed": rule in rules})
     findings = [
         finding("Evidence and identity closure is standard-library Python with no native loading or process spawns",
                 "computational_pipeline", evidence,
@@ -1042,7 +1043,7 @@ def fpga_telemetry(ctx):
                                            producer={"implementation": "ciw.lab.implementation_targets_fpga.crc32"},
                                            checker={"implementation": "zlib.crc32", "revision": zlib.ZLIB_RUNTIME_VERSION})},
                 tolerance=EXACT),
-        finding("Every single-bit error and every 2-32 bit burst in a frame is refused by the decoder", "numerical",
+        finding("Every single-bit error and every sampled 2-32 bit burst in a frame is refused by the decoder", "numerical",
                 {"single_bit": [single, bits], "bursts": [burst_detected, burst_total],
                  "random_multi_bit": [random_detected, random_total]},
                 {"checks": [_check("undetected single-bit errors", bits - single, kind="analytic"),
@@ -1059,15 +1060,16 @@ def fpga_telemetry(ctx):
     ]
     fields = _fields(
         "A read-only frame (header, sequence, timestamp, clock id, raw payload, CRC-32) with a single telemetry frame "
-        "type and no host-to-device field can be decoded safely, and every command or write path is refused.",
+        "type and no host-to-device field lets the host refuse every corrupted frame and every command or write path "
+        "before any payload is used.",
         "Frame = 28-byte big-endian header | 4*c bytes int32 payload | CRC-32/IEEE. CRC-32 detects all single-bit "
         "errors and all bursts of length <= 32 (degree-32 generator with nonzero constant term); other patterns "
         "escape with probability about 2^-32.",
         ["400 PCG64(149) random frames", "500 random messages for CRC comparison", "one 48-byte frame for exhaustive "
          "single-bit, burst and 5000 random corruptions"],
         "Decoder outcomes (accepted record or refusal code); no device was attached.",
-        "Round trip exact; CRC matches zlib and 0xCBF43926; all single-bit and burst<=32 errors refused; command and "
-        "write paths refused; the receiver has no sending method.",
+        "Round trip exact; CRC matches zlib and 0xCBF43926; all single-bit errors and all sampled bursts of 2-32 bits "
+        "refused; command and write paths refused; the receiver has no sending method.",
         "Encode/decode random frames, compare CRC implementations, corrupt a frame exhaustively and at random, forge "
         "command frames and specs.",
         "T152 (drive the decoder with a lossy, jittered stream)",
@@ -1159,7 +1161,8 @@ def bitstream_identity(ctx):
                                decision["observed_refusal"], {"checks": [decision]}, tolerance=EXACT))
     fields = _fields(
         "An identity record over canonical JSON can bind a bitstream's sha256 to its exact toolchain version, "
-        "constraint files and source tree so that any change to any of them is detected.",
+        "constraint files and source tree, so that a change to any of them is detected when the changed artifact is "
+        "checked against the record.",
         "record_sha256 = sha256(E(record without record_sha256)), E = ciw.canonical-json.v1; constraints_sha256 = "
         "sha256(E({file: sha256})); source tree = sha256(E({path: sha256})); toolchain version must match "
         f"{fpga._PINNED_VERSION.pattern}.",
@@ -1176,7 +1179,8 @@ def bitstream_identity(ctx):
         failure_modes_checked=["bitstream bit flip", "truncation", "constraint edit/addition", "source edit",
                                "floating toolchain version", "unrecomputed digest", "missing field", "digest format"],
         unresolved_assumptions=["No real bitstream, toolchain log or device part exists here",
-                                "Toolchain determinism (same inputs -> same bitstream) is not established"])
+                                "Toolchain determinism (same inputs -> same bitstream) is not established",
+                                "Detection of unseen changes relies on sha256 collision resistance"])
     return {"state": "completed", "fields": fields, "findings": findings}
 
 

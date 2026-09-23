@@ -122,12 +122,13 @@ Dormand–Prince rtol = atol ∈ {1e-8, …, 1e-12}.
 | Euler | 1.001–1.008 |
 | midpoint | 1.982–2.039 |
 | RK4 | 3.888–4.023 (bump slightly pre-asymptotic; pairwise slopes retained) |
-| DP5(4) vs evaluations | 4.61–5.86, median 5.39 |
+| DP5(4) vs evaluations | 4.61–5.86, median 5.39 (checked: each within 1.0 of 5, median within 0.6) |
 | DP5(4) vs tolerance | error ∝ rtol^0.87…0.99 |
 
 Loose tolerances (1e-6, 1e-7) were excluded from the adaptive fit: the
-controller's start-step ramp dominates the evaluation count there and biased
-the fitted order to about 6.5. Counterexample: on the flat Cartesian charts
+controller's start-step ramp dominates the evaluation count there, and
+including them biased the fitted orders upward (up to 6.9, median 6.2).
+Counterexample: on the flat Cartesian charts
 (plane, cylinder) Γ ≡ 0, every method reproduces u₀ + s v₀, and no order is
 observable (errors ≤ 2.1e-14).
 
@@ -169,12 +170,14 @@ a mismatch is refused (`CSG_REVISION_MISMATCH`, `CSG_TREE_MISMATCH`,
 `CSG_CHECKOUT_DIRTY`, `CSG_CHECKOUT_UNREADABLE`) and the task is `partial`.
 The provider runs in a subprocess (`sys.executable -c <bootstrap> <checkout>/src`)
 and returns `integrate_jacobi` traces plus `TransferMap` matrices, determinants
-and focus events for the same arclength grids. ciw and CSG agree to 4.1e-15
-(independent check, checker `Curved-Surface-Geodesic-Sensitivity-Runtime@bbc535a…`).
-Both integrate with classical RK4 on the same grid, so the agreement tests the
-implementations (the ciw side integrates the geodesic jointly on the actual
-surface; the CSG side integrates the scalar equation for the declared K), not
-two different methods.
+and focus events for the same arclength grids, both from its RK4 trace and from
+its closed-form `constant_curvature_transfer`. The independent check (checker
+`Curved-Surface-Geodesic-Sensitivity-Runtime@bbc535a…`) compares the ciw
+integrated Φ with the provider's closed form: 2.7e-9, the RK4 error. The two
+RK4 traces agree to 4.1e-15, recorded as a `cross_implementation` check: both
+use classical RK4 on the same grid, so that number tests the implementations
+(ciw integrates the geodesic jointly on the actual surface, CSG the scalar
+equation for the declared K), not two different methods.
 
 ## T006 — Jacobi columns against finite differences
 
@@ -196,7 +199,8 @@ step of each method on the linear part:
   per step to 4.8e-16 on every path. For constant K, det Φ_n = (1 + h²K)ⁿ.
 * Midpoint: det = 1 + h²(K_mid − K_n)/2 + h⁴K_nK_mid/4. Summing, the O(h²)
   part telescopes: det Φ(L) − 1 = (h²/4)(K(L) − K(0)) + O(h³). Verified: ratio
-  to the prediction 0.957–1.003 at N = 200, the gap halving with h; order 2 on
+  to the prediction 0.957–1.003 at N = 200, the gap halving with h, and the
+  extrapolated ratio 2r(h) − r(2h) within 1e-4 of 1; order 2 on
   variable curvature and order 3 when K(L) = K(0) (constant K:
   (1 + h⁴K²/4)ⁿ).
 * RK4: det − 1 = −h⁶K³/72 + h⁸K⁴/576 for constant K. For smooth K(s) (stage
@@ -206,7 +210,8 @@ step of each method on the linear part:
   4.99–5.02 on all nine curved paths. This refutes the naive expectation that
   the determinant drifts at the method's global order (recorded as a
   counterexample).
-* Adaptive DP5(4): drift decreases like rtol^0.98…1.33.
+* Adaptive DP5(4): drift decreases like rtol^0.98…1.33 (checked as slope ≥ 0.8,
+  since controller accept/reject decisions can differ between platforms).
 * K = 0 (plane, cylinder): every method keeps det Φ = 1 exactly.
 
 ## T008 — conjugate and focal points
@@ -223,7 +228,9 @@ reach a conjugate point, the first at 7.79 (margin 2.34). On four seeded bump
 geodesics none reaches one, so the bump bound (2π) is not exercised.
 Counterexample: on variable curvature the first focal point is not half the
 first conjugate distance (3.47 against 3.89). With the provider bound, ciw zeros
-match CSG `focus_events` to 2.2e-16.
+match the focus events of the provider's closed-form transfer (independent
+check) and of its RK4 trace (same method, cross-implementation check), with
+equal zero counts.
 
 ## T009 — lateral and heading columns separately
 

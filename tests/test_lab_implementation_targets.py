@@ -20,8 +20,20 @@ from ciw.lab.report import validate_report
 from ciw.telemetry import canonical as telemetry_canonical
 
 TASKS = {t["id"]: t for t in load_queue()["tasks"]}
-RUST = shutil.which("rustc") is not None
 NOW = "2026-09-23T00:00:00Z"
+
+
+def _rust_available():
+    # Compiled at most once per process; a missing or failing rustc skips the Rust tests.
+    return shutil.which("rustc") is not None and serial.rust_build()["available"]
+
+
+@pytest.fixture(scope="module")
+def rust_probe():
+    if not _rust_available():
+        pytest.skip("Rust probe unavailable: " + serial.rust_build().get("reason", "rustc is not on PATH")
+                    if shutil.which("rustc") else "rustc is not on PATH")
+    return serial.rust_build()
 
 
 def _run(task_id, directory):
@@ -58,14 +70,14 @@ def test_t142_kernel_counts_and_ranking(tmp_path):
     assert findings["Rust ports of the ranked kernels are ready for industrial deployment"]["evidence_status"] == \
         "not_established"
     rust = findings["Rust fused RK4 loop reproduces ciw.lab.jacobi.transfer on the unit sphere"]
-    assert rust["evidence_status"] == ("numerically_verified" if RUST else "not_established")
-    assert report["state"] == ("completed" if RUST else "partial")
+    available = _rust_available()
+    assert rust["evidence_status"] == ("numerically_verified" if available else "not_established")
+    assert report["state"] == ("completed" if available else "partial")
     timings = json.loads((tmp_path / "artifacts" / "T142" / "kernel-timings.json").read_text(encoding="utf-8"))
     assert "seconds_per_call" in timings["timings"]
 
 
-@pytest.mark.skipif(not RUST, reason="rustc is not on PATH")
-def test_rust_fused_sphere_loop():
+def test_rust_fused_sphere_loop(rust_probe):
     result = targets.rust_sphere_agreement(steps=200, length=2.0)
     assert result["max_abs_difference"] <= 1e-11
     assert result["rust_jacobi_error"] <= 1e-7 and result["core_jacobi_error"] <= 1e-7
@@ -148,8 +160,7 @@ def test_t146_python_canonicalizers_and_vectors(tmp_path):
     assert by_name["empty-object"]["sha256"] == "44136fa355b3678a1146ad16f7e8649e94fb4fc21fe77e8310c060f61caaff8a"
 
 
-@pytest.mark.skipif(not RUST, reason="rustc is not on PATH")
-def test_t146_rust_byte_identity():
+def test_t146_rust_byte_identity(rust_probe):
     accepted, invalid = serial.vectors(), serial.invalid_vectors()
     results = serial.rust_canonical([v for _, v in accepted] + [v for _, v, _ in invalid])
     for (name, value), got in zip(accepted, results):
@@ -204,7 +215,8 @@ def test_t149_telemetry_only_frames(tmp_path):
             fpga.decode_frame(forged)
         assert refused.value.code == code
     report, findings = _run("T149", tmp_path)
-    detection = findings["Every single-bit error and every 2-32 bit burst in a frame is refused by the decoder"]["value"]
+    detection = findings["Every single-bit error and every sampled 2-32 bit burst in a frame is refused by the "
+                         "decoder"]["value"]
     assert detection["single_bit"] == [384, 384] and detection["bursts"][0] == detection["bursts"][1]
     assert findings["CIW table-driven CRC-32 agrees with zlib and the catalogue check value"]["evidence_status"] == \
         "independently_verified"

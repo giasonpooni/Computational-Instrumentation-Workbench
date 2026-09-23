@@ -34,8 +34,8 @@ FOLD_COSINE = -0.9            # adjacent unit normals with dot at or below this 
 
 # Named refusal codes in the order the validator reports them.
 MESH_CODES = ("invalid_shape", "empty_mesh", "nonfinite_vertex", "invalid_face_index", "degenerate_face",
-              "non_manifold_edge", "inconsistent_orientation", "non_manifold_vertex", "folded_face", "unreferenced_vertex",
-              "disconnected_components", "open_boundary")
+              "non_manifold_edge", "inconsistent_orientation", "non_manifold_vertex", "folded_face",
+              "unreferenced_vertex", "disconnected_components", "open_boundary")
 TRACE_CODES = ("point_outside_face", "invalid_direction", "boundary_reached", "vertex_hit",
                "step_budget_exceeded")
 QUERY_CODES = ("unreachable_target", "boundary_vertex_curvature")
@@ -531,9 +531,9 @@ def trace(mesh: TriMesh, face: int, point, direction, length: float, *, vertex_t
         points.append(crossing)
         margin = min(margin, s, 1.0 - s)
         if min(s, 1.0 - s) <= vertex_tolerance:
-            return _refuse(strict, "vertex_hit", f"The geodesic reaches vertex {int(ids[k] if s < 0.5 else ids[(k + 1) % 3])}"
-                           " where the straightest continuation is not unique", points, faces, travelled, face,
-                           crossing, direction, margin)
+            hit = int(ids[k] if s < 0.5 else ids[(k + 1) % 3])
+            return _refuse(strict, "vertex_hit", f"The geodesic reaches vertex {hit} where the straightest "
+                           "continuation is not unique", points, faces, travelled, face, crossing, direction, margin)
         nxt = int(mesh.neighbors[face, k])
         if nxt < 0:
             return _refuse(strict, "boundary_reached", "The geodesic reached a boundary edge before its length",
@@ -679,12 +679,72 @@ def cotangent_laplacian(mesh: TriMesh):
     return np.concatenate(rows), np.concatenate(cols), np.concatenate(vals)
 
 
+def _reverse_cuthill_mckee(pattern) -> np.ndarray:
+    """Deterministic bandwidth-reducing order of a symmetric sparsity pattern (dense boolean matrix)."""
+    n = len(pattern)
+    neighbors = [np.flatnonzero(pattern[i]) for i in range(n)]
+    degree = np.array([len(v) for v in neighbors])
+    order, seen = [], np.zeros(n, dtype=bool)
+    for start in np.argsort(degree, kind="stable"):
+        if seen[start]:
+            continue
+        seen[start] = True
+        queue, head = [int(start)], 0
+        while head < len(queue):
+            v = queue[head]
+            head += 1
+            for w in sorted(neighbors[v].tolist(), key=lambda w: (degree[w], w)):
+                if not seen[w]:
+                    seen[w] = True
+                    queue.append(w)
+        order += queue
+    return np.array(order[::-1])
+
+
+def banded_cholesky_solve(matrix, rhs) -> np.ndarray:
+    """Solve a symmetric positive definite system by banded Cholesky in reverse Cuthill-McKee order.
+
+    Uses only elementwise NumPy operations inside a band, so results do not
+    depend on BLAS threading; refuses a matrix that is not positive definite.
+    """
+    matrix = np.asarray(matrix, dtype=float)
+    pattern = matrix != 0
+    np.fill_diagonal(pattern, False)
+    perm = _reverse_cuthill_mckee(pattern)
+    position = np.empty_like(perm)
+    position[perm] = np.arange(len(perm))
+    rows, cols = np.nonzero(pattern)
+    band = int(np.max(np.abs(position[rows] - position[cols]))) if len(rows) else 0
+    factor = matrix[np.ix_(perm, perm)].copy()
+    n = len(factor)
+    for k in range(n):
+        end = min(n, k + band + 1)
+        pivot = factor[k, k]
+        if not pivot > 0:
+            raise FloatingPointError("Matrix is not positive definite")
+        factor[k, k] = math.sqrt(pivot)
+        column = factor[k + 1:end, k] / factor[k, k]
+        factor[k + 1:end, k] = column
+        factor[k + 1:end, k + 1:end] -= np.multiply.outer(column, column)
+    y = np.asarray(rhs, dtype=float)[perm].copy()
+    for k in range(n):
+        end = min(n, k + band + 1)
+        y[k] /= factor[k, k]
+        y[k + 1:end] -= factor[k + 1:end, k] * y[k]
+    for k in range(n - 1, -1, -1):
+        end = min(n, k + band + 1)
+        y[k] = (y[k] - float(np.sum(factor[k + 1:end, k] * y[k + 1:end]))) / factor[k, k]
+    out = np.empty(n)
+    out[perm] = y
+    return out
+
+
 def heat_distance(mesh: TriMesh, source: int, t_factor: float = 1.0, max_vertices: int = 3000) -> np.ndarray:
-    """Heat-method distance (Crane, Weischedel and Wardetzky 2013) with dense solves; t = t_factor h^2.
+    """Heat-method distance (Crane, Weischedel and Wardetzky 2013); t = t_factor h^2.
 
     The heat solution decays like exp(-d^2 / 4t) and its far-field gradient
-    direction needs relative accuracy, so the solves are direct (LU), which
-    limits this method to small meshes.
+    direction needs relative accuracy, so both systems are solved directly
+    (banded Cholesky), which limits this method to small meshes.
     """
     n = len(mesh.vertices)
     if n > max_vertices:
@@ -696,7 +756,7 @@ def heat_distance(mesh: TriMesh, source: int, t_factor: float = 1.0, max_vertice
     t = t_factor * mesh.mean_edge() ** 2
     delta = np.zeros(n)
     delta[source] = 1.0
-    u = np.linalg.solve(np.diag(mass) + t * lap, delta)
+    u = banded_cholesky_solve(np.diag(mass) + t * lap, delta)
     cot = cotangent_weights(mesh)
     v = mesh.vertices[mesh.faces]
     grad = np.zeros((len(mesh.faces), 3))
@@ -716,7 +776,7 @@ def heat_distance(mesh: TriMesh, source: int, t_factor: float = 1.0, max_vertice
     # Pinning the source leaves a symmetric positive definite system on the other vertices.
     keep = np.arange(n) != source
     phi = np.zeros(n)
-    phi[keep] = np.linalg.solve(lap[np.ix_(keep, keep)], -div[keep])
+    phi[keep] = banded_cholesky_solve(lap[np.ix_(keep, keep)], -div[keep])
     return phi - phi[source]
 
 

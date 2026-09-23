@@ -98,6 +98,7 @@ def _physical(claim, domain="physical"):
 @task("T038", changed_files=FILES, regression_tests=(
     f"{TESTS}::test_tracer_is_exact_on_developable_meshes",
     f"{TESTS}::test_graph_distances_and_steiner_sandwich",
+    f"{TESTS}::test_dijkstra_check_falls_back_without_scipy",
     f"{TESTS}::test_solver_task_report"))
 def mesh_geodesic_solver(ctx):
     traces = _memo(ctx, "sphere-traces", S.sphere_trace_study)
@@ -106,6 +107,7 @@ def mesh_geodesic_solver(ctx):
     nested = _memo(ctx, "steiner-nested", S.steiner_nested_study)
     independent = _memo(ctx, "dijkstra-independent", S.dijkstra_independent)
     statuses = sorted({t["status"] for row in traces["rows"] for t in row["traces"]})
+    completed = sum(r["completed"] for r in traces["rows"])
     plane_error = max(r["max_trace_error"] for r in plane["rows"])
     development = max(r["development_error"] for r in cylinder["rows"])
     unfold = max(r["max_unfold_minus_trace"] for r in traces["rows"])
@@ -167,8 +169,8 @@ def mesh_geodesic_solver(ctx):
                   "scanned physical surface"),
     ]
     result = (f"Plane traces exact to {plane_error:.1e}; prism-cylinder traces match the development to "
-              f"{development:.1e}; unfolded strip length equals traced length to {unfold:.1e} over "
-              f"{sum(r['completed'] for r in traces['rows'])} sphere traces (statuses {statuses}); edge Dijkstra agrees "
+              f"{development:.1e}; unfolded strip length equals traced length to {unfold:.1e} over {completed} "
+              f"sphere traces (statuses {statuses}); edge Dijkstra agrees "
               f"with {'scipy and ' if independent.get('scipy') else ''}Floyd-Warshall to {dijkstra_value:.1e}; Steiner "
               f"distances to traced endpoints exceed the traced length by mean "
               + ", ".join(f"{mean_gap[k]:.2e} (k={k})" for k in ks) + ".")
@@ -266,7 +268,8 @@ def mesh_refinement_convergence(ctx):
                 {"k1": steiner[1], "k3": steiner[3]},
                 {"generator": generator("steiner_graph", ks=[1, 3], levels=[r["level"] for r in drows]),
                  "checks": [check("k=3 max relative error at the finest level", steiner[3][-1], 0.005, "ge"),
-                            check("k=3 finest minus coarsest-but-one error", steiner[3][-1] - steiner[3][1], 0.0, "ge")]},
+                            check("k=3 finest minus coarsest-but-one error", steiner[3][-1] - steiner[3][1], 0.0,
+                                  "ge")]},
                 tolerance=TIGHT,
                 counterexample={"statement": "Refining the mesh alone makes a Steiner-graph distance with fixed k "
                                              "converge to the geodesic distance",
@@ -280,7 +283,8 @@ def mesh_refinement_convergence(ctx):
     result = (f"Sphere (levels 2-6): length-defect order {p_length:.2f}, endpoint order {p_endpoint:.2f} "
               f"(cross-track {p_cross:.2f}), finest mean endpoint error {rows[-1]['mean_endpoint']:.2e} rad. "
               f"Cylinder: order {p_helix:.3f}, n^2 error / predicted constant = {scaled:.4f}. Edge Dijkstra max "
-              f"relative error {', '.join(f'{e:.3f}' for e in edge)} (levels {drows[0]['level']}-{drows[-1]['level']}); "
+              f"relative error {', '.join(f'{e:.3f}' for e in edge)} "
+              f"(levels {drows[0]['level']}-{drows[-1]['level']}); "
               f"Steiner k=3 {', '.join(f'{e:.4f}' for e in steiner[3])}; heat-method order {p_heat:.2f}.")
     return {"state": "completed", "findings": findings, "fields": fields(
         "Straightest mesh geodesics converge to smooth geodesics; the length (metric) error is O(h^2) on inscribed "
@@ -408,8 +412,9 @@ def mesh_jacobi_comparison(ctx):
         "and away from irregular vertices.",
         "Smooth: j'' + K j = 0, j_head(s) = sin(s) for K = 1. Mesh: curvature is concentrated at vertices (cone "
         "points); two geodesics are rotated relative to each other only when a vertex lies between them, so the "
-        "finite-difference field depends on delta/h. Angle defect over A/3 equals Voronoi/(A/3) times K on an "
-        "umbilic surface, giving the limit 3 / (4 cos^2(pi/n)) at regular valence-n stars.",
+        "finite-difference field depends on delta/h. For vertices on a sphere the angle defect tends to K times the "
+        "Voronoi-cell area, so defect/(A/3) tends to K Voronoi/(A/3) = 3K / (4 cos^2(pi/n)) at regular valence-n "
+        "stars.",
         ["icosphere levels 1-6", "torus grids n_theta=8..64 (R=2, r=1)", "six declared geodesics, L=2",
          "heading offsets 0.1, 0.03, 0.01, 1e-5 rad"],
         "Central difference |X+(L) - X-(L)| / (2 sin delta), exact for the smooth unit sphere; vertex curvature "
@@ -417,8 +422,9 @@ def mesh_jacobi_comparison(ctx):
         "Delta fixed, h -> 0: convergence; h fixed, delta -> 0: the flat value L. Valence-5 limit 4.5 - 1.5 sqrt 5.",
         "Paired traces at +-delta on each level; angle defect with barycentric and mixed Voronoi areas; torus grids.",
         result,
-        "Deterministic. The FD error at intermediate delta mixes the delta/h regime and vertex straddling, so it is "
-        "not monotone in delta; only the two limits are asserted.",
+        "Deterministic. At intermediate delta the FD error depends on how many vertices lie between the paired "
+        "geodesics (a pair that straddles a vertex jumps), so intermediate values are reported without a claim; only "
+        "the two limits are asserted.",
         ["pairs straddling a vertex (jumps)", "identical face sequences (flat regime)", "valence-5 versus valence-6 "
          "vertices", "Voronoi versus barycentric area", "Gauss-Bonnet exactness"],
         ["Pointwise convergence at valence-6 vertices near the valence-5 ones is not established (the max error "
@@ -450,12 +456,14 @@ def mesh_quality_effects(ctx):
     rms_steps = [b["curvature_rms"] - a["curvature_rms"] for a, b in zip(averaged, averaged[1:])]
     angle_steps = [a["min_angle_deg"] - b["min_angle_deg"] for a, b in zip(averaged, averaged[1:])]
     regular = next(r for r in jitter if r["amplitude"] == 0)
-    better = [r for r in valid if r["geodesic_mean"] < regular["geodesic_mean"] and r["min_angle_deg"] < regular["min_angle_deg"]]
+    better = [r for r in valid
+              if r["geodesic_mean"] < regular["geodesic_mean"] and r["min_angle_deg"] < regular["min_angle_deg"]]
     witness = min(better, key=lambda r: r["geodesic_mean"]) if better else None
     uv = quality["latitude_longitude"]
     uv_better = [r for r in uv if not r["issues"] and r["curvature_rms"] < regular["curvature_rms"]
                  and r["min_angle_deg"] < regular["min_angle_deg"]]
     uv_witness = min(uv_better, key=lambda r: r["curvature_rms"]) if uv_better else None
+    compared = ("mesh", "min_angle_deg", "curvature_rms", "curvature_max")
     everything = [r for r in valid + [r for r in uv if not r["issues"]]]
     correlations = {name: _spearman([r["min_angle_deg"] for r in everything], [r[name] for r in everything])
                     for name in ("curvature_rms", "curvature_max", "geodesic_mean", "area_error")}
@@ -474,7 +482,8 @@ def mesh_quality_effects(ctx):
         ("area / (2 pi R H)", [r["n"] for r in lrows], [r["area_ratio"] for r in lrows]),
         ("traced height / H", [r["n"] for r in lrows], [r["traced_height"] for r in lrows]),
         ("Hausdorff distance", [r["n"] for r in lrows], [r["hausdorff_sampled"] for r in lrows]),
-        ("total |mean curvature| / pi", [r["n"] for r in lrows], [r["total_abs_mean_curvature"] / math.pi for r in lrows])],
+        ("total |mean curvature| / pi", [r["n"] for r in lrows],
+         [r["total_abs_mean_curvature"] / math.pi for r in lrows])],
         title=f"Schwarz lantern, m = {lantern['q']:g} n^2", xlabel="vertices per ring n", ylabel="value",
         logx=True, logy=True))
     ctx.artifact_text("jitter.svg", svg.line_plot([
@@ -486,14 +495,16 @@ def mesh_quality_effects(ctx):
                              else (r["issues"][0] if r["issues"] else None)) for r in folded]
     findings = [
         finding("Seed-averaged curvature RMS error grows and minimum angle falls with tangential jitter", "numerical",
-                averaged, {"generator": generator("icosphere", level=3, jitter=amplitudes, seeds=[1, 2, 3], seed=S.SEED),
-                           "checks": [check("smallest increase of curvature RMS between amplitudes", min(rms_steps), 0.0,
-                                            "ge", "invariant"),
+                averaged, {"generator": generator("icosphere", level=3, jitter=amplitudes, seeds=[1, 2, 3],
+                                                  seed=S.SEED),
+                           "checks": [check("smallest increase of curvature RMS between amplitudes", min(rms_steps),
+                                            0.0, "ge", "invariant"),
                                       check("smallest decrease of min angle between amplitudes", min(angle_steps), 0.0,
                                             "ge", "invariant")]},
                 tolerance=TIGHT),
         finding("Jittered meshes with folded faces are refused and their unguarded curvature error exceeds 1",
-                "numerical", {"meshes": [r["mesh"] for r in folded], "curvature_rms": [r["curvature_rms"] for r in folded],
+                "numerical", {"meshes": [r["mesh"] for r in folded],
+                              "curvature_rms": [r["curvature_rms"] for r in folded],
                               "inverted_faces": [r["inverted_faces"] for r in folded]},
                 {"generator": generator("icosphere", level=3, jitter="folded", seed=S.SEED),
                  "checks": folded_checks + [check("smallest unguarded curvature RMS among folded meshes",
@@ -502,22 +513,23 @@ def mesh_quality_effects(ctx):
         finding("A mesh with a smaller minimum angle can have a smaller geodesic error", "numerical",
                 {"regular": {k: regular[k] for k in ("mesh", "min_angle_deg", "geodesic_mean")},
                  "witness": {k: witness[k] for k in ("mesh", "min_angle_deg", "geodesic_mean")}},
-                {"generator": generator("icosphere", level=3, jitter=witness["amplitude"], seed=S.SEED + witness["seed"]),
-                 "checks": [check("regular minus witness geodesic error", regular["geodesic_mean"] - witness["geodesic_mean"],
-                                  0.0, "ge"),
-                            check("regular minus witness min angle", regular["min_angle_deg"] - witness["min_angle_deg"],
-                                  0.0, "ge")]},
+                {"generator": generator("icosphere", level=3, jitter=witness["amplitude"],
+                                        seed=S.SEED + witness["seed"]),
+                 "checks": [check("regular minus witness geodesic error",
+                                  regular["geodesic_mean"] - witness["geodesic_mean"], 0.0, "ge"),
+                            check("regular minus witness min angle",
+                                  regular["min_angle_deg"] - witness["min_angle_deg"], 0.0, "ge")]},
                 tolerance=TIGHT,
                 counterexample={"statement": "A larger minimum angle implies a smaller geodesic error",
                                 "witness": {"better_quality": regular["mesh"], "worse_quality": witness["mesh"]}}),
         finding("Across mesh families a much smaller minimum angle can come with a smaller curvature RMS error",
-                "numerical", {"regular": {k: regular[k] for k in ("mesh", "min_angle_deg", "curvature_rms", "curvature_max")},
-                              "witness": {k: uv_witness[k] for k in ("mesh", "min_angle_deg", "curvature_rms", "curvature_max")}},
+                "numerical", {"regular": {k: regular[k] for k in compared},
+                              "witness": {k: uv_witness[k] for k in compared}},
                 {"generator": generator("uv_sphere", n_lat=uv_witness["n_lat"], n_lon=uv_witness["n_lon"]),
-                 "checks": [check("regular minus witness curvature RMS", regular["curvature_rms"] - uv_witness["curvature_rms"],
-                                  0.0, "ge"),
-                            check("regular minus witness min angle (deg)", regular["min_angle_deg"] - uv_witness["min_angle_deg"],
-                                  20.0, "ge")]},
+                 "checks": [check("regular minus witness curvature RMS",
+                                  regular["curvature_rms"] - uv_witness["curvature_rms"], 0.0, "ge"),
+                            check("regular minus witness min angle (deg)",
+                                  regular["min_angle_deg"] - uv_witness["min_angle_deg"], 20.0, "ge")]},
                 tolerance=TIGHT,
                 counterexample={"statement": "Minimum angle orders curvature error across mesh families",
                                 "witness": {"better_quality": regular["mesh"], "worse_quality": uv_witness["mesh"],
@@ -561,7 +573,8 @@ def mesh_quality_effects(ctx):
                                 "witness": {"n": last["n"], "tilt_deg": last["max_normal_tilt_deg"],
                                             "total_abs_mean_curvature": last["total_abs_mean_curvature"]}}),
         finding("A strongly pleated lantern (m = n^2) is refused as folded", "numerical", lantern["folded"],
-                {"generator": generator("cylinder_mesh", lantern=True, n=lantern["folded"]["n"], q=lantern["folded"]["q"]),
+                {"generator": generator("cylinder_mesh", lantern=True, n=lantern["folded"]["n"],
+                                        q=lantern["folded"]["q"]),
                  "checks": [refusal("validator on the m = n^2 lantern", "folded_face",
                                     lantern["folded"]["issues"][0] if lantern["folded"]["issues"] else None)]}),
         finding("Straightest geodesics on planar meshes are exact at any tested triangle quality, while edge-graph "
@@ -594,8 +607,8 @@ def mesh_quality_effects(ctx):
         "metrics do not order errors across families; Hausdorff convergence does not imply convergence of area, "
         "distances, normals or mean curvature.",
         "Quality: minimum angle and radius ratio R_circ / (2 r_in). Schwarz lantern with m = q n^2 bands: face "
-        "height sqrt((H/m)^2 + R^2 (1 - cos(pi/n))^2), so area and developed height tend to sqrt(1 + (pi^2 q R / 2H)^2) "
-        "times their cylinder values while d_H = R (1 - cos(pi/n)) -> 0.",
+        "height sqrt((H/m)^2 + R^2 (1 - cos(pi/n))^2), so area and developed height tend to "
+        "sqrt(1 + (pi^2 q R / 2H)^2) times their cylinder values while d_H = R (1 - cos(pi/n)) -> 0.",
         ["icosphere level 3 (642 vertices), tangential jitter 0-0.3 h, 3 seeds", "latitude-longitude spheres with 642 "
          "vertices (20x32, 10x64, 40x16, twisted)", "Schwarz lanterns q=0.25, n=4..64; q=1, n=8",
          "sheared planar grids"],
@@ -730,7 +743,8 @@ def mesh_vertex_uncertainty(ctx):
                  "checks": [check("max |MC / linear variance - 1| for sigma <= 1e-2", distance_dev, 0.1,
                                   kind="self_convergence")]},
                 tolerance=TIGHT),
-        finding("The unfolded marker segment leaves its unperturbed face corridor once sigma reaches 3e-3",
+        finding("The unfolded marker segment stays in its face corridor for sigma <= 1e-3 but leaves it in over 10% "
+                "of samples at sigma = 1e-2",
                 "numerical", {"left_fraction_by_sigma": invalid, "vertex_margin": study["strip"]["vertex_margin"]},
                 {"generator": generator("icosphere", level=study["level"], samples=study["samples"], seed=S.SEED),
                  "checks": [check("largest left fraction for sigma <= 1e-3", corridor_small, 0.0, kind="invariant"),
@@ -742,7 +756,8 @@ def mesh_vertex_uncertainty(ctx):
         finding("Linearized vertex-noise propagation matches Monte Carlo for vertex normals at every tested sigma",
                 "numerical", {o["observable"]: [r["ratio"] for r in o["rows"]] for o in normals},
                 {"generator": generator("icosphere", level=study["level"], samples=study["samples"], seed=S.SEED),
-                 "checks": [check("max |MC / linear mean-square angle - 1|", normal_dev, 0.1, kind="self_convergence")]},
+                 "checks": [check("max |MC / linear mean-square angle - 1|", normal_dev, 0.1,
+                                  kind="self_convergence")]},
                 tolerance=TIGHT),
         finding("Linearized propagation matches Monte Carlo for angle-defect curvature when sigma <= 1e-3", "numerical",
                 {o["observable"]: [r["ratio"] for r in o["rows"]] for o in curvature},
@@ -760,8 +775,8 @@ def mesh_vertex_uncertainty(ctx):
                 counterexample={"statement": "First-order (linearized) propagation of vertex noise is adequate for "
                                              "angle-defect curvature at sigma = 1e-2 on icosphere-3",
                                 "witness": {"sigma": 1e-2, "h": study["h"], "min_ratio": breakdown}}),
-        finding("Sensitivity to vertex noise scales as h^-2 for curvature, h^-1 for normals and h^0 for marker distance",
-                "numerical", slopes,
+        finding("Sensitivity to vertex noise scales as h^-2 for curvature, h^-1 for normals and h^0 for marker "
+                "distance", "numerical", slopes,
                 {"derivation": "Curvature = defect / (A/3) with A ~ h^2 and d(defect)/d(normal offset) ~ pi / R; "
                                "normal tilt ~ offset / h; marker distance moves with the barycentric marker vertices",
                  "checks": [check("worst |curvature slope + 2|", max(abs(s + 2) for s in slope_k), 0.25,
@@ -790,7 +805,8 @@ def mesh_vertex_uncertainty(ctx):
               f"{normal_dev:.3f}; curvature ratio within {curvature_dev:.3f} for sigma<=1e-3 but >= {breakdown:.2f} at "
               f"sigma=1e-2 (sigma/h^2={1e-2 / h2:.2f}). Sensitivity slopes: " + ", ".join(
                   f"{k}: {v:.2f}" for k, v in slopes.items()) + ". Total curvature RMS error at sigma="
-              f"{refinement['sigma']:g}: " + ", ".join(f"{r['total_rms_error']:.3f}@L{r['level']}" for r in rrows) + ".")
+              f"{refinement['sigma']:g}: "
+              + ", ".join(f"{r['total_rms_error']:.3f}@L{r['level']}" for r in rrows) + ".")
     return {"state": "completed", "findings": findings, "fields": fields(
         "Gaussian vertex noise propagates to geodesic length and normals nearly linearly, while angle-defect "
         "curvature needs sigma << h^2 / R for linearization and becomes noisier as the mesh is refined.",
@@ -859,7 +875,8 @@ def geometry_versus_sensor_uncertainty(ctx):
                                          kind="invariant")]},
                 tolerance={"abs": 1e-10, "rel": 0.0}),
         finding("Residual variance equals geometry variance plus sensor variance in every scenario", "numerical",
-                {"fresh_ratio": [s["fresh_ratio"] for s in scenarios], "z": z_fresh, "corridor_left_fraction": corridor_left},
+                {"fresh_ratio": [s["fresh_ratio"] for s in scenarios], "z": z_fresh,
+                 "corridor_left_fraction": corridor_left},
                 {"derivation": "Law of total variance: Var(r) = E[Var(r | eta)] + Var(E[r | eta]) = sigma_s^2 + "
                                "Var_eta(d)",
                  "checks": [check("max |z| of fresh total variance against sigma_s^2 + sigma_g^2 |grad d|^2",
@@ -867,7 +884,8 @@ def geometry_versus_sensor_uncertainty(ctx):
                             check("largest fraction of samples leaving the fixed corridor", corridor_left, 0.001, "le",
                                   "invariant")]},
                 tolerance=TIGHT),
-        finding("Nested components recover the declared sensor variance and the linearized geometry variance",
+        finding("Nested variance components are consistent with the declared sensor variance and the linearized "
+                "geometry variance within sampling error",
                 "numerical", {"within_ratio": [s["within_ratio"] for s in scenarios],
                               "between_ratio": [s["between_ratio"] for s in scenarios],
                               "z_within": z_within, "z_between": z_between},
@@ -878,11 +896,13 @@ def geometry_versus_sensor_uncertainty(ctx):
                                   max(abs(z) for z in z_between), 4.0, kind="self_convergence")]},
                 tolerance=TIGHT),
         finding("Geometry uncertainty dominates the baseline marker-distance residual", "numerical",
-                {"baseline": {"sigma_geometry": 1e-3, "sigma_sensor": 5e-4, "geometry_share": baseline["geometry_share"],
+                {"baseline": {"sigma_geometry": 1e-3, "sigma_sensor": 5e-4,
+                              "geometry_share": baseline["geometry_share"],
                               "crossover_sensor_sigma": baseline["crossover_sensor_sigma"]}, "scenarios": shares,
                  "gain": study["gain"]},
                 {"generator": generator("variance_split_study", level=study["level"], seed=S.SEED + 100),
-                 "checks": [check("baseline geometry share of the total variance", baseline["geometry_share"], 0.5, "ge"),
+                 "checks": [check("baseline geometry share of the total variance", baseline["geometry_share"], 0.5,
+                                  "ge"),
                             check("|nested geometry share - linearized share| at baseline",
                                   baseline["between_corrected"] / baseline["nested_total"] - baseline["geometry_share"],
                                   0.05, kind="self_convergence")]},
@@ -893,8 +913,8 @@ def geometry_versus_sensor_uncertainty(ctx):
                  "z": z_avg},
                 {"generator": generator("variance_split_study", sigma_geometry=study["averaging"]["sigma_geometry"],
                                         sigma_sensor=study["averaging"]["sigma_sensor"], seed=S.SEED + 100),
-                 "checks": [check("variance at the largest K / geometry floor", averaging[-1]["variance"] / geometry_floor,
-                                  0.9, "ge"),
+                 "checks": [check("variance at the largest K / geometry floor",
+                                  averaging[-1]["variance"] / geometry_floor, 0.9, "ge"),
                             check("max |z| against geometry + sensor / K", max(abs(z) for z in z_avg), 4.0,
                                   kind="self_convergence")]},
                 tolerance=TIGHT,
@@ -921,7 +941,8 @@ def geometry_versus_sensor_uncertainty(ctx):
         "Nested design: within-group variance estimates sigma_s^2, corrected between-group variance estimates the "
         "geometry part.",
         ["icosphere level 3, fixed marker strip (T043)", "sigma_g in {1e-4, 1e-3}, sigma_s in {1e-4, 5e-4, 2e-3}",
-         f"nested {outer} x {inner} and fresh {fresh} samples", "averaging K = 1, 4, 16, 64 at sigma_g=1e-3, sigma_s=2e-3"],
+         f"nested {outer} x {inner} and fresh {fresh} samples",
+         "averaging K = 1, 4, 16, 64 at sigma_g=1e-3, sigma_s=2e-3"],
         "Synthetic: the as-built surface differs from the nominal mesh by Gaussian vertex noise and a synthetic "
         "sensor adds Gaussian noise to the distance.",
         "Exact ANOVA identity; totals within sampling error of sigma_s^2 + sigma_g^2 |grad d|^2; floor at the "
@@ -929,9 +950,12 @@ def geometry_versus_sensor_uncertainty(ctx):
         "Nested and fresh seeded Monte Carlo per scenario; z-scores use the Gaussian variance standard error.",
         result,
         "z-scores use sqrt(2/(N-1)) relative standard errors of Gaussian variances; the geometry variance uses the "
-        "T043 linearization, valid at these sigma (checked there).",
+        "T043 linearization, valid at these sigma (checked there). When sigma_s^2 / inner greatly exceeds the geometry "
+        "variance the corrected between-group estimate is dominated by sensor noise (it can be negative, as at "
+        "sigma_g = 1e-4, sigma_s = 2e-3); consistency there is not a useful estimate of the geometry part.",
         ["unidentifiable geometry share when sigma_s^2 / inner >> geometry variance (handled by z-scores)",
          "nonlinearity of the distance (checked in T043)", "strip validity (T043)"],
-        ["Geometry and sensor noise are independent; a sensor that touches the same surface patch could correlate them.",
+        ["Geometry and sensor noise are independent; a sensor that touches the same surface patch could correlate "
+         "them.",
          "Which part dominates is a property of the declared sigmas, not of any real scanner or sensor."],
         "T045: carry this split into typed observation modes (intrinsic geodesic distance, camera chord distance).")}
