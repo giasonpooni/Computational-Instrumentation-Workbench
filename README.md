@@ -138,6 +138,31 @@ experiments. Candidates do not silently replace the active instrument or relax
 its acceptance rules. Reanalysis creates a new computation over existing
 evidence; new physical evidence requires another acquisition.
 
+## Optional project context
+
+Local engineering can use selected information about the surrounding world:
+weather or terrain as declared physical context; equipment specifications,
+materials and replacement parts as feasibility inputs; price and freight
+references for comparisons; and documented facilities or infrastructure as site
+context. These are proposed source integrations, not a connected worldwide
+data service supplied by the current workbench.
+
+The planned **project context bundle** binds a place, period and engineering
+purpose to pinned source versions, units, spatial/temporal resolution,
+uncertainty (including explicitly unknown uncertainty), permitted uses and
+source dependencies. It retains acquisition and validity times and identifies
+which model assumptions or decisions use each record. External context remains
+optional; local acquisition, computation and retained replay must work when a
+context service is unavailable.
+
+A regional forecast is not an on-site sensor reading, a commodity benchmark is
+not a local quote, and a supplier listing is not confirmed inventory. Repeated
+records derived from one source are not independent corroboration. Spatial
+co-location alone does not establish a relationship, ownership, permission or
+physical suitability. These distinctions belong in typed inputs and validation
+rules. Corrections should identify dependent conclusions for reconsideration
+without erasing the earlier evidence.
+
 ## Claims, assistance and execution authority
 
 The terminal, graphical editors, scripts and a future
