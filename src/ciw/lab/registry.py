@@ -150,3 +150,11 @@ def section_implementations(section_key: str) -> dict:
         if name.startswith(prefix):
             import_module(f"ciw.lab.{name}")
     return {task_id: implementation for task_id, implementation in _REGISTRY.items() if task_id in ids}
+
+
+def module_implementations(module: str) -> dict:
+    """Import one lab module (e.g. ``exchange_provenance``) and return only the tasks it registers."""
+    name = module if module.startswith("ciw.lab.") else f"ciw.lab.{module}"
+    import_module(name)
+    return {task_id: implementation for task_id, implementation in _REGISTRY.items()
+            if getattr(implementation.run, "__module__", None) == name}

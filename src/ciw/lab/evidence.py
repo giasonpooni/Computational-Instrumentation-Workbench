@@ -95,9 +95,10 @@ def _check_passed(check, name):
         return observed == expected and check.get("passed") is True
     observed = _finite(check.get("observed"), f"{name}.observed")
     tolerance = _finite(check.get("tolerance"), f"{name}.tolerance")
-    if tolerance < 0:
-        raise EvidenceRefusal(f"{name}.tolerance must be nonnegative")
     comparison = check.get("comparison", "abs_le")
+    if comparison == "abs_le" and tolerance < 0:
+        # A bound on |observed| must be nonnegative; le/ge compare with a signed threshold.
+        raise EvidenceRefusal(f"{name}.tolerance must be nonnegative for abs_le")
     if comparison == "abs_le":
         holds = abs(observed) <= tolerance
     elif comparison == "ge":

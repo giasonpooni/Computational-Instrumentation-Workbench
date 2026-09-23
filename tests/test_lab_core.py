@@ -192,3 +192,29 @@ def test_section_implementations_loads_one_section():
     assert set(loaded) == {f"T{n}" for n in range(155, 169)}
     with pytest.raises(ValueError, match="Unknown lab section"):
         section_implementations("no-such-section")
+
+
+def test_signed_thresholds_are_allowed_for_directional_checks():
+    ge = dict(CHECK, observed=-1e-12, tolerance=-1e-9, comparison="ge")
+    assert supported_label({"checks": [ge]}, "numerical") == "numerically_verified"
+    with pytest.raises(EvidenceRefusal, match="nonnegative for abs_le"):
+        supported_label({"checks": [dict(CHECK, tolerance=-1.0, passed=False)]}, "numerical")
+
+
+def test_label_changes_name_differing_optional_modules(tmp_path):
+    task = load_queue()["tasks"][0]
+    independent = dict(CHECK, producer={"implementation": "ciw.lab"}, checker={"implementation": "sympy"})
+    runs = (("full", {"independent_check": independent}, {"implementation": "ciw.lab", "sympy": "1.14.0"}),
+            ("bare", {"derivation": "docs"}, {"implementation": "ciw.lab"}))
+    for name, basis, identity in runs:
+        built = report.build_report(task, "completed", {"provider_runtime_identity": identity},
+                                    [finding("series", "mathematical", 1.0, basis)])
+        (tmp_path / name / "reports").mkdir(parents=True)
+        (tmp_path / name / "reports" / "T001.json").write_text(runner.dumps(built))
+    problems = runner.compare(tmp_path / "full", tmp_path / "bare")["problems"]
+    assert problems == ["T001: 'series' label independently_verified -> analytic (optional modules differ: -sympy)"]
+
+
+def test_module_implementations_returns_only_that_module():
+    from ciw.lab.registry import module_implementations
+    assert set(module_implementations("research_portfolio")) == {f"T{n}" for n in range(155, 169)}

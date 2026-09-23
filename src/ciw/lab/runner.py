@@ -368,6 +368,18 @@ def _close(retained, fresh, tolerance):
     return retained == fresh
 
 
+OPTIONAL_MODULES = ("scipy", "sympy", "mpmath")
+
+
+def _optional_difference(old, new) -> str:
+    """Optional reference modules present in one run's identity but not the other's."""
+    def present(report):
+        identity = report.get("provider_runtime_identity") or {}
+        return {name for name in OPTIONAL_MODULES if name in identity}
+    before, after = present(old), present(new)
+    return ", ".join([f"-{m}" for m in sorted(before - after)] + [f"+{m}" for m in sorted(after - before)])
+
+
 def compare(retained_dir, fresh_dir) -> dict:
     """Regression gate: same states, same labels, values within declared tolerance."""
     retained = {r["task_id"]: r for r in load_reports(retained_dir)}
@@ -396,7 +408,9 @@ def compare(retained_dir, fresh_dir) -> dict:
                 continue
             validate_finding(other)
             if record["evidence_status"] != other["evidence_status"]:
-                problems.append(f"{task_id}: '{claim}' label {record['evidence_status']} -> {other['evidence_status']}")
+                note = _optional_difference(old, new)
+                problems.append(f"{task_id}: '{claim}' label {record['evidence_status']} -> {other['evidence_status']}"
+                                + (f" (optional modules differ: {note})" if note else ""))
             tolerance = record.get("regression_tolerance", {"abs": 0.0, "rel": 1e-9})
             if not _close(record["value"], other["value"], tolerance):
                 problems.append(f"{task_id}: '{claim}' value outside regression tolerance")
