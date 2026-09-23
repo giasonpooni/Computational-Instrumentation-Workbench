@@ -10,16 +10,23 @@ integrated with the core RK4 step, switching charts between steps when the
 active chart's normalized det g falls below a threshold.
 
 The singularity scan follows a path into a candidate point and fits power
-laws for det g, the metric condition number, the largest Christoffel symbol
-and |K|; a geodesic-circle circumference ratio separates removable coordinate
-singularities from conical points, and the radial distance integral separates
-boundaries at infinite distance. ``require_regular`` is the pointwise guard; it
-refuses with a :class:`SingularityRefusal` code.
+laws for det g, the metric condition number, the largest Christoffel symbol,
+|K| and the radial speed; a geodesic-circle circumference ratio separates
+removable coordinate singularities from conical points, and the radial-speed
+exponent separates boundaries at infinite distance. ``require_regular`` is the
+pointwise guard; it refuses with a coded core ``SurfaceRefusal``.
 
-Non-claims: normalized mathematical surfaces only. The classification rules
-are heuristics validated on the declared examples (rotationally symmetric
-approach paths, radial chart lines that are geodesics); they are not a proof
-of the singularity type of an arbitrary surface or of a measured one.
+Detection limits (stated, and exercised as counterexamples in T037): a
+curvature blow-up slower than r^0.05 over the fit window reads as bounded; a
+radial-speed exponent within 1e-3 of -1 reads as divergent; a circumference
+deficit below 1e-6 reads as removable; and the approach loops must be
+preimages of geodesic circles about the candidate point, which the caller
+chooses (``Approach.polar``) from knowledge of the chart.
+
+Non-claims: normalized mathematical surfaces only. The rules assume
+rotationally symmetric approaches whose radial chart lines are geodesics;
+they are not a proof of the singularity type of an arbitrary surface or of a
+measured one.
 """
 from __future__ import annotations
 
@@ -30,7 +37,6 @@ import numpy as np
 
 from .integrators import integrate_fixed, step_rk4
 from .surfaces import Rotated, Sphere, Surface, SurfaceRefusal
-from .surfaces_discrete_geometry import SingularityRefusal
 
 # Rotation about the y axis by +pi/2: maps e_z to e_x, so chart B's poles are (+-R, 0, 0).
 ROTATION_B = np.array([[0.0, 0.0, 1.0], [0.0, 1.0, 0.0], [-1.0, 0.0, 0.0]])
@@ -42,7 +48,8 @@ class SphereAtlas:
 
     def __init__(self, radius=1.0, threshold=SWITCH_THRESHOLD):
         if not 0 < threshold < 0.5:
-            raise SurfaceRefusal("Chart-switch threshold must lie in (0, 1/2), below the atlas covering bound")
+            raise SurfaceRefusal("Chart-switch threshold must lie in (0, 1/2), below the atlas covering bound",
+                                 "invalid_parameter")
         self.radius, self.threshold = float(radius), float(threshold)
         self.charts = {"A": Sphere(radius), "B": Rotated(Sphere(radius), ROTATION_B)}
         self.rotations = {"A": np.eye(3), "B": ROTATION_B}
@@ -177,6 +184,20 @@ def scan_distances(first=4, last=32, per_decade=4) -> np.ndarray:
     return np.array([10.0 ** (-k / per_decade) for k in range(first, last + 1)])
 
 
+# Classification thresholds. Power laws are fitted on r <= FIT_WINDOW, where a
+# smooth quantity q(r) = q0 (1 + c r) has log-slope at most |c| FIT_WINDOW, so
+# a regular point reads as a blow-up only if K varies on chart scales below
+# FIT_WINDOW / |CURVATURE_BLOWUP|, i.e. about 2e-4.
+FIT_WINDOW = 1e-5
+FIT_RESIDUAL = 0.05          # max |log q - fit| for a clean power law
+CURVATURE_BLOWUP = -0.05     # |K| ~ r^a with a <= this counts as unbounded
+DEGENERACY = 0.5             # det ~ r^a with a >= this, or cond ~ r^-a
+DIVERGENCE_TOLERANCE = 1e-3  # radial speed ~ r^b: distance diverges iff b <= -1
+CONICAL_TOLERANCE = 1e-6     # |C / (2 pi rho) - 1| above this is a cone deficit
+CLASSES = ("regular", "coordinate_singularity", "conical_singularity", "curvature_singularity",
+           "infinite_distance_boundary", "unclassified")
+
+
 def point_invariants(surface: Surface, u) -> dict:
     g = surface.metric(u)
     eig = np.linalg.eigvalsh(0.5 * (g + g.T))
@@ -185,13 +206,22 @@ def point_invariants(surface: Surface, u) -> dict:
             "christoffel": float(np.max(np.abs(gamma))), "curvature": float(surface.gaussian_curvature(u))}
 
 
-def _slope(r, values):
-    """Least-squares power-law exponent; None when values vanish (identically zero quantity)."""
+def _fit(r, values) -> tuple:
+    """Least-squares power-law exponent and max log residual.
+
+    (None, 0.0) for an identically zero quantity; (None, inf) when only some
+    values vanish or any is nonfinite, which is not a power law.
+    """
     values = np.abs(np.asarray(values, dtype=float))
-    if np.any(values == 0) or not np.all(np.isfinite(values)):
-        return None
-    slope, _ = np.polyfit(np.log(r), np.log(values), 1)
-    return float(slope)
+    if not np.all(np.isfinite(values)):
+        return None, math.inf
+    if np.all(values == 0):
+        return None, 0.0
+    if np.any(values == 0):
+        return None, math.inf
+    x, y = np.log(r), np.log(values)
+    slope, intercept = np.polyfit(x, y, 1)
+    return float(slope), float(np.max(np.abs(y - (slope * x + intercept))))
 
 
 def circumference_ratio(approach: Approach, r, nodes=64) -> float:
@@ -210,77 +240,89 @@ def circumference_ratio(approach: Approach, r, nodes=64) -> float:
 
 
 def scan(approach: Approach, distances=None) -> dict:
-    """Invariants along the approach, fitted exponents and the classification."""
+    """Invariants along the approach, fitted exponents and residuals, and the classification."""
     r = scan_distances() if distances is None else np.asarray(distances, dtype=float)
     rows = [point_invariants(approach.surface, approach.point(ri)) for ri in r]
     table = {key: [row[key] for row in rows] for key in ("det", "condition", "christoffel", "curvature")}
-    small = r <= 1e-3
-    exponents = {key: _slope(r[small], np.array(table[key])[small]) for key in table}
     w = approach.radial_velocity()
-    radial_speed = [math.sqrt(float(w @ approach.surface.metric(approach.point(ri)) @ w)) for ri in r]
-    # Radial distance over the last two and the first two decades of the scan (trapezoid in r).
-    order = np.argsort(r)
-    rs, speeds = r[order], np.array(radial_speed)[order]
-    pieces = 0.5 * (speeds[1:] + speeds[:-1]) * np.diff(rs)
-    edges = rs[1:]
-    near = float(np.sum(pieces[edges <= 100 * rs[0]]))
-    far = float(np.sum(pieces[edges > rs[-1] / 100]))
-    ratio = circumference_ratio(approach, float(r.min())) if exponents["det"] is None or exponents["det"] >= -0.5 else None
-    result = {"approach": approach.name, "distances": [float(v) for v in r], "table": table, "exponents": exponents,
-              "circumference_ratio": ratio, "distance_near_over_far": near / far if far > 0 else None}
+    table["radial_speed"] = [math.sqrt(float(w @ approach.surface.metric(approach.point(ri)) @ w)) for ri in r]
+    window = r <= FIT_WINDOW * (1 + 1e-9)
+    fits = {key: _fit(r[window], np.array(values)[window]) for key, values in table.items()}
+    exponents = {key: slope for key, (slope, _) in fits.items()}
+    residuals = {key: residual for key, (_, residual) in fits.items()}
+    ratio = (circumference_ratio(approach, float(r.min()))
+             if exponents["det"] is None or exponents["det"] >= -DEGENERACY else None)
+    result = {"approach": approach.name, "distances": [float(v) for v in r], "fit_window": FIT_WINDOW,
+              "table": table, "exponents": exponents,
+              "fit_residuals": {k: (v if math.isfinite(v) else "not_a_power_law") for k, v in residuals.items()},
+              "circumference_ratio": ratio}
     result["classification"] = classify(result)
     return result
 
 
 def classify(result) -> str:
-    """regular | coordinate_singularity | conical_singularity | curvature_singularity | infinite_distance_boundary."""
-    e = result["exponents"]
-    det, cond, curvature = e["det"], e["condition"], e["curvature"]
-    if curvature is not None and curvature <= -0.5:
+    """One of CLASSES, by these rules in order.
+
+    1. Any rule quantity that is not a clean power law: ``unclassified``.
+    2. |K| ~ r^a with a <= CURVATURE_BLOWUP: ``curvature_singularity``.
+    3. Radial speed ~ r^b with b <= -1 + DIVERGENCE_TOLERANCE (the radial
+       length diverges): ``infinite_distance_boundary``.
+    4. det g blows up at finite distance with bounded K: ``unclassified`` (a
+       removable blow-up chart and a genuine singularity look alike here).
+    5. det g -> 0 or cond g -> infinity: ``conical_singularity`` if the
+       circumference ratio differs from 1 by more than CONICAL_TOLERANCE,
+       else ``coordinate_singularity``.
+    6. Otherwise ``regular``.
+    """
+    e, residuals = result["exponents"], result["fit_residuals"]
+    if any(residuals[key] == "not_a_power_law" or residuals[key] > FIT_RESIDUAL
+           for key in ("det", "condition", "curvature", "radial_speed")):
+        return "unclassified"
+    det, cond, curvature, speed = e["det"], e["condition"], e["curvature"], e["radial_speed"]
+    if curvature is not None and curvature <= CURVATURE_BLOWUP:
         return "curvature_singularity"
-    if det is not None and det <= -0.5 and (result["distance_near_over_far"] or 0.0) > 0.1:
+    if speed is not None and speed <= -1.0 + DIVERGENCE_TOLERANCE:
         return "infinite_distance_boundary"
-    degenerate = (det is not None and det >= 0.5) or (cond is not None and cond <= -0.5)
-    if degenerate:
+    if det is not None and det <= -DEGENERACY:
+        return "unclassified"
+    if (det is not None and det >= DEGENERACY) or (cond is not None and cond <= -DEGENERACY):
         ratio = result["circumference_ratio"]
-        if ratio is not None and abs(ratio - 1.0) > 1e-3:
+        if ratio is not None and abs(ratio - 1.0) > CONICAL_TOLERANCE:
             return "conical_singularity"
         return "coordinate_singularity"
     return "regular"
 
 
 def require_regular(surface: Surface, u, *, max_condition=1e8, curvature_bound=1e6, length=1.0) -> dict:
-    """Pointwise guard: refuse degenerate metrics and curvature blow-up with a refusal code.
+    """Pointwise guard: refuse degenerate metrics and curvature above a bound with a coded SurfaceRefusal.
 
-    Codes: ``nonfinite_point``, ``nonfinite_metric``, ``degenerate_metric``
-    (indefinite or condition number above ``max_condition``: a coordinate or
-    conical singularity), ``curvature_blowup`` (|K| length^2 above
-    ``curvature_bound``), a code raised by the surface itself (for example
-    ``curvature_singularity``), or ``chart_refused`` from the core check.
+    Codes computed here: ``nonfinite_point``, ``nonfinite_metric``,
+    ``degenerate_metric`` (indefinite, or condition number above
+    ``max_condition``: a coordinate or conical singularity) and
+    ``curvature_blowup`` (|K| length^2 above ``curvature_bound``; a slower
+    blow-up passes). A refusal raised by the surface itself (for example
+    ``curvature_singularity`` at a declared apex) or by the core
+    ``Surface.check`` (``outside_chart``, ``degenerate_metric``) propagates
+    unchanged with its own code.
     """
     u = np.asarray(u, dtype=float)
     if u.shape != (2,) or not np.all(np.isfinite(u)):
-        raise SingularityRefusal("nonfinite_point", "Surface coordinates must be two finite numbers")
+        raise SurfaceRefusal("Surface coordinates must be two finite numbers", "nonfinite_point")
     g = surface.metric(u)
     if not np.all(np.isfinite(g)):
-        raise SingularityRefusal("nonfinite_metric", f"{surface.name}: metric is not finite at {u.tolist()}")
+        raise SurfaceRefusal(f"{surface.name}: metric is not finite at {u.tolist()}", "nonfinite_metric")
     eig = np.linalg.eigvalsh(0.5 * (g + g.T))
     if not eig[0] > 0:
-        raise SingularityRefusal("degenerate_metric", f"{surface.name}: metric is not positive definite at {u.tolist()}")
+        raise SurfaceRefusal(f"{surface.name}: metric is not positive definite at {u.tolist()}", "degenerate_metric")
     condition = float(eig[1] / eig[0])
     if condition > max_condition:
-        raise SingularityRefusal("degenerate_metric", f"{surface.name}: metric condition number {condition:.3g} "
-                                 f"exceeds {max_condition:.3g}; change chart or treat as a singular point")
+        raise SurfaceRefusal(f"{surface.name}: metric condition number {condition:.3g} exceeds "
+                             f"{max_condition:.3g}; change chart or treat as a singular point", "degenerate_metric")
     curvature = float(surface.gaussian_curvature(u))
     if not math.isfinite(curvature) or abs(curvature) * length ** 2 > curvature_bound:
-        raise SingularityRefusal("curvature_blowup", f"{surface.name}: |K| = {abs(curvature):.3g} exceeds the "
-                                 f"declared bound {curvature_bound:.3g}")
-    try:
-        surface.check(u)
-    except SingularityRefusal:
-        raise
-    except SurfaceRefusal as exc:
-        raise SingularityRefusal("chart_refused", str(exc)) from exc
+        raise SurfaceRefusal(f"{surface.name}: |K| = {abs(curvature):.3g} exceeds the declared bound "
+                             f"{curvature_bound:.3g}", "curvature_blowup")
+    surface.check(u)
     return {"det": float(eig[0] * eig[1]), "condition": condition, "curvature": curvature}
 
 
@@ -288,8 +330,6 @@ def refusal_code(function, *args, **kwargs) -> str:
     """Run a guarded call and return its refusal code, or 'accepted'."""
     try:
         function(*args, **kwargs)
-    except SingularityRefusal as exc:
+    except SurfaceRefusal as exc:
         return exc.code
-    except SurfaceRefusal:
-        return "surface_refusal"
     return "accepted"

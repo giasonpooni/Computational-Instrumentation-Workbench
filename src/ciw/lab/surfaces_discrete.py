@@ -10,13 +10,15 @@ error of metric derivatives over twelve decades of step size. T036 builds a
 two-chart sphere atlas with exact transitions and integrates geodesics through
 the poles with chart switching. T037 scans approaches to candidate singular
 points and separates coordinate, conical and curvature singularities and an
-infinite-distance boundary, with pointwise refusal codes.
+infinite-distance boundary within stated detection limits, with pointwise
+refusal codes.
 
 Non-claims: all surfaces, coordinates and curvatures are normalized
 mathematical objects. Findings establish agreement between computations on
 sampled points of declared domains; they do not establish correctness between
-samples, outside the domains, or for any measured physical surface, and the
-singularity rules are validated only on the declared examples.
+samples, outside the domains, or for any measured physical surface. The
+singularity rules are validated on the declared examples and misclassify
+cases beyond their thresholds, which T037 records as counterexamples.
 """
 from __future__ import annotations
 
@@ -30,14 +32,14 @@ from . import svg
 from .evidence import finding, holds as compare
 from .registry import task
 from .surfaces import HyperbolicPlane, Plane, Reparametrized, Saddle, Sphere
-from .surfaces_discrete_ad import (DualMath, DualSurface, formulas, partial, symbolic_exact_curvature,
-                                   symbolic_reference)
-from .surfaces_discrete_charts import (SWITCH_THRESHOLD, Approach, SphereAtlas, great_circle, integrate_atlas,
-                                       integrate_single, pole_passing_great_circle, refusal_code, require_regular,
-                                       scan)
-from .surfaces_discrete_geometry import (DOMAINS, EPS, SEED, THRESHOLDS, Cone, DroppedCrossTermBump, PolarChart,
-                                         PowerGraph, central_difference, conformance, conformance_surfaces,
-                                         mutant_surfaces)
+from .surfaces_discrete_ad import DualMath, DualSurface, diffgeom_reference, formulas, partial, symbolic_reference
+from .surfaces_discrete_charts import (CONICAL_TOLERANCE, CURVATURE_BLOWUP, DEGENERACY, DIVERGENCE_TOLERANCE,
+                                       FIT_RESIDUAL, FIT_WINDOW, SWITCH_THRESHOLD, Approach, SphereAtlas, great_circle,
+                                       integrate_atlas, integrate_single, pole_passing_great_circle, refusal_code,
+                                       require_regular, scan)
+from .surfaces_discrete_geometry import (DOMAINS, EPS, SEED, THRESHOLDS, ConformalHalfPlane, Cone, CubeRootChart,
+                                         DroppedCrossTermBump, PolarChart, PowerGraph, central_difference, conformance,
+                                         conformance_surfaces, mutant_surfaces)
 
 MODULE = "src/ciw/lab/surfaces_discrete.py"
 GEOMETRY = "src/ciw/lab/surfaces_discrete_geometry.py"
@@ -79,12 +81,15 @@ CONFORMANCE_FAILURE_MODES = [
     "asymmetric metric matrix (seeded mutant)", "indefinite metric (seeded mutant)",
     "transposed derivative index order (seeded mutant)", "sign-flipped metric derivatives (seeded mutant)",
     "dropped mixed height derivative (seeded mutant)", "curvature misscaled by a factor R (seeded mutant)",
+    "NaN metric derivatives on part of the domain (seeded mutant)",
     "points refused by the core Surface.check inside a declared domain"]
+RESIDUAL_FLOOR = 1e-17  # log-axis floor for exact-zero residuals in the conformance figure
 
 
 @task("T033", changed_files=(MODULE, GEOMETRY, DOC),
       regression_tests=(f"{TESTS}::test_conformance_suite_accepts_every_surface",
                         f"{TESTS}::test_conformance_suite_rejects_seeded_mutants",
+                        f"{TESTS}::test_conformance_reports_nonfinite_residuals",
                         f"{TESTS}::test_brioschi_recovers_supplied_curvature",
                         f"{TESTS}::test_t033_report"))
 def surface_interface(ctx):
@@ -93,7 +98,9 @@ def surface_interface(ctx):
     mutants = {key: conformance(surface, domain, POINTS, SEED) for key, (surface, domain) in mutant_surfaces().items()}
     worst = {}
     for name in THRESHOLDS:
-        values = [row["worst"][name] for row in table.values()]
+        # A nonfinite residual already makes its surface nonconforming; the
+        # worst finite value is still reported for the others.
+        values = [row["worst"][name] for row in table.values() if isinstance(row["worst"][name], float)]
         worst[name] = min(values) if name == "min_eigenvalue_ratio" else max(values)
     nonconforming = sorted(key for key, row in table.items() if not row["conforms"])
     refused = sum(row["refused_by_core_check"] for row in table.values())
@@ -108,14 +115,20 @@ def surface_interface(ctx):
                                            "surfaces": {k: dict(row, describe=surfaces[k].describe())
                                                         for k, row in table.items()}})
     ctx.artifact_json("mutants.json", {"detection": {k: {"failed": row["failed"], "not_evaluated": row["not_evaluated"],
+                                                         "nonfinite": row["nonfinite"], "errors": row["errors"],
                                                          "worst": row["worst"]} for k, row in mutants.items()}})
     keys = list(table)
-    series = [(name, list(range(1, len(keys) + 1)), [table[k]["worst"][name] for k in keys])
+    series = [(name, list(range(1, len(keys) + 1)), [max(table[k]["worst"][name], RESIDUAL_FLOOR) for k in keys])
               for name in ("gauss_equation", "derivative_consistency", "mixed_partials", "compatibility")]
+    short = {"plane": "plane", "sphere": "sphere", "cylinder": "cyl", "saddle": "saddle", "torus": "torus",
+             "gaussian-bump": "bump", "hyperbolic-plane": "hyp", "plane-polar": "polar",
+             "gaussian-bump-shear": "shear", "rotated-torus": "rot-torus"}
     ctx.artifact_text("conformance-residuals.svg", svg.line_plot(
-        series, title="Worst normalized residual per surface (index = position in conformance.json order)",
-        xlabel="surface index", ylabel="normalized residual", logy=True))
+        series, title="Worst residual per surface; values < 1e-17 (and zeros) drawn at 1e-17",
+        xlabel=" ".join(f"{i} {short.get(k, k)}" for i, k in enumerate(keys, 1)), ylabel="normalized residual",
+        logy=True))
     misscaled, flipped = mutants["misscaled-curvature"], mutants["sign-flipped-derivatives"]
+    nan_mutant = mutants["nan-derivatives"]
     fields = {
         "hypothesis": ("Every catalogue surface, the reparametrized charts plane-polar and gaussian-bump-shear and a "
                        "rigidly rotated torus satisfy the interface identities on their declared domains, and the "
@@ -151,6 +164,8 @@ def surface_interface(ctx):
             "Declared domains avoid coordinate singularities; behaviour near them is T037's subject.",
             "Metric compatibility is an algebraic consequence of the Christoffel formula for any symmetric dg; it "
             "checks index conventions, not that dg is the derivative of g (derivative consistency does that).",
+            "Christoffel symmetry is exact whenever dg is symmetric in its last two indices, because the core einsum "
+            "is then symmetric term by term; the check adds evidence only for surfaces that override christoffel().",
             "Conformance on sampled points is evidence, not proof, of correctness on the whole domain."],
         "recommended_next_task": ("T042: turn the conformance suite into the admission gate for invalid or "
                                   "incomplete surface data, reusing its refusal of the seeded defects."),
@@ -198,8 +213,20 @@ def surface_interface(ctx):
                 tolerance={"abs": 1e-14, "rel": 0.0}),
         finding("The conformance suite rejects every seeded defect mutant", "computational_pipeline",
                 {"mutants": len(mutants), "undetected": len(undetected)},
-                {"checks": [_check("mutants passing every identity", len(undetected), 0, kind="exact_arithmetic")]},
-                tolerance={"abs": 0, "rel": 0},
+                {"checks": [_check("mutants passing every identity", len(undetected), 0, kind="exact_arithmetic"),
+                            _check("identities flagged nonfinite for the NaN-derivative mutant",
+                                   len(nan_mutant["nonfinite"]), 1, comparison="ge", kind="exact_arithmetic")]},
+                tolerance={"abs": 0, "rel": 0}),
+        finding("A curvature-misscaled sphere passes every identity except the Gauss equation", "computational_pipeline",
+                {"failed": misscaled["failed"], "gauss_residual": _sig(misscaled["worst"]["gauss_equation"])},
+                {"checks": [_check("identities other than the Gauss equation failed by the misscaled mutant",
+                                   len(set(misscaled["failed"]) - {"gauss_equation"}), 0, kind="exact_arithmetic"),
+                            _check("Gauss equation failed by the misscaled mutant (1 = yes)",
+                                   int("gauss_equation" in misscaled["failed"]), 1, comparison="ge",
+                                   kind="exact_arithmetic"),
+                            _check("misscaled mutant Gauss residual", misscaled["worst"]["gauss_equation"], 0.1,
+                                   comparison="ge", kind="invariant")]},
+                tolerance={"abs": 1e-6, "rel": 1e-6},
                 counterexample={"statement": ("Metric symmetry, positive definiteness, Christoffel symmetry, metric "
                                               "compatibility and derivative consistency together certify a surface "
                                               "implementation"),
@@ -223,12 +250,15 @@ def surface_interface(ctx):
 
 
 # ---------------------------------------------------------------- T034
-EXACT_CURVATURE_KEYS = ("plane", "sphere", "cylinder", "saddle", "torus", "hyperbolic-plane", "plane-polar")
+# Surfaces whose sympy.diffgeom Riemann tensor is cheap to assemble here; the
+# three heavier ones (gaussian-bump, gaussian-bump-shear, rotated-torus) get
+# sympy derivatives with the connection and curvature assembled in ciw code.
+DIFFGEOM_KEYS = ("plane", "sphere", "cylinder", "saddle", "torus", "hyperbolic-plane", "plane-polar")
 
 
 def _declared_curvature(key, surface, sp, u, v):
-    """Closed forms declared in ciw.lab.surfaces, with parameters made exact."""
-    q = sp.nsimplify
+    """Closed forms of ciw.lab.surfaces restated with the exact rationals of their float parameters."""
+    q = sp.Rational
     if key in ("plane", "cylinder", "plane-polar"):
         return sp.Integer(0)
     if key == "sphere":
@@ -245,14 +275,21 @@ def _declared_curvature(key, surface, sp, u, v):
 
 
 def _residuals(reference, surface, u, length):
+    """Normalized residuals of whichever quantities ``reference`` supplies."""
     g, dg = surface.metric(u), surface.metric_derivatives(u)
     gamma, curvature = surface.christoffel(u), float(surface.gaussian_curvature(u))
     dg_scale = float(np.max(np.abs(dg))) + float(np.max(np.abs(g))) / length
-    return {"metric": float(np.max(np.abs(reference["metric"] - g))) / float(np.max(np.abs(g))),
-            "metric_derivatives": float(np.max(np.abs(reference["metric_derivatives"] - dg))) / dg_scale,
-            "christoffel": float(np.max(np.abs(reference["christoffel"] - gamma)))
-            / (float(np.max(np.abs(gamma))) + 1.0 / length),
-            "gaussian_curvature": abs(reference["gaussian_curvature"] - curvature) / (abs(curvature) + length ** -2)}
+    out = {}
+    if "metric" in reference:
+        out["metric"] = float(np.max(np.abs(reference["metric"] - g))) / float(np.max(np.abs(g)))
+    if "metric_derivatives" in reference:
+        out["metric_derivatives"] = float(np.max(np.abs(reference["metric_derivatives"] - dg))) / dg_scale
+    if "christoffel" in reference:
+        out["christoffel"] = (float(np.max(np.abs(reference["christoffel"] - gamma)))
+                              / (float(np.max(np.abs(gamma))) + 1.0 / length))
+    if "gaussian_curvature" in reference:
+        out["gaussian_curvature"] = abs(reference["gaussian_curvature"] - curvature) / (abs(curvature) + length ** -2)
+    return out
 
 
 def dual_self_test() -> dict:
@@ -292,12 +329,21 @@ def derivative_checks(ctx):
     surfaces = conformance_surfaces()
     forms = formulas(surfaces)
     have_sympy = ctx.available("module:sympy")
-    dual_rows, sympy_rows = {}, {}
+    if have_sympy:
+        import sympy as sp
+    dual_rows, sympy_rows, diffgeom_rows, exact = {}, {}, {}, {}
     for key, surface in surfaces.items():
         dual = DualSurface(*forms[key])
         reference = symbolic_reference(*forms[key]) if have_sympy else None
+        geometric = None
+        if have_sympy and key in DIFFGEOM_KEYS:
+            geometric, expression, (u_sym, v_sym) = diffgeom_reference(*forms[key])
+            simplified = sp.simplify(expression)
+            declared = _declared_curvature(key, surface, sp, u_sym, v_sym)
+            exact[key] = {"sympy_diffgeom": str(simplified), "declared": str(declared),
+                          "difference_simplifies_to_zero": bool(sp.simplify(simplified - declared) == 0)}
         domain = DOMAINS[key]
-        dual_worst, sym_worst = {}, {}
+        dual_worst, sym_worst, geo_worst = {}, {}, {}
         for u in domain.sample(AD_POINTS, SEED + 34):
             length = domain.length(u)
             row = _residuals({"metric": dual.metric(u), "metric_derivatives": dual.metric_derivatives(u),
@@ -310,10 +356,15 @@ def derivative_checks(ctx):
                 row["embedding"] = float(np.max(np.abs(dual.point(u) - surface.embedding(u))))
             for name, value in row.items():
                 dual_worst[name] = max(dual_worst.get(name, 0.0), value)
-            if reference is not None:
-                for name, value in _residuals(reference(u), surface, u, length).items():
-                    sym_worst[name] = max(sym_worst.get(name, 0.0), value)
-        dual_rows[key], sympy_rows[key] = dual_worst, sym_worst
+            for source, worst in ((reference, sym_worst), (geometric, geo_worst)):
+                if source is not None:
+                    for name, value in _residuals(source(u), surface, u, length).items():
+                        worst[name] = max(worst.get(name, 0.0), value)
+        dual_rows[key] = dual_worst
+        if have_sympy:
+            sympy_rows[key] = sym_worst
+        if geo_worst:
+            diffgeom_rows[key] = geo_worst
     dual_derivs = max(max(r["metric"], r["metric_derivatives"], r["christoffel"]) for r in dual_rows.values())
     dual_curv = max(max(r["gaussian_curvature"], r.get("extrinsic_curvature", 0.0)) for r in dual_rows.values())
     dual_embed = max(r.get("embedding", 0.0) for r in dual_rows.values())
@@ -326,47 +377,74 @@ def derivative_checks(ctx):
                  for u in DOMAINS["gaussian-bump"].sample(AD_POINTS, SEED + 34))
     ctx.artifact_json("dual-vs-ciw.json", {"points_per_surface": AD_POINTS, "seed": SEED + 34, "surfaces": dual_rows,
                                            "self_test": self_test, "dropped_cross_term_defect": defect})
-    producer = {"implementation": "ciw.lab.surfaces", "revision": _source_identity("surfaces.py")}
+    # The compared ciw values come from the core surfaces and, for plane-polar and
+    # gaussian-bump-shear, from the chart maps of the section's geometry module.
+    producer = {"implementation": "ciw.lab.surfaces",
+                "revision": (f"surfaces.py sha256 {_source_identity('surfaces.py')}; surfaces_discrete_geometry.py "
+                             f"sha256 {_source_identity('surfaces_discrete_geometry.py')}")}
+    restated = {"implementation": "ciw.lab.surfaces_discrete._declared_curvature",
+                "revision": f"surfaces_discrete.py sha256 {_source_identity('surfaces_discrete.py')}"}
+    sympy_claims = (
+        "sympy-differentiated metric and metric derivatives match the ciw surface interface on every conformance surface",
+        "sympy.diffgeom Christoffel symbols match the ciw surface interface on seven surfaces",
+        "sympy.diffgeom Riemann curvature R_1212 / det g matches the supplied Gaussian curvature on seven surfaces",
+        "sympy.diffgeom curvature of seven surfaces simplifies exactly to the closed forms restated from ciw.lab.surfaces",
+        "Christoffel symbols and curvature assembled in ciw code from sympy derivatives match the interface on every "
+        "conformance surface")
     findings = []
     if have_sympy:
-        import sympy as sp
-
         checker = {"implementation": "sympy", "revision": sp.__version__}
-        sym_derivs = max(max(r["metric"], r["metric_derivatives"], r["christoffel"]) for r in sympy_rows.values())
-        sym_curv = max(r["gaussian_curvature"] for r in sympy_rows.values())
-        u, v = sp.symbols("u v", real=True)
-        exact = {}
-        for key in EXACT_CURVATURE_KEYS:
-            expression = symbolic_exact_curvature(*forms[key])
-            declared = _declared_curvature(key, surfaces[key], sp, u, v)
-            exact[key] = {"sympy": str(expression), "declared": str(declared),
-                          "difference_simplifies_to_zero": bool(sp.simplify(expression - declared) == 0)}
+        diffgeom_checker = {"implementation": "sympy.diffgeom", "revision": sp.__version__}
+        sym_derivs = max(max(r["metric"], r["metric_derivatives"]) for r in sympy_rows.values())
+        assembled = max(max(r["christoffel"], r["gaussian_curvature"]) for r in sympy_rows.values())
+        geo_gamma = max(r["christoffel"] for r in diffgeom_rows.values())
+        geo_curv = max(r["gaussian_curvature"] for r in diffgeom_rows.values())
         mismatches = sum(not row["difference_simplifies_to_zero"] for row in exact.values())
         ctx.artifact_json("sympy-vs-ciw.json", {"sympy": sp.__version__, "points_per_surface": AD_POINTS,
-                                                "surfaces": sympy_rows, "exact_curvature": exact})
+                                                "sympy_derivatives": sympy_rows, "sympy_diffgeom": diffgeom_rows,
+                                                "exact_curvature": exact})
         findings += [
-            finding("sympy symbolic metric, metric derivatives and Christoffel symbols match the ciw surface interface",
-                    "numerical", sym_derivs,
-                    {"independent_check": dict(_check("max normalized residual over metric, dg and Gamma",
-                                                      sym_derivs, 1e-12, kind="analytic"),
+            finding(sympy_claims[0], "numerical", sym_derivs,
+                    {"independent_check": dict(_check("max normalized residual over g and dg (sympy differentiation "
+                                                      "of the re-expressed formula)", sym_derivs, 1e-12),
                                                producer=producer, checker=checker)},
-                    unit="normalized residual", tolerance={"abs": 1e-12, "rel": 0.0}),
-            finding("sympy Riemann-tensor curvature R_1212 / det g matches the supplied Gaussian curvature",
-                    "numerical", sym_curv,
-                    {"independent_check": dict(_check("max |K_sympy - K| / (|K| + 1/l^2)", sym_curv, 1e-12,
-                                                      kind="analytic"), producer=producer, checker=checker)},
-                    unit="normalized residual", tolerance={"abs": 1e-12, "rel": 0.0}),
-            finding("sympy simplifies the Brioschi curvature of seven surfaces exactly to the declared closed forms",
-                    "mathematical", {"surfaces": len(exact), "mismatches": mismatches},
-                    {"independent_check": dict(_check("closed forms whose difference does not simplify to 0",
-                                                      mismatches, 0, kind="exact_arithmetic"),
-                                               producer=producer, checker=checker)},
+                    unit="normalized residual", uncertainty={"kind": "roundoff", "value": 1e-12,
+                                                             "basis": "floating evaluation of lambdified expressions"},
+                    tolerance={"abs": 1e-12, "rel": 0.0}),
+            finding(sympy_claims[1], "numerical", geo_gamma,
+                    {"independent_check": dict(_check("max |Gamma_diffgeom - Gamma| / (max|Gamma| + 1/l) "
+                                                      "(metric_to_Christoffel_2nd)", geo_gamma, 1e-12),
+                                               producer=producer, checker=diffgeom_checker)},
+                    unit="normalized residual", uncertainty={"kind": "roundoff", "value": 1e-12,
+                                                             "basis": "floating evaluation of lambdified expressions"},
+                    tolerance={"abs": 1e-12, "rel": 0.0}),
+            finding(sympy_claims[2], "numerical", geo_curv,
+                    {"independent_check": dict(_check("max |K_diffgeom - K| / (|K| + 1/l^2) "
+                                                      "(metric_to_Riemann_components)", geo_curv, 1e-12),
+                                               producer=producer, checker=diffgeom_checker)},
+                    unit="normalized residual", uncertainty={"kind": "roundoff", "value": 1e-12,
+                                                             "basis": "floating evaluation of lambdified expressions"},
+                    tolerance={"abs": 1e-12, "rel": 0.0}),
+            finding(sympy_claims[3], "mathematical", {"surfaces": len(exact), "mismatches": mismatches},
+                    {"independent_check": dict(_check("restated closed forms whose difference from the diffgeom "
+                                                      "curvature does not simplify to 0", mismatches, 0,
+                                                      kind="exact_arithmetic"),
+                                               producer=restated, checker=diffgeom_checker)},
+                    uncertainty={"kind": "reference_error", "value": 0,
+                                 "basis": "exact rational parameters; symbolic identity"},
                     tolerance={"abs": 0, "rel": 0}),
+            finding(sympy_claims[4], "numerical", assembled,
+                    {"checks": [_check("max normalized residual over Gamma and K (sympy differentiation; Levi-Civita "
+                                       "and Riemann assembly written in ciw, same origin)", assembled, 1e-12,
+                                       kind="cross_implementation")]},
+                    unit="normalized residual", uncertainty={"kind": "roundoff", "value": 1e-12,
+                                                             "basis": "floating evaluation of lambdified expressions"},
+                    tolerance={"abs": 1e-12, "rel": 0.0}),
         ]
         state = "completed"
     else:
-        findings.append(finding("sympy symbolic metric, metric derivatives and Christoffel symbols match the ciw "
-                                "surface interface", "numerical", None, {}, expected_not_established=True))
+        findings += [finding(claim, "mathematical" if index == 3 else "numerical", None, {},
+                             expected_not_established=True) for index, claim in enumerate(sympy_claims)]
         state = "partial"
     findings += [
         finding("Nested dual-number derivatives of re-expressed embeddings match the metric, dg and Christoffel symbols",
@@ -375,57 +453,75 @@ def derivative_checks(ctx):
                                    1e-12, kind="analytic"),
                             _check("max |X_dual - X| (formula re-expresses the same embedding)", dual_embed, 1e-13,
                                    kind="analytic")]},
-                unit="normalized residual", tolerance={"abs": 1e-12, "rel": 0.0}),
+                unit="normalized residual", uncertainty={"kind": "roundoff", "value": 1e-12, "basis": "dual arithmetic"},
+                tolerance={"abs": 1e-12, "rel": 0.0}),
         finding("Dual-number curvature (Brioschi with exact second derivatives, and LN - M^2) matches the supplied K",
                 "numerical", dual_curv,
                 {"checks": [_check("max normalized curvature residual", dual_curv, 1e-12, kind="analytic")]},
-                unit="normalized residual", tolerance={"abs": 1e-12, "rel": 0.0}),
+                unit="normalized residual", uncertainty={"kind": "roundoff", "value": 1e-12, "basis": "dual arithmetic"},
+                tolerance={"abs": 1e-12, "rel": 0.0}),
         finding("Dual numbers reproduce closed-form first, mixed and third derivatives without perturbation confusion",
                 "numerical", self_error,
                 {"checks": [_check("max |dual - closed form| over 8 cases", self_error, 1e-13, kind="analytic")]},
+                uncertainty={"kind": "roundoff", "value": 1e-13, "basis": "dual arithmetic"},
                 tolerance={"abs": 1e-13, "rel": 0.0}),
         finding("Dual-number checks expose a hand-coded derivative defect that symmetry checks cannot see",
                 "numerical", _sig(defect, 6),
                 {"checks": [_check("dropped-cross-term mutant: max normalized |dg_mutant - dg_dual|", defect, 1e-3,
                                    comparison="ge", kind="analytic")]},
+                uncertainty={"kind": "roundoff", "value": 1e-12, "basis": "dual arithmetic"},
                 tolerance={"abs": 1e-6, "rel": 1e-4},
                 counterexample={"statement": "Finite, index-symmetric hand-coded metric derivatives are correct",
                                 "witness": {"mutant": "gaussian-bump with f_xy dropped", "normalized_error": _sig(defect)}}),
+        finding("Symbolic and dual-number derivative agreement certifies derivatives of surfaces reconstructed from "
+                "physical measurements", "physical", None, {}),
     ]
     fields = {
         "hypothesis": ("At seeded points of every conformance surface, the hand-coded metric, metric derivatives, "
-                       "Christoffel symbols and Gaussian curvature equal the derivatives of its closed-form embedding "
-                       "(or metric) computed by an independent symbolic system and by forward-mode automatic "
-                       "differentiation; for seven surfaces the symbolic curvature equals the declared closed form."),
-        "mathematical_model": ("Re-expressed X(u) per surface; g = X_i . X_j; dg by differentiation; Gamma from g and "
-                               "dg; sympy K = R_1212 / det g from the Riemann tensor of its own Christoffel symbols; "
-                               "dual-number K from Brioschi with exact second derivatives and from LN - M^2."),
+                       "Christoffel symbols and Gaussian curvature equal those of its closed-form embedding (or "
+                       "metric) computed by an independent symbolic system (sympy differentiation, and sympy.diffgeom "
+                       "for the connection and curvature of seven surfaces) and by forward-mode automatic "
+                       "differentiation; for those seven surfaces the symbolic curvature equals the declared closed "
+                       "form exactly."),
+        "mathematical_model": ("Re-expressed X(u) per surface with exact rational parameters; g = X_i . X_j; dg by "
+                               "differentiation; sympy.diffgeom Gamma from metric_to_Christoffel_2nd and K = g_0m "
+                               "R^m_101 / det g from metric_to_Riemann_components; ciw-assembled Gamma and R_1212 / det g "
+                               "from sympy derivatives; dual-number K from Brioschi with exact second derivatives and "
+                               "from LN - M^2."),
         "input_data": [f"{len(surfaces)} conformance surfaces, {AD_POINTS} points each (PCG64 seed {SEED + 34})",
-                       f"sympy {'available' if have_sympy else 'unavailable'}; closed forms for "
-                       f"{len(EXACT_CURVATURE_KEYS)} surfaces"],
-        "observation_model": "Same normalization as T033; exact symbolic comparison by sympy.simplify(expr - declared) == 0.",
+                       f"sympy {'available' if have_sympy else 'unavailable'}; sympy.diffgeom and exact closed forms "
+                       f"for {len(DIFFGEOM_KEYS)} surfaces ({', '.join(DIFFGEOM_KEYS)})"],
+        "observation_model": ("Same normalization as T033; exact symbolic comparison by "
+                              "sympy.simplify(simplify(K_diffgeom) - declared) == 0."),
         "expected_invariant": "Residuals at rounding level (<= 1e-12); exact closed forms identical.",
-        "experiment": ("Evaluate sympy-lambdified and dual-number quantities at seeded points, compare with the ciw "
-                       "interface, simplify symbolic curvature exactly, self-test the dual numbers, and confirm a "
-                       "seeded derivative defect is exposed."),
+        "experiment": ("Evaluate sympy-lambdified, sympy.diffgeom and dual-number quantities at seeded points, compare "
+                       "with the ciw interface, simplify the diffgeom curvature exactly, self-test the dual numbers, "
+                       "and confirm a seeded derivative defect is exposed."),
         "numerical_result": (f"dual numbers: derivatives {_fmt(dual_derivs)}, curvature {_fmt(dual_curv)}, self-test "
                              f"{_fmt(self_error)}, defect exposed at {_fmt(defect)}"
-                             + (f"; sympy: derivatives {_fmt(sym_derivs)}, curvature {_fmt(sym_curv)}, exact closed "
-                                f"forms {len(EXACT_CURVATURE_KEYS) - mismatches}/{len(EXACT_CURVATURE_KEYS)}"
-                                if have_sympy else "; sympy unavailable, symbolic check not run")),
+                             + (f"; sympy: g and dg {_fmt(sym_derivs)}; sympy.diffgeom: Gamma {_fmt(geo_gamma)}, "
+                                f"K {_fmt(geo_curv)}, exact closed forms {len(exact) - mismatches}/{len(exact)}; "
+                                f"ciw assembly from sympy derivatives {_fmt(assembled)}"
+                                if have_sympy else "; sympy unavailable, symbolic checks not run")),
         "uncertainty": ("Rounding only for the pointwise comparisons (floating evaluation of lambdified expressions "
                         "and dual arithmetic); agreement is shown at sampled points, and the exact symbolic identity "
-                        "for seven closed forms."),
+                        "for seven closed forms with the declared parameters."),
         "failure_modes_checked": ["perturbation confusion in nested dual numbers",
                                   "formula re-expression not equal to the core embedding",
-                                  "dropped mixed derivative (seeded defect)", "sign convention of the Riemann tensor"],
+                                  "dropped mixed derivative (seeded defect)",
+                                  "sign and index convention of the sympy.diffgeom Riemann components",
+                                  "float parameters rounded by simplification (parameters are exact rationals)"],
         "unresolved_assumptions": [
-            "The re-expressed formulas are written by hand from the same definitions as the core; a shared "
-            "misunderstanding of a surface definition would pass both.",
-            "Dual-number agreement is same-origin (ciw) evidence; only the sympy comparison is independent."]
+            "The re-expressed formulas and the restated closed forms are written by hand from the same definitions "
+            "as the core; a shared misunderstanding of a surface definition would pass both.",
+            "sympy.diffgeom assembles the connection and curvature only for seven surfaces; for gaussian-bump, "
+            "gaussian-bump-shear and rotated-torus they come from ciw-written assembly of sympy derivatives, which is "
+            "same-origin evidence.",
+            "Dual-number agreement is same-origin (ciw) evidence."]
             + ([] if have_sympy else ["sympy is not installed here, so the independent symbolic comparison did not run."]),
-        "recommended_next_task": ("T035: use the dual-number third derivatives to predict the finite-difference "
-                                  "error curve of the metric derivatives."),
+        "recommended_next_task": ("T040: compare smooth and mesh Jacobi approximations using these verified smooth "
+                                  "derivatives and curvatures as the reference. Complex-step derivatives remain open "
+                                  "until the core surfaces accept complex coordinates."),
     }
     return {"state": state, "fields": fields, "findings": findings}
 
@@ -436,6 +532,10 @@ FD_CONTROLS = ("saddle", "plane-polar", "plane")
 TRUNCATION_WINDOW = (10 ** -3.5, 1e-2)
 ROUNDING_WINDOW = (1e-13, 1e-10)
 LEADING_STEP = -3.0  # log10 of the relative step where the h^2/6 d^3 g term is compared
+# The signed leading-term comparison uses only points where the truncation
+# term exceeds the rounding floor eps|g|/h by this factor, so rounding moves
+# the relative deviation by at most ~1e-4 and the check measures truncation.
+LEADING_MARGIN = 1e4
 
 
 def fd_steps():
@@ -446,7 +546,9 @@ def fd_study(points=12, seed=SEED + 35) -> dict:
     """Median central-difference error of dg over seeded points for relative steps 1e-1..1e-13.
 
     The prediction per point and component is h^2/6 |d^3_k g_ij| + eps |g_ij| / h
-    with third derivatives from nested dual numbers.
+    with third derivatives from nested dual numbers. Per point, the smallest
+    error over all steps is also compared with that point's smallest
+    predicted error, so the pointwise statement does not rest on the median.
     """
     surfaces = conformance_surfaces()
     forms = formulas(surfaces)
@@ -456,7 +558,7 @@ def fd_study(points=12, seed=SEED + 35) -> dict:
         surface, dual, domain = surfaces[key], DualSurface(*forms[key]), DOMAINS[key]
         errors = np.zeros((points, len(hs)))
         predicted = np.zeros_like(errors)
-        leading = []
+        leading, skipped = [], 0
         for a, u in enumerate(domain.sample(points, seed)):
             length = domain.length(u)
             g, dg = surface.metric(u), surface.metric_derivatives(u)
@@ -470,11 +572,18 @@ def fd_study(points=12, seed=SEED + 35) -> dict:
                 if abs(math.log10(h) - LEADING_STEP) < 1e-9 and np.max(np.abs(third)) > 0:
                     # Signed leading-term check: FD - dg = h^2/6 d^3 g + O(h^4) + rounding.
                     term = step ** 2 / 6 * third
-                    leading.append(float(np.max(np.abs(fd - dg - term))
-                                         / np.max(np.abs(term) + EPS * np.abs(g)[None] / step)))
+                    floor = float(np.max(EPS * np.abs(g))) / step
+                    if float(np.max(np.abs(term))) >= LEADING_MARGIN * floor:
+                        leading.append(float(np.max(np.abs(fd - dg - term)) / np.max(np.abs(term))))
+                    else:
+                        skipped += 1
         median, pmedian = np.median(errors, axis=0), np.median(predicted, axis=0)
+        pointwise_min = np.min(errors, axis=1)
         row = {"median_error": [float(v) for v in median], "median_predicted": [float(v) for v in pmedian],
-               "leading_term_deviation": max(leading) if leading else None}
+               "leading_term_deviation": max(leading) if leading else None,
+               "leading_term_points": len(leading), "leading_term_skipped": skipped,
+               "pointwise_min_error": float(np.max(pointwise_min)),
+               "pointwise_min_ratio": float(np.max(pointwise_min / np.min(predicted, axis=1)))}
         for name, (lo, hi) in (("truncation_slope", TRUNCATION_WINDOW), ("rounding_slope", ROUNDING_WINDOW)):
             mask = (hs >= lo * (1 - 1e-9)) & (hs <= hi * (1 + 1e-9))
             values = median[mask]
@@ -497,6 +606,9 @@ def finite_difference_derivatives(ctx):
     trunc = max(abs(r["truncation_slope"] - 2.0) for r in main)
     rounding = max(abs(r["rounding_slope"] + 1.0) for r in main)
     leading = max(r["leading_term_deviation"] for r in main)
+    leading_points = sum(r["leading_term_points"] for r in main)
+    pointwise_min = max(r["pointwise_min_error"] for r in main)
+    pointwise_ratio = max(r["pointwise_min_ratio"] for r in main)
     hopt_log = max(abs(math.log10(r["h_opt"] / r["h_opt_predicted"])) for r in main)
     bracket = [min(r["h_opt"] for r in main), max(r["h_opt"] for r in main)]
     min_ratio = max(r["min_error"] / r["min_error_predicted"] for r in main)
@@ -523,10 +635,14 @@ def finite_difference_derivatives(ctx):
                               "dual-number third derivatives."),
         "expected_invariant": "Slope 2 on the truncation branch, slope -1 on the rounding branch, V-bottom near eps^(1/3).",
         "experiment": "Scan h, fit both branches, locate the minimum, compare with the prediction and with controls.",
-        "numerical_result": (f"truncation slopes within {_fmt(trunc)} of 2, leading term within {_fmt(leading)}; "
+        "numerical_result": (f"truncation slopes within {_fmt(trunc)} of 2, leading term within {_fmt(leading)} "
+                             f"relative at h = 1e-3 ({leading_points} points where truncation exceeds rounding by "
+                             f"1e4); "
                              f"rounding slopes within {_fmt(rounding)} of -1; observed h* in [{_fmt(bracket[0])}, "
                              f"{_fmt(bracket[1])}] (eps^(1/3) = {_fmt(EPS ** (1 / 3))}), within 10^{_fmt(hopt_log)} of "
-                             f"prediction; minimum error <= {_fmt(worst_min)}; sphere error at h = 1e-12 is "
+                             f"prediction; median minimum error <= {_fmt(worst_min)}, pointwise best error <= "
+                             f"{_fmt(pointwise_min)} ({_fmt(pointwise_ratio)} of each point's predicted minimum); "
+                             f"sphere error at h = 1e-12 is "
                              f"{_fmt(growth)} times the minimum; quadratic-metric controls {_fmt(control)} at h = 1e-2."),
         "uncertainty": ("Rounding-branch values depend on libm and summation details and scatter by tens of percent; "
                         "h* is resolved only on a grid of 4 points per decade (factor 1.78)."),
@@ -544,8 +660,13 @@ def finite_difference_derivatives(ctx):
         finding("Central-difference error of the analytic metric derivatives falls as h^2 on the truncation branch",
                 "numerical", {k: _sig(rows[k]["truncation_slope"], 6) for k in FD_SURFACES},
                 {"checks": [_check("max |slope - 2| over h in [10^-3.5, 1e-2]", trunc, 0.02, kind="analytic"),
-                            _check("max |FD - dg - h^2/6 d^3 g| / (|h^2/6 d^3 g| + eps|g|/h) at h = 1e-3 "
-                                   "(dual-number third derivatives)", leading, 1e-3, kind="analytic")]},
+                            _check("max |FD - dg - h^2/6 d^3 g| / max|h^2/6 d^3 g| at h = 1e-3 over points where "
+                                   "the term exceeds 1e4 eps|g|/h (dual-number third derivatives)", leading, 1e-3,
+                                   kind="analytic"),
+                            _check("points entering the leading-term comparison", leading_points, 40, comparison="ge",
+                                   kind="exact_arithmetic")]},
+                uncertainty={"kind": "truncation_bound", "value": 1e-3,
+                             "basis": "O(h^4) remainder plus rounding below 1e-4 of the term at h = 1e-3"},
                 tolerance={"abs": 0.01, "rel": 0.0}),
         finding("Rounding error of central differences grows as 1/h for small steps", "numerical",
                 {k: _sig(rows[k]["rounding_slope"], 4) for k in FD_SURFACES},
@@ -558,11 +679,25 @@ def finite_difference_derivatives(ctx):
                             _check("smallest observed h_opt", bracket[0], 1e-7, comparison="ge", kind="analytic"),
                             _check("largest observed h_opt", bracket[1], 1e-4, comparison="le", kind="analytic")]},
                 unit="log10(relative step)", tolerance={"abs": 0.75, "rel": 0.0}),
-        finding("Analytic metric derivatives agree with central differences to within the predicted minimum error",
+        finding("The median central-difference error curve bottoms out at or below the predicted minimum error",
                 "numerical", _sig(worst_min, 2),
-                {"checks": [_check("max E(h_opt) / E_pred(h_pred)", min_ratio, 1.0, comparison="le", kind="analytic"),
-                            _check("max normalized E(h_opt)", worst_min, 1e-10, comparison="le", kind="analytic")]},
-                unit="normalized error", tolerance={"abs": 1e-10, "rel": 0.0}),
+                {"checks": [_check("max over surfaces of median E(h_opt) / median E_pred(h_pred)", min_ratio, 1.0,
+                                   comparison="le", kind="analytic"),
+                            _check("max over surfaces of median E(h_opt)", worst_min, 1e-10, comparison="le",
+                                   kind="analytic")]},
+                unit="normalized error", uncertainty={"kind": "roundoff", "value": 1e-10,
+                                                      "basis": "rounding floor eps^(2/3) of the V-bottom"},
+                tolerance={"abs": 1e-10, "rel": 0.0}),
+        finding("At every sampled point the best central difference agrees with the analytic metric derivatives to "
+                "within twice that point's predicted minimum error",
+                "numerical", _sig(pointwise_min, 2),
+                {"checks": [_check("max over points of min_h E / min_h E_pred", pointwise_ratio, 2.0, comparison="le",
+                                   kind="analytic"),
+                            _check("max over points of min_h E (normalized)", pointwise_min, 2e-10, comparison="le",
+                                   kind="analytic")]},
+                unit="normalized error", uncertainty={"kind": "roundoff", "value": 2e-10,
+                                                      "basis": "rounding of the difference quotient at its best step"},
+                tolerance={"abs": 2e-10, "rel": 0.0}),
         finding("Smaller finite-difference steps can be far less accurate", "numerical", _sig(math.log10(growth), 3),
                 {"checks": [_check("sphere E(1e-12) / E(h_opt)", growth, 1e3, comparison="ge", kind="analytic")]},
                 unit="log10 error ratio", tolerance={"abs": 1.0, "rel": 0.0},
@@ -590,12 +725,21 @@ AZIMUTH = 1.3
 STEPS = 400
 
 
+# Numerical breakdowns that count as a single-chart failure; any other
+# exception (a bad step count, an unknown method, a shape error) is a bug and
+# propagates instead of strengthening the counterexample.
+SINGLE_CHART_FAILURES = ("rk4 produced a nonfinite state at step", "math domain error", "math range error")
+
+
 def _single(chart, u0, v0, length, steps):
     with np.errstate(all="ignore"):
         try:
             return integrate_single(chart, u0, v0, length, steps), None
-        except (FloatingPointError, ValueError, OverflowError, ZeroDivisionError, np.linalg.LinAlgError) as exc:
-            return None, type(exc).__name__
+        except (FloatingPointError, ValueError, OverflowError) as exc:
+            message = str(exc)
+            if not any(message.startswith(prefix) for prefix in SINGLE_CHART_FAILURES):
+                raise
+            return None, f"{type(exc).__name__}: {message}"
 
 
 def atlas_study(radius=1.0) -> dict:
@@ -695,6 +839,7 @@ def chart_transitions(ctx):
     spread = max(atlas_errors) / min(atlas_errors)
     order_defect = max(abs(order - 4.0) for order in study["orders"])
     min_after = min(row["min_det_after_switch"] for row in study["runs"])
+    # Recorded after any switch, so it restates the threshold and covering bound; kept as a value only.
     min_active = min(row["min_active_det"] for row in study["runs"])
     degraded = [row for row in study["runs"] if row["delta"] > 0 and (
         row["single_chart_failure"] is not None or row["single_chart_error"] > 10 * row["atlas_error"])]
@@ -702,12 +847,26 @@ def chart_transitions(ctx):
     ctx.artifact_json("atlas-runs.json", study)
     ctx.artifact_json("transitions.json", transitions)
     positive = [row for row in study["runs"] if row["delta"] > 0]
+    # Each run of consecutive successful single-chart deltas is its own series,
+    # so the line never bridges a failure; failures sit at a fixed ceiling.
+    single_series, current = [], []
+    for row in positive:
+        if row["single_chart_error"] is None:
+            if current:
+                single_series.append(current)
+            current = []
+        else:
+            current.append(row)
+    if current:
+        single_series.append(current)
+    series = [("atlas (chart switching)", [r["delta"] for r in positive], [r["atlas_error"] for r in positive])]
+    series += [(f"chart A alone{'' if i == 0 else ' (cont.)'}", [r["delta"] for r in part],
+                [r["single_chart_error"] for r in part]) for i, part in enumerate(single_series)]
+    if failed:
+        series.append(("chart A failed (at 1)", [r["delta"] for r in failed],
+                       [1.0] * len(failed)))
     ctx.artifact_text("atlas-vs-single-chart.svg", svg.line_plot(
-        [("atlas (chart switching)", [r["delta"] for r in positive], [r["atlas_error"] for r in positive]),
-         ("single polar chart (failures omitted)",
-          [r["delta"] for r in positive if r["single_chart_error"] is not None],
-          [r["single_chart_error"] for r in positive if r["single_chart_error"] is not None])],
-        title=f"Great-circle error after 2 pi R, RK4 with {STEPS} steps", xlabel="closest approach to the pole",
+        series, title=f"Great-circle error after 2 pi R, RK4 with {STEPS} steps", xlabel="closest approach to the pole",
         ylabel="max |X - X_exact|", logx=True, logy=True))
     profile = study["regularity_profile"]
     ctx.artifact_text("regularity-profile.svg", svg.line_plot(
@@ -740,17 +899,22 @@ def chart_transitions(ctx):
                              f"{_fmt(through['single_chart_error'])}; transitions round trip "
                              f"{_fmt(transitions['roundtrip'])}, speed {_fmt(transitions['metric_defect'])}, Jacobian "
                              f"{_fmt(transitions['jacobian_defect'])}; covering bound {_fmt(transitions['covering_min'])}."),
-        "uncertainty": ("Atlas errors are RK4 truncation errors (order 4); single-chart failure steps and the error "
-                        "of the knife-edge cases (delta <= 1e-8) depend on rounding and may differ across platforms."),
+        "uncertainty": ("Atlas errors are RK4 truncation errors (order 4). Single-chart errors for small delta come "
+                        "from the unresolved azimuthal rate 1/sin(delta) at a fixed step; the failure steps and the "
+                        "errors for delta <= 1e-8 depend on rounding and may differ across platforms."),
         "failure_modes_checked": ["geodesic exactly through a pole", "geodesics 1e-1..1e-12 from a pole",
                                   "chattering between charts (bound 1/2 > threshold 1/4)",
                                   "longitude wrap-around in transition differences",
-                                  "nonfinite single-chart states and math domain errors"],
+                                  "nonfinite single-chart states and math domain errors (recorded with their message; "
+                                  "any other exception propagates instead of counting as a failure)"],
         "unresolved_assumptions": [
             "Only the sphere has an atlas here; other surfaces need their own charts and transitions.",
-            "Switching happens between steps; an adaptive integrator would need event location at the threshold."],
-        "recommended_next_task": ("T037: detect coordinate singularities automatically so that chart switching can "
-                                  "be triggered by a classified singularity rather than a fixed threshold."),
+            "Switching happens between steps; an adaptive integrator would need event location at the threshold.",
+            "The recorded minimum det g / R^4 of the active chart restates the switch threshold and the covering "
+            "bound; it is reported, not checked."],
+        "recommended_next_task": ("Queue extension after T168: locate the chart-switch crossing with event detection "
+                                  "in the adaptive integrator, and drive switching from the T037 require_regular "
+                                  "refusal codes instead of a fixed det g threshold."),
     }
     single_through = through["single_chart_error"]
     findings = [
@@ -786,9 +950,7 @@ def chart_transitions(ctx):
                  "checks": [_check("min over 4352 sphere points of max(det_A, det_B) / R^4", transitions["covering_min"],
                                    0.5 - 1e-12, comparison="ge", kind="analytic"),
                             _check("min det g / R^4 right after a switch", min_after, 0.5 - 1e-12, comparison="ge",
-                                   kind="analytic"),
-                            _check("min det g / R^4 of the active chart along every run", min_active,
-                                   SWITCH_THRESHOLD, comparison="ge", kind="analytic")]},
+                                   kind="analytic")]},
                 tolerance={"abs": 1e-3, "rel": 0.0}),
         finding("A single polar chart fails or loses accuracy on great circles passing near its pole", "numerical",
                 {"cases": len(positive), "failed": len(failed), "degraded": len(degraded)},
@@ -810,8 +972,10 @@ def chart_transitions(ctx):
                 unit="length", tolerance={"abs": 1e-10, "rel": 0.0},
                 counterexample={"statement": "Single-chart integration exactly through a coordinate pole always fails",
                                 "witness": {"delta": 0.0, "single_chart_error": _sig(single_through, 2),
-                                            "delta_1e-12_error": _sig(runs[1e-12]["single_chart_error"], 2)
-                                            if runs[1e-12]["single_chart_error"] is not None else None}}),
+                                            "single_chart_error_by_delta": {
+                                                f"{d:g}": (None if runs[d]["single_chart_error"] is None
+                                                           else _sig(runs[d]["single_chart_error"], 2))
+                                                for d in (1e-12, 1e-10, 1e-8)}}}),
         finding("Chart-switching geodesic integration is ready for tool paths over physical parts", "industrial_readiness",
                 None, {}),
     ]
@@ -820,34 +984,66 @@ def chart_transitions(ctx):
 
 # ---------------------------------------------------------------- T037
 def approaches() -> list:
+    """Declared approaches; ``polar`` is set from knowledge of each chart (loops are geodesic-circle preimages)."""
     return [Approach("sphere-north-pole", Sphere(1.0), (0.0, 0.0), True),
             Approach("plane-polar-origin", Reparametrized(Plane(), PolarChart()), (0.0, 0.0), True),
             Approach("cone-apex", Cone(math.pi / 6), (0.0, 0.0), True),
             Approach("power-graph-apex", PowerGraph(1.0, 1.5), (0.0, 0.0), False),
+            Approach("power-graph-1.8-apex", PowerGraph(1.0, 1.8), (0.0, 0.0), False),
             Approach("hyperbolic-boundary", HyperbolicPlane(1.0), (0.2, 0.0), False, angle=math.pi / 2),
+            Approach("conformal-0.9-boundary", ConformalHalfPlane(0.9), (0.2, 0.0), False, angle=math.pi / 2),
+            Approach("plane-cube-root-chart", Reparametrized(Plane(), CubeRootChart()), (0.0, 0.3), False),
             Approach("saddle-origin", Saddle(1.0), (0.0, 0.0), False),
             Approach("sphere-equator", Sphere(1.0), (math.pi / 2, 0.3), False)]
 
 
 EXPECTED_CLASS = {"sphere-north-pole": "coordinate_singularity", "plane-polar-origin": "coordinate_singularity",
                   "cone-apex": "conical_singularity", "power-graph-apex": "curvature_singularity",
-                  "hyperbolic-boundary": "infinite_distance_boundary", "saddle-origin": "regular",
-                  "sphere-equator": "regular"}
+                  "power-graph-1.8-apex": "curvature_singularity",
+                  "hyperbolic-boundary": "infinite_distance_boundary",
+                  "conformal-0.9-boundary": "curvature_singularity", "plane-cube-root-chart": "unclassified",
+                  "saddle-origin": "regular", "sphere-equator": "regular"}
+
+# Cases just beyond each detection threshold, with their true type: the scan
+# is expected to misclassify them, and T037 records that as a counterexample.
+SMALL_DEFICIT = 5e-7  # 1 - sin(alpha) of the nearly flat cone
+
+
+def limit_approaches() -> dict:
+    return {
+        "power-graph-1.99-apex": (Approach("power-graph-1.99-apex", PowerGraph(1.0, 1.99), (0.0, 0.0), False),
+                                  "curvature_singularity"),
+        "conformal-0.9995-boundary": (Approach("conformal-0.9995-boundary", ConformalHalfPlane(0.9995), (0.2, 0.0),
+                                               False, angle=math.pi / 2), "curvature_singularity"),
+        "cone-small-deficit-apex": (Approach("cone-small-deficit-apex", Cone(math.asin(1.0 - SMALL_DEFICIT)),
+                                             (0.0, 0.0), True), "conical_singularity"),
+    }
 
 
 def refusal_cases() -> dict:
-    """Pointwise guard outcomes: (description, expected code, observed code)."""
+    """Guard and core-check outcomes computed from the metric and curvature: name -> (expected, observed)."""
     sphere, graph = Sphere(1.0), PowerGraph(1.0, 1.5)
     return {
         "sphere theta = 3e-5 (guard)": ("degenerate_metric", refusal_code(require_regular, sphere, np.array([3e-5, 0.3]))),
-        "sphere theta = 1e-7 (core Surface.check)": ("surface_refusal", refusal_code(sphere.check, np.array([1e-7, 0.3]))),
+        "sphere theta = 1e-7 (core Surface.check)": ("degenerate_metric",
+                                                     refusal_code(sphere.check, np.array([1e-7, 0.3]))),
         "cone apex r = 0 (guard)": ("degenerate_metric", refusal_code(require_regular, Cone(), np.array([0.0, 0.3]))),
-        "cone apex r = 0 (curvature)": ("conical_singularity", refusal_code(Cone().gaussian_curvature, np.array([0.0, 0.3]))),
         "power graph rho = 1e-6 (guard)": ("curvature_blowup", refusal_code(require_regular, graph, np.array([1e-6, 0.0]))),
-        "power graph apex (metric)": ("curvature_singularity", refusal_code(require_regular, graph, np.array([0.0, 0.0]))),
-        "hyperbolic y = -1 (guard)": ("chart_refused", refusal_code(require_regular, HyperbolicPlane(), np.array([0.0, -1.0]))),
+        "power graph p = 1.8 at rho = 1e-8, |K| below the bound (guard)": (
+            "accepted", refusal_code(require_regular, PowerGraph(1.0, 1.8), np.array([1e-8, 0.0]))),
+        "hyperbolic y = -1 (guard, core outside_chart propagated)": (
+            "outside_chart", refusal_code(require_regular, HyperbolicPlane(), np.array([0.0, -1.0]))),
         "nonfinite coordinates (guard)": ("nonfinite_point", refusal_code(require_regular, sphere, np.array([math.nan, 0.0]))),
         "sphere equator (guard)": ("accepted", refusal_code(require_regular, sphere, np.array([math.pi / 2, 0.3]))),
+    }
+
+
+def declared_refusal_cases() -> dict:
+    """Codes that singular surfaces raise themselves at their apex (author labels, not detections)."""
+    return {
+        "cone curvature at r = 0": ("conical_singularity", refusal_code(Cone().gaussian_curvature, np.array([0.0, 0.3]))),
+        "power graph apex through the guard": ("curvature_singularity",
+                                               refusal_code(require_regular, PowerGraph(1.0, 1.5), np.array([0.0, 0.0]))),
     }
 
 
@@ -866,16 +1062,31 @@ def core_check_leniency() -> dict:
 
 @task("T037", changed_files=(MODULE, CHARTS, GEOMETRY, DOC),
       regression_tests=(f"{TESTS}::test_singularity_scans_classify_every_case",
+                        f"{TESTS}::test_singularity_detection_limits",
                         f"{TESTS}::test_singularity_refusal_codes", f"{TESTS}::test_t037_report"))
 def coordinate_singularities(ctx):
     scans = {a.name: scan(a) for a in approaches()}
     classes = {name: result["classification"] for name, result in scans.items()}
     misclassified = sorted(name for name in classes if classes[name] != EXPECTED_CLASS[name])
-    refusals = refusal_cases()
+    limits = {name: (scan(approach), truth) for name, (approach, truth) in limit_approaches().items()}
+    limit_classes = {name: {"true": truth, "observed": result["classification"]}
+                     for name, (result, truth) in limits.items()}
+    missed = sorted(name for name, row in limit_classes.items() if row["observed"] != row["true"])
+    cartesian_pole = scan(Approach("sphere-north-pole-cartesian-loops", Sphere(1.0), (0.0, 0.3), False))
+    refusals, declared = refusal_cases(), declared_refusal_cases()
     leniency = core_check_leniency()
-    ctx.artifact_json("singularity-scans.json", {"expected": EXPECTED_CLASS, "scans": scans})
-    ctx.artifact_json("refusals.json", {name: {"expected": e, "observed": o} for name, (e, o) in refusals.items()}
-                      | {"core_check_leniency": leniency})
+    ctx.artifact_json("singularity-scans.json", {
+        "thresholds": {"fit_window": FIT_WINDOW, "fit_residual": FIT_RESIDUAL, "curvature_blowup": CURVATURE_BLOWUP,
+                       "degeneracy": DEGENERACY, "divergence_tolerance": DIVERGENCE_TOLERANCE,
+                       "conical_tolerance": CONICAL_TOLERANCE},
+        "expected": EXPECTED_CLASS, "scans": scans,
+        "detection_limits": {name: dict(limit_classes[name], scan=result) for name, (result, _) in limits.items()},
+        "approach_loop_dependence": cartesian_pole})
+    ctx.artifact_json("refusals.json", {"computed": {name: {"expected": e, "observed": o}
+                                                     for name, (e, o) in refusals.items()},
+                                        "declared_by_surface": {name: {"expected": e, "observed": o}
+                                                                for name, (e, o) in declared.items()},
+                                        "core_check_leniency": leniency})
     r = scans["sphere-north-pole"]["distances"]
     ctx.artifact_text("singularity-scan.svg", svg.line_plot(
         [("sphere pole: cond(g)", r, scans["sphere-north-pole"]["table"]["condition"]),
@@ -887,7 +1098,7 @@ def coordinate_singularities(ctx):
         title="Approach scans: coordinate versus curvature singularities", xlabel="distance parameter r",
         ylabel="value", logx=True, logy=True))
     pole, cone, polar = scans["sphere-north-pole"], scans["cone-apex"], scans["plane-polar-origin"]
-    graph, boundary = scans["power-graph-apex"], scans["hyperbolic-boundary"]
+    graph, boundary, conformal = scans["power-graph-apex"], scans["hyperbolic-boundary"], scans["conformal-0.9-boundary"]
     e_pole, e_graph = pole["exponents"], graph["exponents"]
     atlas = SphereAtlas(1.0)
     pole_in_b = atlas.regularity("B", atlas.to_chart("B", np.array([0.0, 0.0, 1.0])))
@@ -896,44 +1107,74 @@ def coordinate_singularities(ctx):
     graph_expected = 1.125 * PowerGraph(1.0, 1.5).c ** 2
     signature = max(abs(polar["exponents"][k] - cone["exponents"][k]) for k in ("det", "condition", "christoffel"))
     cone_obj = Cone(math.pi / 6)
+    slow = limits["power-graph-1.99-apex"][0]["exponents"]["curvature"]
+    near_critical = limits["conformal-0.9995-boundary"][0]["exponents"]["radial_speed"]
+    small_ratio = limits["cone-small-deficit-apex"][0]["circumference_ratio"]
     fields = {
-        "hypothesis": ("A scan into a candidate point separates coordinate singularities (det g -> 0 with bounded K, "
-                       "removable by a chart change) from conical points (bounded K but a circumference deficit) and "
-                       "curvature singularities (K unbounded), and pointwise guards refuse all of them with codes."),
-        "mathematical_model": ("Fit power laws r^a for det g, cond(g), max|Gamma| and |K| over r in [1e-8, 1e-3]; "
-                               "circumference ratio C(r) / (2 pi rho(r)) -> 1 at smooth points and sin(alpha) at a cone "
-                               "apex; radial distance diverging (log) marks an infinite-distance boundary."),
-        "input_data": ["sphere pole (chart A), plane in polar chart, cone alpha = pi/6, z = r^(3/2), hyperbolic y -> 0, "
-                       "saddle origin, sphere equator", "29 log-spaced distances 1e-1..1e-8"],
+        "hypothesis": ("A scan into a candidate point, along approach loops that are preimages of geodesic circles, "
+                       "separates coordinate singularities (det g -> 0 or cond g -> infinity with bounded K and "
+                       "circumference ratio 1) from conical points (circumference deficit above 1e-6), curvature "
+                       "singularities (|K| ~ r^a with a <= -0.05) and boundaries at infinite distance (radial speed "
+                       "~ r^b with b <= -1 + 1e-3); beyond these detection limits it misclassifies. A pointwise guard "
+                       "refuses points whose metric condition number or |K| exceeds its declared bounds, with codes."),
+        "mathematical_model": ("Fit power laws r^a on r in [1e-8, 1e-5] for det g, cond(g), max|Gamma|, |K| and the "
+                               "radial speed |dX/dr|; a fit is clean when its max log residual is <= 0.05. Radial "
+                               "distance int r^b dr diverges iff b <= -1; circumference ratio C(r) / (2 pi rho(r)) -> 1 "
+                               "at smooth points and sin(alpha) at a cone apex."),
+        "input_data": [f"{len(EXPECTED_CLASS)} declared approaches: " + ", ".join(EXPECTED_CLASS),
+                       f"{len(limit_classes)} detection-limit cases: " + ", ".join(limit_classes),
+                       "the sphere pole with Cartesian loops in chart A", "29 log-spaced distances 1e-1..1e-8"],
         "observation_model": ("Pointwise invariants of the chart; loop length by 64-point trapezoid; radial length "
                               "by 16-point Gauss-Legendre."),
         "expected_invariant": ("Sphere pole: det ~ r^2, cond ~ r^-2, Gamma ~ r^-1, K ~ r^0; r^(3/2) graph: K ~ r^-1 "
-                               "with det g -> 1; cone: ratio sin(alpha) = 1/2."),
-        "experiment": "Scan, fit, classify every approach; exercise the pointwise guard and the core check.",
-        "numerical_result": (f"{len(classes) - len(misclassified)}/{len(classes)} approaches classified as expected; "
-                             f"sphere pole exponents det {_fmt(e_pole['det'])}, cond {_fmt(e_pole['condition'])}, Gamma "
-                             f"{_fmt(e_pole['christoffel'])}, K {_fmt(e_pole['curvature'])}; r^(3/2) graph K exponent "
-                             f"{_fmt(e_graph['curvature'])}, K r -> {graph_prefactor:.6g} (9/8 expected); cone circumference ratio "
-                             f"{_fmt(cone['circumference_ratio'])}; polar-plane and cone exponent signatures differ by "
-                             f"{_fmt(signature)}; core check accepts cond(g) up to {_fmt(leniency['max_accepted_condition'])}; "
-                             f"{sum(e == o for e, o in refusals.values())}/{len(refusals)} refusal codes as expected."),
-        "uncertainty": ("Exponent fits are exact power laws up to rounding for these closed forms; the circumference "
-                        "test assumes radial chart lines are geodesics (true for these rotationally symmetric "
-                        "examples) and a small-r limit taken at r = 1e-8."),
+                               "with det g -> 1; cone: ratio sin(alpha) = 1/2; hyperbolic: radial speed ~ y^-1."),
+        "experiment": ("Scan, fit and classify every declared approach and every detection-limit case; repeat the "
+                       "sphere pole with Cartesian loops; exercise the pointwise guard and the core check."),
+        "numerical_result": (f"{len(classes) - len(misclassified)}/{len(classes)} declared approaches classified as "
+                             f"expected; {len(missed)}/{len(limit_classes)} detection-limit cases misclassified as "
+                             f"predicted; sphere pole exponents det {_fmt(e_pole['det'])}, cond "
+                             f"{_fmt(e_pole['condition'])}, Gamma {_fmt(e_pole['christoffel'])}, K "
+                             f"{_fmt(e_pole['curvature'])}; r^(3/2) graph K exponent {e_graph['curvature']:.7g}, K r -> "
+                             f"{graph_prefactor:.6g} (9/8 expected); cone circumference ratio "
+                             f"{_fmt(cone['circumference_ratio'])}; hyperbolic radial-speed exponent "
+                             f"{_fmt(boundary['exponents']['radial_speed'])}; Cartesian loops at the sphere pole give "
+                             f"ratio {_fmt(cartesian_pole['circumference_ratio'])} "
+                             f"({cartesian_pole['classification']}); core check accepts cond(g) up to "
+                             f"{_fmt(leniency['max_accepted_condition'])}; "
+                             f"{sum(e == o for e, o in refusals.values())}/{len(refusals)} computed and "
+                             f"{sum(e == o for e, o in declared.values())}/{len(declared)} surface-declared refusal "
+                             f"codes as expected."),
+        "uncertainty": ("Fits on r <= 1e-5 keep the leading smooth correction of each quantity: for z = r^(3/2), "
+                        "K = (9/8) r^-1 (1 + 9r/4)^-2, so the K exponent is -1 - O(r) (observed "
+                        f"{e_graph['curvature']:.7g}) and the det exponent O(r) ({_fmt(e_graph['det'])}); exact power "
+                        "laws (sphere pole, cone, hyperbolic boundary) fit to rounding. The circumference ratio at "
+                        "r = 1e-8 is exact to rounding for these examples."),
         "failure_modes_checked": ["false positive at regular points (saddle origin, sphere equator)",
                                   "coordinate singularity mistaken for a conical point (identical pointwise signature)",
                                   "Christoffel blow-up without curvature blow-up and vice versa",
-                                  "metric blow-up at an infinite-distance boundary", "apex evaluation (refused)"],
+                                  "metric blow-up at an infinite-distance boundary",
+                                  "slow curvature blow-up (K ~ r^-0.4) and a finite-distance boundary with K blow-up",
+                                  "removable metric blow-up at finite distance (left unclassified)",
+                                  "cases just beyond each detection threshold", "approach loops that are not "
+                                  "geodesic-circle preimages", "apex evaluation (refused)"],
         "unresolved_assumptions": [
-            "The classification rules are validated on seven declared examples, not proven for general surfaces.",
+            "The rules assume rotationally symmetric approaches whose radial chart lines are geodesics and whose loops "
+            "are preimages of geodesic circles; Approach.polar encodes that knowledge of the chart and is chosen by "
+            "the caller, and a wrong choice misclassifies.",
+            "Detection limits: |K| blow-up slower than r^0.05 over the fit window, radial-speed exponents within 1e-3 "
+            "of -1 and circumference deficits below 1e-6 are misclassified; logarithmic corrections are read through "
+            "their fitted exponent.",
+            "A metric blow-up at finite distance with bounded K is left unclassified; the cube-root chart of the plane "
+            "is such a case although it is removable.",
             "Non-rotationally-symmetric singular points (edges, cusps along curves) are not covered.",
-            "The pointwise guard reports both a conical point and a coordinate singularity as degenerate_metric and "
-            "does not flag the hyperbolic boundary at any finite y (cond g = 1, K = -1); only the scan separates them.",
-            "The core Surface.check threshold (det g <= 1e-12 (tr g)^2) is left unchanged; a condition-number "
+            "The pointwise guard reports a conical point and a coordinate singularity alike as degenerate_metric, "
+            "accepts curvature below its declared bound however fast it grows, and does not flag the hyperbolic "
+            "boundary at any finite y (cond g = 1, K = -1); only the scan separates them.",
+            "The core Surface.check threshold (det g <= 1e-12 max(1, tr g)^2) is left unchanged; a condition-number "
             "threshold is proposed as a core change."],
-        "recommended_next_task": ("T042: adopt the refusal codes (degenerate_metric, curvature_blowup, "
-                                  "curvature_singularity, chart_refused, nonfinite_point) as the refusal states for "
-                                  "invalid or incomplete surface data."),
+        "recommended_next_task": ("T042: adopt these refusal codes (nonfinite_point, nonfinite_metric, "
+                                  "degenerate_metric, curvature_blowup, outside_chart, curvature_singularity, "
+                                  "conical_singularity) as the refusal states for invalid or incomplete surface data."),
     }
     findings = [
         finding("The sphere pole in the polar chart is a coordinate singularity: det g -> 0 while K stays 1",
@@ -946,17 +1187,20 @@ def coordinate_singularities(ctx):
                             _check("|K exponent|", e_pole["curvature"], 1e-3, kind="analytic"),
                             _check("chart B det g / R^4 at the pole of chart A", pole_in_b, 1 - 1e-12, comparison="ge",
                                    kind="analytic")]},
+                uncertainty={"kind": "roundoff", "value": 1e-9, "basis": "least-squares fit of exact power laws"},
                 tolerance={"abs": 1e-3, "rel": 0.0}),
-        finding("Every approach is classified as expected, with no false positive at regular points",
+        finding("Every declared approach is classified as expected, with no false positive at regular points",
                 "computational_pipeline", classes,
-                {"checks": [_check("misclassified approaches", len(misclassified), 0, kind="exact_arithmetic")]},
+                {"checks": [_check("misclassified declared approaches", len(misclassified), 0, kind="exact_arithmetic")]},
                 tolerance={"abs": 0, "rel": 0}),
         finding("The graph z = r^(3/2) has a curvature singularity although its Monge metric is regular", "numerical",
                 {"curvature_exponent": _sig(e_graph["curvature"], 6), "det_exponent": _sig(e_graph["det"], 3),
                  "christoffel_exponent": _sig(e_graph["christoffel"], 3), "K_times_r": _sig(graph_prefactor, 8)},
-                {"checks": [_check("|K exponent + 1|", e_graph["curvature"] + 1, 5e-3, kind="analytic"),
+                {"checks": [_check("|K exponent + 1|", e_graph["curvature"] + 1, 1e-3, kind="analytic"),
                             _check("|det exponent|", e_graph["det"], 1e-3, kind="analytic"),
                             _check("|K r - 9 c^2 / 8| at r = 1e-8", graph_prefactor - graph_expected, 1e-6, kind="analytic")]},
+                uncertainty={"kind": "truncation_bound", "value": 1e-4,
+                             "basis": "O(r) correction (1 + 9r/4)^-2 over the fit window r <= 1e-5"},
                 tolerance={"abs": 1e-4, "rel": 1e-6},
                 counterexample={"statement": "A nondegenerate metric chart implies bounded Gaussian curvature",
                                 "witness": {"surface": "z = r^(3/2)", "det_g_at_1e-8": _sig(graph["table"]["det"][-1], 6),
@@ -970,6 +1214,7 @@ def coordinate_singularities(ctx):
                             _check("power graph |Gamma exponent| (bounded)", e_graph["christoffel"], 1e-2),
                             _check("minus the power graph K exponent (blow-up rate)", -e_graph["curvature"], 0.9,
                                    comparison="ge")]},
+                uncertainty={"kind": "truncation_bound", "value": 1e-4, "basis": "O(r) corrections over r <= 1e-5"},
                 tolerance={"abs": 1e-2, "rel": 0.0},
                 counterexample={"statement": "Christoffel-symbol blow-up indicates a curvature singularity",
                                 "witness": {"sphere_pole_max_gamma_at_1e-8": _sig(pole["table"]["christoffel"][-1]),
@@ -982,6 +1227,7 @@ def coordinate_singularities(ctx):
                 {"checks": [_check("max exponent difference (det, cond, Gamma)", signature, 1e-6, kind="analytic"),
                             _check("|cone ratio - sin(pi/6)|", cone["circumference_ratio"] - 0.5, 1e-9, kind="analytic"),
                             _check("|polar ratio - 1|", polar["circumference_ratio"] - 1.0, 1e-9, kind="analytic")]},
+                uncertainty={"kind": "roundoff", "value": 1e-12, "basis": "trapezoid and Gauss-Legendre quadrature"},
                 tolerance={"abs": 1e-6, "rel": 0.0},
                 counterexample={"statement": ("Pointwise metric and curvature invariants distinguish a removable "
                                               "coordinate singularity from a conical point"),
@@ -989,20 +1235,71 @@ def coordinate_singularities(ctx):
                                             "angle_deficit": _sig(cone_obj.angle_deficit())}}),
         finding("The hyperbolic chart boundary y -> 0 is at infinite distance, not a singular point", "numerical",
                 {"det_exponent": _sig(boundary["exponents"]["det"], 6),
-                 "near_over_far_distance": _sig(boundary["distance_near_over_far"], 6)},
+                 "radial_speed_exponent": _sig(boundary["exponents"]["radial_speed"], 8)},
                 {"checks": [_check("|det exponent + 4|", boundary["exponents"]["det"] + 4, 1e-3, kind="analytic"),
-                            _check("radial length of the last two decades / first two decades",
-                                   boundary["distance_near_over_far"], 0.9, comparison="ge", kind="analytic")]},
+                            _check("|radial-speed exponent + 1| (distance int dy / y diverges)",
+                                   boundary["exponents"]["radial_speed"] + 1, 1e-6, kind="analytic")]},
+                uncertainty={"kind": "roundoff", "value": 1e-9, "basis": "least-squares fit of exact power laws"},
                 tolerance={"abs": 1e-3, "rel": 0.0}),
-        finding("The pointwise guard refuses singular points with the expected codes and accepts a regular point",
-                "computational_pipeline", {name: observed for name, (_, observed) in refusals.items()},
+        finding("The boundary of g = y^-1.8 I lies at finite distance and carries a curvature singularity", "numerical",
+                {"radial_speed_exponent": _sig(conformal["exponents"]["radial_speed"], 8),
+                 "curvature_exponent": _sig(conformal["exponents"]["curvature"], 8),
+                 "classification": conformal["classification"]},
+                {"checks": [_check("|radial-speed exponent + 0.9| (distance y^0.1 / 0.1 is finite)",
+                                   conformal["exponents"]["radial_speed"] + 0.9, 1e-6, kind="analytic"),
+                            _check("|K exponent + 0.2| (K = -0.9 y^-0.2)", conformal["exponents"]["curvature"] + 0.2,
+                                   1e-6, kind="analytic")]},
+                uncertainty={"kind": "roundoff", "value": 1e-9, "basis": "least-squares fit of exact power laws"},
+                tolerance={"abs": 1e-6, "rel": 0.0}),
+        finding("Cases just beyond each classification threshold are misclassified", "computational_pipeline",
+                {"cases": limit_classes, "slow_curvature_exponent": _sig(slow, 6),
+                 "near_critical_speed_exponent": _sig(near_critical, 8),
+                 "small_deficit_ratio_defect": _sig(1.0 - small_ratio, 6)},
+                {"checks": [_check("detection-limit cases misclassified", len(missed), len(limit_classes),
+                                   comparison="ge", kind="exact_arithmetic"),
+                            _check("z = r^1.99: K exponent + 0.02 (just above the -0.05 threshold)", slow + 0.02, 1e-3,
+                                   kind="analytic"),
+                            _check("g = y^-1.999 I: radial-speed exponent + 0.9995 (within 1e-3 of -1)",
+                                   near_critical + 0.9995, 1e-6, kind="analytic"),
+                            _check("cone with 1 - sin(alpha) = 5e-7: ratio defect - 5e-7 (below the 1e-6 threshold)",
+                                   1.0 - small_ratio - SMALL_DEFICIT, 1e-12, kind="analytic")]},
+                uncertainty={"kind": "roundoff", "value": 1e-9, "basis": "least-squares fit of exact power laws"},
+                tolerance={"abs": 1e-3, "rel": 0.0},
+                counterexample={"statement": "The approach scan classifies every singular point correctly",
+                                "witness": limit_classes}),
+        finding("Cartesian loops around the sphere pole in the polar chart make a coordinate singularity read as a "
+                "conical point", "computational_pipeline",
+                {"circumference_ratio": _sig(cartesian_pole["circumference_ratio"], 6),
+                 "classification": cartesian_pole["classification"],
+                 "exponents": {k: (None if v is None else _sig(v, 6)) for k, v in cartesian_pole["exponents"].items()}},
+                {"checks": [_check("classified conical (1 = yes)",
+                                   int(cartesian_pole["classification"] == "conical_singularity"), 1, comparison="ge",
+                                   kind="exact_arithmetic"),
+                            _check("|circumference ratio - 1| with Cartesian loops",
+                                   abs(cartesian_pole["circumference_ratio"] - 1.0), 0.1, comparison="ge",
+                                   kind="analytic")]},
+                uncertainty={"kind": "roundoff", "value": 1e-12, "basis": "trapezoid and Gauss-Legendre quadrature"},
+                tolerance={"abs": 1e-6, "rel": 1e-6},
+                counterexample={"statement": ("The scan classifies a degenerate point independently of the approach "
+                                              "loops chosen by the caller"),
+                                "witness": {"point": "sphere north pole, chart A", "polar_loops": classes["sphere-north-pole"],
+                                            "cartesian_loops": cartesian_pole["classification"]}}),
+        finding("The pointwise guard and the core check refuse degenerate, blown-up, nonfinite and out-of-chart points "
+                "with computed codes, and accept curvature below the declared bound", "computational_pipeline",
+                {name: observed for name, (_, observed) in refusals.items()},
                 {"checks": [_refusal(name, expected, observed) for name, (expected, observed) in refusals.items()]},
+                tolerance={"abs": 0, "rel": 0}),
+        finding("Singular surfaces declare their apex refusal codes, and the guard propagates them unchanged",
+                "computational_pipeline", {name: observed for name, (_, observed) in declared.items()},
+                {"checks": [_refusal(name, expected, observed) for name, (expected, observed) in declared.items()]},
                 tolerance={"abs": 0, "rel": 0}),
         finding("The core Surface.check accepts sphere-chart points with metric condition number above 1e10",
                 "numerical", _sig(math.log10(leniency["max_accepted_condition"]), 4),
                 {"checks": [_check("max cond(g) accepted by Surface.check on the pole approach",
                                    leniency["max_accepted_condition"], 1e10, comparison="ge", kind="analytic")]},
-                unit="log10 condition number", tolerance={"abs": 0.3, "rel": 0.0}),
+                unit="log10 condition number", uncertainty={"kind": "reference_error", "value": 0.25,
+                                                            "basis": "theta grid of 4 points per decade"},
+                tolerance={"abs": 0.3, "rel": 0.0}),
         finding("The singularity classification applies to scanned physical parts", "physical", None, {}),
     ]
     return {"state": "completed", "fields": fields, "findings": findings}

@@ -6,7 +6,7 @@ extend it (queue tasks T033–T037). The experiments live in
 `src/ciw/lab/surfaces_discrete.py` with helpers
 `surfaces_discrete_geometry.py` (conformance suite, Brioschi curvature,
 stencils, chart maps, singular surfaces, defect mutants),
-`surfaces_discrete_ad.py` (dual numbers, sympy references) and
+`surfaces_discrete_ad.py` (dual numbers, sympy and sympy.diffgeom references) and
 `surfaces_discrete_charts.py` (sphere atlas, singularity scans, pointwise
 guard). Tests: `tests/test_lab_surfaces_discrete.py`.
 
@@ -27,7 +27,7 @@ surface.
 | `gaussian_curvature(u)` | exact `K` (closed form or second fundamental form); must satisfy the Gauss equation, i.e. equal the curvature computed from `g` alone | T033 Brioschi, T034 Riemann tensor |
 | `christoffel(u)` | generic `Γ[k, i, j] = ½ gᵏˡ (∂_i g_jl + ∂_j g_il − ∂_l g_ij)`: symmetric in `i, j`, metric compatible | T033 |
 | `geodesic_rhs(y)` | `y = (u, v)`, `u' = v`, `v'ᵏ = −Γᵏ_ij vⁱ vʲ`; no renormalization | T036 |
-| `check(u)` | raises `SurfaceRefusal` for nonfinite points or `det g ≤ 1e-12 (tr g)²` | T037 |
+| `check(u)` | raises `SurfaceRefusal(message, code)` with code `nonfinite_point` for nonfinite coordinates or `degenerate_metric` when `det g ≤ 1e-12 max(1, tr g)²` (charts may override, e.g. `outside_chart` for the hyperbolic plane at y ≤ 0) | T037 |
 | `embedding(u)`, `embedding_jacobian(u)` | optional point in R³ and 3×2 Jacobian; `None` for intrinsic charts | T034 |
 
 `EmbeddedSurface` derives `g` and `dg` from exact `first(u) = (X_u, X_v)` and
@@ -38,16 +38,20 @@ surface.
 derivatives, and `Rotated(base, R)` rigidly moves an embedded surface.
 
 Extensions added without modifying the core: `PolarChart`, `ShearChart`
-(a ↦ (a₁ + c a₂², a₂)), `Cone` (apex refused with code `conical_singularity`),
+(a ↦ (a₁ + c a₂², a₂)), `CubeRootChart` (a ↦ (∛a₁, a₂), whose Jacobian blows
+up on a₁ = 0), `Cone` (apex refused with code `conical_singularity`),
 `PowerGraph` (z = c ρᵖ, apex refused with `curvature_singularity`),
-`SingularityRefusal(SurfaceRefusal)` with a machine-readable `code`,
-`require_regular` and `SphereAtlas`.
+`ConformalHalfPlane` (g = y^(−2a) I, K = −a y^(2a−2)), `require_regular` and
+`SphereAtlas`. Every refusal is the core `SurfaceRefusal(message, code)`; the
+section defines no refusal class of its own.
 
 ### Declared domains
 
 Conformance is claimed only at seeded points (PCG64 seed 3301, 32 per
-surface) of these boxes, which avoid coordinate singularities. `l` is the
-local length scale used to normalize residuals.
+surface) of these boxes, which avoid coordinate singularities. The catalogue
+boxes are read from the core `SAMPLING_DOMAINS` (`sampling_domain(key)`); only
+the three derived surfaces and the hyperbolic length scale are declared by the
+section. `l` is the local length scale used to normalize residuals.
 
 | Surface | Domain | l |
 | --- | --- | --- |
@@ -73,9 +77,15 @@ At each point the suite evaluates, with normalized residuals:
    derivatives and second derivatives from differences of the exact first
    derivatives, against the supplied `K`.
 
-Worst residuals over 32 points (thresholds 1e-12 for the algebraic
-identities, 1e-8 for derivative consistency, 1e-7 for mixed partials and the
-Gauss equation):
+A residual that is NaN or infinite at any point fails its identity and is
+reported as `nonfinite`; an exception while evaluating a point fails the
+surface. (A running `max` would silently drop a NaN, because every comparison
+with NaN is false.)
+
+Worst residuals over 32 points (thresholds 1e-13 for metric and `dg`
+symmetry and 1e-12 for `Γ` symmetry and compatibility, which are algebraic
+identities; 1e-8 for derivative consistency; 1e-7 for mixed partials and the
+Gauss equation; eigenvalue ratio at least 1e-3):
 
 | Surface | min λ ratio | Γ asymmetry | compatibility | dg vs differences | mixed partials | Gauss equation |
 | --- | --- | --- | --- | --- | --- | --- |
@@ -90,7 +100,7 @@ Gauss equation):
 | gaussian-bump-shear | 0.108 | 0 | 1.5e-16 | 5.4e-13 | 5.9e-13 | 1.5e-13 |
 | rotated-torus | 0.111 | 0 | 1.5e-16 | 3.6e-13 | 1.6e-13 | 2.4e-13 |
 
-The suite rejects all six seeded defects:
+The suite rejects all seven seeded defects:
 
 | Mutant | Identities that fail |
 | --- | --- |
@@ -100,27 +110,48 @@ The suite rejects all six seeded defects:
 | gaussian bump with `f_xy` dropped | consistency, mixed partials, Gauss |
 | indefinite `diag(1, −(1 + y²))` | eigenvalue ratio; the connection identities are *not evaluated* |
 | asymmetric `g` | metric symmetry |
+| torus with `dg` NaN wherever u₁ > 0 | every identity involving `dg`, each flagged `nonfinite` |
 
-Two lessons are recorded as counterexamples. First, only the Gauss
-equation sees a wrong curvature: the other identities never involve `K`.
-Second, metric compatibility holds for *any* symmetric `dg` once `Γ` is built
-from it. It tests the index conventions of `christoffel`, not whether `dg` is
-the derivative of `g`. Only derivative consistency tests that.
+Two lessons are recorded as counterexamples, each on its own finding with
+checks that pass when the violation is observed. First, only the Gauss
+equation sees a wrong curvature: the misscaled sphere fails the Gauss equation
+(residual 0.167) and nothing else, because the other identities never involve
+`K`. Second, metric compatibility holds for *any* symmetric `dg` once `Γ` is
+built from it. It tests the index conventions of `christoffel`, not whether
+`dg` is the derivative of `g`. Only derivative consistency tests that.
+
+Christoffel symmetry is exact (0) for every surface here, because the core
+einsum is symmetric term by term whenever `dg` is symmetric in its last two
+indices. The check adds evidence only for a surface that overrides
+`christoffel()`.
 
 ## Derivative checks (T034)
 
 Each conformance surface is re-expressed once as a closed-form embedding
 (or, for the hyperbolic plane, a closed-form metric) against a small math
-namespace. The same formula feeds:
+namespace. Parameters enter through `ns.const`, which the symbolic namespace
+maps to `sympy.Rational` (the exact rational value of the binary float), so
+symbolic identities are exact for the declared parameters and nothing is
+rounded by `nsimplify`. The same formula feeds:
 
-* **sympy** (optional, distinct implementation origin): symbolic `g`, `dg`,
-  `Γ`, and `K = R₁₂₁₂ / det g` from the Riemann tensor of its own Christoffel
-  symbols, evaluated with `lambdify`. The worst normalized residual against
-  ciw is 3.0e-15 for `g, dg, Γ` and 8.2e-16 for `K`. These findings are
-  `independently_verified`. `sympy.simplify` also reduces the symbolic
-  Brioschi curvature exactly to the declared closed forms of seven surfaces:
-  plane 0, sphere 1, cylinder 0, saddle −1/(u² + v² + 1)², torus
-  cos v/(cos v + 2), hyperbolic −1, plane-polar 0.
+* **sympy differentiation** (optional, distinct origin): symbolic `g` and
+  `dg` for all ten surfaces, evaluated with `lambdify`; worst normalized
+  residual against ciw 4.2e-16 (`independently_verified`).
+* **sympy.diffgeom** (distinct origin for both differentiation and
+  assembly): `Γ` from `metric_to_Christoffel_2nd` and
+  `K = g₀ₘ Rᵐ₁₀₁ / det g` from `metric_to_Riemann_components`, for the seven
+  surfaces whose symbolic Riemann tensor is cheap (plane, sphere, cylinder,
+  saddle, torus, hyperbolic plane, plane-polar). Residuals 1.8e-16 (`Γ`) and
+  7.0e-16 (`K`), both `independently_verified`. `sympy.simplify` reduces the
+  diffgeom curvature exactly to closed forms restated from
+  `ciw.lab.surfaces` (the producer of that finding is the restatement,
+  `_declared_curvature`): plane 0, sphere 1, cylinder 0, saddle
+  −1/(u² + v² + 1)², torus cos v/(cos v + 2), hyperbolic −1, plane-polar 0.
+* **ciw assembly of sympy derivatives**: `Γ` and `R₁₂₁₂ / det g` written in
+  ciw code from sympy's derivatives, for all ten surfaces including the three
+  heavy ones (gaussian-bump, gaussian-bump-shear, rotated-torus). Residual
+  5.6e-16, recorded as a same-origin `cross_implementation` check
+  (`numerically_verified`), not as independent evidence.
 * **Nested forward-mode dual numbers** (implemented in ciw, so same-origin
   and `numerically_verified` only). Tags keep nested perturbations apart,
   and the Siskind–Pearlmutter test d/dx[x · d/dy(x + y)] = 1 passes. Against
@@ -129,7 +160,9 @@ namespace. The same formula feeds:
   expose the dropped-`f_xy` defect at a normalized error of 0.061.
 
 When sympy is absent the task reports `partial` and records the symbolic
-finding as `not_established`.
+findings as `not_established`. The claim that this agreement certifies
+derivatives of surfaces reconstructed from physical measurements is recorded
+as a `physical` finding and is `not_established`.
 
 ## Analytic versus finite-difference derivatives (T035)
 
@@ -147,9 +180,20 @@ per surface, and the table reports median errors.
 | gaussian-bump | 2.0000 | −1.03 | 1.8e-5 | 1.8e-5 | 5.2e-12 |
 | hyperbolic-plane | 2.0000 | −1.03 | 1.8e-6 | 3.2e-6 | 4.0e-11 |
 
-At h = 1e-3 the difference `FD − dg` equals the predicted leading term
-`h²/6 ∂³g` to within 6.6e-4 relative. Any error in the analytic `dg` is
-therefore below the V-bottom, about 4e-11 normalized.
+At h = 1e-3, over the 47 of 48 points where the leading term `h²/6 ∂³g`
+exceeds the rounding floor `ε|g|/h` by at least 1e4, the difference `FD − dg`
+equals that term to within 2.2e-5 relative (tolerance 1e-3). The masked
+point is a flat gaussian-bump flank point, u ≈ (2.40, −2.48), where the
+rounding floor is 1.5e-3 of the term. Without the mask the comparison would
+measure rounding there, not truncation.
+
+The table above reports medians. Per point, the best step over the scan
+agrees with the analytic `dg` to within 7.4e-11 normalized, at most 0.71
+times that point's own predicted minimum. The finding bounds this ratio by
+2, because the `ε|g|/h` rounding model is only a scale. So any error in the
+analytic `dg` is below about 7e-11 normalized at every sampled point. The
+sharper pointwise evidence for `dg` is T033's derivative consistency
+(fourth-order stencil, worst over 32 points per surface: 8.1e-12).
 
 Two counterexamples come out of this scan. First, a smaller step is not
 always better: on the sphere the error at h = 1e-12 is 5e6 times the minimum.
@@ -200,40 +244,68 @@ through the switches.
 
 A single chart passes the pole cleanly only on the exact meridian, where
 `v_φ` is exactly zero and the `cot θ` terms never act. That case is itself a
-counterexample to "single-chart integration through a pole always fails". It
-is also a knife edge: for 0 < δ ≲ 1e-2 the Clairaut rate `φ' = sin δ/sin²θ`
-makes the equations stiff near the pole.
+counterexample to "single-chart integration through a pole always fails".
+Away from it the single-chart error grows continuously with δ. It is roughly
+1e5 δ for δ ≤ 1e-10 (1.0e-7 at 1e-12, which is only 2.1 times the atlas
+error, and 1.1e-5 at 1e-10), reaches 0.10 at 1e-8, and the integration fails
+for 1e-6 ≤ δ ≤ 1e-2 at 400 steps. The mechanism is the azimuthal rate
+`φ' = sin δ/sin²θ`, which peaks at 1/sin δ at closest approach and is not
+resolved by the fixed step.
+
+Only a nonfinite RK4 state or a math domain error counts as a single-chart
+failure, and it is recorded with its message. Any other exception (a bad step
+count, an unknown method) propagates instead of strengthening the
+counterexample. In the figure `atlas-vs-single-chart.svg`, failed runs sit at
+a fixed ceiling of 1, and the single-chart line never bridges them.
 
 ## Singularity classification (T037)
 
 A scan follows a path into a candidate point over distances r from 1e-1 to
-1e-8. It fits power laws r^a for `det g`, `cond g`, `max|Γ|` and `|K|` on
-r ≤ 1e-3, and computes two further quantities:
-
-* the circumference ratio `C(r)/(2π ρ(r))`, loop length over 2π times radial
-  geodesic distance, taken at the smallest r;
-* the share of the radial distance that lies in the last two decades of the
-  scan.
+1e-8. It fits power laws r^a for `det g`, `cond g`, `max|Γ|`, `|K|` and the
+radial speed `|dX/dr|` on the window r ≤ 1e-5. A fit counts as clean when its
+largest log residual is at most 0.05. On that window a smooth quantity
+q₀(1 + c r) has a log-slope of at most |c|·1e-5. The scan also computes the
+circumference ratio `C(r)/(2π ρ(r))`: loop length over 2π times the radial
+geodesic distance, at the smallest r.
 
 The rules are applied in this order:
 
-1. If `K` blows up (exponent ≤ −½), the point is a `curvature_singularity`.
-2. If `det g` blows up and the radial distance diverges, it is an
-   `infinite_distance_boundary`.
-3. If `det g → 0` or `cond g → ∞`, it is a `conical_singularity` when the
-   circumference ratio is not 1, and a `coordinate_singularity` otherwise.
-4. Anything else is `regular`.
+1. If a quantity used by the rules is not a clean power law, the point is
+   `unclassified`.
+2. If `|K| ~ r^a` with a ≤ −0.05, it is a `curvature_singularity`.
+3. If the radial speed goes as r^b with b ≤ −1 + 1e-3, the radial length
+   ∫ r^b dr diverges, and the point is an `infinite_distance_boundary`.
+4. If `det g` blows up at finite distance with bounded `K`, it is
+   `unclassified`: a removable blow-up chart and a genuine singularity look
+   alike here.
+5. If `det g → 0` or `cond g → ∞`, it is a `conical_singularity` when the
+   circumference ratio differs from 1 by more than 1e-6, and a
+   `coordinate_singularity` otherwise.
+6. Anything else is `regular`.
 
-| Approach | det | cond | max\|Γ\| | \|K\| | circumference ratio | class |
-| --- | --- | --- | --- | --- | --- | --- |
-| sphere north pole (chart A) | r² | r⁻² | r⁻¹ | r⁰ (K = 1) | 1 | coordinate singularity (regular in chart B) |
-| plane, polar chart origin | r² | r⁻² | r⁻¹ | K ≡ 0 | 1 | coordinate singularity |
-| cone apex, α = π/6 | r² | r⁻² | r⁻¹ | K ≡ 0 | 0.5 = sin α | conical singularity, angle deficit π |
-| z = r^(3/2) apex (Monge chart) | r⁰ | r⁰ | r⁰ | r⁻¹ (K r → 9/8) | 1 | curvature singularity |
-| hyperbolic plane, y → 0 | y⁻⁴ | 1 | y⁻¹ | K = −1 | n/a | infinite-distance boundary |
-| saddle origin, sphere equator | regular | regular | r¹ | bounded | 1 | regular |
+The circumference test needs approach loops that are preimages of geodesic
+circles about the candidate point. The caller chooses them (`Approach.polar`)
+from knowledge of the chart. The rules also assume rotationally symmetric
+approaches whose radial chart lines are geodesics.
 
-The scans produce three counterexamples:
+| Approach | det | cond | max\|Γ\| | \|K\| | radial speed | circumference ratio | class |
+| --- | --- | --- | --- | --- | --- | --- | --- |
+| sphere north pole (chart A, polar loops) | r² | r⁻² | r⁻¹ | r⁰ (K = 1) | r⁰ | 1 | coordinate singularity (regular in chart B) |
+| plane, polar chart origin | r² | r⁻² | r⁻¹ | K ≡ 0 | r⁰ | 1 | coordinate singularity |
+| cone apex, α = π/6 | r² | r⁻² | r⁻¹ | K ≡ 0 | r⁰ | 0.5 = sin α | conical singularity, angle deficit π |
+| z = r^(3/2) apex (Monge chart) | r⁰ | r⁰ | r⁰ | r⁻¹ (K r → 9/8) | r⁰ | 1 | curvature singularity |
+| z = r^1.8 apex | r⁰ | r⁰ | r^0.6 | r^−0.4 | r⁰ | 1 | curvature singularity |
+| hyperbolic plane, y → 0 | y⁻⁴ | 1 | y⁻¹ | K = −1 | y⁻¹ | n/a | infinite-distance boundary |
+| g = y^−1.8 I, y → 0 | y^−3.6 | 1 | y⁻¹ | y^−0.2 | y^−0.9 (finite distance) | n/a | curvature singularity |
+| plane in the cube-root chart, a₁ → 0 | r^−4/3 | r^−4/3 | r⁻¹ | K ≡ 0 | r^−2/3 (finite distance) | n/a | unclassified |
+| saddle origin, sphere equator | regular | regular | r¹ | bounded | r⁰ | 1 | regular |
+
+The z = r^(3/2) exponents carry the leading smooth correction:
+K = (9/8) r⁻¹ (1 + 9r/4)⁻², so the fitted K exponent is −1.000005 and the det
+exponent 2.3e-6. The exact power laws (sphere pole, cone, hyperbolic boundary)
+fit to rounding.
+
+The scans produce these counterexamples:
 
 * A degenerate metric does not imply a curvature singularity (the sphere
   pole), and a regular metric does not imply bounded curvature
@@ -244,31 +316,50 @@ The scans produce three counterexamples:
 * The polar-plane origin and the cone apex have identical pointwise
   exponents. Only the nonlocal circumference test (1 against sin α)
   separates a removable coordinate singularity from a conical point.
+* Detection limits. Cases just beyond each threshold are misclassified, as
+  predicted:
 
-`require_regular(surface, u)` is the pointwise guard. It raises
-`SingularityRefusal` with one of these codes:
+  | Case | True type | Scan reads | Why |
+  | --- | --- | --- | --- |
+  | z = r^1.99 apex | curvature singularity | regular | K exponent −0.02 is above −0.05 |
+  | g = y^−1.999 I, y → 0 | curvature singularity at finite distance (about 2e3 from y = 0.2) | infinite-distance boundary | speed exponent −0.9995 is within 1e-3 of −1; K exponent −0.001 |
+  | cone with 1 − sin α = 5e-7 | conical singularity | coordinate singularity | circumference defect 5e-7 is below 1e-6 |
 
-| Code | Meaning |
-| --- | --- |
-| `nonfinite_point` | coordinates are not finite |
-| `nonfinite_metric` | the metric is not finite |
-| `degenerate_metric` | the metric is indefinite or its condition number exceeds 1e8; this is a coordinate *or* conical singularity |
-| `curvature_blowup` | \|K\| l² exceeds the declared bound (1e6) |
-| surface's own code | for example `curvature_singularity` at the power-graph apex, or `conical_singularity` for the cone's K at its apex |
-| `chart_refused` | the core `Surface.check` refused the point, for example the hyperbolic plane at y ≤ 0 |
+* Approach-loop dependence. The same sphere pole, scanned with Cartesian
+  loops about (0, 0.3) in chart A, gives circumference ratio 0.832 and reads
+  as a conical singularity. Those loops are not geodesic circles, so the
+  `polar` choice encodes knowledge of the chart and is part of the input.
 
-The core `Surface.check` is more lenient: on the sphere pole approach it
-accepts points with `cond g` up to 3.2e11 (θ ≈ 1.8e-6). The guard refuses
-from θ ≈ 1e-4.
+`require_regular(surface, u)` is the pointwise guard. It raises the core
+`SurfaceRefusal` with one of these codes:
+
+| Code | Source | Meaning |
+| --- | --- | --- |
+| `nonfinite_point` | guard (also the core check) | coordinates are not finite |
+| `nonfinite_metric` | guard | the metric is not finite |
+| `degenerate_metric` | guard (also the core check) | the metric is indefinite, or its condition number exceeds 1e8 (guard) or det g ≤ 1e-12 max(1, tr g)² (core). This is a coordinate *or* conical singularity |
+| `curvature_blowup` | guard | \|K\| l² exceeds the declared bound (1e6). A slower blow-up passes: z = r^1.8 at ρ = 1e-8 (\|K\| = 4.1e3) is accepted |
+| `outside_chart` | core check of the chart, propagated unchanged | for example the hyperbolic plane at y ≤ 0 |
+| `curvature_singularity`, `conical_singularity` | declared by the surface at its own apex | author labels (the power-graph metric at ρ = 0, the cone's K at r = 0), not detections; the guard propagates them unchanged |
+
+T037 checks 8 guard and core-check outcomes, including two acceptances, and
+the 2 surface-declared codes as separate findings.
+
+The core `Surface.check` is more lenient than the guard: on the sphere pole
+approach it accepts points with `cond g` up to 3.2e11 (θ ≈ 1.8e-6). The
+guard refuses from θ ≈ 1e-4.
 
 ## What these results do not establish
 
 * Conformance, derivative agreement and classification are shown at sampled
   points of declared domains and for the declared examples. They are not
-  proofs for whole domains or for general surfaces.
-* sympy agreement is independent in how derivatives are computed. The
-  closed-form re-expressions are hand-written from the same definitions as
-  the core, so a shared misreading of a surface definition would pass both.
+  proofs for whole domains or for general surfaces. The classifier has the
+  detection limits stated above, and it misclassifies beyond them.
+* sympy agreement is independent in how derivatives are computed, and for
+  seven surfaces also in how the connection and curvature are assembled
+  (sympy.diffgeom). The closed-form re-expressions and the restated closed
+  forms are hand-written from the same definitions as the core, so a shared
+  misreading of a surface definition would pass both.
 * The atlas exists for the sphere only. Chart switching happens between
   fixed steps; adaptive integration would need event location.
 * Nothing here applies to measured surfaces. Noise σ ≫ ε changes the
@@ -277,12 +368,11 @@ from θ ≈ 1e-4.
   recorded as `not_established` in the physical and industrial-readiness
   domains.
 
-## Requested core changes (not made here)
+## Requested core change (not made here)
 
-* `Surface.check` could refuse by metric condition number (for example
-  `cond g > 1e8`) in addition to `det g ≤ 1e-12 (tr g)²`, and raise a coded
-  refusal (`degenerate_metric`) as `require_regular` does.
-* `SurfaceRefusal` could carry an optional `code` attribute, so that
-  `SingularityRefusal` becomes unnecessary.
-* The catalogue could export its declared sampling domains (the table
-  above), so that conformance domains are not restated per section.
+* `Surface.check` could also refuse by metric condition number (for example
+  `cond g > 1e8`, code `degenerate_metric`), in addition to
+  `det g ≤ 1e-12 max(1, tr g)²`, as `require_regular` does.
+
+The coded `SurfaceRefusal(message, code)` and `SAMPLING_DOMAINS` /
+`sampling_domain()` are already in the core, and this section uses them.

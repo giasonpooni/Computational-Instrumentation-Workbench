@@ -3,11 +3,12 @@
 Scope: validates and extends the chart-level interface of ``ciw.lab.surfaces``
 (metric ``g_ij``, exact first derivatives ``dg[k, i, j] = d_k g_ij``,
 Christoffel symbols and supplied Gaussian curvature) without modifying it.
-It adds two concrete chart maps (polar and a polynomial shear), two surfaces
-with singular points (a cone and the graph z = c r^p), the Brioschi formula
-for curvature from the metric alone, fourth-order difference stencils, a
-conformance suite run over declared domains, and seeded defect mutants that
-the suite must reject.
+It adds three concrete chart maps (polar, a polynomial shear and a
+cube-root chart), three surfaces with singular points or boundaries (a cone,
+the graph z = c r^p and the conformal half-plane g = y^(-2a) I), the Brioschi
+formula for curvature from the metric alone, fourth-order difference
+stencils, a conformance suite run over declared domains, and seeded defect
+mutants that the suite must reject.
 
 Non-claims: every surface, coordinate and curvature is in declared normalized
 units. Passing the suite shows that one implementation is self-consistent and
@@ -24,7 +25,7 @@ from typing import Callable
 import numpy as np
 
 from .surfaces import (ChartMap, EmbeddedSurface, GaussianBump, MongeSurface, Reparametrized, Rotated, Saddle,
-                       Sphere, Surface, SurfaceRefusal, Torus, catalogue, rotation_matrix)
+                       Sphere, Surface, SurfaceRefusal, Torus, catalogue, rotation_matrix, sampling_domain)
 
 SEED = 3301
 EPS = float(np.finfo(float).eps)
@@ -46,14 +47,6 @@ THRESHOLDS = {
     "mixed_partials": 1e-7,
     "gauss_equation": 1e-7,
 }
-
-
-class SingularityRefusal(SurfaceRefusal):
-    """A surface point refused with a machine-readable singularity code."""
-
-    def __init__(self, code: str, message: str):
-        super().__init__(message)
-        self.code = code
 
 
 # ---------------------------------------------------------------- chart maps
@@ -103,6 +96,34 @@ class ShearChart(ChartMap):
         return np.array([u[0] - self.c * u[1] ** 2, u[1]])
 
 
+class CubeRootChart(ChartMap):
+    """a -> u = (cbrt(a1), a2): a homeomorphism of the plane whose Jacobian blows up on a1 = 0.
+
+    Pulling back a smooth surface through it gives a metric that blows up at
+    finite distance while the surface itself stays smooth there.
+    """
+
+    name = "cube-root"
+
+    def forward(self, a):
+        return np.array([math.copysign(abs(a[0]) ** (1.0 / 3.0), a[0]), a[1]])
+
+    def jacobian(self, a):
+        if a[0] == 0.0:
+            raise SurfaceRefusal("Cube-root chart: the Jacobian is unbounded on a1 = 0", "degenerate_metric")
+        return np.array([[abs(a[0]) ** (-2.0 / 3.0) / 3.0, 0.0], [0.0, 1.0]])
+
+    def hessian(self, a):
+        if a[0] == 0.0:
+            raise SurfaceRefusal("Cube-root chart: the Hessian is unbounded on a1 = 0", "degenerate_metric")
+        hess = np.zeros((2, 2, 2))
+        hess[0, 0, 0] = -2.0 / 9.0 * math.copysign(abs(a[0]) ** (-5.0 / 3.0), a[0])
+        return hess
+
+    def inverse(self, u):
+        return np.array([u[0] ** 3, u[1]])
+
+
 # ------------------------------------------------------- singular surfaces
 class Cone(EmbeddedSurface):
     """Cone of half-angle alpha in the chart (r, phi), r the slant distance to the apex.
@@ -115,7 +136,7 @@ class Cone(EmbeddedSurface):
 
     def __init__(self, half_angle=math.pi / 6):
         if not 0 < half_angle < math.pi / 2:
-            raise SurfaceRefusal("Cone half-angle must lie in (0, pi/2)")
+            raise SurfaceRefusal("Cone half-angle must lie in (0, pi/2)", "invalid_parameter")
         self.alpha = float(half_angle)
         self.sa, self.ca = math.sin(self.alpha), math.cos(self.alpha)
 
@@ -141,7 +162,7 @@ class Cone(EmbeddedSurface):
 
     def gaussian_curvature(self, u):
         if not u[0] > 0:
-            raise SingularityRefusal("conical_singularity", "Cone apex: curvature is concentrated at the vertex")
+            raise SurfaceRefusal("Cone apex: curvature is concentrated at the vertex", "conical_singularity")
         return 0.0
 
 
@@ -156,7 +177,7 @@ class PowerGraph(MongeSurface):
 
     def __init__(self, c=1.0, power=1.5):
         if not 1.0 < power < 2.0:
-            raise SurfaceRefusal("Power graph exponent must lie in (1, 2)")
+            raise SurfaceRefusal("Power graph exponent must lie in (1, 2)", "invalid_parameter")
         self.c, self.p = float(c), float(power)
 
     def describe(self):
@@ -169,8 +190,8 @@ class PowerGraph(MongeSurface):
         x, y = float(u[0]), float(u[1])
         rho = math.hypot(x, y)
         if rho == 0.0:
-            raise SingularityRefusal("curvature_singularity",
-                                     "Power graph apex: second derivatives and curvature diverge")
+            raise SurfaceRefusal("Power graph apex: second derivatives and curvature diverge",
+                                 "curvature_singularity")
         c, p = self.c, self.p
         a = c * p * rho ** (p - 2)
         b = c * p * (p - 2) * rho ** (p - 4)
@@ -181,6 +202,41 @@ class PowerGraph(MongeSurface):
         c, p = self.c, self.p
         f1, f2 = c * p * rho ** (p - 1), c * p * (p - 1) * rho ** (p - 2)
         return f1 * f2 / (rho * (1 + f1 * f1) ** 2)
+
+
+class ConformalHalfPlane(Surface):
+    """g = y^(-2a) I on y > 0: K = -a y^(2a - 2).
+
+    a = 1 is the hyperbolic plane (boundary at infinite distance, K = -1). For
+    0 < a < 1 the boundary y = 0 lies at finite distance y^(1-a) / (1 - a)
+    and K diverges there, ever more slowly as a approaches 1.
+    """
+
+    name = "conformal-half-plane"
+
+    def __init__(self, a=0.9):
+        if not a > 0:
+            raise SurfaceRefusal("Conformal exponent must be positive", "invalid_parameter")
+        self.a = float(a)
+
+    def describe(self):
+        return {"name": self.name, "a": self.a, "metric": "y^(-2a) I on y > 0"}
+
+    def check(self, u):
+        if not (np.all(np.isfinite(u)) and u[1] > 0):
+            raise SurfaceRefusal("Conformal half-plane requires y > 0", "outside_chart")
+
+    def metric(self, u):
+        return np.eye(2) * u[1] ** (-2.0 * self.a)
+
+    def metric_derivatives(self, u):
+        dg = np.zeros((2, 2, 2))
+        dg[1] = -2.0 * self.a * u[1] ** (-2.0 * self.a - 1.0) * np.eye(2)
+        return dg
+
+    def gaussian_curvature(self, u):
+        # g = exp(2 w) I with w = -a ln y: K = -exp(-2 w) Laplacian(w) = -a y^(2a - 2).
+        return -self.a * u[1] ** (2.0 * self.a - 2.0)
 
 
 # ---------------------------------------------------------------- mutants
@@ -238,6 +294,18 @@ class LorentzianChart(Surface):
         return 0.0
 
 
+class NaNDerivativeTorus(Torus):
+    """Defect: metric derivatives that turn NaN on half of the domain (u1 > 0)."""
+
+    name = "mutant-nan-derivatives"
+
+    def metric_derivatives(self, u):
+        dg = super().metric_derivatives(u)
+        if u[0] > 0:
+            dg[0, 0, 0] = math.nan
+        return dg
+
+
 class NonsymmetricMetric(Surface):
     """Defect: an asymmetric metric matrix with a small off-diagonal slip."""
 
@@ -275,19 +343,22 @@ def _hyperbolic_scale(u):
     return u[1]
 
 
+def _core_domain(key, scale=None) -> Domain:
+    """A catalogue sampling box as declared by ciw.lab.surfaces.SAMPLING_DOMAINS."""
+    (low1, high1), (low2, high2) = sampling_domain(key)
+    return Domain((low1, low2), (high1, high2), scale)
+
+
 BOX = Domain((-2.0, -2.0), (2.0, 2.0))
-DOMAINS = {
-    "plane": BOX,
-    "sphere": Domain((0.3, -math.pi), (math.pi - 0.3, math.pi)),
-    "cylinder": Domain((-math.pi, -2.0), (math.pi, 2.0)),
-    "saddle": Domain((-1.5, -1.5), (1.5, 1.5)),
-    "torus": Domain((-math.pi, -math.pi), (math.pi, math.pi)),
-    "gaussian-bump": Domain((-2.5, -2.5), (2.5, 2.5)),
-    "hyperbolic-plane": Domain((-2.0, 0.3), (2.0, 3.0), _hyperbolic_scale),
+# Catalogue boxes come from the core; only the local length scale of the
+# hyperbolic plane and the section's derived surfaces are declared here.
+DOMAINS = {key: _core_domain(key, _hyperbolic_scale if key == "hyperbolic-plane" else None)
+           for key in ("plane", "sphere", "cylinder", "saddle", "torus", "gaussian-bump", "hyperbolic-plane")}
+DOMAINS.update({
     "plane-polar": Domain((0.3, -math.pi), (2.0, math.pi)),
     "gaussian-bump-shear": BOX,
-    "rotated-torus": Domain((-math.pi, -math.pi), (math.pi, math.pi)),
-}
+    "rotated-torus": DOMAINS["torus"],
+})
 TORUS_ROTATION = rotation_matrix([1.0, 2.0, 3.0], 0.7)
 
 
@@ -307,6 +378,7 @@ def mutant_surfaces() -> dict:
         "transposed-derivatives": (TransposedTorus(2.0, 1.0), DOMAINS["torus"]),
         "sign-flipped-derivatives": (SignFlippedSaddle(1.0), DOMAINS["saddle"]),
         "dropped-cross-term": (DroppedCrossTermBump(0.5, 1.0), DOMAINS["gaussian-bump"]),
+        "nan-derivatives": (NaNDerivativeTorus(2.0, 1.0), DOMAINS["torus"]),
         "indefinite-metric": (LorentzianChart(), BOX),
         "nonsymmetric-metric": (NonsymmetricMetric(), BOX),
     }
@@ -416,31 +488,40 @@ def conformance(surface: Surface, domain: Domain, count: int = 32, seed: int = S
     """Worst normalized residual of each identity over seeded domain points, and failed checks.
 
     An identity that could not be evaluated at some point (indefinite metric)
-    is listed under ``not_evaluated`` and never counts as passed.
+    is listed under ``not_evaluated`` and never counts as passed. A NaN or
+    infinite residual at any point fails its identity (``nonfinite``): Python
+    comparisons with NaN are false, so a running max would silently drop it.
+    An exception while evaluating a point fails the surface (``errors``).
     """
     points = domain.sample(count, seed)
     worst = {name: None for name in THRESHOLDS}
+    nonfinite, errors = set(), []
     refused = 0
     for u in points:
         try:
             surface.check(u)
         except SurfaceRefusal:
             refused += 1
-        row = conformance_point(surface, u, domain.length(u))
+        try:
+            row = conformance_point(surface, u, domain.length(u))
+        except (ArithmeticError, ValueError, np.linalg.LinAlgError) as exc:
+            errors.append(f"{type(exc).__name__}: {exc}")
+            continue
         for name in THRESHOLDS:
             value = row[name]
             if value is None:
                 continue
+            if not math.isfinite(value):
+                nonfinite.add(name)
+                continue
             pick = min if name == "min_eigenvalue_ratio" else max
             worst[name] = value if worst[name] is None else pick(worst[name], value)
-    failed = [name for name, bound in THRESHOLDS.items() if worst[name] is not None
-              and (worst[name] < bound if name == "min_eigenvalue_ratio" else not worst[name] <= bound)]
-    not_evaluated = [name for name in THRESHOLDS if worst[name] is None]
+    failed = [name for name, bound in THRESHOLDS.items() if name in nonfinite or (
+        worst[name] is not None
+        and (worst[name] < bound if name == "min_eigenvalue_ratio" else not worst[name] <= bound))]
+    not_evaluated = [name for name in THRESHOLDS if worst[name] is None and name not in nonfinite]
     return {"points": int(count), "seed": int(seed), "refused_by_core_check": refused,
-            "worst": {k: None if v is None else _json_float(v) for k, v in worst.items()},
-            "failed": failed, "not_evaluated": not_evaluated,
-            "conforms": not failed and not not_evaluated}
-
-
-def _json_float(value):
-    return float(value) if math.isfinite(value) else ("inf" if value > 0 else "-inf")
+            "worst": {k: "nonfinite" if k in nonfinite else (None if v is None else float(v))
+                      for k, v in worst.items()},
+            "failed": failed, "not_evaluated": not_evaluated, "nonfinite": sorted(nonfinite),
+            "errors": sorted(set(errors)), "conforms": not failed and not not_evaluated and not errors}

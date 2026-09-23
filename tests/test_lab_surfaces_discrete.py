@@ -10,13 +10,12 @@ from ciw.lab import surfaces_discrete as sd
 from ciw.lab.evidence import validate_finding
 from ciw.lab.registry import _REGISTRY, load_queue
 from ciw.lab.runner import Context, run_task
-from ciw.lab.surfaces import Sphere, SurfaceRefusal, Torus
+from ciw.lab.surfaces import SAMPLING_DOMAINS, Sphere, SurfaceRefusal, Torus
 from ciw.lab.surfaces_discrete_ad import DualSurface, formulas
 from ciw.lab.surfaces_discrete_charts import (SphereAtlas, great_circle, integrate_atlas, pole_passing_great_circle,
-                                              require_regular, scan)
-from ciw.lab.surfaces_discrete_geometry import (DOMAINS, SEED, THRESHOLDS, PowerGraph, SingularityRefusal, brioschi,
-                                                conformance, conformance_surfaces, metric_second_derivatives,
-                                                mutant_surfaces)
+                                              refusal_code, require_regular, scan)
+from ciw.lab.surfaces_discrete_geometry import (DOMAINS, SEED, THRESHOLDS, PowerGraph, brioschi, conformance,
+                                                conformance_surfaces, metric_second_derivatives, mutant_surfaces)
 
 QUEUE = {item["id"]: item for item in load_queue()["tasks"]}
 
@@ -48,6 +47,9 @@ def _common_report_checks(report):
 def test_conformance_suite_accepts_every_surface():
     surfaces = conformance_surfaces()
     assert {"plane-polar", "gaussian-bump-shear", "rotated-torus"} <= set(surfaces)
+    # Catalogue sampling boxes come from the core declaration, not a restatement.
+    for key, ((low1, high1), (low2, high2)) in SAMPLING_DOMAINS.items():
+        assert (DOMAINS[key].low, DOMAINS[key].high) == ((low1, low2), (high1, high2))
     for key, surface in surfaces.items():
         result = conformance(surface, DOMAINS[key], 12, SEED)
         assert result["conforms"], (key, result["failed"])
@@ -67,6 +69,26 @@ def test_conformance_suite_rejects_seeded_mutants():
     assert results["indefinite-metric"]["failed"] == ["min_eigenvalue_ratio"]
     assert "gauss_equation" in results["indefinite-metric"]["not_evaluated"]
     assert results["nonsymmetric-metric"]["failed"] == ["metric_asymmetry"]
+    # NaN derivatives on half of the domain are failures, not silently dropped maxima.
+    nan = results["nan-derivatives"]
+    assert not nan["conforms"] and "derivative_asymmetry" in nan["nonfinite"]
+    assert set(nan["nonfinite"]) <= set(nan["failed"])
+    assert nan["worst"]["derivative_consistency"] == "nonfinite"
+
+
+class _NaNAtFirstPoint(Sphere):
+    """Curvature NaN at the first sampled point only (a running max would keep or drop it by position)."""
+
+    first_sample = tuple(DOMAINS["sphere"].sample(12, SEED)[0])
+
+    def gaussian_curvature(self, u):
+        return math.nan if tuple(u) == self.first_sample else super().gaussian_curvature(u)
+
+
+def test_conformance_reports_nonfinite_residuals():
+    result = conformance(_NaNAtFirstPoint(1.0), DOMAINS["sphere"], 12, SEED)
+    assert result["failed"] == ["gauss_equation"] and result["nonfinite"] == ["gauss_equation"]
+    assert result["worst"]["gauss_equation"] == "nonfinite" and not result["conforms"]
 
 
 def test_brioschi_recovers_supplied_curvature():
@@ -91,12 +113,16 @@ def test_t033_report(tmp_path):
     report = _run("T033", tmp_path)
     assert report["state"] == "completed"
     assert report["evidence_status"]["primary"] == "numerically_verified"
-    assert report["evidence_status"]["counts"]["numerically_verified"] == 9
+    assert report["evidence_status"]["counts"]["numerically_verified"] == 10
     labels = _labels(report)
     assert labels["The conformance suite certifies surfaces reconstructed from physical measurements"] == "not_established"
-    mutants = next(f for f in report["findings"] if f["claim"].startswith("The conformance suite rejects"))
-    assert mutants["value"] == {"mutants": 6, "undetected": 0}
-    assert mutants["counterexample"]["witness"]["failed"] == ["gauss_equation"]
+    findings = {f["claim"]: f for f in report["findings"]}
+    assert findings["The conformance suite rejects every seeded defect mutant"]["value"] == {"mutants": 7, "undetected": 0}
+    misscaled = findings["A curvature-misscaled sphere passes every identity except the Gauss equation"]
+    assert misscaled["evidence_status"] == "numerically_verified"
+    assert misscaled["value"]["failed"] == ["gauss_equation"] and misscaled["counterexample"]["witness"]["failed"] == [
+        "gauss_equation"]
+    assert all(check["passed"] for check in misscaled["basis"]["checks"])
     assert report["findings"][0]["value"] <= 1e-7
     _common_report_checks(report)
 
@@ -124,17 +150,24 @@ def test_dual_derivatives_match_surface_interface():
 
 def test_sympy_references_match_surface_interface():
     sp = pytest.importorskip("sympy")
-    from ciw.lab.surfaces_discrete_ad import symbolic_exact_curvature, symbolic_reference
+    from ciw.lab.surfaces_discrete_ad import diffgeom_reference, symbolic_reference
 
     surfaces = conformance_surfaces()
     forms = formulas(surfaces)
-    for key in ("sphere", "torus", "hyperbolic-plane"):
+    for key in ("sphere", "hyperbolic-plane"):
         reference = symbolic_reference(*forms[key])
+        geometric, expression, (u_sym, v_sym) = diffgeom_reference(*forms[key])
         for u in DOMAINS[key].sample(3, SEED + 3):
             values = reference(u)
             np.testing.assert_allclose(values["metric_derivatives"], surfaces[key].metric_derivatives(u), atol=1e-12)
             assert values["gaussian_curvature"] == pytest.approx(surfaces[key].gaussian_curvature(u), abs=1e-12)
-    assert sp.simplify(symbolic_exact_curvature(*forms["sphere"]) - 1) == 0
+            np.testing.assert_allclose(geometric(u)["christoffel"], surfaces[key].christoffel(u), atol=1e-12)
+            assert geometric(u)["gaussian_curvature"] == pytest.approx(surfaces[key].gaussian_curvature(u), abs=1e-12)
+        declared = {"sphere": 1, "hyperbolic-plane": -1}[key]
+        assert sp.simplify(expression - declared) == 0
+    # Parameters enter the symbolic formulas exactly: no float survives in the curvature.
+    _, expression, _ = diffgeom_reference(*forms["sphere"])
+    assert not sp.simplify(expression).atoms(sp.Float)
 
 
 def test_t034_report(tmp_path):
@@ -142,11 +175,27 @@ def test_t034_report(tmp_path):
     report = _run("T034", tmp_path)
     assert report["state"] == "completed"
     assert report["evidence_status"]["primary"] == "numerically_verified"
-    assert report["evidence_status"]["counts"]["independently_verified"] == 3
-    assert report["evidence_status"]["counts"]["numerically_verified"] == 4
-    exact = next(f for f in report["findings"] if f["claim"].startswith("sympy simplifies"))
+    assert report["evidence_status"]["counts"]["independently_verified"] == 4
+    assert report["evidence_status"]["counts"]["numerically_verified"] == 5
+    labels = _labels(report)
+    # The independent evidence is per finding: every sympy-origin claim is independently verified,
+    # while ciw assembly of sympy derivatives and the dual numbers stay same-origin.
+    for claim, label in labels.items():
+        if claim.startswith("sympy"):
+            assert label == "independently_verified", claim
+    assert labels["Christoffel symbols and curvature assembled in ciw code from sympy derivatives match the interface "
+                  "on every conformance surface"] == "numerically_verified"
+    assert labels["Symbolic and dual-number derivative agreement certifies derivatives of surfaces reconstructed from "
+                  "physical measurements"] == "not_established"
+    findings = {f["claim"]: f for f in report["findings"]}
+    exact = findings["sympy.diffgeom curvature of seven surfaces simplifies exactly to the closed forms restated from "
+                     "ciw.lab.surfaces"]
     assert exact["value"] == {"surfaces": 7, "mismatches": 0}
-    assert exact["basis"]["independent_check"]["checker"]["implementation"] == "sympy"
+    assert exact["basis"]["independent_check"]["checker"]["implementation"] == "sympy.diffgeom"
+    assert exact["basis"]["independent_check"]["producer"]["implementation"].endswith("_declared_curvature")
+    derivs = findings["sympy-differentiated metric and metric derivatives match the ciw surface interface on every "
+                      "conformance surface"]
+    assert "surfaces_discrete_geometry.py" in derivs["basis"]["independent_check"]["producer"]["revision"]
     _common_report_checks(report)
 
 
@@ -159,8 +208,9 @@ def test_t034_degrades_without_sympy(tmp_path):
     report = _run("T034", tmp_path, _NoSympy)
     assert report["state"] == "partial"
     labels = _labels(report)
-    assert labels["sympy symbolic metric, metric derivatives and Christoffel symbols match the ciw surface interface"] \
-        == "not_established"
+    sympy_claims = [claim for claim in labels if claim.startswith("sympy")]
+    assert len(sympy_claims) == 4 and all(labels[claim] == "not_established" for claim in sympy_claims)
+    assert report["evidence_status"]["primary"] == "numerically_verified"
     assert report["evidence_status"]["counts"]["numerically_verified"] == 4
     assert report["evidence_status"]["counts"]["independently_verified"] == 0
 
@@ -175,7 +225,9 @@ def test_finite_difference_error_is_v_shaped():
         assert 1e-7 <= row["h_opt"] <= 1e-4
         assert abs(math.log10(row["h_opt"] / row["h_opt_predicted"])) <= math.log10(4.0)
         assert row["error_at_1e-12"] > 1e3 * row["min_error"]
-        assert row["leading_term_deviation"] <= 1e-3
+        # Signed leading-term comparison only where truncation dominates rounding by 1e4.
+        assert row["leading_term_points"] >= 3 and row["leading_term_deviation"] <= 1e-3
+        assert row["pointwise_min_ratio"] <= 2.0 and row["pointwise_min_error"] <= 2e-10
     assert study["surfaces"]["saddle"]["error_at_1e-2"] <= 1e-13
     assert max(study["surfaces"]["plane"]["median_error"]) == 0.0
 
@@ -224,7 +276,11 @@ def test_atlas_geodesic_through_pole_matches_great_circle():
 def test_single_chart_near_pole_counterexample():
     atlas, start, tangent, u0, v0, run = _great_circle_run(1e-3)
     single, failure = sd._single(atlas.charts["A"], u0, v0, 2 * math.pi, 200)
-    assert single is None and failure in ("FloatingPointError", "ValueError", "OverflowError")
+    assert single is None and failure.startswith(("FloatingPointError: rk4 produced a nonfinite state",
+                                                  "ValueError: math domain error"))
+    # A programming error is not a single-chart failure: it propagates.
+    with pytest.raises(ValueError, match="steps must be positive"):
+        sd._single(atlas.charts["A"], u0, v0, 2 * math.pi, 0)
     atlas, start, tangent, u0, v0, run = _great_circle_run(0.1)
     single, failure = sd._single(atlas.charts["A"], u0, v0, 2 * math.pi, 200)
     atlas_error = np.max(np.linalg.norm(run["points"] - great_circle(start, tangent, 1.0, run["s"]), axis=1))
@@ -253,22 +309,45 @@ def test_singularity_scans_classify_every_case():
     assert {name: r["classification"] for name, r in results.items()} == sd.EXPECTED_CLASS
     pole = results["sphere-north-pole"]["exponents"]
     assert pole["det"] == pytest.approx(2.0, abs=1e-3) and pole["curvature"] == pytest.approx(0.0, abs=1e-3)
-    assert results["power-graph-apex"]["exponents"]["curvature"] == pytest.approx(-1.0, abs=5e-3)
+    assert results["power-graph-apex"]["exponents"]["curvature"] == pytest.approx(-1.0, abs=1e-3)
+    # The slow blow-up K ~ r^-0.4 and the finite-distance conformal boundary are curvature singularities.
+    assert results["power-graph-1.8-apex"]["exponents"]["curvature"] == pytest.approx(-0.4, abs=1e-3)
+    assert results["conformal-0.9-boundary"]["exponents"]["radial_speed"] == pytest.approx(-0.9, abs=1e-6)
+    assert results["hyperbolic-boundary"]["exponents"]["radial_speed"] == pytest.approx(-1.0, abs=1e-6)
     assert results["cone-apex"]["circumference_ratio"] == pytest.approx(0.5, abs=1e-9)
     assert results["plane-polar-origin"]["circumference_ratio"] == pytest.approx(1.0, abs=1e-9)
 
 
+def test_singularity_detection_limits():
+    for name, (approach, truth) in sd.limit_approaches().items():
+        observed = scan(approach)["classification"]
+        assert observed != truth, name
+    limits = {name: scan(approach)["classification"] for name, (approach, _) in sd.limit_approaches().items()}
+    assert limits == {"power-graph-1.99-apex": "regular", "conformal-0.9995-boundary": "infinite_distance_boundary",
+                      "cone-small-deficit-apex": "coordinate_singularity"}
+    # The loops must be geodesic-circle preimages: Cartesian loops at the sphere pole read as a cone.
+    cartesian = scan(sd.Approach("pole-cartesian", Sphere(1.0), (0.0, 0.3), False))
+    assert cartesian["classification"] == "conical_singularity"
+    assert cartesian["circumference_ratio"] == pytest.approx(0.8317, abs=1e-3)
+
+
 def test_singularity_refusal_codes():
-    cases = sd.refusal_cases()
-    assert {name: observed for name, (_, observed) in cases.items()} == \
-        {name: expected for name, (expected, _) in cases.items()}
-    with pytest.raises(SingularityRefusal) as info:
+    for cases in (sd.refusal_cases(), sd.declared_refusal_cases()):
+        assert {name: observed for name, (_, observed) in cases.items()} == \
+            {name: expected for name, (expected, _) in cases.items()}
+    with pytest.raises(SurfaceRefusal) as info:
         PowerGraph().metric(np.array([0.0, 0.0]))
-    assert info.value.code == "curvature_singularity" and isinstance(info.value, SurfaceRefusal)
+    assert info.value.code == "curvature_singularity"
+    # Core refusals keep their own codes through the guard.
+    assert refusal_code(Sphere(1.0).check, np.array([1e-7, 0.3])) == "degenerate_metric"
+    assert refusal_code(require_regular, sd.HyperbolicPlane(), np.array([0.0, -1.0])) == "outside_chart"
     # The core check is lenient where the guard is not.
     Sphere(1.0).check(np.array([3e-5, 0.3]))
-    with pytest.raises(SingularityRefusal, match="condition number"):
+    with pytest.raises(SurfaceRefusal, match="condition number") as info:
         require_regular(Sphere(1.0), np.array([3e-5, 0.3]))
+    assert info.value.code == "degenerate_metric"
+    # The guard refuses only above its declared curvature bound, however fast K grows.
+    assert refusal_code(require_regular, PowerGraph(1.0, 1.8), np.array([1e-8, 0.0])) == "accepted"
     assert require_regular(Torus(2.0, 1.0), np.array([0.1, 0.2]))["condition"] < 10
 
 
@@ -277,9 +356,18 @@ def test_t037_report(tmp_path):
     assert report["state"] == "completed"
     assert report["evidence_status"]["primary"] == "numerically_verified"
     findings = {f["claim"]: f for f in report["findings"]}
-    classes = findings["Every approach is classified as expected, with no false positive at regular points"]["value"]
+    classes = findings["Every declared approach is classified as expected, with no false positive at regular points"][
+        "value"]
     assert classes == sd.EXPECTED_CLASS
-    refusals = findings["The pointwise guard refuses singular points with the expected codes and accepts a regular point"]
-    assert all(check["reference_kind"] == "refusal" and check["passed"] for check in refusals["basis"]["checks"])
-    assert sum(1 for f in report["findings"] if f.get("counterexample")) == 3
+    computed = findings["The pointwise guard and the core check refuse degenerate, blown-up, nonfinite and "
+                        "out-of-chart points with computed codes, and accept curvature below the declared bound"]
+    declared = findings["Singular surfaces declare their apex refusal codes, and the guard propagates them unchanged"]
+    for record, count in ((computed, 8), (declared, 2)):
+        assert len(record["basis"]["checks"]) == count
+        assert all(check["reference_kind"] == "refusal" and check["passed"] for check in record["basis"]["checks"])
+    assert "curvature_singularity" not in computed["value"].values()
+    limits = findings["Cases just beyond each classification threshold are misclassified"]
+    assert limits["evidence_status"] == "numerically_verified"
+    assert all(row["observed"] != row["true"] for row in limits["value"]["cases"].values())
+    assert sum(1 for f in report["findings"] if f.get("counterexample")) == 5
     _common_report_checks(report)
