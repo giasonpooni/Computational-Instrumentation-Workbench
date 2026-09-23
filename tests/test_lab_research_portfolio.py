@@ -122,20 +122,22 @@ def test_clean_room_marker_is_recognized(tmp_path, monkeypatch):
 
 
 def test_regression_coverage_is_checked(retained, monkeypatch):
-    real, errors = load_implementations()
-    covered = Implementation("T010", None, regression_tests=(
-        "tests/test_lab_core.py::test_queue_has_168_ordered_tasks_in_eleven_sections",))
-    monkeypatch.setattr(research_portfolio, "load_implementations", lambda: ({**real, "T010": covered}, errors))
+    existing = "tests/test_lab_core.py::test_queue_has_168_ordered_tasks_in_eleven_sections"
+
+    def registry(t010):
+        # Only the fixture's tasks, so real section registrations cannot leak in.
+        fakes = {"T010": t010, "T116": Implementation("T116", None, regression_tests=(existing,))}
+        monkeypatch.setattr(research_portfolio, "load_implementations", lambda: (fakes, {}))
+
+    registry(Implementation("T010", None, regression_tests=(existing,)))
     report = _run("T168", retained)
     assert report["state"] == "completed"
     rows = json.loads((retained / "artifacts" / "T168" / "regression-coverage.json").read_text())
     assert {row["task_id"] for row in rows} == {"T010", "T116"} and all(not row["missing"] for row in rows)
-    dangling = Implementation("T010", None, regression_tests=("tests/test_lab_core.py::test_does_not_exist",))
-    monkeypatch.setattr(research_portfolio, "load_implementations", lambda: ({**real, "T010": dangling}, errors))
+    registry(Implementation("T010", None, regression_tests=("tests/test_lab_core.py::test_does_not_exist",)))
     report = _run("T168", retained)
     assert report["state"] == "partial" and report["tests_failed"]
-    uncovered = Implementation("T010", None)
-    monkeypatch.setattr(research_portfolio, "load_implementations", lambda: ({**real, "T010": uncovered}, errors))
+    registry(Implementation("T010", None))
     report = _run("T168", retained)
     values = {f["claim"]: f["value"] for f in report["findings"]}
     assert values["Completed or partial tasks lacking a regression test"] == 1 and report["state"] == "partial"
