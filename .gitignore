@@ -23,3 +23,6 @@ docs/adr/
 /docs/coordination.md
 /.internal/
 /docs/internal/
+
+# Local agent worktrees and tool state
+/.claude/
