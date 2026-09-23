@@ -305,4 +305,4 @@ def test_provider_families_can_coexist_without_overwriting_esm_bindings(retained
     restored = Session.from_workspace(session.save_workspace(tmp_path / "both.json"), tmp_path / "both-restored")
     assert len(response(restored, "bundle.list")["bundles"]) == 2
     assert response(restored, "fusion.list") == response(session, "fusion.list")
-    assert not any(o["available"] for o in restored.workbench.describe_operations())
+    assert {o["operation_id"] for o in restored.workbench.describe_operations() if o["available"]} == {"ciw.energy-accuracy.v1"}

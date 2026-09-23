@@ -4,19 +4,176 @@ Part of **Notation Systems' computational instrumentation and evidence infrastru
 
 [Stack map](https://github.com/giasonpooni/Computational-Instrumentation-Workbench/blob/main/docs/STACK.md) · [Component role and interfaces](docs/STACK_ROLE.md)
 
-**Notation Systems Workbench** — an applied mathematics and engineering bench
-for measurement, estimation, and model-based investigation.
-
-Its core is computational metrology and model-based systems engineering:
-connecting mathematical operations to observations of physical systems,
-declared models, uncertainty and retained evidence. Assumptions and intermediate
-results remain inspectable as an investigation moves from measurements to state
-estimates, diagnostics and advice on the next observation.
+**Notation Systems Workbench** — a programmable scientific authoring and
+execution environment, with live instrumentation, for engineers and
+mathematicians investigating, designing and building physical systems.
 
 **Computational Instrumentation Workbench (CIW)** remains the technical name.
-The implementation is terminal-first, with a Python service and an optional
-Godot desktop. Instruments retain their numerical methods behind explicit
-contracts; the workbench connects their execution, inspection and replay.
+The organizing purpose is to make models, measurements, programs, experiments,
+designs and evidence usable together. Physics, chemistry and engineering are
+intended domains within one workspace. An instrument can become a reusable
+assembly of acquisition, models, estimators, constraints, outputs and tests.
+
+The engineer defines the question, assumptions, objectives and acceptance
+criteria. AI assistance is optional and operates under that direction; the
+workbench must remain useful through its terminal, scripts and graphical tools
+without an LLM. Increasing expertise should unlock increasing expressive power:
+use an instrument, modify its equations and assumptions, or create a new one.
+
+**Status:** an executable terminal-first Python prototype with an optional
+Godot desktop and the integrations catalogued below. The broader authoring
+workspace and Julia-centred scientific core described here are development
+directions. JuliaControl, JuMP, ModelingToolkit, a general machine-manifest
+compiler, an MCP adapter and FPGA deployment are not yet integrated operations.
+
+## A workspace for scientific and instrument development
+
+A useful product analogy is a Blender-like environment for computational
+science and engineering: persistent project objects, reusable assets, multiple
+editors and dependency-aware evaluation. The scientific objects include
+components, geometry, materials/species, sensors, actuators, models, uncertainty,
+experiments, executable instruments and claims. Simulation time, acquisition
+time and execution time remain distinct.
+
+The intended project model connects three graphs through shared object identities:
+
+| Graph | What it records |
+| --- | --- |
+| Physical and model | Components, connections, material/energy interactions, geometry and governing relationships |
+| Computation | Inputs, transformations, simulations, estimators, optimization and execution dependencies |
+| Evidence | Observations, calibrations, assumptions, model versions, validation and the claims they support |
+
+Editing a sensor position or calibration should identify affected transforms,
+models, estimates and experiment plans, mark their conclusions for re-evaluation,
+and preserve the earlier configuration. Physical feedback and algebraic
+constraints need explicit semantics beyond ordinary dataflow scheduling.
+Undoing a project edit cannot undo an experiment already performed. Proposed,
+simulated, installed and validated configurations must remain distinguishable.
+This general dependency-aware authoring model is planned; retained sources,
+linked results and fresh replay already provide part of its foundation.
+
+## Planned Python–Julia scientific core
+
+The next scientific integrations are **Julia-first**, with existing Python
+kernels retained as independent references and supported providers. There is
+no mandatory chain through C++, Rust, Python and Julia.
+
+| Layer | Intended responsibility |
+| --- | --- |
+| Python and CIW | Project interaction, acquisition, jobs, exact artifacts, operation contracts and replay |
+| Julia / ModelingToolkit | Shared executable dynamics and observation models, symbolic and numerical analysis |
+| JuliaControl | Supported system analysis, observers, identification and controller design |
+| JuMP and selected solvers | Constrained experiment design, measurement selection and decision problems |
+| GPU computation | Suitable ensembles, fields, sensitivities and candidate evaluations; measured execution cost |
+| Specialist providers | Geometry/Jacobi, Lyapunov checks, registered proofs and future CFD, chemistry or CAD adapters |
+| LaTeX views and reports | Equations, assumptions and constraints generated from the structured model |
+| ESM companion | Supported evidence inspection, retention, review and history, outside the per-sample loop |
+
+[ModelPredictiveControl.jl](https://juliacontrol.github.io/ModelPredictiveControl.jl/stable/)
+already combines ControlSystemsBase and JuMP; [JuMP](https://jump.dev/JuMP.jl/stable/)
+provides optimization modelling with selected solver backends. These are
+foundations to integrate and verify, not capabilities acquired by naming a
+dependency. Julia execution should use the existing
+[CIW → SCR boundary](docs/JULIA_SP1.md) with a pinned environment and exact
+input/output commitments.
+
+The shared model specification must remain language-neutral: state order,
+units, frames, time versus path length, measured versus commanded quantities,
+calibration identity, uncertainty assumptions and validity domain are part of
+its meaning. Typed ports and composition rules should preserve that meaning;
+metres-to-millimetres invariance requires transforming the model and covariance
+consistently. Mathematical abstractions guide the compiler, but their required
+composition and approximation properties must be tested.
+
+LaTeX is the readable mathematical view of that model. Symbolics provides a
+[LaTeX output route](https://docs.sciml.ai/Symbolics/stable/manual/io/); linking a
+symbol to its units, estimate, uncertainty and evidence remains workbench work.
+Arbitrary LaTeX is not an executable model. Handwritten exploratory derivations
+must remain distinguishable from equations bound to a run.
+
+## Distributed instruments and reusable results
+
+The intended instrument can span several machines, acquisition interfaces and
+shared computation. Timestamped observations from a machine, cooling circuit
+and inspection station could support a coupled estimate unavailable to any one
+of them. Machine interfaces must declare signal meaning, units, frames,
+calibration, clock uncertainty, latency, missingness and failure behaviour.
+Arrival order does not establish acquisition order or simultaneity.
+
+The GPU is a shared compute resource, with scheduling and transfer costs, not
+an equipment interface. Local controllers and protective functions retain their
+roles. Supervisory commands, power modulation and FPGA deployment require
+separate supported interfaces, limits and measured end-to-end timing. No FPGA
+board is currently selected; the first FPGA work is a software reference,
+target-arithmetic checks and terminal-driven simulation. Programming an actual
+board follows identification and deployment validation. C++ HLS and explicit
+RTL development are planned alternatives, sharing declared input/output and
+arithmetic contracts rather than assuming automatic translation from Julia.
+
+Each experiment should retain four linked products:
+
+**Scientific outputs + numerical diagnostics + physical measurements + execution provenance.**
+
+Simulation-only experiments must explicitly identify physical measurements as
+not acquired, rather than presenting synthetic values as sensor observations.
+
+Fields, trajectories, sensitivity maps, residuals, fitted models, designs and
+validation results should be versioned inputs to later investigations. A
+simulated ensemble is not a collection of independent physical measurements.
+Two processed versions of the same observation must preserve their shared
+errors and evidence dependencies.
+
+The development goal supports three nested loops:
+
+- **Numerical refinement:** inspect residuals and invariants, then revise a solver,
+  mesh or arithmetic under declared error criteria.
+- **Scientific refinement:** compare explanations, choose an informative
+  experiment, incorporate measurements and test held-out predictions.
+- **Instrument refinement:** revise sensors, models, algorithms or physical
+  fixtures, then validate the changed instrument.
+
+The operational loop uses an accepted configuration. A separate research loop
+can synthesize and compare candidate estimators, calibration models and
+experiments. Candidates do not silently replace the active instrument or relax
+its acceptance rules. Reanalysis creates a new computation over existing
+evidence; new physical evidence requires another acquisition.
+
+## Claims, assistance and execution authority
+
+The terminal, graphical editors, scripts and a future
+[MCP adapter](https://modelcontextprotocol.io/docs/learn/architecture) should use
+the same engineering operation API. MCP provides assistant access to operations
+and records; the numerical core does not depend on it or on an LLM.
+
+| Result classification | Meaning |
+| --- | --- |
+| Measured | A sensor observation with recorded acquisition, timing and calibration context |
+| Estimated | An inference from observations and a declared model, with uncertainty and limitations |
+| Predicted | A model forecast under stated conditions |
+| Verified | A particular mathematical or numerical condition passed within its stated scope |
+| Authorized | A separate operational policy permits a bounded action |
+
+These classifications are a cross-workspace design requirement. Existing
+operations already preserve several scoped authority distinctions; a universal
+claim and deployment policy is not yet implemented. A successful optimizer is
+not a stability proof, and a verified computation does not authorize actuation.
+
+Planned assistance begins with three reusable roles: asset/evidence retrieval, signal
+binding and candidate configuration, and verification/challenge. Their outputs
+are inspectable artifacts with documented, observed, validated or unresolved
+facts. Model/calibration assistance and diagnosis/recommissioning follow.
+Deterministic, versioned validators decide acceptance; missing or conflicting
+premises remain unresolved. Users can perform the same work directly.
+
+The planned execution modes are **Explore** (models and simulations),
+**Observe** (approved acquisition), **Prepare** (candidate deployment artifacts)
+and **Operate** (explicitly enabled equipment operations). Enforcing those
+capabilities and process/device restrictions is implementation work; the mode
+names are not a claim that arbitrary Julia or plugin code is sandboxed today.
+Evidence retention, scientific admission and equipment authorization remain
+separate decisions.
+
+## What runs today
 
 Twenty-two scientific workflow kinds share one local session for sources,
 declared models, compatible sensor fusion, instrument results and replay
@@ -104,19 +261,39 @@ and matching replay digests do not establish physical validity or calibration
 traceability. The Workbench tab presents twenty-two shared scientific workflows;
 other external integrations expose terminal and JSON records as described below.
 
-## Next engineering benchmark
+## Next integrated milestones
 
-GPU energy capture now provides a first physical workstation testbed. Its
-counter accuracy and measurement uncertainty remain uncharacterized.
-The next planned milestone is one calibrated physical experiment carried through
-the investigation workflow. It should include a characterized reference,
-documented calibration, an uncertainty budget, deliberately introduced faults
-and reproducible analysis of the retained observations.
+1. **Typed project and machine interfaces.** Define model/measurement artifacts,
+   plugin capabilities and execution lifecycle. Bind one machine family from
+   evidence and refuse ambiguous signal meanings; keep commissioning read-only.
+2. **One Julia model and estimation experiment.** Pin the Julia environment,
+   exercise the SCR bridge against an independent reference, then share a small
+   plant-and-sensor model across replay, observer comparison and a constrained
+   measurement-selection problem. Keep Python cross-checks.
+3. **A challenged physical claim.** Record a small thermal experiment, withhold
+   an independent reference sensor, compare estimators on separate runs, and
+   test dropouts and changed cooling. Retain raw data, calibration, uncertainty,
+   model versions and failures. GPU energy capture is an available physical
+   testbed; it does not yet establish a thermal-state observer or characterized
+   counter uncertainty.
+4. **Correction and reuse.** Retain supported results through ESM, introduce a
+   calibration/model correction, and identify affected conclusions while
+   preserving their history. General dependency invalidation remains to build.
+5. **Validated deployment and domain extensions.** Add FPGA simulation and
+   arithmetic verification before board programming. Integrate supported
+   supervision, CFD/reduced models, chemical observation/kinetics, constrained
+   calibration and CAD/fabrication when a bounded experiment requires them.
 
-This benchmark will test the connections between acquisition, calibration,
-estimation and diagnostics against an actual physical system. The physical
-experiment and its qualification remain planned; the current software checks
-and synthetic examples provide the development baseline.
+Independent numerical references and held-out physical measurements must
+challenge the shared model. Generating observations, fitting an estimator and
+judging it using the same simulator alone is insufficient physical validation.
+
+The longer-term purpose includes maintainable local engineering workshops:
+measure a problem, design or adapt a solution, fabricate it, test its effect and
+retain knowledge for the next project. Offline workflows, replaceable components,
+manual fallback and locally usable instructions are design priorities. A useful
+result may be a passive fixture or repaired machine that needs no workbench
+running after installation.
 
 ## Integrity and verification
 
@@ -133,11 +310,13 @@ of its evidence, runtime, execution and result:
   projections as canonical JSON. Substituting `true`, `1` or `1.0` cannot pass
   an integrity check simply because Python considers their values equal.
 
-The local regression suite checked on **2026-09-23** passed 1,113 tests and
-38 subtests; 562 optional-runtime or platform-specific tests were skipped in
-that run. Dedicated integration gates exercise their pinned providers
-separately and reject skipped integration tests. The new free-energy gate
-builds an isolated wheel and exercises all six cases on Linux and Windows.
+Dedicated integration gates exercise pinned providers separately from the
+local suite's optional-runtime checks. The free-energy gate builds an isolated
+wheel and exercises all six cases on Linux and Windows. The energy bench adds
+an installed-wheel replay/contract gate and an explicit CUDA/NVML hardware gate;
+synthetic CPU CI is never reported as physical measurement. Local hardware,
+live-session replay, offline restore and Godot projections were exercised for
+the energy increment on **2026-09-23**.
 [CI results](https://github.com/giasonpooni/Computational-Instrumentation-Workbench/actions)
 also cover installed packages, native Windows and container deployment,
 Godot synchronization and the existing scientific integrations.
