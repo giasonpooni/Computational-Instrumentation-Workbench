@@ -493,7 +493,10 @@ def scipy_check(surface, p, q, route, extra=8.0, rtol=1e-11, atol=1e-12, field=N
     length = route["length"]
     sol = solve_ivp(rhs, (0.0, length + extra), initial(p, route["heading"]), method="DOP853", rtol=rtol,
                     atol=atol, events=zero_head, dense_output=True)
-    at_end = sol.sol(length) if sol.status == 0 else np.full(6, np.nan)
+    if sol.status != 0:
+        # No values from an integration that stopped early: the caller counts it as a failed run.
+        return {"j_head": None, "endpoint_residual": None, "first_conjugate": None, "status": int(sol.status)}
+    at_end = sol.sol(length)
     delta, _ = chart_offset(surface, at_end[:2], q)
     events = [float(s) for s in sol.t_events[0] if s > 1e-6]
     return {"j_head": float(at_end[4]), "endpoint_residual": float(np.hypot(*delta)),

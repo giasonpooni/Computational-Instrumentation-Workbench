@@ -320,6 +320,17 @@ def test_route_helpers():
     assert all(math.isfinite(check["observed"]) for check in basis["checks"])
 
 
+def test_independent_disagreement_makes_t024_partial_not_blocked(tmp_path, monkeypatch):
+    disagreement = {"j_head": 2e-8, "conjugate": 1e-7, "endpoint": 1e-9, "presence_mismatches": 1, "failed": 1,
+                    "rows": [], "revision": "scipy x, sympy y"}
+    monkeypatch.setattr(ftt, "_independent_routes", lambda *args: dict(disagreement))
+    report = _run(["T024"], tmp_path)["T024"]
+    assert report["state"] == "partial" and report["evidence_status"]["primary"] == NE
+    assert _label(report, "Every fan-search route")["evidence_status"] == NE
+    assert _label(report, "Rankings by length")["evidence_status"] == NV
+    assert len(report["findings"]) == len(LABELS["T024"])
+
+
 def test_sympy_field_matches_the_closed_form_batch_field():
     pytest.importorskip("sympy")
     import numpy as np

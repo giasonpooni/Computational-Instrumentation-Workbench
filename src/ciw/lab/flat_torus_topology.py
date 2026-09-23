@@ -58,8 +58,9 @@ ROUTE = {"abs": 1e-6, "rel": 1e-5}
 
 
 def _tests(*names):
-    """Regression node ids; every task is also covered by the section-wide completion test."""
-    return tuple(f"{TESTS}::{name}" for name in names + ("test_every_task_is_registered_and_completes",))
+    """Regression node ids; every task is also covered by the section-wide completion and label tests."""
+    return tuple(f"{TESTS}::{name}" for name in names + ("test_every_task_is_registered_and_completes",
+                                                          "test_every_finding_has_its_expected_label"))
 
 
 # ---------------------------------------------------------------- shared helpers
@@ -373,7 +374,9 @@ def sympy_reduction_check(bound=T019_BOUND):
 @task("T019", changed_files=(MODULE, LATTICE, PROVIDER, DOC),
       regression_tests=_tests("test_t019_reduction_and_refusals",
                               "test_gauss_reduction_is_exact",
+                              "test_sympy_reduction_check_detects_a_wrong_boundary_rule",
                               "test_ftr_refusal_makes_task_partial",
+                              "test_provider_output_is_refused_when_unreadable_or_incomplete",
                               "test_ftr_provider_agreement"))
 def enumerate_lattice_representatives(ctx):
     study = ctx.memo("flat-torus/t019-enumeration", enumeration_study)
@@ -567,6 +570,7 @@ def length_comparison(run):
 @task("T020", changed_files=(MODULE, LATTICE, PROVIDER, DOC),
       regression_tests=_tests("test_t020_winding_classification",
                               "test_winding_flow_and_intersections",
+                              "test_provider_output_is_refused_when_unreadable_or_incomplete",
                               "test_ftr_provider_agreement"))
 def classify_by_winding(ctx):
     study = ctx.memo("flat-torus/t020-windings", winding_study)
@@ -942,7 +946,7 @@ def degenerate_shortest_representatives(ctx):
                                    "ge"),
                             _check("ties undercounted with the declared tolerance", study["tolerance_undercounts"])]},
                 counterexample={"statement": "Floating-point distance comparison finds every shortest representative",
-                                "witness": next(t for t in ties if t["binary64"] < t["exact"])},
+                                "witness": next((t for t in ties if t["binary64"] < t["exact"]), {})},
                 uncertainty=EXACT_UNC, tolerance=EXACT),
     ]
     return {"state": "completed", "fields": fields, "findings": findings}
@@ -1134,7 +1138,9 @@ AMPLIFICATION_CAVEAT = ("Small |j_head(L)| is not robustness: the targeting cond
 
 
 @task("T024", changed_files=(MODULE, ROUTES, DOC),
-      regression_tests=_tests("test_t024_t025_route_ranking_and_front", "test_route_helpers"))
+      regression_tests=_tests("test_t024_t025_route_ranking_and_front", "test_route_helpers",
+                              "test_independent_disagreement_makes_t024_partial_not_blocked",
+                              "test_sympy_field_matches_the_closed_form_batch_field"))
 def focus_margin_ranking(ctx):
     data = ctx.memo("flat-torus/t024-routes", torus_routes)
     found, counts, conv = data["routes"], data["counts"], data["convergence"]
@@ -1358,6 +1364,7 @@ def invariance_study(words=60, word_length=10):
 @task("T026", changed_files=(MODULE, LATTICE, PROVIDER, DOC),
       regression_tests=_tests("test_t026_modular_invariance",
                               "test_gauss_reduction_is_exact",
+                              "test_provider_output_is_refused_when_unreadable_or_incomplete",
                               "test_ftr_provider_agreement"))
 def modular_reduction_invariance(ctx):
     study = invariance_study()
@@ -1694,7 +1701,8 @@ DECLARED_CHI = {"square torus": 0, "L-shape": -2, "H(1,1) origami": -2, "octagon
 
 
 @task("T029", changed_files=(MODULE, SURFACES, DOC),
-      regression_tests=_tests("test_t027_t029_surfaces_and_cones", "test_regeneration_is_within_tolerance"))
+      regression_tests=_tests("test_t027_t029_surfaces_and_cones", "test_gauss_bonnet_check_detects_wrong_vertex_classes",
+                              "test_regeneration_is_within_tolerance"))
 def detect_cone_singularities(ctx):
     examples = example_surfaces()
     rows, defects, chi_mismatch, identity_defects, commutator_mismatch = {}, 0, 0, 0, 0
@@ -2090,7 +2098,8 @@ def _witness(key, lib, pair):
 
 
 @task("T032", changed_files=(MODULE, ROUTES, DOC),
-      regression_tests=_tests("test_t032_counterexample_library", "test_route_helpers"))
+      regression_tests=_tests("test_t032_counterexample_library", "test_route_helpers",
+                              "test_sympy_field_matches_the_closed_form_batch_field"))
 def shortest_is_not_safest(ctx):
     lib = counterexample_library()
     w = lib["witnesses"]
