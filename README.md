@@ -7,23 +7,20 @@ Part of **Notation Systems' computational instrumentation and evidence infrastru
 **Notation Systems Workbench** — a terminal-first Python workbench for retained
 scientific observations, explicit operations, and reproducible investigations.
 
-The workbench is being assembled as one operating workspace for sources,
+Fourteen scientific workflow kinds share one local session for sources,
 declared models, compatible sensor fusion, instrument results and replay
-evidence. Existing scientific providers retain their numerical ownership;
-their records and operations enter that shared context. See
-[shared-workbench assembly](docs/WORKBENCH_ASSEMBLY.md) for the implemented
-session connection, component placement and next delivery work. The
-[live Workbench tab](docs/EXPERIMENT_VIEW.md) now brings retained process,
-telemetry, calibrated-window and observation-design results into the desktop:
-measurements, state/covariance, residuals, native dependencies and evidence share
-one selected occurrence and update when the session commits new results.
-SRA [typed schematics and SCR native numerical execution](docs/DECLARED_WORKLOADS.md)
-now join that same catalog, desktop and replay path as explicitly typed objects.
-[Native companion calls, BIM quantities, acquisition and geographic views](docs/INTEGRATED_MODULES.md)
-connect SRA/JSPT/PLSR, CSE, PPDA/SCOUT and GSV to the same operating session.
-[Acquired calibrated streams](docs/ACQUIRED_STREAM.md) now connect exact PPDA
-records to calibrated windows and native FDIR/OIT residual monitoring in that
-session, with live inspection and fresh replay.
+evidence. Each scientific provider retains ownership of its calculations.
+The workbench supplies a common catalog, explicit operation requests, retained
+history and inspection through the terminal or optional Godot desktop.
+
+The [live Workbench tab](docs/EXPERIMENT_VIEW.md) presents measurements,
+state and covariance, residuals, native dependencies and evidence for the selected
+execution occurrence. Committed session changes update the view; replay creates
+a distinct occurrence. The shared paths include calibrated process and stream
+analysis, observation design, measurement chains, circle geometry, stability
+evaluation, typed schematics, integer diffusion and BIM quantity conditioning.
+See the [assembly guide](docs/WORKBENCH_ASSEMBLY.md) for host bindings and
+the [integration coverage matrix](docs/INTEGRATION_COVERAGE.md) for exact scope.
 
 The executable prototype includes a synthetic damped oscillator, numerical
 statistics and periodogram analysis, a shared local session, saved-workspace
@@ -39,9 +36,9 @@ flowchart TD
     Request["Explicit operation request"] --> Capture
     Capture --> Provider["Bound numerical provider"]
     Runtime["Trusted runtime binding"] --> Provider
-    Provider --> Outcome{"Successful response?"}
-    Outcome -->|Yes| Result["Execution and result"]
-    Outcome -->|No| Refusal["Execution and refusal"]
+    Provider --> Outcome{"Declared operation outcome"}
+    Outcome -->|Completed| Result["Execution and result"]
+    Outcome -->|Refused| Refusal["Execution and refusal"]
     Result --> Retain["Retained investigation"]
     Refusal --> Retain
     Retain --> Terminal["Terminal and JSON inspection"]
@@ -73,6 +70,35 @@ and matching replay digests do not establish physical validity or calibration
 traceability. The Workbench tab presents fourteen shared native workflows;
 other external integrations expose terminal and JSON records as described below.
 
+## Integrity and verification
+
+Retained records preserve the inputs used for a calculation and the identities
+of its evidence, runtime, execution and result:
+
+- The operation runner copies provider runtime identities and returned data.
+  Later changes to provider-owned objects cannot change saved results. Invalid
+  runtime identities produce a refusal that can be saved and reopened.
+- Calibrated process and window inputs must have epochs and calibration bounds
+  exactly representable at microsecond precision. Extra trailing zeros are
+  accepted; precision loss is refused before providers are bound.
+- Those calibrated bundles compare retained configuration, requests and numerical
+  projections as canonical JSON. Substituting `true`, `1` or `1.0` cannot pass
+  an integrity check simply because Python considers their values equal.
+
+The verification baseline is [commit `aca2531`](https://github.com/giasonpooni/Computational-Instrumentation-Workbench/commit/aca253164f11135c866d7f61ea0c3e8fac52521e),
+checked on **2026-09-23**. All twelve CI workflows passed, covering installed
+packages, native Windows and container deployment, Godot synchronization and
+pinned-provider integrations. The local suite passed 583 tests and 38 subtests;
+421 optional-runtime or platform-specific tests were skipped in that run.
+Dedicated integration gates exercised their pinned providers separately, and
+the installed calibrated-window gate passed all 30 tests without skips.
+
+See the [development guide](docs/DEVELOPMENT.md#validation-commands) for commands
+and environment requirements. The candidate-evidence gate runs in Ubuntu CI;
+its pinned ESM fixture helper still needs Windows `npx` command resolution.
+Unexpected in-process provider exceptions are not yet normalized into retained
+execution-failure records. These are remaining implementation limits.
+
 ## Integrated tools
 
 This catalogue lists tools that can currently be run through CIW. Each tool's
@@ -101,17 +127,20 @@ establish physical validation or deployment readiness.
 | Measurement chain (`ciw.measurement-chain.v1`) | Native RCI/FSRT/JSPT investigation in the common catalog | Preserve raw and calibrated evidence, posterior/reconciled covariance, explicit quantity mapping, native executions and replay | [Shared module operations](docs/REMAINING_MODULES.md) |
 | Circle geometry (`ciw.geometric-circle.v1`) | Native GTE projection in the common catalog | Inspect observations, eligible/held candidates, residuals and full joint/tangent covariance | [Shared module operations](docs/REMAINING_MODULES.md) |
 | Identified stability (`ciw.identified-stability.v1`) | Selected SIDT model and GSIE prediction evaluated by native PLSR | Bind discrete sample period, state order, units, frame and supplied certificate; retain unknown parameter uncertainty and inconclusive verdicts | [Shared module operations](docs/REMAINING_MODULES.md) |
-| SRA schematic assessment (`ciw.schematic-assessment.v1`) | Native typed schematic in the shared catalog and desktop | Assess declared eligibility, retain stale certificates, retrieve two-hop neighborhoods and replay; explicitly selected companion calls use `ciw.schematic-companions.v1` | [Setup and contract](docs/DECLARED_WORKLOADS.md) |
+| SRA schematic assessment (`ciw.schematic-assessment.v1`) | Native typed schematic in the shared catalog and desktop | Assess declared eligibility, retain stale certificates, retrieve two-hop neighborhoods and replay; explicitly selected companion calls use `ciw.schematic-companions.v1` | [Setup and contract](docs/DECLARED_WORKLOADS.md), [companion bindings](docs/INTEGRATED_MODULES.md) |
+| BIM quantity conditioning (`ciw.bim-quantity.v1`) | Native CSE quantity workflow in the shared session | Condition a declared IFC quantity on an independent scalar observation; retain covariance, held or refused outcomes, execution ledger and replay | [Host bindings and scientific scope](docs/INTEGRATED_MODULES.md) |
+| Snapshot acquisition (`ciw.acquired-dataset.v1`) | Native bounded PPDA/SCOUT acquisition in the shared session | Retain exact source bytes, adapter and source identities, acquisition checkpoints and durable-pool restoration; explicitly select records for downstream calibration | [Acquisition contract and examples](docs/ACQUIRED_DATASET.md) |
 | SCR numerical execution (`ciw.numerical-heat.v1`) | Native Rust integer diffusion in the same catalog and desktop | Execute a bounded declared field, retain byte commitments and host-bound engine identity, replay and independently check integer results with ICRH | [Setup and contract](docs/DECLARED_WORKLOADS.md) |
 
 The [integration coverage matrix](docs/INTEGRATION_COVERAGE.md) distinguishes
 executable paths, conformance coverage, and the next connections between
-existing instruments. The immediate assembly work connects those paths to a
-common source, operation and result history. New scientific paths retain
+existing instruments. The shared session connects the fourteen workflow kinds
+to a common source, operation and result history. New scientific paths retain
 original, replay and adversarial evidence through an ICRH profile.
 
-PLSR is pinned to upstream commit
+The standalone and identified-stability PLSR paths use upstream commit
 [`19ea6967060166ba09db6cd4563bd87bd6b3d196`](https://github.com/giasonpooni/Parameterized-Lyapunov-Stability-Runtime/tree/19ea6967060166ba09db6cd4563bd87bd6b3d196).
+Schematic companions retain their [separately documented PLSR pin](docs/INTEGRATED_MODULES.md#host-bindings).
 Its verdicts concern the declared computation. Numerical refusals remain distinct
 from violations; physical validation and proof verification are not established.
 
@@ -174,7 +203,7 @@ point model and declared independent future measurement noise.
 | [Fault Detection and Isolation Runtime](https://github.com/giasonpooni/Fault-Detection-Isolation-Runtime) | Innovation NIS/whitening and deterministic CUSUM transitions; no physical fault isolation |
 | [Experiment Design and Sensor Placement Testbed](https://github.com/giasonpooni/Experiment-Design-Sensor-Placement-Testbed) | Finite candidate information ranking with D- and A-optimal criteria |
 
-See the [standalone-foundation boundaries](docs/STACK.md#additional-standalone-numerical-foundations)
+See the [numerical-foundation boundaries](docs/STACK.md#numerical-foundations-and-their-integrations)
 for their roles, export binding and integration limits. Existing CIW operations
 and source pins remain unchanged.
 
@@ -191,6 +220,6 @@ and source pins remain unchanged.
 - Identified and budgeted observation selection: [`docs/IDENTIFIED_DESIGN.md`](docs/IDENTIFIED_DESIGN.md)
 - Executable integration coverage and next connections: [`docs/INTEGRATION_COVERAGE.md`](docs/INTEGRATION_COVERAGE.md)
 - Architecture: [`docs/ARCHITECTURE.md`](docs/ARCHITECTURE.md)
-- Implementation status: [`docs/RECONCILIATION.md`](docs/RECONCILIATION.md)
+- Earlier contract audit (revision `617ca62`): [`docs/RECONCILIATION.md`](docs/RECONCILIATION.md)
 - Protocol: [`docs/PROTOCOL.md`](docs/PROTOCOL.md)
 - Development guide: [`docs/DEVELOPMENT.md`](docs/DEVELOPMENT.md)
