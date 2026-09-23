@@ -28,6 +28,7 @@ existing benches.
 | SCR/SP1 registered heat computation | Bounded integer execution and proof verification; exact Linux runtime required | `ciw serve --computation-repo ... --computation-engine ... --sp1-prover ... --sp1-heat-guest ...`; [full setup and contract](PROVED_HEAT.md) |
 | Variational free-energy sensor fusion | Synthetic curved-surface inference with native CSG/GSIE/PLSR, exact Gaussian reference and retained model failure cases | `ciw serve --free-energy-stack-root /trusted/free-energy`; [mathematics, setup and six cases](VARIATIONAL_FREE_ENERGY.md) |
 | GPU energy to accuracy | Actual NVML/CUDA host capture; built-in retained-log analysis, shared view and replay | `ciw energy probe`, `record`, `replay`; [contract and operating guide](ENERGY_ACCURACY.md) |
+| Computational experimentalist queue | Built-in; 168 evidence-labelled computational experiments with retained reports; hardware tasks reported as blocked | `ciw lab queue`, `run`, `report`, `verify`; [queue, labels and commands](LAB.md) |
 
 ## Identified model and budgeted next observation
 

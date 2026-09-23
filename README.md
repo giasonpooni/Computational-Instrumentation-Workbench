@@ -193,6 +193,17 @@ operations already preserve several scoped authority distinctions; a universal
 claim and deployment policy is not yet implemented. A successful optimizer is
 not a stability proof, and a verified computation does not authorize actuation.
 
+The [computational experimentalist queue](docs/LAB.md) (`ciw lab`) is the
+first executable form of that discipline. Each of its 168 tasks states a
+hypothesis and prediction, runs an experiment, compares it with an analytic,
+high-precision or independently implemented reference, and retains a report
+whose findings carry one evidence label: `analytic`, `synthetic`,
+`numerically_verified`, `provider_backed`, `hardware_measured`,
+`independently_verified` or `not_established`. A deterministic validator
+assigns the label from the declared basis and refuses upgrades; physical,
+safety and authority claims remain `not_established` without acquired
+hardware evidence or an external decision.
+
 Planned assistance begins with three reusable roles: asset/evidence retrieval, signal
 binding and candidate configuration, and verification/challenge. Their outputs
 are inspectable artifacts with documented, observed, validated or unresolved
@@ -398,6 +409,7 @@ establish physical validation or deployment readiness.
 | Geometry providers (`ciw.covariance-geometry.v1`, `ciw.mesh-path.v1`, `ciw.translation-flow.v1`) | Bounded native SPD geometry, mesh-edge paths and square-tiled dynamics | Exact native requests/results, numerical evidence, fresh replay, explicit partial-flow states and provider-free inspection | [Profiles and shared session](docs/GEOMETRY_RESEARCH.md) |
 | Variational free-energy sensor fusion (`ciw.variational-free-energy.v1`) | Synthetic CSG → GSIE → PLSR composition with a bounded Gaussian variational kernel | Exact posterior comparison, mean/covariance iteration, normalized KL gap, held-out prediction, empirical coverage, stable/unstable iteration assessment and fresh replay | [Mathematics, six cases and operating guide](docs/VARIATIONAL_FREE_ENERGY.md) |
 | GPU energy to accuracy (`ciw.energy-accuracy.v1`) | Actual NVML counter capture and bounded CUDA Gaussian iteration; built-in offline analysis | Raw timestamped readings, independent posterior accuracy, separate startup/warmed phases, background-inclusive GPU joules, retained replay | [Measurement boundary and operating guide](docs/ENERGY_ACCURACY.md) |
+| Computational experimentalist queue (`ciw.lab-task-report.v1`) | Built-in terminal queue of 168 experiments; optional `lab` extra; pinned CSG, FTR and PLSR bind as subprocess providers | Hypothesis-to-regression loop per task, evidence labels assigned by a deterministic validator, nineteen-question reports, counterexample catalogue, clean-room reproduction and tolerance-aware verification against retained reports | [Queue, labels and commands](docs/LAB.md), [authoring contract](docs/lab/AUTHORING.md) |
 | Flat Torus Geodesic Reference (`ciw.flat-torus-reference.v1`) | Pinned native flat-lattice reference in the shared session | Retain winding, normalized trajectory, geometry digest, replay and independent analytic checks | [Setup and scope](docs/GEODESIC_REFERENCES.md) |
 | Curved Surface Geodesic Sensitivity (`ciw.curved-path-transfer.v1`) | Pinned native constant-curvature Jacobi transfer in the shared session | Retain transfer samples, separation, declared covariance and independent reference checks | [Setup and scope](docs/GEODESIC_REFERENCES.md) |
 

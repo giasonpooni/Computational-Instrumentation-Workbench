@@ -33,7 +33,10 @@ def main() -> int:
     parser.add_argument("--retained", type=Path, default=ROOT / "lab",
                         help="Retained reports to compare with; pass --no-compare to skip")
     parser.add_argument("--no-compare", action="store_true")
-    parser.add_argument("--provider", action="append", default=[], metavar="ROLE=PATH")
+    parser.add_argument("--provider", action="append", default=[], metavar="ROLE=PATH",
+                        help="Provider binding; PATH '@venv' names the clean-room interpreter")
+    parser.add_argument("--extras", default="dev,lab",
+                        help="Wheel extras to install, e.g. dev,lab,plsr on Python 3.12+")
     parser.add_argument("--temporary-root", type=Path)
     args = parser.parse_args()
     output = args.output_dir.resolve()
@@ -52,7 +55,7 @@ def main() -> int:
         wheel_sha256 = hashlib.sha256(wheel.read_bytes()).hexdigest()
         venv.EnvBuilder(with_pip=True).create(work / "venv")
         python = work / "venv" / ("Scripts" if os.name == "nt" else "bin") / ("python.exe" if os.name == "nt" else "python")
-        run([python, "-m", "pip", "install", "--quiet", f"{wheel}[dev,lab]"])
+        run([python, "-m", "pip", "install", "--quiet", f"{wheel}[{args.extras}]"])
         tests = work / "tests"
         tests.mkdir()
         for path in sorted((ROOT / "tests").glob("test_lab_*.py")):
@@ -69,7 +72,8 @@ def main() -> int:
         environment["CIW_LAB_CLEAN_ROOM"] = json.dumps({"wheel_sha256": wheel_sha256, "python": sys.version.split()[0]})
         command = [python, "-m", "ciw", "lab", "run", "--all", "--output-dir", str(output), "--junit", str(junit)]
         for binding in args.provider:
-            command += ["--provider", binding]
+            role, _, path = binding.partition("=")
+            command += ["--provider", f"{role}={python}" if path == "@venv" else binding]
         run(command, cwd=work, env=environment)
         if not args.no_compare:
             run([python, "-m", "ciw", "lab", "verify", "--retained", str(args.retained.resolve()), "--fresh", str(output)],

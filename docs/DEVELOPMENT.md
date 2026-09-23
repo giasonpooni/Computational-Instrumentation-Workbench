@@ -147,6 +147,21 @@ for local-checkout arguments and numerical scope. Existing authenticated local
 checkouts can also provision older integration gates; [provider availability](PROVIDER_AVAILABILITY.md)
 documents their options and remaining public-source assumptions.
 
+The [computational experimentalist queue](LAB.md) has its own tests
+(`tests/test_lab_*.py`) and a clean-room gate that builds a wheel, runs the
+lab tests and every queue task, and compares the fresh reports with the
+retained ones in `lab/` within each finding's declared tolerance:
+
+```sh
+python -m pip install -e '.[dev,lab]'
+python -m pytest -q tests/test_lab_core.py
+python scripts/check_lab.py --output-dir results/lab-gate
+```
+
+New lab tasks follow the [authoring contract](lab/AUTHORING.md). Regenerate
+the retained evidence with `ciw lab run --all --output-dir lab` only together
+with the code change that alters it, and review the `ciw lab verify` differences.
+
 ## Documenting an integrated tool
 
 Update the README catalogue and [INSTRUMENTS.md](INSTRUMENTS.md) when a supported
