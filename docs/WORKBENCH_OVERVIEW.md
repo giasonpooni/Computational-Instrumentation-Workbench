@@ -95,6 +95,24 @@ Operation success does not grant authorization. Protective functions and local
 machine controllers remain independent of an editable notebook, agent or
 viewport.
 
+## Evidence classes
+
+This is the single classification table used by the workbench overview and
+linked from shorter operator pages:
+
+| Classification | Meaning |
+| --- | --- |
+| Measured | A declared source produced the observation under a recorded configuration. |
+| Estimated | A declared model and observations support an inferred state or parameter. |
+| Predicted | A model forecasts an outcome under specified conditions. |
+| Verified | A named checker established a named condition within its claim scope. |
+| Authorized | A separate operational policy permits an action. |
+
+Unknown uncertainty stays unknown. A digest establishes content identity, not
+source authenticity. A successful optimizer is not a stability proof; a
+stability check is not physical validation; a retained candidate is not
+admitted canonical state.
+
 ## Distributed instruments and context
 
 A distributed instrument combines timestamped interfaces, local machine
@@ -127,4 +145,3 @@ repository link into an implemented integration.
 See [SYSTEMS_CATALOG.md](SYSTEMS_CATALOG.md) for the provider map and
 [DEVELOPMENT.md](DEVELOPMENT.md) for the delivery checklist. The stack-level
 ownership and numerical boundaries remain in [STACK.md](STACK.md).
-

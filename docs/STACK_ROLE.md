@@ -1,5 +1,8 @@
-# Computational Instrumentation Workbench in the instrumentation stack
+# Computational Instrumentation Workbench (CIW) in the Notation-Systems-Workbench stack
 
+The public repository is [Notation-Systems-Workbench](https://github.com/giasonpooni/Notation-Systems-Workbench).
+Its distribution package is `computational-instrumentation-workbench`, its
+Python import is `ciw`, and its command-line entry point is `ciw`.
 Notation Systems develops computational instrumentation and evidence infrastructure for industrial and cyber-physical systems.
 This component owns **operation, inspection and replay**. The [stack map](https://github.com/giasonpooni/Notation-Systems-Workbench/blob/main/docs/STACK.md) locates all public components and distinguishes implemented paths from specifications and scaffolds.
 
@@ -30,7 +33,7 @@ Display names and repository locations do not rename packages, schemas, operatio
 - [docs/INSTRUMENTS.md](INSTRUMENTS.md)
 - [docs/ARCHITECTURE.md](ARCHITECTURE.md)
 
-Private customer state, deployment configuration and calibration knowledge are outside this public component description. This repository is `AGPL-3.0-only`. That grant covers the workbench program only: it does not relicense pinned providers, and it does not apply to experiment outputs unless an output itself contains covered program code. Other repositories' licenses and source-data rights remain controlling; a shared stack identity is not a license grant or a change of repository visibility.
+Private customer state, deployment configuration and calibration knowledge are outside this public component description. Applicable repository licenses and source-data rights remain controlling; a shared stack identity is not a license grant or a change of repository visibility.
 
 ## Read-only exchange path
 

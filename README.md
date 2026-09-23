@@ -1,5 +1,10 @@
 # Computational Instrumentation Workbench
 
+The public repository is **Notation-Systems-Workbench**. The technical name is
+**Computational Instrumentation Workbench (CIW)**; its distribution package is
+`computational-instrumentation-workbench`, and its Python import and CLI command
+are `ciw`.
+
 Part of **Notation Systems' computational instrumentation and evidence
 infrastructure** for industrial and cyber-physical systems.
 
@@ -115,24 +120,13 @@ The demo is synthetic and needs no external provider. For the shared
 measurement/design session, follow [WORKBENCH_ASSEMBLY.md](docs/WORKBENCH_ASSEMBLY.md)
 and the [quickstart](docs/quickstart.md). Container and workstation deployment
 notes are in [deploy/README.md](deploy/README.md).
+The command-only oscillator walkthrough is [OSCILLATOR_OPERATOR.md](docs/OSCILLATOR_OPERATOR.md).
 
 ## Evidence boundaries
 
 CIW records what was measured, supplied, estimated, predicted or checked. Those
-labels are not interchangeable:
-
-| Classification | Meaning |
-| --- | --- |
-| Measured | A declared source produced the observation under a recorded configuration. |
-| Estimated | A declared model and observations support an inferred state or parameter. |
-| Predicted | A model forecasts an outcome under specified conditions. |
-| Verified | A named checker established a named condition within its claim scope. |
-| Authorized | A separate operational policy permits an action. |
-
-Unknown uncertainty stays unknown. A digest establishes content identity, not
-source authenticity. A successful optimizer is not a stability proof; a
-stability check is not physical validation; a retained candidate is not
-admitted canonical state.
+labels are not interchangeable; the single classification table is maintained
+in [Workbench overview](docs/WORKBENCH_OVERVIEW.md#evidence-classes).
 
 ## Development and validation
 
@@ -150,20 +144,14 @@ results distinguishable in both documentation and records.
 
 ## Next gates
 
-The next integration work is deliberately staged:
+The next visible gate is one independently challenged physical claim: a
+held-out reference measurement, a replayable evidence bundle and a result whose
+limitations remain explicit. The detailed integration matrix owns the broader
+provider and runtime backlog; the overview does not promote those candidates to
+current capability.
 
-1. Register the project-graph/model compiler seam in the shared operation,
-   execution and result envelopes.
-2. Resolve and CI-integrate the Julia worker environment for a thermal parity
-   reference before making Julia a required runtime.
-3. Deliver one independently challenged physical claim, with a held-out
-   reference measurement and a replayable evidence bundle.
-4. Complete offline-capable ICRH replay for the remaining exchange producers.
-5. Treat FPGA programming, MCP authority, physical calibration and external
-   actuation as separate deployment gates.
-
-The current Julia scaffold under runtimes/julia is intentionally not presented
-as an integrated provider until its lockfile and environment are reproducible.
+See [INTEGRATION_COVERAGE.md](docs/INTEGRATION_COVERAGE.md) for the current
+matrix and [SYSTEMS_CATALOG.md](docs/SYSTEMS_CATALOG.md) for provider status.
 
 ## Documentation map
 
@@ -186,6 +174,5 @@ integration matrix or provider manifests.
 
 ## License
 
-This project is licensed under the GNU Affero General Public License, version 3
-or later. See the published repository's [LICENSE](https://github.com/giasonpooni/Notation-Systems-Workbench/blob/main/LICENSE).
-
+This project is licensed under the GNU Affero General Public License v3.0 only
+(AGPL-3.0-only). See the published repository's [LICENSE](https://github.com/giasonpooni/Notation-Systems-Workbench/blob/main/LICENSE).

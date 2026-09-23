@@ -1,8 +1,12 @@
-# Documentation index
+# Documentation index for Notation-Systems-Workbench
 
 The root [README](../README.md) is the macro entrypoint. This index points to
 the page that owns each kind of detail so status and contracts do not drift
 across several copies.
+
+The technical name is **Computational Instrumentation Workbench (CIW)**. The
+Python distribution is `computational-instrumentation-workbench`; Python code
+imports `ciw`, and the command-line entry point is also `ciw`.
 
 ## Start here
 
@@ -14,6 +18,7 @@ across several copies.
 | Multi-provider assembly and local deployment | [Workbench assembly](WORKBENCH_ASSEMBLY.md) |
 | Current executable paths and remaining gates | [Integration coverage](INTEGRATION_COVERAGE.md) |
 | User-facing instruments and exact commands | [Instrument catalogue](INSTRUMENTS.md) |
+| Oscillator demo, inspection and reopen commands | [Oscillator operator card](OSCILLATOR_OPERATOR.md) |
 
 ## Contracts and operations
 
@@ -42,4 +47,3 @@ across several copies.
 
 Historical audits remain linked from the root for context. They do not override
 the current operation catalogue, integration matrix or provider manifests.
-
