@@ -2153,7 +2153,8 @@ def shortest_is_not_safest(ctx):
         f"diverged, residual, over length) "
         f"{ {k: [c['singular'], c['diverged'], c['residual_fail'], c['over_length']] for k, c in counts.items()} }.",
         "Route quantities to about 1e-6 relative (RK4 step 0.04; scipy/sympy agreement when available); witness "
-        "gaps are O(0.1-4); sphere margins to 1e-6 absolute.",
+        f"gaps are O(0.1-4); sphere margins within {max(abs(s['measured_margin'] - s['delta']) for s in sphere):.0e} "
+        "of delta (checked to 1e-3 relative).",
         ["analytic anchors (sinh 2.5, pi sqrt 3 - 4.5, sin delta)", "censored margins use the horizon lower bound",
          "negative margins (route past a conjugate point) kept, not discarded", "symmetric duplicate routes",
          "fan density (route sets unchanged at double density)"],
