@@ -205,3 +205,18 @@ retains exact logs and reproduces analysis with fresh identities; replay does
 not repeat physical acquisition. Counter coverage, target failures and
 synthetic provenance remain explicit. CPU/whole-machine energy, calibrated
 uncertainty and thermal-state estimation remain future work.
+
+## Computational experimentalist queue
+
+The [lab queue](LAB.md) (`ciw lab`) runs 168 declared computational
+experiments. It calls the pinned CSG, FTR, SCR and PLSR providers in
+subprocesses after checking their revisions and trees against CIW's own pins,
+and uses scipy, sympy and mpmath as independent-origin references. Its reports
+are its own records (`ciw.lab-task-report.v1`), not shared workbench bundles.
+`ciw lab classify` projects the same evidence labels onto existing workspaces
+without editing sealed records. The clean-room gate
+([`lab.yml`](../.github/workflows/lab.yml)) regenerates every report and
+compares it with the retained run in `lab/`. The queue acquires no physical
+data; GPU energy, RAPL counters, FPGA toolchains and metrology instruments
+remain blocked tasks with stated protocols, and no ICRH profile covers lab
+reports yet.
