@@ -244,16 +244,19 @@ def test_t097_scr_numerical_heat_integration(tmp_path):
 
 def test_t098_provider_identities(tmp_path):
     blocked = run("T098", tmp_path / "none")
-    assert blocked["state"] == "blocked"
-    pins = blocked["findings"][0]
-    assert pins["evidence_status"] == "numerically_verified" and len(pins["value"]["scr_revisions"]) == 1
+    assert blocked["state"] == "blocked" and blocked["findings"] == []
+    table = json.loads((tmp_path / "none" / "artifacts" / "T098" / "provider-identities.json").read_text())
+    assert {pin["revision"] for pin in table["ciw_pins"]["scr"]} == {"a59aba283b0304faeeb3e5d305087e7709e171ca"}
     if not os.environ.get("CIW_LAB_SCR_REPO"):
         pytest.skip("set CIW_LAB_SCR_REPO for provider identities")
     report = run("T098", tmp_path / "scr", {"scr": os.environ["CIW_LAB_SCR_REPO"]})
     assert report["state"] == "completed"
-    accepted = report["findings"][0]
-    assert accepted["value"]["scr"]["head"] == "a59aba283b0304faeeb3e5d305087e7709e171ca"
-    assert accepted["value"]["scr"]["tree"] == "4068a711534932e8d89bb0d87d373376dafdf6cd"
+    pins = claim(report, "CIW declares one SCR revision")
+    assert pins["evidence_status"] == "numerically_verified" and len(pins["value"]["set_revisions"]) == 4
+    accepted = claim(report, "Every accepted provider checkout")
+    assert accepted["value"]["rejected"] == []
+    assert accepted["value"]["accepted"]["scr"]["head"] == "a59aba283b0304faeeb3e5d305087e7709e171ca"
+    assert accepted["value"]["accepted"]["scr"]["tree"] == "4068a711534932e8d89bb0d87d373376dafdf6cd"
     assert claim(report, "The working bytes")["evidence_status"] == "independently_verified"
     digests = claim(report, "Tracked-source and Cargo.lock")["value"]["scr"]
     assert digests["cargo_locks"]["crates/Cargo.lock"] == \
@@ -320,7 +323,10 @@ def test_t100_labels_and_origins_stay_distinct(tmp_path):
     report = run("T100", tmp_path)
     assert report["state"] == "completed"
     primary = report["findings"][0]
-    assert primary["value"] == {"reports_checked": 2, "violations": 0}
+    assert primary["value"] == {"reports_checked": 2, "label_violations": 0}
+    rendered = claim(report, "Every retained finding's label is rendered")
+    assert rendered["value"] == {"reports_checked": 2, "rendering_violations": 0}
+    assert claim(report, "An unescaped pipe")["value"] == {"row_cells": 4, "label_column_shifted": True}
     energy = claim(report, "CIW keeps the synthetic energy fixture")
     assert energy["evidence_status"] == "numerically_verified"
     assert energy["value"]["synthetic"]["classification"] == "synthetic_only"
@@ -338,9 +344,10 @@ def test_t100_flags_a_retained_report_whose_label_leaves_its_column(tmp_path):
     (tmp_path / "reports").mkdir()
     (tmp_path / "reports" / "T001.json").write_text(runner.dumps(build_report(QUEUE["T001"], "partial", {}, [record])))
     report = run("T100", tmp_path)
-    primary = report["findings"][0]
-    assert primary["value"] == {"reports_checked": 1, "violations": 1}
-    assert primary["evidence_status"] == "not_established" and report["state"] == "partial"
+    assert report["findings"][0]["value"] == {"reports_checked": 1, "label_violations": 0}
+    rendered = claim(report, "Every retained finding's label is rendered")
+    assert rendered["value"] == {"reports_checked": 1, "rendering_violations": 1}
+    assert rendered["evidence_status"] == "not_established" and report["state"] == "partial"
 
 
 def test_render_markdown_claim_pipe_counterexample():
@@ -348,7 +355,8 @@ def test_render_markdown_claim_pipe_counterexample():
     record = finding("claim with a | pipe", "numerical", 1.0, {"generator": {"name": "probe"}})
     validate_finding(record)
     row = render_markdown(build_report(QUEUE["T100"], "partial", {}, [record])).splitlines()[-1]
-    assert row.endswith("| `synthetic` |") and row.count(" | ") == 3
+    # GitHub-flavoured Markdown drops cells beyond the header's three: the label cell is lost.
+    assert row.endswith("| `synthetic` |") and section._cells(row) == 4
 
 
 def test_relabelled_energy_origin_collides_within_one_workbench(tmp_path):

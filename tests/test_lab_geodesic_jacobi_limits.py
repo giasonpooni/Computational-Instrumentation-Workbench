@@ -17,6 +17,8 @@ from ciw.lab.report import FIELD_NAMES, validate_report
 from ciw.lab.surfaces import Plane, Reparametrized, Sphere, SurfaceRefusal, Torus
 
 TASKS = ("T010", "T011", "T012", "T013", "T014", "T015", "T016", "T017", "T018")
+# Only this section's module is imported; other sections are never loaded here.
+IMPLEMENTATIONS = registry.module_implementations("geodesic_jacobi_limits")
 
 
 @pytest.fixture(scope="module")
@@ -26,13 +28,21 @@ def run(tmp_path_factory):
     ctx = runner.Context(directory)
     reports = {}
     for task_id in TASKS:
-        # Only this section's registrations are used; other sections are never imported here.
-        reports[task_id] = validate_report(runner.run_task(queue[task_id], registry._REGISTRY[task_id], ctx, {}))
+        reports[task_id] = validate_report(runner.run_task(queue[task_id], IMPLEMENTATIONS[task_id], ctx, {}))
     return directory, reports
 
 
-def _findings(report):
-    return {f["claim"]: f for f in report["findings"]}
+def test_registrations_name_existing_tests_and_files():
+    names = set(globals())
+    assert set(IMPLEMENTATIONS) == set(TASKS)
+    for task_id in TASKS:
+        implementation = IMPLEMENTATIONS[task_id]
+        assert implementation.regression_tests, task_id
+        for node in implementation.regression_tests:
+            path, _, name = node.partition("::")
+            assert path == "tests/test_lab_geodesic_jacobi_limits.py" and name in names, node
+        assert gjl.MODULE in implementation.changed_files and gjl.DOC in implementation.changed_files
+        assert implementation.requires == ()
 
 
 def _labelled(report, fragment):
@@ -56,6 +66,8 @@ def test_reports_answer_every_question_and_never_claim_physical_validation(run):
             assert record["assigned_by"] == "ciw.lab.evidence"
             if record["evidence_status"] != "not_established" and not isinstance(record["value"], (str, type(None))):
                 assert "regression_tolerance" in record, (task_id, record["claim"])
+                uncertainty = record["uncertainty"]
+                assert set(uncertainty) == {"kind", "value", "basis"} and uncertainty["value"] >= 0, record["claim"]
         for artifact in report["generated_artifacts"]:
             assert (directory / artifact["path"]).is_file()
 

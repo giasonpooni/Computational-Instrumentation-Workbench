@@ -19,10 +19,11 @@ from ciw.lab import flat_torus_topology as ftt
 from ciw.lab import flat_torus_topology_lattice as lat
 from ciw.lab import flat_torus_topology_surfaces as surf
 from ciw.lab import runner
-from ciw.lab.registry import _REGISTRY, load_queue
+from ciw.lab.registry import load_queue, section_implementations
 from ciw.lab.report import validate_report
 
 TASKS = [f"T0{n}" for n in range(19, 33)]
+IMPLEMENTATIONS = section_implementations("flat-torus-topology")
 HAS = {name: importlib.util.find_spec(name) is not None for name in ("scipy", "sympy", "mpmath")}
 
 
@@ -32,7 +33,7 @@ def _queue():
 
 def _run(task_ids, directory, providers=None):
     queue, ctx = _queue(), runner.Context(directory, providers)
-    return {tid: validate_report(runner.run_task(queue[tid], _REGISTRY[tid], ctx, {})) for tid in task_ids}
+    return {tid: validate_report(runner.run_task(queue[tid], IMPLEMENTATIONS[tid], ctx, {})) for tid in task_ids}
 
 
 @pytest.fixture(scope="module")
@@ -55,7 +56,7 @@ def _expect(module):
 
 
 def test_every_task_is_registered_and_completes(reports):
-    assert set(TASKS) <= set(_REGISTRY)
+    assert set(IMPLEMENTATIONS) == set(TASKS)
     for tid in TASKS:
         report = reports[tid]
         assert report["state"] == "completed", (tid, report["experiment"])
@@ -67,6 +68,7 @@ def test_every_task_is_registered_and_completes(reports):
         for record in report["findings"]:
             if record["domain"] in ("mathematical", "numerical") and record["value"] is not None:
                 assert "regression_tolerance" in record, (tid, record["claim"])
+                assert {"kind", "value", "basis"} <= set(record["uncertainty"]), (tid, record["claim"])
 
 
 # ---------------------------------------------------------------- lattice

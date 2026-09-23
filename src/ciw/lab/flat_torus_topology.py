@@ -61,9 +61,19 @@ def _tests(*names):
 # ---------------------------------------------------------------- shared helpers
 def _check(reference, observed, tolerance=0.0, comparison="abs_le", kind="exact_arithmetic"):
     observed, tolerance = float(observed), float(tolerance)
-    holds = {"abs_le": abs(observed) <= tolerance, "le": observed <= tolerance, "ge": observed >= tolerance}[comparison]
+    # le bounds a nonnegative magnitude; signed_le / signed_ge compare signed quantities.
+    holds = {"abs_le": abs(observed) <= tolerance, "le": observed <= tolerance, "signed_le": observed <= tolerance,
+             "ge": observed >= tolerance, "signed_ge": observed >= tolerance}[comparison]
     return {"reference_kind": kind, "reference": reference, "observed": observed, "tolerance": tolerance,
             "comparison": comparison, "passed": holds}
+
+
+EXACT_UNC = {"kind": "exact", "value": 0.0, "basis": "integer, Fraction or Q(sqrt d) arithmetic; no rounding"}
+
+
+def _unc(kind, value, basis):
+    """Per-finding uncertainty object (kind, value, basis) for the uncertainty budget."""
+    return {"kind": kind, "value": float(value), "basis": basis}
 
 
 def _refusal(reference, expected, observed):
@@ -161,13 +171,14 @@ def _provider(ctx):
             return {"refusal": exc.code, "message": str(exc)}
         run["cases"] = cases
         return run
-    return ctx.memo("ftr-provider", compute)
+    return ctx.memo("flat-torus/ftr-provider", compute)
 
 
 def _provider_refused_finding(run):
     return finding("A bound FTR provider that does not match its pin or cannot execute is refused rather than compared",
                    "provenance", run["refusal"],
-                   {"checks": [_refusal("flat_torus_topology_provider.run_ftr", run["refusal"], run["refusal"])]})
+                   {"checks": [_refusal("flat_torus_topology_provider.run_ftr", run["refusal"], run["refusal"])]},
+                   uncertainty=EXACT_UNC)
 
 
 def _provider_note(run, fields, findings, changed_files):
@@ -301,7 +312,7 @@ def sympy_enumeration_check(bound=2):
                               "test_ftr_refusal_makes_task_partial",
                               "test_ftr_provider_agreement"))
 def enumerate_lattice_representatives(ctx):
-    study = ctx.memo("t019-enumeration", enumeration_study)
+    study = ctx.memo("flat-torus/t019-enumeration", enumeration_study)
     ctx.artifact_json("lattice-reduction.json", study)
     failures = study["failures"]
     total_failures = sum(failures.values())
@@ -348,13 +359,14 @@ def enumerate_lattice_representatives(ctx):
     findings.append(finding(
         "Every enumerated SL(2,Z) basis and every random word reduces exactly to the same canonical Gram form",
         "mathematical", {"failures": failures, "reductions": len(LATTICES) * (study["matrices"] + study["words"])},
-        basis, tolerance=EXACT))
+        basis, uncertainty=EXACT_UNC, tolerance=EXACT))
     findings.append(finding(
         "Number of reduced bases equals the predicted stabilizer count (2 generic, 4 boundary or square, 12 hexagonal)",
         "mathematical", counts,
         {"derivation": "Stabilizers in SL(2,Z): +-I generically, order 4 at i, order 6 at exp(i pi/3); boundary "
                        "points have two representatives in the closed domain",
-         "checks": [_check("count mismatches against prediction", count_mismatch)]}, tolerance=EXACT))
+         "checks": [_check("count mismatches against prediction", count_mismatch)]},
+        uncertainty=EXACT_UNC, tolerance=EXACT))
     findings.append(finding(
         "Integer matrices with det != 1 are refused as SL(2,Z) basis changes", "mathematical", codes,
         {"checks": [_refusal("lat.transform with det 2", "BASIS_CHANGE_NOT_UNIMODULAR",
@@ -368,7 +380,7 @@ def enumerate_lattice_representatives(ctx):
                         "witness": {"gram": list(generic), "matrix": [[2, 0], [0, 1]],
                                     "image_canonical": [str(x) for x in sub_canonical],
                                     "canonical": [str(x) for x in lat.gauss_reduce(generic)[0]]}},
-        tolerance=EXACT))
+        uncertainty=EXACT_UNC, tolerance=EXACT))
     run = _provider(ctx)
     if run is not None and "refusal" not in run:
         cmp = fold_comparison(run)
@@ -386,6 +398,8 @@ def enumerate_lattice_representatives(ctx):
              "independent_check": _independent(
                  _check("FTR reduced tau", cmp["max_tau_difference"], 1e-9, kind="high_precision"),
                  ftr.checker_identity(identity)["implementation"], identity["revision"])},
+            uncertainty=_unc("roundoff", cmp["max_tau_difference"],
+                             "binary64 Mobius images of seeded words reduced by two float implementations"),
             tolerance={"abs": 1e-9, "rel": 0}))
     state = _provider_note(run, fields, findings, (MODULE, LATTICE, PROVIDER))
     return {"state": state, "fields": fields, "findings": findings}
@@ -477,7 +491,7 @@ def length_comparison(run):
                               "test_winding_flow_and_intersections",
                               "test_ftr_provider_agreement"))
 def classify_by_winding(ctx):
-    study = ctx.memo("t020-windings", winding_study)
+    study = ctx.memo("flat-torus/t020-windings", winding_study)
     gaps = golden_returns()
     ctx.artifact_json("windings.json", study)
     ctx.artifact_json("golden-returns.json", gaps)
@@ -525,17 +539,17 @@ def classify_by_winding(ctx):
                 "length gcd times that of its primitive class",
                 "mathematical", {"classes": len(study["rows"]), "failures": study["failures"]},
                 {"checks": [_check("closure time, crossings and length scaling mismatches", study["failures"])]},
-                tolerance=EXACT),
+                uncertainty=EXACT_UNC, tolerance=EXACT),
         finding("For 120 pairs of primitive classes the transverse intersections number |det(v, w)|", "mathematical",
                 {"pairs": len(study["intersections"]), "failures": study["intersection_failures"]},
                 {"checks": [_check("intersection count mismatches (exact rational solve)",
-                                   study["intersection_failures"])]}, tolerance=EXACT),
+                                   study["intersection_failures"])]}, uncertainty=EXACT_UNC, tolerance=EXACT),
         finding("Closed-geodesic count within radius R obeys the lattice covering bound |N - pi R^2 / A| <= "
                 "pi (2 R D + D^2) / A", "mathematical",
                 {k: count[k] for k in ("radius", "lattice_points_with_origin", "primitive")},
-                {"checks": [_check("|N - pi R^2 / A| minus the covering bound",
-                                   abs(count["lattice_points_with_origin"] - count["gauss_estimate"]) - count["bound"],
-                                   0.0, "le", kind="invariant")]}, tolerance=EXACT),
+                {"checks": [_check("|N - pi R^2 / A| against the covering bound pi (2 R D + D^2) / A",
+                                   abs(count["lattice_points_with_origin"] - count["gauss_estimate"]), count["bound"],
+                                   "le", kind="invariant")]}, uncertainty=EXACT_UNC, tolerance=EXACT),
     ]
     golden_basis = {"derivation": "Binet: F_{k+1} - phi F_k = (-1/phi)^k, so ||F_k phi|| = phi^-k for k >= 2",
                     "checks": [_check("binary64 gap relative to phi^-k", float_rel, 1e-6, kind="analytic"),
@@ -550,6 +564,8 @@ def classify_by_winding(ctx):
     findings.append(finding(
         "The golden-slope geodesic has positive return gaps phi^-k at Fibonacci returns, with q * gap -> 1/sqrt 5",
         "numerical", {"q": [r["q"] for r in gaps], "gap": [r["gap"] for r in gaps]}, golden_basis,
+        uncertainty=_unc("roundoff", float_rel,
+                         "binary64 cancellation in q phi - round(q phi), relative to phi^-k (q <= 17711)"),
         tolerance={"abs": 1e-15, "rel": 1e-6}))
     findings.append(finding(
         "A binary64 heading slope is rational, so a float simulation cannot represent a non-closing direction",
@@ -560,7 +576,7 @@ def classify_by_winding(ctx):
                         "witness": {"float_phi": PHI,
                                     "exact_fraction": f"{phi_fraction.numerator}/2^{log2_denominator}",
                                     "closes_after_alpha_turns": phi_fraction.denominator}},
-        tolerance=EXACT))
+        uncertainty=EXACT_UNC, tolerance=EXACT))
     run = _provider(ctx)
     if run is not None and "refusal" not in run:
         cmp = length_comparison(run)
@@ -577,6 +593,8 @@ def classify_by_winding(ctx):
              "independent_check": _independent(
                  _check("FTR loop_length", cmp["max_relative_difference"], 1e-12, kind="high_precision"),
                  ftr.checker_identity(identity)["implementation"], identity["revision"])},
+            uncertainty=_unc("roundoff", cmp["max_relative_difference"],
+                             "relative difference of two binary64 length evaluations"),
             tolerance={"abs": 1e-12, "rel": 0}))
     state = _provider_note(run, fields, findings, (MODULE, LATTICE, PROVIDER))
     return {"state": state, "fields": fields, "findings": findings}
@@ -672,15 +690,19 @@ def shortest_versus_least_sensitive(ctx):
                             _check("|j_lat(L) - 1|", lat_err, 1e-12, kind="analytic"),
                             _check("endpoint equals p + translate", end_err, 1e-12, kind="invariant"),
                             _check("discordant length/amplification pairs", study["discordant_pairs"])]},
+                uncertainty=_unc("roundoff", j_err,
+                                 "relative deviation of RK4 j_head(L) from L on the linear flat system"),
                 tolerance={"abs": 1e-12, "rel": 0}),
         finding("For every flat torus and every pair of points the least-sensitive geodesic is a shortest one",
                 "mathematical", True,
                 {"derivation": "j_head(s) = s is strictly increasing, so ordering routes by |j_head(L)| equals "
-                               "ordering by L (ties included)"}, tolerance=EXACT),
+                               "ordering by L (ties included)"},
+                uncertainty={"kind": "exact", "value": 0.0, "basis": "closed-form derivation"}, tolerance=EXACT),
         finding("With nonzero curvature the amplification |j_head(s)| is not monotone in s (e.g. sin s on the unit "
                 "sphere), so the equivalence can fail", "mathematical", True,
                 {"derivation": "Constant K > 0: j_head(s) = sin(sqrt K s)/sqrt K; K < 0: sinh(sqrt(-K) s)/sqrt(-K) "
-                               "(ciw.lab.jacobi.constant_curvature); witnesses in T032"}, tolerance=EXACT),
+                               "(ciw.lab.jacobi.constant_curvature); witnesses in T032"},
+                uncertainty={"kind": "exact", "value": 0.0, "basis": "closed-form derivation"}, tolerance=EXACT),
         finding("The shortest route on a physical flat workpiece is the safest route to execute", "machine_safety",
                 None, {}),
     ]
@@ -759,16 +781,18 @@ def degenerate_shortest_representatives(ctx):
     findings = [
         finding("Square-torus half-period targets have exactly 2 (edge) or 4 (centre) shortest representatives",
                 "mathematical", study["half_periods"],
-                {"checks": [_check("mismatches against predicted multiplicities", half_mismatch)]}, tolerance=EXACT),
+                {"checks": [_check("mismatches against predicted multiplicities", half_mismatch)]},
+                uncertainty=EXACT_UNC, tolerance=EXACT),
         finding("Multiplicity census on the 12 x 12 rational grid equals the predicted cut-locus counts",
                 "mathematical", study["census"],
                 {"checks": [_check("census deviation from {1: n^2 - 2n + 1, 2: 2(n - 1), 4: 1}", census_mismatch)]},
-                tolerance=EXACT),
+                uncertainty=EXACT_UNC, tolerance=EXACT),
         finding("On six lattices the cut-locus vertices satisfy sum over vertices of (k_v - 2) = 2 (Euler "
                 "characteristic 0)",
                 "mathematical", {k: v["sum_k_minus_2"] for k, v in study["cut_locus"].items()},
                 {"derivation": "E = sum k_v / 2 and V - E + F = 0 with F = 1 give sum (k_v - 2) = 2",
-                 "checks": [_check("lattices violating the identity", vertex_mismatch)]}, tolerance=EXACT),
+                 "checks": [_check("lattices violating the identity", vertex_mismatch)]},
+                uncertainty=EXACT_UNC, tolerance=EXACT),
         finding("Binary64 comparison reports a tie where exact arithmetic finds a unique shortest representative",
                 "numerical", fc,
                 {"checks": [_check("binary64 multiplicity minus exact multiplicity (expect 1)",
@@ -777,7 +801,7 @@ def degenerate_shortest_representatives(ctx):
                 counterexample={"statement": "Floating-point distance comparison decides the shortest representative",
                                 "witness": {"target": "(1/2 + 2^-60, 1/4)", "exact_multiplicity": fc["exact"],
                                             "binary64_multiplicity": fc["binary64"]}},
-                tolerance=EXACT),
+                uncertainty=EXACT_UNC, tolerance=EXACT),
     ]
     return {"state": "completed", "fields": fields, "findings": findings}
 
@@ -875,17 +899,26 @@ def sensitivity_across_headings(ctx):
                 "directions with |v| <= L",
                 "numerical", {"found": len(study["found"]), "predicted": len(study["predicted"])},
                 {"checks": [_check("missing plus extra closure directions",
-                                   len(study["missing"]) + len(study["extra"]))]}, tolerance=EXACT),
+                                   len(study["missing"]) + len(study["extra"]))]},
+                uncertainty=_unc("truncation_bound", study["step"],
+                                 "heading grid spacing (rad); each zero refined at the exact direction arg v"),
+                tolerance=EXACT),
         finding("Near each closing heading the closing error grows at rate |v| (the loop length) per radian",
                 "numerical", {"max_relative_slope_error": study["slope_relative_error"]},
                 {"derivation": "r = |v| sin|theta - theta_v| near theta_v",
                  "checks": [_check("|r / sin(delta) - |v|| / |v| at delta = 1e-4", study["slope_relative_error"],
-                                   1e-9, kind="analytic")]}, tolerance={"abs": 1e-9, "rel": 0}),
+                                   1e-9, kind="analytic")]},
+                uncertainty=_unc("roundoff", study["slope_relative_error"],
+                                 "relative error of r / sin(delta) against |v| at delta = 1e-4"),
+                tolerance={"abs": 1e-9, "rel": 0}),
         finding("Closure basins are widest for the shortest (lowest-order) primitive classes", "numerical",
                 [{"winding": b["winding"], "length": b["length"], "basin_width": b["basin_width"]} for b in top],
                 {"checks": [_check("discordant (width, length) pairs", study["discordant"]),
                             _check("measured minus analytic basin width (rad)", study["width_error"],
-                                   2 * study["step"] + 1e-12, kind="analytic")]}, tolerance=TIGHT),
+                                   2 * study["step"] + 1e-12, kind="analytic")]},
+                uncertainty=_unc("truncation_bound", 2 * study["step"],
+                                 "grid quantization of measured basin widths (rad)"),
+                tolerance=TIGHT),
         finding("A physical heading sensor closes the shortest loop within the computed heading tolerance",
                 "sensor_performance", None, {}),
     ]
@@ -927,7 +960,7 @@ def _route_table(found):
 @task("T024", changed_files=(MODULE, ROUTES, DOC),
       regression_tests=_tests("test_t024_t025_route_ranking_and_front"))
 def focus_margin_ranking(ctx):
-    data = ctx.memo("t024-routes", torus_routes)
+    data = ctx.memo("flat-torus/t024-routes", torus_routes)
     found = data["routes"]
     ranks = routes.rankings(found)
     ctx.artifact_json("torus-routes.json", {"p": ROUTE_P, "q": ROUTE_Q, "max_length": ROUTE_MAX,
@@ -977,7 +1010,11 @@ def focus_margin_ranking(ctx):
                    1e-5, kind="high_precision"), "scipy.integrate.solve_ivp", sc["version"])
     findings = [
         finding("Geodesic routes p -> q on the torus with amplification and focus margin", "numerical",
-                _route_table(found), basis, tolerance=ROUTE),
+                _route_table(found), basis,
+                uncertainty=_unc("reference_error", max(batch, sc["j_head"] if sc else 0.0),
+                                 "max relative amplification difference against the batch RK4 search (and scipy "
+                                 "DOP853 when available); RK4 step about 0.04 in ciw.lab.jacobi"),
+                tolerance=ROUTE),
         finding("Rankings by length, amplification and focus margin disagree", "numerical", ranks,
                 {"checks": [_check("rank positions that differ from the length order", disagreements, 1.0, "ge"),
                             _check("routes found", len(found), 3, "ge")]},
@@ -985,11 +1022,15 @@ def focus_margin_ranking(ctx):
                                 "witness": {"shortest": _route_table(found)[ranks["by_length"][0]],
                                             "least_amplification": _route_table(found)[ranks["by_amplification"][0]],
                                             "largest_margin": _route_table(found)[ranks["by_focus_margin"][0]]}},
+                uncertainty={"kind": "exact", "value": 0.0, "basis": "orderings of the route values; adjacent values "
+                                                                     "differ far more than their uncertainty"},
                 tolerance=EXACT),
         finding("A flat torus has no conjugate points: j_head(s) = s > 0 (infinite focus margin)", "numerical",
                 flat_min, {"derivation": "K = 0 gives j_head(s) = s",
                            "checks": [_check("min j_head(s)/s - 1 on (0, 20] (ciw.lab.jacobi, plane)", flat_min - 1.0,
-                                             1e-12, kind="analytic")]}, tolerance=TIGHT),
+                                             1e-12, kind="analytic")]},
+                uncertainty=_unc("roundoff", abs(flat_min - 1.0), "RK4 on the linear flat Jacobi system"),
+                tolerance=TIGHT),
         finding("Ranking routes by focus margin selects a route that is safe to execute on a physical part",
                 "machine_safety", None, {}),
     ]
@@ -999,7 +1040,7 @@ def focus_margin_ranking(ctx):
 @task("T025", changed_files=(MODULE, ROUTES, DOC),
       regression_tests=_tests("test_t024_t025_route_ranking_and_front"))
 def pareto_fronts(ctx):
-    data = ctx.memo("t024-routes", torus_routes)
+    data = ctx.memo("flat-torus/t024-routes", torus_routes)
     found = data["routes"]
     front = routes.pareto_front(found)
     violations = 0
@@ -1045,6 +1086,8 @@ def pareto_fronts(ctx):
                 {"checks": [_check("dominance violations (members dominated or non-members undominated)", violations),
                             _check("front size", len(front), 2, "ge"),
                             _check("shortest route missing from the front", 0 if shortest in front else 1)]},
+                uncertainty={"kind": "exact", "value": 0.0, "basis": "exhaustive dominance on the T024 values (which "
+                                                                     "carry their own uncertainty)"},
                 tolerance=EXACT),
         finding("A Pareto-optimal route is safe to execute on a physical part", "machine_safety", None, {}),
     ]
@@ -1139,29 +1182,33 @@ def modular_reduction_invariance(ctx):
                 "change of basis and under reduction", "mathematical",
                 {"matrices": study["matrices"], "failures": failures},
                 {"checks": [_check("exact spectrum/area/systole/winding-transport failures", sum(failures.values()))]},
-                tolerance=EXACT),
+                uncertainty=EXACT_UNC, tolerance=EXACT),
         finding("Area-one float spectra agree to rounding under the same basis changes", "numerical",
                 study["float_max_relative_deviation"],
                 {"checks": [_check("max relative deviation of the first 30 lengths (bases with entries up to "
                                    f"{study['float_max_matrix_entry']})", study["float_max_relative_deviation"],
-                                   1e-8, kind="invariant")]}, tolerance={"abs": 1e-8, "rel": 0}),
+                                   1e-8, kind="invariant")]},
+                uncertainty=_unc("roundoff", study["float_max_relative_deviation"],
+                                 f"binary64 Gram entries of skewed bases (entries up to "
+                                 f"{study['float_max_matrix_entry']})"),
+                tolerance={"abs": 1e-8, "rel": 0}),
         finding("Transporting winding labels with M instead of M^-1 breaks length invariance", "mathematical",
                 study["wrong_rule_mismatches"],
                 {"checks": [_check("naive-rule mismatches", study["wrong_rule_mismatches"], 1, "ge")]},
                 counterexample={"statement": "Winding labels transform with the same matrix as the basis",
                                 "witness": {"correct_rule": "c' = M^-1 c", "mismatches": study["wrong_rule_mismatches"]}},
-                tolerance=EXACT),
+                uncertainty=EXACT_UNC, tolerance=EXACT),
         finding("The length spectrum does not determine the oriented shape: a mirror image is isospectral but not "
                 "SL(2,Z)-equivalent", "mathematical", mirror,
                 {"checks": [_check("isospectral mirror (0 = same spectrum)", 0 if mirror["same_spectrum"] else 1),
                             _check("mirror canonical form equal (0 = different)", 1 if mirror["same_canonical"] else 0)]},
                 counterexample={"statement": "Equal length spectra imply SL(2,Z)-equivalent oriented lattices",
-                                "witness": mirror}, tolerance=EXACT),
+                                "witness": mirror}, uncertainty=EXACT_UNC, tolerance=EXACT),
         finding("A det-2 integer matrix changes area and spectrum (an index-2 sublattice, not a basis change)",
                 "mathematical", sub,
                 {"checks": [_check("squared-area ratio minus 4", Fraction(sub["area_sq_ratio"]) - 4),
                             _check("spectrum unchanged (0 = changed)", 1 if sub["same_spectrum"] else 0)]},
-                tolerance=EXACT),
+                uncertainty=EXACT_UNC, tolerance=EXACT),
     ]
     run = _provider(ctx)
     if run is not None and "refusal" not in run:
@@ -1180,6 +1227,8 @@ def modular_reduction_invariance(ctx):
              "independent_check": _independent(
                  _check("FTR fold length_pair against ciw lengths", cmp["max_length_relative_difference"], 1e-9,
                         kind="high_precision"), ftr.checker_identity(identity)["implementation"], identity["revision"])},
+            uncertainty=_unc("roundoff", cmp["max_length_relative_difference"],
+                             "relative difference of binary64 lengths before and after the fold"),
             tolerance={"abs": 1e-9, "rel": 0}))
     state = _provider_note(run, fields, findings, (MODULE, LATTICE, PROVIDER))
     return {"state": state, "fields": fields, "findings": findings}
@@ -1268,7 +1317,7 @@ def translation_surface_examples(ctx):
                 records,
                 {"checks": [_check("genus mismatches (L 2, octagon 2, square torus 1, hexagon 1)", 0 if genus_ok else 1),
                             _check("octagon area minus 2 + 2 sqrt 2 (exact)", 0 if area_error.sign() == 0 else 1)]},
-                tolerance=EXACT),
+                uncertainty=EXACT_UNC, tolerance=EXACT),
         finding("Horizontal cylinders: L-shape circumferences equal the r-cycle lengths, octagon strips have "
                 "circumferences 2 + sqrt 2 and 1 + sqrt 2 with areas summing to the surface area", "mathematical",
                 {"l_shape": cyl["l_shape_circumferences"], "octagon": [float(cyl["octagon_outer"]),
@@ -1277,14 +1326,14 @@ def translation_surface_examples(ctx):
                     cyl["l_shape_circumferences"], cyl["l_shape_r_cycles"]))),
                             _check("octagon circumference mismatch (exact surd)", 1 if circ_error else 0),
                             _check("octagon cylinder area minus surface area (exact surd)",
-                                   0 if cyl_error.sign() == 0 else 1)]}, tolerance=TIGHT),
+                                   0 if cyl_error.sign() == 0 else 1)]}, uncertainty=EXACT_UNC, tolerance=TIGHT),
         finding("Pairings that are not translations, or glue unequal edges, are refused as translation surfaces",
                 "mathematical", codes,
                 {"checks": [_refusal("octagon adjacent pairing", "GLUING_NOT_TRANSLATION",
                                      codes["octagon adjacent pairing"]),
                             _refusal("pillowcase (half-translation)", "GLUING_NOT_TRANSLATION", codes["pillowcase"]),
                             _refusal("edges of length 1 and 2 glued", "EDGE_LENGTH_MISMATCH",
-                                     codes["mismatched edge lengths"])]}, tolerance=EXACT),
+                                     codes["mismatched edge lengths"])]}, uncertainty=EXACT_UNC, tolerance=EXACT),
     ]
     return {"state": "completed", "fields": fields, "findings": findings}
 
@@ -1388,7 +1437,7 @@ def trace_across_glued_edges(ctx):
                 {"derivation": "Veech dichotomy for square-tiled surfaces: rational directions are completely periodic",
                  "checks": [_check("undecided trajectories", lflows["undecided"]),
                             _check("closure multipliers outside {1, 2, 3}", lflows["bad_multiplier"])]},
-                tolerance=EXACT),
+                uncertainty=EXACT_UNC, tolerance=EXACT),
         finding("Trajectories hitting a cone point are terminated as saddle connections, exactly or within the "
                 "declared float tolerance", "numerical",
                 {"exact_l_shape": saddle, "exact_octagon": oflows["exact_vertex_code"],
@@ -1398,16 +1447,22 @@ def trace_across_glued_edges(ctx):
                             _refusal("octagon float pass 1e-12 from a vertex", "NEAR_VERTEX_WITHIN_TOLERANCE",
                                      oflows["near_vertex_code"]),
                             _refusal("float start 1e-12 from an edge", "START_NOT_INTERIOR", oflows["start_code"])]},
-                tolerance=EXACT),
+                uncertainty=EXACT_UNC, tolerance=EXACT),
         finding("Float octagon flow reproduces the exact Q(sqrt 2) trajectory (same crossings, closure time)",
                 "numerical", {"time_difference": oflows["time_difference"], "crossings": oflows["exact_crossings"]},
                 {"checks": [_check("crossing sequences differ", 0 if oflows["same_crossing_sequence"] else 1),
                             _check("|float - exact| closure time", oflows["time_difference"], 1e-9,
-                                   kind="cross_implementation")]}, tolerance={"abs": 1e-9, "rel": 0}),
+                                   kind="cross_implementation")]},
+                uncertainty=_unc("roundoff", oflows["time_difference"],
+                                 "binary64 accumulation over the crossings against the exact Q(sqrt 2) trajectory"),
+                tolerance={"abs": 1e-9, "rel": 0}),
         finding("A generic float octagon trajectory stays farther than the tolerance from every vertex for 400 crossings",
                 "numerical", {"crossings": oflows["generic_crossings"], "min_clearance": oflows["generic_min_clearance"]},
                 {"checks": [_check("minimum vertex clearance", oflows["generic_min_clearance"], oflows["tolerance"],
-                                   "ge", kind="invariant")]}, tolerance={"abs": 1e-9, "rel": 1e-6}),
+                                   "ge", kind="invariant")]},
+                uncertainty=_unc("roundoff", oflows["tolerance"],
+                                 "declared float tolerance bounding accumulated position error over 400 crossings"),
+                tolerance={"abs": 1e-9, "rel": 1e-6}),
     ]
     return {"state": "completed", "fields": fields, "findings": findings}
 
@@ -1457,17 +1512,20 @@ def detect_cone_singularities(ctx):
                 {"checks": [_check("mismatches against predicted cone angles", mismatch),
                             _check("origami commutator-cycle prediction mismatches", commutator_mismatch),
                             _check("angle recognition residual", residual, 1e-12, kind="analytic")]},
+                uncertainty=_unc("roundoff", residual,
+                                 "float residual of corner-angle recognition before exact rounding to multiples of "
+                                 "pi/24"),
                 tolerance=EXACT),
         finding("Gauss-Bonnet sum (2 pi - theta_v) = 2 pi chi holds exactly on every surface", "mathematical",
                 {k: v["gauss_bonnet_defect_over_pi"] for k, v in rows.items()},
-                {"checks": [_check("surfaces with nonzero defect", defects)]}, tolerance=EXACT),
+                {"checks": [_check("surfaces with nonzero defect", defects)]}, uncertainty=EXACT_UNC, tolerance=EXACT),
         finding("Polygon vertices need not be cone singularities: the glued hexagon's vertices are regular points",
                 "mathematical", rows["hexagon"]["cone_angles_over_pi"],
                 {"checks": [_check("singular vertex classes on the hexagon torus", len(rows["hexagon"]["singular"]))]},
                 counterexample={"statement": "Every polygon vertex of a glued surface is a cone singularity",
                                 "witness": {"surface": "regular hexagon, opposite sides glued",
                                             "vertex_classes": 2, "cone_angles": ["2 pi", "2 pi"]}},
-                tolerance=EXACT),
+                uncertainty=EXACT_UNC, tolerance=EXACT),
     ]
     return {"state": "completed", "fields": fields, "findings": findings}
 
@@ -1537,16 +1595,22 @@ def smooth_versus_discrete(ctx):
                 basis,
                 counterexample={"statement": "Grid shortest-path lengths converge to geodesic length as the grid is refined",
                                 "witness": {"stencil": "4-neighbour", "direction": "45 deg", "grids": list(grid.REFINEMENTS),
-                                            "ratio": diag[0]["ratio4"]}}, tolerance=TIGHT),
+                                            "ratio": diag[0]["ratio4"]}},
+                uncertainty=_unc("roundoff", stencil_error, "graph distance against the closed-form stencil norm"),
+                tolerance=TIGHT),
         finding("Worst-direction metrication error is sqrt 2 - 1 (4-nbr, 45 deg) and sqrt(4 - 2 sqrt 2) - 1 "
                 "(8-nbr, 22.5 deg)", "numerical", {"4": worst[4][0] - 1, "8": worst[8][0] - 1},
                 {"derivation": "maximize cos a + sin a and cos a + (sqrt 2 - 1) sin a on [0, pi/4]",
                  "checks": [_check("dense maximum minus closed form", worst_dense_error, 1e-8, kind="analytic")]},
+                uncertainty=_unc("truncation_bound", worst_dense_error,
+                                 "36001-angle dense search against the closed form"),
                 tolerance={"abs": 1e-8, "rel": 0}),
         finding("Fast marching converges to Euclidean length under refinement", "numerical",
                 {"max_relative_error": {str(n): v for n, v in fmm.items()}, "observed_order": order},
                 {"checks": [_check("errors decrease with N (0 = monotone)", 0 if monotone else 1),
                             _check("observed order", order, 0.5, "ge", kind="self_convergence")]},
+                uncertainty=_unc("truncation_bound", fmm[grid.REFINEMENTS[-1]],
+                                 "first-order discretization error on the finest grid (N = 120)"),
                 tolerance={"abs": 1e-9, "rel": 1e-6}),
         finding("Grid-planned path lengths predict distances travelled by a physical vehicle or tool", "physical",
                 None, {}),
@@ -1677,7 +1741,8 @@ def metric_perturbation_routes(ctx):
                                                   "sympy.solve", sympy_version)
     findings = [
         finding("The shortest route switches at eps* = 4 delta, which vanishes as the unperturbed gap vanishes",
-                "mathematical", {"eps_star": study["eps_star"], "scaling": study["scaling"]}, basis, tolerance=EXACT),
+                "mathematical", {"eps_star": study["eps_star"], "scaling": study["scaling"]}, basis,
+                uncertainty=EXACT_UNC, tolerance=EXACT),
         finding("A metric perturbation just above eps* = 1/250 (0.4%) turns the shortest-route heading by about "
                 "127 deg while the minimal length changes continuously", "numerical",
                 {"heading_jump_deg": study["heading_jump_deg"], "length_jump": study["length_jump"]},
@@ -1686,7 +1751,10 @@ def metric_perturbation_routes(ctx):
                                    kind="invariant")]},
                 counterexample={"statement": "A small metric perturbation changes the shortest route only slightly",
                                 "witness": {"delta": study["delta"], "eps": "1/200 > eps* = 1/250",
-                                            "heading_jump_deg": study["heading_jump_deg"]}}, tolerance=FLOAT),
+                                            "heading_jump_deg": study["heading_jump_deg"]}},
+                uncertainty=_unc("truncation_bound", 1e-4,
+                                 "sweep step in eps; the jump is measured between sweep points bracketing eps*"),
+                tolerance=FLOAT),
         finding("A metric calibrated from physical measurements is accurate enough to decide between near-tied routes",
                 "calibration", None, {}),
     ]
@@ -1814,6 +1882,8 @@ def shortest_is_not_safest(ctx):
         counterexample={"statement": "The shortest geodesic between two points has the least heading amplification",
                         "witness": {"surface": "Torus(2, 1)", "p": inner["p"], "q": inner["q"],
                                     "shortest": _brief(inner["shortest"]), "alternative": _brief(inner["alternative"])}},
+        uncertainty=_unc("reference_error", inner_anchor,
+                         "relative deviation of the shortest amplification from sinh 2.5 (RK4 step about 0.04)"),
         tolerance=ROUTE))
     findings.append(finding(
         "Torus outer equator: the shortest route has a smaller focus margin than a longer route", "numerical",
@@ -1823,6 +1893,8 @@ def shortest_is_not_safest(ctx):
         counterexample={"statement": "The shortest geodesic has the largest focus margin (farthest from conjugate points)",
                         "witness": {"surface": "Torus(2, 1)", "p": outer["p"], "q": outer["q"],
                                     "shortest": _brief(outer["shortest"]), "alternative": _brief(outer["alternative"])}},
+        uncertainty=_unc("reference_error", outer_anchor,
+                         "deviation of the shortest focus margin from pi sqrt 3 - 4.5"),
         tolerance=ROUTE))
     findings.append(finding(
         "Torus (0, 0) -> (2.2, 0): two mirror-image shortest routes tie, so 'the' shortest route is not unique",
@@ -1832,7 +1904,9 @@ def shortest_is_not_safest(ctx):
                     _check("heading separation (rad)", abs(t0["heading"] - t1["heading"]), 0.1, "ge", kind="invariant")]},
         counterexample={"statement": "The shortest route between two points is unique",
                         "witness": {"surface": "Torus(2, 1)", "p": tie["p"], "q": tie["q"],
-                                    "routes": [_brief(t0), _brief(t1)]}}, tolerance=ROUTE))
+                                    "routes": [_brief(t0), _brief(t1)]}},
+        uncertainty=_unc("roundoff", abs(t0["length"] - t1["length"]), "length difference of the mirror-image routes"),
+        tolerance=ROUTE))
     findings.append(finding(
         "Gaussian bump: a longer route over the top has smaller amplification but passes a conjugate point",
         "numerical", {"shortest": _brief(bump["shortest"]), "alternative": _brief(bump["alternative"])},
@@ -1844,6 +1918,8 @@ def shortest_is_not_safest(ctx):
         counterexample={"statement": "Low heading amplification certifies a robust (locally minimizing) route",
                         "witness": {"surface": "GaussianBump(1.5, 1)", "p": bump["p"], "q": bump["q"],
                                     "shortest": _brief(bump["shortest"]), "alternative": _brief(bump["alternative"])}},
+        uncertainty=_unc("reference_error", sc["worst"] if sc else 1e-6,
+                         "scipy DOP853 agreement of witness routes when available, else the RK4 step estimate"),
         tolerance=ROUTE))
     findings.append(finding(
         "Unit sphere, separation pi - 0.05: the minimizing arc ends 0.05 before its conjugate point", "numerical",
@@ -1858,13 +1934,17 @@ def shortest_is_not_safest(ctx):
         counterexample={"statement": "A shortest geodesic stays well away from conjugate points",
                         "witness": {"surface": "unit sphere", "separation": sphere["separation"],
                                     "focus_margin": minor["focus_margin"],
-                                    "targeting_condition_number": 1 / abs(minor["j_head"])}}, tolerance=FLOAT))
+                                    "targeting_condition_number": 1 / abs(minor["j_head"])}},
+        uncertainty=_unc("reference_error", abs(sphere["transfer"]["j_head"] - math.sin(0.05)),
+                         "ciw.lab.jacobi j_head(L) against sin 0.05"),
+        tolerance=FLOAT))
     findings.append(finding(
         "Search on the saddle (K < 0, simply connected) finds exactly one route, consistent with Cartan-Hadamard "
         "uniqueness, so this surface admits no witness",
         "numerical", {"routes": len(saddle["routes"])},
         {"derivation": "Cartan-Hadamard: exp is a diffeomorphism on complete simply connected K <= 0 surfaces",
-         "checks": [_check("routes found minus 1", len(saddle["routes"]) - 1)]}, tolerance=EXACT))
+         "checks": [_check("routes found minus 1", len(saddle["routes"]) - 1)]},
+        uncertainty=EXACT_UNC, tolerance=EXACT))
     findings.append(finding("A route from this library is safe (or unsafe) to execute on a physical part or vehicle",
                             "machine_safety", None, {}))
     return {"state": "completed", "fields": fields, "findings": findings}

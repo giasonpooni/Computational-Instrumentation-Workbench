@@ -43,16 +43,20 @@ class Surd:
     def __init__(self, a, b=0, d=2):
         self.a, self.b, self.d = Fraction(a), Fraction(b), int(d)
 
-    def _lift(self, other):
-        if isinstance(other, Surd):
-            if other.d != self.d and other.b and self.b:
-                raise ValueError("Surd arithmetic requires the same radicand")
-            return other if other.d == self.d else Surd(other.a, other.b, self.d if not other.b else other.d)
-        return Surd(other, 0, self.d)
+    def _common(self, other):
+        """Both operands over one radicand; a rational operand adopts the other's radicand."""
+        o = other if isinstance(other, Surd) else Surd(other, 0, self.d)
+        if o.d == self.d:
+            return self, o, self.d
+        if not o.b:
+            return self, Surd(o.a, 0, self.d), self.d
+        if not self.b:
+            return Surd(self.a, 0, o.d), o, o.d
+        raise ValueError("Surd arithmetic requires the same radicand")
 
     def __add__(self, other):
-        o = self._lift(other)
-        return Surd(self.a + o.a, self.b + o.b, self.d)
+        x, y, d = self._common(other)
+        return Surd(x.a + y.a, x.b + y.b, d)
 
     __radd__ = __add__
 
@@ -60,26 +64,29 @@ class Surd:
         return Surd(-self.a, -self.b, self.d)
 
     def __sub__(self, other):
-        return self + (-self._lift(other))
+        x, y, d = self._common(other)
+        return Surd(x.a - y.a, x.b - y.b, d)
 
     def __rsub__(self, other):
-        return self._lift(other) - self
+        x, y, d = self._common(other)
+        return Surd(y.a - x.a, y.b - x.b, d)
 
     def __mul__(self, other):
-        o = self._lift(other)
-        return Surd(self.a * o.a + self.d * self.b * o.b, self.a * o.b + self.b * o.a, self.d)
+        x, y, d = self._common(other)
+        return Surd(x.a * y.a + d * x.b * y.b, x.a * y.b + x.b * y.a, d)
 
     __rmul__ = __mul__
 
     def __truediv__(self, other):
-        o = self._lift(other)
-        norm = o.a * o.a - o.d * o.b * o.b
+        x, y, d = self._common(other)
+        norm = y.a * y.a - d * y.b * y.b
         if norm == 0:
             raise ZeroDivisionError("Surd division by zero")
-        return self * Surd(o.a / norm, -o.b / norm, self.d)
+        return x * Surd(y.a / norm, -y.b / norm, d)
 
     def __rtruediv__(self, other):
-        return self._lift(other) / self
+        x, y, _ = self._common(other)
+        return y / x
 
     def sign(self) -> int:
         """Exact sign: compare a^2 with d b^2 when a and b have opposite signs."""
@@ -95,7 +102,8 @@ class Surd:
         return (self - other).sign() == 0
 
     def __hash__(self):
-        return hash((self.a, self.b, self.d))
+        # Rational values hash like the equal Fraction, whatever the radicand.
+        return hash(self.a) if not self.b else hash((self.a, self.b, self.d))
 
     def __lt__(self, other):
         return (self - other).sign() < 0
@@ -161,8 +169,7 @@ class PolygonSurface:
                     raise GluingRefusal("POLYGON_NOT_CONVEX_CCW",
                                     f"Polygon {i} is not strictly convex and counterclockwise at vertex {j + 1}")
         for (i, j), (k, l) in self.partner.items():
-            if abs(float(_dot(self.edge(i, j), self.edge(i, j))) - float(_dot(self.edge(k, l), self.edge(k, l)))) > 1e-12 \
-                    and not self._equal(_dot(self.edge(i, j), self.edge(i, j)), _dot(self.edge(k, l), self.edge(k, l))):
+            if not self._equal(_dot(self.edge(i, j), self.edge(i, j)), _dot(self.edge(k, l), self.edge(k, l))):
                 raise GluingRefusal("EDGE_LENGTH_MISMATCH", f"Glued edges {(i, j)} and {(k, l)} have different lengths")
 
     def _positive(self, x):
@@ -278,7 +285,7 @@ class PolygonSurface:
         self.require_translation()
         poly = self.polygons[polygon]
         if not all(self._positive(_cross(self.edge(polygon, j), _sub(start, poly[j]))) for j in range(len(poly))):
-            raise FlowTermination("START_NOT_INTERIOR", "start point is not strictly inside its polygon",
+            raise FlowTermination("START_NOT_INTERIOR", "Start point is not strictly inside its polygon",
                                   {"polygon": polygon})
         singular = self.cone_points()
         x, current, entry = start, polygon, None
@@ -303,7 +310,7 @@ class PolygonSurface:
                 if best is None or t < best[0]:
                     best = (t, j, sigma)
             if best is None:
-                raise FlowTermination("NO_EXIT", "no exit edge found (point outside polygon)", {"polygon": current})
+                raise FlowTermination("NO_EXIT", "No exit edge found (point outside polygon)", {"polygon": current})
             t, j, sigma = best
             # Returning to the start inside this polygon closes the trajectory.
             if stop_on_return and current == polygon and crossings:
@@ -322,9 +329,9 @@ class PolygonSurface:
                 corner = (current, j if (float(sigma) < 0.5) else (j + 1) % len(poly))
                 if not self.tol:
                     code = "SADDLE_CONNECTION" if corner in singular else "REGULAR_VERTEX_UNRESOLVED"
-                    raise FlowTermination(code, "trajectory hits a polygon vertex", dict(record, corner=list(corner)))
+                    raise FlowTermination(code, "Trajectory hits a polygon vertex", dict(record, corner=list(corner)))
                 raise FlowTermination("NEAR_VERTEX_WITHIN_TOLERANCE",
-                                      "trajectory passes within the declared tolerance of a vertex",
+                                      "Trajectory passes within the declared tolerance of a vertex",
                                       dict(record, corner=list(corner), clearance=clearance))
             k, l = self.partner[(current, j)]
             partner_poly = self.polygons[k]

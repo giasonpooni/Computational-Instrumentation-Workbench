@@ -26,6 +26,7 @@ from hashlib import sha256
 import inspect
 import json
 from pathlib import Path
+import re
 import subprocess
 import tempfile
 
@@ -71,6 +72,7 @@ def _check(reference, observed, tolerance=0.0, comparison="abs_le", kind="exact_
 
 
 def _refusal(reference, expected, observed):
+    observed = "none" if observed is None else str(observed)
     return {"reference_kind": "refusal", "reference": reference, "expected_refusal": expected,
             "observed_refusal": observed, "passed": observed == expected}
 
@@ -857,8 +859,8 @@ def malformed_exchange_fixtures(ctx):
         ["duplicate keys", "NaN and ±Infinity literals", "float overflow", "truncation", "invalid UTF-8",
          "recursion depth", "wrong schema", "wrong types", "extra fields", "oversize bytes", "forged identity",
          "non-canonical base64"],
-        ["The workbench validator is exercised through the energy-accuracy kind; other kinds use their own schema "
-         "validators after the same canonical-base64 and JSON checks.",
+        ["The workbench validator is exercised through the energy-accuracy kind; other kinds apply their own "
+         "source parsers after the same canonical-base64 and byte-budget checks.",
          "The exchange stage stops before the SET validator; conformance of well-formed artifacts needs SET (T097)."],
         "T096: provider-free conformance of exchange identities and ESM candidate responses.")
     return {"state": "completed", "fields": fields, "findings": findings}
@@ -1216,15 +1218,15 @@ def exact_provider_integrations(ctx):
         fields.update(numerical_result=f"SCR checkout refused: HEAD {identity['head']} matches {comparison['matched']}",
                       unresolved_assumptions=["The bound SCR checkout is not at a CIW pin or not clean."])
         return {"state": "blocked", "fields": fields, "findings": [
-            finding("The bound SCR checkout is refused before execution", "provenance", comparison,
-                    {"checks": [_refusal("SCR HEAD against ciw.declared_workload.PINS", "refused", "refused")]},
-                    tolerance=EXACT)]}
+            finding("The SCR integration was not executed because the bound checkout is not at a clean CIW pin",
+                    "provenance", comparison, {}, expected_not_established=True)]}
     engine = _engine(ctx)
     findings, parts, blocked = [], {}, []
     with tempfile.TemporaryDirectory(prefix="ciw-lab-t097-") as scratch:
         scratch = Path(scratch)
         if engine is None:
-            blocked.append("SCR engine: neither scr-engine binding nor cargo is available")
+            blocked.append("SCR engine unavailable: no scr-engine binding, and cargo is absent or its locked "
+                           "offline build produced no binary")
         else:
             path = providers.materialize(engine["binary"], scratch)
             workbench = providers.scr_workbench_integration(ctx.providers["scr"], path, scratch / "workbench", [
@@ -1436,23 +1438,27 @@ def provider_identities(ctx):
         "ciw_pins": pins, "engine": None if engine is None else {
             "origin": engine["origin"], "sha256": engine["sha256"], "byte_count": len(engine["binary"]),
             "toolchain": None if engine["build"] is None else {k: engine["build"][k] for k in ("cargo", "rustc")}}})
-    findings = [finding(
-        "CIW declares one SCR revision across its workflows and several distinct SET revisions",
-        "provenance", {"scr_revisions": consistency["scr_revisions"], "set_revisions": consistency["set_revisions"]},
-        {"checks": [_check("distinct SCR revisions declared by CIW beyond one", len(consistency["scr_revisions"]) - 1),
-                    _check("distinct SET revisions declared by CIW", len(consistency["set_revisions"]), 2, "ge",
-                           "invariant")]}, tolerance=EXACT)]
     if not roles:
         fields = _fields(
             "Every bound provider checkout is clean and at a CIW pin, and its bytes reproduce its Git tree.",
             "Identity = (HEAD, HEAD^{tree}, SHA-256 over tracked working bytes, Cargo.lock SHA-256, engine SHA-256).",
             [], "None: no provider checkout is bound.", "Pins matched; recomputed tree equals Git's tree.",
             "Blocked: bind providers with --provider ROLE=PATH for roles " + ", ".join(sorted(providers.REPOSITORIES)),
-            "CIW pin table only.", "not quantified", ["no provider bound"], ["No provider checkout is bound."],
+            "No checkout identity computed; the CIW pin table is retained in provider-identities.json.",
+            "not quantified", ["no provider bound"], ["No provider checkout is bound."],
             "Bind csg, ftr, scr (scripts/check_lab.py does) and rerun T098.")
-        return {"state": "blocked", "fields": fields, "findings": findings}
-    value = {role: {"head": identities[role]["head"], "tree": identities[role]["tree"],
-                    "pins": comparisons[role]["matched"]} for role in accepted}
+        # A blocked report carries no established finding; the CIW pin table is in the artifact.
+        return {"state": "blocked", "fields": fields, "findings": []}
+    findings = [finding(
+        "CIW declares one SCR revision across its workflows and several distinct SET revisions",
+        "provenance", {"scr_revisions": consistency["scr_revisions"], "set_revisions": consistency["set_revisions"]},
+        {"checks": [_check("distinct SCR revisions declared by CIW beyond one", len(consistency["scr_revisions"]) - 1),
+                    _check("distinct SET revisions declared by CIW", len(consistency["set_revisions"]), 2, "ge",
+                           "invariant")]}, tolerance=EXACT)]
+    # Rejected roles (no CIW pin, dirty, or unreadable) are listed, never counted as accepted.
+    value = {"accepted": {role: {"head": identities[role]["head"], "tree": identities[role]["tree"],
+                                 "pins": comparisons[role]["matched"]} for role in accepted},
+             "rejected": rejected}
     tree_mismatch = sum(identities[role]["recomputed_tree"] != identities[role]["tree"] for role in identities)
     again = {role: providers.checkout_identity(ctx.providers[role])["tracked_sha256"] for role in identities}
     findings.insert(0, finding(
@@ -1489,11 +1495,6 @@ def provider_identities(ctx):
                                  "SOURCE_PIN_MISMATCH: The bound checkout is not at the declared revision",
                                  row["outcome"]) for role, rows in sorted(refused_rows.items()) for row in rows]},
             tolerance=EXACT))
-    if rejected:
-        findings.append(finding(
-            "Bound checkouts that match no CIW pin are refused", "provenance",
-            {role: comparisons.get(role, {"error": errors.get(role)}) for role in rejected},
-            {"checks": [_refusal(f"{role} checkout", "refused", "refused") for role in rejected]}, tolerance=EXACT))
     if liveness is not None:
         findings.append(finding(
             "The SCR engine recorded for this run executes the SCR heat descriptor on the survey input",
@@ -1647,22 +1648,27 @@ def locked_cargo_build(ctx):
 _COMPUTATIONAL_LABELS = frozenset({"analytic", "synthetic", "numerically_verified", "provider_backed"})
 
 
+def _cells(row: str) -> int:
+    """Cells of a Markdown table row: unescaped pipes minus one (GFM drops cells beyond the header's)."""
+    return len(re.findall(r"(?<!\\)\|", row)) - 1
+
+
 def _audit_reports(ctx):
     """Label and rendering audit of every retained report numbered below 100."""
     directory = ctx.output_dir / "reports"
-    rows, violations = [], []
+    rows, labels, rendering = [], [], []
     for path in sorted(directory.glob("T*.json")) if directory.is_dir() else []:
         try:
             report = json.loads(path.read_text(encoding="utf-8"))
         except (OSError, ValueError) as exc:
-            violations.append(f"{path.name}: unreadable ({exc})")
+            labels.append(f"{path.name}: unreadable ({exc})")
             continue
         if not isinstance(report.get("number"), int) or report["number"] >= 100:
             continue
         try:
             validate_report(report)
         except EvidenceRefusal as exc:
-            violations.append(f"{path.name}: refused by validate_report ({exc})")
+            labels.append(f"{path.name}: refused by validate_report ({exc})")
             continue
         markdown = render_markdown(report)
         table = markdown.split("| Finding | Value | Evidence status |\n| --- | --- | --- |\n", 1)
@@ -1670,25 +1676,25 @@ def _audit_reports(ctx):
         for index, record in enumerate(report["findings"]):
             label, domain = record["evidence_status"], record["domain"]
             if label not in LABELS:
-                violations.append(f"{report['task_id']}[{index}]: unknown label {label}")
+                labels.append(f"{report['task_id']}[{index}]: unknown label {label}")
             if domain in PHYSICAL_DOMAINS and (label in _COMPUTATIONAL_LABELS or
                                                (label != "not_established" and not record["basis"].get("acquisition"))):
-                violations.append(f"{report['task_id']}[{index}]: physical finding labelled {label}")
+                labels.append(f"{report['task_id']}[{index}]: physical finding labelled {label}")
             if domain in AUTHORITY_DOMAINS and label != "not_established":
-                violations.append(f"{report['task_id']}[{index}]: authority finding labelled {label}")
+                labels.append(f"{report['task_id']}[{index}]: authority finding labelled {label}")
             if domain not in PHYSICAL_DOMAINS and label == "hardware_measured":
-                violations.append(f"{report['task_id']}[{index}]: computational finding labelled hardware_measured")
+                labels.append(f"{report['task_id']}[{index}]: computational finding labelled hardware_measured")
             row = lines[index] if index < len(lines) else ""
-            if not row.endswith(f"| `{label}` |") or row.count(" | ") != 2:
-                violations.append(f"{report['task_id']}[{index}]: rendered row does not show `{label}` in its column")
+            if not row.endswith(f"| `{label}` |") or _cells(row) != 3:
+                rendering.append(f"{report['task_id']}[{index}]: rendered row does not show `{label}` in its column")
         if f"`{report['physical_validation_status']['status']}`" not in markdown:
-            violations.append(f"{report['task_id']}: physical validation status not rendered")
+            rendering.append(f"{report['task_id']}: physical validation status not rendered")
         rows.append({"task_id": report["task_id"], "findings": len(report["findings"]),
                      "pipe_claims": sum("|" in f["claim"] or "\n" in f["claim"] for f in report["findings"]),
                      "labels": sorted({f["evidence_status"] for f in report["findings"]}),
                      "physical_or_authority": sum(f["domain"] in PHYSICAL_DOMAINS | AUTHORITY_DOMAINS
                                                   for f in report["findings"])})
-    return rows, violations
+    return rows, labels, rendering
 
 
 def _energy_origin_study():
@@ -1756,7 +1762,7 @@ def _free_energy_study():
       regression_tests=(f"{TESTS}::test_t100_labels_and_origins_stay_distinct",
                         f"{TESTS}::test_render_markdown_claim_pipe_counterexample"))
 def visibly_distinct_results(ctx):
-    rows, violations = _audit_reports(ctx)
+    rows, violations, rendering = _audit_reports(ctx)
     energy = _energy_origin_study()
     free = _free_energy_study()
     # Validator self-test: a physical finding relabelled with a computational label is refused.
@@ -1773,19 +1779,24 @@ def visibly_distinct_results(ctx):
     probe = build_report(
         load_queue()["tasks"][99], "partial", {}, [witness])
     row = render_markdown(probe).splitlines()[-1]
-    shifted = row.count(" | ") != 2
+    shifted = _cells(row) != 3
     pipe_claims = sum(r.get("pipe_claims", 0) for r in rows)
-    ctx.artifact_json("visibility-audit.json", {"reports": rows, "violations": violations, "energy": energy,
+    ctx.artifact_json("visibility-audit.json", {"reports": rows, "label_violations": violations,
+                                                "rendering_violations": rendering, "energy": energy,
                                                 "free_energy": free, "forged_relabel": forged,
                                                 "rendering_probe_row": row})
     findings = []
     audited = bool(rows)
     if audited:
         findings.append(finding(
-            "Every retained report of tasks T001-T099 keeps labels among the seven, physical and authority findings "
-            "unestablished without acquisition, and renders each finding's label in its Markdown row",
-            "computational_pipeline", {"reports_checked": len(rows), "violations": len(violations)},
-            {"checks": [_check("label, domain or rendering violations", len(violations))]}, tolerance=EXACT))
+            "Every retained report of tasks T001-T099 keeps labels among the seven and physical and authority "
+            "findings unestablished without acquisition", "computational_pipeline",
+            {"reports_checked": len(rows), "label_violations": len(violations)},
+            {"checks": [_check("label or domain violations", len(violations))]}, tolerance=EXACT))
+        findings.append(finding(
+            "Every retained finding's label is rendered in the label column of its Markdown row",
+            "computational_pipeline", {"reports_checked": len(rows), "rendering_violations": len(rendering)},
+            {"checks": [_check("findings whose rendered label leaves its column", len(rendering))]}, tolerance=EXACT))
     else:
         findings.append(finding(
             "No retained report of tasks T001-T099 was present to audit", "computational_pipeline",
@@ -1797,7 +1808,7 @@ def visibly_distinct_results(ctx):
                                      "Evidence label refused: basis supports not_established, finding states synthetic",
                                      forged)]}, tolerance=EXACT),
         finding("An unescaped pipe character in a finding claim shifts the rendered label out of its Markdown column",
-                "computational_pipeline", {"row_cells": row.count(" | ") + 1, "label_column_shifted": shifted},
+                "computational_pipeline", {"row_cells": _cells(row), "label_column_shifted": shifted},
                 {"checks": [_check("rendered rows keeping three cells for a claim containing a pipe", int(not shifted))]},
                 tolerance=EXACT, counterexample={
                     "statement": "render_markdown keeps every finding's label in the label column for any claim text",
@@ -1858,7 +1869,8 @@ def visibly_distinct_results(ctx):
         "Audit every retained report below T100; forge a relabelled physical finding; render a claim containing "
         "a pipe character; relabel the energy fixture unsealed, resealed in the same occurrence and resealed in a fresh "
         "occurrence; relabel free-energy source policies; inspect the free-energy truth panel basis.",
-        f"{len(rows)} reports audited with {len(violations)} violations; resealed energy relabel classified "
+        f"{len(rows)} reports audited: {len(violations)} label violations, {len(rendering)} rendering "
+        f"violations; resealed energy relabel classified "
         f"{energy['resealed_relabel']['classification']}; same-occurrence relabel: {energy['same_occurrence_collision']}.",
         "Exact.",
         ["unknown label", "physical finding with computational label", "authority finding established",

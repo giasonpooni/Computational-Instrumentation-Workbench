@@ -216,63 +216,78 @@ def lateral_direction3(surface, u, tangent_chart) -> np.ndarray:
 
 # Surface area sampling and coverage ----------------------------------------
 @dataclass
-class AreaGrid:
-    """Midpoint-rule cells of a chart rectangle: column abscissae, embedded centres, area weights."""
+class AreaSample:
+    """Area-weighted sample points of a chart rectangle, grouped into x-columns for local distance queries."""
 
-    xs: np.ndarray
-    points: np.ndarray    # (columns, rows, 3) embedded cell centres
-    weights: np.ndarray   # (columns, rows) sqrt(det g) dx dy
+    columns: list          # [(x_lo, x_hi, points3d (m, 3), weights (m,)), ...]
+    count: int
 
 
-def area_grid(surface, x_range, y_range, count) -> AreaGrid:
-    """Cell centres avoid the chart lines where abutting swaths touch, so knife-edge ties carry no area."""
-    dx = (x_range[1] - x_range[0]) / count
-    dy = (y_range[1] - y_range[0]) / count
-    xs = x_range[0] + dx * (np.arange(count) + 0.5)
-    ys = y_range[0] + dy * (np.arange(count) + 0.5)
-    points = np.empty((count, count, 3))
-    weights = np.empty((count, count))
-    for i, x in enumerate(xs):
-        for j, y in enumerate(ys):
-            u = np.array([x, y])
-            points[i, j] = surface.embedding(u)
-            weights[i, j] = math.sqrt(np.linalg.det(surface.metric(u))) * dx * dy
-    return AreaGrid(xs, points, weights)
+def halton(index, base) -> float:
+    result, fraction = 0.0, 1.0
+    while index:
+        fraction /= base
+        index, digit = divmod(index, base)
+        result += digit * fraction
+    return result
+
+
+def area_sample(surface, x_range, y_range, count, start=1, columns=80) -> AreaSample:
+    """Halton (2, 3) points weighted by sqrt(det g); weighted fractions converge to surface-area fractions.
+
+    A deterministic low-discrepancy set avoids the knife-edge ties of a grid
+    aligned with row midlines and hits thin uncovered slivers in proportion to
+    their area.
+    """
+    u = np.array([[halton(k, 2), halton(k, 3)] for k in range(start, start + count)])
+    xs = x_range[0] + u[:, 0] * (x_range[1] - x_range[0])
+    ys = y_range[0] + u[:, 1] * (y_range[1] - y_range[0])
+    points = np.array([surface.embedding(np.array([x, y])) for x, y in zip(xs, ys)])
+    weights = np.array([math.sqrt(np.linalg.det(surface.metric(np.array([x, y])))) for x, y in zip(xs, ys)])
+    edges = np.linspace(x_range[0], x_range[1], columns + 1)
+    index = np.clip(np.searchsorted(edges, xs, side="right") - 1, 0, columns - 1)
+    grouped = [(edges[c], edges[c + 1], points[index == c], weights[index == c]) for c in range(columns)
+               if np.any(index == c)]
+    return AreaSample(grouped, count)
 
 
 def _segment_distances(points, a, b) -> np.ndarray:
-    """Distances from points (m, 3) to segments a[k] -> b[k]; returns (m,) minima."""
-    ab = b - a
-    length2 = np.maximum((ab * ab).sum(axis=1), 1e-300)
-    ap = points[:, None, :] - a[None, :, :]
-    t = np.clip((ap * ab[None, :, :]).sum(axis=2) / length2[None, :], 0.0, 1.0)
-    closest = a[None, :, :] + t[:, :, None] * ab[None, :, :]
-    return np.sqrt(((points[:, None, :] - closest) ** 2).sum(axis=2)).min(axis=1)
+    """Distances from points (m, 3) to segments a[k] -> b[k]; returns (m,) minima.
 
-
-def nearest_row_distance(grid: AreaGrid, rows3d, reach) -> np.ndarray:
-    """3D distance from every cell centre to the nearest row polyline, exact within ``reach``.
-
-    A segment farther than ``reach`` in chart-aligned x cannot be within reach
-    in 3D (|dX| >= |dx|), so each column only examines nearby segments.
+    Uses |p - a - t (b - a)|^2 = |p - a|^2 - 2 t (p - a).(b - a) + t^2 |b - a|^2 with
+    coordinates centred on the points, so the matrix products do not cancel badly.
     """
+    shift = points.mean(axis=0)
+    p, a = points - shift, a - shift
+    ab = b - shift - a
+    length2 = np.maximum((ab * ab).sum(axis=1), 1e-300)
+    pa_ab = p @ ab.T - (a * ab).sum(axis=1)[None, :]
+    pa2 = (p * p).sum(axis=1)[:, None] - 2.0 * p @ a.T + (a * a).sum(axis=1)[None, :]
+    t = np.clip(pa_ab / length2[None, :], 0.0, 1.0)
+    d2 = pa2 - 2.0 * t * pa_ab + t * t * length2[None, :]
+    return np.sqrt(np.maximum(d2.min(axis=1), 0.0))
+
+
+def coverage_fraction(sample: AreaSample, rows3d, swath) -> float:
+    """Area fraction of the chart rectangle within swath/2 (3D distance) of some row polyline.
+
+    Valid for graph surfaces X = (x, y, f(x, y)) (the plate and the coupon): the 3D
+    distance is at least the difference in x, so each column only examines
+    segments whose x-range lies within reach. A relative slack of 1e-9 (1e-8 mm
+    for a 20 mm swath) absorbs rounding at exact ties.
+    """
+    reach = 0.5 * swath * (1.0 + 1e-9)
     segments = [(np.asarray(r[:-1], dtype=float), np.asarray(r[1:], dtype=float)) for r in rows3d if len(r) > 1]
-    a = np.concatenate([s[0] for s in segments])
-    b = np.concatenate([s[1] for s in segments])
+    a = np.concatenate([seg[0] for seg in segments])
+    b = np.concatenate([seg[1] for seg in segments])
     xa, xb = np.minimum(a[:, 0], b[:, 0]), np.maximum(a[:, 0], b[:, 0])
-    nearest = np.full(grid.weights.shape, np.inf)
-    for i, x in enumerate(grid.xs):
-        near = (xb >= x - reach) & (xa <= x + reach)
+    covered = total = 0.0
+    for lo, hi, points, weights in sample.columns:
+        total += float(weights.sum())
+        near = (xb >= lo - reach) & (xa <= hi + reach)
         if near.any():
-            nearest[i] = _segment_distances(grid.points[i], a[near], b[near])
-    return nearest
-
-
-def coverage_fraction(grid: AreaGrid, rows3d, swath) -> float:
-    """Area fraction of the chart rectangle within swath/2 (3D distance) of some row polyline."""
-    nearest = nearest_row_distance(grid, rows3d, 0.5 * swath + 1e-9)
-    covered = nearest <= 0.5 * swath
-    return float(grid.weights[covered].sum() / grid.weights.sum())
+            covered += float(weights[_segment_distances(points, a[near], b[near]) <= reach].sum())
+    return covered / total
 
 
 def clip_to_extent(points_u, x_range=COUPON_X, y_range=COUPON_Y) -> np.ndarray:

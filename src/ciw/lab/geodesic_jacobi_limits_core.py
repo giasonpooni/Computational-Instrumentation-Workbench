@@ -24,7 +24,12 @@ from .surfaces import ChartMap, SurfaceRefusal
 
 # Checks whose pass flag is derived from their numbers ---------------------
 def check(kind: str, reference: str, observed, tolerance, comparison: str = "abs_le") -> dict:
+    """A check object with the documented comparisons; ``le`` bounds a nonnegative magnitude."""
     observed, tolerance = float(observed), float(tolerance)
+    if comparison in ("abs_le", "le") and tolerance < 0:
+        raise ValueError(f"{comparison} needs a nonnegative tolerance")
+    if comparison == "le" and observed < 0:
+        raise ValueError("le bounds a nonnegative magnitude; phrase a signed bound with abs_le")
     if comparison == "abs_le":
         passed = abs(observed) <= tolerance
     elif comparison == "le":
@@ -38,8 +43,23 @@ def check(kind: str, reference: str, observed, tolerance, comparison: str = "abs
 
 
 def refusal_check(reference: str, expected: str, observed: str | None) -> dict:
+    """Refusal check; ``observed`` is the refusal message, or 'none' when nothing was refused."""
+    observed = "none" if observed is None else observed
     return {"reference_kind": "refusal", "reference": reference, "expected_refusal": expected,
             "observed_refusal": observed, "passed": observed == expected}
+
+
+def uncertainty(kind: str, value, basis: str) -> dict:
+    """Per-finding uncertainty: a number with its kind and the basis it was derived from."""
+    return {"kind": kind, "value": float(value), "basis": basis}
+
+
+def slope_spread(xs, ys) -> float:
+    """Largest gap between the global log-log slope and the slopes of consecutive point pairs."""
+    xs, ys = np.asarray(xs, dtype=float), np.asarray(ys, dtype=float)
+    fit = loglog_slope(xs, ys)
+    local = np.diff(np.log(ys)) / np.diff(np.log(xs))
+    return float(np.max(np.abs(local - fit)))
 
 
 def loglog_slope(xs, ys) -> float:

@@ -100,6 +100,17 @@ def torus_family(ctx, key: str):
     return ctx.memo(("gjl-torus-family", key), compute)
 
 
+def equator_grid_check(ctx):
+    """Smallest separation (equator, eps = 0.005) at s* on the 400-step grid and on a grid with half the steps."""
+    def compute():
+        fine = torus_family(ctx, "equator")
+        coarse = core.separation_family(Torus(2.0, 1.0), *TORUS_PATHS["equator"], fine["s_star"] * 290 / 200, 290,
+                                        (EPS[0],))
+        a, b = coarse["runs"][EPS[0]]["chord"][200], fine["runs"][EPS[0]]["chord"][TORUS_M]
+        return {"absolute": float(abs(a - b)), "relative": float(abs(a / b - 1.0))}
+    return ctx.memo("gjl-equator-grid", compute)
+
+
 def _divergence(family, eps, offsets=(1, 2, 4, 8)):
     """Relative first-order error at nodes s* - m h: |signed - eps j| / |eps j|."""
     s, j = family["s"], family["j"]
@@ -132,16 +143,15 @@ def _torus_summary(family):
 def near_focus_counterexamples(ctx):
     equator, generic = torus_family(ctx, "equator"), torus_family(ctx, "generic")
     eq, gen = _torus_summary(equator), _torus_summary(generic)
-    # Grid check on the smallest separation: the same equator run on a grid with half the steps.
-    coarse = core.separation_family(Torus(2.0, 1.0), *TORUS_PATHS["equator"], equator["s_star"] * 290 / 200, 290,
-                                    (EPS[0],))
-    grid_difference = abs(coarse["runs"][EPS[0]]["chord"][200] / eq["chord_at_s_star"][0] - 1.0)
+    grid = equator_grid_check(ctx)
+    grid_difference = grid["relative"]
     torus = Torus(2.0, 1.0)
     analytic_s_star = math.pi * math.sqrt(torus.minor * (torus.major + torus.minor))
 
     # Divergence of the relative first-order error approaching s* (generic path, eps = 0.01).
     divergence = _divergence(generic, 0.01)
     divergence_slope = core.loglog_slope([r["distance"] for r in divergence], [r["relative_error"] for r in divergence])
+    divergence_spread = core.slope_spread([r["distance"] for r in divergence], [r["relative_error"] for r in divergence])
     divergence_eq = _divergence(equator, 0.04)
     divergence_eq_slope = core.loglog_slope([r["distance"] for r in divergence_eq],
                                             [r["relative_error"] for r in divergence_eq])
@@ -217,6 +227,9 @@ def near_focus_counterexamples(ctx):
                                        eq["chord_exponent"] - 3.0, 0.05),
                             core.check("self_convergence", "smallest chord at s*: 200- versus 400-step grid "
                                        "(relative)", grid_difference, 1e-3)]},
+                uncertainty=core.uncertainty("truncation_bound", grid["relative"],
+                                             "relative change of the smallest separation (eps = 0.005) at s* when "
+                                             "the grid is halved; the 400-step error is about a sixteenth of it"),
                 tolerance={"abs": 1e-10, "rel": 1e-4},
                 counterexample={"statement": "The separation at a conjugate point is of exact order eps^2",
                                 "witness": {"surface": "Torus(2, 1)", "path": "outer equator, heading 0",
@@ -231,6 +244,9 @@ def near_focus_counterexamples(ctx):
                                        gen["first_order_at_s_star"], 1e-8),
                             core.check("self_convergence", "fitted chord exponent minus 2",
                                        gen["chord_exponent"] - 2.0, 0.1)]},
+                uncertainty=core.uncertainty("fit_spread", core.slope_spread(EPS, gen["chord_at_s_star"]),
+                                             "largest gap between the fitted exponent and the slopes of "
+                                             "consecutive eps pairs"),
                 tolerance={"abs": 1e-6, "rel": 1e-5}),
         finding("The relative first-order error diverges like 1/|s - s*| approaching the conjugate point",
                 "numerical", {"slope_generic_eps_0.01": divergence_slope, "slope_equator_eps_0.04": divergence_eq_slope,
@@ -241,6 +257,9 @@ def near_focus_counterexamples(ctx):
                             core.check("self_convergence", "equator log-log slope plus 1", divergence_eq_slope + 1.0, 0.2),
                             core.check("invariant", "relative first-order error one step before s* (eps = 0.04)",
                                        witness_rel["relative_error"], 1.0, "ge")]},
+                uncertainty=core.uncertainty("fit_spread", divergence_spread,
+                                             "largest gap between the fitted slope and consecutive-offset slopes "
+                                             "(generic path)"),
                 tolerance={"abs": 1e-3, "rel": 1e-4},
                 counterexample={"statement": "The first-order separation eps j is accurate along the whole path "
                                              "once eps is small",
@@ -257,18 +276,24 @@ def near_focus_counterexamples(ctx):
                                        inversion["generic"]["ratio_after"] - 1.0, 0.05),
                             core.check("invariant", "equator: signed / (eps j) after s* minus 1",
                                        inversion["equator"]["ratio_after"] - 1.0, 0.05),
-                            core.check("invariant", "sign product of separations before and after s* (generic)",
+                            core.check("invariant", "sign product of separations before and after s* plus 1 (generic)",
                                        math.copysign(1.0, inversion["generic"]["signed_before"])
-                                       * math.copysign(1.0, inversion["generic"]["signed_after"]), 0.0, "le"),
-                            core.check("invariant", "sign product of separations before and after s* (equator)",
+                                       * math.copysign(1.0, inversion["generic"]["signed_after"]) + 1.0, 0.0),
+                            core.check("invariant", "sign product of separations before and after s* plus 1 (equator)",
                                        math.copysign(1.0, inversion["equator"]["signed_before"])
-                                       * math.copysign(1.0, inversion["equator"]["signed_after"]), 0.0, "le")]},
+                                       * math.copysign(1.0, inversion["equator"]["signed_after"]) + 1.0, 0.0)]},
+                uncertainty=core.uncertainty("truncation_bound", grid["absolute"],
+                                             "absolute separation change when the grid is halved (smallest "
+                                             "separation at s*); separations here are larger than 1e-3"),
                 tolerance={"abs": 1e-9, "rel": 1e-5}),
         finding("Separation does not grow monotonically with length: it nearly vanishes at the conjugate point",
                 "numerical", monotone_ratio,
                 {"generator": _gen("torus-equator-family", eps=0.02),
                  "checks": [core.check("invariant", "chord(s*) / chord(s*/2) on the outer equator",
                                        monotone_ratio, 1e-3, "le")]},
+                uncertainty=core.uncertainty("truncation_bound",
+                                             grid["absolute"] / float(equator["runs"][0.02]["chord"][TORUS_M // 2]),
+                                             "grid-halving separation change relative to chord(s*/2)"),
                 tolerance={"abs": 1e-9, "rel": 1e-4},
                 counterexample={"statement": "The separation of neighbouring geodesics grows monotonically with length",
                                 "witness": {"surface": "Torus(2, 1)", "path": "outer equator", "eps": 0.02,
@@ -284,6 +309,8 @@ def near_focus_counterexamples(ctx):
                                        sphere_closed_error, 1e-9),
                             core.check("analytic", "relative error minus 2 sin(eps/2)/eps - 1 at every node",
                                        sphere_uniform_dev, 1e-6)]},
+                uncertainty=core.uncertainty("reference_error", sphere_closed_error,
+                                             "max deviation of the numerical separations from exact great circles"),
                 tolerance={"abs": 1e-9, "rel": 1e-4},
                 counterexample={"statement": "The relative first-order error diverges at every conjugate point",
                                 "witness": {"surface": "unit sphere", "perturbation": "pure heading",
@@ -292,6 +319,10 @@ def near_focus_counterexamples(ctx):
                 "numerical", sphere_flip,
                 {"generator": _gen("sphere-great-circles", eps=0.02),
                  "checks": [core.check("analytic", "signed separation at 5pi/4 over 3pi/4 plus 1", sphere_flip + 1.0, 1e-8)]},
+                uncertainty=core.uncertainty("reference_error",
+                                             sphere_closed_error / abs(float(pure["runs"][0.02]["signed"][192])),
+                                             "numerical-versus-great-circle deviation relative to the signed "
+                                             "separation at 3pi/4"),
                 tolerance={"abs": 1e-8, "rel": 0.0}),
         finding("A combined lateral+heading perturbation on the sphere has true separation eps^2/2 where eps j vanishes",
                 "numerical", {"exponent": mixed_exponent, "coefficient": mixed_coefficient, "s0": s0},
@@ -301,6 +332,9 @@ def near_focus_counterexamples(ctx):
                             core.check("analytic", "chord / eps^2 at s0 = 3pi/4 minus 1/2", mixed_coefficient - 0.5, 1e-3),
                             core.check("analytic", "numerical chord at s0 minus closed form (eps = 0.02)",
                                        mixed_numeric - float(closed_mixed["chord"][192]), 1e-9)]},
+                uncertainty=core.uncertainty("fit_spread", core.slope_spread(EPS, mixed_chord),
+                                             "largest gap between the fitted exponent and consecutive-pair slopes "
+                                             "of the closed form"),
                 tolerance={"abs": 1e-6, "rel": 1e-6}),
     ]
     fields = _fields(
@@ -423,7 +457,9 @@ def chart_study(ctx):
                     length_errors.append(abs(length_error))
                 adaptive, adaptive_length, stats, _ = _chart_run(surface, a0, ta, length, rtol=1e-10)
                 rows[name] = {"fixed_errors": errors, "fixed_length_errors": length_errors,
-                              # Order from the last step pair; roundoff-level errors carry no order.
+                              # Orders from step pairs; roundoff-level errors carry no order.
+                              "order_first_pair": -core.loglog_slope(T011_STEPS[:2], errors[:2])
+                              if min(errors[:2]) > 1e-13 else None,
                               "order_last_pair": -core.loglog_slope(T011_STEPS[-2:], errors[-2:])
                               if min(errors[-2:]) > 1e-13 else None,
                               "adaptive_error": float(np.max(np.abs(adaptive - ref))),
@@ -461,6 +497,10 @@ def coordinate_change_invariance(ctx):
     orders = {f"{key}: {name}": row["order_last_pair"] for key, case in study.items()
               for name, row in case["charts"].items() if row["order_last_pair"] is not None}
     min_order = min(orders.values())
+    order_spread = max(abs(row["order_first_pair"] - row["order_last_pair"]) for case in study.values()
+                       for row in case["charts"].values()
+                       if row["order_first_pair"] is not None and row["order_last_pair"] is not None)
+    torus_spread = study["torus"]["reference_spread"]
     factors = {key: {name: row["fixed_errors"][-1] / study[key]["charts"]["base"]["fixed_errors"][-1]
                      for name, row in study[key]["charts"].items() if name != "base"} for key in ("sphere", "torus")}
     fold_factor = min(factors["sphere"]["near-fold mu=0.1"], factors["torus"]["near-fold mu=0.1"])
@@ -481,12 +521,18 @@ def coordinate_change_invariance(ctx):
                             core.check("high_precision", "adaptive error against the rtol 1e-13 torus reference",
                                        adaptive_by_kind["high_precision"], 1e-8),
                             core.check("invariant", "|integral of speed - L| in every chart", length_max, 1e-8)]},
+                uncertainty=core.uncertainty("reference_error", torus_spread,
+                                             "torus reference spread (rtol 1e-13 against 1e-12); plane and sphere "
+                                             "references are exact"),
                 tolerance={"abs": 1e-9, "rel": 0.5}),
         finding("RK4 keeps fourth-order convergence in every chart, including the near-fold charts",
                 "numerical", {"min_order": min_order, "orders": orders},
                 {"generator": _gen("chart-study", steps=list(T011_STEPS)),
                  "checks": [core.check("self_convergence", "smallest observed order between N = 128 and 256",
                                        min_order, 3.7, "ge")]},
+                uncertainty=core.uncertainty("fit_spread", order_spread,
+                                             "largest difference between the orders from N = 64/128 and N = "
+                                             "128/256 (pre-asymptotic spread)"),
                 tolerance={"abs": 0.05, "rel": 0.0}),
         finding("A geometry-preserving near-fold chart multiplies the fixed-step error by a large factor",
                 "numerical", {"error_factor_mu_0.1_at_N_256": {k: factors[k]["near-fold mu=0.1"] for k in factors},
@@ -495,6 +541,10 @@ def coordinate_change_invariance(ctx):
                 {"generator": _gen("chart-study", steps=T011_STEPS[-1]),
                  "checks": [core.check("self_convergence", "min over sphere and torus of error(fold 0.1)/error(base)",
                                        fold_factor, 100.0, "ge")]},
+                uncertainty=core.uncertainty("reference_error",
+                                             torus_spread / study["torus"]["charts"]["base"]["fixed_errors"][-1],
+                                             "torus reference spread relative to the torus base-chart error at N = "
+                                             "256 (relative uncertainty of the torus factor)"),
                 tolerance={"abs": 1e-6, "rel": 0.02},
                 counterexample={"statement": "A change of chart that preserves the geometry leaves the fixed-step "
                                              "integration error unchanged",
@@ -507,6 +557,8 @@ def coordinate_change_invariance(ctx):
         finding("The identity chart reproduces the base-chart integration bit for bit", "computational_pipeline",
                 identity, {"checks": [core.check("exact_arithmetic", "max |identity-chart state - base state|",
                                                  identity, 0.0)]},
+                uncertainty=core.uncertainty("roundoff", 0.0,
+                                             "bitwise comparison of identical floating-point operations"),
                 tolerance={"abs": 0.0, "rel": 0.0}),
     ]
     torus_rows = study["torus"]["charts"]
@@ -615,7 +667,7 @@ def frame_study():
         _, states = integrators.integrate_fixed(sphere.geodesic_rhs, np.concatenate([u0, tangent]), length,
                                                 T012_STEPS, "rk4")
         signed[name] = float((sphere.embedding(states[-1, :2]) - end) @ normal_end)
-    refusal = None
+    refusal = "none"
     try:
         Rotated(sphere, np.diag([1.0, 1.0, -1.0]))
     except SurfaceRefusal as exc:
@@ -643,25 +695,33 @@ def frame_change_invariance(ctx):
                             "derivation": _derivation("t012-frame-change-invariance"),
                             "checks": [core.check("invariant", "max |rotated state - base state| over all nodes",
                                                   rot_state, 1e-11)]},
+                uncertainty=core.uncertainty("roundoff", rot_state,
+                                             "the observed difference is itself the roundoff of rotated dot "
+                                             "products"),
                 tolerance={"abs": 1e-11, "rel": 0.0}),
         finding("Embedded endpoints rotate exactly with the ambient frame", "numerical", rot_end,
                 {"generator": _gen("frame-study"),
                  "checks": [core.check("invariant", "max |X_rotated(L) - R X(L)|", rot_end, 1e-12)]},
+                uncertainty=core.uncertainty("roundoff", rot_end, "the observed difference is itself roundoff"),
                 tolerance={"abs": 1e-12, "rel": 0.0}),
         finding("Gaussian curvature from the rotated second fundamental form is unchanged", "numerical", rot_k,
                 {"generator": _gen("frame-study"),
                  "checks": [core.check("invariant", "max |K_rotated - K| along every path", rot_k, 1e-12)]},
+                uncertainty=core.uncertainty("roundoff", rot_k, "the observed difference is itself roundoff"),
                 tolerance={"abs": 1e-12, "rel": 0.0}),
         finding("Rotating the reference tangent basis (heading measured from e1') leaves every result unchanged",
                 "numerical", {"max_state_difference": basis_state, "max_tangent_difference": basis_tangent},
                 {"generator": _gen("frame-study", basis_angles=list(T012_BASIS_ANGLES)),
                  "checks": [core.check("invariant", "max |state(beta) - state(0)|", basis_state, 1e-11)]},
+                uncertainty=core.uncertainty("roundoff", basis_tangent, "initial tangents differ by roundoff only"),
                 tolerance={"abs": 1e-11, "rel": 0.0}),
         finding("An orientation-reversing tangent basis flips the sign of the heading perturbation's separation",
                 "numerical", orient["ratio"],
                 {"generator": _gen("frame-study", eps=orient["eps"]),
                  "checks": [core.check("invariant", "left-handed / right-handed signed separation plus 1",
                                        orient["ratio"] + 1.0, 1e-2)]},
+                uncertainty=core.uncertainty("truncation_bound", abs(orient["ratio"] + 1.0),
+                                             "second-order (eps^2) and RK4 contributions to the separation ratio"),
                 tolerance={"abs": 1e-6, "rel": 0.0},
                 counterexample={"statement": "Signed Jacobi separations are invariant under every change of "
                                              "orthonormal tangent basis",
@@ -747,6 +807,8 @@ def flat_limit_study():
             "deviation_exponent": core.loglog_slope(radii, [r["deviation"] for r in fit]),
             "deviation_exponent_exact": core.loglog_slope(radii, [r["exact_deviation"] for r in fit]),
             "chord_deficit_exponent": core.loglog_slope(radii, [r["chord_deficit"] for r in fit]),
+            "deviation_spread": core.slope_spread(radii, [r["deviation"] for r in fit]),
+            "chord_deficit_spread": core.slope_spread(radii, [r["chord_deficit"] for r in fit]),
             "max_relative_error_vs_closed_form": max(abs(r["deviation"] / r["exact_deviation"] - 1) for r in tori),
             "max_leading_order_relative_gap": max(abs(r["deviation"] / r["leading_order"] - 1) for r in fit)}
 
@@ -772,6 +834,8 @@ def flat_developable_limit(ctx):
                  "checks": [core.check("exact_arithmetic", "max |Jacobi(cylinder) - Jacobi(plane)|",
                                        pc["jacobi_max_difference"], 0.0),
                             core.check("analytic", "max |j_head(s) - s|", pc["j_head_minus_s_max"], 1e-13)]},
+                uncertainty=core.uncertainty("roundoff", pc["j_head_minus_s_max"],
+                                             "accumulated rounding of j_head = s over 60 RK4 steps"),
                 tolerance={"abs": 1e-13, "rel": 0.0}),
         finding("Equal Jacobi fields do not imply equal chords: the helix chord is shorter than the plane chord",
                 "numerical", {"chord_plane": pc["chord_plane"], "chord_cylinder": pc["chord_cylinder"]},
@@ -781,6 +845,9 @@ def flat_developable_limit(ctx):
                             core.check("analytic", "plane chord minus L", pc["chord_plane"] - pc["length"], 1e-12),
                             core.check("invariant", "plane chord minus cylinder chord",
                                        pc["chord_plane"] - pc["chord_cylinder"], 0.1, "ge")]},
+                uncertainty=core.uncertainty("reference_error",
+                                             abs(pc["chord_cylinder"] - pc["chord_cylinder_exact"]),
+                                             "numerical helix chord against its closed form"),
                 tolerance={"abs": 1e-9, "rel": 1e-9},
                 counterexample={"statement": "Surfaces with identical Jacobi fields (intrinsic geometry) have identical "
                                              "chords between corresponding points",
@@ -792,6 +859,8 @@ def flat_developable_limit(ctx):
                 {"generator": _gen("torus-flat-limit", radii=list(T013_RADII), steps=T013_STEPS),
                  "checks": [core.check("analytic", "max relative error of L - j_head(L) against L - sin(wL)/w",
                                        study["max_relative_error_vs_closed_form"], 1e-7)]},
+                uncertainty=core.uncertainty("truncation_bound", study["max_relative_error_vs_closed_form"],
+                                             "the RK4 relative error itself bounds the deviation error"),
                 tolerance={"abs": 1e-9, "rel": 0.5}),
         finding("The Jacobi deviation from flat decays like 1/R (fitted exponent near -1)", "numerical",
                 {"fitted_exponent": study["deviation_exponent"], "closed_form_exponent": study["deviation_exponent_exact"],
@@ -805,6 +874,9 @@ def flat_developable_limit(ctx):
                             core.check("analytic", "|dev / (K L^3/6) - 1| <= K L^2/20 at the smallest fitted R",
                                        study["max_leading_order_relative_gap"],
                                        1.05 * fit_bound["curvature"] * T013_LENGTH ** 2 / 20, "le")]},
+                uncertainty=core.uncertainty("fit_spread", study["deviation_spread"],
+                                             "largest gap between the fitted exponent and consecutive-radius "
+                                             "slopes (R >= 16)"),
                 tolerance={"abs": 1e-6, "rel": 0.0}),
         finding("The chord deficit vanishes faster (exponent near -2) than the Jacobi deviation (near -1)",
                 "numerical", study["chord_deficit_exponent"],
@@ -812,6 +884,9 @@ def flat_developable_limit(ctx):
                  "derivation": _derivation("t013-flat-and-developable-limit"),
                  "checks": [core.check("analytic", "chord-deficit exponent plus 2", study["chord_deficit_exponent"] + 2.0,
                                        0.1)]},
+                uncertainty=core.uncertainty("fit_spread", study["chord_deficit_spread"],
+                                             "largest gap between the fitted exponent and consecutive-radius "
+                                             "slopes (R >= 16)"),
                 tolerance={"abs": 1e-4, "rel": 0.0},
                 counterexample={"statement": "Intrinsic (Jacobi) and extrinsic (chord) signatures of curvature vanish "
                                              "at the same rate in the flat limit",
@@ -949,6 +1024,10 @@ def reversal_and_truncation(ctx):
                 "numerical", orders,
                 {"generator": _gen("reversal", steps=list(T014_STEPS)),
                  "derivation": _derivation("t014-geodesic-reversal-and-path-truncation"), "checks": checks},
+                uncertainty=core.uncertainty("fit_spread",
+                                             max(core.slope_spread(T014_STEPS, r["errors"]) for r in rev["fixed"]),
+                                             "largest gap between a fitted order and its consecutive-step-pair "
+                                             "orders"),
                 tolerance={"abs": 0.05, "rel": 0.0},
                 counterexample={"statement": "Forward-then-reversed integration with a method of order p returns to "
                                              "the start with error proportional to h^p",
@@ -957,12 +1036,18 @@ def reversal_and_truncation(ctx):
                 adaptive_ratio,
                 {"generator": _gen("reversal-adaptive", rtol=1e-9),
                  "checks": [core.check("invariant", "max return error / rtol", adaptive_ratio, 10.0, "le")]},
+                uncertainty=core.uncertainty("step_sequence",
+                                             adaptive_ratio - min(r["return_error"] / r["rtol"] for r in rev["adaptive"]),
+                                             "spread of return error / rtol over the three surfaces (set by the "
+                                             "accepted step sequences)"),
                 tolerance={"abs": 0.5, "rel": 0.5}),
         finding("Truncating at L1 and continuing on the same dyadic grid reproduces direct integration bit for bit",
                 "computational_pipeline", trunc["dyadic_max_difference"],
                 {"generator": _gen("truncation", L1=1.25, L2=2.0, steps=256),
                  "checks": [core.check("exact_arithmetic", "max |continued - direct| (Euler, midpoint, RK4)",
                                        dyadic, 0.0)]},
+                uncertainty=core.uncertainty("roundoff", 0.0,
+                                             "bitwise comparison of identical floating-point operations"),
                 tolerance={"abs": 0.0, "rel": 0.0}),
         finding("With decimal truncation lengths the step sizes differ in the last bit and bitwise reproduction fails",
                 "computational_pipeline",
@@ -972,6 +1057,9 @@ def reversal_and_truncation(ctx):
                                        witness["differing_final_components"] if witness else 0, 1, "ge"),
                             core.check("invariant", "max difference stays at roundoff level",
                                        witness["max_abs_difference"] if witness else 1.0, 1e-12, "le")]},
+                uncertainty=core.uncertainty("roundoff", witness["max_abs_difference"] if witness else 0.0,
+                                             "the difference is one-ulp step-size rounding propagated through the "
+                                             "run"),
                 tolerance={"abs": 1e-12, "rel": 0.0},
                 counterexample={"statement": "Truncate-and-continue reproduces fixed-step integration bit for bit "
                                              "for any truncation length", "witness": witness}),
@@ -981,6 +1069,9 @@ def reversal_and_truncation(ctx):
                  "checks": [core.check("invariant", "difference / rtol", restart_ratio, 10.0, "le"),
                             core.check("invariant", "restart is not bitwise: absolute difference",
                                        trunc["adaptive_restart"]["difference"], 1e-15, "ge")]},
+                uncertainty=core.uncertainty("step_sequence", restart_ratio,
+                                             "the whole difference comes from different accepted step sequences "
+                                             "after the restart"),
                 tolerance={"abs": 0.5, "rel": 0.5}),
     ]
     fields = _fields(
@@ -1062,14 +1153,16 @@ def drift_run(key: str, method: str) -> dict:
         series["angular_momentum"] = np.linalg.norm(moment - moment[0], axis=1)
         exact = surface.exact_embedded_geodesic(u0, surface.unit_tangent(u0, heading), s)
         series["position"] = np.linalg.norm(points - exact, axis=1)
-    envelopes, exponents = {}, {}
+    envelopes, exponents, spreads = {}, {}, {}
     for name, values in series.items():
         running = np.maximum.accumulate(values)
         reached = [c for c in T015_CHECKPOINTS if c <= s[-1] + 1e-9]
         envelopes[name] = [float(running[np.searchsorted(s, c - 1e-9)]) for c in reached]
         exponents[name] = core.loglog_slope(reached, envelopes[name]) if len(reached) >= 3 else None
+        spreads[name] = core.slope_spread(reached, envelopes[name]) if len(reached) >= 3 else None
     return {"surface": key, "method": method, "failed_at": failed, "reached": float(s[-1]),
-            "envelopes": envelopes, "exponents": exponents, "max_energy_error": float(np.max(series["energy"])),
+            "envelopes": envelopes, "exponents": exponents, "exponent_spreads": spreads,
+            "max_energy_error": float(np.max(series["energy"])),
             "accepted_steps": stats.get("accepted_steps"), **extra}
 
 
@@ -1093,7 +1186,6 @@ def long_horizon_drift(ctx):
           study[f"sphere:{m}"]["envelopes"]["position"]) for m in T015_METHODS],
         title="Sphere: distance to the exact great circle", xlabel="length L", ylabel="max error up to L",
         logx=True, logy=True))
-    exps = {label: row["exponents"] for label, row in study.items()}
     adaptive_energy = {k: study[f"{k}:adaptive"]["exponents"]["energy"] for k in ("torus", "sphere")}
     rk4_energy = {k: study[f"{k}:rk4"]["exponents"]["energy"] for k in ("torus", "sphere")}
     rk4_growth = {k: study[f"{k}:rk4"]["envelopes"]["energy"][-1] / study[f"{k}:rk4"]["envelopes"]["energy"][0]
@@ -1108,6 +1200,10 @@ def long_horizon_drift(ctx):
                  "derivation": _derivation("t015-long-horizon-drift"),
                  "checks": [core.check("self_convergence", f"{k} energy-envelope exponent minus 1", v - 1.0, 0.2)
                             for k, v in adaptive_energy.items()]},
+                uncertainty=core.uncertainty("fit_spread",
+                                             max(study[f"{k}:adaptive"]["exponent_spreads"]["energy"] for k in ("torus", "sphere")),
+                                             "largest gap between the fitted exponent and consecutive-checkpoint "
+                                             "slopes"),
                 tolerance={"abs": 0.02, "rel": 0.0}),
         finding("Sphere position error grows like L for fixed-step RK4 and like L^2 for adaptive DP45", "numerical",
                 pos,
@@ -1115,12 +1211,21 @@ def long_horizon_drift(ctx):
                  "derivation": _derivation("t015-long-horizon-drift"),
                  "checks": [core.check("analytic", "RK4 position exponent minus 1", pos["rk4"] - 1.0, 0.2),
                             core.check("analytic", "adaptive position exponent minus 2", pos["adaptive"] - 2.0, 0.2)]},
+                uncertainty=core.uncertainty("fit_spread",
+                                             max(study[f"sphere:{m}"]["exponent_spreads"]["position"] for m in ("rk4", "adaptive")),
+                                             "largest gap between the fitted exponent and consecutive-checkpoint "
+                                             "slopes"),
                 tolerance={"abs": 0.02, "rel": 0.0}),
         finding("Fixed-step RK4 energy error stays oscillation-dominated over lengths 10-320 (envelope exponent < 0.5)",
                 "numerical", {"exponents": rk4_energy, "envelope_growth_factor_10_to_320": rk4_growth},
                 {"generator": _gen("drift", h=T015_H),
-                 "checks": [core.check("invariant", f"{k} RK4 energy-envelope exponent", v, 0.5, "le")
+                 "checks": [core.check("invariant", f"{k} RK4 energy-envelope exponent (a running maximum: nonnegative)",
+                                       v, 0.5)
                             for k, v in rk4_energy.items()]},
+                uncertainty=core.uncertainty("fit_spread",
+                                             max(study[f"{k}:rk4"]["exponent_spreads"]["energy"] for k in ("torus", "sphere")),
+                                             "largest gap between the fitted exponent and consecutive-checkpoint "
+                                             "slopes (the secular part appears late on the torus)"),
                 tolerance={"abs": 0.02, "rel": 0.01},
                 counterexample={"statement": "The energy error of a non-symplectic fixed-step integrator grows "
                                              "linearly with length at every horizon",
@@ -1130,6 +1235,9 @@ def long_horizon_drift(ctx):
                 {"generator": _gen("drift"),
                  "checks": [core.check("self_convergence", "adaptive Clairaut exponent minus 1",
                                        clair["adaptive"] - 1.0, 0.2)]},
+                uncertainty=core.uncertainty("fit_spread", study["torus:adaptive"]["exponent_spreads"]["clairaut"],
+                                             "largest gap between the adaptive fitted exponent and "
+                                             "consecutive-checkpoint slopes"),
                 tolerance={"abs": 0.02, "rel": 0.0}),
         finding("Euler on the torus keeps a bounded energy error but changes the orbit type (Clairaut drift)",
                 "numerical", {"max_energy_error": euler_t["max_energy_error"],
@@ -1141,6 +1249,9 @@ def long_horizon_drift(ctx):
                                        0.1, "le"),
                             core.check("invariant", "max |theta| minus exact turning latitude",
                                        euler_t["theta_max_abs"] - euler_t["theta_turning"], 1.0, "ge")]},
+                uncertainty=core.uncertainty("method_error", euler_t["max_energy_error"],
+                                             "the Euler run's own speed error; the orbit change is a property of "
+                                             "this discretization, not of the geodesic"),
                 tolerance={"abs": 1e-6, "rel": 1e-2},
                 counterexample={"statement": "A bounded energy (speed) error implies a qualitatively correct "
                                              "long-horizon geodesic",
@@ -1154,7 +1265,9 @@ def long_horizon_drift(ctx):
                  "checks": [core.check("invariant", "arclength at which the Euler run was stopped",
                                        euler_s["failed_at"] if euler_s["failed_at"] is not None else 1e9,
                                        T015_CHECKPOINTS[-1], "le")]},
-                unit="arclength", tolerance={"abs": T015_H, "rel": 0.0}),
+                unit="arclength",
+                uncertainty=core.uncertainty("step_quantization", T015_H, "the stop is located to one fixed step"),
+                tolerance={"abs": T015_H, "rel": 0.0}),
     ]
     fields = _fields(
         hypothesis=("Non-symplectic integrators drift in the first integrals of the geodesic flow (speed, Clairaut "
@@ -1310,6 +1423,9 @@ def negative_curvature(ctx):
                  "derivation": _derivation("t016-strongly-negative-curvature"),
                  "checks": [core.check("analytic", "max relative error of j_head(L) against sinh(kL)/k",
                                        max(r["adaptive_relative_error"] for r in rows), 1e-8)]},
+                uncertainty=core.uncertainty("reference_error", max(r["adaptive_relative_error"] for r in rows),
+                                             "closed-form reference; the adaptive relative error is the whole "
+                                             "uncertainty"),
                 tolerance={"abs": 1e-8, "rel": 1e-9}),
         finding("Fixed-step RK4 relative error grows like k^5 and matches L k^5 h^4 / 120", "numerical",
                 {"exponent": rk4_exp, "ratio_to_prediction": ratio_pred},
@@ -1318,6 +1434,10 @@ def negative_curvature(ctx):
                  "checks": [core.check("analytic", "fitted exponent minus 5", rk4_exp - 5.0, 0.2),
                             core.check("analytic", "max |measured / predicted - 1|",
                                        max(abs(v - 1.0) for v in ratio_pred), 0.2)]},
+                uncertainty=core.uncertainty("fit_spread",
+                                             core.slope_spread(ks, [r["rk4_relative_error"] for r in rows]),
+                                             "largest gap between the fitted exponent and consecutive-k slopes "
+                                             "(higher powers of kh)"),
                 tolerance={"abs": 1e-3, "rel": 1e-4}),
         finding("RK4 steps for relative accuracy 1e-6 grow like k^(5/4); DP45 accepted steps grow about linearly in k",
                 "numerical", {"rk4_exponent": steps_exp, "adaptive_exponent": adaptive_exp,
@@ -1330,6 +1450,10 @@ def negative_curvature(ctx):
                                        max(abs(r["rk4_steps_required"] / r["rk4_steps_predicted"] - 1) for r in rows),
                                        0.2),
                             core.check("self_convergence", "DP45 step exponent minus 1", adaptive_exp - 1.0, 0.2)]},
+                uncertainty=core.uncertainty("fit_spread",
+                                             core.slope_spread(ks, [r["rk4_steps_required"] for r in rows]),
+                                             "largest gap between the fitted exponent and consecutive-k slopes of "
+                                             "integer step counts"),
                 tolerance={"abs": 0.03, "rel": 0.0}),
         finding("This is intrinsic exponential instability, not stiffness: accuracy, not stability, sets the step",
                 "numerical", {"steps_required_over_stability_limit": stiffness,
@@ -1340,6 +1464,8 @@ def negative_curvature(ctx):
                  "checks": [core.check("invariant", "min over k of accuracy steps / RK4 stability steps", min(stiffness),
                                        5.0, "ge"),
                             core.check("analytic", "d log(2k j_head) / d(kL) minus 1", growth - 1.0, 0.01)]},
+                uncertainty=core.uncertainty("quantization", 1.0 / min(r["rk4_stability_steps"] for r in rows),
+                                             "integer stability step counts (ceil) limit the ratio to one step"),
                 tolerance={"abs": 1e-8, "rel": 0.05}),
         finding("Implicit midpoint does not remove the cost and is qualitatively wrong beyond kh = 2", "numerical",
                 {"implicit_over_rk4_steps": im_over_rk4, "implicit_step_exponent": im_exp,
@@ -1351,6 +1477,10 @@ def negative_curvature(ctx):
                             core.check("analytic", "implicit-midpoint step exponent minus 3/2", im_exp - 1.5, 0.15),
                             core.check("invariant", "sign changes of the implicit-midpoint j at kh > 2",
                                        beyond["implicit_midpoint_sign_changes"], 1, "ge")]},
+                uncertainty=core.uncertainty("fit_spread",
+                                             core.slope_spread(ks, [r["implicit_midpoint_steps_required"] for r in rows]),
+                                             "largest gap between the fitted implicit-midpoint step exponent and "
+                                             "consecutive-k slopes"),
                 tolerance={"abs": 0.0, "rel": 0.05},
                 counterexample={"statement": "An implicit (A-stable) integrator removes the step restriction on "
                                              "strongly negatively curved surfaces",
@@ -1368,6 +1498,9 @@ def negative_curvature(ctx):
                                        max(r["max_abs_y"] for r in saddle), 1e-12),
                             core.check("analytic", "fitted exponent minus sqrt(2) (far-field K ~ -1/(4 s^2))",
                                        saddle_exp - math.sqrt(2.0), 0.1)]},
+                uncertainty=core.uncertainty("truncation_bound", max(r["self_convergence"] for r in saddle),
+                                             "relative change of j_head(L) when rtol is tightened from 1e-9 to "
+                                             "1e-11"),
                 tolerance={"abs": 0.0, "rel": 1e-4},
                 counterexample={"statement": "Jacobi growth is exponential in sqrt(peak |K|) times the length",
                                 "witness": {"c": saddle[-1]["c"], "peak_abs_curvature": saddle[-1]["peak_abs_curvature"],
@@ -1453,8 +1586,10 @@ def _validity_row(s, j, distances):
     remainder = [d - e * abs(j) for d, e in zip(distances, EPS)]
     c2, c3 = remainder_fit(EPS, remainder)
     exponent = core.loglog_slope(EPS, [abs(r) for r in remainder]) if all(abs(r) > 0 for r in remainder) else None
+    scale = max(abs(r) for r in remainder)
+    residual = max(abs(r - (c2 * e ** 2 + c3 * e ** 3)) for r, e in zip(remainder, EPS)) / scale if scale else 0.0
     return {"s": float(s), "j": float(j), "C2": c2, "C3": c3, "remainder_exponent": exponent,
-            "eps_max": validity_bound(c2, c3, j)}
+            "eps_max": validity_bound(c2, c3, j), "fit_residual": float(residual)}
 
 
 def validity_study(ctx):
@@ -1509,13 +1644,15 @@ def validity_study(ctx):
         start = jacobi.perturbed_start(torus, u0t, heading_t, heading_change=eps)
         _, states = integrators.integrate_fixed(torus.geodesic_rhs, start, h * node, node, "rk4")
         chord = float(np.linalg.norm(torus.embedding(states[-1, :2]) - family["points"][node]))
-        probes[label] = {"eps": eps, "relative_error": abs(chord - eps * abs(family["j"][node])) / (eps * abs(family["j"][node]))}
+        probes[label] = {"eps": eps, "j": float(family["j"][node]),
+                         "relative_error": abs(chord - eps * abs(family["j"][node])) / (eps * abs(family["j"][node]))}
     return {"tau": TAU, "eps": list(EPS), "cases": cases, "boundary_probe": {"s": float(family["s"][node]), **probes}}
 
 
 @task("T017", changed_files=CHANGED, regression_tests=(f"{TESTS}::test_t017_validity_domains",))
 def validity_domains(ctx):
     study = ctx.memo("gjl-validity", lambda: validity_study(ctx))
+    grid = equator_grid_check(ctx)
     ctx.artifact_json("validity-domains.json", core.jsonable(study, 12))
     series = []
     for key in ("sphere-heading", "sphere-lateral-heading", "torus-generic", "torus-equator"):
@@ -1540,8 +1677,6 @@ def validity_domains(ctx):
     hyp_c2 = max(abs(r["C2"]) / (abs(r["C3"]) * EPS[0]) for r in hyp)
     eq_c2 = max(abs(r["C2"]) for r in eq.values())
     probe = study["boundary_probe"]
-    table = {key: [{k: r[k] for k in ("s", "j", "C2", "C3", "eps_max")} for r in case["rows"]]
-             for key, case in cases.items()}
     findings = [
         finding("On a generic torus geodesic C2(s*) != 0 and the validity domain shrinks to zero at the conjugate point",
                 "numerical", {"C2_at_s_star": gen[1.0]["C2"], "eps_max_at_s_star": gen[1.0]["eps_max"],
@@ -1551,6 +1686,9 @@ def validity_domains(ctx):
                  "checks": [core.check("self_convergence", "|C2(s*)|", abs(gen[1.0]["C2"]), 0.1, "ge"),
                             core.check("invariant", "eps_max at s*", gen[1.0]["eps_max"], 1e-6, "le"),
                             core.check("invariant", "eps_max at s*/2", gen[0.5]["eps_max"], 0.01, "ge")]},
+                uncertainty=core.uncertainty("fit_residual", gen[1.0]["fit_residual"],
+                                             "largest residual of the C2 eps^2 + C3 eps^3 model at s*, relative to "
+                                             "the largest remainder"),
                 tolerance={"abs": 1e-8, "rel": 1e-3}),
         finding("The predicted validity boundary holds: half of eps_max is within tolerance, twice eps_max is not",
                 "numerical", probe,
@@ -1559,6 +1697,9 @@ def validity_domains(ctx):
                                        probe["half"]["relative_error"], TAU, "le"),
                             core.check("invariant", "relative error at 2 eps_max (must be >= tau)",
                                        probe["double"]["relative_error"], TAU, "ge")]},
+                uncertainty=core.uncertainty("truncation_bound",
+                                             grid["absolute"] / (probe["half"]["eps"] * abs(probe["half"]["j"])),
+                                             "grid-halving separation change relative to eps j at the smaller probe"),
                 tolerance={"abs": 1e-8, "rel": 1e-3}),
         finding("Unit sphere, pure heading: C2 = 0, C3 = -|sin s| cos^2 s / 24, and the domain does not shrink at s = pi",
                 "numerical", {"max_C2_over_j": sph_c2, "max_C3_relative_error": sph_c3,
@@ -1570,6 +1711,8 @@ def validity_domains(ctx):
                             core.check("analytic", "max |eps_max / (sqrt(24 tau)/|cos s|) - 1|", sph_eps, 2e-2),
                             core.check("invariant", "min eps_max at s = 0.999 pi and 1.001 pi", min(near.values()),
                                        0.4, "ge")]},
+                uncertainty=core.uncertainty("fit_residual", max(r["fit_residual"] for r in sph),
+                                             "largest relative residual of the C2/C3 model over the tabulated s"),
                 tolerance={"abs": 1e-7, "rel": 1e-3},
                 counterexample={"statement": "The validity domain of the first-order approximation shrinks to zero at "
                                              "every conjugate point",
@@ -1582,6 +1725,9 @@ def validity_domains(ctx):
                  "derivation": _derivation("t017-validity-domains-of-the-first-order-approximation"),
                  "checks": [core.check("analytic", "max |C2| / (|C3| eps_min): quadratic term negligible", hyp_c2, 0.05),
                             core.check("analytic", "max |eps_max / (sqrt(24 tau)/cosh s) - 1|", hyp_eps, 5e-2)]},
+                uncertainty=core.uncertainty("model_truncation",
+                                             max(abs(r["C3"] / r["C3_analytic"] - 1) for r in hyp),
+                                             "eps^5 terms absorbed by the fitted C3 (largest at s = 2.5)"),
                 tolerance={"abs": 1e-7, "rel": 1e-3}),
         finding("Sphere lateral+heading perturbation: C2(s0) = 1/2 at the first-order zero s0 = 3pi/4, eps_max -> 0",
                 "numerical", {"C2_at_s0": mixed[1.0]["C2"], "eps_max_at_s0": mixed[1.0]["eps_max"],
@@ -1590,6 +1736,8 @@ def validity_domains(ctx):
                  "derivation": _derivation("t017-validity-domains-of-the-first-order-approximation"),
                  "checks": [core.check("analytic", "|C2(s0)| - 1/2", abs(mixed[1.0]["C2"]) - 0.5, 1e-2),
                             core.check("invariant", "eps_max at s0", mixed[1.0]["eps_max"], 1e-6, "le")]},
+                uncertainty=core.uncertainty("fit_residual", mixed[1.0]["fit_residual"],
+                                             "relative residual of the C2/C3 model at s0"),
                 tolerance={"abs": 1e-8, "rel": 1e-3}),
         finding("Torus outer equator: C2 vanishes along the whole path (reflection symmetry); the remainder is cubic",
                 "numerical", {"max_abs_C2": eq_c2, "remainder_exponent_at_s_star": eq[1.0]["remainder_exponent"],
@@ -1598,6 +1746,9 @@ def validity_domains(ctx):
                  "checks": [core.check("invariant", "max |C2| over the tabulated nodes", eq_c2, 1e-4),
                             core.check("self_convergence", "remainder exponent at s* minus 3",
                                        (eq[1.0]["remainder_exponent"] or 0.0) - 3.0, 0.05)]},
+                uncertainty=core.uncertainty("model_truncation", eq_c2, "the fitted C2 is not exactly zero because eps^5 terms leak "
+                                             "into the two-term fit; RK4 chord errors contribute at most "
+                                             f"{_g(grid['absolute'] / EPS[0] ** 2, 2)}"),
                 tolerance={"abs": 1e-6, "rel": 1e-3}),
         finding("These validity domains certify first-order path corrections as safe on real machines",
                 "machine_safety", None, {}),
@@ -1784,9 +1935,9 @@ def curvature_versus_integrator_error(ctx):
     flat = [r for r in rows if r["curvature_signal"] == 0.0]
     flat_error = max(max(r["methods"][m]["errors"]) for r in flat for m in T018_METHODS)
     spread = max(r["reference_spread"] for r in rows)
-    scipy_rows = [r for r in rows if r["scipy"] is not None]
-    scipy_gap = max((abs(r["scipy"]["j_head"] - r["reference_j_head"]) for r in scipy_rows), default=None)
-    resolved_from = {r["surface"]: {m: r["methods"][m]["resolved_from_steps"] for m in T018_METHODS} for r in curved}
+    # Only truncation-limited surfaces: their thresholds are set by the step, not by rounding patterns.
+    resolved_from = {r["surface"]: {m: r["methods"][m]["resolved_from_steps"] for m in T018_METHODS}
+                     for r in truncation}
     findings = [
         finding("RK4 resolves every truncation-limited curvature signal from N = 16 (h = 1/8)", "numerical",
                 {"min_ratio_rk4_N16": rk4_min16, "min_ratio_surface": hardest["surface"],
@@ -1796,6 +1947,9 @@ def curvature_versus_integrator_error(ctx):
                  "checks": [core.check("self_convergence", "min over truncation-limited surfaces of signal / RK4 error "
                                        "at N = 16", rk4_min16, RESOLVED, "ge"),
                             core.check("high_precision", "max reference spread (rtol 1e-12 vs 1e-11)", spread, 1e-9)]},
+                uncertainty=core.uncertainty("reference_error", spread,
+                                             "largest adaptive reference spread (rtol 1e-12 against 1e-11); "
+                                             "closed-form references are exact"),
                 tolerance={"abs": 1e-9, "rel": 0.05}),
         finding("Weak curvature is not harder to resolve: Euler and midpoint ratios are independent of K",
                 "numerical", {"ratio_K_1e-8_over_K_1e-2_at_N16": weak_pair, "rk4_ratio_K_1e-4_over_K_1e-2_at_N16": rk4_gain},
@@ -1805,6 +1959,8 @@ def curvature_versus_integrator_error(ctx):
                             for m, v in weak_pair.items()]
                  + [core.check("analytic", "RK4 ratio grows like 1/K: ratio(K = 1e-4)/ratio(K = 1e-2) in [50, 200] "
                                "(distance from 100)", abs(math.log10(rk4_gain) - 2.0), math.log10(2.0), "le")]},
+                uncertainty=core.uncertainty("model_truncation", max(abs(v - 1.0) for v in weak_pair.values()),
+                                             "O(K L^2) corrections to K-independence at K = 1e-2"),
                 tolerance={"abs": 1e-6, "rel": 0.02},
                 counterexample={"statement": "Weaker intrinsic curvature is harder to resolve at a fixed step size",
                                 "witness": {"method_ratios_at_N16": {m: {k: by_name[k]["methods"][m]["ratios"][at16]
@@ -1817,6 +1973,8 @@ def curvature_versus_integrator_error(ctx):
                  "checks": [core.check("invariant", "max ratio over methods and N for K = 1e-16", floor_ratio, 1.0, "le"),
                             core.check("exact_arithmetic", "nonzero computed deviations for K = 1e-16", floor_nonzero,
                                        0.0)]},
+                uncertainty=core.uncertainty("roundoff", math.ulp(T018_LENGTH),
+                                             "one unit in the last place of L = 2"),
                 tolerance={"abs": 1e-12, "rel": 0.0},
                 counterexample={"statement": "Refining the step size always makes a nonzero curvature effect resolvable",
                                 "witness": {"surface": "Sphere(1e8), K = 1e-16", "signal": floor["curvature_signal"],
@@ -1826,10 +1984,15 @@ def curvature_versus_integrator_error(ctx):
                 {"generator": _gen("resolvability", surface="sphere R=1"),
                  "checks": [core.check("analytic", f"{m} order minus {integrators.ORDERS[m]}",
                                        orders[m] - integrators.ORDERS[m], 0.3) for m in T018_METHODS]},
+                uncertainty=core.uncertainty("fit_spread",
+                                             max(core.slope_spread(T018_STEPS[2:], sphere["methods"][m]["errors"][2:]) for m in T018_METHODS),
+                                             "largest gap between a fitted order and consecutive-step-pair orders"),
                 tolerance={"abs": 0.02, "rel": 0.0}),
         finding("Flat surfaces show no spurious curvature signal for any method or step", "numerical", flat_error,
                 {"generator": _gen("resolvability", surfaces=[r["surface"] for r in flat]),
                  "checks": [core.check("analytic", "max |j_head(L) - L| on plane and cylinder", flat_error, 1e-13)]},
+                uncertainty=core.uncertainty("roundoff", 0.0,
+                                             "K = 0 exactly and j'' = 0 is integrated exactly by every method"),
                 tolerance={"abs": 1e-13, "rel": 0.0}),
         finding("Curvature signals resolvable here would be resolvable in measured sensor data", "sensor_performance",
                 None, {}),
@@ -1859,11 +2022,12 @@ def curvature_versus_integrator_error(ctx):
                           f"{weakest['methods']['rk4']['resolved_from_steps']} with RK4; ratio(K = 1e-8)/ratio(K = 1e-2) "
                           f"at N = 16: Euler {_g(weak_pair['euler'], 4)}, midpoint {_g(weak_pair['midpoint'], 4)}; RK4 "
                           f"ratio gain from K = 1e-2 to 1e-4: {_g(rk4_gain, 3)}; K = 1e-16: computed deviation 0 for all "
-                          f"runs (max ratio {_g(floor_ratio, 3)}); K = 1e-14 RK4 ratios {[round(v, 1) for v in marginal]}; "
+                          f"runs (max ratio {_g(floor_ratio, 3)}); K = 1e-14 RK4 ratios "
+                          f"{', '.join(_g(v, 3) for v in marginal)} for N = 4 ... 128; "
                           f"orders {', '.join(f'{m} {_g(v, 3)}' for m, v in orders.items())}; flat max |j - L| "
-                          f"{_g(flat_error, 2)}; resolved-from N {resolved_from}; scipy DOP853 cross-check "
-                          + (f"max |j_scipy - j_ref| = {_g(scipy_gap, 2)} over {len(scipy_rows)} references (artifact only)"
-                             if scipy_rows else "not run (scipy unavailable)") + "."),
+                          f"{_g(flat_error, 2)}; resolved-from N on truncation-limited surfaces {resolved_from}. An "
+                          "optional SciPy DOP853 cross-check of the adaptive references is retained in "
+                          "resolvability.json when SciPy is installed (artifact only; no finding depends on it)."),
         uncertainty=(f"Reference spread up to {_g(spread, 2)}; ratios near the roundoff floor (K = 1e-14) depend on "
                      "the rounding sequence and are reported in the artifacts only, not as regression values. The "
                      "threshold 10 is a declared convention."),
