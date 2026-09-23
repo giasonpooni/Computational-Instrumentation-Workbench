@@ -83,6 +83,8 @@ ciw lab run --all --output-dir results/lab \
 ciw lab report T010 --retained lab               # the nineteen answers for one task
 ciw lab report T010 --retained lab --schema      # also check task-report.schema.json
 ciw lab next --retained lab                      # rank the next experiments; runs nothing
+ciw lab dashboard --retained lab --output lab/index.html   # self-contained HTML view
+ciw lab classify results/workspace.json          # label results in an existing CIW workspace
 ciw lab queue --retained lab --section geodesic-jacobi --state partial
 ciw lab verify --retained lab --fresh results/lab
 ```

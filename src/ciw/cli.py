@@ -442,6 +442,9 @@ def parser() -> argparse.ArgumentParser:
     lab_report.add_argument("--schema", action="store_true", help="Also check the structural JSON Schema (needs jsonschema)")
     lab_classify = lab_actions.add_parser("classify", help="Label every result retained in a saved workspace; binds no provider")
     lab_classify.add_argument("workspace", type=Path)
+    lab_dashboard = lab_actions.add_parser("dashboard", help="Write a self-contained HTML view of retained reports")
+    lab_dashboard.add_argument("--retained", type=Path, required=True)
+    lab_dashboard.add_argument("--output", type=Path, required=True)
     lab_next = lab_actions.add_parser("next", help="Rank the next experiments from retained state; runs nothing")
     lab_next.add_argument("--retained", type=Path)
     lab_next.add_argument("--provider", action="append", default=[], metavar="ROLE=PATH")
@@ -749,6 +752,11 @@ def main(argv: list[str] | None = None) -> int:
                     print_json(report)
                 else:
                     print(render_markdown(report), end="")
+            elif args.lab_command == "dashboard":
+                from .lab.dashboard import render
+                args.output.parent.mkdir(parents=True, exist_ok=True)
+                args.output.write_text(render(args.retained), encoding="utf-8")
+                print_json({"dashboard": str(args.output)})
             elif args.lab_command == "classify":
                 from .lab.bridge import classify_workspace
                 print_json(classify_workspace(args.workspace))
