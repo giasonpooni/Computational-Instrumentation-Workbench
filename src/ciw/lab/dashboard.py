@@ -26,13 +26,13 @@ CSS = """
 @media (prefers-color-scheme:dark){:root:not([data-theme=light]){--bg:#141413;--fg:#ecebe6;--muted:#a3a29c;--line:#2e2e2b;--card:#1d1d1b}}
 *{box-sizing:border-box}body{margin:0;background:var(--bg);color:var(--fg);font:15px/1.5 system-ui,sans-serif}
 main{max-width:1100px;margin:0 auto;padding:24px 16px 64px}h1{font-size:26px;margin:0 0 4px}h2{font-size:20px;margin:36px 0 8px}
-p.lead{color:var(--muted);margin:0 0 20px}.tiles{display:grid;grid-template-columns:repeat(auto-fit,minmax(150px,1fr));gap:10px}
+p.lead{color:var(--muted);margin:0 0 20px}.tiles{display:grid;grid-template-columns:repeat(auto-fit,minmax(180px,1fr));gap:10px}
 .tile{background:var(--card);border:1px solid var(--line);border-radius:8px;padding:10px 12px}.tile b{display:block;font-size:22px}
-.tile span{color:var(--muted);font-size:13px}.label{display:inline-block;padding:1px 8px;border-radius:999px;color:#fff;font-size:12px;white-space:nowrap}
+.tile span{color:var(--muted);font-size:13px}.label,.tile span.label{display:inline-block;max-width:100%;overflow:hidden;text-overflow:ellipsis;vertical-align:middle;padding:1px 8px;border-radius:999px;color:#fff;font-size:12px;white-space:nowrap}
 table{width:100%;border-collapse:collapse;margin:8px 0}th,td{text-align:left;padding:6px 8px;border-bottom:1px solid var(--line);vertical-align:top}
 th{font-size:13px;color:var(--muted);font-weight:600}.scroll{overflow-x:auto}details{background:var(--card);border:1px solid var(--line);border-radius:8px;margin:8px 0;padding:8px 12px}
 summary{cursor:pointer;font-weight:600}dl{display:grid;grid-template-columns:minmax(120px,220px) 1fr;gap:4px 12px;margin:10px 0}
-dt{color:var(--muted);font-size:13px}dd{margin:0;overflow-wrap:anywhere}figure{margin:12px 0}figure svg{max-width:100%;height:auto;background:#fff;border-radius:6px}
+dt{color:var(--muted);font-size:13px}dd{margin:0;overflow-wrap:anywhere}dd ul{margin:0;padding-left:18px}figure{margin:12px 0}figure svg{max-width:100%;height:auto;background:#fff;border-radius:6px}
 .filters{display:flex;flex-wrap:wrap;gap:6px;margin:8px 0}.filters button{border:1px solid var(--line);background:var(--card);color:var(--fg);border-radius:999px;padding:3px 10px;cursor:pointer}
 .filters button[aria-pressed=true]{outline:2px solid var(--fg)}
 """
@@ -52,6 +52,25 @@ def _chip(label):
 def _text(value, limit=900):
     text = value if isinstance(value, str) else json.dumps(value, sort_keys=True, ensure_ascii=False)
     return escape(text if len(text) <= limit else text[:limit - 1] + "…")
+
+
+def _value(value, limit=160):
+    """Display form only: floats to four significant digits; retained JSON keeps exact values."""
+    if isinstance(value, float):
+        return escape(format(value, ".4g"))
+    return _text(value, limit)
+
+
+def _answer(name, value):
+    """Render one report answer: string lists as bullets, identities compactly."""
+    if isinstance(value, list) and value and all(isinstance(item, str) for item in value):
+        return "<ul>" + "".join(f"<li>{_text(item, 400)}</li>" for item in value) + "</ul>"
+    if isinstance(value, list) and not value:
+        return "none"
+    if name == "provider_runtime_identity" and isinstance(value, dict):
+        shown = {k: (f"{len(v)} source digests" if k == "sources" and isinstance(v, dict) else v) for k, v in value.items()}
+        return "; ".join(f"{escape(str(k))}: {_text(v, 200)}" for k, v in sorted(shown.items()))
+    return _text(value)
 
 
 def render(retained) -> str:
@@ -99,7 +118,7 @@ def render(retained) -> str:
                 value = report[name]
                 if name == "physical_validation_status":
                     value = f'{value["status"]}: {value["statement"]}'
-                out.append(f"<dt>{escape(label)}</dt><dd>{_text(value)}</dd>")
+                out.append(f"<dt>{escape(label)}</dt><dd>{_answer(name, value)}</dd>")
             out.append(f'<dt>Tests</dt><dd>{len(report["tests_passed"])} passed, {len(report["tests_skipped"])} skipped'
                        f'{", " + str(len(report.get("tests_failed", []))) + " failed" if report.get("tests_failed") else ""}</dd></dl>')
             if report["findings"]:
@@ -107,7 +126,7 @@ def render(retained) -> str:
                 for record in report["findings"]:
                     unit = f' {escape(record["unit"])}' if record.get("unit") else ""
                     flag = " (counterexample)" if record.get("counterexample") else ""
-                    out.append(f'<tr><td>{escape(record["claim"])}{flag}</td><td>{_text(record["value"], 160)}{unit}</td>'
+                    out.append(f'<tr><td>{escape(record["claim"])}{flag}</td><td>{_value(record["value"])}{unit}</td>'
                                f'<td>{_chip(record["evidence_status"])}</td></tr>')
                 out.append("</table></div>")
             for artifact in report["generated_artifacts"]:
