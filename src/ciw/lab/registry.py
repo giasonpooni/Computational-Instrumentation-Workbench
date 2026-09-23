@@ -10,6 +10,9 @@ from __future__ import annotations
 from dataclasses import dataclass, field
 from importlib import import_module, resources
 import json
+import os
+from pathlib import Path
+import re
 from typing import Callable
 
 # Section modules are imported in queue order; a section may span several
@@ -54,9 +57,60 @@ def task(task_id: str, *, changed_files=(), regression_tests=(), requires=(), pl
     return decorate
 
 
+# Queue extensions append tasks after the packaged definition without editing
+# it. They come from configure() or from os.pathsep-separated environment
+# variables, so clean-room and subprocess runs see the same queue.
+EXTENSION_SCHEMA = "ciw.lab-queue-extension.v1"
+_CONFIGURED = {"extensions": (), "modules": ()}
+
+
+def configure(extensions=(), modules=()) -> None:
+    """Select queue extension files and extra implementation modules for this process."""
+    _CONFIGURED["extensions"] = tuple(str(Path(path)) for path in extensions)
+    _CONFIGURED["modules"] = tuple(modules)
+
+
+def _configured(kind, variable):
+    values = list(_CONFIGURED[kind])
+    values += [item for item in os.environ.get(variable, "").split(os.pathsep) if item]
+    return list(dict.fromkeys(values))
+
+
+def _extension(path, base_ids, taken_keys, section_number):
+    data = json.loads(Path(path).read_text(encoding="utf-8"))
+    if not isinstance(data, dict) or data.get("schema") != EXTENSION_SCHEMA or set(data) != {"schema", "section", "tasks"}:
+        raise ValueError(f"Require {EXTENSION_SCHEMA} with section and tasks: {path}")
+    section = data["section"]
+    if (not isinstance(section, dict) or set(section) != {"key", "name"}
+            or not re.fullmatch(r"[a-z0-9]+(-[a-z0-9]+)*", str(section["key"])) or not str(section["name"]).strip()):
+        raise ValueError(f"Extension section needs a kebab-case key and a name: {path}")
+    if section["key"] in taken_keys:
+        raise ValueError(f"Extension section key already in the queue: {section['key']}")
+    tasks = []
+    for item in data["tasks"]:
+        if not isinstance(item, dict) or set(item) != {"id", "title"} or not re.fullmatch(r"T[0-9]{3}", str(item["id"])):
+            raise ValueError(f"Extension tasks need exactly an id T### and a title: {path}")
+        if int(item["id"][1:]) <= max(int(i[1:]) for i in base_ids) or item["id"] in base_ids:
+            raise ValueError(f"Extension task {item['id']} must follow every existing queue task")
+        if not isinstance(item["title"], str) or not item["title"].strip():
+            raise ValueError(f"Extension task {item['id']} needs a title")
+        tasks.append({"id": item["id"], "number": int(item["id"][1:]), "section": section_number,
+                      "section_key": section["key"], "title": item["title"]})
+        base_ids = base_ids | {item["id"]}
+    if not tasks:
+        raise ValueError(f"Extension declares no tasks: {path}")
+    return {"section": section_number, "key": section["key"], "name": section["name"], "extension": str(path)}, tasks
+
+
 def load_queue() -> dict:
+    """The packaged 168-task definition followed by any configured extensions."""
     text = resources.files("ciw.lab").joinpath("queue.json").read_text(encoding="utf-8")
     queue = json.loads(text)
+    for path in _configured("extensions", "CIW_LAB_EXTENSIONS"):
+        section, tasks = _extension(path, {t["id"] for t in queue["tasks"]}, {s["key"] for s in queue["sections"]},
+                                    len(queue["sections"]) + 1)
+        queue["sections"].append(section)
+        queue["tasks"].extend(tasks)
     ids = [item["id"] for item in queue["tasks"]]
     if len(ids) != len(set(ids)) or ids != sorted(ids):
         raise ValueError("Lab queue task identities must be unique and ordered")
@@ -64,13 +118,15 @@ def load_queue() -> dict:
 
 
 def load_implementations() -> tuple[dict, dict]:
-    """Import section modules; return implementations and per-module import errors."""
+    """Import section and configured modules; return implementations and per-module import errors."""
     errors = {}
-    for name in SECTION_MODULES:
+    names = [f"ciw.lab.{name}" for name in SECTION_MODULES] + _configured("modules", "CIW_LAB_MODULES")
+    for qualified in names:
+        name = qualified.removeprefix("ciw.lab.")
         try:
-            import_module(f"ciw.lab.{name}")
+            import_module(qualified)
         except ModuleNotFoundError as exc:
-            if exc.name == f"ciw.lab.{name}":
+            if exc.name == qualified:
                 errors[name] = "section module not implemented"
             else:
                 errors[name] = f"missing dependency: {exc.name}"

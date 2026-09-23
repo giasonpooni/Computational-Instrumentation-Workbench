@@ -418,6 +418,10 @@ def parser() -> argparse.ArgumentParser:
     energy_replay.add_argument("path", type=Path)
     energy_replay.add_argument("--output", type=Path)
     lab = commands.add_parser("lab", help="Computational-experimentalist queue with evidence-labelled reports")
+    lab.add_argument("--extension", action="append", default=[], type=Path, metavar="QUEUE.json",
+                     help="Append tasks from a ciw.lab-queue-extension.v1 file")
+    lab.add_argument("--module", action="append", default=[], metavar="MODULE",
+                     help="Import a module that registers implementations for extension tasks")
     lab_actions = lab.add_subparsers(dest="lab_command", required=True)
     lab_queue = lab_actions.add_parser("queue", help="List queued tasks with retained state and evidence status")
     lab_queue.add_argument("--retained", type=Path, help="Directory of retained lab reports")
@@ -715,6 +719,8 @@ def main(argv: list[str] | None = None) -> int:
                 print_investigation(result)
         elif args.command == "lab":
             from .lab import runner
+            from .lab.registry import configure
+            configure(args.extension, args.module)
             if args.lab_command == "queue":
                 from .lab.registry import load_queue
                 reports = ({r["task_id"]: r for r in runner.load_reports(args.retained)}

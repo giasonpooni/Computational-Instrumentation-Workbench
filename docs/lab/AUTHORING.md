@@ -112,3 +112,27 @@ report is still informative. Soft optional checks use `ctx.available(...)`.
 - Style follows the surrounding code: module docstring stating scope and
   non-claims, sparse comments explaining invariants, error messages in sentence
   case without trailing period.
+
+## Extending the queue
+
+The packaged definition (`src/ciw/lab/queue.json`, T001–T168) is fixed. New
+experiments are appended with a queue extension and an implementation module,
+without editing package data:
+
+```json
+{"schema": "ciw.lab-queue-extension.v1",
+ "section": {"key": "follow-ups", "name": "Follow-up experiments"},
+ "tasks": [{"id": "T169", "title": "Measure the chord coefficient on a rolled coupon."}]}
+```
+
+```sh
+ciw lab --extension follow-ups.json --module my_lab_tasks run T169 --output-dir results/lab
+ciw lab --extension follow-ups.json --module my_lab_tasks next --retained results/lab
+```
+
+Extension task identities must follow every existing task, section keys must
+be new, and each task declares exactly an `id` and a `title`. The module
+registers implementations with `@task` exactly as section modules do.
+`CIW_LAB_EXTENSIONS` and `CIW_LAB_MODULES` (`os.pathsep`-separated) select the
+same extensions for subprocesses and the clean-room reproduction. A task
+without an implementation is reported as deferred, never omitted.
