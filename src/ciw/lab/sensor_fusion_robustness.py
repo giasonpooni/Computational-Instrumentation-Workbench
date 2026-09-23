@@ -2,8 +2,8 @@
 
 Scope: T069 shows that prediction-only steps grow the covariance exactly as
 F(n dt) P F(n dt)^T + Q(n dt), keep NEES consistent through gaps, and that
-zero-filling is refused by the session API (and is catastrophic when done by
-hand). T070 gives the camera an unmodelled one-tick clock lag: with a second,
+requested substitutes are refused by the session API (zero-filling done by
+hand is catastrophic, by exactly the amount the joint moments predict). T070 gives the camera an unmodelled one-tick clock lag: with a second,
 correctly clocked sensor the innovations acquire a bias detectable by a mean
 test, a filter that estimates the offset as a state removes it, and with the
 stale camera alone the lag is invisible to innovations. T071 expresses a
@@ -26,12 +26,17 @@ from .registry import task
 from .sensor_fusion_bench import (H_POS, batched_update, consistency, cv_model, gain_schedule, generator, measure,
                                   mismatch_moments, nees_series, quadratic, run_shared, simulate_truth)
 from .sensor_fusion_common import (MU0, P0_BENCH, R_CAMERA, TESTS, TOL_EXACT, TOL_MC, TOL_TINY, as_json, bonferroni,
-                                   check, covariance_z, files, generator_basis, outcome, refusal, refusal_code,
-                                   run_mean_z, unreal)
+                                   check, covariance_z, exact, files, generator_basis, is_not, mc95, outcome,
+                                   refusal, refusal_code, roundoff, run_mean_z, unreal)
 from .sensor_fusion_objects import (CalibrationRecord, FrameTransform, FusionSession, Observation)
 
 DT, Q_SPECTRAL = 0.1, 0.05
 R_TRACKER = 0.0025 * np.eye(2)
+
+
+def _tests(task_id, *specific) -> tuple:
+    return tuple(f"{TESTS}::{name}" for name in specific) + (
+        f"{TESTS}::test_section_reports_labels_and_states[{task_id}]",)
 
 
 def rotation(theta: float) -> np.ndarray:
@@ -59,15 +64,17 @@ def gap_study(seed: int = 69_2026, runs: int = 400, ticks: int = 100) -> dict:
         worst = max(worst, error)
         growth.append({"gap_ticks": n, "position_variance_x": float(closed[0, 0]),
                        "cubic_term": Q_SPECTRAL * (n * DT) ** 3 / 3, "relative_error": error})
-    before = np.array(session.P)
+    before = (np.array(session.x), np.array(session.P), session.tick)
     codes = {
         "zero_fill": refusal_code(lambda: session.handle_gap("camera", 51, strategy="zero_fill")),
         "hold_last": refusal_code(lambda: session.handle_gap("camera", 51, strategy="hold_last")),
         "nan_reading": refusal_code(lambda: Observation("camera", "world", 51, (math.nan, math.nan),
                                                         R_CAMERA, "cam-cal")),
         "absent_value": refusal_code(lambda: Observation("camera", "world", 51, None, R_CAMERA, "cam-cal")),
+        "fractional_tick": refusal_code(lambda: session.predict(50.5)),
     }
-    unchanged = bool(np.array_equal(before, session.P)) and session.tick == 50
+    unchanged = (bool(np.array_equal(before[0], session.x) and np.array_equal(before[1], session.P))
+                 and session.tick == before[2])
 
     # Monte Carlo: a 30-tick block gap plus 20% random dropout, one pattern shared by all runs.
     present = rng.random(ticks) >= 0.2
@@ -86,6 +93,12 @@ def gap_study(seed: int = 69_2026, runs: int = 400, ticks: int = 100) -> dict:
     zero_readings = [z[:, k] if present[k] else np.zeros_like(z[:, k]) for k in range(ticks)]
     zero_est, _ = run_shared(F, MU0, zero_steps, zero_readings)
     zero_nees = nees_series(zero_est, truth, zero_steps)
+    # Exact prediction: a zero placeholder is a reading with H_true = 0, no offset and no noise.
+    placeholder = (np.zeros((2, 4)), np.zeros(2), np.zeros((2, 2)))
+    zero_plan = [(H_POS, np.zeros(2), R_CAMERA) if present[k] else placeholder for k in range(ticks)]
+    zero_predicted = np.array(mismatch_moments(F, Q, MU0, P0_BENCH, MU0, zero_steps, zero_plan)["nees"])
+    zero_z, _, zero_se = run_mean_z(zero_nees[..., None] - zero_predicted[None, :, None])
+    nees_z, _, nees_se = run_mean_z(nees[..., None] - 4.0)
 
     def rmse(est):
         return float(np.sqrt(np.mean(np.sum((est[:, 1:, :2] - truth[:, 1:, :2]) ** 2, axis=-1))))
@@ -94,16 +107,18 @@ def gap_study(seed: int = 69_2026, runs: int = 400, ticks: int = 100) -> dict:
     return {"seed": seed, "runs": runs, "ticks": ticks, "missing_ticks": int((~present).sum()),
             "growth": growth, "max_growth_error": worst, "refusals": codes, "state_unchanged_by_refusals": unchanged,
             "nees": consistency(nees, 4), "nees_mean_per_tick": nees.mean(axis=0),
+            "nees_grand_z": float(nees_z[0]), "nees_grand_se": float(nees_se[0]),
             "gap_end_max_abs_z": float(np.max(np.abs(z_gap))), "gap_end_covariance": S,
             "gap_end_predicted": steps[gap_end].post, "gap_variance_growth": gap_ratio,
             "zero_fill": {"nees": consistency(zero_nees, 4), "grand_mean_nees": float(zero_nees.mean()),
+                          "predicted_grand_mean_nees": float(zero_predicted.mean()),
+                          "z_vs_predicted": float(zero_z[0]), "grand_se": float(zero_se[0]),
                           "max_anees": float(zero_nees.mean(axis=0).max()), "rmse": rmse(zero_est)},
             "predict_only_rmse": rmse(estimates), "present": present, "z_critical": bonferroni(10)}
 
 
-@task("T069", changed_files=files("sensor_fusion_robustness", "sensor_fusion_objects"), regression_tests=(
-    f"{TESTS}::test_missing_data_prediction_only_and_zero_fill_refusal",
-    f"{TESTS}::test_section_reports_labels_and_states"))
+@task("T069", changed_files=files("sensor_fusion_robustness"), regression_tests=_tests(
+    "T069", "test_missing_data_prediction_only_and_zero_fill_refusal"))
 def missing_data(ctx):
     study = gap_study()
     seed = study["seed"]
@@ -123,7 +138,7 @@ def missing_data(ctx):
                                "Q(a+b) = F(b) Q(a) F(b)^T + Q(b)", "checks": [
                     check("analytic", "session and schedule covariance against the closed form (relative)",
                           study["max_growth_error"], 1e-12)]},
-                tolerance=TOL_TINY),
+                uncertainty=roundoff(study["max_growth_error"]), tolerance=TOL_TINY),
         finding("With a 30-tick gap and 20% dropout handled by prediction only, NEES stays chi-square consistent "
                 "and the error covariance at the end of the gap equals the grown covariance", "numerical",
                 {"nees": study["nees"], "gap_end_max_abs_z": study["gap_end_max_abs_z"],
@@ -134,26 +149,33 @@ def missing_data(ctx):
                           study["nees"]["fraction_inside"], 0.9, "ge"),
                     check("analytic", "gap-end error covariance against the predicted covariance (max |z|)",
                           study["gap_end_max_abs_z"], study["z_critical"], "le")]},
+                uncertainty=mc95(study["nees_grand_se"], "run-level standard error of the grand-mean NEES"),
                 tolerance=TOL_MC),
-        finding("The session refuses zero-filling and other substitutes for a missing reading, refuses NaN and "
-                "absent observation values, and leaves its state unchanged by the refusals", "computational_pipeline",
+        finding("The session refuses requested substitution strategies (zero_fill, hold_last), NaN and absent "
+                "observation values and a non-integer prediction tick, and leaves its state unchanged by the "
+                "refusals", "computational_pipeline",
                 {**codes, "state_unchanged": study["state_unchanged_by_refusals"]},
-                {"derivation": "FusionSession.handle_gap and Observation validation", "checks": [
+                {"derivation": "FusionSession.handle_gap, FusionSession.predict and Observation validation", "checks": [
                     refusal("handle_gap strategy zero_fill", "zero_fill_refused", codes["zero_fill"]),
                     refusal("handle_gap strategy hold_last", "gap_strategy_refused", codes["hold_last"]),
                     refusal("Observation with NaN values", "nonfinite_observation", codes["nan_reading"]),
                     refusal("Observation with no value", "missing_reading", codes["absent_value"]),
+                    refusal("predict to tick 50.5", "malformed_tick", codes["fractional_tick"]),
                     check("invariant", "state changed by a refused call", float(not study["state_unchanged_by_refusals"]),
                           0.0)]},
-                tolerance=TOL_EXACT),
+                uncertainty=exact("refusal codes and bitwise state comparison"), tolerance=TOL_EXACT),
         finding("Zero-filling missing readings by hand drags the estimate toward the origin and destroys "
-                "consistency", "numerical",
+                "consistency by the amount the exact joint moments predict", "numerical",
                 {"zero_fill": study["zero_fill"], "predict_only_rmse": study["predict_only_rmse"]},
                 {**generator_basis(seed), "checks": [
                     check("analytic", "grand-mean NEES of the zero-filled filter", study["zero_fill"]["grand_mean_nees"],
                           100.0, "ge"),
+                    check("analytic", "grand-mean NEES against the mismatch_moments prediction (run-level z)",
+                          study["zero_fill"]["z_vs_predicted"], study["z_critical"]),
                     check("analytic", "zero-filled RMSE relative to prediction only",
                           study["zero_fill"]["rmse"] / study["predict_only_rmse"], 5.0, "ge")]},
+                uncertainty=mc95(study["zero_fill"]["grand_se"], "run-level standard error of the zero-filled "
+                                                                  "grand-mean NEES"),
                 tolerance=TOL_MC, counterexample={
                     "statement": "A zero placeholder for a missing reading is harmless",
                     "witness": {"grand_mean_nees": study["zero_fill"]["grand_mean_nees"], "nominal": 4.0,
@@ -175,20 +197,26 @@ def missing_data(ctx):
                               "refusal codes zero_fill_refused, gap_strategy_refused, nonfinite_observation, "
                               "missing_reading.",
         "experiment": "Advance a FusionSession through gaps of 1, 5, 20 and 50 ticks and compare with the closed "
-                      "form; Monte Carlo NEES through the dropout pattern; request zero-fill, hold-last and NaN/None "
-                      "readings through the API; zero-fill by hand outside the API as the counterexample.",
+                      "form; Monte Carlo NEES through the dropout pattern; request zero-fill, hold-last, NaN/None "
+                      "readings and a fractional tick through the API; zero-fill by hand outside the API as the "
+                      "counterexample, predicted beforehand from the exact joint moments of truth and filter.",
         "numerical_result": f"max relative growth error {study['max_growth_error']:.1e}; ANEES inside "
                             f"{study['nees']['fraction_inside']:.2f} of ticks; gap-end |z| "
                             f"{study['gap_end_max_abs_z']:.2f}; position variance grows "
                             f"{study['gap_variance_growth']:.0f}x over the gap; zero-fill grand NEES "
-                            f"{study['zero_fill']['grand_mean_nees']:.0f}, RMSE {study['zero_fill']['rmse']:.2f} m vs "
-                            f"{study['predict_only_rmse']:.3f} m.",
+                            f"{study['zero_fill']['grand_mean_nees']:.0f} (exact prediction "
+                            f"{study['zero_fill']['predicted_grand_mean_nees']:.0f}), RMSE "
+                            f"{study['zero_fill']['rmse']:.2f} m vs {study['predict_only_rmse']:.3f} m.",
         "uncertainty": "Closed-form comparison is exact to roundoff; Monte Carlo statements carry 99% per-tick "
                        "intervals and a Bonferroni bound on the gap-end covariance.",
         "failure_modes_checked": ["zero-fill", "hold-last substitution", "NaN placeholder", "None placeholder",
-                                  "state mutation by a refused call", "covariance growth mismatch"],
+                                  "fractional prediction tick", "state mutation by a refused call",
+                                  "covariance growth mismatch"],
         "unresolved_assumptions": ["Dropouts are missing at random; state-dependent dropouts (occlusion near "
                                    "obstacles) bias the filter even with prediction-only steps.",
+                                   "A caller who builds an Observation with value (0, 0) is indistinguishable from "
+                                   "a genuine reading at the origin: the API refuses requested substitutes, not "
+                                   "zero-filling done before an Observation is constructed.",
                                    "Long gaps stay consistent only while the motion model holds (see T073)."],
         "recommended_next_task": "T070: stale clocks, where a reading is present but refers to the wrong time.",
     }
@@ -241,6 +269,7 @@ def stale_clock_study(seed: int = 70_2026, runs: int = 200, ticks: int = 200, tr
                                 axis=1)[0]
         result = {"camera_mean_z": run_mean_z(cam[:, burn:])[0],
                   "camera_whitened_mean": cam[:, burn:].mean(axis=(0, 1)),
+                  "camera_whitened_mean_se": run_mean_z(cam[:, burn:])[2],
                   "camera_predicted_whitened_mean": cam_expected[burn:].mean(axis=0),
                   "camera_z_vs_predicted": run_mean_z(cam[:, burn:] - cam_expected[None, burn:])[0]}
         if with_tracker:
@@ -253,6 +282,7 @@ def stale_clock_study(seed: int = 70_2026, runs: int = 200, ticks: int = 200, tr
         error = estimates[:, burn + 1:, :2] - truth[:, burn + 1:, :2]
         result["position_error_mean"] = error.mean(axis=(0, 1))
         result["position_error_mean_z_vs_zero"] = run_mean_z(error)[0]
+        result["position_error_mean_se"] = run_mean_z(error)[2]
         result["position_error_predicted_mean"] = mean_error.mean(axis=0)
         result["position_error_z_vs_predicted"] = run_mean_z(error - mean_error[None])[0]
         result["nees"] = consistency(nees_series(estimates, truth, steps)[:, burn:], 4)
@@ -308,9 +338,8 @@ def stale_clock_study(seed: int = 70_2026, runs: int = 200, ticks: int = 200, tr
             "augmented": augmented, "z_critical": bonferroni(16)}
 
 
-@task("T070", changed_files=files("sensor_fusion_robustness"), regression_tests=(
-    f"{TESTS}::test_stale_clock_bias_detection_and_augmented_offset",
-    f"{TESTS}::test_section_reports_labels_and_states"))
+@task("T070", changed_files=files("sensor_fusion_robustness"), regression_tests=_tests(
+    "T070", "test_stale_clock_bias_detection_and_augmented_offset"))
 def stale_clock(ctx):
     study = stale_clock_study()
     seed, zc = study["seed"], study["z_critical"]
@@ -337,6 +366,8 @@ def stale_clock(ctx):
                     check("analytic", "largest mean-innovation z against zero", detected, zc, "ge"),
                     check("analytic", "mean innovations against the noise-free linear prediction (max |z|)", agree, zc,
                           "le")]},
+                uncertainty=mc95(float(np.max(two["camera_whitened_mean_se"])),
+                                 "largest run-level standard error of the camera's whitened mean innovation"),
                 tolerance=TOL_MC),
         finding("A filter that estimates the clock offset as a state (h = p - tau v) removes the innovation bias "
                 "and recovers tau = 0.1 s", "numerical",
@@ -347,6 +378,8 @@ def stale_clock(ctx):
                     check("analytic", "mean final tau estimate against 0.1 s (z)", aug["tau_z"], zc),
                     check("analytic", "grand-mean 5-state NEES minus 5, relative", aug["nees_grand_mean"] / 5.0 - 1.0,
                           0.15)]},
+                uncertainty=mc95(aug["tau_run_std"] / math.sqrt(study["runs"]),
+                                 "run-level standard error of the mean final tau estimate (s)"),
                 tolerance=TOL_MC),
         finding("With the stale camera as the only position sensor the lag is invisible to the innovations: the "
                 "lagged constant-velocity path is itself a constant-velocity path, so the estimate is biased by "
@@ -361,6 +394,8 @@ def stale_clock(ctx):
                     check("analytic", "position error mean z against zero", error_z, zc, "ge"),
                     check("analytic", "position error mean against the exact linear prediction (max |z|)",
                           float(np.max(np.abs(one["position_error_z_vs_predicted"]))), zc, "le")]},
+                uncertainty=mc95(float(np.max(one["position_error_mean_se"])),
+                                 "largest run-level standard error of the mean position error (m)"),
                 tolerance=TOL_MC, counterexample={
                     "statement": "A stale sensor clock always shows up as a bias in the filter innovations",
                     "witness": as_json({"sensors": "camera only", "camera_mean_z": one["camera_mean_z"],
@@ -385,7 +420,8 @@ def stale_clock(ctx):
         "experiment": "Whiten innovations with their filter covariance, average per run after a 50-tick burn-in, "
                       "and test the grand mean with run-level standard errors for the naive two-sensor, naive "
                       "camera-only and offset-augmented filters.",
-        "numerical_result": f"naive two-sensor max |z| {detected:.1f} (vs prediction {agree:.2f}); augmented max "
+        "numerical_result": f"naive two-sensor mean-innovation max |z| {detected:.1f} against zero, {agree:.2f} "
+                            f"against the exact predicted bias; augmented max "
                             f"|z| {aug_z:.2f}, tau-hat {aug['tau_mean']:.4f} s (run spread {aug['tau_run_std']:.4f}, "
                             f"posterior std {aug['tau_mean_posterior_std']:.4f}), NEES {aug['nees_grand_mean']:.2f}; "
                             f"camera-only innovation |z| {one_z:.2f}, position error mean "
@@ -432,6 +468,9 @@ def frame_mismatch_study(seed: int = 71_2026, runs: int = 200, ticks: int = 100,
                 "late_grand_nis": float(nis[:, late].mean()),
                 "late_predicted_nis": float(np.mean(predicted["nis"][late])),
                 "late_z_vs_predicted": float(run_mean_z(nis[:, late, None] - np.array(predicted["nis"][late])[None, :, None])[0][0]),
+                "late_se": float(run_mean_z(nis[:, late, None])[2][0]),
+                "early_se": float(run_mean_z(nis[:, early, None])[2][0]),
+                "final_nees_se": float(nees[:, -1].std(ddof=1) / math.sqrt(nees.shape[0])),
                 "final_nees": float(nees[:, -1].mean()), "final_predicted_nees": float(predicted["nees"][-1])}
 
     mixed = nis_run([np.concatenate([camera[:, k], tracker_frame[:, k]], axis=1) for k in range(ticks)],
@@ -465,9 +504,8 @@ def _frame_summary(case):
         "late_fraction_above": case["late"]["fraction_above"]}
 
 
-@task("T071", changed_files=files("sensor_fusion_robustness", "sensor_fusion_objects"), regression_tests=(
-    f"{TESTS}::test_frame_mismatch_inflation_blind_spot_and_refusal",
-    f"{TESTS}::test_section_reports_labels_and_states"))
+@task("T071", changed_files=files("sensor_fusion_robustness"), regression_tests=_tests(
+    "T071", "test_frame_mismatch_inflation_blind_spot_and_refusal"))
 def frame_mismatch(ctx):
     study = frame_mismatch_study()
     seed, zc = study["seed"], study["z_critical"]
@@ -493,6 +531,7 @@ def frame_mismatch(ctx):
                           mixed["late"]["fraction_above"], 0.9, "ge"),
                     check("analytic", "late grand NIS against the exact prediction (run-level z)",
                           mixed["late_z_vs_predicted"], zc)]},
+                uncertainty=mc95(mixed["late_se"], "run-level standard error of the late grand NIS"),
                 tolerance=TOL_MC),
         finding("Near the rotation centre (ticks 1-20) the same mismatch goes undetected by the per-tick NIS test at "
                 "this sample size; its predicted inflation there is only about 2%", "numerical",
@@ -501,6 +540,7 @@ def frame_mismatch(ctx):
                 {**generator_basis(seed), "checks": [
                     check("analytic", "fraction of ticks 1-20 inside the 99% interval", mixed["early"]["fraction_inside"],
                           0.9, "ge")]},
+                uncertainty=mc95(mixed["early_se"], "run-level standard error of the early grand NIS"),
                 tolerance=TOL_MC, counterexample={
                     "statement": "A passing NIS test shows that the sensor frames agree",
                     "witness": {"ticks": "1-20", "fraction_inside": mixed["early"]["fraction_inside"],
@@ -514,6 +554,7 @@ def frame_mismatch(ctx):
                     check("analytic", "final ANEES", alone["final_nees"], 20.0, "ge"),
                     check("analytic", "final ANEES against the exact prediction, relative",
                           alone["final_nees"] / alone["final_predicted_nees"] - 1.0, 0.25)]},
+                uncertainty=mc95(alone["final_nees_se"], "standard error of the final ANEES across runs"),
                 tolerance=TOL_MC, counterexample={
                     "statement": "A frame mismatch always produces NIS inflation",
                     "witness": {"sensors": "rotated tracker alone", "late_grand_nis": alone["late_grand_nis"],
@@ -524,6 +565,7 @@ def frame_mismatch(ctx):
                     check("analytic", "fraction of ticks 51-100 inside the 99% interval", fixed["late"]["fraction_inside"],
                           0.9, "ge"),
                     check("analytic", "late grand NIS against 4 (run-level z)", fixed["late_z_vs_predicted"], zc)]},
+                uncertainty=mc95(fixed["late_se"], "run-level standard error of the late grand NIS"),
                 tolerance=TOL_MC),
         finding("The session refuses an observation whose frame id differs from its own, and a transform refuses an "
                 "observation from another source frame; the refused observation is retained in the log",
@@ -534,10 +576,10 @@ def frame_mismatch(ctx):
                     refusal("apply a camera-frame transform to a tracker-frame observation", "frame_mismatch",
                             codes["transform_from_wrong_frame"]),
                     check("invariant", "fusion after the explicit transform refused",
-                          float(codes["fuse_after_transform"] != "no_refusal"), 0.0),
+                          is_not(codes["fuse_after_transform"], "none"), 0.0),
                     check("invariant", "refused observation not retained",
-                          float(study["log_dispositions"][0] != "refused:frame_mismatch"), 0.0)]},
-                tolerance=TOL_EXACT),
+                          is_not(study["log_dispositions"][0], "refused:frame_mismatch"), 0.0)]},
+                uncertainty=exact("refusal codes and log dispositions"), tolerance=TOL_EXACT),
         unreal("A 2 degree rotation is the size of a real extrinsic calibration error", "calibration", seed,
                "not established: the rotation is a declared synthetic fault"),
     ]

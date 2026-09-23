@@ -28,8 +28,9 @@ from .integrators import integrate_fixed
 from .jacobi import constant_curvature, perturbed_start, transfer
 from .registry import task
 from .sensor_fusion_bench import chi2_quantile, factor, generator
-from .sensor_fusion_common import (TESTS, TOL_MC, TOL_ROUNDOFF, TOL_TINY, as_json, bonferroni,
-                                   check, covariance_z, files, generator_basis, outcome, rate_interval, unreal)
+from .sensor_fusion_common import (CORE_GEOMETRY, TESTS, TOL_MC, TOL_ROUNDOFF, TOL_TINY, as_json, bonferroni,
+                                   check, covariance_z, files, generator_basis, gram, identity, mc95, outcome,
+                                   rate_interval, roundoff, uncertainty, unreal)
 from .sensor_fusion_objects import FrameTransform, Observation
 from .surfaces import HyperbolicPlane, Sphere
 
@@ -76,7 +77,7 @@ def frame_study(seed: int = T063_SEED, samples: int = 100_000) -> dict:
     per_map, z_all, exact, roundtrip = {}, [], 0.0, 0.0
     d_body = mahalanobis(x - mean, P)
     invariance = {}
-    S_x = (x - mean).T @ (x - mean) / samples
+    S_x = gram(x - mean) / samples
     for name, (J, b) in maps.items():
         y = x @ J.T + b
         mu_y = J @ mean + b
@@ -116,6 +117,7 @@ def frame_study(seed: int = T063_SEED, samples: int = 100_000) -> dict:
             "z_critical": z_crit, "moments_tested": int(len(z_all)), "exact_transport": exact,
             "roundtrip": roundtrip, "invariance": invariance,
             "rotated_only": {"mean_d2": float(rotated_only.mean()), "predicted_mean_d2": predicted_rotated,
+                             "standard_error": math.sqrt(var_rotated / samples),
                              "z": float((rotated_only.mean() - predicted_rotated) / math.sqrt(var_rotated / samples)),
                              "gate_99": gate, "rejection": rate_interval(rejected, samples),
                              "rejection_with_rotated_covariance": rate_interval(rejected_correct, samples)},
@@ -126,9 +128,9 @@ def frame_study(seed: int = T063_SEED, samples: int = 100_000) -> dict:
             "api_max_difference": api}
 
 
-@task("T063", changed_files=files("sensor_fusion_geometry", "sensor_fusion_objects"), regression_tests=(
+@task("T063", changed_files=files("sensor_fusion_geometry"), regression_tests=(
     f"{TESTS}::test_frame_transform_covariance_and_mahalanobis_invariance",
-    f"{TESTS}::test_section_reports_labels_and_states"))
+    f"{TESTS}::test_section_reports_labels_and_states[T063]"))
 def frame_transform_covariance(ctx):
     study = frame_study()
     ctx.artifact_json("frame_transforms.json", as_json(study))
@@ -148,26 +150,30 @@ def frame_transform_covariance(ctx):
                 {**generator_basis(seed, samples=study["samples"]), "checks": [
                     check("analytic", "Gaussian sampling law Var(S_ij) = (P'_ij^2 + P'_ii P'_jj)/N", study["max_abs_z"],
                           study["z_critical"], "le")]},
+                uncertainty=uncertainty("monte_carlo_95ci", 1.96, "each standardized covariance entry has unit "
+                                                                  "sampling standard deviation"),
                 tolerance=TOL_MC),
-        finding("The sample covariance transforms exactly as J S J^T and the inverse transforms recover the "
-                "declared covariance to roundoff", "numerical",
+        finding("Roundoff sanity: the sample covariance of transformed samples equals J S J^T and J^-1 (J P J^T) "
+                "J^-T returns P to roundoff (algebraic identities that check the arithmetic, not the propagation "
+                "law)", "numerical",
                 {"relative_transport_error": study["exact_transport"], "relative_roundtrip_error": study["roundtrip"]},
                 {**generator_basis(seed), "checks": [
                     check("invariant", "sample covariance of J x + b against J S J^T", study["exact_transport"], 1e-12),
                     check("invariant", "J^-1 (J P J^T) J^-T against P", study["roundtrip"], 1e-12)]},
-                tolerance=TOL_TINY),
+                uncertainty=roundoff(max(study["exact_transport"], study["roundtrip"])), tolerance=TOL_TINY),
         finding("Mahalanobis distance is invariant under every transform, including the metre-to-millimetre "
                 "unit change, when the covariance is transformed with the vector", "numerical",
                 study["invariance"],
                 {**generator_basis(seed), "checks": [
                     check("invariant", "max relative change of d^2 over all samples and transforms",
                           max(study["invariance"].values()), 1e-9)]},
-                unit="max relative difference", tolerance=TOL_TINY),
+                unit="max relative difference", uncertainty=roundoff(max(study["invariance"].values())),
+                tolerance=TOL_TINY),
         finding("FrameTransform.apply moves a typed position observation to value R z + t and covariance R Sigma "
                 "R^T, matching J P J^T to roundoff", "computational_pipeline", study["api_max_difference"],
                 {"derivation": "FrameTransform.apply in ciw.lab.sensor_fusion_objects", "checks": [
                     check("invariant", "API output against J P J^T and J mu + b", study["api_max_difference"], 1e-12)]},
-                unit="max abs difference", tolerance=TOL_TINY),
+                unit="max abs difference", uncertainty=roundoff(study["api_max_difference"]), tolerance=TOL_TINY),
         finding("Rotating a position measurement by 35 degrees without rotating its covariance inflates the mean "
                 "Mahalanobis distance to tr(P^-1 R P R^T) and multiplies the 99% gate rejection rate", "numerical",
                 {"mean_d2": rot["mean_d2"], "predicted_mean_d2": rot["predicted_mean_d2"], "z": rot["z"],
@@ -180,6 +186,8 @@ def frame_transform_covariance(ctx):
                     check("analytic", "rejection with the rotated covariance inside its Wilson interval around 1%",
                           float(rot["rejection_with_rotated_covariance"]["wilson"][0] <= 0.01
                                 <= rot["rejection_with_rotated_covariance"]["wilson"][1]), 1.0, "ge")]},
+                uncertainty=mc95(rot["standard_error"], "sampling standard error of the mean d^2 (exact variance "
+                                                        "2 tr((P^-1 R P R^T)^2) / N)"),
                 tolerance=TOL_MC, counterexample={
                     "statement": "Rotating a measurement into another frame without rotating its covariance is harmless",
                     "witness": {"rotation_deg": study["theta_deg"], "mean_d2": rot["mean_d2"], "nominal_mean_d2": 2.0,
@@ -187,8 +195,9 @@ def frame_transform_covariance(ctx):
         finding("Converting a state to millimetres while keeping its covariance in metres multiplies every squared "
                 "Mahalanobis distance by exactly 10^6", "numerical", study["unit_only"],
                 {**generator_basis(seed), "checks": [
-                    check("exact_arithmetic", "per-sample d^2 ratio against scale^2 (max relative deviation)",
+                    check("invariant", "per-sample d^2 ratio against scale^2 (max relative deviation)",
                           study["unit_only"]["max_relative_deviation_from_scale_squared"], 1e-9)]},
+                uncertainty=roundoff(study["unit_only"]["max_relative_deviation_from_scale_squared"]),
                 tolerance=TOL_ROUNDOFF, counterexample={
                     "statement": "A unit change of the measurement vector alone leaves gating decisions unchanged",
                     "witness": {"mean_d2": study["unit_only"]["mean_d2"],
@@ -321,18 +330,21 @@ def linear_variance_error(case, sigma, s):
 
 
 def breakdown_sigma(case, level=0.1):
-    """Heading standard deviation at which the first-order variance error reaches ``level`` (bisection)."""
+    """Heading std at which the first-order variance error reaches ``level`` (bisection), and the final bracket width.
+
+    Returns (None, None) when the error stays below ``level`` up to 1 rad.
+    """
     s = case["sweep_s"]
     lo, hi = 1e-4, 1.0
     if linear_variance_error(case, hi, s) < level:
-        return None
+        return None, None
     for _ in range(60):
         mid = math.sqrt(lo * hi)
         if linear_variance_error(case, mid, s) < level:
             lo = mid
         else:
             hi = mid
-    return math.sqrt(lo * hi)
+    return math.sqrt(lo * hi), hi - lo
 
 
 def jacobi_case(name: str, seed: int) -> dict:
@@ -383,6 +395,7 @@ def jacobi_case(name: str, seed: int) -> dict:
         d = case["lateral"](final[-1])[0]
         closed_form_error = max(closed_form_error, float(np.max(np.abs(d - case["exact_heading"](heading, s_eval)))))
         exact2, exact4 = gauss_hermite_moments(case["exact_heading"], sigma, s_eval)
+        coarse2, _ = gauss_hermite_moments(case["exact_heading"], sigma, s_eval, nodes=64)
         j_head = constant_curvature(case["curvature"], s_eval)[2]
         linear = float(sigma ** 2 * j_head ** 2)
         mc = float(np.mean(d ** 2))
@@ -390,9 +403,13 @@ def jacobi_case(name: str, seed: int) -> dict:
                       "monte_carlo_variance": mc,
                       "z_mc_vs_exact": float((mc - exact2) / math.sqrt((exact4 - exact2 ** 2) / SWEEP_SAMPLES)),
                       "linear_relative_error": linear / exact2 - 1.0,
-                      "monte_carlo_relative_error": linear / mc - 1.0})
+                      "monte_carlo_relative_error": linear / mc - 1.0,
+                      "quadrature_relative_change_64_to_96_nodes": abs(exact2 / coarse2 - 1.0)})
     second_order = {"sphere": math.cos(s_eval) ** 2, "hyperbolic": math.cosh(s_eval) ** 2}[name]
     leading = sweep[0]["linear_relative_error"] / SWEEP_SIGMAS[0] ** 2
+    breakdown, bracket = breakdown_sigma(case)
+    j_lat, _, j_hd, _ = constant_curvature(case["curvature"], np.array([0.0, case["length"]]))
+    closed_lateral = j_lat ** 2 * P0[0, 0] + 2 * j_lat * j_hd * P0[0, 1] + j_hd ** 2 * P0[1, 1]
     return {"surface": surface.describe(), "start": u0, "heading": HEADING, "length": case["length"],
             "steps": case["steps"], "rhs_consistency": rhs_error, "phi_error": phi_error, "det_error": det_error,
             "conjugate_points": flow.conjugate_points(), "nodes_s": s[nodes], "predicted": predicted,
@@ -400,7 +417,9 @@ def jacobi_case(name: str, seed: int) -> dict:
             "lateral_predicted": lateral_pred, "lateral_monte_carlo": lateral_mc, "s": s,
             "full_lateral": full_lateral, "sweep_s": s_eval, "sweep": sweep,
             "closed_form_error": closed_form_error, "second_order_coefficient": second_order,
-            "observed_leading_coefficient": leading, "breakdown_sigma_10pct": breakdown_sigma(case)}
+            "observed_leading_coefficient": leading, "breakdown_sigma_10pct": breakdown,
+            "breakdown_bracket": bracket, "closed_form_growth": float(closed_lateral[1] / closed_lateral[0]),
+            "lateral_mc_relative_se": math.sqrt(2.0 / (MC_GEODESICS - 1))}
 
 
 def jacobi_study(seed: int = T064_SEED) -> dict:
@@ -413,7 +432,7 @@ def jacobi_study(seed: int = T064_SEED) -> dict:
 
 @task("T064", changed_files=files("sensor_fusion_geometry"), regression_tests=(
     f"{TESTS}::test_jacobi_transfer_covariance_collapse_and_breakdown",
-    f"{TESTS}::test_section_reports_labels_and_states"))
+    f"{TESTS}::test_section_reports_labels_and_states[T064]"))
 def jacobi_transfer_covariance(ctx):
     study = ctx.memo("sensor_fusion.jacobi", jacobi_study)
     sphere, hyper = study["cases"]["sphere"], study["cases"]["hyperbolic"]
@@ -439,12 +458,19 @@ def jacobi_transfer_covariance(ctx):
     collapse_mc = float(sphere["lateral_monte_carlo"][s_index] / np.max(sphere["lateral_monte_carlo"]))
     sigma_l2 = float(study["P0"][0, 0])
     growth = float(hyper["lateral_predicted"][-1] / hyper["lateral_predicted"][0])
+    growth_error = abs(growth / hyper["closed_form_growth"] - 1.0)
     sweep_z = max(abs(r["z_mc_vs_exact"]) for c in study["cases"].values() for r in c["sweep"])
     coefficient_error = max(abs(c["observed_leading_coefficient"] / c["second_order_coefficient"] - 1.0)
                             for c in study["cases"].values())
     table = {name: [{k: r[k] for k in ("sigma_heading", "linear_relative_error", "monte_carlo_relative_error")}
                     for r in case["sweep"]] for name, case in study["cases"].items()}
     breakdown = {name: case["breakdown_sigma_10pct"] for name, case in study["cases"].items()}
+    found = all(value is not None for value in breakdown.values())
+    quadrature = max(r["quadrature_relative_change_64_to_96_nodes"] for c in study["cases"].values() for r in c["sweep"])
+    bracket = max(case["breakdown_bracket"] or 0.0 for case in study["cases"].values())
+
+    def shown(value, digits):
+        return "not found below 1 rad" if value is None else f"{value:.{digits}f} rad"
     findings = [
         finding("The Jacobi transfer matrix integrated by ciw.lab.jacobi.transfer matches the constant-curvature "
                 "closed forms (cos s, sin s; cosh s, sinh s) with unit Wronskian on both surfaces", "numerical",
@@ -454,6 +480,8 @@ def jacobi_transfer_covariance(ctx):
                     check("analytic", "max |Phi - closed form| over both surfaces",
                           max(sphere["phi_error"], hyper["phi_error"]), 1e-7),
                     check("invariant", "max |det Phi - 1|", max(sphere["det_error"], hyper["det_error"]), 1e-7)]},
+                uncertainty=uncertainty("truncation_bound", max(sphere["phi_error"], hyper["phi_error"]),
+                                        "observed RK4 global error of Phi against the closed forms"),
                 tolerance={"abs": 1e-9, "rel": 1e-3}),
         finding("Phi P Phi^T predicts the Monte Carlo covariance of (lateral offset, lateral rate) over perturbed "
                 "geodesics on the sphere and the hyperbolic plane within a Bonferroni 99.9% bound", "numerical",
@@ -465,6 +493,8 @@ def jacobi_transfer_covariance(ctx):
                           max(sphere["max_abs_z"], hyper["max_abs_z"]), study["z_critical"], "le"),
                     check("invariant", "batched geodesic RHS against Surface.geodesic_rhs",
                           max(sphere["rhs_consistency"], hyper["rhs_consistency"]), 1e-12)]},
+                uncertainty=uncertainty("monte_carlo_95ci", 1.96, "each standardized covariance entry has unit "
+                                                                  "sampling standard deviation"),
                 tolerance=TOL_MC),
         finding("Lateral variance collapses at the sphere's conjugate point s = pi: the heading contribution "
                 "vanishes because j_head(pi) = 0, leaving only the initial lateral variance", "numerical",
@@ -478,17 +508,23 @@ def jacobi_transfer_covariance(ctx):
                     check("analytic", "predicted variance at pi relative to sigma_lateral^2 minus one",
                           float(sphere["lateral_predicted"][s_index]) / sigma_l2 - 1.0, 1e-6),
                     check("analytic", "Monte Carlo ratio of variance at pi to its peak", collapse_mc, 0.05, "le")]},
+                uncertainty=mc95(collapse_mc * sphere["lateral_mc_relative_se"],
+                                 "Gaussian relative standard error sqrt(2/(N-1)) of a sample variance, applied to "
+                                 "the Monte Carlo ratio"),
                 tolerance=TOL_MC, counterexample={
                     "statement": "Lateral position uncertainty grows monotonically with distance travelled",
                     "witness": {"surface": "unit sphere", "s": math.pi, "variance_ratio_to_peak": collapse_mc}}),
         finding("On the hyperbolic plane (K = -1) there is no conjugate point and the lateral variance grows "
-                "like cosh^2 s and sinh^2 s", "numerical",
-                {"growth_factor_s0_to_s3": growth,
+                "as the closed form cosh^2 s sigma_l^2 + 2 cosh s sinh s c + sinh^2 s sigma_h^2", "numerical",
+                {"growth_factor_s0_to_s3": growth, "closed_form_growth_factor": hyper["closed_form_growth"],
                  "predicted_final_lateral_variance": float(hyper["lateral_predicted"][-1]),
                  "monte_carlo_final_lateral_variance": float(hyper["lateral_monte_carlo"][-1])},
                 {**generator_basis(seed), "checks": [
                     check("analytic", "number of conjugate points on [0, 3]", len(hyper["conjugate_points"]), 0),
-                    check("analytic", "growth factor over 3 units of arclength", growth, 50.0, "ge")]},
+                    check("analytic", "integrated growth factor over 3 units of arclength against the closed form "
+                                      "(relative)", growth_error, 1e-6)]},
+                uncertainty=uncertainty("truncation_bound", growth_error,
+                                        "relative RK4 error of the integrated growth factor"),
                 tolerance=TOL_MC),
         finding("The first-order variance sigma^2 j_head^2 overestimates the exact lateral variance by a relative "
                 "error that grows like cos^2(s) sigma^2 on the sphere and cosh^2(s) sigma^2 on the hyperbolic "
@@ -503,17 +539,25 @@ def jacobi_transfer_covariance(ctx):
                           sweep_z, study["sweep_z_critical"], "le"),
                     check("analytic", "integrated lateral against asin(sin a sin s) / asinh(sin a sinh s)",
                           max(sphere["closed_form_error"], hyper["closed_form_error"]), 1e-6)]},
+                uncertainty=uncertainty("reference_error", quadrature,
+                                        "largest relative change of the Gauss-Hermite exact variance from 64 to 96 "
+                                        "nodes"),
                 tolerance=TOL_MC),
         finding("The heading standard deviation at which the first-order variance is 10% too large is about "
                 "ten times smaller on the hyperbolic plane at s = 3 than on the sphere near its conjugate point "
                 "(s = 0.9 pi)",
                 "numerical", breakdown,
                 {**generator_basis(seed), "checks": [
-                    check("analytic", "hyperbolic breakdown sigma at the 10% level", breakdown["hyperbolic"] or 1.0,
-                          0.05, "le"),
-                    check("analytic", "sphere breakdown sigma at the 10% level", breakdown["sphere"] or 1.0, 0.2,
-                          "ge")]},
-                unit="rad", tolerance=TOL_ROUNDOFF, counterexample={
+                    # A breakdown not found below 1 rad fails explicitly instead of passing a bound vacuously.
+                    check("analytic", "10% breakdown found on both surfaces", float(found), 1.0, "ge"),
+                    check("analytic", "hyperbolic breakdown sigma at the 10% level",
+                          1.0 if breakdown["hyperbolic"] is None else breakdown["hyperbolic"], 0.05, "le"),
+                    check("analytic", "sphere breakdown sigma at the 10% level",
+                          0.0 if breakdown["sphere"] is None else breakdown["sphere"], 0.2, "ge")]},
+                unit="rad", uncertainty=uncertainty("truncation_bound", bracket,
+                                                    "final bisection bracket width on sigma (quadrature error "
+                                                    "below the linearization finding's reference error)"),
+                tolerance=TOL_ROUNDOFF, counterexample={
                     "statement": "A first-order (Phi P Phi^T) covariance is accurate for any heading uncertainty "
                                  "below 0.1 rad",
                     "witness": {"surface": "hyperbolic plane", "s": 3.0, "sigma_heading": 0.1,
@@ -546,12 +590,13 @@ def jacobi_transfer_covariance(ctx):
                       "linear, Monte Carlo and quadrature variances.",
         "numerical_result": f"max |z| {max(sphere['max_abs_z'], hyper['max_abs_z']):.2f} vs "
                             f"{study['z_critical']:.2f}; conjugate point {conjugate:.9f}; variance at pi / peak "
-                            f"{collapse_mc:.4f} (predicted {collapse_pred:.4f}); hyperbolic growth {growth:.0f}x; "
-                            f"10% breakdown sigma: sphere {breakdown['sphere']:.3f} rad, hyperbolic "
-                            f"{breakdown['hyperbolic']:.4f} rad.",
+                            f"{collapse_mc:.4f} (predicted {collapse_pred:.4f}); hyperbolic growth {growth:.0f}x "
+                            f"(closed form {hyper['closed_form_growth']:.0f}x); 10% breakdown sigma: sphere "
+                            f"{shown(breakdown['sphere'], 3)}, hyperbolic {shown(breakdown['hyperbolic'], 4)}.",
         "uncertainty": "Monte Carlo sampling error (600 geodesics) is covered by the Bonferroni bound; the "
                        "linearization errors come from 96-node Gauss-Hermite quadrature of closed forms and are "
-                       "deterministic; RK4 integration error is below 1e-6 against the closed forms.",
+                       "deterministic (64 against 96 nodes changes them by at most "
+                       f"{quadrature:.0e} relative); RK4 integration error is below 1e-6 against the closed forms.",
         "failure_modes_checked": ["transfer matrix vs closed form", "Wronskian drift", "batched RHS vs Christoffel RHS",
                                   "chart singularity (sweep limited to sigma <= 0.3 on the sphere)",
                                   "linearization breakdown", "matched-arclength vs closest-point lateral offset "
@@ -562,5 +607,7 @@ def jacobi_transfer_covariance(ctx):
                                    "other shapes and correlations with speed."],
         "recommended_next_task": "T065: model the correlation that a filter itself induces between successive "
                                  "estimates.",
+        # The numbers depend on the core Jacobi, integrator and surface modules; their digests are recorded.
+        "provider_runtime_identity": identity(files("sensor_fusion_geometry"), *CORE_GEOMETRY),
     }
     return outcome(fields, findings)

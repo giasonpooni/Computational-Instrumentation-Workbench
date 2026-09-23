@@ -6,12 +6,16 @@ a filter prediction or update proposes; an :class:`AdmittedState` exists only
 after :meth:`FusionSession.admit` has evaluated declared consistency checks.
 A :class:`FusionSession` defaults to read-only with the CIW authority
 vocabulary (``sensor_fusion`` and ``state_admission`` ``not_performed``);
-fusion must be enabled explicitly and is then labelled ``synthetic_only``.
+fusion must be enabled explicitly at construction and is then labelled
+``synthetic_only``. The read-only flag and the authority record cannot be
+rebound afterwards, so they cannot disagree.
 
-Refusals are explicit: missing readings are never zero-filled, observations in
-another frame or under an expired or revoked calibration are retained but not
-fused, a lost track needs explicit two-point reacquisition, and nothing is
-ever admitted automatically.
+Refusals are explicit and leave the estimate untouched: missing readings are
+never zero-filled, observations in another frame or under an expired, revoked
+or other-frame calibration are retained but not fused, a lost track needs
+explicit two-point reacquisition, time never moves backwards, only the most
+recently issued candidate can be admitted, and nothing is ever admitted
+automatically.
 
 Non-claims: admission here is a software gate over synthetic data. It confers
 no physical truth, calibration validity, safety or production authority.
@@ -22,6 +26,7 @@ from dataclasses import asdict, dataclass
 import hashlib
 import json
 import math
+from types import MappingProxyType
 
 import numpy as np
 
@@ -53,9 +58,9 @@ def _text(value, name):
     return value
 
 
-def _tick(value, name):
+def _tick(value, name, code="malformed_observation"):
     if isinstance(value, bool) or not isinstance(value, int) or value < 0:
-        raise FusionRefusal("malformed_observation", f"{name} must be a nonnegative integer tick")
+        raise FusionRefusal(code, f"{name} must be a nonnegative integer tick")
     return value
 
 
@@ -74,7 +79,12 @@ def _rows(matrix) -> tuple:
 
 @dataclass(frozen=True)
 class Observation:
-    """A retained reading in a named frame under a named calibration."""
+    """A retained reading in a named frame under a named calibration.
+
+    ``origin_frame_id`` is the frame the sensor produced the reading in (its
+    calibration frame); it defaults to ``frame_id`` and is carried through an
+    explicit :class:`FrameTransform`.
+    """
 
     sensor_id: str
     frame_id: str
@@ -82,10 +92,14 @@ class Observation:
     value: tuple
     covariance: tuple
     calibration_id: str
+    origin_frame_id: str | None = None
 
     def __post_init__(self):
         for name in ("sensor_id", "frame_id", "calibration_id"):
             _text(getattr(self, name), name)
+        if self.origin_frame_id is None:
+            object.__setattr__(self, "origin_frame_id", self.frame_id)
+        _text(self.origin_frame_id, "origin_frame_id")
         _tick(self.tick, "tick")
         try:
             value = tuple(float(v) for v in self.value)
@@ -116,6 +130,13 @@ class CalibrationRecord:
     valid_from: int
     valid_until: int
 
+    def __post_init__(self):
+        for name in ("calibration_id", "sensor_id", "frame_id"):
+            if not isinstance(getattr(self, name), str) or not getattr(self, name).strip():
+                raise FusionRefusal("malformed_calibration", f"{name} must be a nonempty string")
+        _tick(self.valid_from, "valid_from", "malformed_calibration")
+        _tick(self.valid_until, "valid_until", "malformed_calibration")
+
     def covers(self, tick: int) -> bool:
         return self.valid_from <= tick < self.valid_until
 
@@ -137,7 +158,8 @@ class FrameTransform:
         value = rotation @ np.asarray(observation.value) + np.asarray(self.translation, dtype=float)
         covariance = rotation @ np.asarray(observation.covariance) @ rotation.T
         return Observation(observation.sensor_id, self.target, observation.tick, tuple(value),
-                           _rows(0.5 * (covariance + covariance.T)), observation.calibration_id)
+                           _rows(0.5 * (covariance + covariance.T)), observation.calibration_id,
+                           observation.origin_frame_id)
 
 
 @dataclass(frozen=True)
@@ -207,7 +229,8 @@ ADMISSION_CHECKS = (
     ("integrity", "digest_mismatch", lambda s, c, d: c.content_digest() == c.digest),
     ("provenance", "unknown_candidate", lambda s, c, d: c.digest in s._issued),
     ("frame", "frame_mismatch", lambda s, c, d: c.frame_id == d["expected_frame_id"] == s.frame_id),
-    ("fresh", "stale_candidate", lambda s, c, d: c.tick == s.tick),
+    # Fresh means the most recent issue: a later prediction or a second update at the same tick supersedes it.
+    ("fresh", "stale_candidate", lambda s, c, d: c.digest == s._latest and c.tick == s.tick),
     ("track", "track_lost", lambda s, c, d: c.track_status == "tracking"),
     ("uncertainty", "uncertainty_exceeds_limit", lambda s, c, d: _position_std(c) <= d["max_position_std"]),
     ("innovation", "inconsistent_innovation",
@@ -242,13 +265,17 @@ class FusionSession:
     Defaults to ``read_only=True``: observations are retained, but prediction,
     fusion, reacquisition and admission are refused and the authority record
     equals the CIW vocabulary. ``read_only=False`` enables synthetic fusion only.
+    The flag is fixed at construction and the authority record is derived from
+    it on every read, so neither can be rebound to disagree with the other.
     """
+
+    _FIXED = ("read_only", "authority", "_read_only")
 
     def __init__(self, *, frame_id: str = "world", read_only: bool = True, dt: float = 0.1, q: float = 0.05,
                  track_radius: float | None = None, track_probability: float = 0.99,
                  session_id: str = "synthetic-session"):
-        self.frame_id, self.read_only, self.session_id = frame_id, bool(read_only), session_id
-        self.authority = dict(DEFAULT_AUTHORITY if self.read_only else SYNTHETIC_AUTHORITY)
+        object.__setattr__(self, "_read_only", bool(read_only))
+        self.frame_id, self.session_id = frame_id, session_id
         self.F, self.Q = cv_model(dt, q)
         self.dt, self.q = dt, q
         self.track_radius, self.track_probability = track_radius, track_probability
@@ -257,9 +284,24 @@ class FusionSession:
         self.revoked: set = set()
         self.admitted: list = []
         self._issued: dict = {}
+        self._latest: str | None = None
         self.x = self.P = None
         self.tick: int | None = None
         self.track_status = "uninitialized"
+
+    def __setattr__(self, name, value):
+        if name in self._FIXED:
+            raise FusionRefusal("read_only_session", f"{name} is fixed when the session is constructed")
+        object.__setattr__(self, name, value)
+
+    @property
+    def read_only(self) -> bool:
+        return self._read_only
+
+    @property
+    def authority(self):
+        """Read-only view of the authority record implied by the read-only flag."""
+        return MappingProxyType(DEFAULT_AUTHORITY if self._read_only else SYNTHETIC_AUTHORITY)
 
     # Records -----------------------------------------------------------------------
     def register_calibration(self, record: CalibrationRecord) -> None:
@@ -292,6 +334,10 @@ class FusionSession:
             self._refuse(entry, "calibration_unknown", "Observation cites no registered calibration for its sensor")
         if observation.calibration_id in self.revoked:
             self._refuse(entry, "calibration_revoked", "Observation cites a revoked calibration")
+        if record.frame_id != observation.origin_frame_id:
+            self._refuse(entry, "calibration_frame_mismatch", f"Calibration {record.calibration_id} is declared for "
+                                                              f"frame {record.frame_id}, the reading comes from "
+                                                              f"{observation.origin_frame_id}")
         if not record.covers(observation.tick):
             self._refuse(entry, "calibration_expired", "Observation lies outside its calibration validity interval")
         if len(observation.value) != 2:
@@ -306,28 +352,33 @@ class FusionSession:
                   "session_id": self.session_id}
         candidate = CandidateState(digest=_digest({"kind": "candidate", **fields}), **fields)
         self._issued[candidate.digest] = candidate
+        self._latest = candidate.digest
         return candidate
 
-    def position_radius(self) -> float:
+    def position_radius(self, P=None) -> float:
         """Semi-major axis of the ``track_probability`` position confidence ellipse."""
-        eigen = float(np.linalg.eigvalsh(self.P[:2, :2]).max())
+        P = self.P if P is None else P
+        eigen = float(np.linalg.eigvalsh(P[:2, :2]).max())
         return math.sqrt(eigen * chi2_quantile(self.track_probability, 2))
 
-    def _advance(self, tick: int, update_follows: bool = False) -> None:
-        """Predict tick by tick (identical arithmetic to the batch schedule) and apply the track-loss rule.
+    def _propagated(self, tick: int, update_follows: bool = False) -> tuple:
+        """Predict tick by tick (identical arithmetic to the batch schedule) without committing anything.
 
-        The rule is evaluated on every prediction-only tick; when a reading is
-        about to update the final tick, that tick is judged after the update,
-        not on the prior the reading corrects.
+        Returns (x, P, status) at ``tick``. The track-loss rule is evaluated on
+        every prediction-only tick; when a reading is about to update the final
+        tick, that tick is judged after the update, not on the prior the
+        reading corrects. Callers commit only after every refusal check passed.
         """
-        while self.tick < tick:
-            self.x = self.F @ self.x
-            self.P = self.F @ self.P @ self.F.T + self.Q
-            self.tick += 1
-            if update_follows and self.tick == tick:
+        x, P, current, status = self.x, self.P, self.tick, self.track_status
+        while current < tick:
+            x = self.F @ x
+            P = self.F @ P @ self.F.T + self.Q
+            current += 1
+            if update_follows and current == tick:
                 break
-            if self.track_radius is not None and self.position_radius() > self.track_radius:
-                self.track_status = "lost"
+            if self.track_radius is not None and self.position_radius(P) > self.track_radius:
+                status = "lost"
+        return x, P, status
 
     def initialize(self, mean, covariance, tick: int) -> CandidateState:
         self._writable()
@@ -344,11 +395,13 @@ class FusionSession:
     def predict(self, tick: int) -> CandidateState:
         """Prediction-only step (the only supported response to a missing reading)."""
         self._writable()
+        _tick(tick, "tick", "malformed_tick")
         if self.x is None:
             raise FusionRefusal("not_initialized", "The session has no state to predict")
         if tick < self.tick:
             raise FusionRefusal("out_of_order", "Prediction cannot move backwards in time")
-        self._advance(tick)
+        self.x, self.P, self.track_status = self._propagated(tick)
+        self.tick = tick
         return self._issue()
 
     def handle_gap(self, sensor_id: str, tick: int, strategy: str = "predict_only") -> CandidateState:
@@ -368,19 +421,21 @@ class FusionSession:
             self._refuse(entry, "not_initialized", "The session has no state to update; reacquire explicitly")
         if observation.tick < self.tick:
             self._refuse(entry, "out_of_order", "Observation is older than the session state")
-        self._advance(observation.tick, update_follows=True)
-        if self.track_status != "tracking":
+        # The prediction is computed on copies and committed only if the update proceeds, so a refusal
+        # leaves the state, covariance, clock and track status exactly as they were.
+        x, P, status = self._propagated(observation.tick, update_follows=True)
+        if status != "tracking":
             self._refuse(entry, "track_lost_requires_reacquisition",
                          "The track is lost; fusion resumes only after explicit reacquisition")
         z = np.asarray(observation.value)
         R = np.asarray(observation.covariance)
-        S = H_POS @ self.P @ H_POS.T + R
-        K = np.linalg.solve(S, H_POS @ self.P).T
-        nu = z - H_POS @ self.x
+        S = H_POS @ P @ H_POS.T + R
+        K = np.linalg.solve(S, H_POS @ P).T
+        nu = z - H_POS @ x
         A = np.eye(4) - K @ H_POS
-        self.x = self.x + K @ nu
-        self.P = A @ self.P @ A.T + K @ R @ K.T
-        self.P = 0.5 * (self.P + self.P.T)
+        P = A @ P @ A.T + K @ R @ K.T
+        self.x, self.P = x + K @ nu, 0.5 * (P + P.T)
+        self.tick, self.track_status = observation.tick, status
         entry["disposition"] = "fused"
         return self._issue((observation.digest,), ((float(nu @ np.linalg.solve(S, nu)), 2),),
                            (observation.calibration_id,))
@@ -400,6 +455,8 @@ class FusionSession:
         if second.tick != first.tick + 1 or second.sensor_id != first.sensor_id:
             self._refuse(entries[1], "reacquisition_needs_consecutive_readings",
                          "Two-point reacquisition needs consecutive readings from one sensor")
+        if self.tick is not None and first.tick < self.tick:
+            self._refuse(entries[1], "out_of_order", "Reacquisition readings are older than the session clock")
         R1, R2 = np.asarray(first.covariance), np.asarray(second.covariance)
         dt = self.dt
         velocity = (np.asarray(second.value) - np.asarray(first.value)) / dt
@@ -418,6 +475,6 @@ class FusionSession:
         code, passed = admission_verdict(self, candidate, declared)
         if code is not None:
             raise FusionRefusal(code, f"Admission refused at check {len(passed) + 1}: {code}")
-        admitted = AdmittedState(candidate, passed, declared, self.authority, _token=_GATE_TOKEN)
+        admitted = AdmittedState(candidate, passed, declared, dict(self.authority), _token=_GATE_TOKEN)
         self.admitted.append(admitted)
         return admitted

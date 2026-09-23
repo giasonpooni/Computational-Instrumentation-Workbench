@@ -5,7 +5,8 @@ errors, Cov(e_{k+j}, e_k) = [(I - K H) F]^j P, exactly for a rational scalar
 random walk and numerically for the planar constant-velocity bench, and shows
 the cost of treating filtered outputs as independent. T066 shows that
 innovations are normalized by S = H P- H^T + R and post-fit residuals by
-R - H P+ H^T, not by the raw sensor R. T067 checks chi-square gate
+R - H P+ H^T (which reproduces the innovation NIS exactly), not by the raw
+sensor R. T067 checks chi-square gate
 false-rejection rates, open loop and closed loop. T068 injects outliers of two
 sizes and measures detection, false alarms and estimate error with and
 without rejection.
@@ -28,11 +29,16 @@ from .sensor_fusion_bench import (H_POS, chi2_cdf, chi2_quantile, consistency, c
                                   measure, noncentral_chi2_2_cdf, noncentral_chi2_2_cdf_many,
                                   normal_quantile, quadratic, run_gated, run_shared, simulate_truth)
 from .sensor_fusion_common import (MU0, P0_BENCH, R_CAMERA, TESTS, TOL_EXACT, TOL_MC, TOL_TINY,
-                                   as_json, bonferroni, check, files, generator_basis, outcome, rate_interval,
-                                   run_mean_z, unreal)
+                                   as_json, bonferroni, check, dot_chart, exact, files, generator_basis, gram,
+                                   mc95, outcome, rate_interval, roundoff, run_mean_z, uncertainty, unreal)
 
 FILES = files("sensor_fusion_filtering")
 DT = 0.1
+
+
+def _tests(task_id, *specific) -> tuple:
+    return tuple(f"{TESTS}::{name}" for name in specific) + (
+        f"{TESTS}::test_section_reports_labels_and_states[{task_id}]",)
 
 
 def _ncdf(x: float) -> float:
@@ -130,7 +136,7 @@ def correlation_study(seed: int = 65_2026) -> dict:
     e = truth - estimates
     z_matrix, lag_table = [], []
     for j in range(0, 6):
-        C = e[:, base + j].T @ e[:, base] / cv_runs
+        C = gram(e[:, base + j], e[:, base]) / cv_runs
         C_pred = np.linalg.matrix_power(A, j) @ P_ss
         scale = np.sqrt((np.outer(np.diag(P_ss), np.diag(P_ss)) + C_pred ** 2) / cv_runs)
         zj = ((C - C_pred) / scale)
@@ -149,6 +155,8 @@ def correlation_study(seed: int = 65_2026) -> dict:
                                      "innovation_autocorrelation": white,
                                      "max_abs_z_innovation": float(np.max(np.abs(z_white))),
                                      "monte_carlo_average_variance": mc_var, "z_average": float(z_avg),
+                                     "average_variance_se": V * math.sqrt(2.0 / runs),
+                                     "lag1_autocovariance_se": math.sqrt((P * P + predicted[1] ** 2) / runs),
                                      "naive_95_coverage_monte_carlo": coverage_mc,
                                      "naive_95_coverage_exact": coverage_exact},
             "cv": {"runs": cv_runs, "P_ss": P_ss, "K_ss": K_ss, "riccati_residual": residual,
@@ -159,9 +167,7 @@ def correlation_study(seed: int = 65_2026) -> dict:
             "z_critical_cv": bonferroni(len(z_matrix))}
 
 
-@task("T065", changed_files=FILES, regression_tests=(
-    f"{TESTS}::test_filter_induced_correlation_and_naive_average",
-    f"{TESTS}::test_section_reports_labels_and_states"))
+@task("T065", changed_files=FILES, regression_tests=_tests("T065", "test_filter_induced_correlation_and_naive_average"))
 def filter_induced_correlation(ctx):
     study = correlation_study()
     sc, cv = study["scalar"], study["cv"]
@@ -181,7 +187,7 @@ def filter_induced_correlation(ctx):
                 {"derivation": "M^2 = qM + qr; e_{k+1} = (1 - K)(e_k + w_k) - K v_{k+1}", "checks": [
                     check("exact_arithmetic", "Riccati fixed-point residual in Fractions",
                           float(Fraction(sc["riccati_residual"])), 0.0)]},
-                tolerance=TOL_EXACT),
+                uncertainty=exact("rational arithmetic"), tolerance=TOL_EXACT),
         finding("Monte Carlo error autocovariances of the scalar filter match a^j P at lags 0-8, while its "
                 "innovations are white", "numerical",
                 {"max_abs_z_autocovariance": sc["max_abs_z_autocovariance"],
@@ -191,6 +197,8 @@ def filter_induced_correlation(ctx):
                 {**generator_basis(seed, runs=sc["runs"]), "checks": [
                     check("analytic", "autocovariance z against a^j P", sc["max_abs_z_autocovariance"], z_s, "le"),
                     check("analytic", "innovation autocorrelation z against 0", sc["max_abs_z_innovation"], z_s, "le")]},
+                uncertainty=mc95(sc["lag1_autocovariance_se"], "sampling standard error of the lag-1 error "
+                                                               "autocovariance"),
                 tolerance=TOL_MC),
         finding("On the planar constant-velocity bench the lag-j cross-covariance of filtered errors equals "
                 "[(I - K H) F]^j P_ss for j = 0-5", "numerical",
@@ -201,6 +209,8 @@ def filter_induced_correlation(ctx):
                     check("analytic", "matrix lag covariance z against A^j P_ss", cv["max_abs_z"], z_cv, "le"),
                     check("invariant", "steady-state Riccati fixed-point residual (relative)", cv["riccati_residual"],
                           1e-12)]},
+                uncertainty=uncertainty("monte_carlo_95ci", 1.96, "each standardized lag-covariance entry has unit "
+                                                                  "sampling standard deviation"),
                 tolerance=TOL_MC),
         finding("Treating 20 successive filtered outputs as independent underestimates the variance of their "
                 "average by the exact factor V_20 / (P/20), and a naive 95% interval covers far less often",
@@ -215,6 +225,8 @@ def filter_induced_correlation(ctx):
                     check("analytic", "exact variance ratio V_20 / (P/20)", sc["variance_ratio"], 2.0, "ge"),
                     check("analytic", "naive coverage Monte Carlo minus exact",
                           sc["naive_95_coverage_monte_carlo"] - sc["naive_95_coverage_exact"], 0.02)]},
+                uncertainty=mc95(sc["average_variance_se"], "sampling standard error of the Monte Carlo variance of "
+                                                            "the 20-tick average; the ratio itself is exact"),
                 tolerance=TOL_MC, counterexample={
                     "statement": "Successive filtered estimates can be averaged as independent samples",
                     "witness": {"n": sc["n"], "variance_ratio": sc["variance_ratio"],
@@ -274,6 +286,7 @@ def residual_study(seed: int = 66_2026, runs: int = 300, ticks: int = 100, q: fl
     for k, step in enumerate(steps):
         C = R_CAMERA - H_POS @ step.post @ H_POS.T
         identity = max(identity, float(np.max(np.abs(C - R_CAMERA @ np.linalg.solve(step.S, R_CAMERA)))))
+        # r = R S^-1 nu and C = R S^-1 R give r^T C^-1 r = nu^T S^-1 nu exactly: no new information.
         series["innovation_S"].append(quadratic(innovations[k], step.S))
         series["innovation_R"].append(quadratic(innovations[k], R_CAMERA))
         series["posterior_R"].append(quadratic(post[:, k], R_CAMERA))
@@ -288,14 +301,16 @@ def residual_study(seed: int = 66_2026, runs: int = 300, ticks: int = 100, q: fl
         grand_z, grand, se = run_mean_z(values[..., None] - np.array(predicted[key])[None, :, None])
         result[key] = {"consistency": consistency(values, 2), "grand_mean": float(values.mean()),
                        "predicted_grand_mean": float(np.mean(predicted[key])), "z_vs_predicted": float(grand_z[0]),
-                       "predicted_per_tick": predicted[key], "anis": values.mean(axis=0)}
-    return {"seed": seed, "runs": runs, "ticks": ticks, "q": q, "identity_error": identity, "series": result,
-            "steady_S": steps[-1].S, "z_critical": bonferroni(len(series))}
+                       "standard_error": float(se[0]), "predicted_per_tick": predicted[key],
+                       "anis": values.mean(axis=0)}
+    innovation, posterior = (np.stack(series[key], axis=1) for key in ("innovation_S", "posterior_C"))
+    same_statistic = float(np.max(np.abs(posterior - innovation) / np.maximum(1.0, innovation)))
+    return {"seed": seed, "runs": runs, "ticks": ticks, "q": q, "identity_error": identity,
+            "posterior_vs_innovation_nis": same_statistic, "series": result,
+            "steady_S": steps[-1].S, "z_critical": bonferroni(3)}
 
 
-@task("T066", changed_files=FILES, regression_tests=(
-    f"{TESTS}::test_residuals_need_filter_covariance",
-    f"{TESTS}::test_section_reports_labels_and_states"))
+@task("T066", changed_files=FILES, regression_tests=_tests("T066", "test_residuals_need_filter_covariance"))
 def residual_covariance(ctx):
     study = residual_study()
     seed, zc = study["seed"], study["z_critical"]
@@ -318,21 +333,27 @@ def residual_covariance(ctx):
                 "predicted_grand_mean": row["predicted_grand_mean"], "z_vs_predicted": row["z_vs_predicted"]}
 
     findings = [
-        finding("Innovations normalized by S = H P- H^T + R are chi-square(2) consistent at every tick", "numerical",
-                summary("innovation_S"),
+        finding("Innovations normalized by S = H P- H^T + R are chi-square(2) consistent: run-averaged NIS lies "
+                "inside its per-tick 99% interval at 90% or more of ticks and the grand mean matches 2",
+                "numerical", summary("innovation_S"),
                 {**generator_basis(seed, runs=study["runs"], ticks=study["ticks"]), "checks": [
                     check("analytic", "fraction of ticks with ANIS in the chi2(2N)/N 99% interval",
                           s["innovation_S"]["consistency"]["fraction_inside"], 0.9, "ge"),
                     check("analytic", "grand mean against 2 (run-level z)", s["innovation_S"]["z_vs_predicted"], zc)]},
+                uncertainty=mc95(s["innovation_S"]["standard_error"], "run-level standard error of the grand mean"),
                 tolerance=TOL_MC),
-        finding("Post-fit residuals z - H x+ have covariance R - H P+ H^T = R S^-1 R and are chi-square(2) "
-                "consistent with it", "numerical",
-                {**summary("posterior_C"), "identity_error": study["identity_error"]},
-                {**generator_basis(seed), "checks": [
-                    check("analytic", "fraction of ticks inside the 99% interval",
-                          s["posterior_C"]["consistency"]["fraction_inside"], 0.9, "ge"),
-                    check("invariant", "R - H P+ H^T against R S^-1 R", study["identity_error"], 1e-12)]},
-                tolerance=TOL_MC),
+        finding("Post-fit residuals z - H x+ have covariance R - H P+ H^T = R S^-1 R, and normalizing them by it "
+                "reproduces the innovation NIS exactly, so the post-fit test carries no information beyond the "
+                "innovation test", "numerical",
+                {"identity_error": study["identity_error"],
+                 "max_relative_difference_from_innovation_nis": study["posterior_vs_innovation_nis"]},
+                {"derivation": "r = (I - H K) nu = R S^-1 nu, Cov r = R S^-1 R, so r^T (R S^-1 R)^-1 r = nu^T S^-1 nu",
+                 "checks": [
+                    check("invariant", "R - H P+ H^T against R S^-1 R", study["identity_error"], 1e-12),
+                    check("invariant", "post-fit NIS against innovation NIS over all runs and ticks (relative)",
+                          study["posterior_vs_innovation_nis"], 1e-9)]},
+                uncertainty=roundoff(max(study["identity_error"], study["posterior_vs_innovation_nis"])),
+                tolerance=TOL_TINY),
         finding("Normalizing innovations by the raw sensor covariance R inflates NIS to tr(R^-1 S) and fails the "
                 "chi-square test at nearly every tick", "numerical", summary("innovation_R"),
                 {**generator_basis(seed), "checks": [
@@ -340,6 +361,7 @@ def residual_covariance(ctx):
                           s["innovation_R"]["consistency"]["fraction_above"], 0.9, "ge"),
                     check("analytic", "grand mean against the exact tr(R^-1 S) (run-level z)",
                           s["innovation_R"]["z_vs_predicted"], zc)]},
+                uncertainty=mc95(s["innovation_R"]["standard_error"], "run-level standard error of the grand mean"),
                 tolerance=TOL_MC, counterexample={
                     "statement": "Innovations can be tested against the raw sensor covariance",
                     "witness": {"grand_mean_nis": s["innovation_R"]["grand_mean"], "nominal": 2.0}}),
@@ -350,6 +372,7 @@ def residual_covariance(ctx):
                           s["posterior_R"]["consistency"]["fraction_below"], 0.9, "ge"),
                     check("analytic", "grand mean against the exact tr(S^-1 R) (run-level z)",
                           s["posterior_R"]["z_vs_predicted"], zc)]},
+                uncertainty=mc95(s["posterior_R"]["standard_error"], "run-level standard error of the grand mean"),
                 tolerance=TOL_MC, counterexample={
                     "statement": "Post-fit residuals have the sensor covariance R",
                     "witness": {"grand_mean": s["posterior_R"]["grand_mean"], "nominal": 2.0}}),
@@ -358,26 +381,29 @@ def residual_covariance(ctx):
     ]
     fields = {
         "hypothesis": "Filter residuals must be normalized by the filter's own covariance: S for innovations and "
-                      "R - H P+ H^T for post-fit residuals. The raw sensor covariance R over-states the first and "
-                      "under-states the second by predictable amounts.",
+                      "R - H P+ H^T for post-fit residuals (the two normalized statistics coincide). The raw sensor "
+                      "covariance R over-states the first and under-states the second by predictable amounts.",
         "mathematical_model": "nu = z - H x-, Cov nu = S = H P- H^T + R; r = z - H x+ = (I - H K) nu, Cov r = "
                               "R S^-1 R = R - H P+ H^T. E[nu^T R^-1 nu] = tr(R^-1 S) > m; E[r^T R^-1 r] = tr(S^-1 R) "
                               "< m. Planar CV, dt = 0.1 s, q = 0.5, camera R = [[0.04, 0.012], [0.012, 0.04]].",
         "input_data": [f"seed {seed} (PCG64)", f"{study['runs']} runs x {study['ticks']} ticks"],
         "observation_model": "Camera position at every tick; filter model equals the truth model.",
-        "expected_invariant": "ANIS inside chi2(2N)/N intervals with S and with R - H P+ H^T; outside above "
-                              "(innovation / R) and below (post-fit / R), with grand means equal to the exact traces.",
+        "expected_invariant": "ANIS inside chi2(2N)/N intervals with S; post-fit NIS with R - H P+ H^T identical to "
+                              "the innovation NIS; outside above (innovation / R) and below (post-fit / R), with "
+                              "grand means equal to the exact traces.",
         "experiment": "One seeded Monte Carlo; four normalizations of the same residuals; per-tick ANIS "
                       "against 99% intervals; grand means against the exact traces with run-level standard errors.",
-        "numerical_result": f"innovation/S inside {s['innovation_S']['consistency']['fraction_inside']:.2f}; "
-                            f"post-fit/(R - HP+H^T) inside {s['posterior_C']['consistency']['fraction_inside']:.2f}; "
+        "numerical_result": f"innovation/S inside {s['innovation_S']['consistency']['fraction_inside']:.2f} of "
+                            f"ticks; post-fit/(R - HP+H^T) equals it to {study['posterior_vs_innovation_nis']:.0e} "
+                            f"relative; "
                             f"innovation/R grand mean {s['innovation_R']['grand_mean']:.3f} (exact "
                             f"{s['innovation_R']['predicted_grand_mean']:.3f}); post-fit/R grand mean "
                             f"{s['posterior_R']['grand_mean']:.3f} (exact {s['posterior_R']['predicted_grand_mean']:.3f}).",
         "uncertainty": "Per-tick 99% intervals and run-level z-scores (family-corrected); the trace predictions are "
                        "exact for the declared model.",
         "failure_modes_checked": ["raw R for innovations", "raw R for post-fit residuals",
-                                  "post-fit covariance identity R - H P+ H^T = R S^-1 R"],
+                                  "post-fit covariance identity R - H P+ H^T = R S^-1 R",
+                                  "counting the post-fit test as independent evidence (it is the same statistic)"],
         "unresolved_assumptions": ["A deployed monitor has no truth; it sees only these residual statistics.",
                                    "q = 0.5 was chosen so the raw-R bias is visible per tick; smaller q shrinks "
                                    "tr(R^-1 H P- H^T) but never removes it."],
@@ -434,9 +460,7 @@ def gating_study(seed: int = 67_2026, runs: int = 400, ticks: int = 100) -> dict
             "dof4_closed_form_error": closed_form_4, "gates": {str(p): chi2_quantile(p, 2) for p in (0.9, 0.99, 0.999)}}
 
 
-@task("T067", changed_files=FILES, regression_tests=(
-    f"{TESTS}::test_gating_rates_open_and_closed_loop",
-    f"{TESTS}::test_section_reports_labels_and_states"))
+@task("T067", changed_files=FILES, regression_tests=_tests("T067", "test_gating_rates_open_and_closed_loop"))
 def mahalanobis_gating(ctx):
     study = gating_study()
     seed = study["seed"]
@@ -451,6 +475,10 @@ def mahalanobis_gating(ctx):
         logx=True, logy=True))
     inside = all(row["nominal_inside_wilson"] for row in ol.values())
     excess = cl["0.9"]
+    trials = study["trials"]
+
+    def binomial_se(rate):
+        return math.sqrt(rate * (1 - rate) / trials)
     findings = [
         finding("Open loop, the false-rejection rate of a gate at the chi-square(2) p-quantile of the correctly "
                 "normalized NIS matches 1 - p within a 99.9% Wilson interval for p = 0.9, 0.99 and 0.999",
@@ -458,6 +486,8 @@ def mahalanobis_gating(ctx):
                               for p, row in ol.items()},
                 {**generator_basis(seed, runs=study["runs"], ticks=study["ticks"]), "checks": [
                     check("analytic", "nominal 1 - p inside every Wilson interval", float(inside), 1.0, "ge")]},
+                uncertainty=mc95(max(binomial_se(row["rate"]) for row in ol.values()),
+                                 "largest binomial standard error of the three open-loop rates"),
                 tolerance=TOL_MC),
         finding("The chi-square quantiles used by the gate invert the closed-form chi-square CDF to roundoff for "
                 "1-6 degrees of freedom", "numerical",
@@ -467,6 +497,7 @@ def mahalanobis_gating(ctx):
                     check("invariant", "max |F(F^-1(p)) - p|", study["quantile_roundtrip_error"], 1e-10),
                     check("analytic", "dof 4 closed form 1 - exp(-x/2)(1 + x/2)", study["dof4_closed_form_error"],
                           1e-10)]},
+                uncertainty=roundoff(max(study["quantile_roundtrip_error"], study["dof4_closed_form_error"])),
                 tolerance=TOL_TINY),
         finding("Closed loop, a gated filter rejects valid readings more often than 1 - p at p = 0.9: a rejected "
                 "reading signals a large prior error that the filter then keeps", "numerical",
@@ -474,16 +505,20 @@ def mahalanobis_gating(ctx):
                  for p, row in cl.items()},
                 {**generator_basis(seed), "checks": [
                     check("analytic", "Wilson lower bound of the closed-loop rate at p = 0.9 minus 0.1",
-                          excess["wilson"][0] - 0.1, 0.0, "ge")]},
+                          excess["wilson"][0] - 0.1, 0.0, "signed_ge")]},
+                uncertainty=mc95(binomial_se(excess["rate"]), "binomial standard error at p = 0.9 (rejections "
+                                                              "within a run are positively dependent, so this "
+                                                              "understates the spread)"),
                 tolerance=TOL_MC, counterexample={
                     "statement": "The false-rejection rate of a gated filter equals the nominal 1 - p",
                     "witness": {"p": 0.9, "rate": excess["rate"], "wilson": excess["wilson"],
                                 "rate_after_a_rejection": excess["rejection_rate_after_a_rejection"]}}),
         finding("Gating the NIS computed with the raw sensor covariance R at the 99% quantile rejects valid readings "
-                "at many times the nominal 1% rate", "numerical", study["raw_R_gate_99"],
+                "at more than twice the nominal 1% rate", "numerical", study["raw_R_gate_99"],
                 {**generator_basis(seed), "checks": [
                     check("analytic", "Wilson lower bound of the raw-R rejection rate",
                           study["raw_R_gate_99"]["wilson"][0], 0.02, "ge")]},
+                uncertainty=mc95(binomial_se(study["raw_R_gate_99"]["rate"]), "binomial standard error"),
                 tolerance=TOL_MC, counterexample={
                     "statement": "A chi-square gate on raw-R Mahalanobis distance has false-rejection rate 1 - p",
                     "witness": {"rate": study["raw_R_gate_99"]["rate"], "nominal": 0.01}}),
@@ -556,6 +591,11 @@ def outlier_study(seed: int = 68_2026, runs: int = 400, ticks: int = 100, rate: 
         values = values if mask is None else values[mask]
         return float(math.sqrt(values.mean()))
 
+    def rmse_se(values, mask=None):
+        """Delta-method standard error of an RMSE from independent per-run MSEs."""
+        values = values if mask is None else values[mask]
+        return float(values.std(ddof=1) / math.sqrt(len(values)) / (2 * math.sqrt(values.mean())))
+
     clean_open, clean_gated = run(z_clean), run(z_clean, gate)
     clean_rejected = np.stack([~a for a in clean_gated["accepted"]], axis=1)
     mse_clean_open, mse_clean_gated = mse(clean_open), mse(clean_gated)
@@ -564,6 +604,7 @@ def outlier_study(seed: int = 68_2026, runs: int = 400, ticks: int = 100, rate: 
            "first_reading_outliers": int(contaminated[:, 0].sum()),
            "clean": {"rmse_ungated": rmse(mse_clean_open), "rmse_gated": rmse(mse_clean_gated),
                      "paired_mse_z_gated_minus_ungated": paired(mse_clean_gated, mse_clean_open),
+                     "paired_mse_se": float(np.std(mse_clean_gated - mse_clean_open, ddof=1) / math.sqrt(runs)),
                      "false_alarm": rate_interval(int(clean_rejected.sum()), clean_rejected.size),
                      "longest_valid_rejection_streak": max(_longest_run(r) for r in clean_rejected)},
            "cases": {}}
@@ -589,17 +630,26 @@ def outlier_study(seed: int = 68_2026, runs: int = 400, ticks: int = 100, rate: 
         accepted_first = contaminated[:, 0] & ~rejected[:, 0]
         m_u, m_g, m_o = mse(ungated), mse(gated), mse(oracle)
         worst = int(np.argmax(m_g - m_o))
+        difference = m_g - m_u
+        wins, ties = int(np.sum(difference < 0)), int(np.sum(difference == 0))
         out["cases"][label] = {
             "magnitude_m": magnitude, "outliers": int(contaminated.sum()),
             "detection": rate_interval(detected, int(contaminated.sum())),
             "false_alarm": rate_interval(false_alarm, int((~contaminated).sum())),
             "predicted_detection_rate": expected / int(contaminated.sum()),
             "detection_z": float((detected - expected) / spread) if spread > 0 else 0.0,
+            "detection_rate_sd": spread / int(contaminated.sum()),
             "first_reading_detection_predicted": float(np.mean(probability[ticks_idx == 0])),
             "rmse": {"ungated": rmse(m_u), "gated": rmse(m_g), "oracle": rmse(m_o)},
             "rmse_without_lockout_runs": {"ungated": rmse(m_u, ~locked), "gated": rmse(m_g, ~locked),
                                           "oracle": rmse(m_o, ~locked)},
+            "rmse_se": {"gated_without_lockout": rmse_se(m_g, ~locked)},
             "paired_mse_z_gated_minus_ungated": paired(m_g, m_u),
+            "paired_mse_difference": {"mean": float(difference.mean()),
+                                      "standard_error": float(difference.std(ddof=1) / math.sqrt(runs)),
+                                      "median": float(np.median(difference))},
+            "sign_test": {"gated_better": wins, "ties": ties, "runs": runs,
+                          "wins": rate_interval(wins, runs - ties)},
             "lockout_runs": int(locked.sum()), "lockout_run_ids": np.nonzero(locked)[0],
             "accepted_first_reading_outliers": int(accepted_first.sum()),
             "lockout_runs_with_accepted_first_outlier": int(np.sum(locked & accepted_first)),
@@ -612,23 +662,27 @@ def outlier_study(seed: int = 68_2026, runs: int = 400, ticks: int = 100, rate: 
     return out
 
 
-@task("T068", changed_files=FILES, regression_tests=(
-    f"{TESTS}::test_outlier_rejection_detection_lockout_and_cost",
-    f"{TESTS}::test_section_reports_labels_and_states"))
+@task("T068", changed_files=FILES, regression_tests=_tests("T068", "test_outlier_rejection_detection_lockout_and_cost"))
 def outlier_rejection(ctx):
     study = outlier_study()
     seed = study["seed"]
     gross, subtle, clean = study["cases"]["gross"], study["cases"]["subtle"], study["clean"]
     ctx.artifact_json("outliers.json", as_json(study))
-    ctx.artifact_text("rmse.svg", svg.line_plot(
-        [("ungated", [0, 1, 2], [clean["rmse_ungated"], gross["rmse"]["ungated"], subtle["rmse"]["ungated"]]),
-         ("gated", [0, 1, 2], [clean["rmse_gated"], gross["rmse"]["gated"], subtle["rmse"]["gated"]]),
-         ("oracle", [1, 2], [gross["rmse"]["oracle"], subtle["rmse"]["oracle"]]),
-         ("gated, lock-out runs removed", [1, 2], [gross["rmse_without_lockout_runs"]["gated"],
-                                                   subtle["rmse_without_lockout_runs"]["gated"]])],
-        title="T068 position RMSE (0 clean, 1 gross 1.5 m, 2 subtle 0.3 m)", xlabel="data set", ylabel="RMSE (m)"))
+    # Categorical data sets: markers only, no lines implying a trend between unrelated cases.
+    ctx.artifact_text("rmse.svg", dot_chart(
+        ["clean", "gross 1.5 m", "subtle 0.3 m"],
+        [("ungated", {"clean": clean["rmse_ungated"], "gross 1.5 m": gross["rmse"]["ungated"],
+                      "subtle 0.3 m": subtle["rmse"]["ungated"]}),
+         ("gated", {"clean": clean["rmse_gated"], "gross 1.5 m": gross["rmse"]["gated"],
+                    "subtle 0.3 m": subtle["rmse"]["gated"]}),
+         ("oracle", {"gross 1.5 m": gross["rmse"]["oracle"], "subtle 0.3 m": subtle["rmse"]["oracle"]}),
+         ("gated, post hoc", {"gross 1.5 m": gross["rmse_without_lockout_runs"]["gated"],
+                              "subtle 0.3 m": subtle["rmse_without_lockout_runs"]["gated"]})],
+        title="T068 position RMSE by data set (post hoc: lock-out runs removed)", ylabel="RMSE (m)"))
     z_crit = bonferroni(2)
     kept = gross["rmse_without_lockout_runs"]
+    sign = gross["sign_test"]
+    false_alarm = clean["false_alarm"]
     findings = [
         finding("Gross 1.5 m outliers are detected at the rate predicted by the noncentral chi-square(2) law with "
                 "lambda = b^T S^-1 b at each outlier's own prior covariance", "numerical",
@@ -638,16 +692,41 @@ def outlier_rejection(ctx):
                 {**generator_basis(seed, runs=study["runs"], contamination=study["contamination_rate"]), "checks": [
                     check("analytic", "detections against the Poisson-binomial prediction (z)", gross["detection_z"],
                           z_crit)]},
+                uncertainty=mc95(gross["detection_rate_sd"], "Poisson-binomial standard deviation of the detection "
+                                                             "rate"),
                 tolerance=TOL_MC),
-        finding("Outside the lock-out runs, gating returns the position RMSE to within 5% of the oracle that knows "
-                "which readings are bad, while fusing every reading is at least 30% worse", "numerical",
+        finding("Over all runs with gross outliers, gating lowers the mean squared error in most runs (sign test) "
+                "but its mean improvement over fusing every reading is not statistically significant, because the "
+                "cold-start lock-out runs lose heavily", "numerical",
+                {"rmse_all_runs": gross["rmse"], "paired_mse_z_gated_minus_ungated":
+                    gross["paired_mse_z_gated_minus_ungated"], "paired_mse_difference": gross["paired_mse_difference"],
+                 "sign_test": sign},
+                {**generator_basis(seed), "checks": [
+                    check("analytic", "paired per-run MSE difference gated - ungated (z, not significant)",
+                          gross["paired_mse_z_gated_minus_ungated"], z_crit),
+                    check("analytic", "Wilson 99.9% lower bound of the fraction of runs where gating wins",
+                          sign["wins"]["wilson"][0], 0.5, "ge")]},
+                uncertainty=mc95(gross["paired_mse_difference"]["standard_error"],
+                                 "run-level standard error of the mean per-run MSE difference (m^2)"),
+                tolerance=TOL_MC, counterexample={
+                    "statement": "Gating that wins in most runs improves the mean error",
+                    "witness": {"gated_better_runs": sign["gated_better"], "runs": sign["runs"],
+                                "paired_z": gross["paired_mse_z_gated_minus_ungated"],
+                                "rmse_gated": gross["rmse"]["gated"], "rmse_ungated": gross["rmse"]["ungated"]}}),
+        finding("Post hoc, conditioning on the outcome: after removing the lock-out runs (selected by the gated "
+                "filter's own failure, which favours gating by construction) the gated RMSE is within 5% of the "
+                "oracle that knows which readings are bad, while fusing every reading is at least 30% worse",
+                "numerical",
                 {"rmse_without_lockout_runs": kept, "rmse_all_runs": gross["rmse"],
-                 "lockout_runs_removed": gross["lockout_runs"]},
+                 "lockout_runs_removed": gross["lockout_runs"], "selection": "post hoc, outcome-conditioned"},
                 {**generator_basis(seed), "checks": [
                     check("analytic", "gated / oracle RMSE minus one", kept["gated"] / kept["oracle"] - 1.0,
                           0.05),
                     check("analytic", "ungated / oracle RMSE", kept["ungated"] / kept["oracle"], 1.3,
                           "ge")]},
+                uncertainty=mc95(gross["rmse_se"]["gated_without_lockout"],
+                                 "delta-method standard error of the conditioned gated RMSE (m); the selection "
+                                 "bias of the conditioning is not included"),
                 tolerance=TOL_MC),
         finding("Cold-start lock-out: a gross outlier in the first reading passes the gate under the broad prior, "
                 "and the corrupted state then rejects runs of valid readings; every lock-out run starts this way",
@@ -661,6 +740,9 @@ def outlier_rejection(ctx):
                     check("analytic", "number of lock-out runs", gross["lockout_runs"], 1, "ge"),
                     check("exact_arithmetic", "lock-out runs not explained by an accepted first-reading outlier",
                           gross["lockout_runs"] - gross["lockout_runs_with_accepted_first_outlier"], 0)]},
+                uncertainty=mc95(math.sqrt(gross["lockout_runs"]),
+                                 "Poisson approximation of the lock-out count across seeds; the attribution to "
+                                 "accepted first-reading outliers is exact in this realization"),
                 tolerance=TOL_MC, counterexample={
                     "statement": "A chi-square gate protects a filter from gross outliers",
                     "witness": gross["worst_run"]}),
@@ -668,11 +750,15 @@ def outlier_rejection(ctx):
                 "the rejected valid readings are the ones that would have corrected a large prior error",
                 "numerical", clean,
                 {**generator_basis(seed), "checks": [
-                    check("analytic", "Wilson interval of the clean false-alarm rate overlaps [0.005, 0.015]",
-                          max(clean["false_alarm"]["wilson"][0] - 0.015, 0.005 - clean["false_alarm"]["wilson"][1]),
-                          0.0, "signed_le"),
+                    # The Wilson interval must meet [0.005, 0.015]: lower end at most 0.015, upper end at least 0.005.
+                    check("analytic", "Wilson lower bound of the clean false-alarm rate", false_alarm["wilson"][0],
+                          0.015, "le"),
+                    check("analytic", "Wilson upper bound of the clean false-alarm rate", false_alarm["wilson"][1],
+                          0.005, "ge"),
                     check("analytic", "paired per-run MSE difference gated - ungated (z)",
                           clean["paired_mse_z_gated_minus_ungated"], 3.0, "ge")]},
+                uncertainty=mc95(clean["paired_mse_se"], "run-level standard error of the mean per-run MSE "
+                                                         "difference (m^2)"),
                 tolerance=TOL_MC, counterexample={
                     "statement": "Gating never degrades the estimate when the data are clean",
                     "witness": {"rmse_ungated": clean["rmse_ungated"], "rmse_gated": clean["rmse_gated"],
@@ -688,6 +774,8 @@ def outlier_rejection(ctx):
                     check("analytic", "detection rate", subtle["detection"]["rate"], 0.5, "le"),
                     check("analytic", "paired per-run MSE difference gated - ungated (z)",
                           subtle["paired_mse_z_gated_minus_ungated"], 3.0, "ge")]},
+                uncertainty=mc95(subtle["detection_rate_sd"], "Poisson-binomial standard deviation of the detection "
+                                                              "rate"),
                 tolerance=TOL_MC, counterexample={
                     "statement": "A Mahalanobis gate removes injected outliers and so improves the estimate",
                     "witness": {"magnitude_m": subtle["magnitude_m"], "detection_rate": subtle["detection"]["rate"],
@@ -697,7 +785,7 @@ def outlier_rejection(ctx):
                 {"derivation": "Poisson mixture of central chi-square CDFs", "checks": [
                     check("invariant", "scalar vs vectorized at lambda = 4", study["noncentral_cdf_agreement"],
                           1e-12)]},
-                tolerance=TOL_TINY),
+                uncertainty=roundoff(study["noncentral_cdf_agreement"]), tolerance=TOL_TINY),
         unreal("Real outliers are rare, isolated and of fixed magnitude as in this contamination model",
                "sensor_performance", seed, "not established: the contamination model is declared, not measured"),
     ]
@@ -715,25 +803,31 @@ def outlier_rejection(ctx):
                        "magnitudes 1.5 m (gross) and 0.3 m (subtle)"],
         "observation_model": "Camera position every tick, correlated R, CV motion dt = 0.1 s, q = 0.05.",
         "expected_invariant": "Detection count matches the Poisson-binomial expectation; gated RMSE approaches the "
-                              "oracle for gross outliers except after a cold-start lock-out; false alarms ~1%.",
+                              "oracle for gross outliers except after a cold-start lock-out, which can cancel the "
+                              "mean benefit; false alarms ~1%.",
         "experiment": "Run ungated, gated (p = 0.99) and oracle filters (the oracle skips exactly the contaminated "
                       "readings) on the same readings; count detections and false alarms; per-run MSE after a "
-                      "20-tick burn-in; identify lock-out runs (>= 5 consecutive valid readings rejected); paired "
-                      "per-run MSE tests for the cost of gating.",
+                      "20-tick burn-in; paired per-run MSE tests and a sign test over all runs; identify lock-out "
+                      "runs (>= 5 consecutive valid readings rejected) and, separately and post hoc, compare RMSE "
+                      "without them.",
         "numerical_result": f"gross: detection {gross['detection']['rate']:.3f} (predicted "
-                            f"{gross['predicted_detection_rate']:.3f}); RMSE ungated/gated/oracle "
+                            f"{gross['predicted_detection_rate']:.3f}); all runs RMSE ungated/gated/oracle "
                             f"{gross['rmse']['ungated']:.3f}/{gross['rmse']['gated']:.3f}/{gross['rmse']['oracle']:.3f}"
-                            f" m, without {gross['lockout_runs']} lock-out runs {kept['ungated']:.3f}/"
+                            f" m, paired MSE z {gross['paired_mse_z_gated_minus_ungated']:.2f} (not significant), "
+                            f"gating better in {sign['gated_better']} of {sign['runs']} runs; post hoc without "
+                            f"{gross['lockout_runs']} lock-out runs {kept['ungated']:.3f}/"
                             f"{kept['gated']:.3f}/{kept['oracle']:.3f} m; worst lock-out run RMSE "
                             f"{gross['worst_run']['rmse_gated']:.2f} m. subtle: detection "
                             f"{subtle['detection']['rate']:.3f} (predicted {subtle['predicted_detection_rate']:.3f}). "
                             f"clean: false alarms {clean['false_alarm']['rate']:.4f}, RMSE {clean['rmse_ungated']:.4f}"
                             f" -> {clean['rmse_gated']:.4f} m with gating.",
         "uncertainty": "Detection prediction uses each outlier's own prior covariance from the gated run and assumes "
-                       "the prior error is still N(0, P-); lock-out runs violate that assumption. Paired tests use "
-                       "run-level independence.",
+                       "the prior error is still N(0, P-); lock-out runs violate that assumption. Paired and sign "
+                       "tests use run-level independence. The lock-out-free comparison is conditioned on the "
+                       "gated filter's outcome and is descriptive, not a test.",
         "failure_modes_checked": ["missed small outliers", "false alarms on clean data", "estimate corruption "
-                                  "without gating", "cold-start lock-out", "oracle comparison"],
+                                  "without gating", "cold-start lock-out", "oracle comparison",
+                                  "outcome-conditioned selection (reported separately from the all-run test)"],
         "unresolved_assumptions": ["Outliers are independent across ticks; bursts and persistent biases defeat a "
                                    "per-reading gate and need T070-style bias states.",
                                    "Lock-out recovery (covariance inflation or reacquisition) is not implemented in "

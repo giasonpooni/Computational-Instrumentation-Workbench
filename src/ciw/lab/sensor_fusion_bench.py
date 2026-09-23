@@ -350,13 +350,39 @@ def mismatch_moments(F, Q_true, mu0, P0_true, x0_hat, steps, truth_plan) -> dict
 
 
 # Batch posterior and exact arithmetic (T074) -----------------------------------------
+def gauss_solve(A, B) -> np.ndarray:
+    """Solve A X = B by Gaussian elimination with partial pivoting in elementwise NumPy.
+
+    No LAPACK or BLAS call is made, so the bits of the result do not depend on
+    the thread count (a multithreaded LU of a few hundred unknowns does).
+    """
+    A = np.array(A, dtype=float)
+    B = np.array(B, dtype=float)
+    vector = B.ndim == 1
+    n = A.shape[0]
+    M = np.concatenate([A, B[:, None] if vector else B], axis=1)
+    for k in range(n):
+        pivot = k + int(np.argmax(np.abs(M[k:, k])))
+        if M[pivot, k] == 0.0:
+            raise np.linalg.LinAlgError("Singular matrix")
+        if pivot != k:
+            M[[k, pivot]] = M[[pivot, k]]
+        M[k + 1:, k:] -= (M[k + 1:, k] / M[k, k])[:, None] * M[k, k:][None, :]
+    X = np.zeros((n, M.shape[1] - n))
+    for k in range(n - 1, -1, -1):
+        X[k] = (M[k, n:] - np.sum(M[k, k + 1:n][:, None] * X[k + 1:], axis=0)) / M[k, k]
+    return X[:, 0] if vector else X
+
+
 def batch_posterior(F, Q, mu0, P0, plan, readings, full=True) -> tuple[np.ndarray, np.ndarray]:
     """Exact Gaussian posterior over x_0..x_K from the information (normal-equation) form.
 
-    Minimizes |x_0 - mu0|^2_{P0} + sum |x_k - F x_{k-1}|^2_Q + sum |z_k - H x_k|^2_R;
-    no recursion is used, so it is an independent route to the filter's answer.
-    With ``full=False`` only the final-time covariance block is returned, from
-    one factorization shared with the mean.
+    Minimizes |x_0 - mu0|^2_{P0} + sum |x_k - F x_{k-1}|^2_Q + sum |z_k - H x_k|^2_R
+    with one dense elimination of the whole information matrix
+    (:func:`gauss_solve`): no recursion over time is used, so it is a different
+    route to the filter's answer (same ciw origin, not an independent
+    implementation). With ``full=False`` only the final-time covariance block is
+    returned, from one elimination shared with the mean.
     """
     n = F.shape[0]
     size = n * (len(plan) + 1)
@@ -380,11 +406,10 @@ def batch_posterior(F, Q, mu0, P0, plan, readings, full=True) -> tuple[np.ndarra
         rhs = np.zeros((size, n + 1))
         rhs[:, 0] = vector
         rhs[size - n:, 1:] = np.eye(n)
-        solved = np.linalg.solve(information, rhs)
+        solved = gauss_solve(information, rhs)
         return solved[:, 0].reshape(len(plan) + 1, n), solved[size - n:, 1:]
-    covariance = np.linalg.inv(information)
-    mean = np.linalg.solve(information, vector)
-    return mean.reshape(len(plan) + 1, n), covariance
+    solved = gauss_solve(information, np.column_stack([vector, np.eye(size)]))
+    return solved[:, 0].reshape(len(plan) + 1, n), solved[:, 1:]
 
 
 def batch_posterior_banded(F, Q, mu0, P0, plan, readings) -> tuple[np.ndarray, np.ndarray]:
@@ -392,10 +417,13 @@ def batch_posterior_banded(F, Q, mu0, P0, plan, readings) -> tuple[np.ndarray, n
 
     The information matrix of x_0..x_K is block tridiagonal (diagonal blocks
     D_k, off-diagonal blocks -F^T Q^-1). Forward elimination produces Schur
-    complements whose last block is the final-time information; back
-    substitution gives every posterior mean. Only n x n solves are used, so
-    long horizons stay cheap and free of large multithreaded factorizations.
-    Returns the means (K+1, n) and the final-time covariance.
+    complements whose last block is the final-time information; this forward
+    pass is algebraically an information-form filter, so agreement with the
+    covariance-form Kalman filter checks one algebra against another rather than
+    recursion against no recursion. Back substitution gives every smoothed mean.
+    Only n x n solves are used, so long horizons stay cheap and free of large
+    multithreaded factorizations. Returns the means (K+1, n) and the final-time
+    covariance.
     """
     n = F.shape[0]
     size = len(plan) + 1
