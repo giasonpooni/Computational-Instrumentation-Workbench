@@ -104,6 +104,14 @@ def main():
         from provider_checkouts import validate_checkout
         validate_checkout(scr, SCR_REVISION)
 
+        # Snapshot sources, tests and examples together before the long
+        # provisioning step, so the wheel and its tests describe one revision.
+        work = temporary / "check"
+        (work / "tests" / "fixtures").mkdir(parents=True)
+        for name in TESTS:
+            shutil.copyfile(root / "tests" / name, work / "tests" / name)
+        shutil.copyfile(root / "tests/fixtures/fake_model_worker.py", work / "tests/fixtures/fake_model_worker.py")
+        shutil.copytree(root / "examples/model-core", work / "examples/model-core")
         build = temporary / "build"
         shutil.copytree(root / "src", build / "src", ignore=shutil.ignore_patterns("__pycache__", "*.egg-info"))
         for name in ("pyproject.toml", "README.md", "LICENSE"):
@@ -130,12 +138,6 @@ def main():
         if {name: sha256(worker_root / name) for name in committed} != committed:
             raise AssertionError("Instantiation changed the committed Project.toml or Manifest.toml")
 
-        work = temporary / "check"
-        (work / "tests" / "fixtures").mkdir(parents=True)
-        for name in TESTS:
-            shutil.copyfile(root / "tests" / name, work / "tests" / name)
-        shutil.copyfile(root / "tests/fixtures/fake_model_worker.py", work / "tests/fixtures/fake_model_worker.py")
-        shutil.copytree(root / "examples/model-core", work / "examples/model-core")
         env = {key: value for key, value in os.environ.items() if not key.startswith("JULIA_")}
         env.update(CIW_JULIA=str(julia), CIW_JULIA_DEPOT=str(depot), CIW_SCR_REPO=str(scr))
         env.pop("PYTHONPATH", None)
