@@ -26,6 +26,16 @@ workspace and Julia-centred scientific core described here are development
 directions. JuliaControl, JuMP, ModelingToolkit, a general machine-manifest
 compiler, an MCP adapter and FPGA deployment are not yet integrated operations.
 
+**License:** GNU Affero General Public License version 3 only
+(`AGPL-3.0-only`). Copyright (c) 2026 Notation Systems. See [LICENSE](LICENSE).
+
+This grant covers the Computational Instrumentation Workbench program and
+modifications of that program. Forks and modifications must remain under
+AGPL-3.0 when distributed or offered as a network service. It does not
+relicense separately pinned provider repositories. It does not make
+experiment outputs open source unless an output itself contains a covered
+portion of this program.
+
 ## A workspace for scientific and instrument development
 
 A useful product analogy is a Blender-like environment for computational

@@ -8,6 +8,7 @@ This component owns **operation, inspection and replay**. The [stack map](https:
 | Property | Scope |
 | --- | --- |
 | Implementation | Executable prototype |
+| License | GNU Affero General Public License v3.0 only (`AGPL-3.0-only`); see [LICENSE](../LICENSE) |
 | Workbench connection | Host; oscillator, five external tool workflows and read-only exchange inspection |
 | Inputs | Retained scientific records, explicit selections, operation parameters and bound runtime manifests. |
 | Outputs | Saved investigations, execution and result records, terminal analysis and an optional oscillator viewport. |
@@ -29,7 +30,7 @@ Display names and repository locations do not rename packages, schemas, operatio
 - [docs/INSTRUMENTS.md](INSTRUMENTS.md)
 - [docs/ARCHITECTURE.md](ARCHITECTURE.md)
 
-Private customer state, deployment configuration and calibration knowledge are outside this public component description. Applicable repository licenses and source-data rights remain controlling; a shared stack identity is not a license grant or a change of repository visibility.
+Private customer state, deployment configuration and calibration knowledge are outside this public component description. This repository is `AGPL-3.0-only`. That grant covers the workbench program only: it does not relicense pinned providers, and it does not apply to experiment outputs unless an output itself contains covered program code. Other repositories' licenses and source-data rights remain controlling; a shared stack identity is not a license grant or a change of repository visibility.
 
 ## Read-only exchange path
 
