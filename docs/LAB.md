@@ -95,6 +95,17 @@ until the hardware is bound. `ciw lab run --budget-seconds N` lists tasks that
 exceed a time budget; elapsed times go to `run-log.json`, never into reports,
 because timing is not a reproducible finding.
 
+`ciw lab classify WORKSPACE` applies the same labels to results retained in an
+existing CIW workspace, as a derived projection that never edits sealed
+records. It validates the workspace like `Session.from_workspace` (no provider
+is bound; built-in offline analyses such as the energy-accuracy log analysis
+may be recomputed to check retained data), then labels the run evidence, each
+operation result, each workbench bundle and each replay receipt. Replay
+receipts are same-runtime determinism checks, never independent verification.
+Only an energy log that declares `physical_measurement` with device, digest,
+clock and calibration fields yields `hardware_measured`, and that recorder
+assertion remains unauthenticated.
+
 `src/ciw/lab/task-report.schema.json` is the structural JSON Schema of
 `ciw.lab-task-report.v1` for consumers in other languages. Passing it does not
 make a report valid: labels, derived statuses and the report identity are
