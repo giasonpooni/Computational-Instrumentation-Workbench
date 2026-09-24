@@ -77,6 +77,24 @@ def _common_report_checks(report):
         assert isinstance(report[name], str) and report[name]
     assert report["failure_modes_checked"] and report["unresolved_assumptions"]
     assert report["generated_artifacts"]
+    # The next step is the task's own open question, never a queue task that already ran without delivering it.
+    assert report["recommended_next_task"] == sd.NEXT_STEPS[report["task_id"]]
+    assert report["recommended_next_task"].startswith("Deferred research question")
+
+
+def test_next_steps_do_not_hand_work_to_tasks_that_did_not_deliver_it():
+    """T042 defines mesh refusal states and T043 propagates vertex noise; neither owns T033's, T035's or T037's work."""
+    from ciw.lab.surfaces_discrete_mesh_geometry import MESH_CODES, QUERY_CODES, TRACE_CODES
+    chart_codes = ("nonfinite_point", "nonfinite_metric", "degenerate_metric", "curvature_blowup", "outside_chart",
+                   "curvature_singularity", "conical_singularity")
+    assert not set(chart_codes) & set(MESH_CODES + TRACE_CODES + QUERY_CODES)
+    for task_id in ("T033", "T035", "T036", "T037"):
+        text = sd.NEXT_STEPS[task_id]
+        assert text.startswith("Deferred research question (queue extension after T168): "), task_id
+        assert not text.split(": ", 1)[1].startswith(("T042", "T043")), task_id
+    assert all(code in sd.NEXT_STEPS["T037"] for code in chart_codes)
+    assert "sigma^(2/3)" in sd.NEXT_STEPS["T035"]
+    assert "tests no difference-based metric derivative" in sd.NEXT_STEPS["T035"]
 
 
 # ------------------------------------------------------------------ T033

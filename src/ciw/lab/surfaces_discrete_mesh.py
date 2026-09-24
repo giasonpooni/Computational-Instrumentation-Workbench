@@ -33,6 +33,8 @@ STUDIES = "src/ciw/lab/surfaces_discrete_mesh_studies.py"
 DOC = "docs/lab/MESH_GEODESICS.md"
 TESTS = "tests/test_lab_surfaces_discrete_mesh.py"
 FILES = (MODULE, GEOMETRY, STUDIES, DOC)
+# Section-wide contract test: each next step names forward work.
+NEXT_STEP_TEST = f"{TESTS}::test_next_steps_name_forward_work"
 PRODUCER = "ciw.lab.surfaces_discrete_mesh"
 GEOM = "ciw.lab.surfaces_discrete_mesh_geometry"
 STUD = "ciw.lab.surfaces_discrete_mesh_studies"
@@ -107,6 +109,85 @@ def fields(hypothesis, model, inputs, observation, invariant, experiment, result
             "unresolved_assumptions": assumptions, "recommended_next_task": next_task}
 
 
+# Each task's next step names its own open question, never a queue task that has already run.
+NEXT_STEPS = {
+    "T038": ("Complete T038: implement an exact two-point polyhedral geodesic (MMP or ICH, or iterative edge flipping) "
+             "and compare it with the Steiner, heat-method and traced lengths."),
+    "T039": ("Deferred research question: measure the heat-method convergence rate for time steps t = m h^2 over a "
+             "range of m (only m = 1, as Crane et al. recommend, is used here) and the endpoint-error order for "
+             "geodesic directions sampled over their angle to the lattice rows, on which the retained empirical order "
+             "depends."),
+    "T040": ("Deferred research question: derive the mechanism of the valence-6 curvature plateau (about 2.6e-3) on "
+             "the icosahedral mirror planes, for example by testing whether a smooth refinement (Loop subdivision "
+             "projected to the sphere) instead of the recursive midpoint map removes it, and establish or refute "
+             "pointwise convergence off the planes beyond level 7 and on irregular torus meshes."),
+    "T041": ("Deferred research question: attribute geodesic and curvature errors per region (per-vertex error "
+             "against local triangle quality) instead of summarizing each mesh by its worst triangle, and test "
+             "whether the radius-ratio association holds within each mesh family separately (it is not positive "
+             "within the latitude-longitude family)."),
+    "T042": ("Deferred research question: detect the defects recorded here as undetected (self-intersections between "
+             "non-adjacent faces, unwelded seams of coincident duplicate vertices, duplicate faces) as named refusal "
+             "states, and measure the false-positive rate of every refusal on valid meshes, including legitimate "
+             "sharp creases that folded_face now refuses."),
+    "T043": ("Deferred research question: re-trace the geodesic per Monte Carlo sample past the strip-dependent "
+             "corridor threshold, where the fixed-strip distance stops being the geodesic distance, and propagate a "
+             "correlated, anisotropic vertex covariance and independently measured normals. A realistic scanner "
+             "covariance needs acquired scan data (hardware-gated). Route: T043 would read the scan export as an "
+             "operator capture (ctx.capture('scan-export'), bound with ciw lab run T043 --capture "
+             "scan-export=PATH) and fit the covariance from it as a computational finding; a scanner claim needs, "
+             "besides an acquisition record (device, raw_sha256 of the captured bytes, acquired_at, calibration), a "
+             "probe of the scanner on the analysing host that succeeds in T043 (runner.CAPTURE_INSTRUMENTS has no "
+             "entry for scan-export) or a signed-capture trust anchor, and the run is retained with ciw lab "
+             "hardware retain under lab/hardware/<run-id>. Neither the capture reader nor a scanner probe exists, so "
+             "T043's scanner claims stay not_established even when such data exist."),
+    # T045 delivered the split for model-derived distances on parametric surfaces; the mesh form is still open
+    # there (T045's own next step names the same conversion).
+    "T044": ("Deferred research question: fill reconstructed_surface_distance's geometry_m2 from a mesh, as "
+             "sigma_vertex^2 |grad d|^2 with T043's linearized vertex-noise gain (valid only while the marker segment "
+             "stays in its face corridor) instead of declared analytic surface parameters, and check it against this "
+             "task's nested Monte Carlo. Partly delivered by T045, which carries the geometry/sensor split for "
+             "model-derived distances on parametric surfaces (plane, sphere, cylinder geodesic) and names the same "
+             "mesh conversion as its next step, and by T140's instrument and geometry budget for manufacturing "
+             "predictions. An intrinsic_geodesic_distance reading keeps one sensor sigma: as in this task's residual, "
+             "its geometry part belongs to the model prediction it is compared with, not to the reading."),
+}
+
+
+def declared_strip_agreement(first: dict, first_samples: int, second, sigmas, second_samples: int) -> dict:
+    """Agreement of two independent Monte Carlo estimates of the declared strip's corridor-leave fraction.
+
+    ``first`` maps str(sigma) to a fraction of ``first_samples`` samples; ``second`` lists fractions of
+    ``second_samples`` samples in the order of ``sigmas``. Each difference is compared with the standard error of
+    a difference of two independent binomial fractions, whose per-estimate variance is floored at 0.5 / n^2 so that
+    two exact zeros agree; 1.96 standard errors bound the 95% interval.
+    """
+    rows = []
+    for sigma, q in zip(sigmas, second):
+        p = first[str(sigma)]
+        error = math.sqrt(max(p * (1 - p), 0.5 / first_samples) / first_samples
+                          + max(q * (1 - q), 0.5 / second_samples) / second_samples)
+        rows.append({"sigma": sigma, "difference": abs(p - q), "z": abs(p - q) / error, "interval": 1.96 * error})
+    top = max(rows, key=lambda r: r["difference"])
+    return {"other": [float(q) for q in second], "max_abs": top["difference"], "interval_at_max": top["interval"],
+            "sigma_at_max": top["sigma"], "max_z": max(r["z"] for r in rows)}
+
+
+# The agreement check's bound: 1.96 standard errors of the difference bound its 95% interval.
+AGREEMENT_Z = 1.96
+
+
+def agreement_text(agreement: dict) -> str:
+    """The report sentence on the two declared-strip estimates, decided by the same test as the finding's check."""
+    where = (f"largest difference {agreement['max_abs']:.4f} against {agreement['interval_at_max']:.4f} at "
+             f"sigma={agreement['sigma_at_max']:g}")
+    if holds(agreement["max_z"], AGREEMENT_Z, "le"):
+        return ("the two independent estimates agree within the 95% interval of a difference of two independent "
+                f"fractions ({where})")
+    return ("the two independent estimates differ beyond the 95% interval of a difference of two independent "
+            f"fractions ({where}; largest z {agreement['max_z']:.2f} against {AGREEMENT_Z}), so the corridor "
+            "finding's agreement check fails")
+
+
 def orders(hs, errors) -> dict:
     """Least-squares order, pairwise local orders and the largest deviation between them."""
     fit = S.fitted_order(hs, errors)
@@ -133,6 +214,7 @@ def _missing_witness(claim, reference):
 
 # ---------------------------------------------------------------- T038
 @task("T038", changed_files=FILES, regression_tests=(
+    NEXT_STEP_TEST,
     f"{TESTS}::test_tracer_is_exact_on_developable_meshes",
     f"{TESTS}::test_graph_distances_and_steiner_sandwich",
     f"{TESTS}::test_dijkstra_check_falls_back_without_scipy",
@@ -261,13 +343,12 @@ def mesh_geodesic_solver(ctx):
          "distances are not compared with an exact polyhedral distance.",
          "Vertex hits are refused rather than continued by the Polthier-Schmies angle-bisection rule.",
          "Traced geodesics are shortest paths only when no shorter corridor exists; not proved here."],
-        "Complete T038: implement an exact two-point polyhedral geodesic (MMP or ICH, or iterative edge flipping) and "
-        "compare it with the Steiner, heat-method and traced lengths; T039 measures convergence of the delivered "
-        "tracer and distances.")}
+        NEXT_STEPS["T038"])}
 
 
 # ---------------------------------------------------------------- T039
 @task("T039", changed_files=FILES, regression_tests=(
+    NEXT_STEP_TEST,
     f"{TESTS}::test_convergence_orders_on_small_levels",
     f"{TESTS}::test_convergence_task_report"))
 def mesh_refinement_convergence(ctx):
@@ -429,12 +510,12 @@ def mesh_refinement_convergence(ctx):
          "Heat-method time step t = h^2 as recommended by Crane et al.; other choices change the rate.",
          "The edge-graph floor is derived for the valence-5 source used here; other sources have other floors "
          "(1/cos(pi/6) - 1 at regular valence 6)."],
-        "T040: compare finite-difference mesh Jacobi fields with the smooth transfer and locate where curvature "
-        "estimates fail.")}
+        NEXT_STEPS["T039"])}
 
 
 # ---------------------------------------------------------------- T040
 @task("T040", changed_files=FILES, regression_tests=(
+    NEXT_STEP_TEST,
     f"{TESTS}::test_flat_jacobi_counterexample_and_valence_limit",
     f"{TESTS}::test_jacobi_task_report"))
 def mesh_jacobi_comparison(ctx):
@@ -616,7 +697,7 @@ def mesh_jacobi_comparison(ctx):
          "the plateau is given. The off-mirror maximum stops decreasing near 4.5e-4 at level 7, so pointwise "
          "convergence off the planes is not established either.",
          "The torus grid is regular; irregular torus meshes are not tested here."],
-        "T041: quantify how mesh quality (jitter, slivers, anisotropy) changes geodesic and curvature errors.")}
+        NEXT_STEPS["T040"])}
 
 
 # ---------------------------------------------------------------- T041
@@ -675,6 +756,7 @@ def _fold_code(issues):
 
 
 @task("T041", changed_files=FILES, regression_tests=(
+    NEXT_STEP_TEST,
     f"{TESTS}::test_schwarz_lantern_counterexample",
     f"{TESTS}::test_rank_correlation_matches_average_ranks",
     f"{TESTS}::test_fold_check_misses_small_bend_inversions",
@@ -1112,12 +1194,12 @@ def mesh_quality_effects(ctx):
          "jitter family (within the latitude-longitude family it is not positive); it is not a general law.",
          "Meshes that pass only the structural and dihedral checks may still contain inverted faces; the valid set "
          "here is validated with the sphere centre declared."],
-        "T042: name the refusal states for invalid or incomplete surface data (including folded and inverted "
-        "faces).")}
+        NEXT_STEPS["T041"])}
 
 
 # ---------------------------------------------------------------- T042
 @task("T042", changed_files=FILES, regression_tests=(
+    NEXT_STEP_TEST,
     f"{TESTS}::test_every_defect_has_a_named_refusal",
     f"{TESTS}::test_fold_check_misses_small_bend_inversions",
     f"{TESTS}::test_refusal_task_report"))
@@ -1218,15 +1300,18 @@ def mesh_refusal_states(ctx):
          "False-positive risk: a legitimate sharp crease with a dihedral bend over about 154 degrees is refused as "
          "folded_face (the embedded m = n^2 lantern is refused although it does not overlap itself and no face "
          "points inward)."],
-        "T043: propagate vertex noise to geodesic length, normals and curvature on validated meshes.")}
+        NEXT_STEPS["T042"])}
 
 
 # ---------------------------------------------------------------- T043
 @task("T043", changed_files=FILES, regression_tests=(
+    NEXT_STEP_TEST,
     f"{TESTS}::test_linearization_matches_monte_carlo_and_breaks",
     f"{TESTS}::test_corridor_threshold_depends_on_the_strip",
     f"{TESTS}::test_per_vertex_uncertainty_matches_monte_carlo",
-    f"{TESTS}::test_uncertainty_task_report"))
+    f"{TESTS}::test_uncertainty_task_report",
+    f"{TESTS}::test_t043_reconciles_the_two_declared_strip_estimates",
+    f"{TESTS}::test_t043_says_when_the_two_declared_strip_estimates_differ"))
 def mesh_vertex_uncertainty(ctx):
     study = _memo(ctx, "uncertainty", S.uncertainty_study)
     corridors = _memo(ctx, "corridors", S.corridor_study)
@@ -1258,6 +1343,7 @@ def mesh_vertex_uncertainty(ctx):
     # Robustness at larger noise: z of (declared - other) left fraction, smallest over sigma >= 3e-3.
     wide = [i for i, sg in enumerate(corridors["sigmas"]) if sg >= 3e-3]
     n_corridor = corridors["samples"]
+    agreement = declared_strip_agreement(invalid, samples, declared["left_fraction"], corridors["sigmas"], n_corridor)
 
     def _z_less(row):
         z = []
@@ -1312,12 +1398,19 @@ def mesh_vertex_uncertainty(ctx):
         finding("The declared marker segment stays in its face corridor for sigma <= 1e-3 but leaves it in over 10% "
                 "of samples at sigma = 1e-2", "numerical",
                 {"left_fraction_by_sigma": invalid, "vertex_margin": study["strip"]["vertex_margin"],
-                 "start_index": study["strip"]["start_index"]},
+                 "start_index": study["strip"]["start_index"], "seed": S.SEED,
+                 "corridor_study": {"seed": S.SEED + 30, "samples": n_corridor,
+                                    "left_fraction": agreement["other"], "max_abs_difference": agreement["max_abs"],
+                                    "interval_95_at_max": agreement["interval_at_max"]}},
                 {"generator": generator(f"{GEOM}.icosphere", level=study["level"], samples=samples, seed=S.SEED),
                  "checks": [check("largest left fraction for sigma <= 1e-3", corridor_small, 0.0, "le",
                                   kind="self_convergence"),
                             check("left fraction at sigma = 1e-2", corridor_large, 0.1, "ge",
-                                  kind="self_convergence")]},
+                                  kind="self_convergence"),
+                            check("largest |difference| between this estimate and the independent six-strip corridor "
+                                  f"study (seed {S.SEED + 30}) over sigma, in standard errors of a difference of two "
+                                  "independent binomial fractions (1.96 bounds the 95% interval)", agreement["max_z"],
+                                  AGREEMENT_Z, "le", kind="self_convergence")]},
                 uncertainty=_binomial(corridor_large, samples), tolerance=TIGHT,
                 counterexample={"statement": "A fixed face corridor (fixed mesh combinatorics) represents the "
                                              "perturbed marker geodesic at every tested vertex-noise level",
@@ -1463,7 +1556,12 @@ def mesh_vertex_uncertainty(ctx):
               f"{study['strip']['start_index']} (largest margin of six): fixed-corridor distance variance ratio within "
               f"{distance_dev:.3f} of 1 (sigma<=1e-2), but the segment leaves the corridor in "
               + ", ".join(f"{float(v):.3f}@{k}" for k, v in invalid.items())
-              + " of samples; over all six strips the left fraction at sigma=1e-3 ranges "
+              + f" of samples (seed {S.SEED}); the six-strip corridor study (seed {S.SEED + 30}, {n_corridor} samples) "
+              "gives the declared strip "
+              + ", ".join(f"{v:.3f}@{sg:g}" for sg, v in zip(corridors["sigmas"], declared["left_fraction"]))
+              + f", and {agreement_text(agreement)}; corridor comparisons "
+              "between strips below use the six-strip study only. Over all six strips the left fraction at "
+              "sigma=1e-3 ranges "
               f"{min(r['left_fraction'][at] for r in crow):.3f}-{worst['left_fraction'][at]:.3f} (smallest margin "
               f"{worst['vertex_margin']:.4f}){robust_text}. Per-vertex field over all {field['vertices']} vertices "
               f"({field['samples']} samples): isotropic sigma={field['sigma']:g} gives curvature SD "
@@ -1524,13 +1622,15 @@ def mesh_vertex_uncertainty(ctx):
          "normals (for example scanner-reported normals) is not implemented and is deferred.",
          "The per-vertex field is checked at sigma where linearization holds (sigma R / h^2 about 0.01); at larger "
          "sigma the curvature SD is underestimated as in the two-vertex study."],
-        "T044: separate geometry uncertainty from sensor noise for a marker-distance observation.")}
+        NEXT_STEPS["T043"])}
 
 
 # ---------------------------------------------------------------- T044
 @task("T044", changed_files=FILES, regression_tests=(
+    NEXT_STEP_TEST,
     f"{TESTS}::test_law_of_total_variance_split",
-    f"{TESTS}::test_variance_split_task_report"))
+    f"{TESTS}::test_variance_split_task_report",
+    f"{TESTS}::test_t044_next_step_names_what_t045_leaves_open"))
 def geometry_versus_sensor_uncertainty(ctx):
     study = _memo(ctx, "variance-split", S.variance_split_study)
     corridors = _memo(ctx, "corridors", S.corridor_study)
@@ -1715,4 +1815,4 @@ def geometry_versus_sensor_uncertainty(ctx):
          "relevant one.",
          "Which part dominates is a property of the declared sigmas and noise model, not of any real scanner or "
          "sensor."],
-        "T045: carry this split into typed observation modes (intrinsic geodesic distance, camera chord distance).")}
+        NEXT_STEPS["T044"])}

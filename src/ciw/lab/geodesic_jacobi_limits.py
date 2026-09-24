@@ -38,6 +38,9 @@ CORE = "src/ciw/lab/geodesic_jacobi_limits_core.py"
 DOC = "docs/lab/GEODESIC_JACOBI_LIMITS.md"
 TESTS = "tests/test_lab_geodesic_jacobi_limits.py"
 CHANGED = (MODULE, CORE, DOC)
+# Section-wide contract test: every next step names forward work.
+NEXT_STEP_TEST = f"{TESTS}::test_next_steps_name_forward_work"
+OBSERVABLE_TEST = f"{TESTS}::test_t010_t017_name_the_separation_observable"
 
 # Heading perturbations (radians) used for every separation-scaling fit.
 EPS = (0.005, 0.01, 0.02, 0.04)
@@ -50,6 +53,15 @@ TORUS_PATHS = {"equator": ((0.0, 0.0), 0.0),      # outer equator of Torus(2, 1)
                "generic": ((0.0, 0.3), 0.5)}      # oscillates about the outer equator, no symmetry
 TORUS_M, TORUS_STEPS = 400, 580                   # node TORUS_M is the conjugate point; grid runs to 1.45 s*
 SPHERE_STEPS = 384                                # h = pi / 256, grid [0, 1.5 pi]
+
+# The one cross-platform question T014 defers (adaptive step sequences can differ in the last bit between builds).
+PLATFORM_QUESTION_T014 = (
+    "Deferred research question (cross-platform reproduction): run T014 on Windows x86-64 and macOS arm64 besides "
+    "the retained Linux x86-64 run and check that the two bitwise claims (dyadic truncation and continuation "
+    "reproduces direct integration; decimal truncation lengths change the step in the last bit) hold bit for bit "
+    "there and that every other T014 finding value (reversal orders, adaptive return and restart ratios) matches "
+    "the retained one within its regression tolerance; adaptive step sequences may differ in the last bit between "
+    "platforms, and no second platform has been compared")
 
 
 def _gen(name: str, **params) -> dict:
@@ -155,7 +167,8 @@ def _torus_summary(family):
 
 
 # ------------------------------------------------------------------ T010
-@task("T010", changed_files=CHANGED, regression_tests=(f"{TESTS}::test_t010_near_focus_and_post_focus_counterexamples",))
+@task("T010", changed_files=CHANGED, regression_tests=(f"{TESTS}::test_t010_near_focus_and_post_focus_counterexamples",
+                                                     OBSERVABLE_TEST, NEXT_STEP_TEST))
 def near_focus_counterexamples(ctx):
     equator, generic = torus_family(ctx, "equator"), torus_family(ctx, "generic")
     eq, gen = _torus_summary(equator), _torus_summary(generic)
@@ -374,7 +387,8 @@ def near_focus_counterexamples(ctx):
                                             "s_half": float(equator["s"][TORUS_M // 2]), "s_star": eq["s_star"],
                                             "chord_ratio": monotone_ratio}}),
         finding("On the unit sphere a pure heading perturbation refocuses exactly: the relative first-order error "
-                "is uniform and does not diverge at the conjugate point",
+                "of the embedded chord is uniform (2 sin(eps/2)/eps - 1, about -eps^2/24) and does not diverge at "
+                "the conjugate point",
                 "numerical", {"uniform_relative_error": uniform, "relative_error_at_pi_minus_h": near_pi,
                               "max_deviation_from_uniform": sphere_uniform_dev},
                 {"generator": _gen("sphere-great-circles", eps=0.02, steps=SPHERE_STEPS),
@@ -434,7 +448,10 @@ def near_focus_counterexamples(ctx):
                     f"eps = {list(EPS)} rad; RK4 grid with node {TORUS_M} at s*, {TORUS_STEPS} steps",
                     "Unit sphere: start (pi/2, 0) heading 1.0; grid h = pi/256 to 1.5 pi; eps = 0.02"],
         observation_model=("Embedded chord |X_eps(s) - X(s)| and its signed component along the base geodesic's "
-                           "embedded in-surface normal, compared at matched arclength nodes; no renormalization."),
+                           "embedded in-surface normal, compared at matched arclength nodes; no renormalization. The "
+                           "observable is the extrinsic chord, not the intrinsic geodesic distance (T017) or a "
+                           "Fermi normal offset: error profiles depend on it (unit sphere, pure heading: relative "
+                           "error -eps^2/24 at every s for the chord, -eps^2 cos^2 s/24 for the distance)."),
         expected_invariant=("d(s*) = O(eps^2) generically and O(eps^3) on the symmetric equator; relative error "
                             "~ 1/|s - s*| on both sides of s*; sign(d) = sign(j) away from s*; sphere relative chord "
                             "error 2 sin(eps/2)/eps - 1 at every s."),
@@ -478,8 +495,10 @@ def near_focus_counterexamples(ctx):
                                 "change only third-order coefficients",
                                 "The generic torus path is one geodesic; genericity is argued, not sampled",
                                 "Heading perturbations only for the torus; lateral families are not fitted there"],
-        recommended_next_task="T017 (validity domains, which tabulates C(s) for these families) and T008 "
-                              "(conjugate-point location accuracy)",
+        recommended_next_task=("Deferred research question: sample genericity on the torus: fit the chord exponent "
+                               "at s* and the 1/|s - s*| divergence slope over a seeded sample of torus geodesics "
+                               "(one generic path now) and for lateral perturbation families, which are not fitted "
+                               "on the torus here"),
     )
     return {"state": "completed", "fields": fields, "findings": findings}
 
@@ -576,7 +595,8 @@ def chart_study(ctx):
 
 
 @task("T011", changed_files=CHANGED, regression_tests=(f"{TESTS}::test_t011_chart_invariance_and_fold_amplification",
-                                                     f"{TESTS}::test_chart_maps_have_exact_derivatives"))
+                                                     f"{TESTS}::test_chart_maps_have_exact_derivatives",
+                                                     NEXT_STEP_TEST))
 def coordinate_change_invariance(ctx):
     study = chart_study(ctx)
     ctx.artifact_json("chart-invariance.json", core.jsonable(study, 12))
@@ -722,7 +742,10 @@ def coordinate_change_invariance(ctx):
         unresolved_assumptions=["Chart centers are rounded midpoints of one path; other placements change the factors",
                                 "The fold amplification is measured, not derived; its scaling in mu is not fitted",
                                 "Embedded observables only; the intrinsic hyperbolic chart is not reparametrized here"],
-        recommended_next_task="T012 (frame-change invariance) and a fold-scaling study of error versus mu",
+        recommended_next_task=("Deferred research question: fit how the fold amplification scales with mu (error "
+                               "versus mu over a declared mu sequence; measured here, not fitted) and reparametrize "
+                               "the intrinsic HyperbolicPlane chart, which is exercised here only through embedded "
+                               "observables"),
     )
     return {"state": "completed", "fields": fields, "findings": findings}
 
@@ -858,7 +881,8 @@ def frame_study():
             "improper_rotation_refusal": refusal}
 
 
-@task("T012", changed_files=CHANGED, regression_tests=(f"{TESTS}::test_t012_frame_invariance_and_refusal",))
+@task("T012", changed_files=CHANGED, regression_tests=(f"{TESTS}::test_t012_frame_invariance_and_refusal",
+                                                     NEXT_STEP_TEST))
 def frame_change_invariance(ctx):
     study = ctx.memo("gjl-frame-study", frame_study)
     ctx.artifact_json("frame-invariance.json", core.jsonable(study, 12))
@@ -1060,7 +1084,10 @@ def frame_change_invariance(ctx):
                                 "The orientation test uses one sphere path and one torus path; the saddle is covered "
                                 "by the ambient-rotation and basis-rotation tests and the bump by the ambient-rotation "
                                 "test only, and the coefficient C2 of the torus gap is measured, not derived"],
-        recommended_next_task="T013 (flat/developable limit) and an isometry test for HyperbolicPlane under Mobius maps",
+        recommended_next_task=("Deferred research question: implement Mobius isometries of HyperbolicPlane as a "
+                               "ChartMap and check that Jacobi columns and endpoint distances are invariant under "
+                               "them (only tangent-basis changes are tested there now), and extend the ambient tests "
+                               "to translations and reflections of the embedding"),
     )
     return {"state": "completed", "fields": fields, "findings": findings}
 
@@ -1130,7 +1157,7 @@ def flat_limit_study():
             "max_leading_order_relative_gap": max(abs(r["deviation"] / r["leading_order"] - 1) for r in fit)}
 
 
-@task("T013", changed_files=CHANGED, regression_tests=(f"{TESTS}::test_t013_flat_limit",))
+@task("T013", changed_files=CHANGED, regression_tests=(f"{TESTS}::test_t013_flat_limit", NEXT_STEP_TEST))
 def flat_developable_limit(ctx):
     study = ctx.memo("gjl-flat-limit", flat_limit_study)
     ctx.artifact_json("flat-limit.json", core.jsonable(study, 12))
@@ -1275,7 +1302,10 @@ def flat_developable_limit(ctx):
                                 "Only the outer equator (constant K) is fitted; inclined torus geodesics average K and "
                                 "are not studied",
                                 "Physical workpieces are not measured: the physical finding is not established"],
-        recommended_next_task="T046 (chord versus geodesic distance) and T018 (resolvability of weak curvature)",
+        recommended_next_task=("Deferred research question: fit the flat-limit scaling of L - j_head(L) and of the "
+                               "chord deficit on a cone and a tangent developable (neither is in the core catalogue; "
+                               "each needs a Surface) and on inclined torus geodesics, which average K along the path "
+                               "(only the cylinder and the constant-K outer equator are fitted here)"),
     )
     return {"state": "completed", "fields": fields, "findings": findings}
 
@@ -1355,7 +1385,9 @@ def truncation_study():
             "adaptive_restart": {"rtol": rtol, "difference": float(np.max(np.abs(cont[-1] - whole[-1])))}}
 
 
-@task("T014", changed_files=CHANGED, regression_tests=(f"{TESTS}::test_t014_reversal_and_truncation",))
+@task("T014", changed_files=CHANGED, regression_tests=(f"{TESTS}::test_t014_reversal_and_truncation",
+                                                     f"{TESTS}::test_t014_defers_cross_platform_reproduction_as_one_question",
+                                                     NEXT_STEP_TEST))
 def reversal_and_truncation(ctx):
     rev = ctx.memo("gjl-reversal", reversal_study)
     trunc = ctx.memo("gjl-truncation", truncation_study)
@@ -1459,8 +1491,11 @@ def reversal_and_truncation(ctx):
                                "decimal witness search is deterministic and bounded"],
         unresolved_assumptions=["The order gain for even p is derived for smooth problems; it can fail near "
                                 "chart singularities",
-                                "Adaptive step sequences are platform-sensitive at the last-bit level"],
-        recommended_next_task="T015 (long-horizon drift) and a symmetric integrator (implicit midpoint) for exact reversal",
+                                PLATFORM_QUESTION_T014],
+        recommended_next_task=("Deferred research question: add a symmetric integrator (implicit midpoint) to "
+                               "ciw.lab.integrators and check that its forward/backward return error stays at "
+                               "rounding level at every step size, where the explicit methods return with errors "
+                               "of order 1, 3 and 5"),
     )
     return {"state": "completed", "fields": fields, "findings": findings}
 
@@ -1552,7 +1587,7 @@ def drift_study():
     return {f"{key}:{method}": drift_run(key, method) for key in ("torus", "sphere") for method in T015_METHODS}
 
 
-@task("T015", changed_files=CHANGED, regression_tests=(f"{TESTS}::test_t015_long_horizon_drift",))
+@task("T015", changed_files=CHANGED, regression_tests=(f"{TESTS}::test_t015_long_horizon_drift", NEXT_STEP_TEST))
 def long_horizon_drift(ctx):
     study = ctx.memo("gjl-drift", drift_study)
     ctx.artifact_json("drift.json", core.jsonable(study, 12))
@@ -1810,7 +1845,9 @@ def long_horizon_drift(ctx):
         unresolved_assumptions=["Two geodesics only; resonant or chaotic geodesics are not sampled",
                                 "Horizon 320 is limited by the run budget; asymptotic drift laws are not established",
                                 "Symplectic or symmetric integrators are not in the core and are not compared"],
-        recommended_next_task="T016 (negative curvature) and a symmetric-integrator comparison on the same horizons",
+        recommended_next_task=("Deferred research question: sample resonant and chaotic geodesics (two geodesics "
+                               "now) beyond the horizon 320 the run budget allows, fit asymptotic drift laws, and "
+                               "compare a symmetric integrator on the same horizons"),
     )
     return {"state": "completed", "fields": fields, "findings": findings}
 
@@ -1918,7 +1955,8 @@ def negative_curvature_study():
     return {"hyperbolic": rows, "beyond_pole": beyond_pole, "saddle": saddle}
 
 
-@task("T016", changed_files=CHANGED, regression_tests=(f"{TESTS}::test_t016_negative_curvature_is_not_stiffness",))
+@task("T016", changed_files=CHANGED, regression_tests=(f"{TESTS}::test_t016_negative_curvature_is_not_stiffness",
+                                                     NEXT_STEP_TEST))
 def negative_curvature(ctx):
     study = ctx.memo("gjl-negative-curvature", negative_curvature_study)
     ctx.artifact_json("negative-curvature.json", core.jsonable(study, 12))
@@ -2168,7 +2206,11 @@ def negative_curvature(ctx):
                                 "exact step matrices; no nonlinear implicit geodesic integrator is in the core",
                                 "Error amplification of the geodesic in the half-plane chart mixes chart compression near "
                                 "y = 0 with intrinsic instability"],
-        recommended_next_task="T017 (validity domains, which shrink like 1/cosh(ks) on the hyperbolic plane) and T018",
+        recommended_next_task=("Deferred research question: add a nonlinear implicit geodesic integrator (for "
+                               "example Gauss-Legendre collocation) and compare it on the full saddle and "
+                               "hyperbolic geodesic systems, including oblique saddle geodesics that sample other K "
+                               "(implicit methods are compared here only on the constant-curvature Jacobi step "
+                               "matrices)"),
     )
     return {"state": "completed", "fields": fields, "findings": findings}
 
@@ -2279,7 +2321,8 @@ def validity_study(ctx):
     return {"tau": TAU, "eps": list(EPS), "cases": cases, "boundary_probe": {"s": float(family["s"][node]), **probes}}
 
 
-@task("T017", changed_files=CHANGED, regression_tests=(f"{TESTS}::test_t017_validity_domains",))
+@task("T017", changed_files=CHANGED, regression_tests=(f"{TESTS}::test_t017_validity_domains", OBSERVABLE_TEST,
+                                                     NEXT_STEP_TEST))
 def validity_domains(ctx):
     study = ctx.memo("gjl-validity", lambda: validity_study(ctx))
     ctx.artifact_json("validity-domains.json", core.jsonable(study, 12))
@@ -2439,7 +2482,10 @@ def validity_domains(ctx):
         input_data=[f"eps = {list(EPS)}; tau = {TAU}; bounds capped at eps = {EPS_CAP}",
                     "Closed forms: unit sphere (pure heading; lateral = heading), HyperbolicPlane(1) (pure heading)",
                     "Numerical: Torus(2, 1) generic and outer-equator families from T010 (RK4 chords at grid nodes)"],
-        observation_model=("Great-circle or hyperbolic distance (closed form) or embedded chord (torus) versus "
+        observation_model=("Unsigned separation d at matched arclength, by family: intrinsic geodesic distance on "
+                           "the unit sphere (great-circle distance, closed form) and on the hyperbolic plane "
+                           "(hyperbolic distance, closed form); embedded chord |X_eps(s) - X(s)| on Torus(2, 1) (RK4 "
+                           "chords at grid nodes, equal to the intrinsic distance up to O(d^3)); each versus "
                            "eps |j(s)|; C2 and C3 by least squares over eps; eps_max from the fitted quadratic."),
         expected_invariant=("C2 = 0 for isotropic/symmetric configurations; eps_max -> 0 at first-order zeros only "
                             "when the remainder does not vanish there."),
@@ -2480,8 +2526,9 @@ def validity_domains(ctx):
         unresolved_assumptions=["The quadratic remainder model is extrapolated to eps_max up to the cap",
                                 "Heading perturbations (plus one lateral case on the sphere) only",
                                 "Machine-safety use of these domains is outside what the computation establishes"],
-        recommended_next_task="T018 (curvature signal versus integrator error) and a sampled survey of C2(s*) over "
-                              "random torus geodesics",
+        recommended_next_task=("Deferred research question: survey C2(s*) over a seeded sample of torus geodesics "
+                               "(how often a path is reflection-symmetric with C2 = 0) and tabulate validity domains "
+                               "for lateral perturbation families beyond the single lateral case on the sphere"),
     )
     return {"state": "completed", "fields": fields, "findings": findings}
 
@@ -2635,7 +2682,8 @@ def resolvability_study():
 
 
 @task("T018", changed_files=CHANGED, regression_tests=(f"{TESTS}::test_t018_resolvability_report",
-                                                     f"{TESTS}::test_optional_scipy_cross_check_agrees_with_adaptive_references"))
+                                                     f"{TESTS}::test_optional_scipy_cross_check_agrees_with_adaptive_references",
+                                                     NEXT_STEP_TEST))
 def curvature_versus_integrator_error(ctx):
     rows = ctx.memo("gjl-resolvability", resolvability_study)
     by_name = {r["surface"]: r for r in rows}
@@ -2889,6 +2937,10 @@ def curvature_versus_integrator_error(ctx):
                                 "integrator only",
                                 "Measurement noise of any real observation is absent; sensor-level resolvability is "
                                 "not established"],
-        recommended_next_task="T005 (Jacobi separation law) with resolvability-aware step selection, and T046",
+        recommended_next_task=("Deferred research question: resolvability-aware step selection: choose each "
+                               "method's step from the measured curvature-signal-to-integrator-error ratio and check "
+                               "that the lateral column and the conjugate-point locations (only j_head(L) is compared "
+                               "here) are then resolved on the weak-curvature paths (sensor-level resolvability "
+                               "needs a measured noise floor and is hardware-gated)"),
     )
     return {"state": "completed", "fields": fields, "findings": findings}

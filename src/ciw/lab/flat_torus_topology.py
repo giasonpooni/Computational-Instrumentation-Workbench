@@ -63,7 +63,8 @@ ROUTE = {"abs": 1e-6, "rel": 1e-5}
 def _tests(*names):
     """Regression node ids; every task is also covered by the section-wide completion and label tests."""
     return tuple(f"{TESTS}::{name}" for name in names + ("test_every_task_is_registered_and_completes",
-                                                          "test_every_finding_has_its_expected_label"))
+                                                          "test_every_finding_has_its_expected_label",
+                                                          "test_next_steps_name_forward_work"))
 
 
 # ---------------------------------------------------------------- shared helpers
@@ -414,7 +415,10 @@ def enumerate_lattice_representatives(ctx):
          "large-entry words (exact integers, no overflow)"],
         ["Automorphism counts are checked for six declared lattices, not proven for all lattices here "
          "(the general statement is the classical stabilizer theorem)."],
-        "T026: test modular-reduction invariance of length spectrum, area and systole")
+        "Deferred research question: extend the automorphism-count check from the six declared lattices to a seeded "
+        "sample of reduced Gram matrices that includes every boundary case of the fundamental domain (|b| = a, "
+        "a = c, and the hexagonal point where both hold) and compare each count with the classical stabilizer "
+        "theorem, which is cited here rather than checked in general")
     findings = []
     second = vector_reduction_check()
     basis = {"checks": [_check("exact reduction failures (inverse, area, canonical form, reducer, automorphism)",
@@ -626,7 +630,9 @@ def classify_by_winding(ctx):
         ["Non-closure of irrational directions is a theorem (irrationality), not something a finite computation "
          "establishes; the numerical gaps only illustrate it.",
          "Primitive fraction approaches 6/pi^2 only asymptotically; no rate is claimed."],
-        "T023: compute heading sensitivity of closure across all starting headings")
+        "Deferred research question: measure how fast the primitive fraction of winding vectors approaches 6/pi^2 "
+        "(its deviation over a doubling sequence of radii against the O(log R / R) error of the classical estimate), "
+        "which is recorded here only as a limit, without a rate")
     findings = [
         finding("Every winding with |m|, |n| <= 6 first returns to its start at t = 1/gcd, displaced by its primitive "
                 "vector after (|m| + |n|)/gcd edge crossings, and returns gcd times by t = 1 (a gcd-fold cover of the "
@@ -789,7 +795,9 @@ def shortest_versus_least_sensitive(ctx):
         ["The equivalence needs j_head(L) to be one strictly increasing function of L for every route (constant "
          "K <= 0, e.g. flat or closed hyperbolic surfaces); it can fail where K > 0 somewhere or where curvature "
          "differs between routes. T032 records curved-surface counterexamples."],
-        "T022: detect degenerate (tied) shortest representatives")
+        "Deferred research question: test the equivalence of shortest and least heading-sensitive routes on a closed "
+        "hyperbolic surface (constant K = -1, for example a genus-2 surface glued from a regular octagon), the other "
+        "case its assumption covers, with routes between two points in different homotopy classes")
     findings = [
         finding("On the test flat torus every route's heading amplification equals its length (ciw.lab.jacobi), so "
                 "the length and amplification orders coincide",
@@ -910,7 +918,9 @@ def degenerate_shortest_representatives(ctx):
         ["exact ties at half periods", "Voronoi vertices of generic, boundary, square, hexagonal and rectangular "
          "lattices", "binary64 rounding of the target itself", "exact ties at targets binary64 cannot represent"],
         ["Targets with irrational coordinates are only handled in float with a declared tolerance."],
-        "T031: study route changes under small metric perturbations near these ties")
+        "Deferred research question: decide ties exactly for targets with algebraic irrational coordinates (for "
+        "example exact algebraic or interval arithmetic that certifies the sign of each squared-length difference), "
+        "which are handled here only in binary64 with a declared tolerance")
     findings = [
         finding("Square-torus half-period targets have exactly 2 (edge) or 4 (centre) shortest representatives",
                 "mathematical", study["half_periods"],
@@ -1052,7 +1062,9 @@ def sensitivity_across_headings(ctx):
          "non-primitive multiples on the same ray", "grid resolution against the narrowest basin"],
         ["Heading sensitivity is defined through the closest return within L; other definitions (e.g. Lyapunov "
          "exponents, zero here) would rank headings differently."],
-        "T024: add focus-margin-aware route ranking on curved surfaces")
+        "Deferred research question: rank the closing headings under a second definition of heading sensitivity (for "
+        "example the measure of headings within +-delta whose closest return within L stays below a threshold) and "
+        "report where that ranking differs from the closest-return definition used here")
     findings = [
         finding("Zeros of the return distance (tau = 0.31 + 1.07i, L = 3) are exactly the primitive lattice "
                 "directions with |v| <= L",
@@ -1144,6 +1156,7 @@ AMPLIFICATION_CAVEAT = ("Small |j_head(L)| is not robustness: the targeting cond
 
 @task("T024", changed_files=(MODULE, ROUTES, DOC),
       regression_tests=_tests("test_t024_t025_route_ranking_and_front", "test_route_helpers",
+                              "test_focus_margin_claims_state_the_canonical_definition",
                               "test_independent_disagreement_makes_t024_partial_not_blocked",
                               "test_sympy_field_matches_the_closed_form_batch_field"))
 def focus_margin_ranking(ctx):
@@ -1167,8 +1180,8 @@ def focus_margin_ranking(ctx):
     flat_min = float(np.min(flat.states[1:, 6] / flat.s[1:]))
     fields = _fields(
         "Between two points of the torus of revolution the ranking of geodesic routes by length, by heading "
-        "amplification |j_head(L)| and by focus margin (distance to the first conjugate point) disagree; on a "
-        "flat torus there are no conjugate points (infinite margin).",
+        "amplification |j_head(L)| and by focus margin s_c - L (s_c the first conjugate point of p, the first zero "
+        "of j_head) disagree; on a flat torus there are no conjugate points (infinite margin).",
         "Geodesic + heading Jacobi system on Torus(R=2, r=1), chart (phi, theta); K = cos theta / (r (R + r cos "
         "theta)); focus margin = s_c - L for the first zero s_c > 0 of j_head along the extended geodesic "
         "(negative: the route passes a conjugate point and is not locally minimizing); targeting condition "
@@ -1201,7 +1214,9 @@ def focus_margin_ranking(ctx):
          "completeness is not proven.",
          "Focus margin uses conjugate points of p only; conjugate points of q along the reversed route are not "
          "separately reported.", AMPLIFICATION_CAVEAT],
-        "T025: generate Pareto fronts over these routes")
+        "Deferred research question: report each route's focus margin at q as well (conjugate points of q along the "
+        "reversed route) and bound the completeness of the route set up to length 11, for example by interval "
+        "shooting over all headings (the fan search does not prove completeness)")
     basis = {"checks": [_check("endpoint residual to the lift of q", residual, 1e-6, "le", kind="invariant"),
                         _check("Wronskian drift", wronskian, 1e-8, "le", kind="invariant"),
                         _check("Clairaut integral drift", clairaut, 1e-6, "le", kind="invariant"),
@@ -1225,25 +1240,28 @@ def focus_margin_ranking(ctx):
                 {"checks": [_check("routes found at only one of the two densities", conv["differences"],
                                    kind="self_convergence")]},
                 uncertainty=ROUTE_SET_UNC, tolerance=EXACT),
-        finding("Rankings by length, amplification and focus margin disagree: the shortest route is neither the "
-                "least amplifying nor in the best focus-margin group", "numerical", ranks,
+        finding("Rankings by length, amplification |j_head(L)| and focus margin s_c - L (s_c the first zero of "
+                "j_head) disagree: the shortest route is neither the least amplifying nor in the best focus-margin "
+                "group", "numerical", ranks,
                 {"checks": [_check("rank of the shortest route by amplification (0 = least amplifying)", amp_rank,
                                    1, "ge"),
                             _check("focus-margin group of the shortest route (0 = best group)", margin_rank, 1, "ge")]},
-                counterexample={"statement": "The shortest route also minimizes amplification and maximizes focus margin",
+                counterexample={"statement": "The shortest route also minimizes amplification and maximizes focus "
+                                             "margin s_c - L",
                                 "witness": {"shortest": table[shortest],
                                             "least_amplification": table[ranks["by_amplification"][0]],
                                             "best_margin_group": [table[i] for i in ranks["by_focus_margin"][0]]}},
                 uncertainty={"kind": "exact", "value": 0.0, "basis": "orderings of the route values; adjacent values "
                                                                      "differ far more than their uncertainty"},
                 tolerance=EXACT),
-        finding("A flat torus has no conjugate points: j_head(s) = s > 0 (infinite focus margin)", "numerical",
+        finding("A flat torus has no conjugate points: j_head(s) = s > 0 has no zero, so the focus margin s_c - L is "
+                "infinite", "numerical",
                 flat_min, {"derivation": "K = 0 gives j_head(s) = s",
                            "checks": [_check("min j_head(s)/s - 1 on (0, 20] (ciw.lab.jacobi, plane)", flat_min - 1.0,
                                              1e-12, kind="analytic")]},
                 uncertainty=_unc("roundoff", abs(flat_min - 1.0), "RK4 on the linear flat Jacobi system"),
                 tolerance=TIGHT),
-        finding("Ranking routes by focus margin selects a route that is safe to execute on a physical part",
+        finding("Ranking routes by focus margin s_c - L selects a route that is safe to execute on a physical part",
                 "machine_safety", None, {}),
     ]
     if censored:
@@ -1253,7 +1271,8 @@ def focus_margin_ranking(ctx):
 
 
 @task("T025", changed_files=(MODULE, ROUTES, DOC),
-      regression_tests=_tests("test_t024_t025_route_ranking_and_front", "test_route_helpers"))
+      regression_tests=_tests("test_t024_t025_route_ranking_and_front", "test_route_helpers",
+                              "test_focus_margin_claims_state_the_canonical_definition"))
 def pareto_fronts(ctx):
     data = ctx.memo("flat-torus/t024-routes", torus_routes)
     found = data["routes"]
@@ -1287,7 +1306,8 @@ def pareto_fronts(ctx):
     fields = _fields(
         "Length, amplification and focus margin conflict, so the three-objective Pareto front of the torus "
         "routes has several members.",
-        "Minimize (L, |j_head(L)|, -margin) with censored margins treated as +infinity; a dominates b when no "
+        "Minimize (L, |j_head(L)|, -margin) with margin the focus margin s_c - L (s_c the first zero of j_head) and "
+        "censored margins treated as +infinity; a dominates b when no "
         "worse in every objective and better in one. The shortest route is on the front by definition (nothing "
         "is shorter), so its membership is not a test.",
         ["T024 routes (same run, shared memo)"], NO_PHYSICAL,
@@ -1304,10 +1324,14 @@ def pareto_fronts(ctx):
          "front members past a conjugate point flagged"],
         ["Objectives are unweighted; a decision needs weights or constraints that the workbench does not set.",
          AMPLIFICATION_CAVEAT],
-        "T032: build the counterexample library for 'shortest means safest'")
+        "Deferred research question: which declared constraints (for example a lower bound on the focus margin "
+        "s_c - L and an upper bound on the targeting condition 1/|j_head(L)| derived from a declared heading error) "
+        "leave a unique route on the front, and is that choice stable under the route uncertainty? Choosing the "
+        "constraints is an operator decision the workbench does not make")
     findings = [
-        finding("The three-objective front has several members, and a second computation (numpy dominance matrix; "
-                "sort-and-sweep for the two-objective fronts) reproduces every front", "numerical",
+        finding("The three-objective front (length, |j_head(L)|, focus margin s_c - L with s_c the first zero of "
+                "j_head) has several members, and a second computation (numpy dominance matrix; sort-and-sweep for "
+                "the two-objective fronts) reproduces every front", "numerical",
                 {"front": front, "fronts_2d": pairs, "routes": len(found), "front_members_past_conjugate_point": past},
                 {"derivation": "Every route off the front is dominated by a front member because strict dominance "
                                "is transitive and acyclic on a finite set (definitional, not tested); the shortest "
@@ -1419,7 +1443,9 @@ def modular_reduction_invariance(ctx):
         ["naive winding transport (M instead of M^-1)", "orientation reversal (mirror image)",
          "index-2 sublattice", "skewed bases with large entries (row-scan enumeration)"],
         ["Spectra are compared up to R^2 = 60, not over the whole lattice (a finite truncation)."],
-        "T027: build polygonal translation-surface examples")
+        "Deferred research question: find the word length at which binary64 area-one spectra of SL(2,Z) images first "
+        "disagree with the exact spectrum beyond tolerance (matrix entries grow with the word length; 10-letter "
+        "words are used here), and extend the exact comparison beyond R^2 = 60")
     findings = [
         finding("Length spectrum (R^2 <= 60), area and systole are exactly invariant under every tested SL(2,Z) "
                 "change of basis and under reduction", "mathematical",
@@ -1559,7 +1585,9 @@ def translation_surface_examples(ctx):
         ["non-translation pairings refused", "unequal glued edge lengths refused", "non-convex or clockwise polygons "
          "refused", "half-translation pillowcase recognized"],
         ["Only horizontal cylinders are predicted; other periodic directions are traced in T028."],
-        "T028: trace geodesics across glued edges")
+        "Deferred research question: predict the cylinder decomposition of the L-shape and the regular octagon in "
+        "every periodic direction up to a saddle-connection length bound (for the octagon through its Veech group "
+        "action), not only the horizontal one, and compare it with the periodic directions traced in T028")
     findings = [
         finding("L-shape and regular octagon are genus-2 translation surfaces with one vertex class", "mathematical",
                 records,
@@ -1701,7 +1729,9 @@ def trace_across_glued_edges(ctx):
          "binary64 drift of a generic trajectory measured against its exact trace",
          "Euclidean closest approach to a vertex (smaller than the along-edge clearance)"],
         ["A generic float direction is never certified non-periodic; only its first 400 crossings are traced."],
-        "T029: detect cone singularities")
+        "Deferred research question: certify non-periodicity of an algebraic direction exactly (for example a "
+        "quadratic-irrational slope on a square-tiled surface, traced in exact arithmetic over Q(sqrt d)) instead of "
+        "tracing the first 400 crossings of a float direction")
     findings = [
         finding(f"All {traced} tested rational trajectories on the L-shape close (multiplier 1-3) or end in a "
                 "saddle connection",
@@ -1813,7 +1843,9 @@ def detect_cone_singularities(ctx):
          "two cone points (H(1,1)) versus one (L-shape)",
          "Gauss-Bonnet tautology avoided (chi independent of the vertex classes)"],
         ["Angle recognition assumes corner angles are multiples of pi/24, true for every declared polygon."],
-        "T030: compare smooth and discrete geodesic approximations")
+        "Deferred research question: recognize cone angles exactly for polygons whose corner angles are not "
+        "multiples of pi/24 (from exact algebraic vertex coordinates) and test on a declared polygon with such an "
+        "angle (recognition here assumes the pi/24 grid)")
     findings = [
         finding("Cone angles: octagon and L-shape one 6 pi point, H(1,1) two 4 pi points, pillowcase four pi points, "
                 "square and hexagon tori none", "mathematical", {k: v["cone_angles_over_pi"] for k, v in rows.items()},
@@ -1900,7 +1932,9 @@ def smooth_versus_discrete(ctx):
         ["refinement drift of graph ratios", "stencil-norm closed form", "dense worst-direction search",
          "periodic wrap within half a period"],
         ["Fast-marching convergence is shown on three grids, not proven here (standard result)."],
-        "T031: study route changes under small metric perturbations")
+        "Deferred research question: fit the fast-marching convergence order over at least five refinement levels "
+        "with a confidence interval (three grids and an empirical order now) and compare with a second, "
+        "independently written eikonal solver")
     basis = {"checks": [_check("graph distance minus stencil norm", stencil_error, 1e-12, kind="analytic"),
                         _check("ratio change under refinement", drift, 1e-12, kind="self_convergence"),
                         _check("4-nbr error at 45 deg minus (sqrt 2 - 1)", diag[0]["ratio4"] - math.sqrt(2), 1e-12,
@@ -2063,7 +2097,9 @@ def metric_perturbation_routes(ctx):
         ["other translates overtaking within the sweep (checked exactly)", "positive definiteness (|eps| < 1)",
          "tie at eps* has multiplicity 2"],
         ["Only constant perturbations are studied; a varying metric can also bend routes continuously."],
-        "T032: counterexample library for 'shortest means safest'")
+        "Deferred research question: repeat the route-switch study with a spatially varying metric perturbation "
+        "(for example eps cos(2 pi x) added to g11 on the square torus), where routes bend continuously and the "
+        "switch threshold need not be eps* = 4 delta")
     basis = {"checks": [_check("eps*/delta - 4 mismatches over four deltas", scaling_error),
                         _check("switches in the sweep minus 1", study["switches"] - 1),
                         _check("float bisection minus exact eps*", study["float_eps_star"] - float(eps_star), 1e-15,
@@ -2174,6 +2210,7 @@ def _witness(key, lib, pair):
 
 @task("T032", changed_files=(MODULE, ROUTES, DOC),
       regression_tests=_tests("test_t032_counterexample_library", "test_route_helpers",
+                              "test_focus_margin_claims_state_the_canonical_definition",
                               "test_sympy_field_matches_the_closed_form_batch_field"))
 def shortest_is_not_safest(ctx):
     lib = counterexample_library()
@@ -2242,7 +2279,10 @@ def shortest_is_not_safest(ctx):
         ["Witnesses show the statements are false in general; they do not rank routes for any application.",
          "Route sets are fan-search results, stable under doubling the density but not proven complete (the "
          "saddle's uniqueness is the Cartan-Hadamard theorem, not the search).", AMPLIFICATION_CAVEAT],
-        "Extend the library to variable-curvature meshes (surfaces-discrete section) and to manufacturing paths")
+        "Deferred research question: extend the library to variable-curvature triangle meshes (for example a "
+        "jittered icosphere or a mesh torus, with routes traced by the T038 mesh tracer), where route quantities "
+        "carry mesh error (manufacturing paths are already covered by T137's retained counterexample to 'The "
+        "shortest route between a station and an edge is also the safest route')")
 
     def basis_with(checks, key):
         basis = {"checks": checks}
@@ -2263,14 +2303,15 @@ def shortest_is_not_safest(ctx):
                 uncertainty=_unc("reference_error", inner_anchor,
                                  "relative deviation of the shortest amplification from sinh 2.5 (RK4 step about 0.04)"),
                 tolerance=ROUTE),
-        finding("Torus outer equator: the shortest route has a smaller focus margin than a longer route", "numerical",
+        finding("Torus outer equator: the shortest route has a smaller focus margin s_c - L (s_c the first zero of "
+                "j_head) than a longer route", "numerical",
                 {"shortest": _brief(outer["shortest"]), "alternative": _brief(outer["alternative"])},
                 basis_with([_check("alternative minus shortest focus margin", outer_gap, 1.0, "signed_ge",
                                    kind="invariant"),
                             _check("shortest margin vs pi sqrt 3 - 4.5", outer_anchor, 1e-6, kind="analytic")],
                            "torus-outer"),
-                counterexample={"statement": "The shortest geodesic has the largest focus margin (farthest from "
-                                             "conjugate points)",
+                counterexample={"statement": "The shortest geodesic has the largest focus margin s_c - L (farthest "
+                                             "from its first conjugate point)",
                                 "witness": _witness("torus-outer", lib, {"shortest": outer["shortest"],
                                                                          "alternative": outer["alternative"]})},
                 uncertainty=_unc("reference_error", outer_anchor,
@@ -2305,7 +2346,8 @@ def shortest_is_not_safest(ctx):
                                  "conjugate-point difference bounding the focus margin (length units)"),
                 tolerance=ROUTE),
         finding("On the unit sphere the minimizing arc between points at separation pi - delta ends delta before "
-                "its conjugate point, so minimizing geodesics have no positive lower bound on focus margin",
+                "its conjugate point, so minimizing geodesics have no positive lower bound on the focus margin "
+                "s_c - L",
                 "numerical", {"delta": list(SPHERE_DELTAS), "focus_margin": [s["measured_margin"] for s in sphere],
                               "j_head": [s["transfer"]["j_head"] for s in sphere],
                               "targeting_condition": [s["targeting_condition"] for s in sphere]},
@@ -2315,8 +2357,8 @@ def shortest_is_not_safest(ctx):
                                    1e-3, "le", kind="analytic"),
                             _check("ciw.lab.jacobi j_head(L) - sin delta (max over delta)", j_error, 1e-8, "le",
                                    kind="analytic")]},
-                counterexample={"statement": "Minimizing geodesics on the unit sphere have focus margin bounded below "
-                                            "by a positive constant",
+                counterexample={"statement": "Minimizing geodesics on the unit sphere have focus margin s_c - L "
+                                            "bounded below by a positive constant",
                                 "witness": {"surface": "unit sphere", "kind": "near-conjugate conditioning",
                                             "delta": list(SPHERE_DELTAS),
                                             "focus_margin": [s["measured_margin"] for s in sphere],

@@ -129,6 +129,39 @@ def test_t010_near_focus_and_post_focus_counterexamples(run):
     assert all(f["evidence_status"] == "numerically_verified" for f in report["findings"])
 
 
+def test_t010_t017_name_the_separation_observable(run):
+    """Error profiles depend on the observable, so each report names it (chord in T010; per family in T017)."""
+    reports = run[1]
+    sphere = _labelled(reports["T010"], "refocuses exactly")
+    assert "of the embedded chord is uniform" in sphere["claim"] and "-eps^2/24" in sphere["claim"]
+    observation = reports["T010"]["observation_model"]
+    assert observation.startswith("Embedded chord") and "not the intrinsic geodesic distance (T017)" in observation
+    validity = reports["T017"]["observation_model"]
+    for fragment in ("intrinsic geodesic distance on the unit sphere", "on the hyperbolic plane",
+                     "embedded chord |X_eps(s) - X(s)| on Torus(2, 1)"):
+        assert fragment in validity, fragment
+    assert "Great-circle or hyperbolic distance (closed form) or embedded chord" not in validity
+
+
+def test_t014_defers_cross_platform_reproduction_as_one_question(run):
+    assumptions = run[1]["T014"]["unresolved_assumptions"]
+    platform = [a for a in assumptions if "platform" in a]
+    assert platform == [gjl.PLATFORM_QUESTION_T014]
+    assert platform[0].startswith("Deferred research question (cross-platform reproduction)")
+    for fragment in ("Windows x86-64", "macOS arm64", "Linux x86-64", "bit for bit", "regression tolerance"):
+        assert fragment in platform[0], fragment
+
+
+def test_next_steps_name_forward_work(run):
+    """Every completed task's next step is its own open question, never a queue task that has already run."""
+    for task_id, report in run[1].items():
+        text = report["recommended_next_task"]
+        assert text.startswith("Deferred research question"), (task_id, text)
+    # T018 used to point back to T005 and T010 to T017/T008; neither names a queue task as its next step now.
+    assert "T005" not in run[1]["T018"]["recommended_next_task"]
+    assert "T017" not in run[1]["T010"]["recommended_next_task"]
+
+
 def test_t011_chart_invariance_and_fold_amplification(run):
     report = run[1]["T011"]
     converged = _labelled(report, "agree in every chart")

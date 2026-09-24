@@ -54,8 +54,12 @@ the geometry:
   `j = ε(cos s + sin s)`, zero at `3π/4`, where the exact chord is `ε²/2 + …`.
 
 *Protocol.* RK4 on grids whose node 400 is `s*` (580 steps); `ε ∈ {0.005,
-0.01, 0.02, 0.04}`; embedded chord and its component along the base geodesic's
-in-surface normal; sphere runs compared node by node with great circles. On
+0.01, 0.02, 0.04}`; the observable is the embedded chord `|X_ε(s) − X(s)|` and
+its component along the base geodesic's in-surface normal; sphere runs compared
+node by node with great circles. The error profile depends on the observable:
+for the unit sphere with a pure heading perturbation the chord's relative
+first-order error is `−ε²/24` at every `s`, the intrinsic distance's (T017) is
+`−ε² cos² s/24`. On
 the equator `s* = π√3` is analytic; on the generic path `s*` is located on a
 separate 1024-step probe, so its vanishing first-order term on the 580-step
 grid is a self-convergence check, not an analytic one. Every torus family is
@@ -69,7 +73,7 @@ at `ε = 0.04`. Past `s*` the relative error falls again with slope −1.01
 (generic) and −0.99 (equator): 3.8 one step after `s*`, 0.018 at `1.25 s*`
 (`ε = 0.04`). After `s*` the signed separation equals `ε j` to 0.4 % with
 `j < 0`. `chord(s*)/chord(s*/2) = 1.6e−4` on the equator. Sphere relative
-error uniform at −1.667e−5 (`ε = 0.02`, largest deviation from uniform
+chord error uniform at −1.667e−5 (`ε = 0.02`, largest deviation from uniform
 7.7e−8), including one step from `π`. Halving the torus grid changes the
 smallest separation at `s*` (equator, `ε = 0.005`) by 1.5e−4 relative, the
 signed separations compared for the inversion (`ε = 0.01`, `s*/2` and
@@ -242,6 +246,13 @@ to 0.011 × rtol but not bitwise.
 returns with error ∝ h^p"; "truncate-and-continue is bitwise reproducible for
 any truncation length".
 
+*Deferred research question (cross-platform reproduction).* Run T014 on
+Windows x86-64 and macOS arm64 besides the retained Linux x86-64 run: the two
+bitwise claims must hold bit for bit there, and every other T014 value
+(reversal orders, adaptive return and restart ratios) must match the retained
+one within its regression tolerance. Adaptive step sequences may differ in the
+last bit between platforms; no second platform has been compared.
+
 ## T015 Long-horizon drift
 
 *Prediction.* Speed, torus Clairaut constant and sphere angular momentum
@@ -373,6 +384,12 @@ unsigned separation. The first-order prediction is within relative tolerance
 `C₂(s*) ≠ 0`, so `ε_max ∝ |s − s*| → 0`; symmetric ones (outer equator) have
 `C₂ ≡ 0` and `ε_max ∝ √|s − s*|`.
 
+The observable `d` is the separation at matched arclength, by family: the
+intrinsic geodesic distance on the unit sphere (great-circle distance) and on
+the hyperbolic plane (hyperbolic distance), both in closed form; the embedded
+chord on the torus (RK4 chords at grid nodes, from T010), which equals the
+intrinsic distance up to `O(d³)` and so cannot change `C₂`.
+
 The sphere with lateral `ε` and heading `ε` behaves differently at its
 first-order zero `s0 = 3π/4`: the `ε²/2` offset there is along-track,
 orthogonal to `ε j N`, so near `s0` the distance is
@@ -467,6 +484,12 @@ resolvable". Transfer to measured sensor data is a `sensor_performance` claim
 and is `not_established`.
 
 ## Requested follow-ups
+
+Each task's `recommended_next_task` is its own deferred research question
+(for example T018's resolvability-aware step selection, which used to point
+back to T005), never a queue task that has already run. The cross-platform
+question T014 defers is recorded once among its unresolved assumptions
+(`PLATFORM_QUESTION_T014`).
 
 * A symmetric (reversible) integrator in `ciw.lab.integrators` would make the
   reversal test exact and give a long-horizon comparison (T014, T015).

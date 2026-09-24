@@ -43,6 +43,23 @@ FRESH_PATTERNS = {"execution": r"execution-[0-9a-f]{32}", "result": r"result-[0-
 # Fixed forged constants are deterministic and stay readable in witnesses.
 CONSTANTS = {FORGED_DIGEST: "sha256:<forged-constant>", FORGED_SESSION: "session:<forged-constant>"}
 
+# Cross-cutting deferred research questions, recorded verbatim among the unresolved assumptions of every report
+# that depends on them, so the planner lists each once with the tasks that raise it.
+KEY_CUSTODY_QUESTION = (
+    "Deferred research question (key custody and signatures): which key signs CIW workspace records, replay "
+    "receipts and execution records, who holds it, how is it provisioned, rotated and revoked, and how does a "
+    "verifier obtain its public key? Every seal and identity on these paths is an unkeyed SHA-256, so 'Retained "
+    "workspace records are authenticated' stays not_established until records are signed (for example Ed25519 over "
+    "the canonical record bytes, with an RFC 3161 timestamp for created_at) and T077 and T080-T090 are re-run "
+    "against the signed records to check that every surviving forgery is refused.")
+TELEMETRY_STACK_QUESTION = (
+    "Deferred research question (telemetry provider stack): provision the telemetry stack pinned in "
+    "src/ciw/telemetry-runtimes.json (ppda, stfe, gsie, set, cbsr; scripts/check_lab.py provisions only ppda and set "
+    "of these, and scripts/reproduce_lab.py TEST_VARIABLES has no variable for stfe, gsie or cbsr), bind it to a "
+    "telemetry or declared-workload workflow, and observe the ESM candidate, candidate execution and "
+    "ciw.subprocess-runtime.v1 identity rows and telemetry-validated records that are now read from code or "
+    "replaced by a synthetic telemetry-shaped record.")
+
 
 def energy_dir() -> Path | None:
     """The bundled synthetic energy logs, resolved like every lab repository input."""

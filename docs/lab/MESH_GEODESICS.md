@@ -465,7 +465,20 @@ No sampled vertex normal flipped sign (smallest `n·n₀` 0.98).
   corridor less often than the declared strip 5 at σ = 3e-3 (0 against 0.028)
   and at 1e-2 (0.26 against 0.41). Other near-vertex crossings matter. This is
   recorded as a counterexample to "the largest-margin strip is the most
-  robust". Past it the perturbed geodesic can switch
+  robust".
+
+  The declared strip's leave fraction is estimated twice, by two independent
+  4000-sample studies: the propagation study (seed 20260938: 0.031 at
+  σ = 3e-3, 0.395 at 1e-2) and this six-strip corridor study (seed 20260968:
+  0.028 and 0.411). At σ = 1e-2 they differ by 0.0155. That is more than one
+  estimate's 95 % half-width (0.015) but within the 95 % interval of the
+  difference of two independent fractions (1.96 √(p₁q₁/n + p₂q₂/n) ≈ 0.0215).
+  A check on the corridor finding requires every difference to stay within
+  that interval, and the report prints both estimates with their seeds. The
+  report's sentence is decided by the same test as that check: it says the
+  estimates agree only when the largest z is at most 1.96, and otherwise that
+  they differ beyond the interval, with the largest z.
+  Comparisons between strips use the corridor study only. Past the threshold the perturbed geodesic can switch
   corridors, its distance becomes a minimum over corridors, and the
   fixed-corridor variance no longer describes the geodesic distance. Re-tracing
   per sample is not done.
@@ -548,10 +561,43 @@ Residual `r = y − d(V_nominal)` with `y = d(V_nominal + η) + ε`,
 4. Derive the valence-6 plateau on the icosahedral mirror planes (star shape of
    the recursive midpoint subdivision in the limit).
 5. Replace isotropic independent vertex noise by correlated, anisotropic scanner
-   models once acquired scan data exist (physical, currently blocked).
+   models once acquired scan data exist (physical, currently blocked). The
+   scan export would enter as an operator capture read with
+   `ctx.capture("scan-export")` (bound by `ciw lab run T043 --capture
+   scan-export=PATH`), from which T043 could fit the covariance as a
+   computational finding. A scanner claim also needs an acquisition record
+   (device, `raw_sha256` of the captured bytes, time, calibration) and either
+   a probe of the scanner on the analysing host that succeeds in T043 or a
+   signed-capture trust anchor, because the physical gate never accepts an
+   unauthenticated capture by itself (`runner.CAPTURE_INSTRUMENTS` has no
+   entry for `scan-export`). The run would be retained with
+   `ciw lab hardware retain` under `lab/hardware/<run-id>`. Neither the
+   capture reader nor a scanner probe exists, so the scanner claims stay
+   `not_established` even when such data exist.
 6. An inversion test for closed meshes that are not star-shaped (for example,
    a winding-number or orientation test against a declared outward field).
-7. Carry the geometry/sensor split into the typed observation modes of T045.
+7. Fill `reconstructed_surface_distance`'s `geometry_m2` from a mesh, as
+   σ_vertex² |∇d|² with T043's linearized vertex-noise gain (valid only while
+   the marker segment stays in its face corridor), instead of declared
+   analytic surface parameters, and check it against T044's nested Monte
+   Carlo. T045 delivers the split in part: it carries separate geometry and
+   sensor variance components for model-derived distances on parametric
+   surfaces (plane, sphere, cylinder geodesic) and names the same mesh
+   conversion as its next step. T140's instrument and geometry budget
+   delivers it for manufacturing predictions only. An
+   `intrinsic_geodesic_distance` reading keeps one sensor sigma: as in T044's
+   residual, its geometry part belongs to the model prediction it is compared
+   with, not to the reading.
+8. Heat-method rates for time steps `t = m h²` other than `m = 1`, and
+   endpoint-error orders over the direction's angle to the lattice rows.
+9. Per-region error attribution against local triangle quality, and the
+   radius-ratio association within each mesh family separately.
+10. Named refusal states for the defects T042 does not detect: self-intersections
+    between non-adjacent faces, unwelded seams and duplicate faces.
+
+Each task's `recommended_next_task` is one of these questions
+(`surfaces_discrete_mesh.NEXT_STEPS`), never a queue task that has already
+run.
 
 ## Reproduce
 

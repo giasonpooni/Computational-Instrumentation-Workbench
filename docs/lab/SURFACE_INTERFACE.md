@@ -459,6 +459,33 @@ guard refuses from θ ≈ 1e-4.
   recorded as `not_established` in the physical and industrial-readiness
   domains.
 
+## Deferred research questions (each task's next step)
+
+Each task's `recommended_next_task` is one of these questions
+(`surfaces_discrete.NEXT_STEPS`). None of them is handed to a queue task that
+has already run: T042 defines refusal states for triangle meshes
+(`MESH_CODES`, `TRACE_CODES`, `QUERY_CODES`), which contain none of the T037
+codes and do not use the T033 suite, and T043 propagates vertex noise without
+testing a difference-based metric derivative.
+
+* T033 (queue extension after T168): make the conformance suite the admission
+  gate for smooth surface data, refusing a nonconforming surface with a named
+  code per failed identity before any lab task integrates on it.
+* T034: an independent assembly of the connection and curvature for
+  gaussian-bump, gaussian-bump-shear and rotated-torus (today same-origin
+  ciw assembly of sympy derivatives), and complex-step derivatives once the
+  core surfaces accept complex coordinates.
+* T035 (queue extension after T168): with metric samples carrying noise σ,
+  check that the optimal central-difference step moves to about
+  (σ/|∂³g|)^(1/3) and the smallest derivative error grows like σ^(2/3).
+* T036 (queue extension after T168): event location of the chart-switch
+  crossing in the adaptive integrator, with switching driven by the T037
+  `require_regular` codes instead of a fixed threshold.
+* T037 (queue extension after T168): adopt the T037 refusal codes as the
+  admission refusal states for smooth surface data, and add a removability
+  test (metric regularity in radial arclength coordinates) so the cube-root
+  chart's removable singularity is classified.
+
 ## Requested core change (not made here)
 
 * `Surface.check` already refuses by a scale-free conditioning test,

@@ -194,6 +194,10 @@ log through `data.log_digest`. Renaming the sensor, which is never analysed, and
 resealing the log changes `numerical_result_id` while every analysed number
 stays equal. The identity is therefore stable across occurrences of a
 canonically identical log. It is not a function of the analysed numbers alone.
+T081 retains the baseline identity itself as `energy_numerical_result_id`, in
+`numerical-identity.json` and in the value of its identity finding, so
+`ciw lab verify` compares it exactly between runs. The other identities in
+that artifact are replaced by role labels, because they are fresh per run.
 
 ## Mutation matrix (T080–T090)
 
@@ -400,6 +404,37 @@ the logs and their producer identities. All of these remain `not_established`.
    `selection_revision` from sealed records.
 8. **Clearer error text.** Word the byte-order-mark refusal for sources as a
    source-bytes error.
+
+## Deferred research questions
+
+Three questions have no owner in the queue. Each report that depends on one
+records it verbatim among its unresolved assumptions, so `ciw lab next` lists
+it once, with the other tasks that raise it (`exchange_provenance_common`
+holds the first two).
+
+- **Key custody and signatures** (`KEY_CUSTODY_QUESTION`; T077, T078 and
+  T080–T090). Which key signs workspace records, replay receipts and execution
+  records? Who holds it, how is it provisioned, rotated and revoked, and how
+  does a verifier obtain its public key? Change 1 above needs these answers
+  before it can be made. Until records are signed and T077 and T080–T090 are
+  re-run against them, "Retained workspace records are authenticated" stays
+  `not_established`.
+- **Telemetry provider stack** (`TELEMETRY_STACK_QUESTION`; T077, T086 and
+  T088–T090). Provision the stack pinned in `src/ciw/telemetry-runtimes.json`
+  (ppda, stfe, gsie, set, cbsr). Today `scripts/check_lab.py` provisions only
+  ppda and set of these, and `TEST_VARIABLES` has no variable for stfe, gsie or
+  cbsr. Then bind the stack to a telemetry or declared-workload workflow, so
+  the ESM candidate rows, the candidate execution rows and the
+  `ciw.subprocess-runtime.v1` rows are observed rather than read from code.
+- **Cross-platform reproduction** (T081). Run T081 on Windows x86-64 and macOS
+  arm64 besides the retained Linux x86-64 run. Every float-valued
+  `numerical_result_id` of the energy-accuracy bundles must equal the retained
+  `energy_numerical_result_id` exactly (T081's `numerical-identity.json` and
+  its identity finding's value, which `ciw lab verify` compares exactly).
+
+Each task's `recommended_next_task` names its own open question, usually one
+of the CIW changes above (`exchange_provenance.NEXT_STEPS`). It is never the
+next queue task, which has already run.
 
 ## What this does not establish
 

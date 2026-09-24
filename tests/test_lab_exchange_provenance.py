@@ -363,6 +363,76 @@ def test_admission_and_runtime_mutations(lab):
     _retained_rows(lab, "T090")
 
 
+def test_next_steps_name_forward_work(lab):
+    """Each next step names the task's own open question, never the next queue task (which has already run)."""
+    for task_id in TASKS:
+        report = lab(task_id)
+        text = report["recommended_next_task"]
+        assert text == ep.NEXT_STEPS[task_id], task_id
+        assert IMPLEMENTATIONS[task_id].run.plan["recommended_next_task"] == text, task_id
+        if report["state"] == "completed":
+            assert text.startswith("Deferred research question"), (task_id, text)
+    assert lab("T077")["state"] == "partial" and ep.NEXT_STEPS["T077"].startswith("Complete T077: ")
+    assert "T078" not in ep.NEXT_STEPS["T077"] and "T091" not in ep.NEXT_STEPS["T090"]
+
+
+def _literal(path, name):
+    """A module-level literal assignment read without importing the script."""
+    import ast
+    from pathlib import Path
+    tree = ast.parse(Path(path).read_text(encoding="utf-8"))
+    node = next(n for n in tree.body if isinstance(n, ast.Assign) and any(getattr(t, "id", None) == name
+                                                                           for t in n.targets))
+    return ast.literal_eval(node.value)
+
+
+def test_shared_deferred_questions_are_recorded_where_they_apply(lab):
+    """Key custody and the telemetry stack are recorded as deferred questions in every report that depends on them."""
+    key_tasks = {"T077", "T078"} | {f"T0{n}" for n in range(80, 91)}
+    telemetry_tasks = {"T077", "T086", "T088", "T089", "T090"}
+    for task_id in TASKS:
+        report = lab(task_id)
+        assumptions = report["unresolved_assumptions"]
+        assert assumptions.count(common.KEY_CUSTODY_QUESTION) == (task_id in key_tasks), task_id
+        assert assumptions.count(common.TELEMETRY_STACK_QUESTION) == (task_id in telemetry_tasks), task_id
+        if any(r["claim"].startswith("Retained workspace records are authenticated") for r in report["findings"]):
+            assert task_id in key_tasks
+    for question in (common.KEY_CUSTODY_QUESTION, common.TELEMETRY_STACK_QUESTION):
+        assert question.startswith("Deferred research question (")
+    # The telemetry question's statement about provisioning must match the scripts and pins it names.
+    from ciw.lab.runner import repository_path
+    root = repository_path()
+    if root is None:
+        pytest.skip("repository scripts are not available")
+    pins = json.loads((root / "src" / "ciw" / "telemetry-runtimes.json").read_text(encoding="utf-8"))
+    provisioned = set(_literal(root / "scripts" / "check_lab.py", "REPOSITORIES"))
+    variables = set(_literal(root / "scripts" / "reproduce_lab.py", "TEST_VARIABLES"))
+    assert sorted(pins) == ["cbsr", "gsie", "ppda", "set", "stfe"]
+    assert set(pins) & provisioned == {"ppda", "set"} and not {"stfe", "gsie", "cbsr"} & variables
+
+
+def test_t081_defers_cross_platform_reproduction_as_one_question(lab):
+    report = lab("T081")
+    assumptions = report["unresolved_assumptions"]
+    platform = [a for a in assumptions if "platform" in a.lower()]
+    assert platform == [ep.PLATFORM_QUESTION_T081]
+    for fragment in ("Windows x86-64", "macOS arm64", "Linux x86-64", "numerical_result_id",
+                     "equals the retained energy_numerical_result_id", "numerical-identity.json"):
+        assert fragment in platform[0], fragment
+    # The id the question compares against is retained verbatim (not masked by relabel) in the named artifact and
+    # in the identity finding's value, which the regression gate compares exactly.
+    retained = json.loads(_artifact(lab, "T081", "numerical-identity.json"))["energy_numerical_result_id"]
+    assert retained.startswith("sha256:") and len(retained) == len("sha256:") + 64
+    int(retained.removeprefix("sha256:"), 16)
+    identity = report["findings"][0]
+    assert identity["claim"].startswith("The energy numerical_result_id is identical")
+    assert identity["value"]["energy_numerical_result_id"] == retained
+    # It is the baseline log's identity that T078 retains for its source records.
+    lab("T078")
+    records = json.loads(_artifact(lab, "T078", "source-retention.json"))["records"]
+    assert next(r for r in records if r["name"] == "baseline")["numerical_result_id"] == retained
+
+
 def test_tasks_block_without_the_fixture_logs(tmp_path, monkeypatch):
     monkeypatch.setenv("CIW_LAB_REPOSITORY_ROOT", str(tmp_path / "absent"))
     queue = {item["id"]: item for item in load_queue()["tasks"]}

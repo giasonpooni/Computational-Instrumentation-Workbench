@@ -43,8 +43,13 @@ reduction and length comparison is exact in integers or `Fraction`s.
 - Heading amplification of a route of length L is |j_head(L)|, where
   j'' + K j = 0 with j(0) = 0, j'(0) = 1 (`ciw.lab.jacobi`). The focus margin is
   s_c − L, where s_c is the first conjugate point of the start along the
-  extended geodesic. A negative margin means the route has passed a conjugate
-  point and is not locally minimizing. The margin is censored (reported as
+  extended geodesic: the first zero s_c > 0 of j_head. Only conjugate points
+  count; zeros of the lateral column j_lat (focal points of lateral start
+  offsets) do not. This is the queue's one definition of "focus margin", used
+  in the claims of T024, T025 and T032; a ratio such as (nearest focal or
+  conjugate point)/L, which also counts zeros of j_lat, is a different quantity
+  and is not a focus margin. A negative margin means the route has passed a
+  conjugate point and is not locally minimizing. The margin is censored (reported as
   `null` with `margin_lower_bound`) when no conjugate point occurs within the
   extension horizon; censored margins are only known to exceed the horizon, so
   those routes are tied.
@@ -121,10 +126,10 @@ route sets agree.
 | Refuted statement | Witness | Numbers |
 | --- | --- | --- |
 | The shortest geodesic has the least heading amplification | Torus(2, 1), inner equator (0, π) → (2.5, π) | shortest L = 2.5, amplification sinh 2.5 = 6.050 (exact, K = −1); a route of length 7.405 has amplification 2.242 |
-| The shortest geodesic has the largest focus margin | Torus(2, 1), outer equator (0, 0) → (1.5, 0) | shortest margin π√3 − 4.5 = 0.941 (exact, K = 1/3); a route of length 6.723 has no conjugate point within 8 (margin ≥ 8.04) but amplification 29.5 |
+| The shortest geodesic has the largest focus margin s_c − L | Torus(2, 1), outer equator (0, 0) → (1.5, 0) | shortest margin π√3 − 4.5 = 0.941 (exact, K = 1/3); a route of length 6.723 has no conjugate point within 8 (margin ≥ 8.04) but amplification 29.5 |
 | The shortest route is unique | Torus(2, 1), (0, 0) → (2.2, 0) | two mirror-image shortest routes of length 6.30866770804 (headings ±0.933); the equator route (6.6) lies past its conjugate point |
 | Low amplification certifies a robust (locally minimizing) route | GaussianBump(1.5, 1), (−2.5, 0) → (2.5, 0) | side routes (shortest, 5.718) have amplification 6.88; the straight route over the top (5.878) has 6.49 but margin −2.00 |
-| Minimizing geodesics on the unit sphere have a positive lower bound on focus margin | Unit sphere, separations π − δ for δ = 0.1, 0.01, 0.001 (a near-conjugate conditioning witness, not a shortest-versus-alternative one) | `ciw.lab.jacobi` margins 0.1, 0.01, 0.001 (to 1e-7 relative), j_head = sin δ, targeting condition up to 1/sin 0.001 ≈ 1000 |
+| Minimizing geodesics on the unit sphere have focus margin s_c − L bounded below by a positive constant | Unit sphere, separations π − δ for δ = 0.1, 0.01, 0.001 (a near-conjugate conditioning witness, not a shortest-versus-alternative one) | `ciw.lab.jacobi` margins 0.1, 0.01, 0.001 (to 1e-7 relative), j_head = sin δ, targeting condition up to 1/sin 0.001 ≈ 1000 |
 
 Searches that cannot produce a witness are recorded as such. On a flat torus
 j_head(s) = s, so the shortest route is exactly the least sensitive (T021),
@@ -223,3 +228,11 @@ general statements are false; they do not rank routes for any application.
   focus margin.
 - Spatially varying metric perturbations, and route switching on curved
   surfaces (surfaces-discrete section).
+- The counterexample library on variable-curvature triangle meshes (T032's
+  next step). Manufacturing paths are not open here: T137 retains the
+  counterexample "The shortest route between a station and an edge is also the
+  safest route".
+
+Each task's `recommended_next_task` is its own deferred research question from
+the list above or from its unresolved assumptions, never a pointer to a queue
+task that has already run.

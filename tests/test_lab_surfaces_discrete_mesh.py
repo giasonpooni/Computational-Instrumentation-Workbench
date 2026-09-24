@@ -1,3 +1,4 @@
+import copy
 import math
 
 import numpy as np
@@ -25,10 +26,15 @@ def _run(task_id, ctx):
 
 
 @pytest.fixture(scope="module")
-def reports(tmp_path_factory):
+def mesh_ctx(tmp_path_factory):
+    """The shared context whose memoized studies the section run computes."""
+    return runner.Context(tmp_path_factory.mktemp("lab-mesh"))
+
+
+@pytest.fixture(scope="module")
+def reports(mesh_ctx):
     """Run the section once through the runner with one shared context (memoized studies)."""
-    ctx = runner.Context(tmp_path_factory.mktemp("lab-mesh"))
-    return {tid: _run(tid, ctx) for tid in TASKS}
+    return {tid: _run(tid, mesh_ctx) for tid in TASKS}
 
 
 def _labels(report):
@@ -438,6 +444,98 @@ def test_uncertainty_task_report(reports):
     assert calibration and calibration[0]["evidence_status"] == "not_established"
     legend = next(a for a in report["generated_artifacts"] if a["path"].endswith("linearization-ratio.svg"))
     assert legend["sha256"]
+
+
+def test_t043_reconciles_the_two_declared_strip_estimates(reports):
+    """Two seeded studies estimate the declared strip's leave fraction; the report checks their agreement."""
+    report = reports["T043"]
+    record = _value(report, "The declared marker segment stays in its face corridor")
+    other = record["value"]["corridor_study"]
+    assert record["value"]["seed"] == S.SEED and other["seed"] == S.SEED + 30
+    check = next(c for c in record["basis"]["checks"] if "independent six-strip corridor study" in c["reference"])
+    assert check["passed"] and check["tolerance"] == 1.96 and check["comparison"] == "le"
+    assert other["max_abs_difference"] <= other["interval_95_at_max"]
+    text = report["numerical_result"]
+    assert f"seed {S.SEED})" in text and f"seed {S.SEED + 30}, 4000 samples" in text
+    assert "within the 95% interval of a difference of two independent fractions" in text
+    # The retained estimates at sigma = 1e-2 (0.39525 and 0.41075) differ by more than one estimate's 95% half-width
+    # (0.015) but lie within the 95% interval of their difference (about 0.0215).
+    retained = M.declared_strip_agreement({"0.0001": 0.0, "0.001": 0.0, "0.003": 0.03075, "0.01": 0.39525}, 4000,
+                                          [0.0, 0.0, 0.02825, 0.41075], [1e-4, 1e-3, 3e-3, 1e-2], 4000)
+    assert retained["max_abs"] == pytest.approx(0.0155) and retained["sigma_at_max"] == 1e-2
+    assert retained["interval_at_max"] == pytest.approx(0.0215, abs=5e-4) and retained["max_z"] < 1.96
+    apart = M.declared_strip_agreement({"0.01": 0.39525}, 4000, [0.45], [1e-2], 4000)
+    assert apart["max_z"] > 1.96
+    assert M.agreement_text(retained).startswith("the two independent estimates agree within")
+    assert M.agreement_text(apart).startswith("the two independent estimates differ beyond")
+
+
+def test_t043_says_when_the_two_declared_strip_estimates_differ(reports, mesh_ctx, tmp_path):
+    """When the corridor study disagrees with the propagation study, the report text does not claim agreement."""
+    ctx = runner.Context(tmp_path)
+    for name in ("uncertainty", "scaling", "refinement-noise", "vertex-field", "corridors"):
+        key = f"surfaces_discrete_mesh:{name}"
+        value = copy.deepcopy(mesh_ctx.memo(key, lambda: pytest.fail(f"{key} was not computed by the section run")))
+        if name == "corridors":
+            # The corridor study's declared strip leaves its corridor at sigma = 1e-2 in 50% of samples, far from
+            # the propagation study's 0.395 (z about 9.5).
+            declared = _value(reports["T043"], "The declared marker segment stays")["value"]["start_index"]
+            row = next(r for r in value["rows"] if r["start_index"] == declared)
+            row["left_fraction"][value["sigmas"].index(1e-2)] = 0.5
+        ctx.memo(key, lambda value=value: value)
+    report = _run("T043", ctx)
+    record = _value(report, "The declared marker segment stays")
+    check = next(c for c in record["basis"]["checks"] if "independent six-strip corridor study" in c["reference"])
+    assert check["observed"] > 1.96 and check["passed"] is False
+    assert record["evidence_status"] == "not_established"
+    assert report["evidence_status"]["primary"] == "not_established"
+    text = report["numerical_result"]
+    assert "agree within" not in text
+    assert "differ beyond the 95% interval of a difference of two independent fractions" in text
+    assert f"largest z {check['observed']:.2f} against 1.96" in text
+
+
+def test_next_steps_name_forward_work(reports):
+    """A completed task's next step is its own open question, never a queue task that already ran."""
+    for task_id, report in reports.items():
+        text = report["recommended_next_task"]
+        assert text == M.NEXT_STEPS[task_id], task_id
+        if report["state"] == "completed":
+            assert text.startswith("Deferred research question: "), (task_id, text)
+    assert reports["T038"]["recommended_next_task"].startswith("Complete T038: ")
+    assert "T039" not in reports["T038"]["recommended_next_task"]
+    # T045 now carries the split for model-derived distances on parametric surfaces; T044 hands out only the
+    # part still open there (the mesh form of geometry_m2), naming T045 and T140 as partial deliverers.
+    step = M.NEXT_STEPS["T044"]
+    assert "Partly delivered by T045" in step and "T140" in step
+    assert "does not carry" not in step
+    assert "geometry_m2" in step and "T043" in step and "mesh" in step
+    # A hardware-gated part names the route by which acquired bytes could enter the task.
+    hardware = M.NEXT_STEPS["T043"]
+    for fragment in ("hardware-gated", "ctx.capture('scan-export')", "ciw lab run T043 --capture scan-export=PATH",
+                     "raw_sha256", "calibration", "runner.CAPTURE_INSTRUMENTS", "signed-capture trust anchor",
+                     "lab/hardware/<run-id>", "ciw lab hardware retain", "stay not_established even when such data"):
+        assert fragment in hardware, fragment
+    # The step says no scanner probe exists: true while the physical gate maps no instrument to that role.
+    assert "scan-export" not in runner.CAPTURE_INSTRUMENTS
+
+
+def test_t044_next_step_names_what_t045_leaves_open(reports, tmp_path):
+    """T045 carries the split T044 asked for; T044's next step names only the mesh form, which T045 leaves open."""
+    pytest.importorskip("ciw.lab.observation")
+    modes = pytest.importorskip("ciw.lab.observation_modes")
+    queue = {t["id"]: t for t in load_queue()["tasks"]}
+    t045 = validate_report(runner.run_task(queue["T045"], module_implementations("observation")["T045"],
+                                           runner.Context(tmp_path), {}))
+    split = [f for f in t045["findings"] if "geometry and sensor variance" in f["claim"] and "T044" in f["claim"]]
+    assert len(split) == 1 and split[0]["evidence_status"] == "numerically_verified"
+    surface = modes.MODES["reconstructed_surface_distance"]
+    assert set(surface.variance_components) == {"geometry_m2", "sensor_m2"} and surface.variance_required
+    # What remains open: intrinsic readings keep one sensor sigma by design, and no mesh conversion fills geometry_m2.
+    assert not modes.MODES["intrinsic_geodesic_distance"].variance_components
+    assert "mesh" in t045["recommended_next_task"] and "geometry_m2" in t045["recommended_next_task"]
+    step = reports["T044"]["recommended_next_task"]
+    assert step == M.NEXT_STEPS["T044"] and "Partly delivered by T045" in step and "does not carry" not in step
 
 
 # ---------------------------------------------------------------- T044

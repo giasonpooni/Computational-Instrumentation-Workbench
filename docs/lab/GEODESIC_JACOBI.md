@@ -457,6 +457,28 @@ differences (ε = 1e-3) confirm the endpoint sensitivities to 1.9e-6.
   stage offsets e₂, e₃ included), and whether a Wronskian-preserving
   (symplectic) integrator for the Jacobi block changes conjugate-point accuracy
   near foci (T010–T011).
+* Each task's `recommended_next_task` is its own deferred research question,
+  not the next queue task (which has already run): a Markdown-parsed hand
+  table (T001), an integrator-independent 34-digit reference through
+  `mpmath.odefun` (T002), a second step-size controller (T003), a call-graph
+  renormalization scan (T004), measured trajectories (T005, hardware-gated),
+  an intrinsic finite-difference separation (T006), the determinant
+  coefficient and curvature discontinuities (T007), a proof of the bump's
+  curvature monotonicity (T008) and equal-length column rankings (T009).
 * Physical claims (T005 separation of real trajectories, T009 that the computed
   lateral/heading ranking predicts which start error dominates a real tool or
   vehicle path) are recorded as `not_established`.
+* T005's hardware-gated next step names the route by which measured
+  trajectories could reach it. The tracker export would enter as an operator
+  capture read with `ctx.capture("trajectory-log")` (bound by `ciw lab run
+  T005 --capture trajectory-log=PATH`), from which T005 could fit the
+  separation as a computational finding. The physical finding also needs an
+  acquisition record (device, `raw_sha256` of the captured bytes, time,
+  calibration) and either a probe of the tracker on the analysing host that
+  succeeds in T005 or a signed-capture trust anchor, because the physical
+  gate never accepts an unauthenticated capture by itself
+  (`runner.CAPTURE_INSTRUMENTS` has no entry for `trajectory-log`). The run
+  would be retained with `ciw lab hardware retain` under
+  `lab/hardware/<run-id>`. Neither the capture reader nor a tracker probe
+  exists, so the physical finding stays `not_established` even when such
+  data exist.

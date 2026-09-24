@@ -34,7 +34,8 @@ import uuid
 
 from .evidence import finding, holds as compare
 from .exchange_provenance_common import (
-    FORGED_CODE, FORGED_DIGEST, FORGED_RUNTIME, FORGED_SESSION, FORGED_TIME, KIND, OPERATION, Mutant, View,
+    FORGED_CODE, FORGED_DIGEST, FORGED_RUNTIME, FORGED_SESSION, FORGED_TIME, KEY_CUSTODY_QUESTION, KIND, OPERATION,
+    TELEMETRY_STACK_QUESTION, Mutant, View,
     attempt, build_session_fixture, build_variant_fixture, build_verification, check_esm, edited_log, esm_case,
     exchange_artifact, fixture_available, forge_receipt, measurement_edit, reforge, reforge_source, relabel, reopen,
     request,
@@ -80,12 +81,82 @@ COMPARISON = ("Digest re-derivations use a local canonical-JSON/SHA-256 implemen
               "implementation origin as CIW, so they are cross_implementation checks (numerically_verified, never "
               "independently_verified); every other check compares CIW's own outputs or refusal messages.")
 BOM_MESSAGE = "The bound runtime did not return finite, unambiguous JSON"
+# Each task's next step names its own open question (a CIW change or a provider binding), never a queue task that
+# has already run. The key-custody and telemetry-stack questions are shared and live in the unresolved assumptions.
+NEXT_STEPS = {
+    "T077": ("Complete T077: observe the ESM candidate, candidate execution and pinned-provider runtime identity rows, "
+             "now read from code, once the telemetry provider stack is provisioned and bound (the deferred research "
+             "question among the unresolved assumptions), and, as CIW changes, add a numerical_result_id to "
+             "oscillator operation results and bind replay receipts into a catalog-level seal."),
+    "T078": ("Deferred research question: exercise exact byte retention for the source kinds other than "
+             "energy-accuracy (they share workbench._source but have their own parsers), and retain the oscillator "
+             "recording's input bytes, which are supplied as parsed JSON and so do not exist to retain."),
+    "T079": ("Deferred research question: do Unicode escape variants of the same JSON text (\\u0041 versus A, "
+             "escaped versus literal non-ASCII characters) retain distinct bytes and source identities under one "
+             "label, as the eight whitespace and spelling variants do, and should the BOM refusal name the source "
+             "bytes rather than a bound runtime (a CIW message change, reported and not made here)?"),
+    "T080": ("Deferred research question (CIW change): persist the selection history or drop selection_revision from "
+             "sealed records, and bind oscillator result identities to their content so the execution that produced "
+             "a result is verifiable, then repeat the re-pairing test across operations with different parameters "
+             "and data."),
+    "T081": ("Deferred research question (CIW change): give oscillator operation results a content-level "
+             "numerical_result_id so their replays can be linked, recompute statistics (or at least the moment "
+             "inequalities) on reopen, and repeat the stability test in a separate process on a second host, since "
+             "the separate session here shares the process and code."),
+    "T082": ("Deferred research question (CIW change): keyed or externally timestamped execution records (for example "
+             "an RFC 3161 timestamp over the execution record digest) so that created_at carries evidential weight, "
+             "and a registry of occurrences across workspaces so that two workspaces reusing one occurrence identity "
+             "are detected."),
+    "T083": ("Deferred research question (CIW change): bind replay receipts into the replay bundle identity or a "
+             "catalog-level seal so that an accidental deletion is detected, and sign receipts at replay time with a "
+             "host-held key under a defined key custody so that the retained fabricated sibling receipt (B0b) and a "
+             "transplanted receipt are refused."),
+    "T084": ("Deferred research question (CIW change): bind each replay receipt to the source execution's own "
+             "identity as well as its bytes, or sign it under a defined key custody, and re-run these mutations to "
+             "check that receipt-source.sibling-execution is refused while every killed mutant keeps its pinned "
+             "message."),
+    "T085": ("Deferred research question (CIW change): refuse a replay whose created_at precedes its source's, or date "
+             "replays with an external timestamp, and re-run these mutations to check that "
+             "receipt-replayed.reidentified-bundle is refused while every killed mutant keeps its pinned message."),
+    "T086": ("Deferred research question (CIW change): refuse undeclared keys in sealed oscillator records (a closed "
+             "key set needs no key) and re-run to check that oscillator-subject.injected, oscillator-method.injected, "
+             "oscillator-independent.injected and oscillator-admission.injected are refused on reopen."),
+    "T087": ("Deferred research question (CIW change): fix the oscillator verification method in its protocol record, "
+             "as the energy path fixes fresh_analysis_of_same_retained_measurement, so that reopen compares it, and "
+             "re-run to check that oscillator-method.injected is refused."),
+    "T088": ("Deferred research question: run exchange inspection through inspect_exchange with the pinned State "
+             "Estimation Evaluation Testbed validator (the set provider, CIW_SET_REPO), which the pure "
+             "exchange._identity rows here do not reach, and check whether a recomputed artifact claiming "
+             "independent: true is still accepted as content_recomputed_not_authenticated."),
+    "T089": ("Deferred research question: define a signed admission authorization record (signer, key custody, scope "
+             "of the admitted result) that CIW would require before any state_admission other than not_performed, "
+             "and re-run to check that oscillator-admission.injected is refused (admission itself stays an authority "
+             "decision, a production_acceptance claim never established here)."),
+    "T090": ("Deferred research question: mutate the pinned-provider subprocess runtime identities "
+             "(ciw.subprocess-runtime.v1) once a provider checkout is bound to a declared-workload or telemetry "
+             "workflow, and label a retained runtime that differs from the current analysis identity as historical "
+             "and unverified on reopen (a CIW change), so that energy-runtime.all-bundles and "
+             "energy-runtime.python-version no longer reopen as current."),
+}
+# The one cross-platform question T081 defers: float-valued numerical identities on another platform.
+PLATFORM_QUESTION_T081 = (
+    "Deferred research question (cross-platform reproduction): run T081 on Windows x86-64 and macOS arm64 besides "
+    "the retained Linux x86-64 run and check that every float-valued numerical_result_id of the energy-accuracy "
+    "bundles (originals, sibling, replays, replay after reopen, separate session) equals the retained "
+    "energy_numerical_result_id exactly (kept in T081's numerical-identity.json and in its identity finding's value, "
+    "which ciw lab verify compares exactly); a mismatch would mean the canonical float serialization or the analysis "
+    "arithmetic depends on the platform, and no second platform has been compared.")
 LOG_DIGEST = "Retained log digest differs"
 ESM_SCOPE = "Native ESM inspection binding or scope mismatch"
 
 
 def _node(name: str) -> str:
     return f"{TESTS}::{name}"
+
+
+# Section-wide tests: forward next steps and the shared deferred research questions.
+SECTION_TESTS = (_node("test_next_steps_name_forward_work"),
+                 _node("test_shared_deferred_questions_are_recorded_where_they_apply"))
 
 
 def _canon(value, ascii_only=False) -> bytes:
@@ -1473,11 +1544,12 @@ T077_PLAN = _fields(
     "check every predicted property per identity, with CIW's own validators judging refusals and moved occurrences; "
     "compare every retained identity before reopen with the value the reopened session saves again (records paired "
     "by catalog position). Planned but offline-unreachable: " + UNEXERCISED,
-    "not run", "not run", [], [], "T078",
+    "not run", "not run", [], [], NEXT_STEPS["T077"],
     inputs=SESSION_INPUTS + [VARIANT_INPUT, ESM_INPUT, EXCHANGE_INPUT])
 
 
-@task("T077", changed_files=CHANGED, regression_tests=(_node("test_identity_matrix"),), plan=T077_PLAN)
+@task("T077", changed_files=CHANGED, regression_tests=(_node("test_identity_matrix"),) + SECTION_TESTS,
+      plan=T077_PLAN)
 def identity_matrix_task(ctx):
     if not fixture_available():
         return _blocked(T077_PLAN)
@@ -1580,9 +1652,9 @@ def identity_matrix_task(ctx):
             "identity rows are inferred only where they share the energy-accuracy code path.",
             "Reopen stability is observed as the value CIW saves again after reopening, which is the reopened "
             "session's own serialization of its restored state.",
-            "Content identities establish consistency, not authorship."],
-        recommended_next_task="T078 (exact source-byte retention); CIW change: add a numerical_result_id to "
-                              "oscillator operation results and bind replay receipts into a catalog-level seal")
+            "Content identities establish consistency, not authorship.",
+            TELEMETRY_STACK_QUESTION, KEY_CUSTODY_QUESTION],
+        recommended_next_task=NEXT_STEPS["T077"])
     state = _state(findings)
     return {"state": "partial" if unexercised and state == "completed" else state, "fields": fields,
             "findings": findings}
@@ -1600,11 +1672,12 @@ T078_PLAN = _fields(
     "Retain the four fixture logs, eight byte variants and two resealed content variants of the baseline log, "
     "execute each, compare source.get bytes live and after offline reopen and the bundle evidence bytes with the "
     "input; submit three refused re-encodings and three non-canonical base64 transports and count retained sources "
-    "before and after.", "not run", "not run", [], [], "T079",
+    "before and after.", "not run", "not run", [], [], NEXT_STEPS["T078"],
     inputs=[VARIANT_INPUT, OSCILLATOR_INPUT])
 
 
-@task("T078", changed_files=CHANGED, regression_tests=(_node("test_exact_source_bytes"),), plan=T078_PLAN)
+@task("T078", changed_files=CHANGED, regression_tests=(_node("test_exact_source_bytes"),) + SECTION_TESTS,
+      plan=T078_PLAN)
 def exact_source_bytes(ctx):
     if not fixture_available():
         return _blocked(T078_PLAN, [_physical_logs()])
@@ -1679,8 +1752,8 @@ def exact_source_bytes(ctx):
                                 "The oscillator recording is supplied as parsed JSON, so its input bytes do not "
                                 "exist to retain.",
                                 "Exact retention is not authenticity: the retained bytes carry only the log author's "
-                                "unkeyed log_digest (see T081 energy-source.resealed)."],
-        recommended_next_task="T079 (whitespace-preserving evidence retention)")
+                                "unkeyed log_digest (see T081 energy-source.resealed).", KEY_CUSTODY_QUESTION],
+        recommended_next_task=NEXT_STEPS["T078"])
     return {"state": _state(findings), "fields": fields, "findings": findings}
 
 
@@ -1698,11 +1771,12 @@ T079_PLAN = _fields(
     "resealed one is distinct evidence, never aliased.",
     "Retain and analyse eight variants of baseline.json under one shared label; compare identities; submit a partial "
     "and a consistent (unsealed) int-for-float rewrite and a byte-order-mark variant; retain a consistent resealed "
-    "int-for-float rewrite.", "not run", "not run", [], [], "T080",
+    "int-for-float rewrite.", "not run", "not run", [], [], NEXT_STEPS["T079"],
     inputs=[VARIANT_INPUT])
 
 
-@task("T079", changed_files=CHANGED, regression_tests=(_node("test_whitespace_variants"),), plan=T079_PLAN)
+@task("T079", changed_files=CHANGED, regression_tests=(_node("test_whitespace_variants"),) + SECTION_TESTS,
+      plan=T079_PLAN)
 def whitespace_retention(ctx):
     if not fixture_available():
         return _blocked(T079_PLAN)
@@ -1809,7 +1883,7 @@ def whitespace_retention(ctx):
             "The BOM refusal message names a 'bound runtime' although the defect is in source bytes; the refusal is "
             "correct but its wording is misleading (reported, not changed).",
             "Unicode escape variants (\\u0041 vs A) were not exercised."],
-        recommended_next_task="T080 (operation/execution/result identity separation)")
+        recommended_next_task=NEXT_STEPS["T079"])
     return {"state": _state(findings), "fields": fields, "findings": findings}
 
 
@@ -1829,10 +1903,11 @@ T080_PLAN = _fields(
     "Compare identity sets across oscillator and energy occurrences, move one energy step to a new execution_ref and "
     "let EnergyAccuracyWorkflow._validate_step judge it, and reopen four inconsistent aliasing forgeries, one "
     "consistent re-pairing of the two statistics occurrences and one selection-revision forgery.",
-    "not run", "not run", [], [], "T081")
+    "not run", "not run", [], [], NEXT_STEPS["T080"])
 
 
-@task("T080", changed_files=CHANGED, regression_tests=(_node("test_identity_separation"),), plan=T080_PLAN)
+@task("T080", changed_files=CHANGED, regression_tests=(_node("test_identity_separation"),) + SECTION_TESTS,
+      plan=T080_PLAN)
 def identity_separation(ctx):
     if not fixture_available():
         return _blocked(T080_PLAN)
@@ -1903,9 +1978,8 @@ def identity_separation(ctx):
                                 "between occurrences of one operation with equal parameters and data.",
                                 "Selection history is not persisted, so selection_revision is only bounded, not bound.",
                                 "No binding between operation_id and the other identities was isolated from payload "
-                                "validation."],
-        recommended_next_task="T081 (stable numerical-result identity); CIW change: persist the selection history or "
-                              "drop selection_revision from sealed records")
+                                "validation.", KEY_CUSTODY_QUESTION],
+        recommended_next_task=NEXT_STEPS["T080"])
     return {"state": _state(findings), "fields": fields, "findings": findings}
 
 
@@ -1937,11 +2011,14 @@ T081_PLAN = _fields(
     "Collect the numerical identity from the original, a sibling, a replay, a replay after reopen, a replay of a "
     "replay and a separate session (steps and reproductions); compare a resealed metadata-only variant; recompute "
     "statistics.v1 from the samples; reopen data-edit and source-log forgeries.",
-    "not run", "not run", [], [], "T082",
+    "not run", "not run", [], [], NEXT_STEPS["T081"],
     inputs=SESSION_INPUTS + ["baseline.json with the sensor name renamed and log_digest resealed (variant fixture)"])
 
 
-@task("T081", changed_files=CHANGED, regression_tests=(_node("test_numerical_identity"),), plan=T081_PLAN)
+@task("T081", changed_files=CHANGED,
+      regression_tests=(_node("test_numerical_identity"),
+                        _node("test_t081_defers_cross_platform_reproduction_as_one_question")) + SECTION_TESTS,
+      plan=T081_PLAN)
 def numerical_identity(ctx):
     if not fixture_available():
         return _blocked(T081_PLAN)
@@ -1963,19 +2040,24 @@ def numerical_identity(ctx):
     inequalities = _moments(computed)
     rows, harness = _task_rows(ctx, "T081"), _mutations(ctx)["harness"]
     _retain_rows(ctx, rows, "numerical-mutations")
-    ctx.artifact_json("numerical-identity.json", relabel(
+    # The baseline's numerical_result_id is a content identity (stable across runs), so it is retained verbatim,
+    # outside relabel(), which would mask any sha256 value: a second platform compares its own id with this one.
+    baseline_numerical = natives["B0"]["steps"][0]["numerical_result_id"]
+    identity = relabel(
         {"occurrences": [{"bundle": role, "step": natives[role]["steps"][0]["execution_id"],
                           "numerical_result_id_equal_to_B0": natives[role]["steps"][0]["numerical_result_id"]
-                          == natives["B0"]["steps"][0]["numerical_result_id"]} for role in SAME_SOURCE],
+                          == baseline_numerical} for role in SAME_SOURCE],
          "metadata_variant": {key: metadata[key] for key in ("experiment_id", "data_keys_differing_from_baseline")},
          "statistics": {"computed": computed, "direct": direct, "max_relative_difference": relative}},
-        role_labels(fixture)))
+        role_labels(fixture))
+    ctx.artifact_json("numerical-identity.json", {"energy_numerical_result_id": baseline_numerical, **identity})
     findings = [
         _verified("The energy numerical_result_id is identical across original, sibling, replay, replay after offline "
                   "reopen, replay of a replay and a separate session (same process and code) of one canonically "
                   "identical log",
                   {"occurrences": len(occurrences), "distinct_numerical_result_ids": len(numerical),
-                   "distinct_result_ids": len(result_ids), "recomputation_mismatches": recomputed},
+                   "distinct_result_ids": len(result_ids), "recomputation_mismatches": recomputed,
+                   "energy_numerical_result_id": baseline_numerical},
                   [_count("distinct numerical_result_id values", len(numerical), 1),
                    _count("distinct result_id values (fresh occurrences)", len(result_ids), len(occurrences)),
                    _rederived("numerical_result_id differs from the lab's sha256 over {operation_id, data}",
@@ -2044,13 +2126,11 @@ def numerical_identity(ctx):
                                "resealed edit of the retained source log", "resealed variant analysed beside the "
                                "original under one run_id", "out-of-bounds statistics",
                                "statistics violating the moment inequalities"],
-        unresolved_assumptions=["Cross-platform stability of float-valued numerical identities is not established.",
+        unresolved_assumptions=[PLATFORM_QUESTION_T081,
                                 "Oscillator results have no numerical identity, so their replays cannot be linked.",
                                 "The separate session runs in the same process with the same code; it is not an "
-                                "independent reproduction."],
-        recommended_next_task="T082 (fresh replay execution and result identities); CIW change: content-level "
-                              "numerical_result_id for operation results, recomputation of statistics (or at least "
-                              "the moment inequalities) on reopen, and keyed authentication of retained source bytes")
+                                "independent reproduction.", KEY_CUSTODY_QUESTION],
+        recommended_next_task=NEXT_STEPS["T081"])
     return {"state": _state(findings), "fields": fields, "findings": findings}
 
 
@@ -2065,10 +2145,11 @@ T082_PLAN = _fields(
     "only one record is refused, moved in both it reopens (fresh.created-at-shift).",
     "Count identities over oscillator executions and every energy bundle (original, sibling, other log, replays, "
     "separate session); reopen four reuse forgeries and two creation-time forgeries.",
-    "not run", "not run", [], [], "T083")
+    "not run", "not run", [], [], NEXT_STEPS["T082"])
 
 
-@task("T082", changed_files=CHANGED, regression_tests=(_node("test_fresh_occurrences"),), plan=T082_PLAN)
+@task("T082", changed_files=CHANGED, regression_tests=(_node("test_fresh_occurrences"),) + SECTION_TESTS,
+      plan=T082_PLAN)
 def fresh_occurrences(ctx):
     if not fixture_available():
         return _blocked(T082_PLAN)
@@ -2116,9 +2197,8 @@ def fresh_occurrences(ctx):
                                "creation time moved in one record", "creation time moved in both records"],
         unresolved_assumptions=["No global registry of occurrences exists, so two workspaces can reuse an "
                                 "occurrence identity without detection.",
-                                "created_at is a declared timestamp, not a trusted time."],
-        recommended_next_task="T083 (replay receipt binding); CIW change: keyed or externally timestamped "
-                              "execution records if creation time is to carry evidential weight")
+                                "created_at is a declared timestamp, not a trusted time.", KEY_CUSTODY_QUESTION],
+        recommended_next_task=NEXT_STEPS["T082"])
     return {"state": _state(findings), "fields": fields, "findings": findings}
 
 
@@ -2139,10 +2219,11 @@ T083_PLAN = _fields(
     "shows the forged receipt placement.",
     "Check the binding equalities for three receipts (replay, replay after reopen, replay of a replay); reopen a false "
     "numerical match, receipt transplants with no, local and full recomputation, a fabricated receipt and a receipt "
-    "deletion.", "not run", "not run", [], [], "T084")
+    "deletion.", "not run", "not run", [], [], NEXT_STEPS["T083"])
 
 
-@task("T083", changed_files=CHANGED, regression_tests=(_node("test_replay_receipt_binding"),), plan=T083_PLAN)
+@task("T083", changed_files=CHANGED, regression_tests=(_node("test_replay_receipt_binding"),) + SECTION_TESTS,
+      plan=T083_PLAN)
 def receipt_binding(ctx):
     if not fixture_available():
         return _blocked(T083_PLAN)
@@ -2221,11 +2302,8 @@ def receipt_binding(ctx):
                                 "workbench._validate_receipts but have workflow-specific checks.",
                                 "A fabricated receipt needs a sibling of the same source bytes, configuration and "
                                 "runtime; one was retained here (B0b), which any user can create by executing a "
-                                "source twice."],
-        recommended_next_task="T084 (mutate replay receipt source digest); CIW change: bind receipts into the replay "
-                              "bundle identity or a catalog-level seal so accidental deletion is detected, and sign "
-                              "receipts with a host-held key at replay time so a transplanted or fabricated receipt "
-                              "is refused")
+                                "source twice.", KEY_CUSTODY_QUESTION],
+        recommended_next_task=NEXT_STEPS["T083"])
     return {"state": _state(findings), "fields": fields, "findings": findings}
 
 
@@ -2245,7 +2323,7 @@ MUTATION_TASKS = {
         "survivors": {"receipt-source.sibling-execution": "Surviving mutant receipt-source.sibling-execution: a "
                       "receipt re-pointed, with its verification subject, at a sibling execution of the same bytes "
                       "reopens"},
-        "next": "T085 (mutate replay receipt replayed digest)"},
+        "next": NEXT_STEPS["T084"]},
     "T085": {
         "subject": "Replay receipt replayed digest", "stem": "receipt-replayed-mutations",
         "hypothesis": "Predicted kills: the four replayed_bundle_digest edits, resealed or not, because reopen requires "
@@ -2257,7 +2335,7 @@ MUTATION_TASKS = {
                      "the harness controls hold.",
         "survivors": {"receipt-replayed.reidentified-bundle": "Surviving mutant receipt-replayed.reidentified-"
                       "bundle: a replay re-sessioned and dated before its source, with recomputed digests, reopens"},
-        "next": "T086 (mutate verification subject)"},
+        "next": NEXT_STEPS["T085"]},
     "T086": {
         "subject": "Verification subject", "stem": "verification-subject-mutations", "validators": "ESM and exchange",
         "hypothesis": "Predicted kills: a receipt verification subject edited with or without recomputed ids (reopen "
@@ -2274,7 +2352,7 @@ MUTATION_TASKS = {
                      "the harness controls hold.",
         "survivors": {"oscillator-subject.injected": "Surviving mutant oscillator-subject.injected: a sealed result "
                       "carrying an injected verification subject naming its sibling result reopens"},
-        "next": "T087 (mutate verification method)"},
+        "next": NEXT_STEPS["T086"]},
     "T087": {
         "subject": "Verification method", "stem": "verification-method-mutations",
         "hypothesis": "Predicted kills: the three energy verification method edits, because reopen rebuilds the "
@@ -2285,7 +2363,7 @@ MUTATION_TASKS = {
                      "after reopen; the harness controls hold.",
         "survivors": {"oscillator-method.injected": "Surviving mutant oscillator-method.injected: a sealed result "
                       "carrying an injected verification_method reopens"},
-        "next": "T088 (mutate independence flag)"},
+        "next": NEXT_STEPS["T087"]},
     "T088": {
         "subject": "Independence flag", "stem": "independence-mutations", "validators": "ESM and exchange",
         "hypothesis": "Predicted kills: independent true in an energy receipt or bundle verification (reopen fixes "
@@ -2297,7 +2375,7 @@ MUTATION_TASKS = {
                      "identity status is content_recomputed_not_authenticated; the harness controls hold.",
         "survivors": {"oscillator-independent.injected": "Surviving mutant oscillator-independent.injected: "
                       "sealed records carrying an injected independent: true reopen"},
-        "next": "T089 (mutate admission status)"},
+        "next": NEXT_STEPS["T088"]},
     "T089": {
         "subject": "Admission status", "stem": "admission-mutations", "validators": "ESM",
         "hypothesis": "Predicted kills: receipt admission other than not_performed; energy verification or result "
@@ -2308,7 +2386,7 @@ MUTATION_TASKS = {
                      "the harness controls hold.",
         "survivors": {"oscillator-admission.injected": "Surviving mutant oscillator-admission.injected: a "
                       "sealed result carrying an injected state_admission reopens"},
-        "next": "T090 (mutate provider runtime identity)"},
+        "next": NEXT_STEPS["T089"]},
     "T090": {
         "subject": "Provider runtime identity", "stem": "runtime-mutations",
         "hypothesis": "Predicted kills: oscillator runtime edits that break the seal, differ between execution and "
@@ -2326,9 +2404,7 @@ MUTATION_TASKS = {
                       "forged analysis code digest reopens",
                       "energy-runtime.python-version": "Surviving mutant energy-runtime.python-version: forged "
                       "dependency versions reopen"},
-        "next": "T091 (save/reopen without provider access); CIW change: keyed signatures over workspace records; "
-                "label a retained runtime that differs from the current analysis identity as historical and "
-                "unverified on reopen"},
+        "next": NEXT_STEPS["T090"]},
 }
 
 
@@ -2429,12 +2505,15 @@ def _mutation_task(ctx, task_id: str) -> dict:
                "the CIW-internal oscillator provider identity and CIW's own energy analysis identity were."]
               if task_id == "T090" else []),
             "Whether a reader of a forged workspace would be misled depends on how the record is displayed; not "
-            "assessed."])
+            "assessed.",
+            *([TELEMETRY_STACK_QUESTION] if spec.get("validators") or task_id == "T090" else []),
+            KEY_CUSTODY_QUESTION])
     return {"state": _state(findings), "fields": fields, "findings": findings}
 
 
 def _register_mutation_task(task_id: str, test: str):
-    @task(task_id, changed_files=CHANGED, regression_tests=(_node(test),), plan=_mutation_plan(task_id))
+    @task(task_id, changed_files=CHANGED, regression_tests=(_node(test),) + SECTION_TESTS,
+          plan=_mutation_plan(task_id))
     def run(ctx):
         return _mutation_task(ctx, task_id)
     run.__name__ = f"mutation_{task_id.lower()}"

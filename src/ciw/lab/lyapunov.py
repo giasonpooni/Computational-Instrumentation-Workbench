@@ -39,6 +39,88 @@ from .evidence import COMPUTATIONAL_DOMAINS, finding, holds, origin
 from .lyapunov_provider import PLSR_ROLE, ProviderRefusal, manifest, producer, provider_basis, run_plsr, source_digest
 from .registry import task
 
+# The one cross-platform question T101 and T102 defer: codes that LAPACK/BLAS builds may decide differently.
+PLATFORM_QUESTION = (
+    "Deferred research question (cross-platform reproduction): run T101 and T102 against the pinned PLSR on Windows "
+    "x86-64, on macOS arm64 and on Linux x86-64 with a LAPACK other than the retained OpenBLAS build (for example "
+    "MKL), and check that the PLSR codes below the normal range (the subnormal witness's code included; "
+    "resolution-floor.json) and the outside-window code flips and scaled-witness code (scaling-invariance.json) match "
+    "the retained ones case for case, and that every finding value matches within its regression tolerance; these "
+    "codes are retained as artifacts only because LAPACK/BLAS builds may decide them differently, and no second build "
+    "has been compared.")
+
+
+def capture_route(task_id: str, role: str, source: str, analysis: str, instrument: str, claims: str) -> str:
+    """How acquired bytes could reach ``task_id``, and what the physical gate needs beyond them.
+
+    An operator capture is retained and unauthenticated: computational findings may be computed from it, but a
+    physical, calibration or sensor_performance label also needs a probe of the role's instrument on the analysing
+    host (runner.CAPTURE_INSTRUMENTS) or a signed-capture trust anchor.
+    """
+    return (f"Route: {task_id} would read the {source} as an operator capture (ctx.capture('{role}'), bound with "
+            f"ciw lab run {task_id} --capture {role}=PATH) and {analysis} as a computational finding; its {claims} "
+            "need, besides an acquisition record (device, raw_sha256 of the captured bytes, acquired_at, "
+            f"calibration), a probe of the {instrument} on the analysing host that succeeds in {task_id} "
+            f"(runner.CAPTURE_INSTRUMENTS has no entry for {role}) or a signed-capture trust anchor, and the run is "
+            f"retained with ciw lab hardware retain under lab/hardware/<run-id>. Neither the capture reader nor a "
+            f"probe of the {instrument} exists, so they stay not_established even when such data exist.")
+
+
+# Operator capture roles the hardware-gated next steps name (none has an instrument probe in the runner).
+CAPTURE_ROLES = {"T113": "encoder-log", "T114": "servo-bench-log"}
+# Each task's next step names its own open question (an upstream PLSR proposal to re-test, a new check, or a
+# hardware-gated acquisition with its route), never the next queue task, which has already run.
+NEXT_STEPS = {
+    "T101": ("Deferred research question (upstream PLSR change): add a subnormal-aware term (an absolute "
+             "n^2 * 2^-1074 floor) to PLSR's decrease resolution and re-run this resolution-floor study to check that "
+             "the subnormal witness's resolution then covers the rounding error of forming its decrease matrix."),
+    "T102": ("Deferred research question (upstream PLSR change): pre-scale M by a power of two into LAPACK's window "
+             "before eigvalsh and re-run this scaling study to check that verdicts outside [2^-485, 2^485] become "
+             "exactly scale-invariant, as they are inside the window."),
+    "T103": ("Deferred research question (upstream PLSR change): decide the level gate by comparing exponents "
+             "(log2 V = 2 e + log2 scaled_value) instead of forming s^2, and report NUMERICAL_OVERFLOW instead of "
+             "raising when A(theta) overflows, then re-run this near-limit scan to check that no exceedance is missed "
+             "or spurious and that no in-box theta raises."),
+    "T104": ("Deferred research question (upstream PLSR change): check positive definiteness in QuadraticCertificate "
+             "with an exact LDL^T (or a resolution-aware eigenvalue floor) instead of the eigvalsh sign, and re-run to "
+             "check that the exactly indefinite P candidates that eigvalsh calls positive definite are refused."),
+    "T105": ("Deferred research question: do outward-rounded parameter boxes (a guard band declared by the host) "
+             "remove the boundary collisions between unit conventions, and should PLSR document that margin ratios "
+             "are unit-dependent under non-uniform unit changes? Re-run the unit-scale comparison with outward-rounded "
+             "boxes to find out."),
+    "T106": ("Deferred research question (upstream PLSR change): pin one witness per runtime code and per allowed "
+             "transition in PLSR's own tests, and decide whether a P(theta) that loses definiteness inside the box "
+             "should return CERTIFICATE_NOT_POSITIVE rather than raise, which would make the eight transitions "
+             "involving that code reachable."),
+    "T107": ("Deferred research question: how much of the [-2, 0) res inconclusive band would a less conservative "
+             "eigensolver term (p(n) = n instead of n^2) recover without losing soundness against the exact bins?"),
+    "T108": ("Deferred research question: extend the required-margin monotonicity property test to affine plants with "
+             "a parameter-dependent P(theta), which the finite family here does not contain (the general statement "
+             "rests on the decision-order argument)."),
+    "T109": ("Deferred research question: an exact-arithmetic Lyapunov solve (rational Bartels-Stewart) to decide the "
+             "defective and clustered cases that PLSR's residual gate refuses, and an upstream proposal that "
+             "solve_lyapunov report the residual gate separately from definiteness."),
+    "T110": ("Deferred research question: a sampled-data check that a continuous-time certificate is not silently "
+             "reused for the one-step map exp(A h): certify exp(A h) for declared sampling periods h and compare with "
+             "the continuous verdict (no sampling period is modelled here)."),
+    "T111": ("Deferred research question: compare the scalar-quadratic and matrix-eigenvalue routes on near-marginal "
+             "plants (stability margins below 0.05, excluded here) against exact rational references, where the two "
+             "routes are most likely to disagree."),
+    "T112": ("Deferred research question: specify a resolution-aware float64 ISS inequality (open question 1 in the "
+             "retained spec) before any runtime integration (acquiring an evidenced disturbance bound is "
+             "hardware-gated)."),
+    "T113": ("Deferred research question (hardware-gated): bind the residual adapter to acquired encoder data and "
+             "check the coverage of its three-standard-error interval there, which synthetic EKF data cannot "
+             "establish (a sensor_performance claim). "
+             + capture_route("T113", CAPTURE_ROLES["T113"], "encoder log", "run the residual adapter on it", "encoder",
+                             "sensor_performance and calibration findings")),
+    "T114": ("Deferred research question (hardware-gated): identify J, friction and delay on the bench, replace the "
+             "placeholder interval, re-run this check with an affine over-approximation suitable for PLSR's box "
+             "semantics, then run T113's adapter on acquired encoder data. "
+             + capture_route("T114", CAPTURE_ROLES["T114"], "servo bench log", "identify the J, friction and delay "
+                             "interval from it", "bench instrument", "physical and calibration findings")),
+}
+
 MODULE = "src/ciw/lab/lyapunov.py"
 REFERENCE = "src/ciw/lab/lyapunov_reference.py"
 BRIDGE = "src/ciw/lab/lyapunov_provider.py"
@@ -57,6 +139,9 @@ def _node(name):
 
 PARTIAL_TEST = f"{TESTS}::test_provider_tasks_are_partial_without_the_provider"
 UNCONDITIONAL_TEST = f"{TESTS}::test_checks_are_unconditional_and_observed_values_are_computed"
+NEXT_STEP_TEST = f"{TESTS}::test_next_steps_name_forward_work"
+PLATFORM_TEST = f"{TESTS}::test_t101_t102_defer_cross_platform_reproduction_as_one_question"
+WITNESS_ONCE_TEST = f"{TESTS}::test_t101_t103_retain_the_subnormal_witness_once"
 
 
 EXACT = {"kind": "roundoff", "value": 0.0, "basis": "exact rational, integer or bitwise comparison; no rounding "
@@ -232,6 +317,18 @@ def _witness_formed(result):
     return (np.array(sample["decrease_matrix"], dtype=float) / R.TINY).tolist()
 
 
+def _witness_measure(result):
+    """PLSR's formed witness matrix (units of 2^-1074), its largest deviation from the exact form and the resolution.
+
+    Without a returned sample the formed matrix is None, the deviation 0 and the resolution None.
+    """
+    formed = _witness_formed(result)
+    if formed is None:
+        return None, 0.0, None
+    exact_units = np.array(_witness_exact()["exact_form_units"])
+    return formed, float(np.max(np.abs(np.array(formed) - exact_units))), float(result.get("resolution", 0.0))
+
+
 def _witness_finding(result, identity, statement):
     """The subnormal witness: PLSR's formed decrease matrix and resolution against the exact declared form.
 
@@ -243,9 +340,7 @@ def _witness_finding(result, identity, statement):
     """
     exact = _witness_exact()
     A, P, x = _subnormal_witness()
-    formed = _witness_formed(result)
-    exact_units = np.array(exact["exact_form_units"])
-    error = 0.0 if formed is None else float(np.max(np.abs(np.array(formed) - exact_units)))
+    formed, error, _ = _witness_measure(result)
     # Sylvester: a 2x2 symmetric form is negative definite iff its (1, 1) entry is negative and det > 0.
     formed_det = 0.0 if formed is None or formed[0][0] >= 0.0 else float(
         formed[0][0] * formed[1][1] - formed[0][1] * formed[1][0])
@@ -372,7 +467,8 @@ CODE_LEVELS = {"CERTIFIED_WITH_MARGIN": 1.0, "NUMERICAL_INCONCLUSIVE": 0.0}
 @task("T101", changed_files=PROVIDER_FILES, regression_tests=(_node("test_t101_resolution_floor"),
                                                                 _node("test_reference_witness_is_exactly_indefinite"),
                                                                 _node("test_t101_threshold_is_analytic"),
-                                                                UNCONDITIONAL_TEST, PARTIAL_TEST))
+                                                                WITNESS_ONCE_TEST, PLATFORM_TEST,
+                                                                UNCONDITIONAL_TEST, PARTIAL_TEST, NEXT_STEP_TEST))
 def resolution_floor(ctx):
     fields = _fields(
         "For the family A = s[[-eps, 1], [-1, -eps]], P = I, PLSR's resolution floor is the documented "
@@ -395,8 +491,7 @@ def resolution_floor(ctx):
         "Evaluate every case with PLSR, recompute the documented resolution and the exact rational class of the "
         "declared form in CIW, compare codes with the analytic threshold and the exact class, and locate where the "
         "prediction stops holding.",
-        "T102: test power-of-two homogeneous scaling of A, P and x together; then propose a subnormal-aware "
-        "resolution term (an absolute n^2 * 2^-1074 floor) upstream and re-run T101.",
+        NEXT_STEPS["T101"],
         ["resolution differs from the documented formula", "normalised resolution drifts with scale",
          "code differs from the analytic threshold eps*", "code differs from the unit-scale code",
          "NUMERICAL_OVERFLOW before the decrease form overflows", "no NUMERICAL_OVERFLOW once it overflows",
@@ -405,9 +500,7 @@ def resolution_floor(ctx):
         ["The exact class concerns the declared binary64 numbers; they are synthetic, not measured plants.",
          "The resolution comparison is against CIW's transcription of the documented formula: a same-"
          "specification check, not an independent one.",
-         "Subnormal behaviour of numpy.linalg.eigvalsh (LAPACK dsyevd) may differ between BLAS builds, so the "
-         "codes below the normal range, the witness's code included, are retained in the artifact and not "
-         "compared by a finding."])
+         PLATFORM_QUESTION])
     cases, meta = _t101_family()
     offline = _t101_offline(meta)
     try:
@@ -627,7 +720,8 @@ def discrete_family():
 @task("T102", changed_files=PROVIDER_FILES, regression_tests=(_node("test_t102_power_of_two_scaling"),
                                                                 _node("test_eigvalsh_scaling_window"),
                                                                 _node("test_discrete_razor_edge_sits_at_the_threshold"),
-                                                                UNCONDITIONAL_TEST, PARTIAL_TEST))
+                                                                PLATFORM_TEST,
+                                                                UNCONDITIONAL_TEST, PARTIAL_TEST, NEXT_STEP_TEST))
 def power_of_two_scaling(ctx):
     fields = _fields(
         "Replacing (A, P, x) by (2^a A, 2^b P, 2^c x) multiplies M, max eig(M) and the resolution by 2^(a+b) "
@@ -654,15 +748,12 @@ def power_of_two_scaling(ctx):
         "Evaluate base and scaled cases with PLSR in one subprocess; count code flips and ratio changes per window; "
         "classify every declared form exactly; independently test numpy.linalg.eigvalsh against exact power-of-two "
         "scaling inside and outside the window.",
-        "T103: overflow and underflow of states and parameters; propose that PLSR pre-scale M by a power of two "
-        "into LAPACK's window before eigvalsh so verdicts are exactly scale-invariant.",
+        NEXT_STEPS["T102"],
         ["code flip inside the window", "margin ratio changes inside the window", "x scaling alters the sample",
          "discrete near-threshold code flip under (P, x) scaling", "code moved against the exact class outside the "
          "window", "resolution of the scaled subnormal witness not zero"],
         ["The LAPACK window [2^-485, 2^485] is taken from reference dsyevd (RMIN, RMAX); other LAPACK builds may "
-         "rescale differently.",
-         "Outside-window flip counts and the scaled witness's code depend on the LAPACK/BLAS build; they are "
-         "retained in the artifact, and only the soundness property is checked."])
+         "rescale differently.", PLATFORM_QUESTION])
     inside_eig, outside_eig = _eigvalsh_window()
     offline = [finding(
         "numpy.linalg.eigvalsh commutes exactly with power-of-two scaling while max|M| stays in [2^-485, 2^485]",
@@ -861,7 +952,8 @@ def _level_counts(rows, key):
 @task("T103", changed_files=PROVIDER_FILES, regression_tests=(_node("test_t103_overflow_underflow"),
                                                                 _node("test_level_gate_prediction"),
                                                                 _node("test_representability_reference"),
-                                                                UNCONDITIONAL_TEST, PARTIAL_TEST))
+                                                                WITNESS_ONCE_TEST,
+                                                                UNCONDITIONAL_TEST, PARTIAL_TEST, NEXT_STEP_TEST))
 def overflow_underflow(ctx):
     fields = _fields(
         "States anywhere in binary64 are classified with the code unchanged through PLSR's power-of-two state "
@@ -869,8 +961,8 @@ def overflow_underflow(ctx):
         "and vanish beyond about 2^1075, which a code decided relative to |x|^2 does not see); the reported "
         "unscaled V and x^T M x equal the exact values to within rounding or are flagged value_out_of_range, and "
         "the flag is set exactly when the exact value is not representable; matrices whose arithmetic leaves "
-        "binary64 return NUMERICAL_OVERFLOW or an input refusal; near the limits the resolution still covers the "
-        "rounding of the decrease form and no level-set exceedance is missed.",
+        "binary64 return NUMERICAL_OVERFLOW or an input refusal; no level-set exceedance is missed near the limits. "
+        "The resolution floor of a subnormal plant is T101's finding, which T103 cites and does not repeat.",
         "V(x) = x^T P x and x^T M x are homogeneous of degree two in x, so PLSR evaluates at x / 2^e with the "
         "unit state in [1, 2), and reports V = s^2 * scaled_value (s = 2^e), flagging value_out_of_range when that "
         "product is infinite or zero while scaled_value is not. The level gate decides V > level as scaled_value > "
@@ -882,23 +974,20 @@ def overflow_underflow(ctx):
          "Level scan: A = -I, P = 2^p I (p in -1060..1000), x = 2^e e1 (e in -1074..1023), "
          "level = 2^(p + 2e -+ 1)", "Near-limit matrices: A = -2^1000 I with P = 2^30 I; A = -2^511 I or -2^512 I "
          "with P = 2^511 I; P = 2^1022 I with x = (1.5, 1.5); affine A(theta) = -I + theta c I, theta = +-1e308",
-         "The subnormal witness A = [[-2, 5], [0, -3]] 2^-1074, P = I"],
+         "The subnormal witness A = [[-2, 5], [0, -3]] 2^-1074, P = I (re-evaluated for the artifact only; its "
+         "finding is retained by T101)"],
         "PLSR code (or raised input error) per case; PLSR's reported V, x^T M x and value_out_of_range against "
         "exact rationals; exact exponent arithmetic for V against the level; PLSR's formed decrease matrix and "
         "resolution of the witness against its exact rational form.",
         "State scaling never changes the code; reported values are exact to rounding or flagged, and flagged "
-        "exactly when not representable; levels are decided exactly; overflow returns NUMERICAL_OVERFLOW; the "
-        "resolution covers the rounding of the formed decrease matrix.",
+        "exactly when not representable; levels are decided exactly; overflow returns NUMERICAL_OVERFLOW.",
         "One PLSR subprocess evaluates every case; CIW predicts the level decisions from the documented rule and "
         "from exact exponents and recomputes where the decrease form overflows.",
-        "T104: semidefinite and skew-symmetric edge cases; propose upstream that the level gate compare exponents "
-        "(log2 V = 2 e + log2 scaled_value) instead of forming s^2, and that forming A(theta) report "
-        "NUMERICAL_OVERFLOW rather than raise.",
+        NEXT_STEPS["T103"],
         ["state scaling changes the code", "non-finite state accepted", "reported V or x^T M x wrong without a flag",
          "value_out_of_range missing for an unrepresentable value", "value_out_of_range set for a representable "
          "value", "level gate misses an exceedance", "level gate reports a spurious exceedance",
-         "overflow not reported as NUMERICAL_OVERFLOW", "overflow while forming A(theta) raises",
-         "resolution below the rounding error of the formed decrease matrix (subnormal witness)"],
+         "overflow not reported as NUMERICAL_OVERFLOW", "overflow while forming A(theta) raises"],
         ["Near-limit inputs are synthetic binary64 numbers chosen to reach the limits, not plant data.",
          "The documented level rule is transcribed from the runtime source at the pinned commit, so agreement "
          "with it is a same-specification check; the exact exponent comparison is the independent reference.",
@@ -1051,9 +1140,8 @@ def overflow_underflow(ctx):
                                      "binary64", "witness": extra_flags[0]} if extra_flags else None,
         uncertainty=_roundoff(0.0, "single-component states: s^2 = 2^(2e) and the reported product are "
                                    "IEEE-deterministic; representability of the exact rationals is exact")))
-    witness = _witness_finding(results["witness"], identity, "Near the representable limits the float64 resolution "
-                                                             "still bounds the rounding error of the decrease form")
-    findings.append(witness)
+    # C12: the subnormal-witness finding is retained once, by T101; T103 re-evaluates the witness for its artifact.
+    _, witness_error, witness_resolution = _witness_measure(results["witness"])
     findings += offline
     refutations = []
     if missed or spurious:
@@ -1063,8 +1151,6 @@ def overflow_underflow(ctx):
         refutations.append("an input error raised for an in-box theta")
     if extra_flags:
         refutations.append("value_out_of_range set for representable subnormal values")
-    if witness["evidence_status"] != "not_established":
-        refutations.append("a resolution of zero below the rounding error of a subnormal plant's decrease form")
     behaved = state_mismatch == 0 and all(limit_codes[k] == predicted_limits[k] for k in limits)
     fields["numerical_result"] = (
         f"{len(state_codes)} states from 2^-1074 to 1.797e308: {state_mismatch} code changes (all {reference_code}). "
@@ -1074,11 +1160,13 @@ def overflow_underflow(ctx):
         f"values within {max(unflagged_errors):.3g} roundings of the exact ones. "
         f"Level scan ({len(rows)} cases): {missed} missed exceedances (certified with V > level, s^2 underflowed), "
         f"{spurious} spurious exceedances (s^2 overflowed), {disagreement} disagreements with the documented rule. "
-        f"Near-limit matrices: {limit_codes}. theta overflow: {theta_codes}. Subnormal witness: resolution "
-        f"{witness['value']['resolution']:.3g}, formed decrease matrix off the exact form by "
-        f"{witness['value']['formation_error_units']:g} x 2^-1074 in its largest entry (its code is retained in the "
-        "artifact). Conclusion: " + ("state scaling and matrix overflow behave as documented" if behaved else
-                                     "state scaling or matrix overflow departs from the documented order")
+        f"Near-limit matrices: {limit_codes}. theta overflow: {theta_codes}. Subnormal witness, re-evaluated for the "
+        f"artifact only (T101 retains its finding '{WITNESS_CLAIM}'): resolution "
+        + ("not returned" if witness_resolution is None else f"{witness_resolution:.3g}")
+        + f", formed decrease matrix off the exact form by {witness_error:g} x 2^-1074 in its largest entry (its "
+        "code is retained in the artifact). Conclusion: "
+        + ("state scaling and matrix overflow behave as documented" if behaved else
+           "state scaling or matrix overflow departs from the documented order")
         + ("; the hypothesis is refuted by " + ", by ".join(refutations) if refutations else
            "; no refutation of the hypothesis was observed") + ".")
     fields["uncertainty"] = ("The level scan, the reported-value states and the overflow cases involve exact powers "
@@ -1176,7 +1264,7 @@ def expected_codes(exact_class, exact_bin):
 
 @task("T104", changed_files=PROVIDER_FILES, regression_tests=(_node("test_t104_semidefinite_edges"),
                                                                 _node("test_edge_case_exact_classes"),
-                                                                UNCONDITIONAL_TEST, PARTIAL_TEST))
+                                                                UNCONDITIONAL_TEST, PARTIAL_TEST, NEXT_STEP_TEST))
 def semidefinite_edges(ctx):
     fields = _fields(
         "PLSR never certifies a decrease form that is only semidefinite or indefinite: skew-symmetric plants with "
@@ -1197,8 +1285,7 @@ def semidefinite_edges(ctx):
         "NOT_CERTIFIED.",
         "Classify every declared form exactly (Sylvester criterion and principal minors on dyadic rationals), "
         "evaluate it with PLSR, and compare; probe the solver and the certificate constructor with singular data.",
-        "T105: parameter boxes across unit scales; propose that PLSR's QuadraticCertificate check positive "
-        "definiteness with an exact LDL^T (or a resolution-aware eigenvalue floor) instead of the eigvalsh sign.",
+        NEXT_STEPS["T104"],
         ["certificate for a semidefinite or indefinite form", "skew form not inconclusive",
          "Jordan threshold misplaced", "semidefinite Q accepted by the solver", "indefinite P accepted and certified"],
         ["Exact classes describe the declared binary64 matrices; the intended real matrices may differ by rounding.",
@@ -1401,7 +1488,8 @@ def conversion_scan(count=2000):
 
 
 @task("T105", changed_files=PROVIDER_FILES, regression_tests=(_node("test_t105_unit_scales"),
-                                                                _node("test_conversion_scan"), PARTIAL_TEST))
+                                                                _node("test_conversion_scan"), PARTIAL_TEST,
+                                                                NEXT_STEP_TEST))
 def unit_scales(ctx):
     fields = _fields(
         "The same physical parameter box and plant expressed in different units give the same PLSR verdicts: box "
@@ -1420,8 +1508,7 @@ def unit_scales(ctx):
         "neighbours; check_vertices passes in every unit system.",
         "Convert the SI declaration into each unit system the way a host would (float arithmetic), evaluate all "
         "samples with PLSR, compare codes per sample, then search the conversion arithmetic for counterexamples.",
-        "T106: drive every runtime status; propose that hosts declare boxes with an outward-rounded guard band "
-        "and that PLSR document that margin ratios are unit-dependent for non-uniform unit changes.",
+        NEXT_STEPS["T105"],
         ["code differs across unit systems", "box decision differs at a bound", "just-outside sample admitted",
          "bound conversion formulas disagree", "vertex check fails in some units",
          "near-threshold verdict depends on units"],
@@ -1855,7 +1942,7 @@ def _affine_certificate_case(cid, theta):
                                                                 _node("test_documented_decision_order"),
                                                                 _node("test_transition_graph"),
                                                                 _node("test_t106_offline_findings_without_the_provider"),
-                                                                UNCONDITIONAL_TEST, PARTIAL_TEST))
+                                                                UNCONDITIONAL_TEST, PARTIAL_TEST, NEXT_STEP_TEST))
 def status_transitions(ctx):
     graph = transition_graph()
     allowed = sorted(key for key, entry in graph.items() if entry["status"] == "allowed")
@@ -1898,9 +1985,7 @@ def status_transitions(ctx):
         "Derive the transition graph by enumerating the gate vectors the decision order can hold, build each path, "
         "evaluate all steps in one PLSR subprocess, recompute gates and codes in CIW, and tabulate the direct "
         "transitions and their coverage (transition-coverage.json and .md).",
-        "T107: near-boundary spectra; add an upstream regression that pins one witness per code and per allowed "
-        "transition, and decide whether a P(theta) that loses definiteness in the box should return "
-        "CERTIFICATE_NOT_POSITIVE rather than raise.",
+        NEXT_STEPS["T106"],
         ["a code unreachable", "a step off the documented order", "an allowed transition not realised",
          "a code change at a crossing the order does not allow", "a host-owned code accepted",
          "CERTIFICATE_NOT_POSITIVE reachable without rounding", "a certificate on an exactly indefinite P"],
@@ -2118,7 +2203,8 @@ def boundary_family():
     return family
 
 
-@task("T107", changed_files=PROVIDER_FILES, regression_tests=(_node("test_t107_inconclusive_band"), PARTIAL_TEST))
+@task("T107", changed_files=PROVIDER_FILES,
+      regression_tests=(_node("test_t107_inconclusive_band"), PARTIAL_TEST, NEXT_STEP_TEST))
 def inconclusive_band(ctx):
     fields = _fields(
         "PLSR never gives a certifying code to a near-boundary decrease form that is not exactly negative "
@@ -2141,8 +2227,7 @@ def inconclusive_band(ctx):
         "+2 res; with the declared margin no CERTIFIED_WITH_MARGIN within the band. Without a declared margin, "
         "exactly negative definite band cases may be certified (soundly) or left inconclusive.",
         "Generate cases, bin their exact spectra, evaluate with PLSR at both margins and tabulate codes per bin.",
-        "T108: required-margin monotonicity; measure how much of the [-2, 0) res band a less conservative "
-        "eigensolver term (p(n) = n instead of n^2) would recover without losing soundness against exact bins.",
+        NEXT_STEPS["T107"],
         ["certifying code on a form that is not exactly negative definite", "unresolved sign beyond two "
          "resolutions", "CERTIFIED_WITH_MARGIN inside the band under a declared margin",
          "MARGIN_LOW inconsistent with the declared margin",
@@ -2325,7 +2410,8 @@ def monotonicity_violations(sequence):
 
 
 @task("T108", changed_files=PROVIDER_FILES, regression_tests=(_node("test_t108_margin_monotonicity"),
-                                                                _node("test_documented_rule_is_monotone"), PARTIAL_TEST))
+                                                                _node("test_documented_rule_is_monotone"), PARTIAL_TEST,
+                                                                NEXT_STEP_TEST))
 def margin_monotonicity(ctx):
     fields = _fields(
         "Increasing required_margin never turns a failing verdict into a passing one: CERTIFIED_WITH_MARGIN and "
@@ -2344,7 +2430,7 @@ def margin_monotonicity(ctx):
         "r = nextafter(margin, 0); refusal of invalid margins.",
         "Two PLSR passes: base verdicts give margin and resolution, then each case is re-evaluated on its sorted "
         "margin grid; properties are checked along each sequence.",
-        "T109: adversarial eigenvalue cases; extend the property test to affine plants with parameter-dependent P.",
+        NEXT_STEPS["T108"],
         ["passing verdict regained at a larger margin", "meets_required_margin regained", "non-certifying code "
          "changed by the margin", "inequality_certified changed by the margin", "threshold not at margin",
          "invalid margin accepted"],
@@ -2493,7 +2579,7 @@ def _valid_certificate(A, P, time="continuous"):
 
 @task("T109", changed_files=PROVIDER_FILES, regression_tests=(_node("test_t109_adversarial_eigenvalues"),
                                                                 _node("test_numpy_misreads_exact_jordan_block"),
-                                                                UNCONDITIONAL_TEST, PARTIAL_TEST))
+                                                                UNCONDITIONAL_TEST, PARTIAL_TEST, NEXT_STEP_TEST))
 def adversarial_eigenvalues(ctx):
     fields = _fields(
         "On highly non-normal, exactly defective and clustered Hurwitz plants PLSR either certifies soundly (the "
@@ -2518,9 +2604,7 @@ def adversarial_eigenvalues(ctx):
         "Phase 1: PLSR solves and verdicts with P = I and the independent P; phase 2: verdicts with PLSR's P. "
         "CIW checks certificates exactly, computes transient peaks in closed form and compares numpy's spectral "
         "abscissa with the exact spectrum.",
-        "T110: discrete versus continuous interpretation; add an exact-arithmetic Lyapunov solve (rational "
-        "Bartels-Stewart) to decide defective cases that PLSR's residual gate refuses, and propose that "
-        "solve_lyapunov report the residual gate separately from definiteness.",
+        NEXT_STEPS["T109"],
         ["certificate without exact validity", "solver disagreement beyond conditioning", "transient bound violated",
          "numpy eigenvalue of an exactly defective matrix not misplaced beyond rounding (its sign is retained in the "
          "artifact)", "P = I threshold misplaced",
@@ -2752,7 +2836,8 @@ def quadrant_family(per_quadrant=10):
     return family
 
 
-@task("T110", changed_files=PROVIDER_FILES, regression_tests=(_node("test_t110_time_interpretation"), PARTIAL_TEST))
+@task("T110", changed_files=PROVIDER_FILES,
+      regression_tests=(_node("test_t110_time_interpretation"), PARTIAL_TEST, NEXT_STEP_TEST))
 def time_interpretation(ctx):
     fields = _fields(
         "PLSR distinguishes x' = A x from x+ = A x: the same matrix is certified in a time convention exactly when "
@@ -2771,8 +2856,7 @@ def time_interpretation(ctx):
         "convention; theta_dot refused for discrete plants.",
         "Phase 1: P = I verdicts and solves in both conventions; phase 2: verdicts with each returned P in both "
         "conventions; compare with numpy's spectral abscissa and radius.",
-        "T111: scalar quadratic versus matrix-eigenvalue routes; add a sampled-data check that a continuous "
-        "certificate is not silently reused for exp(A h).",
+        NEXT_STEPS["T110"],
         ["same verdict in both conventions for quadrant-differing matrices", "certified but unstable",
          "stable but never certified", "discrete theta_dot accepted", "resolution formula not time-specific"],
         ["Stability margins of at least 0.1 keep numpy's eigenvalue reference reliable for these matrices.",
@@ -3016,7 +3100,8 @@ def scalar_gate_summary(rows):
             "route_disagreements": robust}
 
 
-@task("T111", changed_files=PROVIDER_FILES, regression_tests=(_node("test_t111_routes"), PARTIAL_TEST))
+@task("T111", changed_files=PROVIDER_FILES,
+      regression_tests=(_node("test_t111_routes"), PARTIAL_TEST, NEXT_STEP_TEST))
 def quadratic_routes(ctx):
     fields = _fields(
         "The PLSR matrix route (Lyapunov solve, then the sign of max eig of the decrease form beyond the "
@@ -3049,7 +3134,7 @@ def quadratic_routes(ctx):
         "matrix route and cannot stand in for it.",
         "Phase 1: PLSR solves, P = I verdicts, scalar-gate, thin-cone and n = 1 verdicts; phase 2: verdicts with "
         "PLSR's P. Compare routes case by case and per sample with exact rationals.",
-        "T112: a separate disturbance-aware (ISS) research branch; T113: connect filtered residuals.",
+        NEXT_STEPS["T111"],
         ["solver disagreement", "solver returns P for an unstable plant", "solver refuses a stable plant",
          "solver refusal other than ValueError", "verdict certifies an unstable plant", "NOT_CERTIFIED where the "
          "exact x^T M x is not positive", "NOT_CERTIFIED without max eig(M) > res", "matrix route calls an exactly "
@@ -3265,7 +3350,8 @@ def _exponential_finding(claim, series, closed_form, independent, reference):
 
 
 @task("T112", changed_files=RESEARCH_FILES, regression_tests=(_node("test_t112_iss_branch"),
-                                                                _node("test_research_tasks_without_optional_modules")))
+                                                                _node("test_research_tasks_without_optional_modules"),
+                                                                NEXT_STEP_TEST))
 def iss_branch(ctx):
     fields = _fields(
         "For x' = A x + B w with |w| <= w_bar, the quadratic ISS-Lyapunov bound sqrt(V(t)) <= max(sqrt(V(0)), "
@@ -3290,8 +3376,7 @@ def iss_branch(ctx):
         "Derive the bound, compute the sharp reachable-set supremum, simulate four disturbance classes with the "
         "exact discretisation, compare, check the matrix exponential against its closed form and an independent "
         "implementation, and retain the written branch specification.",
-        "Specify a resolution-aware float64 ISS inequality (open question 1 in the retained spec) before any "
-        "runtime integration; acquiring an evidenced disturbance bound is hardware-gated.",
+        NEXT_STEPS["T112"],
         ["simulated trajectory exceeds the sharp supremum", "worst-case switching far below the sharp supremum",
          "sharp supremum not converged in the step", "bound not approached in one dimension",
          "matrix exponential inaccurate", "ISS claims leaking into runtime statuses"],
@@ -3394,7 +3479,7 @@ T113_FILES = (MODULE, REFERENCE, BRIDGE, RESEARCH, DOC)
 
 @task("T113", changed_files=T113_FILES,
       regression_tests=(_node("test_t113_residual_adapter"), _node("test_adapter_keeps_metadata_outside"),
-                        PARTIAL_TEST))
+                        PARTIAL_TEST, NEXT_STEP_TEST))
 def residual_adapter(ctx):
     fields = _fields(
         "A host-side adapter can turn filtered residual statistics into plsr-sample-v1 samples (a schema tag and "
@@ -3419,8 +3504,7 @@ def residual_adapter(ctx):
         "Run the adapter on every window, serialise the samples it emits and search them for envelope metadata, "
         "evaluate every forwarded sample with PLSR, apply the host's window rule, and compare with the "
         "documented decision order.",
-        "T114: servo-axis pilot specification; then bind the adapter to acquired encoder data (hardware-gated) and "
-        "check the coverage of the three-standard-error interval there.",
+        NEXT_STEPS["T113"],
         ["metadata in the adapter's emitted samples", "non-numeric or extra sample field",
          "host status forwarded to the "
          "kernel", "kernel accepts a host-owned code", "near-bound point estimate accepted although its interval "
@@ -3622,7 +3706,7 @@ def _abort_finding(claim, rows, basis):
                                                             _node("test_t114_level_set_and_monitor"),
                                                             _node("test_level_set_extent_is_checked_independently"),
                                                             _node("test_research_tasks_without_optional_modules"),
-                                                            PARTIAL_TEST))
+                                                            PARTIAL_TEST, NEXT_STEP_TEST))
 def servo_pilot(ctx):
     fields = _fields(
         "A non-production servo-axis pilot can be specified so that the Lyapunov monitor's scope, data, abort "
@@ -3650,9 +3734,7 @@ def servo_pilot(ctx):
         "Build the sampled-data models, choose P, check each grid point exactly, verify the exponential, derive the "
         "level set and check its extent, evaluate the monitor configuration at the scan states with the pinned "
         "runtime and with the transcription, and retain the specification (JSON and Markdown).",
-        "Hardware-gated: identify J, friction and delay on the bench, replace the placeholder interval, re-run "
-        "this check with an affine over-approximation suitable for PLSR's box semantics, then run T113's adapter "
-        "on acquired encoder data.",
+        NEXT_STEPS["T114"],
         ["certificate invalid on part of the interval", "exponential inaccurate", "monitor code independent of the "
          "state even with a level set", "abort trigger that the configuration cannot produce",
          "level set outside the envelope", "runtime codes off the documented order", "authority or safety claimed"],

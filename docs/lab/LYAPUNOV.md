@@ -162,9 +162,10 @@ answers "not exceeded" and when it overflows it answers "exceeded", whatever
 and reported 9 spurious ones against the exact exponent comparison, in the
 same cases as the CIW transcription of the documented rule. `θ = 1e308` with
 `A₁ = 2I` makes `A(θ)` infinite and raises `ValueError: A must be finite`
-instead of returning a status. The subnormal witness's resolution is again 0
-below its formation error (checked as in T101); its code is retained in
-`near-limits.json`.
+instead of returning a status. T103 re-evaluates the subnormal witness only
+for `near-limits.json`: its resolution is again 0 below its formation error,
+and T103's numerical result states this. The finding itself is retained
+once, by T101, so aggregates count it once.
 
 **T104 — semidefinite and skew-symmetric edges.** Skew A with `P = I` gives
 an exactly zero form and always `NUMERICAL_INCONCLUSIVE`; skew A with SPD P is
@@ -381,8 +382,36 @@ as such and treated as a runtime fault, not as abort triggers.
 
 ## Open research questions
 
+Each task's `recommended_next_task` is its own open question
+(`lyapunov.NEXT_STEPS`): an upstream proposal above re-tested by the task that
+motivated it, a new check (sampled-data reuse of a continuous certificate,
+near-marginal route comparison, affine plants with parameter-dependent P), or a
+hardware-gated acquisition. It is never the next queue task.
+
+- Cross-platform reproduction (T101, T102; `lyapunov.PLATFORM_QUESTION`):
+  run both against the pinned PLSR on Windows x86-64, on macOS arm64 and on
+  Linux x86-64 with a LAPACK other than the retained OpenBLAS build. The
+  subnormal codes (`resolution-floor.json`) and the outside-window flips and
+  scaled-witness code (`scaling-invariance.json`) must match the retained ones
+  case for case, and every finding value must match within its regression
+  tolerance. These values are artifact-only because builds may decide them
+  differently, and no second build has been compared.
 - A resolution-aware float64 evaluation of the ISS inequality (T112).
 - An affine over-approximation of the sampled-data servo loop that fits PLSR's
   box semantics, and bench identification of J, friction and delay
   (hardware-gated; T114).
 - Binding the T113 adapter to acquired encoder data (hardware-gated).
+
+Both hardware-gated steps name their route (`lyapunov.capture_route`). The
+bench or encoder log would enter as an operator capture
+(`ctx.capture("servo-bench-log")` in T114, `ctx.capture("encoder-log")` in
+T113, bound by `ciw lab run TASK --capture ROLE=PATH`), from which the task
+could compute computational findings. Their physical, calibration and
+sensor-performance findings also need an acquisition record (device,
+`raw_sha256` of the captured bytes, time, calibration) and either a probe of
+the instrument on the analysing host that succeeds in the task or a
+signed-capture trust anchor, because the physical gate never accepts an
+unauthenticated capture by itself (`runner.CAPTURE_INSTRUMENTS` has no entry
+for either role). The run would be retained with `ciw lab hardware retain`
+under `lab/hardware/<run-id>`. Neither task reads a capture and no such probe
+exists, so those findings stay `not_established` even when such data exist.

@@ -727,6 +727,33 @@ def test_figures_fit_their_legend_and_title_space(lab):
             assert len(legends) <= len(svg.PALETTE), path.name
 
 
+# What a hardware-gated next step must name: the capture route by which acquired bytes could enter the task, its
+# acquisition record, the instrument probe (or trust anchor) the physical gate also needs, where the run is retained,
+# and that the physical finding stays unestablished until then.
+CAPTURE_ROUTE = ("ctx.capture(", "--capture ", "raw_sha256", "calibration", "runner.CAPTURE_INSTRUMENTS",
+                 "signed-capture trust anchor", "lab/hardware/<run-id>", "ciw lab hardware retain",
+                 "stays not_established even when such data exist")
+
+
+def test_every_next_step_is_a_deferred_research_question(lab):
+    """A completed task's next step names its own open question, not a queue task that has already run."""
+    gated = []
+    for task_id in SECTION:
+        report = lab(task_id)
+        text = report["recommended_next_task"]
+        assert text.startswith("Deferred research question"), (task_id, text)
+        assert "T0" not in text.split(":", 1)[0], (task_id, text)
+        if text.startswith("Deferred research question (hardware-gated)"):
+            gated.append(task_id)
+            for fragment in CAPTURE_ROUTE:
+                assert fragment in text, (task_id, fragment)
+    assert gated == ["T005"]
+    text = lab("T005")["recommended_next_task"]
+    assert "ctx.capture('trajectory-log')" in text and "ciw lab run T005 --capture trajectory-log=PATH" in text
+    # The step says no tracker probe exists: true while the physical gate maps no instrument to that role.
+    assert "trajectory-log" not in runner.CAPTURE_INSTRUMENTS
+
+
 def test_perturbation_helpers_are_geometric():
     sphere = gj.surface("sphere")
     spec = gj.path("sphere")

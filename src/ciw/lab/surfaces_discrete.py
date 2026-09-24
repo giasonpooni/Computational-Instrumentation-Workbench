@@ -55,6 +55,35 @@ INTEGRATORS = "src/ciw/lab/integrators.py"
 TESTS = "tests/test_lab_surfaces_discrete.py"
 POINTS = 32
 AD_POINTS = 12
+# Each task's next step is its own deferred research question. T042 defines refusal states for triangle meshes
+# (MESH_CODES, TRACE_CODES, QUERY_CODES) and T043 propagates vertex noise; neither delivers T033's, T035's or
+# T037's question, so those are named as queue extensions after T168. Context sits in parentheses so that the
+# planner's clause split (at ';' and before a joined task pointer) keeps each question whole.
+MESH_REFUSALS = ("the refusal states that T042 defines (MESH_CODES, TRACE_CODES and QUERY_CODES in "
+                 "surfaces_discrete_mesh_geometry.py) are for triangle meshes")
+NEXT_STEPS = {
+    "T033": ("Deferred research question (queue extension after T168): make this conformance suite the admission "
+             "gate for smooth surface data, run on every Surface before a lab task integrates on it and refusing a "
+             "nonconforming one with a named code per failed identity (the seeded defects are refused only inside "
+             "T033 today, " + MESH_REFUSALS + " and do not use this suite)."),
+    "T034": ("Deferred research question: an independent assembly of the connection and curvature for gaussian-bump, "
+             "gaussian-bump-shear and rotated-torus (for example sympy.diffgeom as for the other seven surfaces, or a "
+             "second computer algebra system), where ciw-written assembly of sympy derivatives gives only same-origin "
+             "evidence, and complex-step derivatives once the core surfaces accept complex coordinates."),
+    "T035": ("Deferred research question (queue extension after T168): with metric samples carrying noise of "
+             "standard deviation sigma, does the optimal central-difference step move to about "
+             "(sigma / |d^3 g|)^(1/3) and the smallest derivative error grow like sigma^(2/3)? (T043 propagates "
+             "vertex noise to mesh lengths, normals and curvature but tests no difference-based metric derivative, "
+             "so this law is not tested anywhere in the queue.)"),
+    "T036": ("Deferred research question (queue extension after T168): locate the chart-switch crossing with event "
+             "detection in the adaptive integrator (switching now happens between steps), and drive switching from "
+             "the T037 require_regular refusal codes instead of a fixed regularity threshold."),
+    "T037": ("Deferred research question (queue extension after T168): adopt these refusal codes (nonfinite_point, "
+             "nonfinite_metric, degenerate_metric, curvature_blowup, outside_chart, curvature_singularity, "
+             "conical_singularity) as the admission refusal states for smooth surface data, and add a removability "
+             "test (metric regularity in radial arclength coordinates) so the cube-root chart's removable "
+             "singularity is classified (" + MESH_REFUSALS + " and contain none of these codes)."),
+}
 
 
 def _check(reference, observed, tolerance, comparison="abs_le", kind="analytic"):
@@ -112,7 +141,8 @@ STENCIL_UNCERTAINTY = {
                         f"{TESTS}::test_conformance_suite_rejects_seeded_mutants",
                         f"{TESTS}::test_conformance_reports_nonfinite_residuals",
                         f"{TESTS}::test_brioschi_recovers_supplied_curvature",
-                        f"{TESTS}::test_t033_report"))
+                        f"{TESTS}::test_t033_report",
+                        f"{TESTS}::test_next_steps_do_not_hand_work_to_tasks_that_did_not_deliver_it"))
 def surface_interface(ctx):
     surfaces = conformance_surfaces()
     table = {key: conformance(surface, DOMAINS[key], POINTS, SEED) for key, surface in surfaces.items()}
@@ -190,8 +220,7 @@ def surface_interface(ctx):
             "Christoffel symmetry is exact whenever dg is symmetric in its last two indices, because the core einsum "
             "is then symmetric term by term; the check adds evidence only for surfaces that override christoffel().",
             "Conformance on sampled points is evidence, not proof, of correctness on the whole domain."],
-        "recommended_next_task": ("T042: turn the conformance suite into the admission gate for invalid or "
-                                  "incomplete surface data, reusing its refusal of the seeded defects."),
+        "recommended_next_task": NEXT_STEPS["T033"],
         "provider_runtime_identity": builtin_identity((MODULE, GEOMETRY, DOC, CORE)),
     }
     findings = [
@@ -555,9 +584,7 @@ def derivative_checks(ctx):
             "same-origin evidence.",
             "Dual-number agreement is same-origin (ciw) evidence."]
             + ([] if have_sympy else ["sympy is not installed here, so the independent symbolic comparison did not run."]),
-        "recommended_next_task": ("T040: compare smooth and mesh Jacobi approximations using these verified smooth "
-                                  "derivatives and curvatures as the reference. Complex-step derivatives remain open "
-                                  "until the core surfaces accept complex coordinates."),
+        "recommended_next_task": NEXT_STEPS["T034"],
         "provider_runtime_identity": builtin_identity((MODULE, AD, GEOMETRY, DOC, CORE)),
     }
     return {"state": state, "fields": fields, "findings": findings}
@@ -643,7 +670,8 @@ def fd_study(points=12, seed=SEED + 35) -> dict:
 
 
 @task("T035", changed_files=(MODULE, GEOMETRY, AD, DOC),
-      regression_tests=(f"{TESTS}::test_finite_difference_error_is_v_shaped", f"{TESTS}::test_t035_report"))
+      regression_tests=(f"{TESTS}::test_finite_difference_error_is_v_shaped", f"{TESTS}::test_t035_report",
+                        f"{TESTS}::test_next_steps_do_not_hand_work_to_tasks_that_did_not_deliver_it"))
 def finite_difference_derivatives(ctx):
     study = fd_study()
     rows = study["surfaces"]
@@ -699,8 +727,7 @@ def finite_difference_derivatives(ctx):
             "complex coordinates.",
             "Measured surface samples would add noise sigma >> eps, moving the optimum to ~(sigma / |d^3 g|)^(1/3); "
             "nothing here measures that."],
-        "recommended_next_task": ("T043: propagate vertex and normal uncertainty through difference-based metric "
-                                  "derivatives, where noise replaces eps in the step-size law."),
+        "recommended_next_task": NEXT_STEPS["T035"],
         "provider_runtime_identity": builtin_identity((MODULE, GEOMETRY, AD, DOC, CORE)),
     }
     findings = [
@@ -1165,9 +1192,7 @@ def chart_transitions(ctx):
             "Switching happens between steps; an adaptive integrator would need event location at the threshold.",
             "The recorded minimum regularity of the active chart restates the switch threshold and the covering "
             "bound; it is reported, not checked."],
-        "recommended_next_task": ("Queue extension after T168: locate the chart-switch crossing with event detection "
-                                  "in the adaptive integrator, and drive switching from the T037 require_regular "
-                                  "refusal codes instead of a fixed regularity threshold."),
+        "recommended_next_task": NEXT_STEPS["T036"],
         "provider_runtime_identity": builtin_identity((MODULE, CHARTS, GEOMETRY, DOC, CORE, INTEGRATORS)),
     }
     findings = [
@@ -1409,7 +1434,8 @@ def core_check_leniency() -> dict:
 @task("T037", changed_files=(MODULE, CHARTS, GEOMETRY, DOC),
       regression_tests=(f"{TESTS}::test_singularity_scans_classify_every_case",
                         f"{TESTS}::test_singularity_detection_limits",
-                        f"{TESTS}::test_singularity_refusal_codes", f"{TESTS}::test_t037_report"))
+                        f"{TESTS}::test_singularity_refusal_codes", f"{TESTS}::test_t037_report",
+                        f"{TESTS}::test_next_steps_do_not_hand_work_to_tasks_that_did_not_deliver_it"))
 def coordinate_singularities(ctx):
     scans = {a.name: scan(a) for a in approaches()}
     classes = {name: result["classification"] for name, result in scans.items()}
@@ -1535,9 +1561,7 @@ def coordinate_singularities(ctx):
             "proposed as a core change.",
             "The apex codes that the cone and the power graph raise themselves (conical_singularity, "
             "curvature_singularity) are author labels, recorded in refusals.json but not counted as detections."],
-        "recommended_next_task": ("T042: adopt these refusal codes (nonfinite_point, nonfinite_metric, "
-                                  "degenerate_metric, curvature_blowup, outside_chart, curvature_singularity, "
-                                  "conical_singularity) as the refusal states for invalid or incomplete surface data."),
+        "recommended_next_task": NEXT_STEPS["T037"],
         "provider_runtime_identity": builtin_identity((MODULE, CHARTS, GEOMETRY, DOC, CORE)),
     }
     findings = [

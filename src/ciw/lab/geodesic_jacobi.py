@@ -56,7 +56,8 @@ def _test(name: str) -> str:
 
 # Section-wide contract tests (per-finding uncertainty, figure legibility) cover every task.
 SECTION_TESTS = (_test("test_every_numerical_finding_declares_uncertainty_and_tolerance"),
-                 _test("test_figures_fit_their_legend_and_title_space"))
+                 _test("test_figures_fit_their_legend_and_title_space"),
+                 _test("test_every_next_step_is_a_deferred_research_question"))
 
 
 def _plain(value):
@@ -521,7 +522,10 @@ def rederive_geodesic_equations(ctx):
         + ["Only 8 sample points per chart are compared", "The hand table covers the unit-radius polar cylinder only",
            f"The Markdown table in {DOC} is not parsed: what is checked is its Python transcription hand_geometry, "
            "and the correspondence between the two rests on review"],
-        recommended_next_task="T002: build high-precision reference solutions on the same equations")
+        recommended_next_task=("Deferred research question: parse the hand table in docs/lab/GEODESIC_JACOBI.md "
+                               "itself (not its Python transcription hand_geometry), evaluate it at more than 8 "
+                               "points per chart and add polar cylinders of radius other than 1, so that a table "
+                               "edit that diverges from ciw.lab.surfaces fails a check instead of resting on review"))
 
 
 # ---------------------------------------------------------------------------
@@ -785,7 +789,11 @@ def high_precision_references(ctx):
            "Only the equations of the 34-digit reference are independent of ciw (sympy derives them); its "
            "Gragg-Bulirsch-Stoer integrator is ciw-authored and mpmath supplies the arithmetic. The scipy DOP853 "
            "comparison integrates the ciw equations, so only its integrator is independent"],
-        recommended_next_task="T003: measure Euler, midpoint, RK4 and adaptive orders against these references")
+        recommended_next_task=("Deferred research question: an integrator-independent 34-digit reference: integrate "
+                               "the sympy-derived equations with mpmath's own Taylor-series solver (mpmath.odefun) "
+                               "instead of the ciw-authored Gragg-Bulirsch-Stoer integrator and check that it agrees "
+                               "with the retained references within their empirical error estimates, so that both "
+                               "the equations and the integrator of the reference are independent of ciw"))
 
 
 # ---------------------------------------------------------------------------
@@ -1027,7 +1035,11 @@ def integrator_orders(ctx):
                                 "plane-polar and cylinder-polar carry the same flat metric (unit cylinder); they "
                                 "count as two charts because their declared paths differ (start, heading, length), "
                                 "so each contributes its own data point"],
-        recommended_next_task="T004: measure unit-speed drift of the same integrations without renormalization")
+        recommended_next_task=("Deferred research question: separate the adaptive effective order from the step-size "
+                               "controller by re-measuring it with a second controller and start step on the same "
+                               "references (for example scipy's RK45 and DOP853 at matched tolerances), since the "
+                               "retained effective orders hold for integrators.integrate_adaptive only and the "
+                               "half-way thresholds do not certify the exact order of the pair"))
 
 
 # T004 -----------------------------------------------------------------------
@@ -1300,7 +1312,11 @@ def unit_speed_drift(ctx):
         unresolved_assumptions=["The static scan covers the listed functions only; code outside them (for example "
                                 "initial-state construction, which normalizes the start by design, and the metric "
                                 "evaluations called from the right-hand side) is not scanned"],
-        recommended_next_task="T005: verify the Jacobi separation law on constant-curvature paths")
+        recommended_next_task=("Deferred research question: extend the no-renormalization scan from the listed "
+                               "functions to every function reachable from the integrator step (the metric "
+                               "evaluations called from the right-hand side included), for example by walking the "
+                               "call graph with the ast module, with the start-state normalization declared as the "
+                               "one allowed exception"))
 
 
 # ---------------------------------------------------------------------------
@@ -1664,7 +1680,19 @@ def separation_law(ctx):
                                         "straight lines through the polar chart of the plane",
                                         "No physical trajectories were measured; the physical-domain claim is "
                                         "recorded as not established"],
-        recommended_next_task="T006: compare the integrated columns with finite-difference flow perturbations")
+        recommended_next_task=("Deferred research question (hardware-gated): measure the separation law on real "
+                               "neighbouring trajectories (for example two tracked markers on great circles of a "
+                               "sphere and on a saddle, with a calibrated position sensor) and compare the measured "
+                               "separation with eps j(s) within the sensor's calibrated uncertainty. Route: T005 "
+                               "would read the tracker export as an operator capture (ctx.capture('trajectory-log'), "
+                               "bound with ciw lab run T005 --capture trajectory-log=PATH) and fit the separation "
+                               "from it as a computational finding; the physical finding needs, besides an "
+                               "acquisition record (device, raw_sha256 of the captured bytes, acquired_at, "
+                               "calibration), a probe of the tracker on the analysing host that succeeds in T005 "
+                               "(runner.CAPTURE_INSTRUMENTS has no entry for trajectory-log) or a signed-capture "
+                               "trust anchor, and the run is retained with ciw lab hardware retain under "
+                               "lab/hardware/<run-id>. Neither the capture reader nor a tracker probe exists, so the "
+                               "physical-domain finding stays not_established even when such data exist"))
     if identity:
         fields["provider_runtime_identity"] = identity
     return {"state": state, "fields": fields, "findings": findings}
@@ -1796,7 +1824,10 @@ def finite_difference_jacobi(ctx):
                                "matched nodes: base and perturbed paths share the arclength grid"],
         unresolved_assumptions=["The separation is measured in the chart and projected on N; its second-order "
                                 "chart curvature term cancels only in the central difference"],
-        recommended_next_task="T007: measure the Wronskian and transfer-matrix determinant")
+        recommended_next_task=("Deferred research question: repeat the comparison with an intrinsic separation "
+                               "(geodesic distance between perturbed and base points at matched arclength, from the "
+                               "34-digit references) instead of the chart difference projected on N, and measure how "
+                               "much of the one-sided difference error is the chart's second-order term"))
 
 
 # ---------------------------------------------------------------------------
@@ -2033,7 +2064,11 @@ def wronskian_determinant(ctx):
                                "expectation)", "flat charts where every method is exact"],
         unresolved_assumptions=["The O(h^6) RK4 per-step defect is derived for smooth K(s) along the stage points; "
                                 "paths through curvature discontinuities were not tested"],
-        recommended_next_task="T008: locate conjugate and focal points")
+        recommended_next_task=("Deferred research question: characterize the leading RK4 determinant coefficient "
+                               "-(4 k0^3 - k0 k2 + 2 k1^2 + 4 k0 (e2 + e3))/288 along whole paths (stage offsets "
+                               "included), and measure the determinant defect on a path through a curvature "
+                               "discontinuity (for example a cylinder joined to a spherical cap), where the O(h^6) "
+                               "per-step derivation for smooth K(s) does not apply"))
 
 
 # ---------------------------------------------------------------------------
@@ -2562,7 +2597,10 @@ def conjugate_focal_points(ctx):
             "two-sided envelope comparison instead",
             "The envelope comparison assumes K(rho) on the bump decreases up to its flank minimum and increases "
             "beyond (checked on a grid, not proved)"],
-        recommended_next_task="T009: compare lateral and heading columns separately; T010: near-focus counterexamples")
+        recommended_next_task=("Deferred research question: prove the monotonicity the bump's envelope comparison "
+                               "assumes (K(rho) decreasing up to its flank minimum and increasing beyond; now checked "
+                               "on a grid), for example by a sympy sign analysis of dK/drho, and exercise the global "
+                               "bound pi/sqrt(max K) on a variable-curvature path that meets K > 0 before the bound"))
     if identity:
         fields["provider_runtime_identity"] = identity
     return {"state": state, "fields": fields, "findings": findings}
@@ -2843,4 +2881,7 @@ def lateral_heading_columns(ctx):
                                 "The witness heading difference comes from the two curvature profiles not being "
                                 "mirror images; the first-order kernels explain it only qualitatively",
                                 "No physical platform, tool or perturbation statistics were measured"],
-        recommended_next_task="T010: generate near-focus and post-focus counterexamples")
+        recommended_next_task=("Deferred research question: rank lateral against heading sensitivity over "
+                               "equal-length paths (only the witness pair has equal lengths now) and predict the "
+                               "witness pair's heading difference quantitatively from its two curvature profiles "
+                               "through the first-order kernels, which now explain it only qualitatively"))

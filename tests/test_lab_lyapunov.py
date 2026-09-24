@@ -20,6 +20,7 @@ import numpy as np
 import pytest
 
 from ciw.lab import lyapunov as L
+from ciw.lab import runner
 from ciw.lab import lyapunov_reference as R
 from ciw.lab import lyapunov_research as X
 from ciw.lab.evidence import COMPUTATIONAL_DOMAINS
@@ -297,6 +298,40 @@ def test_provider_tasks_are_partial_without_the_provider(task_id, tmp_path):
     assert report["evidence_status"]["primary"] != "not_established"
     assert all("provider" not in f["basis"] for f in report["findings"])
     _regression_ready(report)
+    assert report["recommended_next_task"] == L.NEXT_STEPS[task_id]
+
+
+def test_next_steps_name_forward_work(tmp_path):
+    """Each next step is the task's own open question, never the next queue task, which has already run."""
+    assert sorted(L.NEXT_STEPS) == [f"T1{n:02d}" for n in range(1, 15)]
+    for task_id, text in L.NEXT_STEPS.items():
+        assert text.startswith("Deferred research question"), task_id
+        assert not text.split(": ", 1)[1].startswith("T1"), task_id
+    # A hardware-gated step names the route by which acquired bytes could enter the task, what the physical gate
+    # needs beyond them, and where the run is retained.
+    gated = sorted(task_id for task_id, text in L.NEXT_STEPS.items()
+                   if text.startswith("Deferred research question (hardware-gated)"))
+    assert gated == ["T113", "T114"] == sorted(L.CAPTURE_ROLES)
+    for task_id in gated:
+        text, role = L.NEXT_STEPS[task_id], L.CAPTURE_ROLES[task_id]
+        for fragment in (f"ctx.capture('{role}')", f"ciw lab run {task_id} --capture {role}=PATH", "raw_sha256",
+                         "calibration", f"runner.CAPTURE_INSTRUMENTS has no entry for {role}",
+                         "signed-capture trust anchor", "ciw lab hardware retain under lab/hardware/<run-id>",
+                         "stay not_established even when such data exist"):
+            assert fragment in text, (task_id, fragment)
+        assert role not in runner.CAPTURE_INSTRUMENTS  # the step's claim that no instrument probe exists
+    # T112 runs without the provider and completes: its report carries the same next step.
+    assert _run("T112", tmp_path)["recommended_next_task"] == L.NEXT_STEPS["T112"]
+
+
+@pytest.mark.parametrize("task_id", ["T101", "T102"])
+def test_t101_t102_defer_cross_platform_reproduction_as_one_question(task_id, tmp_path):
+    assumptions = _run(task_id, tmp_path)["unresolved_assumptions"]
+    assert assumptions.count(L.PLATFORM_QUESTION) == 1
+    assert not [a for a in assumptions if "BLAS" in a and a != L.PLATFORM_QUESTION]
+    for fragment in ("Windows x86-64", "macOS arm64", "Linux x86-64", "OpenBLAS", "case for case",
+                     "regression tolerance"):
+        assert fragment in L.PLATFORM_QUESTION, fragment
 
 
 def test_t106_offline_findings_without_the_provider(tmp_path):
@@ -498,13 +533,26 @@ def test_t103_overflow_underflow(reports):
     theta = _finding(report, "A finite in-box theta")
     assert theta["value"]["theta:+1e308,c=2"] == "raises ValueError"
     assert theta["value"]["theta:+1e308,c=1"] == "NUMERICAL_OVERFLOW"
-    assert _label(report, "PLSR's resolution of a subnormal plant is zero") == "numerically_verified"
     reported = _finding(report, "PLSR's reported V and x^T M x equal the exact values")
     assert reported["evidence_status"] == "independently_verified"
     assert reported["value"]["missed_flags"] == 0 and reported["value"]["states"] == 37
     conservative = _finding(report, "PLSR sets value_out_of_range and reports V = 0")
     assert conservative["evidence_status"] == "numerically_verified"
     assert conservative["value"]["representable_but_flagged"] == 2 and conservative["counterexample"]
+
+
+@needs_provider
+def test_t101_t103_retain_the_subnormal_witness_once(reports):
+    """T101 keeps the subnormal-witness finding; T103 cites it and re-evaluates the witness for its artifact only."""
+    claims = {task_id: [f["claim"] for f in reports[task_id]["findings"]] for task_id in ("T101", "T103")}
+    assert claims["T101"].count(L.WITNESS_CLAIM) == 1 and L.WITNESS_CLAIM not in claims["T103"]
+    result = reports["T103"]["numerical_result"]
+    assert f"T101 retains its finding '{L.WITNESS_CLAIM}'" in result
+    assert "formed decrease matrix off the exact form by 1 x 2^-1074" in result and "resolution 0," in result
+    assert "subnormal plant's decrease form" not in result  # the refutation is T101's
+    assert "T101's finding" in reports["T103"]["hypothesis"]
+    # Deduplication is report bookkeeping guarded by this test, not a failure mode T103's experiment checks.
+    assert not [m for m in reports["T103"]["failure_modes_checked"] if "witness" in m or "T101" in m]
 
 
 @needs_provider

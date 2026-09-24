@@ -111,6 +111,33 @@ def test_every_task_is_registered_and_completes(reports):
                 assert {"kind", "value", "basis"} <= set(record["uncertainty"]), (tid, record["claim"])
 
 
+def test_next_steps_name_forward_work(reports):
+    """Every completed task's next step is its own open question, never a queue task that has already run."""
+    for tid in TASKS:
+        text = reports[tid]["recommended_next_task"]
+        assert text.startswith("Deferred research question: "), (tid, text)
+    # Manufacturing paths are covered by T137's retained counterexample; only the mesh extension stays open.
+    library = reports["T032"]["recommended_next_task"]
+    assert "T137" in library and "triangle meshes" in library
+
+
+def test_focus_margin_claims_state_the_canonical_definition(reports):
+    """'Focus margin' is s_c - L over conjugate points (zeros of j_head), stated wherever a claim uses it."""
+    mentions = 0
+    for tid in ("T024", "T025", "T032"):
+        for record in reports[tid]["findings"]:
+            statement = record["counterexample"]["statement"] if record.get("counterexample") else None
+            texts = [record["claim"]] + ([statement] if statement else [])
+            for text in (t for t in texts if "focus margin" in t):
+                mentions += 1
+                assert "focus margin s_c - L" in text, (tid, text)
+    assert mentions == 9
+    for tid in ("T024", "T025"):
+        defining = [f["claim"] for f in reports[tid]["findings"] if "s_c the first zero of j_head" in f["claim"]]
+        assert defining, tid
+    assert "s_c the first zero of j_head" in _label(reports["T032"], "Torus outer equator")["claim"]
+
+
 def test_every_finding_has_its_expected_label(reports):
     for tid in TASKS:
         findings = reports[tid]["findings"]
