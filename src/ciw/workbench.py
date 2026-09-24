@@ -332,9 +332,11 @@ def _validate_receipts(native, kind):
 
 def _validate_links(record, bundles):
     native = record["native"]
-    if record["kind"] == "residual-monitor":
-        _workflow(record["kind"]).validate_upstreams(native, {key: value["native"] for key, value in bundles.items()})
     workflow = _workflow(record["kind"])
+    # A workflow that selects several upstream bundles checks them against everything retained.
+    upstreams = getattr(workflow, "validate_upstreams", None)
+    if upstreams is not None:
+        upstreams(native, {key: value["native"] for key, value in bundles.items()})
     occurrences_of = getattr(workflow, "native_occurrences", None)
     occurrences = occurrences_of(native) if occurrences_of is not None else None
     if occurrences is not None:
@@ -359,15 +361,10 @@ def _validate_links(record, bundles):
         upstream = bundles.get(upstream_id)
         if upstream is None or upstream["kind"] != UPSTREAM_KINDS.get(record["kind"]):
             raise ValueError("Upstream must name a retained bundle of the declared kind")
-        if record["kind"] == "schematic-companions":
-            from .schematic_companions import validate_upstream
-            validate_upstream(native, upstream["native"])
-        elif record["kind"] == "acquired-calibrated-window":
-            _workflow(record["kind"]).validate_upstream(native, upstream["native"])
-        elif record["kind"] == "identified-stability":
-            _workflow(record["kind"]).validate_upstream(native, upstream["native"])
-        elif _canonical(native["upstream"]) != _canonical(upstream["native"]):
-            raise ValueError("Design upstream must exactly match a retained calibrated bundle")
+        validate_upstream = getattr(workflow, "validate_upstream", None)
+        if validate_upstream is None:
+            raise ValueError("This workflow cannot bind a selected upstream bundle")
+        validate_upstream(native, upstream["native"])
     for receipt in native.get("replay_receipts", []):
         original = bundles.get(receipt["source_bundle_digest"])
         if (original is None or original["kind"] != record["kind"] or
@@ -375,10 +372,9 @@ def _validate_links(record, bundles):
                 original["upstream_bundle_id"] != upstream_id):
             raise ValueError("Replay source must already belong to this workbench")
         old_steps, new_steps = original["native"]["steps"], native["steps"]
-        if record["kind"] == "acquired-calibrated-window":
-            _workflow(record["kind"]).validate_replay(original["native"], native, receipt)
-        if record["kind"] == "proved-heat":
-            _workflow("proved-heat").validate_replay(original["native"], native, receipt)
+        validate_replay = getattr(workflow, "validate_replay", None)
+        if validate_replay is not None:
+            validate_replay(original["native"], native, receipt)
         if record["kind"] in REPRODUCED_KINDS and record["kind"] != "instrument-exchange":
             workflow = _workflow(record["kind"])
             raw = workflow._validate(original["native"])

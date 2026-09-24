@@ -338,6 +338,9 @@ class SchematicCompanionWorkflow(DeclaredWorkflow):
 
     FRESH_OCCURRENCE_MESSAGE = "Companion bundles must retain fresh native execution occurrences"
 
+    def validate_upstream(self, bundle, upstream):
+        return validate_upstream(bundle, upstream)
+
     def catalog_steps(self, bundle):
         return []
 

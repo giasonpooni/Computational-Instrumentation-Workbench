@@ -251,3 +251,16 @@ def test_acquired_windows_sharing_an_occurrence_are_refused_through_the_hook():
     for other in (record("b", "execution-1", "result-2"), record("b", "execution-2", "result-1")):
         with pytest.raises(ValueError, match="fresh native execution and result"):
             workbench._validate_links(first, {"a": first, "b": other})
+
+
+def test_every_upstream_kind_binds_its_upstream_through_its_workflow():
+    from ciw import identified_design, workbench
+    for kind in workbench.UPSTREAM_KINDS:
+        assert callable(getattr(workbench._workflow(kind), "validate_upstream", None)), kind
+    identified_design.validate_upstream({"upstream": {"a": 1}}, {"a": 1})
+    with pytest.raises(ValueError, match="Design upstream must exactly match"):
+        identified_design.validate_upstream({"upstream": {"a": 1}}, {"a": 2})
+    record = {"kind": "identified-design", "bundle_id": "d", "upstream_bundle_id": "u", "native": {"upstream": {"a": 1}}}
+    upstream = {"kind": "calibrated-observable", "bundle_id": "u", "native": {"a": 2}}
+    with pytest.raises(ValueError, match="Design upstream must exactly match"):
+        workbench._validate_links(record, {"d": record, "u": upstream})

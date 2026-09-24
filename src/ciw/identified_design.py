@@ -400,6 +400,12 @@ def _execute(raw, upstream, upstream_replay, adapters, template=None):
     return bundle
 
 
+def validate_upstream(bundle, upstream):
+    """A design embeds its calibrated upstream; the selected retained bundle must be exactly it."""
+    if canonical(bundle["upstream"]) != canonical(upstream):
+        raise ValueError("Design upstream must exactly match a retained calibrated bundle")
+
+
 def _validate_upstream_pair(original, replay):
     calibrated.inspect_session(original)
     fresh, receipt = replay["session"], replay["replay_receipt"]
