@@ -18,7 +18,7 @@ Run the section with
 python -m ciw lab run T142 T143 T144 T145 T146 T147 T148 T149 T150 T151 T152 T153 T154 --output-dir results/lab-implementation-targets
 ```
 
-It takes about 5 s on one core. T142 and T146 compile a small Rust probe
+It takes about 6 s on one core. T142 and T146 compile a small Rust probe
 (standard library only) with `rustc` when it is on `PATH`:
 
 - `rustc` absent, or unable to build a trivial program here: the Rust findings
@@ -45,7 +45,11 @@ Headline labels (weakest established computational label per task):
 `numerically_verified` for T142, T144, T146, T147 and T149-T154; `analytic`
 for T143 (a design inventory), T145 (the Julia pin procedure) and T148 (the
 reduction policy record is a derivation, although every number in T148 is
-exact). T145 and T147 are `partial` because Julia and a GPU are absent.
+exact). T145 and T147 are `partial`: neither task has a Julia or GPU
+execution path, so provisioning Julia or a CUDA host changes no finding until
+a Julia worker behind the SCR boundary, or a GPU implementation of the batched
+dot products feeding `compare_outputs`, is built (their recommended next
+tasks name that work).
 
 ## Kernel ranking
 
@@ -71,11 +75,20 @@ The ranking is by Python dispatches that porting a unit alone removes from one
 reference experiment (a 2000-step Jacobi transfer plus 2000 Kalman updates);
 callbacks that stay in Python are not removed. Ties would be broken by
 arithmetic intensity (flops per byte of state, stage vectors and matrices read
-or written per call, higher first), then by determinism need. The ranking
-finding checks that rank 1 leads rank 2 by at least 5% of its removable
-dispatches (observed 9.7%) and that no tie occurs, so a change of order across
-Python or NumPy versions fails loudly instead of passing as a 25% dispatch
-drift.
+or written per call, higher first), then by determinism need. The units are
+nested, not alternatives: `jacobi.rhs` calls `surface.geodesic_rhs`, so the
+fused transfer loop contains all 8000 geodesic RHS calls and all RK4 steps and
+ranks above them by construction. The ranking finding checks that rank 1 leads
+rank 2 by at least 5% of its removable dispatches (observed 9.7%, which is the
+Jacobi and RK4 glue outside the contained geodesic RHS calls) and that no tie
+occurs, so a change of order across Python or NumPy versions fails loudly
+instead of passing as a 25% dispatch drift. The ranking says which enclosing
+unit to port, not which disjoint kernel costs most.
+
+That dispatch overhead rather than arithmetic dominates the run time is
+recorded as **not established**: only wall-clock timings speak to it, and they
+stay in `kernel-timings.json`. The reproducible proxy is interpreter calls per
+flop (0.42 for the geodesic RHS, 0.011 for the Kalman update).
 
 | Rank | Port unit | Removable dispatches | Flops per byte | Determinism need |
 | --- | --- | --- | --- | --- |
@@ -101,11 +114,19 @@ T143 records which interfaces need C/C++ and where the CIW boundary sits.
 
 | Interface | Native libraries | Why native | Boundary | Direction / write path |
 | --- | --- | --- | --- | --- |
-| OPC UA client (read-only subscriptions) | open62541 (C), vendor C++ SDKs | certified stacks, security policies, subscription timing | pinned subprocess | read-only / absent |
+| OPC UA client (read-only subscriptions) | open62541 (C), vendor C++ SDKs (preferred, not required) | pure-Python stacks exist (`asyncua`; `python-opcua`, superseded by it); C/C++ is chosen for OPC Foundation certification, vendor support and an accepted security-policy implementation | pinned subprocess | read-only / absent |
 | EtherCAT passive monitoring (network TAP capture) | libpcap / Npcap, Wireshark EtherCAT dissectors, TAP device driver | line-rate capture with hardware timestamps at microsecond frame spacing | pinned subprocess | read-only (passive tap) / absent |
 | Vendor camera SDKs (GenICam GenTL) | Basler pylon, Spinnaker, Vimba X | proprietary drivers, zero-copy buffers, hardware triggers | pinned subprocess | read-only / absent |
 | Point clouds | PCL, Open3D | C++ registration and reconstruction kernels with threading | pinned subprocess | geometry exchange / absent |
 | CAD kernel | OpenCASCADE | B-rep, STEP/IGES translation, tolerances | pinned subprocess | geometry exchange / absent |
+
+C/C++ is required for four rows and preferred for OPC UA; a preferred entry
+must name the pure-Python alternatives it passes over, and either stack would
+sit behind the same pinned subprocess boundary. The package probe in the
+artifact (`python_packages_present_here`) lists importable Python packages:
+bindings to the C/C++ libraries (`open3d`, `OCC`, `pysoem`, `pypylon`,
+`PySpin`, `vmbpy`, `pcl`) and the two pure-Python OPC UA stacks (`asyncua`,
+`opcua`).
 
 An EtherCAT master (SOEM, IgH, TwinCAT) originates every bus frame, including
 output process data, so it can never be read-only; monitoring is modelled as a
@@ -114,7 +135,8 @@ not verified, here.
 
 The validator refuses an in-process binding, a write-capable direction, an
 enabled write path, a fieldbus master in place of a passive tap, an entry
-without identity pins and floating pins. A pin is floating when it is blank;
+without identity pins, floating pins, an unknown native necessity and a
+native preference that does not name its pure-Python alternatives. A pin is floating when it is blank;
 when the whole pin is `current`, `main`, `master`, `trunk`, `head`, `dev`,
 `develop` or `x`; when it contains the word `latest`, `nightly`, `snapshot`,
 `stable`, `any`, `unknown`, `tbd`, `n/a` or `na` (case-insensitive, also after
@@ -122,9 +144,9 @@ when the whole pin is `current`, `main`, `master`, `trunk`, `head`, `dev`,
 `* ? < > = ~ ^`; or when it has an `N.x` wildcard such as `2024.x`. Pins are
 descriptions of what is pinned, so branch-like words inside prose ("main board
 firmware version", "/dev/ttyUSB0 adapter serial number") are accepted; the
-list is a denylist and cannot recognise every moving label. All ten mutations
-(including `nightly build`, `SDK version >=1.0`, `2024.x` and `HEAD`) are
-refused with their codes. No library was installed or exercised.
+list is a denylist and cannot recognise every moving label. All twelve
+mutations (including `nightly build`, `SDK version >=1.0`, `2024.x` and `HEAD`)
+are refused with their codes. No library was installed or exercised.
 
 ## Python orchestration boundary
 
@@ -134,7 +156,10 @@ in the provider/runtime identity) and checks structural rules:
 
 - the transitive `ciw` import closure of `ciw.lab.evidence`, `ciw.lab.report`
   and `ciw.core.identities` uses only the standard library, loads no native
-  code and spawns no process (closure: exactly those three modules);
+  code and spawns no process. The closure includes every ancestor package,
+  because Python executes `ciw/__init__.py` and `ciw/lab/__init__.py` before
+  `ciw.lab.evidence` (closure: `ciw`, `ciw.core`, `ciw.core.identities`,
+  `ciw.lab`, `ciw.lab.evidence`, `ciw.lab.report`);
 - native loading (`ctypes`, `cffi`) appears only in the declared hardware
   energy probes `ciw.energy_cuda` and `ciw.energy_nvml`;
 - no spawn goes through a shell (`shell=True`, `os.system`, `os.popen`,
@@ -148,11 +173,13 @@ with `from ... import`) to name an identity (`revision`, `source_tree`,
 strings; comments and docstrings do not count. It shows that a name appears
 in code, not that the spawned binary is pinned.
 
-Eight forged mutations are each flagged: a `ctypes` import in the evidence
-module, `numpy` in the report module, a spawn in the evidence module, a
-`shell=True` provider, an asyncio shell spawn, a spawn without identity, a
-spawn whose only identity token is in a comment, and `posix_spawn` imported
-from `os`.
+Eleven forged mutations are each flagged: a `ctypes` import in the evidence
+module, `numpy` in the report module, a spawn in the evidence module, `numpy`
+in `ciw/lab/__init__.py`, `ctypes` in `ciw/core/__init__.py`, a spawn in
+`ciw/__init__.py` (the three package mutations went unnoticed before the
+closure followed ancestor packages), a `shell=True` provider, an asyncio shell
+spawn, a spawn without identity, a spawn whose only identity token is in a
+comment, and `posix_spawn` imported from `os`.
 
 Whether numerical providers run only pinned executables is **not
 established**: a source scan cannot show that a spawned binary equals an
@@ -168,7 +195,10 @@ libraries are not seen.
 
 ## Julia
 
-T145 is `partial`: no Julia runtime is present. The pin procedure follows
+T145 is `partial`: no Julia runtime is present, and the task has no Julia
+execution path either, so a Julia host would change nothing until a Julia
+worker behind the SCR boundary and a dispatch path from T145 exist. The pin
+procedure follows
 [docs/JULIA_SP1.md](../JULIA_SP1.md): candidate Julia 1.10.12 LTS (not yet
 accepted), a dedicated project with OrdinaryDiffEqTsit5 and SciMLBase,
 instantiate and precompile separately, commit the machine-generated
@@ -270,17 +300,35 @@ float32), the bitwise policy flags 123 of 128 float64 rows, the bound policy
 accepts float64 reordering (at most 0.0017 of the bound), and float32 violates
 the float64 policy on every row but stays at 0.0087 of its own bound.
 
-A worst-case bound policy can miss faults up to about its bound. Dropping
-each of the 131,072 single partial products in turn: under the float64 policy
-none escapes; under the float32 policy 708 escape, the largest a term of
-magnitude 5.89e-4 against a row tolerance of 5.94e-4. Under the float32 policy
-one fault 1.00016 times its row bound also escaped (row 14, column 538),
-because the candidate's own deviation from the reference points the other way;
-so "larger than the bound" alone does not guarantee detection. What holds
-under both policies is the triangle-inequality guarantee: a dropped term
-larger than the tolerance plus the legitimate candidate-reference difference
-is always detected (0 violations). No GPU was present, so CPU/GPU agreement is
-not established.
+A worst-case bound policy can miss faults up to about its bound. Each of the
+131,072 single partial products is dropped in turn, and every faulty candidate
+is judged by `compare_outputs` itself (one call on the broadcast matrix), so a
+defect of the harness changes the result; the tests replace the harness with
+one whose tolerance is 3 times or a third of the policy and whose bitwise mode
+flags nothing, and the fault and bitwise findings are refuted. What is checked:
+
+- operational guarantee: the policy tolerance is the sum of the two outputs'
+  worst-case bounds, so the fault-free candidate satisfies |c - r| <= tol
+  (the harness reports 0 violations) and a dropped term with |p| > 2 tol gives
+  |c - p - r| > tol without knowing c - r. Under both policies none of those
+  faults escapes (0 of 131,072 with the float64 policy, 0 of 129,813 with the
+  float32 policy);
+- threshold: with m the harness's largest fault-free |c - r| / tol (0.0087
+  for float32), no fault below (1 - m) tol is detected and none above
+  (1 + m) tol escapes;
+- miss rate: with a_ij uniform on [-1, 1), P(|a_ij x_j| <= tol_i) =
+  min(1, tol_i / |x_j|). Summed over the faults this predicts 665.3 +/- 22.5
+  misses under the float32 policy; 708 escape (z = 1.9, within the 4-sigma
+  check; over 40 other seeds z had mean 0.08 and standard deviation 1.1). The
+  largest missed term has magnitude 5.89e-4 against a row tolerance of
+  5.94e-4, and one fault 1.00016 times its row bound escaped (row 14, column
+  538) because the candidate's own deviation points the other way, so "larger
+  than the bound" alone does not guarantee detection. Under the float64 policy
+  no fault escapes.
+
+The bitwise finding reports the bitwise policy's own violations (123 of 128
+rows), and a copy of the reference is not flagged. This task has no GPU kernel
+path, so CPU/GPU agreement is not established whatever host runs it.
 
 ## Reduction policies
 
@@ -304,7 +352,12 @@ without proof.
 
 Across 25 orders of five datasets, exact accumulation gave one result per
 dataset and matched `math.fsum` everywhere; fixed-tree pairwise gave 4
-distinct results on uniform data; every observed error stayed within its
+distinct results on uniform data, while the same tree walked a second way
+(NumPy level-wise additions of even and odd entries, equal to the recursive
+split at n // 2 for n = 1024) gave the same bits as the recursive Python sum on
+all 25 orders, so the result depends on the order and not on the
+implementation. Other platforms are covered only by the regression gate, which
+compares the retained first-order sum bits exactly; every observed error stayed within its
 bound (worst ratios: exact 0.41, Neumaier 0.41, sequential 0.35, Kahan 0.35
 of its allowance, pairwise 0.22).
 
@@ -331,8 +384,13 @@ The decoder checks the CRC first, then refuses a bad magic, an unsupported
 version, command and write paths (`command_path_refused`), unknown types,
 reserved flags, truncation and length mismatches; the encoder refuses a write
 request and the interface validator a host-to-device or `write_enable` field
-(13 forged frames, requests and specifications, each refused with its code). The host receiver has no sending
-method. The CIW CRC-32 matches `zlib` and the check value 0xCBF43926.
+(13 forged frames, requests and specifications, each refused with its code).
+The host receiver is checked structurally rather than by method names: after
+receiving good and corrupted frames its public interface is exactly `accept`
+plus plain data (numbers, strings, bytes and containers of them), it has no
+base class other than `object`, and a forged subclass with an `emit` method
+and a transport handle is flagged. The CIW CRC-32 matches `zlib` and the check
+value 0xCBF43926.
 
 Error detection on a 48-byte frame, with bit p of the frame taken as bit p % 8
 of byte p // 8 (least significant first, the reflected CRC's polynomial
@@ -355,8 +413,9 @@ guarantee holds only for an LSB-first link (as UART and Ethernet send), which
 is assumed, not demonstrated.
 
 **Bitstream identity** (`ciw.fpga-bitstream-identity.v1`, T150): bitstream
-sha256 and size, toolchain name, exact version and `installation_sha256` over
-its executables and libraries, part, per-file constraint digests and their
+sha256 and size, toolchain name, exact version and `installation_sha256` (the
+canonical digest of the `{path: sha256}` manifest of the toolchain files
+supplied), part, per-file constraint digests and their
 canonical digest, source-tree manifest digest, synthesis options, a
 `synthetic` flag, and `record_sha256` over the canonical JSON of everything
 else. Versions must be strings that fully match
@@ -367,10 +426,17 @@ because `$` would also accept a trailing newline), so `latest`, ranges,
 `2024.1-rc2` is accepted (positive control). Every digest is exactly 64
 lowercase hex digits (a trailing newline is refused), the size a nonnegative
 integer and the synthetic flag a boolean; a malformed source tree is refused,
-not a crash. Twenty-three mutations are refused with their codes; deployment of a synthetic
+not a crash. The record is checked against every artifact it binds:
+bitstream bytes, constraint files, source files, the toolchain's installation
+files and the version the installed toolchain reports, so an edited or added
+toolchain file and a toolchain reporting another version are refused
+(`toolchain_installation_mismatch`, `toolchain_version_mismatch`).
+Twenty-six mutations are refused with their codes; deployment of a synthetic
 record is refused, and deployment of any record needs authority the lab does
-not hold. How `installation_sha256` is computed for a vendor toolchain is not
-specified here.
+not hold. Which files of a vendor toolchain the installation manifest must
+cover is not specified here, and a change outside the supplied files is not
+detected. Reproducibility of the record across runs is left to the regression
+gate, which compares `record_sha256` exactly.
 
 **Compatibility and rollback** (`ciw.fpga-compatibility.v1`,
 `ciw.fpga-rollback.v1`, T151): `compatible(b, h, r)` iff the host decoder
@@ -414,8 +480,27 @@ the 2^32 wrap, over 4000 frames:
   anchor and no actuator transport and refuses to issue authorization
   records, so every route ends in a refusal with a specific code
   (`authorization_missing`, `authorization_wrong_type`,
-  `self_issued_authority`, `authorization_expired`, `out_of_scope`,
-  `unsigned_authorization`, `no_trust_anchor`).
+  `self_issued_authority`, `malformed_timestamp`, `authorization_expired`,
+  `out_of_scope`, `unsigned_authorization`, `no_trust_anchor`). The validity
+  window is compared as instants: `valid_from`, `valid_until` and the
+  evaluation instant are parsed as ISO-8601 timestamps with a UTC offset, so an
+  expiry written `2026-09-23T01:00:00+02:00` is expired at
+  `2026-09-23T00:00:00Z`, fractional seconds count, and a timestamp without an
+  offset or a non-timestamp such as `tomorrow` is refused as
+  `malformed_timestamp` (twelve routes in all). The default gate refuses a
+  write on each declared channel before it reads the channel or value.
+- A source scan (the T144 scanner) finds no module that imports a device,
+  serial, fieldbus, industrial-protocol or instrument library (pyserial,
+  python-can, pymodbus, pysoem, asyncua, pyvisa, ...) or names a device node
+  (`/dev/...`, `\\.\...`, `COMn`), and network libraries or connection calls
+  only in the declared workbench servers (`ciw.server`, `ciw.cli`,
+  `ciw.lab.mcp_server`, which talk to the workbench's own clients). Five forged
+  write paths (a serial port, a COM device opened as a file, a Modbus client, a
+  raw socket and an asyncio stream to a PLC) are each flagged. No module routes
+  writes through `ActuatorWritePolicy` because there is no write path to route;
+  a future transport would be flagged, but routing it through the policy is
+  not enforced. The scan is static and does not see dynamic imports,
+  third-party internals or spawned providers.
 - A frozen dataclass can still be mutated with `object.__setattr__`; the gate
   re-verifies the authorization on every write, so the mutation does not open
   it. In-process checks are defence in depth only; real enforcement belongs in
@@ -431,3 +516,14 @@ the 2^32 wrap, over 4000 frames:
   (relative error 4.7e-12), cancels a lateral offset to second order on the
   torus (residual order 2.02, uncorrected 1.00) and is refused at a conjugate
   point.
+- Scope of T154: only the control outputs built in this section are
+  proposals. An inventory (`CONTROL_OUTPUTS`) lists the workbench's
+  control-like outputs and is checked against a keyword scan of the package
+  (stop request, abort, setpoint, command conversion, gain change); every
+  module naming one is inventoried, and a forged module returning a setpoint
+  is found. Of five outputs, only the heading correction is a
+  `ControlProposal`: the T149 command frames, the T151 rollback execution and
+  the T153 actuator writes are refused rather than proposed, and the T114
+  servo-axis abort (a stop request to the bench's independent safety function,
+  declared in `ciw.lab.lyapunov_research`) is neither. "Every control-like
+  output is a proposal" is therefore recorded as not established.

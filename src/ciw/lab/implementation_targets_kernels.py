@@ -14,7 +14,8 @@ allowance. The comparison
 harness compares a candidate output against a reference under a bitwise,
 analytic-bound or absolute/relative policy. No GPU is used here; float32 and
 reordered float64 CPU reductions stand in for a device to show the harness
-detects differences. Nothing here measures GPU behaviour.
+detects differences, and injected faults are judged by the harness itself.
+Nothing here measures GPU behaviour.
 """
 from __future__ import annotations
 
@@ -305,6 +306,25 @@ def sum_pairwise(xs) -> float:
     return sum_pairwise(xs[:half]) + sum_pairwise(xs[half:])
 
 
+def sum_pairwise_levels(xs) -> float:
+    """The same fixed tree as sum_pairwise, built level by level with NumPy vector additions.
+
+    For a power-of-two length, splitting at n // 2 recursively pairs x[2k] with
+    x[2k + 1] at the leaves and adjacent partial sums above them, so adding the
+    even and odd entries level by level performs the same additions in a
+    different implementation (NumPy's elementwise binary64 add instead of
+    recursive Python floats). Other lengths are refused: their recursive tree
+    is not level-wise.
+    """
+    values = np.asarray(xs, dtype=np.float64)
+    n = values.size
+    if n == 0 or n & (n - 1):
+        raise ValueError("Level-wise pairwise summation needs a power-of-two length")
+    while values.size > 1:
+        values = values[0::2] + values[1::2]
+    return float(values[0])
+
+
 def sum_kahan(xs) -> float:
     total = compensation = 0.0
     for x in xs:
@@ -423,7 +443,7 @@ def permutation_study(datasets: dict, permutations: int = 24, seed: int = 1480) 
                               "results": results}
         per["fsum"] = {"results": [math.fsum(order) for order in orders]}
         out[name] = {"n": len(xs), "exact": exact_float, "abs_sum": abs_sum, "orders": len(orders),
-                     "algorithms": per}
+                     "algorithms": per, "orders_data": orders}
     return out
 
 
@@ -478,7 +498,7 @@ def compare_outputs(reference, candidate, policy: dict) -> dict:
             "violations": int(np.sum(violating)), "max_abs": float(np.max(difference)),
             "max_ulp": float(np.max(ulp_distance(reference, candidate))),
             "max_ratio": None if ratio is None else float(np.max(ratio)), "ratios": ratio,
-            "passed": not bool(np.any(violating))}
+            "violating": np.asarray(violating, dtype=bool), "passed": not bool(np.any(violating))}
 
 
 def two_product(a, b):
@@ -536,36 +556,67 @@ def batched_dot_study(seed: int = 147, rows: int = 128, n: int = 1024, width: in
             "bounds": bounds, "depths": {k: v[0] for k, v in depths.items()}, "A": A, "x": x}
 
 
-def dropped_product_power(reference, candidate, products, tolerance) -> dict:
-    """Outcome of every single dropped partial product under a bound policy.
+DETECTION_BINS = (0.0, 0.5, 0.9, 0.99, 1.01, 1.1, 2.0, math.inf)
 
-    Fault (i, j) replaces candidate[i] by candidate[i] - products[i, j]; it is
-    detected iff |faulty - reference| exceeds tolerance[i]. By the triangle
-    inequality a fault with |p| > tolerance + |candidate - reference| (plus a
-    rounding margin) must be detected; smaller faults may escape, including
-    faults slightly larger than the bound alone when the candidate's own
-    deviation points the other way (counted in undetected_above_bound).
+
+def dropped_product_study(reference, candidate, products, tolerance, column_scale) -> dict:
+    """Every single dropped partial product, judged by compare_outputs (the harness under test).
+
+    Fault (i, j) replaces candidate[i] by candidate[i] - products[i, j]. All
+    faults go through one bound-policy comparison against the reference
+    broadcast over columns, so detection is what the harness reports; this
+    function only tallies it against predictions that use the policy
+    tolerance and the fault size, never the fault-free deviation of a row:
+
+    - operational guarantee: when the fault-free candidate passes the policy
+      (|c_i - r_i| <= tol_i, reported by the harness), a fault with
+      |p| > 2 tol_i is detected (up to rounding far below tol_i);
+    - threshold: with m = the harness's largest fault-free |c - r| / tol,
+      faults below (1 - m) tol are missed and faults above (1 + m) tol are
+      detected, so detection switches at the bound;
+    - miss count: for products a_ij s_j with a_ij uniform on [-1, 1) and
+      column scale s_j, P(|p_ij| <= tol_i) = min(1, tol_i / |s_j|), whose sum
+      (with the Bernoulli variance) predicts the number of missed faults.
     """
     reference, candidate = np.asarray(reference, float), np.asarray(candidate, float)
     products, tolerance = np.asarray(products, float), np.asarray(tolerance, float)
+    scale = np.abs(np.asarray(column_scale, float))
+    policy = {"mode": "bound", "tolerance": tolerance}
+    clean = compare_outputs(reference, candidate, policy)
     faulty = candidate[:, None] - products
-    detected = np.abs(faulty - reference[:, None]) > tolerance[:, None]
+    judged = compare_outputs(np.broadcast_to(reference[:, None], faulty.shape), faulty,
+                             {"mode": "bound", "tolerance": tolerance[:, None]})
+    detected = np.asarray(judged["violating"], dtype=bool)
     magnitude = np.abs(products)
-    margin = 8 * U64 * (np.abs(candidate) + np.abs(reference))[:, None] + 8 * U64 * magnitude
-    guaranteed = magnitude > (tolerance + np.abs(candidate - reference))[:, None] + margin
-    above = magnitude > tolerance[:, None]
+    ratio = magnitude / tolerance[:, None]
+    m = float(clean["max_ratio"])
+    miss = np.minimum(1.0, tolerance[:, None] / scale[None, :])
+    expected, sigma = float(np.sum(miss)), float(math.sqrt(np.sum(miss * (1.0 - miss))))
+    undetected = int(np.sum(~detected))
 
     def witness(cells):
         if not len(cells):
             return None
         i, j = max(cells.tolist(), key=lambda ij: (magnitude[ij[0], ij[1]], -ij[0], -ij[1]))
         return {"row": int(i), "column": int(j), "magnitude": float(magnitude[i, j]),
-                "row_tolerance": float(tolerance[i]), "ratio": float(magnitude[i, j] / tolerance[i])}
+                "row_tolerance": float(tolerance[i]), "ratio": float(ratio[i, j])}
 
-    return {"faults": int(products.size), "undetected": int(np.sum(~detected)),
-            "guarantee_violations": int(np.sum(guaranteed & ~detected)),
-            "undetected_above_bound": int(np.sum(above & ~detected)),
-            "max_undetected_ratio": float(np.max((magnitude / tolerance[:, None])[~detected], initial=0.0)),
+    bins = []
+    for low, high in zip(DETECTION_BINS[:-1], DETECTION_BINS[1:]):
+        inside = (ratio >= low) & (ratio < high)
+        bins.append({"ratio_from": low, "ratio_to": None if math.isinf(high) else high, "faults": int(np.sum(inside)),
+                     "detected": int(np.sum(inside & detected))})
+    return {"faults": int(products.size), "undetected": undetected,
+            "fault_free_violations": clean["violations"], "fault_free_max_ratio": m,
+            "above_twice_tolerance": int(np.sum(ratio > 2.0)),
+            "undetected_above_twice_tolerance": int(np.sum((ratio > 2.0) & ~detected)),
+            "undetected_above_bound": int(np.sum((ratio > 1.0) & ~detected)),
+            "detected_below_band": int(np.sum((ratio < 1.0 - m) & detected)),
+            "undetected_above_band": int(np.sum((ratio > 1.0 + m) & ~detected)),
+            "expected_undetected": expected, "sigma_undetected": sigma,
+            "undetected_z": (undetected - expected) / sigma if sigma > 0 else float(undetected - expected),
+            "max_undetected_ratio": float(np.max(ratio[~detected], initial=0.0)),
             "largest_undetected": witness(np.argwhere(~detected)),
-            "above_bound_witness": witness(np.argwhere(above & ~detected)),
+            "above_bound_witness": witness(np.argwhere((ratio > 1.0) & ~detected)),
+            "detection_by_ratio": bins,
             "max_tolerance": float(np.max(tolerance)), "min_tolerance": float(np.min(tolerance))}

@@ -4,14 +4,17 @@ Actuator writes are denied by default. Enabling them needs an authorization
 record issued outside the workbench and verified against a trust anchor; the
 lab build contains no trust anchor and no actuator transport, and it refuses
 to issue authorization records itself, so every path ends in a refusal here.
-Control outputs are immutable proposals: converting one into a command is
-refused without separate authorization. These are software refusals inside
+Control outputs built here are immutable proposals: converting one into a
+command is refused without separate authorization. Other control-like
+outputs of the workbench are inventoried in CONTROL_OUTPUTS; the servo-axis
+abort of another section is not a proposal. These are software refusals inside
 one Python process. They are defence in depth, not a security boundary, and
 they establish nothing about machine safety or actuator authority.
 """
 from __future__ import annotations
 
 from dataclasses import dataclass, field
+from datetime import datetime, timezone
 import math
 
 import numpy as np
@@ -48,11 +51,30 @@ def issue_authorization(*_, **__):
     raise AuthorityRefusal("lab_cannot_issue_authority", "The lab cannot create actuator authorization records")
 
 
+def _instant(text, name: str) -> datetime:
+    """An ISO-8601 timestamp with an explicit UTC offset, as an aware UTC instant; anything else is refused.
+
+    Comparing the strings themselves would order '2026-09-23T01:00:00+02:00'
+    after '2026-09-23T00:00:00Z' although it is an hour earlier, and would put
+    fractional seconds and non-timestamps anywhere.
+    """
+    if not isinstance(text, str):
+        raise AuthorityRefusal("malformed_timestamp", f"{name} must be an ISO-8601 timestamp string")
+    try:
+        value = datetime.fromisoformat(text)
+    except ValueError:
+        raise AuthorityRefusal("malformed_timestamp", f"{name} is not an ISO-8601 timestamp") from None
+    if value.utcoffset() is None:
+        raise AuthorityRefusal("malformed_timestamp", f"{name} must carry a UTC offset")
+    return value.astimezone(timezone.utc)
+
+
 def verify_authorization(record, *, channel: str, now: str) -> None:
     """Check an authorization in a fixed order; in the lab build the last check always refuses.
 
-    ``now`` is an explicit ISO-8601 UTC instant so that results never depend on
-    the wall clock.
+    ``now`` is an explicit ISO-8601 instant with a UTC offset so that results
+    never depend on the wall clock. The validity window is compared as
+    instants after parsing, never as strings.
     """
     if record is None:
         raise AuthorityRefusal("authorization_missing", "No actuator authorization record was supplied")
@@ -60,7 +82,8 @@ def verify_authorization(record, *, channel: str, now: str) -> None:
         raise AuthorityRefusal("authorization_wrong_type", "Authorization must be a ciw.actuator-authorization.v1 record")
     if record.issuer.strip().lower().startswith("ciw"):
         raise AuthorityRefusal("self_issued_authority", "The workbench cannot authorize its own actuator writes")
-    if not record.valid_from <= now < record.valid_until:
+    start, end = _instant(record.valid_from, "valid_from"), _instant(record.valid_until, "valid_until")
+    if not start <= _instant(now, "now") < end:
         raise AuthorityRefusal("authorization_expired", "Authorization is not valid at the stated instant")
     if channel not in record.channels:
         raise AuthorityRefusal("out_of_scope", f"Authorization does not cover channel {channel}")
@@ -135,6 +158,30 @@ def to_command(proposal, authorization=None, *, now: str):
         raise AuthorityRefusal("proposal_not_authorized", "Control outputs are proposals until separately authorized")
     verify_authorization(authorization, channel=proposal.channel, now=now)
     raise AuthorityRefusal("no_actuator_transport", "The lab build has no actuator transport")
+
+
+# Control-like outputs of the workbench (T154), checked against a keyword scan of the package. Only the heading
+# correction is a ControlProposal; the others are refused command paths or, for the servo-axis abort, a stop
+# request declared in another section's specification text.
+CONTROL_OUTPUTS = (
+    {"output": "Jacobi heading correction", "task": "T154", "kind": "heading proposal",
+     "modules": ["ciw.lab.implementation_targets_authority", "ciw.lab.implementation_targets"],
+     "route": "ControlProposal; conversion to a command refused without separate authorization", "proposal": True},
+    {"output": "Actuator writes on the declared channels (spindle speed, feed override, axis setpoint, coolant, "
+               "laser power)", "task": "T153", "kind": "actuator write",
+     "modules": ["ciw.lab.implementation_targets_authority", "ciw.lab.implementation_targets"],
+     "route": "ActuatorWritePolicy; refused by default and on every enabling route", "proposal": False},
+    {"output": "FPGA command, register-write, actuator-setpoint and bitstream-load frame types", "task": "T149",
+     "kind": "device command frames", "modules": ["ciw.lab.implementation_targets_fpga", "ciw.lab.implementation_targets"],
+     "route": "refused by the decoder, encoder and interface validator (command_path_refused)", "proposal": False},
+    {"output": "FPGA rollback execution", "task": "T151", "kind": "bitstream change",
+     "modules": ["ciw.lab.implementation_targets_fpga"], "route": "refused (rollback_requires_machine_authority)",
+     "proposal": False},
+    {"output": "Servo-axis Lyapunov monitor abort: a stop request to the bench's independent safety function",
+     "task": "T114", "kind": "abort / stop request", "modules": ["ciw.lab.lyapunov_research", "ciw.lab.lyapunov"],
+     "route": "none here: declared in the pilot specification text; not a ControlProposal and not gated in this "
+              "section", "proposal": False},
+)
 
 
 def heading_correction(surface, u0, heading: float, length: float, lateral: float, steps: int = 200,

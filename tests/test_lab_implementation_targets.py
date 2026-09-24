@@ -104,6 +104,10 @@ def test_t142_kernel_counts_and_ranking(tmp_path):
     assert "not a core kernel" in ranking["value"][2]
     dispatches = findings["Interpreter calls issued by ciw code per kernel call"]
     assert dispatches["evidence_status"] == "numerically_verified" and dispatches["value"]["geodesic_rhs"] > 20
+    # Containment: the fused loop's lead over geodesic_rhs is structural, and the derivation says so.
+    assert "contains every geodesic_rhs call" in ranking["basis"]["derivation"]
+    overhead = findings["Python dispatch overhead, not arithmetic, dominates the run time of the geodesic/Jacobi kernels"]
+    assert overhead["evidence_status"] == "not_established" and overhead["expected_not_established"] is True
     assert findings["Rust ports of the ranked kernels are ready for industrial deployment"]["evidence_status"] == \
         "not_established"
     rust = findings[targets.RUST_SPHERE_CLAIM]
@@ -126,12 +130,18 @@ def test_rust_fused_sphere_loop(rust_probe):
 def test_t143_interface_inventory(tmp_path):
     report, findings = _run("T143", tmp_path)
     _assert_clean(report, "completed", "analytic")
-    names = findings["Industrial interfaces that need C/C++ libraries behind a pinned subprocess boundary"]
-    assert names["evidence_status"] == "analytic" and len(names["value"]) == 5
-    assert "EtherCAT passive monitoring (network TAP capture)" in names["value"]
-    refusals = findings["Inventory validator refuses in-process bindings, write-capable directions or bus roles and "
-                        "unpinned entries"]
-    assert refusals["value"] == 10 and refusals["evidence_status"] == "numerically_verified"
+    names = findings["Industrial interfaces assigned to C/C++ libraries behind a pinned subprocess boundary (required, "
+                     "or preferred over existing pure-Python stacks)"]
+    assert names["evidence_status"] == "analytic" and len(names["value"]["required"]) == 4
+    assert "EtherCAT passive monitoring (network TAP capture)" in names["value"]["required"]
+    # OPC UA has pure-Python stacks (asyncua, python-opcua): C/C++ is a stated preference, not a necessity.
+    assert names["value"]["preferred"] == ["OPC UA client (read-only subscriptions)"]
+    assert any("asyncua" in name for name in arch.INTERFACES[0]["pure_python_alternatives"])
+    refusals = findings["Inventory validator refuses in-process bindings, write-capable directions or bus roles, "
+                        "unpinned entries and unexplained native preferences"]
+    assert refusals["value"] == 12 and refusals["evidence_status"] == "numerically_verified"
+    inventory = json.loads((tmp_path / "artifacts" / "T143" / "interface-inventory.json").read_text(encoding="utf-8"))
+    assert set(inventory["python_packages_present_here"]) == set(targets.PYTHON_PACKAGES)
     assert findings["The listed interfaces are qualified for plant integration"]["evidence_status"] == "not_established"
     for entry, code in ((dict(arch.INTERFACES[1], write_path="enabled"), "write_path_enabled"),
                         (dict(arch.INTERFACES[1], fieldbus_role="master"), "write_capable_direction"),
@@ -153,12 +163,17 @@ def test_t144_architecture_scan(tmp_path):
     report, findings = _run("T144", tmp_path)
     _assert_clean(report, "completed", "numerically_verified")
     closure = findings["Evidence and identity closure is standard-library Python with no native loading or process spawns"]
-    assert closure["value"] == ["ciw.core.identities", "ciw.lab.evidence", "ciw.lab.report"]
+    # Ancestor packages run their __init__ on import, so they belong to the closure.
+    assert closure["value"] == ["ciw", "ciw.core", "ciw.core.identities", "ciw.lab", "ciw.lab.evidence",
+                                "ciw.lab.report"]
     assert closure["evidence_status"] == "numerically_verified"
     structural = findings["Package-wide structural rules hold (no shell spawns, native loading only in declared "
                           "hardware probes, no compiled extensions)"]
     assert structural["value"] == 0 and structural["evidence_status"] == "numerically_verified"
-    assert findings["Scanner flags forged modules that cross the boundary"]["value"] == 8
+    assert findings["Scanner flags forged modules that cross the boundary"]["value"] == 11
+    scan = arch.scan_package()
+    forged = arch.mutated_scan(scan, "ciw.lab", "import numpy\n")
+    assert ("evidence_closure_not_stdlib", "ciw.lab", "numpy") in arch.violations(forged)
     unpinned = findings["Some process spawns run a PATH-resolved executable without comparing it to a pinned identity"]
     assert unpinned["counterexample"]["statement"] == "Numerical providers are invoked only through pinned executables"
     pinned = findings["Numerical providers are invoked only through pinned executables"]
@@ -186,6 +201,8 @@ def test_t145_julia_partial_with_plan(tmp_path):
     assert findings["Julia environment pinned and exercised through the CIW to SCR boundary"]["evidence_status"] == \
         "not_established"
     assert findings["Julia provider pin procedure"]["evidence_status"] == "analytic"
+    # No Julia execution path exists, so the next task is to build one, not merely to provision Julia.
+    assert report["recommended_next_task"].startswith("Implement the Julia worker behind the SCR boundary")
     plan = json.loads((tmp_path / "artifacts" / "T145" / "julia-pin-procedure.json").read_text(encoding="utf-8"))
     assert "manifest_sha256" in plan["identity_fields"] and plan["steps"]
     symbolic = findings.get("Symbolic torus Christoffel symbols and curvature agree with ciw.lab.surfaces.Torus")
@@ -276,36 +293,68 @@ def test_t146_rust_byte_identity(rust_probe):
     assert serial.rust_shortest([1e15 + 0.25]) == ["1.0000000000000003e15"]
 
 
+GUARANTEE_CLAIM = ("The harness detects every dropped partial product larger than twice the row tolerance under both "
+                   "policies")
+MISS_CLAIM = ("The float32 policy misses dropped partial products up to about its bound, as often as the product "
+              "distribution predicts")
+BITWISE_CLAIM = "Bitwise policy detects reduction-order differences between float64 CPU orders"
+
+
 def test_t147_harness_detects_differences(tmp_path):
     report, findings = _run("T147", tmp_path)
     _assert_clean(report, "partial", "numerically_verified")
-    assert findings["Bitwise policy detects reduction-order differences between float64 CPU orders"]["value"] >= 1
+    assert findings[BITWISE_CLAIM]["value"] >= 1
     within = findings["Float64 reduction-order differences lie within the analytic error-bound policy"]
     assert within["evidence_status"] == "numerically_verified" and within["value"] < 1.0
     f32 = findings["Float32 results violate the float64 policy and satisfy the float32 policy"]["value"]
     assert f32["violations_under_f64_policy"] > 0 and f32["max_ratio_under_f32_policy"] < 1.0
-    power = findings["Dropped partial products larger than the policy bound plus the candidate's deviation from the "
-                     "reference are detected under both policies"]
+    power = findings[GUARANTEE_CLAIM]
     assert power["evidence_status"] == "numerically_verified"
     power = power["value"]
-    assert power["float64"] == {"faults": 131072, "undetected": 0, "guarantee_violations": 0,
-                                "undetected_above_bound": 0}
-    assert power["float32"]["guarantee_violations"] == 0 and power["float32"]["undetected"] > 0
-    assert power["float32"]["undetected_above_bound"] == 1
-    missed = findings["The float32 policy misses dropped partial products up to about its bound"]
+    assert power["float64"] == {"faults": 131072, "fault_free_violations": 0, "above_twice_tolerance": 131072,
+                                "undetected_above_twice_tolerance": 0, "undetected": 0}
+    assert power["float32"]["undetected_above_twice_tolerance"] == 0 and power["float32"]["above_twice_tolerance"] > 0
+    missed = findings[MISS_CLAIM]
     assert missed["evidence_status"] == "numerically_verified" and missed["value"]["undetected"] == 708
+    value = missed["value"]
+    assert abs(value["undetected"] - value["expected_undetected"]) <= 4 * value["sigma"]
+    assert value["detected_below_band"] == 0 and value["undetected_above_band"] == 0
     witness = missed["counterexample"]["witness"]
     assert witness["largest_undetected"]["magnitude"] <= witness["largest_undetected"]["row_tolerance"]
     # A fault slightly above its row bound escapes: the candidate's own deviation points the other way.
     above = witness["above_bound"]
     assert (above["row"], above["column"]) == (14, 538) and 1.0 < above["ratio"] < 1.001
-    assert missed["value"]["max_undetected_ratio"] == above["ratio"]
+    assert value["max_undetected_ratio"] == above["ratio"] and value["undetected_above_bound"] == 1
+    gpu = findings["CPU and GPU outputs agree under the tolerance policy on GPU hardware"]
+    assert gpu["expected_not_established"] is True and "no GPU kernel path" in gpu["basis"]["notes"]
+    assert report["recommended_next_task"].startswith("Implement a GPU path")
     assert findings["GPU/CPU agreement establishes industrial readiness"]["evidence_status"] == "not_established"
     with pytest.raises(ValueError, match="equal shapes"):
         kernels.compare_outputs(np.zeros(2), np.zeros(3), {"mode": "bitwise"})
     with pytest.raises(ValueError, match="finite"):
         kernels.compare_outputs(np.zeros(2), np.array([0.0, np.nan]), {"mode": "bitwise"})
     assert kernels.ulp_distance(np.array([1.0]), np.array([np.nextafter(1.0, 2.0)]))[0] == 1.0
+
+
+@pytest.mark.parametrize("scale", [3.0, 1.0 / 3.0])
+def test_t147_fault_study_is_judged_by_the_harness(tmp_path, monkeypatch, scale):
+    """A harness with a wrong tolerance or a bitwise mode that flags nothing refutes the fault findings."""
+    real = kernels.compare_outputs
+
+    def broken(reference, candidate, policy):
+        if policy["mode"] == "bound":
+            policy = dict(policy, tolerance=scale * np.asarray(policy["tolerance"]))
+        elif policy["mode"] == "bitwise":
+            policy = {"mode": "abs_rel", "abs": 1.0, "rel": 0.0}
+        return real(reference, candidate, policy)
+
+    monkeypatch.setattr(kernels, "compare_outputs", broken)
+    report, _ = _run("T147", tmp_path)
+    refuted = set(_refuted(report))
+    assert BITWISE_CLAIM in refuted and MISS_CLAIM in refuted
+    # A lenient harness (3x tolerance) misses faults above twice the true tolerance.
+    assert (GUARANTEE_CLAIM in refuted) == (scale > 1)
+    assert report["evidence_status"]["primary"] == "not_established"
 
 
 def test_t148_reduction_policies(tmp_path):
@@ -322,7 +371,13 @@ def test_t148_reduction_policies(tmp_path):
     exact = findings["Correctly rounded exact accumulation is permutation-invariant"]
     assert exact["value"] == 1 and exact["evidence_status"] == "independently_verified"
     pairwise = findings["Fixed-order pairwise summation is reproducible for one order but not permutation-invariant"]
-    assert pairwise["value"] >= 2 and pairwise["counterexample"]
+    assert pairwise["value"]["distinct_results"] >= 2 and pairwise["counterexample"]
+    # The same tree walked by NumPy level-wise additions gives the same bits on every sampled order.
+    assert pairwise["value"]["tree_mismatches"] == 0 and pairwise["value"]["orders"] == 25
+    assert float.fromhex(pairwise["value"]["first_order_sum_hex"]) == kernels.sum_pairwise(
+        kernels.reduction_datasets()["uniform"])
+    with pytest.raises(ValueError, match="power-of-two"):
+        kernels.sum_pairwise_levels([1.0, 2.0, 3.0])
     rigorous = findings["Observed errors of the sequential, pairwise, Neumaier and exact sums lie within their "
                         "rigorous bounds"]
     assert set(rigorous["value"]) == {"exact", "neumaier", "pairwise", "sequential"}
@@ -363,7 +418,20 @@ def test_t149_telemetry_only_frames(tmp_path):
         "independently_verified"
     assert findings["Decoder, encoder and interface validator refuse every command, write or malformed path"][
         "value"] == 13
-    assert findings["Host receiver exposes no sending or writing method"]["value"] == []
+    receiver = findings["Host receiver exposes only accept() and plain data attributes, with no sending method or "
+                        "transport handle"]
+    assert receiver["value"] == {"public_methods": ["accept"], "bases": ["object"], "non_data_attributes": []}
+    assert receiver["evidence_status"] == "numerically_verified"
+
+    class Relay(fpga.TelemetryReceiver):  # a method name no denylist would catch
+        def push(self, data):
+            return data
+
+    relay = Relay(0, 1)
+    relay.port = object()
+    assert fpga.receiver_interface(Relay, relay) == {"public_methods": ["accept", "push"],
+                                                     "bases": ["TelemetryReceiver", "object"],
+                                                     "non_data_attributes": ["port"]}
     assert findings["A telemetry-only interface guarantees the FPGA cannot actuate the machine"]["evidence_status"] == \
         "not_established"
 
@@ -371,8 +439,11 @@ def test_t149_telemetry_only_frames(tmp_path):
 def test_t150_bitstream_identity(tmp_path):
     report, findings = _run("T150", tmp_path)
     _assert_clean(report, "completed", "numerically_verified")
-    bound = findings["Bitstream identity record binds bitstream, toolchain, constraints and source tree"]
-    assert bound["value"]["refused_mutations"] == 23 and bound["value"]["accepted_positive_controls"] == 1
+    bound = findings["Bitstream identity record binds bitstream, toolchain version and installation manifest, "
+                     "constraints and source tree"]
+    assert bound["value"]["refused_mutations"] == 26 and bound["value"]["accepted_positive_controls"] == 1
+    codes = {check["expected_refusal"] for check in bound["basis"]["checks"]}
+    assert {"toolchain_installation_mismatch", "toolchain_version_mismatch"} <= codes
     assert bound["evidence_status"] == "numerically_verified"
     assert findings["The bitstream is approved for production deployment"]["evidence_status"] == "not_established"
     record = json.loads((tmp_path / "artifacts" / "T150" / "bitstream-identity.json").read_text(encoding="utf-8"))
@@ -387,6 +458,10 @@ def test_t150_bitstream_identity(tmp_path):
     with pytest.raises(fpga.IdentityRefusal) as refused:
         fpga.validate_identity(dict(record, source_tree="unknown"), source_files={"a.v": b""})
     assert refused.value.code == "missing_field"
+    fpga.validate_identity(record, toolchain_files=targets.PLACEHOLDER_TOOLCHAIN_FILES, toolchain_version="0.0.1")
+    with pytest.raises(fpga.IdentityRefusal) as refused:
+        fpga.validate_identity(record, toolchain_files=dict(targets.PLACEHOLDER_TOOLCHAIN_FILES, extra=b""))
+    assert refused.value.code == "toolchain_installation_mismatch"
 
 
 def test_t151_compatibility_and_rollback(tmp_path):
@@ -438,10 +513,29 @@ def test_t153_writes_disabled_by_default(tmp_path):
     assert refused.value.code == "lab_cannot_issue_authority"
     with pytest.raises(dataclasses.FrozenInstanceError):
         policy.enabled = True
+    # The validity window is compared as instants, not strings.
+    for valid_until, code in (("2026-09-23T01:00:00+02:00", "authorization_expired"),
+                              ("2026-09-23T00:00:00.500Z", "no_trust_anchor"),
+                              ("tomorrow", "malformed_timestamp"), ("2027-01-01T00:00:00", "malformed_timestamp"),
+                              ("2026-09-23T00:00:00Z", "authorization_expired")):
+        with pytest.raises(authority.AuthorityRefusal) as refused:
+            authority.verify_authorization(dataclasses.replace(targets.EXTERNAL, valid_until=valid_until),
+                                           channel="spindle_speed", now=NOW)
+        assert refused.value.code == code, valid_until
+    with pytest.raises(authority.AuthorityRefusal) as refused:
+        authority.verify_authorization(targets.EXTERNAL, channel="spindle_speed", now="2026-09-23T02:00:00+02:00")
+    assert refused.value.code == "no_trust_anchor"
     report, findings = _run("T153", tmp_path)
     _assert_clean(report, "completed", "numerically_verified")
-    assert findings["Default policy refuses every write attempt"]["value"] == {"attempts": 1000, "accepted": 0}
-    assert findings["Enabling writes is refused on every route, including a well-formed external record"]["value"] == 8
+    assert findings["Default policy refuses writes on every declared channel"]["value"] == len(targets.WRITE_CHANNELS)
+    assert findings["Enabling writes is refused on every route, including a well-formed external record"]["value"] == 12
+    paths = findings["No ciw module imports a device, serial or fieldbus library or names a device node, and network "
+                     "libraries appear only in the declared workbench servers (source scan)"]
+    assert paths["evidence_status"] == "numerically_verified"
+    assert paths["value"]["device_paths"] == [] and paths["value"]["undeclared_network"] == []
+    assert set(paths["value"]["declared_network"]) <= set(arch.DECLARED_NETWORK)
+    scanned = arch.scan_source("ciw.lab.x", "import serial\nopen('/dev/ttyACM0', 'wb').write(b'M3')\n")
+    assert scanned["device_libraries"] == ["serial"] and scanned["device_nodes"] == ["/dev/ttyACM0"]
     assert findings["A frozen in-process policy object can be mutated"]["counterexample"]
     assert findings["The lab holds actuator write authority"]["evidence_status"] == "not_established"
     assert findings["The lab holds actuator write authority"]["domain"] == "actuator_authority"
@@ -450,7 +544,8 @@ def test_t153_writes_disabled_by_default(tmp_path):
 def test_t154_control_outputs_are_proposals(tmp_path):
     report, findings = _run("T154", tmp_path)
     _assert_clean(report, "completed", "numerically_verified")
-    outputs = findings["Control outputs are constructed with status proposal and cannot be converted to a command here"]
+    outputs = findings["Control outputs built by this section are constructed with status proposal and cannot be "
+                       "converted to a command here"]
     assert outputs["value"] == {"refusals": 7, "status": "proposal"}
     tampered = findings["A frozen control proposal's status can be forced in memory, and the forced object is refused"]
     assert tampered["value"] == {"refusals": 3, "status_forced": True} and tampered["counterexample"]
@@ -458,6 +553,13 @@ def test_t154_control_outputs_are_proposals(tmp_path):
     assert abs(orders["corrected_order"] - 2.0) < 0.2 and abs(orders["uncorrected_order"] - 1.0) < 0.2
     assert findings["Heading proposals are authorized for execution as actuator commands"]["evidence_status"] == \
         "not_established"
+    inventory = findings["Control-like outputs named in the package are all inventoried (keyword scan)"]
+    assert inventory["evidence_status"] == "numerically_verified"
+    assert "ciw.lab.lyapunov_research" in inventory["value"]["modules_naming_control_terms"]
+    assert inventory["value"]["proposals"] == ["Jacobi heading correction"]
+    scope = findings["Every control-like output of the workbench is a ControlProposal"]
+    assert scope["expected_not_established"] is True and "stop request" in scope["basis"]["notes"]
+    assert any("T114 servo-axis abort" in item for item in report["unresolved_assumptions"])
     record = json.loads((tmp_path / "artifacts" / "T154" / "proposal-record.json").read_text(encoding="utf-8"))
     assert record["status"] == "proposal"
     with pytest.raises(authority.AuthorityRefusal) as refused:

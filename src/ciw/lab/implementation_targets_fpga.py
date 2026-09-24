@@ -277,6 +277,34 @@ class TelemetryReceiver:
         return record
 
 
+def _plain_data(value) -> bool:
+    if value is None or type(value) in (bool, int, float, str, bytes) or isinstance(value, (np.number, np.bool_)):
+        return True
+    if type(value) in (list, tuple, set, frozenset):
+        return all(_plain_data(item) for item in value)
+    if type(value) is dict:
+        return all(_plain_data(key) and _plain_data(item) for key, item in value.items())
+    return False
+
+
+def receiver_interface(cls, instance=None) -> dict:
+    """Public callables, base classes and non-data attributes of a receiver class and one of its instances.
+
+    A telemetry-only receiver's public interface is exactly ``accept`` plus
+    plain data (numbers, strings, bytes and containers of them); a public
+    method of any name other than ``accept``, a base class that could
+    contribute one, or an attribute holding an object (a socket, file or
+    transport handle) is reported, whatever it is called.
+    """
+    public = sorted(name for name in dir(cls) if not name.startswith("_"))
+    methods = [name for name in public if callable(getattr(cls, name))]
+    class_objects = [name for name in public if name not in methods and not _plain_data(getattr(cls, name))]
+    handles = [] if instance is None else sorted(name for name, value in vars(instance).items()
+                                                 if not _plain_data(value))
+    return {"public_methods": methods, "bases": [base.__qualname__ for base in cls.__mro__[1:]],
+            "non_data_attributes": sorted(class_objects + handles)}
+
+
 def naive_gap_count(sequences) -> int:
     """Unsafe detector: sums positive (seq - previous - 1) in the given order, without modular arithmetic."""
     lost, previous = 0, None
@@ -389,6 +417,18 @@ def _files_digest(files: dict) -> dict:
     return {"files": manifest, "sha256": canonical_sha256(manifest)}
 
 
+def installation_digest(files: dict) -> str:
+    """Manifest digest of a toolchain installation: sha256 of the canonical {path: sha256} map of the files given.
+
+    Which files of a vendor toolchain belong in the manifest (executables,
+    libraries, device databases) is the caller's declaration; the digest binds
+    exactly the files supplied.
+    """
+    if not files:
+        raise IdentityRefusal("unpinned_toolchain_installation", "A toolchain installation manifest needs files")
+    return _files_digest(files)["sha256"]
+
+
 def synthetic_bitstream(seed: int, size: int = 32768) -> bytes:
     """Seeded placeholder bytes with an unmistakable prefix; not an FPGA configuration."""
     rng = np.random.Generator(np.random.PCG64(seed))
@@ -408,8 +448,14 @@ def bitstream_identity(bitstream: bytes, *, toolchain: dict, part: str, constrai
 
 
 def validate_identity(record: dict, *, bitstream: bytes | None = None, constraints: dict | None = None,
-                      source_files: dict | None = None) -> dict:
-    """Refuse incomplete, malformed, floating, unbound or tampered identity records."""
+                      source_files: dict | None = None, toolchain_files: dict | None = None,
+                      toolchain_version: str | None = None) -> dict:
+    """Refuse incomplete, malformed, floating, unbound or tampered identity records.
+
+    Each artifact supplied is checked against the record: bitstream bytes,
+    constraint files, source files, the toolchain installation's files (by
+    installation_digest) and the version the installed toolchain reports.
+    """
     if not isinstance(record, dict):
         raise IdentityRefusal("missing_field", "Bitstream identity must be an object")
     missing = [name for name in IDENTITY_FIELDS + ("record_sha256",) if name not in record]
@@ -466,6 +512,11 @@ def validate_identity(record: dict, *, bitstream: bytes | None = None, constrain
         raise IdentityRefusal("constraints_digest_mismatch", "Constraint files differ from their identity record")
     if source_files is not None and _files_digest(source_files)["sha256"] != tree["value"]:
         raise IdentityRefusal("source_tree_mismatch", "Source files differ from the recorded source tree")
+    if toolchain_version is not None and toolchain_version != version:
+        raise IdentityRefusal("toolchain_version_mismatch", "The installed toolchain reports another version")
+    if toolchain_files is not None and installation_digest(toolchain_files) != installation:
+        raise IdentityRefusal("toolchain_installation_mismatch",
+                              "Toolchain installation files differ from the recorded installation digest")
     return record
 
 

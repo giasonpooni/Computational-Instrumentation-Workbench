@@ -1,7 +1,8 @@
-"""Language boundaries: industrial C/C++ interface inventory and an import-graph scan (T143, T144).
+"""Language boundaries: industrial C/C++ interface inventory and an import-graph scan (T143, T144, T153, T154).
 
-The inventory records which industrial interfaces need C or C++ libraries and
-the boundary CIW would use for each: a pinned subprocess provider that
+The inventory records which industrial interfaces are assigned to C or C++
+libraries (required, or preferred where a pure-Python stack exists) and the
+boundary CIW would use for each: a pinned subprocess provider that
 exchanges retained bytes, never an in-process binding inside the evidence
 layer, and never an enabled write path. It is an analytic design record; no
 listed library is installed, linked or exercised here.
@@ -14,9 +15,11 @@ os, asyncio) use argument vectors and no shell, and no compiled extension
 ships inside the package. Whether a spawning module names an identity in its
 code is recorded as a heuristic only; whether the spawned executable is pinned
 (compared with an expected identity before it runs) is not something a source
-scan can establish, and PATH-resolved spawns are listed as counterexamples. A
-rule scan is structural evidence about source text, not proof of runtime
-behaviour.
+scan can establish, and PATH-resolved spawns are listed as counterexamples.
+The same scan lists machine write paths (device, serial, fieldbus and
+instrument libraries, device nodes, and network libraries outside declared
+servers) and modules whose code names a control-like output. A rule scan is
+structural evidence about source text, not proof of runtime behaviour.
 """
 from __future__ import annotations
 
@@ -30,10 +33,16 @@ PACKAGE_ROOT = Path(__file__).resolve().parents[1]
 
 # ----------------------------------------------------------------- T143
 INTERFACES = (
+    # OPC UA does not need C/C++: pure-Python stacks exist. The C/C++ choice is a preference, stated with its reason.
     {"name": "OPC UA client (read-only subscriptions)", "category": "plant data",
      "libraries": ["open62541 (C)", "Unified Automation C++ SDK", "Siemens/vendor OPC UA stacks"],
-     "why_native": "Certified and vendor-supported stacks are C/C++; security policies (X.509, SignAndEncrypt) and "
-                   "subscription timing are implemented there",
+     "native_necessity": "preferred",
+     "pure_python_alternatives": ["asyncua (asyncio OPC UA client and server)",
+                                  "python-opcua (package opcua; superseded by asyncua)"],
+     "why_native": "Not required: the pure-Python stacks can subscribe read-only. C/C++ stacks are preferred for OPC "
+                   "Foundation certification, vendor support and a maintained security-policy implementation (X.509, "
+                   "SignAndEncrypt) that plant operators accept; either stack would sit behind the same pinned "
+                   "subprocess boundary, never inside the evidence process",
      "boundary": "pinned_subprocess", "direction": "read_only", "write_path": "absent",
      "exchange": "framed JSON/CBOR records over stdio with node ids, source timestamps and status codes retained raw",
      "identity": ["executable sha256", "library version and build flags", "server certificate fingerprint"]},
@@ -43,6 +52,7 @@ INTERFACES = (
      "libraries": ["libpcap / Npcap (C)", "Wireshark EtherCAT dissectors (C)", "TAP or probe device driver (vendor C)"],
      "why_native": "Line-rate capture with hardware timestamps needs kernel capture drivers and C dissectors; a Python "
                    "loop cannot keep up with cyclic frames at microsecond spacing",
+     "native_necessity": "required",
      "boundary": "pinned_subprocess", "direction": "read_only", "write_path": "absent", "fieldbus_role": "passive_tap",
      "exchange": "pcapng captures with sha256; decoded PDO snapshots with working counters and TAP timestamps retained",
      "identity": ["TAP device model and firmware version", "capture library version", "ENI/ESI decoding configuration "
@@ -50,12 +60,14 @@ INTERFACES = (
     {"name": "Vendor camera SDKs (GenICam GenTL)", "category": "vision acquisition",
      "libraries": ["Basler pylon (C++)", "Teledyne FLIR Spinnaker (C++)", "Allied Vision Vimba X (C/C++)",
                    "GenICam reference implementation (C++)"],
+     "native_necessity": "required",
      "why_native": "Proprietary drivers, zero-copy buffers and hardware triggers are exposed only through C/C++ ABIs",
      "boundary": "pinned_subprocess", "direction": "read_only", "write_path": "absent",
      "exchange": "raw frame bytes with sha256, chunk timestamps and camera feature snapshot (GenICam XML digest)",
      "identity": ["SDK version", "camera firmware version", "GenICam XML digest"]},
     {"name": "Point cloud processing (PCL / Open3D)", "category": "3D geometry",
      "libraries": ["PCL (C++)", "Open3D (C++ core with Python bindings)"],
+     "native_necessity": "required",
      "why_native": "Registration, KD-tree and surface reconstruction kernels are C++ with nondeterministic threading "
                    "unless pinned; bindings would put unaudited native state in the evidence process",
      "boundary": "pinned_subprocess", "direction": "geometry_exchange", "write_path": "absent",
@@ -63,12 +75,14 @@ INTERFACES = (
      "identity": ["library version", "thread count", "build flags (OpenMP, SIMD)"]},
     {"name": "CAD kernel (OpenCASCADE)", "category": "CAD geometry",
      "libraries": ["OpenCASCADE Technology (C++)", "pythonOCC bindings"],
+     "native_necessity": "required",
      "why_native": "B-rep, STEP/IGES translation and tolerance handling live in the C++ kernel",
      "boundary": "pinned_subprocess", "direction": "geometry_exchange", "write_path": "absent",
      "exchange": "STEP/BREP files with sha256; exported meshes and measurements as retained records",
      "identity": ["OCCT version", "translator settings digest", "tolerance settings"]},
 )
 BOUNDARIES = frozenset({"pinned_subprocess"})
+NECESSITIES = frozenset({"required", "preferred"})
 DIRECTIONS = frozenset({"read_only", "geometry_exchange"})
 WRITE_PATHS = frozenset({"absent", "disabled"})
 FIELDBUS_ROLES = frozenset({"passive_tap"})
@@ -94,12 +108,22 @@ class ArchitectureRefusal(ValueError):
 
 
 def validate_inventory(entries) -> list:
-    """Refuse in-process bindings, write-capable directions or bus roles and missing or floating identity pins."""
+    """Refuse in-process bindings, write-capable directions or bus roles and missing or floating identity pins.
+
+    ``native_necessity`` says whether C/C++ is required or only preferred; a
+    preferred entry must name the pure-Python alternatives it passes over.
+    """
     for entry in entries:
-        for key in ("name", "category", "libraries", "why_native", "boundary", "direction", "write_path",
-                    "exchange", "identity"):
+        for key in ("name", "category", "libraries", "native_necessity", "why_native", "boundary", "direction",
+                    "write_path", "exchange", "identity"):
             if not entry.get(key):
                 raise ArchitectureRefusal("incomplete_entry", f"Interface entry lacks {key}")
+        if entry["native_necessity"] not in NECESSITIES:
+            raise ArchitectureRefusal("incomplete_entry", f"{entry['name']}: native_necessity must be required or "
+                                      "preferred")
+        if entry["native_necessity"] == "preferred" and not entry.get("pure_python_alternatives"):
+            raise ArchitectureRefusal("incomplete_entry", f"{entry['name']}: a preferred native library must name the "
+                                      "pure-Python alternatives it passes over")
         if entry["boundary"] not in BOUNDARIES:
             raise ArchitectureRefusal("in_process_binding", f"{entry['name']}: native code must stay behind a pinned "
                                       "subprocess boundary")
@@ -128,6 +152,31 @@ OS_SPAWN = re.compile(r"^(system|popen|exec\w*|spawn\w*|posix_spawn\w*)$")
 SHELL_CALLS = frozenset({"system", "popen", "create_subprocess_shell", "getoutput", "getstatusoutput"})
 IDENTITY_TOKENS = ("revision", "source_tree", "runtime_identity", "sha256", "digest")
 
+# Write paths toward machines (T153). Device, serial, fieldbus, industrial-protocol and instrument-I/O libraries
+# are refused everywhere; network libraries only in declared modules that serve the workbench's own clients.
+# A dotted entry matches that module and its submodules.
+DEVICE_LIBRARIES = frozenset({
+    "serial", "can", "canopen", "pymodbus", "minimalmodbus", "umodbus", "pysoem", "pyads", "snap7", "pycomm3",
+    "cpppo", "pylogix", "asyncua", "opcua", "usb", "hid", "ftd2xx", "pyftdi", "smbus", "smbus2", "spidev", "RPi",
+    "gpiozero", "periphery", "pyvisa", "nidaqmx", "evdev", "pyudev"})
+NETWORK_LIBRARIES = frozenset({
+    "socket", "socketserver", "ssl", "http", "urllib.request", "xmlrpc", "ftplib", "smtplib", "telnetlib",
+    "websockets", "websocket", "aiohttp", "requests", "httpx", "urllib3", "zmq", "grpc", "paho", "mcp"})
+NETWORK_CALLS = frozenset({"open_connection", "start_server", "open_unix_connection", "start_unix_server",
+                           "create_connection", "create_server", "create_datagram_endpoint",
+                           "create_unix_connection", "create_unix_server"})
+_DEVICE_NODE = re.compile(r"^(/dev/|\\\\[.?]\\|COM[0-9]+:?\Z)")
+DECLARED_NETWORK = {
+    "ciw.server": "workbench websocket server: sends session snapshots and results to its browser clients",
+    "ciw.cli": "websocket client for the workbench server and launcher of ciw.server",
+    "ciw.lab.mcp_server": "MCP tool server for lab reports, run over stdio",
+}
+# Control-like outputs (T154): stop or abort requests, setpoints, gain changes and command conversions named in code.
+CONTROL_TERMS = ("stop request", "abort_action", "abort_on", "setpoint", "to_command", "safe torque",
+                 "release a stop", "command motion", "change gains")
+# The scanner's own term lists name every library and term above without using them.
+SCANNER_MODULES = frozenset({"ciw.lab.implementation_targets_architecture"})
+
 
 def module_name(path: Path, root: Path) -> str:
     parts = list(path.relative_to(root.parent).with_suffix("").parts)
@@ -154,7 +203,7 @@ def scan_source(name: str, text: str, is_package: bool = False) -> dict:
     tree = ast.parse(text)
     imports, aliases = set(), {"subprocess": set(), "os": set(), "asyncio": set(), "shutil": set()}
     spawn_names, shell_names, which_names = set(), set(), set()
-    calls, words, docstrings = [], [], set()
+    calls, words, docstrings, strings = [], [], set(), []
     for node in ast.walk(tree):  # breadth first: a docstring's owner is visited before the docstring
         if isinstance(node, (ast.Module, ast.ClassDef, ast.FunctionDef, ast.AsyncFunctionDef)):
             first = node.body[0] if node.body else None
@@ -194,10 +243,13 @@ def scan_source(name: str, text: str, is_package: bool = False) -> dict:
             words.append(node.arg)
         elif isinstance(node, ast.Constant) and isinstance(node.value, str) and id(node) not in docstrings:
             words.append(node.value)
-    spawns, shell, which = [], set(), []
+            strings.append(node.value)
+    spawns, shell, which, network_calls = [], set(), [], set()
     for node in calls:
         func = node.func
         called = None
+        if isinstance(func, ast.Attribute) and func.attr in NETWORK_CALLS:
+            network_calls.add(func.attr)
         if isinstance(func, ast.Attribute) and isinstance(func.value, ast.Name):
             owner = func.value.id
             if ((owner in aliases["subprocess"] and func.attr in SPAWN_FUNCTIONS)
@@ -220,10 +272,20 @@ def scan_source(name: str, text: str, is_package: bool = False) -> dict:
                 shell.add(node.lineno)
     native = sorted(imp for imp in imports if imp.split(".")[0] in {m.split(".")[0] for m in NATIVE_MODULES})
     code = "\n".join(words)
+    lowered = code.lower()
     return {"imports": sorted(imports), "native": native, "spawn_lines": sorted(spawns),
             "shell_lines": sorted(shell), "which_lines": sorted(which),
             "identity_tokens": sorted(token for token in IDENTITY_TOKENS if token in code),
-            "mentions_subprocess": "subprocess" in text}
+            "mentions_subprocess": "subprocess" in text,
+            "device_libraries": sorted(imp for imp in imports if _matches(imp, DEVICE_LIBRARIES)),
+            "network_libraries": sorted(imp for imp in imports if _matches(imp, NETWORK_LIBRARIES)),
+            "network_calls": sorted(network_calls),
+            "device_nodes": sorted({value for value in strings if _DEVICE_NODE.match(value)}),
+            "control_terms": sorted(term for term in CONTROL_TERMS if term in lowered)}
+
+
+def _matches(module: str, entries) -> bool:
+    return any(module == entry or module.startswith(entry + ".") for entry in entries)
 
 
 def scan_package(root: Path = PACKAGE_ROOT) -> dict:
@@ -247,13 +309,21 @@ def scan_package(root: Path = PACKAGE_ROOT) -> dict:
 
 
 def closure(modules: dict, roots) -> list:
-    """Transitive ciw-internal import closure of ``roots`` (packages include their __init__)."""
+    """Transitive ciw-internal import closure of ``roots``.
+
+    Importing a module executes every ancestor package's ``__init__`` first
+    (``ciw``, then ``ciw.lab`` for ``ciw.lab.evidence``), so each visited
+    module brings its scanned ancestor packages and their imports along.
+    """
     seen, stack = set(), [r for r in roots if r in modules]
     while stack:
         current = stack.pop()
         if current in seen:
             continue
         seen.add(current)
+        names = current.split(".")
+        stack.extend(parent for parent in (".".join(names[:end]) for end in range(1, len(names)))
+                     if parent in modules and parent not in seen)
         for target in modules[current]["imports"]:
             parts = target.split(".")
             for end in range(len(parts), 0, -1):
@@ -303,7 +373,34 @@ def path_resolved_spawners(scan: dict) -> list:
 
 
 def mutated_scan(scan: dict, name: str, text: str) -> dict:
-    """The package scan with one module's source replaced (negative tests)."""
+    """The package scan with one module's source replaced (negative tests); a package keeps its package status."""
     modules = dict(scan["modules"])
-    modules[name] = scan_source(name, text, is_package=False)
+    is_package = any(other.startswith(name + ".") for other in modules)
+    modules[name] = scan_source(name, text, is_package=is_package)
     return dict(scan, modules=modules)
+
+
+def write_paths(scan: dict) -> dict:
+    """Device and network write paths per module, split into refused and declared ones (T153).
+
+    Any device, serial, fieldbus or instrument library, and any device-node
+    string such as '/dev/ttyUSB0' or 'COM3', is refused everywhere. Network
+    libraries and connection calls are refused outside DECLARED_NETWORK.
+    """
+    device, network, declared = {}, {}, {}
+    for name, info in sorted(scan["modules"].items()):
+        if name in SCANNER_MODULES:
+            continue
+        found = info["device_libraries"] + [f"device node {node!r}" for node in info["device_nodes"]]
+        if found:
+            device[name] = found
+        net = info["network_libraries"] + [f"call {call}" for call in info["network_calls"]]
+        if net:
+            (declared if name in DECLARED_NETWORK else network)[name] = net
+    return {"device": device, "undeclared_network": network, "declared_network": declared}
+
+
+def control_term_modules(scan: dict) -> dict:
+    """Modules whose code (identifiers and non-docstring strings) names a control-like output (heuristic, T154)."""
+    return {name: info["control_terms"] for name, info in sorted(scan["modules"].items())
+            if info["control_terms"] and name not in SCANNER_MODULES}
