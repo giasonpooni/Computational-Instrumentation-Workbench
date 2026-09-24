@@ -21,7 +21,6 @@ import numpy as np
 
 from . import energy_records
 from . import reference_workflow as base
-from .adapters.subprocess import _json
 from .declared_workload import RESULT_SCHEMA, VERIFY_SCHEMA
 from .telemetry import _keys
 
@@ -98,7 +97,7 @@ class EnergyAccuracyWorkflow(base.ReferenceWorkflow):
     def _source(self, raw):
         if type(raw) is not bytes or not 1 <= len(raw) <= SOURCE_LIMIT:
             raise ValueError("Energy analysis source must contain 1..4194304 exact retained bytes")
-        source = _json(raw)
+        source = base.parse_json(raw, "Energy analysis source")
         energy_records.validate_log(source)
         return source
 
@@ -120,14 +119,14 @@ class EnergyAccuracyWorkflow(base.ReferenceWorkflow):
     def _check_runtime(self, runtime):
         _check_runtime(runtime)
 
-    def _check_data(self, result, source):
+    def _check_data(self, result, source, expected=None):
         # Statuses, reasons, counts, decimal counter strings and structure must
         # match exactly.  The accuracy metrics compare each retained batch with
         # the Gaussian reference, whose conditioning runs through the host's
         # linear-algebra kernels; the resulting roundoff-level errors differ
         # between CPUs without changing any classification, so numbers are
         # compared with the shared binary64 tolerance.
-        base.close_data(result["data"], self._native_data(source))
+        base.close_data(result["data"], self._native_data(source) if expected is None else expected)
 
 
 def _verification(bundle, reproduced):

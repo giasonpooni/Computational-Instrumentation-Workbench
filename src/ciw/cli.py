@@ -22,6 +22,9 @@ from .server import run_server
 from .session import Session, _reject_constant, read_json, write_json
 
 
+SOURCE_FRAME_LIMIT = 8 * 1024 * 1024
+
+
 def print_json(value) -> None:
     print(json.dumps(value, indent=2, allow_nan=False))
 
@@ -217,7 +220,12 @@ def _remote(url: str, kind: str, payload: dict, timeout: float) -> int:
 def _workbench_command(args) -> int:
     """Terminal verbs over the shared workbench: retained sources, operations and bundles."""
     if args.command == "source" and args.source_command == "add":
-        raw = args.file.read_bytes()
+        # The shared session accepts frames up to 8 MiB; refuse locally before
+        # encoding and shipping bytes the service would reject anyway.
+        with args.file.open("rb") as stream:
+            raw = stream.read(SOURCE_FRAME_LIMIT + 1)
+        if len(raw) > SOURCE_FRAME_LIMIT:
+            raise ValueError("Source file exceeds the 8 MiB shared-session frame; retain a smaller exact source")
         payload = {"kind": args.kind, "label": args.label or args.file.name,
                    "bytes_b64": base64.b64encode(raw).decode("ascii")}
         return _remote(args.url, "source.add", payload, args.timeout)

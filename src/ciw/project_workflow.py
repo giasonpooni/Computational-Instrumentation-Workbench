@@ -19,7 +19,6 @@ import re
 
 from . import project_model as project
 from . import reference_workflow as base
-from .adapters.subprocess import _json
 from .telemetry import canonical, _keys
 
 KIND = "project-graph"
@@ -52,9 +51,7 @@ CLAIM_SCOPE = "declared_graph_consistency_and_result_staleness_under_retained_hi
 _REVISION = re.compile(r"sha256:[0-9a-f]{64}\Z")
 
 
-def _text(value, limit=512):
-    if not isinstance(value, str) or not value.strip() or len(value) > limit:
-        raise ValueError("Require bounded nonempty text")
+_text = base._text
 
 
 @lru_cache(maxsize=1)
@@ -90,7 +87,7 @@ def validate_source(raw):
     """Validate exact source bytes and replay the project history without executing it."""
     if type(raw) is not bytes or not 1 <= len(raw) <= SOURCE_LIMIT:
         raise ValueError("Project graph source requires bounded exact JSON bytes")
-    source = _json(raw)
+    source = base.parse_json(raw, "Project graph source")
     _keys(source, {"schema", "experiment_id", "configuration", "project", "request"})
     if source["schema"] != SOURCE_SCHEMA or canonical(source["configuration"]) != canonical(CONFIGURATION):
         raise ValueError("Unsupported project graph source or authority policy")

@@ -25,7 +25,6 @@ import numpy as np
 
 from . import consistency_math as consistency
 from . import reference_workflow as base
-from .adapters.subprocess import _json
 from .core.covariance import _validate_matrix
 from .telemetry import canonical, _keys
 
@@ -65,9 +64,7 @@ REL_TOL = base.REL_TOL
 ABS_TOL = base.ABS_TOL
 
 
-def _text(value, limit=512):
-    if not isinstance(value, str) or not value.strip() or len(value) > limit:
-        raise ValueError("Require bounded nonempty text")
+_text = base._text
 
 
 @lru_cache(maxsize=1)
@@ -141,7 +138,7 @@ def validate_source(raw):
     """Validate exact source bytes; no statistic is computed here."""
     if type(raw) is not bytes or not 1 <= len(raw) <= SOURCE_LIMIT:
         raise ValueError("Uncertainty validation source requires bounded exact JSON bytes")
-    source = _json(raw)
+    source = base.parse_json(raw, "Uncertainty validation source")
     _keys(source, {"schema", "experiment_id", "configuration", "request"})
     if source["schema"] != SOURCE_SCHEMA or canonical(source["configuration"]) != canonical(CONFIGURATION):
         raise ValueError("Unsupported uncertainty validation source or authority policy")
@@ -259,11 +256,11 @@ class UncertaintyValidationWorkflow(base.ReferenceWorkflow):
     def _configuration(self, source):
         return deepcopy(CONFIGURATION)
 
-    def _check_data(self, result, source):
+    def _check_data(self, result, source, expected=None):
         # Statuses, names and structure must match exactly; the statistics are
         # compared with a binary64 tolerance because linear solves may round
         # differently across platforms without changing any conclusion.
-        base.close_data(result["data"], _native_data(source))
+        base.close_data(result["data"], _native_data(source) if expected is None else expected)
 
 
 def _verification(bundle, reproduced):

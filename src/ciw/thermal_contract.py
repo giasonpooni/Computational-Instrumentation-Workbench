@@ -153,11 +153,11 @@ def _close(received, expected, path="result"):
 
 
 def validate_source(raw):
-    from .adapters.subprocess import _json
+    from .reference_workflow import parse_json
     from .thermal_reference import model_matrices
     if type(raw) is not bytes or not 1 <= len(raw) <= SOURCE_LIMIT:
         raise ValueError("Thermal source requires bounded exact JSON bytes")
-    source = _json(raw)
+    source = parse_json(raw, "Thermal source")
     _keys(source, {"schema", "experiment_id", "configuration", "request", "evaluation"})
     if source["schema"] != SOURCE_SCHEMA or canonical(source["configuration"]) != canonical(POLICY):
         raise ValueError("Unsupported thermal source or authority policy")

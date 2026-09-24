@@ -36,6 +36,8 @@ import uuid
 
 import numpy as np
 
+from .adapters.protocol import AdapterRefusal
+from .adapters.subprocess import _json
 from .exchange import _identity
 from .telemetry import _bundle_digest, _now, byte_digest, canonical, digest, _keys
 
@@ -51,6 +53,10 @@ FIXED_ALGORITHM_KEYS = {"profile", "code_sha256", "source_normalization"}
 # compares identities whole, so they can never claim the current runtime.
 OPTIONAL_ALGORITHM_KEYS = {"kernel_probe"}
 PROBE_SIZES = ((2, 7), (3, 11), (6, 13), (8, 17))
+# The C math library the pure-Python bands use (chi-square and beta quantiles
+# go through lgamma, exp, log1p and erf) can round differently between libc
+# builds, so the probe covers it alongside NumPy's kernels.
+PROBE_SCALARS = (0.001, 0.5, 1.5, 2.5, 7.25, 31.75, 100.125, 1024.0625)
 STEP_KEYS = {"runtime_ref", "operation_id", "execution_id", "input_refs", "request", "request_sha256",
              "result", "result_sha256", "result_id", "numerical_result", "numerical_result_id"}
 RESULT_KEYS = {"schema", "operation_id", "execution_ref", "input_refs", "data", "authority", "result_id"}
@@ -73,6 +79,14 @@ def _text(value, limit=512):
         raise ValueError("Require bounded nonempty text")
 
 
+def parse_json(raw, label="Source"):
+    """Parse exact uploaded bytes as finite, unambiguous JSON; a bad upload is a source error, not a runtime one."""
+    try:
+        return _json(raw)
+    except AdapterRefusal as exc:
+        raise ValueError(f"{label} must be finite, unambiguous JSON") from exc
+
+
 def _number(value):
     return isinstance(value, (int, float)) and not isinstance(value, bool)
 
@@ -90,7 +104,9 @@ def close_data(retained, fresh, path="data", *, rel_tol=REL_TOL, abs_tol=ABS_TOL
         for index, (left, right) in enumerate(zip(retained, fresh)):
             close_data(left, right, f"{path}[{index}]", rel_tol=rel_tol, abs_tol=abs_tol)
     elif _number(retained) and _number(fresh):
-        if not math.isclose(retained, fresh, rel_tol=rel_tol, abs_tol=abs_tol):
+        # Counts stay exact; only binary64 values carry the tolerance.
+        exact = type(retained) is int and type(fresh) is int
+        if (retained != fresh) if exact else not math.isclose(retained, fresh, rel_tol=rel_tol, abs_tol=abs_tol):
             raise ValueError(f"Retained {path} differs numerically from the deterministic reference")
     elif retained != fresh or type(retained) is not type(fresh):
         raise ValueError(f"Retained {path} differs from the deterministic reference")
@@ -117,6 +133,9 @@ def _kernel_probe():
                   np.linalg.det(spd), np.log(np.diag(spd)), np.exp(-np.diag(spd) / size), np.expm1(-vector / size),
                   np.sum(spd, axis=0), np.sum(spd), np.trace(np.linalg.solve(spd, general @ general.T)),
                   np.linalg.norm(general), np.sqrt(np.diag(spd))]
+    for value in PROBE_SCALARS:
+        parts.append([math.lgamma(value), math.exp(-value), math.log(value), math.log1p(value), math.expm1(-value / 8),
+                      math.erf(value / 4), math.sqrt(value), math.pow(value, 0.375)])
     raw = b"".join(np.ascontiguousarray(np.asarray(part, dtype="<f8")).tobytes() for part in parts)
     return sha256(raw).hexdigest()
 
@@ -195,9 +214,14 @@ class ReferenceWorkflow:
         """The configuration a bundle retains for this source."""
         raise NotImplementedError
 
-    def _check_data(self, result, source):
-        """Refuse a retained result that the reference does not reproduce exactly."""
-        if canonical(result["data"]) != canonical(self._native_data(source)):
+    def _check_data(self, result, source, expected=None):
+        """Refuse a retained result that the reference does not reproduce exactly.
+
+        ``expected`` is the reference output already computed for this source,
+        so one validation computes the reference once for every step it checks.
+        """
+        expected = self._native_data(source) if expected is None else expected
+        if canonical(result["data"]) != canonical(expected):
             raise ValueError(f"{self._label} native result differs from the deterministic reference")
 
     def _experiment_id(self, source):
@@ -240,12 +264,12 @@ class ReferenceWorkflow:
                               "bytes_b64": base64.b64encode(raw).decode()}]}
 
     # ---------------------------------------------------------- occurrences
-    def _step(self, source, evidence_id, execution_id=None):
+    def _step(self, source, evidence_id, execution_id=None, data=None):
         occurrence = execution_id or "execution-" + uuid.uuid4().hex
         # A retained step holds plain JSON values, so an in-memory bundle equals
         # its reopened form leaf for leaf; the canonical encoding is idempotent
         # through this round trip, so no identity changes.
-        data = json.loads(canonical(self._native_data(source)))
+        data = json.loads(canonical(self._native_data(source) if data is None else data))
         result = {
             "schema": self.result_schema,
             "operation_id": self.operation,
@@ -271,7 +295,7 @@ class ReferenceWorkflow:
             "numerical_result_id": digest(numerical),
         }
 
-    def _validate_step(self, step, source, evidence_id):
+    def _validate_step(self, step, source, evidence_id, expected=None):
         _keys(step, STEP_KEYS)
         request = self._request(source, evidence_id)
         if (step["runtime_ref"] != self.role or step["operation_id"] != self.operation or
@@ -287,7 +311,7 @@ class ReferenceWorkflow:
                 result["authority"] != self.AUTHORITY or
                 result["result_id"] != digest({key: value for key, value in result.items() if key != "result_id"})):
             raise ValueError(f"{self._label} native result envelope differs")
-        self._check_data(result, source)
+        self._check_data(result, source, expected)
         numerical = {"operation_id": self.operation, "data": result["data"]}
         if step["numerical_result"] != numerical or step["numerical_result_id"] != digest(numerical):
             raise ValueError(f"{self._label} numerical result identity differs")
@@ -314,9 +338,9 @@ class ReferenceWorkflow:
             raise ValueError(f"{self._label} replay numerical result differs")
         return self._artifact(bundle["bundle_digest"], bundle["runtimes"], reproduced)
 
-    def _check_verification(self, bundle, verification, source, evidence):
+    def _check_verification(self, bundle, verification, source, evidence, expected=None):
         _keys(verification, VERIFICATION_KEYS)
-        self._validate_step(verification["reproduction"], source, evidence)
+        self._validate_step(verification["reproduction"], source, evidence, expected)
         old, new = bundle["steps"][0], verification["reproduction"]
         # Recomputing the artifact pins its schema, subject, outcome, method,
         # runtime digest and authority at once.
@@ -360,8 +384,10 @@ class ReferenceWorkflow:
             _keys(bundle["runtimes"], {self.role})
             self._check_runtime(bundle["runtimes"][self.role])
             step, = bundle["steps"]
-            self._validate_step(step, source, evidence["artifact_ref"])
-            self._check_verification(bundle, bundle["verification"], source, evidence["artifact_ref"])
+            # One reference computation serves the step, its reproduction and any receipt.
+            expected = self._native_data(source)
+            self._validate_step(step, source, evidence["artifact_ref"], expected)
+            self._check_verification(bundle, bundle["verification"], source, evidence["artifact_ref"], expected)
             receipts = bundle.get("replay_receipts", [])
             if not isinstance(receipts, list) or len(receipts) > 1:
                 raise ValueError(f"At most one {self.label} replay receipt belongs to an occurrence")
@@ -384,10 +410,13 @@ class ReferenceWorkflow:
         except (KeyError, TypeError, IndexError, AttributeError, OverflowError, RecursionError, UnicodeError) as exc:
             raise ValueError(f"Malformed retained {self.label} session") from exc
 
-    def _execute(self, raw, runtime):
-        source = self._source(raw)
+    def _execute(self, raw, runtime, source=None):
+        source = self._source(raw) if source is None else source
         evidence = byte_digest(raw)
-        step = self._step(source, evidence)
+        # The reference runs once; the reproduction is a second occurrence over
+        # the same data, and _validate then recomputes it independently.
+        data = self._native_data(source)
+        step = self._step(source, evidence, data=data)
         bundle = {
             "schema": self.schema,
             "session_id": "session-" + uuid.uuid4().hex,
@@ -398,13 +427,13 @@ class ReferenceWorkflow:
             "steps": [step],
         }
         bundle["bundle_digest"] = _bundle_digest(bundle)
-        bundle["verification"] = self._verification(bundle, self._step(source, evidence))
+        bundle["verification"] = self._verification(bundle, self._step(source, evidence, data=data))
         self._validate(bundle)
         return bundle
 
     def create_session(self, raw, repositories):
-        self._source(raw)
-        return self._execute(raw, self._adapters(repositories)[1])
+        source = self._source(raw)
+        return self._execute(raw, self._adapters(repositories)[1], source)
 
     def replay_session(self, bundle, repositories):
         raw = self._validate(bundle)

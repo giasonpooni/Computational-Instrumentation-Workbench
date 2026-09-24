@@ -26,7 +26,10 @@ VERIFY_SCHEMA = "ciw.thermal-observer-verification.v1"
 PROFILE = "ciw.thermal-observer.python-reference.v1"
 ROLE = "thermal"
 ROLES = set()
-MAX_BYTES = contract.RESULT_LIMIT
+# A retained bundle carries the base64 source plus the result, its numerical
+# copy, the reproduction and that copy, so the budget is a multiple of the
+# contract's result limit, as for the other references.
+MAX_BYTES = 4 * contract.RESULT_LIMIT
 AUTHORITY = {
     "physical_validation": "not_established",
     "state_admission": "not_performed",
@@ -129,7 +132,7 @@ class ThermalWorkflow(base.ReferenceWorkflow):
     def _configuration(self, source):
         return deepcopy(source["configuration"])
 
-    def _check_data(self, result, source):
+    def _check_data(self, result, source, expected=None):
         # The contract tolerates platform rounding, so the retained numbers are
         # checked against the independent reference rather than bit for bit;
         # provenance, however, must be this reference's own.

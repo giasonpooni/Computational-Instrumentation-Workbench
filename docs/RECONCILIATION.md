@@ -145,14 +145,18 @@ identity fields: `tests/test_workspace_verify.py`. The energy reopen check
 tolerates roundoff-level differences but not changed conclusions:
 `tests/test_energy_workflow.py::test_reopen_tolerates_kernel_level_rounding_of_error_metrics_but_not_changed_conclusions`.
 
-Partial: the `runtime_mismatch` refusal of a saved revision outside the
-current-or-historical allowlist, `RUNTIME_UNAVAILABLE` and `RUNTIME_IO` are
-implemented and asserted by no test. Refusal of a version-1 workspace carrying
-executions is untested. Replay compares a recomputed data digest under the
-same pins; a mismatch of the investigation and covariance verbs exits `2`,
-untested. Container restart and resume are exercised only by
-`scripts/check_container.py`, which needs a Docker daemon and did not run in
-this environment.
+The `runtime_mismatch` refusal of a saved revision outside the
+current-or-historical allowlist is asserted without binding an adapter by
+`tests/test_runtime_allowlist.py::test_saved_runtime_off_the_allowlist_is_refused_before_any_binding`;
+`RUNTIME_UNAVAILABLE` and `RUNTIME_IO` by `tests/test_subprocess_adapter.py`;
+refusal of a version-1 workspace carrying executions by
+`tests/test_operation_runner.py::test_version_one_workspace_cannot_carry_executions`.
+
+Partial: replay compares a recomputed data digest under the same pins; a
+mismatch of the investigation and covariance verbs exits `2`, which needs the
+pinned providers and is exercised only by the provider gates. Container
+restart and resume are exercised only by `scripts/check_container.py`, which
+needs a Docker daemon and did not run in this environment.
 
 Not implemented: a multi-run journal, digest re-verification of the recording
 and result files on disk, a persistence adapter, and in-process or remote

@@ -10,14 +10,14 @@ from __future__ import annotations
 
 from copy import deepcopy
 from functools import lru_cache
+import json
 from pathlib import Path
 
 import numpy as np
 
 from . import machine_manifest as manifest
 from . import reference_workflow as base
-from .adapters.subprocess import _json
-from .telemetry import canonical, digest, _keys
+from .telemetry import canonical, _keys
 
 KIND = "machine-manifest"
 SCHEMA = "ciw.machine-manifest-session.v1"
@@ -49,9 +49,7 @@ AUTHORITY = {
 CLAIM_SCOPE = "position_and_local_linearized_uncertainty_under_declared_kinematic_model"
 
 
-def _text(value, limit=512):
-    if not isinstance(value, str) or not value.strip() or len(value) > limit:
-        raise ValueError("Require bounded nonempty text")
+_text = base._text
 
 
 @lru_cache(maxsize=1)
@@ -86,7 +84,7 @@ def validate_source(raw):
     """Validate exact source bytes and all deterministic upstream artifacts."""
     if type(raw) is not bytes or not 1 <= len(raw) <= SOURCE_LIMIT:
         raise ValueError("Machine manifest source requires bounded exact JSON bytes")
-    source = _json(raw)
+    source = base.parse_json(raw, "Machine manifest source")
     _keys(source, {"schema", "experiment_id", "configuration", "evidence_bundle",
                    "candidate_manifest", "challenge_report", "request"})
     if source["schema"] != SOURCE_SCHEMA or canonical(source["configuration"]) != canonical(CONFIGURATION):
@@ -115,19 +113,18 @@ def validate_source(raw):
     return deepcopy(source)
 
 
-_COMPILED = {}
+@lru_cache(maxsize=8)
+def _compile_exact(candidate, evidence, report):
+    """Compile once per exact artifact triple; the compiler is pure and revalidates everything.
+
+    Keyed by canonical bytes so the cache is safe under the session's worker threads.
+    """
+    return manifest.compile(json.loads(candidate), json.loads(evidence), json.loads(report))
 
 
 def _compiled(source):
-    """Compile once per exact artifact triple; the compiler is pure and revalidates everything."""
-    key = digest([source["candidate_manifest"], source["evidence_bundle"], source["challenge_report"]])
-    compiled = _COMPILED.get(key)
-    if compiled is None:
-        compiled = manifest.compile(source["candidate_manifest"], source["evidence_bundle"], source["challenge_report"])
-        if len(_COMPILED) >= 8:
-            _COMPILED.pop(next(iter(_COMPILED)))
-        _COMPILED[key] = compiled
-    return deepcopy(compiled)
+    return deepcopy(_compile_exact(canonical(source["candidate_manifest"]), canonical(source["evidence_bundle"]),
+                                   canonical(source["challenge_report"])))
 
 
 def _native_data(source):

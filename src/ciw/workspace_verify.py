@@ -22,7 +22,7 @@ import numpy as np
 from . import reference_workflow as base
 from .numerical_backend import linear_algebra_backend
 from .session import Session, read_json
-from .workbench import OPERATIONS, Workbench, _validate_record, _workflow
+from .workbench import Workbench, _validate_record, _workflow
 
 SCHEMA = "ciw.workspace-verification.v1"
 RETAINED_SCHEMAS = {"ciw.retained-workbench.v1", "ciw.retained-workbench.v2"}
@@ -44,12 +44,12 @@ def _form(value):
     raise ValueError("Not a saved workspace or a retained workbench file")
 
 
-def _replay_assessment(kind, native, available):
+def _replay_assessment(kind, runtimes, available):
     workflow = _workflow(kind)
     if kind not in available or not hasattr(workflow, "_runtime_identity"):
-        return {"replay_here": PROVIDER, "runtime_roles": sorted(native["runtimes"]), "differences": None}
+        return {"replay_here": PROVIDER, "runtime_roles": sorted(runtimes), "differences": None}
     current = workflow._runtime_projection(workflow._runtime_identity())
-    retained = workflow._runtime_projection(native["runtimes"][workflow.role])
+    retained = workflow._runtime_projection(runtimes[workflow.role])
     differences = base.identity_differences(current, retained)
     return {"replay_here": MATCHES if not differences else DIFFERS, "runtime_roles": [workflow.role],
             "differences": differences}
@@ -57,35 +57,49 @@ def _replay_assessment(kind, native, available):
 
 def bundle_reports(workbench):
     """Per-bundle identities and replayability on this host for a restored or live workbench."""
-    available = {kind for kind, operation in OPERATIONS.items()
-                 if any(row["available"] and row["operation_id"] == operation for row in workbench.describe_operations())}
+    available = {row["source_kind"] for row in workbench.describe_operations()
+                 if row.get("available") and "source_kind" in row}
+    facts = {fact["bundle_id"]: fact for fact in workbench.bundle_facts()}
     reports = []
     for summary in workbench.list_bundles():
-        native = workbench.get_bundle(summary["bundle_id"])
+        fact = facts[summary["bundle_id"]]
         reports.append({
             "kind": summary["kind"], "bundle_id": summary["bundle_id"], "operation_id": summary["operation_id"],
             "source_id": summary["source_id"], "upstream_bundle_id": summary["upstream_bundle_id"],
             "execution_ids": summary["execution_ids"], "result_ids": summary["result_ids"],
-            "numerical_result_ids": [step["numerical_result_id"] for step in native["steps"] if "numerical_result_id" in step],
+            "numerical_result_ids": fact["numerical_result_ids"],
             "retained_verification_outcome": summary["retained_verification_outcome"],
-            "replay_receipts": len(native.get("replay_receipts", [])),
+            "replay_receipts": fact["replay_receipts"],
             "validation": "valid",
-            **_replay_assessment(summary["kind"], native, available),
+            **_replay_assessment(summary["kind"], fact["runtimes"], available),
         })
     return reports
 
 
+def _listed(value, key):
+    items = value.get(key) if isinstance(value, dict) else None
+    return items if isinstance(items, list) else []
+
+
+def _counts(retained):
+    if not isinstance(retained, dict):
+        return None
+    return {"schema": retained.get("schema"), "revision": retained.get("revision"),
+            "sources": len(_listed(retained, "sources")), "bundles": len(_listed(retained, "bundles")),
+            "candidates": len(_listed(retained, "candidates"))}
+
+
 def _diagnose(retained):
     """Per-bundle validation after a refused reopen, so the report names what failed."""
-    sources = {source.get("source_id"): source for source in retained.get("sources", []) if isinstance(source, dict)}
+    sources = {source.get("source_id"): source for source in _listed(retained, "sources") if isinstance(source, dict)}
     reports = []
-    for record in retained.get("bundles", []):
+    for record in _listed(retained, "bundles"):
         entry = {"kind": record.get("kind") if isinstance(record, dict) else None,
                  "bundle_id": record.get("bundle_id") if isinstance(record, dict) else None}
         try:
             _validate_record(record, sources)
             entry["validation"] = "valid"
-        except (ValueError, KeyError, TypeError, AttributeError) as exc:
+        except (ValueError, KeyError, TypeError, AttributeError, IndexError, OverflowError, RecursionError) as exc:
             entry.update(validation="invalid", refusal=str(exc) or type(exc).__name__)
         reports.append(entry)
     return reports
@@ -100,22 +114,18 @@ def verify(path):
               "workspace_version": value.get("workspace_version") if form == "workspace" else None,
               "host": host_identity(), "providers_executed": False, "state_admission": "not_performed",
               "verification": "content_consistent_without_execution"}
-    retained = value.get("workbench", {"schema": "ciw.retained-workbench.v1", "revision": 0, "sources": [], "bundles": []}) \
-        if form == "workspace" else value
-    if isinstance(retained, dict):
-        report["retained"] = {"schema": retained.get("schema"), "revision": retained.get("revision"),
-                              "sources": len(retained.get("sources", []) or []),
-                              "bundles": len(retained.get("bundles", []) or []),
-                              "candidates": len(retained.get("candidates", []) or [])}
+    empty = {"schema": "ciw.retained-workbench.v1", "revision": 0, "sources": [], "bundles": []}
+    retained = value.get("workbench", empty) if form == "workspace" else value
+    report["retained"] = _counts(retained)
     try:
         if form == "workspace":
             with tempfile.TemporaryDirectory() as scratch:
                 workbench = Session.from_workspace(path, Path(scratch) / "reopened").workbench
         else:
             workbench = Workbench.restore(retained)
-    except ValueError as exc:
-        report.update(status="invalid", refusal=str(exc),
-                      bundles=_diagnose(retained) if isinstance(retained, dict) else [])
+    except (ValueError, TypeError, KeyError, AttributeError, IndexError, OverflowError, RecursionError) as exc:
+        # A file whose purpose is to be diagnosed always yields a report.
+        report.update(status="invalid", refusal=str(exc) or type(exc).__name__, bundles=_diagnose(retained))
         return report
     bundles = bundle_reports(workbench)
     report.update(status="valid", refusal=None, bundles=bundles,

@@ -803,6 +803,16 @@ class Workbench:
         with self._lock:
             return deepcopy([_summary(value) for value in self._bundles.values()])
 
+    def bundle_facts(self):
+        """Small per-bundle facts for replayability reports: identities, receipt count and retained runtimes."""
+        with self._lock:
+            return [{"bundle_id": record["bundle_id"], "kind": record["kind"],
+                     "numerical_result_ids": [step["numerical_result_id"] for step in record["native"]["steps"]
+                                              if "numerical_result_id" in step],
+                     "replay_receipts": len(record["native"].get("replay_receipts", [])),
+                     "runtimes": deepcopy(record["native"]["runtimes"])}
+                    for record in self._bundles.values()]
+
     def get_bundle(self, bundle_id):
         _text(bundle_id, "Bundle identity")
         with self._lock:
@@ -1102,5 +1112,5 @@ class Workbench:
             # Check projections now, so a restored catalog can always be read.
             restored.fusion_contexts()
             return restored
-        except (KeyError, TypeError, IndexError, OverflowError, RecursionError) as exc:
+        except (KeyError, TypeError, IndexError, AttributeError, OverflowError, RecursionError) as exc:
             raise ValueError("Malformed retained workbench") from exc
