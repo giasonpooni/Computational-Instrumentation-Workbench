@@ -121,3 +121,33 @@ def test_provider_backed_sources_refuse_non_numeric_quantities_before_retention(
         change(mutated)
         with pytest.raises(ValueError):
             add(mutated)
+
+
+def test_identified_design_inputs_are_refused_before_retention_when_no_prior_could_complete_them():
+    import json
+    from copy import deepcopy
+    from ciw.workbench import Workbench
+    source = json.loads((ROOT / "examples" / "identified-design" / "source.json").read_text(encoding="utf-8"))
+    def add(value):
+        return Workbench().add_source({"kind": "identified-design", "label": "probe", "bytes_b64": base64.b64encode(json.dumps(value).encode()).decode()})
+    assert add(source)["source_schema"] == source["schema"]
+    changes = [
+        lambda v: v["identification"]["training"]["states"][2].__setitem__(0, ""),
+        lambda v: v["identification"]["training"]["inputs"][3].__setitem__(0, {}),
+        lambda v: v["identification"]["training"]["sample_times"].__setitem__(1, ""),
+        lambda v: v["identification"]["training"]["sample_times"].__setitem__(1, v["identification"]["training"]["sample_times"][0]),
+        lambda v: v["design"]["state_scales"].__setitem__(0, True),
+        lambda v: v["design"]["candidates"][2]["noise_covariance"][0].__setitem__(0, ""),
+        lambda v: v["design"]["candidates"][0]["observation_matrix"][0].__setitem__(1, {}),
+        lambda v: v["token_admission"]["yield_claim"].__setitem__("expected_rank_delta", {}),
+        lambda v: v["token_admission"]["yield_claim"].__setitem__("expected_new_morphism", 1),
+        lambda v: v["prediction"]["process_covariance"].__setitem__(0, [1.0]),
+        lambda v: v.__setitem__("extra", 1),
+    ]
+    for change in changes:
+        mutated = deepcopy(source)
+        change(mutated)
+        with pytest.raises(ValueError):
+            add(mutated)
+    with pytest.raises(ValueError, match="finite, unambiguous JSON"):
+        Workbench().add_source({"kind": "identified-design", "label": "probe", "bytes_b64": base64.b64encode(b'{"schema": "ciw.identified-design-input.v1", "a": NaN}').decode()})

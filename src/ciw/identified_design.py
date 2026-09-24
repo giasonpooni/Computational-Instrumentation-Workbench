@@ -178,6 +178,85 @@ def _declared_refs(source):
     return set(refs)
 
 
+def _finite(value, name):
+    if type(value) not in (int, float) or not math.isfinite(value):
+        raise ValueError(f"{name} must be a finite number")
+
+
+def _numeric_rows(rows, name, width, count=None):
+    if (not isinstance(rows, list) or (count is not None and len(rows) != count) or
+            any(not isinstance(row, list) or len(row) != width for row in rows)):
+        raise ValueError(f"{name} must be rows of {width} numbers")
+    for row in rows:
+        for value in row:
+            _finite(value, name + " entry")
+
+
+def validate_declaration(raw):
+    """The checks a design input must pass before retention, without the retained prior it will later bind.
+
+    The full validator adds every comparison against the selected upstream
+    calibrated experiment; this part refuses a document no prior could
+    complete: wrong keys, non-numeric samples, scales, candidates or budgets.
+    """
+    try:
+        if not isinstance(raw, bytes) or len(raw) > MAX_BYTES:
+            raise ValueError("Design input must be bounded exact bytes")
+        try:
+            s = _json(raw)
+        except AdapterRefusal as exc:
+            raise ValueError("Design input must be finite, unambiguous JSON") from exc
+        _keys(s, {"schema", "experiment_id", "claim_scope", "identification", "prediction", "design", "token_admission"})
+        if s["schema"] != SOURCE_SCHEMA:
+            raise ValueError("Unsupported identified-design input")
+        _text(s["experiment_id"])
+        _text(s["claim_scope"])
+        ident, prediction, design, tokens = s["identification"], s["prediction"], s["design"], s["token_admission"]
+        for key in ("state_names", "state_units", "input_names", "input_units"):
+            if not isinstance(ident[key], list) or len(ident[key]) > 16:
+                raise ValueError("Identification declares at most sixteen named coordinates per role")
+            for item in ident[key]:
+                _text(item)
+        if len(ident["state_names"]) != len(ident["state_units"]) or len(ident["input_names"]) != len(ident["input_units"]) or not ident["state_names"]:
+            raise ValueError("Identification names and units must pair, with at least one state")
+        width, inputs = len(ident["state_names"]), len(ident["input_names"])
+        for split in ("training", "holdout"):
+            if split in ident:
+                times = ident[split]["sample_times"]
+                if not isinstance(times, list) or not 2 <= len(times) <= 1025:
+                    raise ValueError("Identification requires two to 1025 ordered sample times")
+                for value in times:
+                    _finite(value, "identification sample time")
+                if any(later <= earlier for earlier, later in zip(times, times[1:])):
+                    raise ValueError("Identification sample times must increase")
+                _numeric_rows(ident[split]["states"], f"identification.{split}.states", width, len(times))
+                _numeric_rows(ident[split]["inputs"], f"identification.{split}.inputs", inputs, len(times) - 1)
+        _numeric_rows(prediction["process_covariance"], "prediction.process_covariance", width, width)
+        if not isinstance(design["state_scales"], list) or len(design["state_scales"]) != width:
+            raise ValueError("Ordered positive state scales are required")
+        for value in design["state_scales"]:
+            _finite(value, "design.state_scales entry")
+            if value <= 0:
+                raise ValueError("Ordered positive state scales are required")
+        _finite(design["budget"], "design.budget")
+        if not isinstance(design["candidates"], list) or not 1 <= len(design["candidates"]) <= 32:
+            raise ValueError("Declare one to 32 finite observation candidates")
+        for candidate in design["candidates"]:
+            _numeric_rows(candidate["observation_matrix"], "candidate observation_matrix", width)
+            _numeric_rows(candidate["noise_covariance"], "candidate noise_covariance",
+                          len(candidate["observation_matrix"]), len(candidate["observation_matrix"]))
+            _finite(candidate["cost"], "candidate cost")
+        for key in ("token_budget", "requested_tokens", "eta_hat", "similarity_to_store"):
+            _finite(tokens[key], "token_admission." + key)
+        _finite(tokens["yield_claim"]["expected_rank_delta"], "token_admission.yield_claim.expected_rank_delta")
+        if type(tokens["yield_claim"]["expected_new_morphism"]) is not bool:
+            raise ValueError("token_admission.yield_claim.expected_new_morphism must be a boolean")
+        canonical(s)
+        return s
+    except (KeyError, TypeError, IndexError, AttributeError, OverflowError, RecursionError) as exc:
+        raise ValueError("Malformed identified-design input") from exc
+
+
 def _source(raw, upstream):
     try:
         return _source_inner(raw, upstream)
@@ -186,6 +265,7 @@ def _source(raw, upstream):
 
 
 def _source_inner(raw, upstream):
+    validate_declaration(raw)
     if not isinstance(raw, bytes) or len(raw) > MAX_BYTES:
         raise ValueError("Design input must be bounded exact bytes")
     s = _json(raw)

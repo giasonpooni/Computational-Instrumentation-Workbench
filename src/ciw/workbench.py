@@ -186,11 +186,10 @@ def _source(payload):
     if kind != "identified-design":
         declaration = workflow._source(raw)
     else:
-        # The full design validator needs an explicitly selected retained prior.
-        declaration = _json(raw)
-        if not isinstance(declaration, dict) or declaration.get("schema") != workflow.SOURCE_SCHEMA:
-            raise ValueError("Unsupported identified-design source")
-        _canonical(declaration)
+        # The full design validator needs an explicitly selected retained prior;
+        # everything a prior cannot repair is still refused before retention.
+        from .identified_design import validate_declaration
+        declaration = validate_declaration(raw)
     descriptor = {"schema": SOURCE_SCHEMA, "kind": kind, "label": label,
         "source_schema": declaration["schema"],
         "evidence_id": "sha256:" + sha256(raw).hexdigest(), "byte_count": len(raw)}

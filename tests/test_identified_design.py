@@ -58,9 +58,9 @@ def test_all_eleven_owner_pins_extend_the_calibrated_graph():
 def test_source_identity_requires_exact_bytes_without_duplicate_fields():
     with pytest.raises(ValueError, match="exact bytes"):
         design._source(SOURCE.decode(), None)
-    with pytest.raises(AdapterRefusal) as caught:
+    # A bad upload is a source error, never a provider-runtime refusal.
+    with pytest.raises(ValueError, match="finite, unambiguous JSON"):
         design._source(b'{"schema":"first","schema":"second"}', None)
-    assert caught.value.code == "MALFORMED_RESPONSE"
 
 
 def test_completed_session_retains_upstream_and_read_only_inspection(bundle, upstream):
