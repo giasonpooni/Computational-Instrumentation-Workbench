@@ -11,6 +11,12 @@ false-rejection rates, open loop and closed loop. T068 injects outliers of two
 sizes and measures detection, false alarms and estimate error with and
 without rejection.
 
+The gated filter is exercised twice: in the batched experiment helper
+:func:`ciw.lab.sensor_fusion_bench.run_gated` and through the fusion API,
+``FusionSession(gate_probability=p)``, whose decisions and final states must
+agree with it run by run. T066 likewise checks that the NIS the fusion API
+records (and the admission gate consumes) is normalized by S.
+
 Non-claims: every reading is a synthetic Gaussian draw, and the outliers are a
 declared contamination model. Rates and errors here say nothing about a real
 sensor's noise, outlier process or the performance of a deployed gate.
@@ -28,12 +34,15 @@ from .registry import task
 from .sensor_fusion_bench import (H_POS, chi2_cdf, chi2_quantile, consistency, cv_model, gain_schedule, generator,
                                   measure, noncentral_chi2_2_cdf, noncentral_chi2_2_cdf_many,
                                   normal_quantile, quadratic, run_gated, run_shared, simulate_truth)
+from .sensor_fusion_objects import CalibrationRecord, FusionSession, Observation
 from .sensor_fusion_common import (MU0, P0_BENCH, R_CAMERA, TESTS, TOL_EXACT, TOL_MC, TOL_TINY,
                                    as_json, bonferroni, check, dot_chart, exact, files, generator_basis, gram,
-                                   mc95, outcome, rate_interval, roundoff, run_mean_z, uncertainty, unreal)
+                                   max_abs_z_spread, mc95, outcome, rate_interval, refusal_code, roundoff,
+                                   run_mean_z, unreal)
 
 FILES = files("sensor_fusion_filtering")
 DT = 0.1
+API_RUNS = 40  # runs replayed through the fusion API (about 0.2 ms per fused reading)
 
 
 def _tests(task_id, *specific) -> tuple:
@@ -43,6 +52,51 @@ def _tests(task_id, *specific) -> tuple:
 
 def _ncdf(x: float) -> float:
     return 0.5 * math.erfc(-x / math.sqrt(2.0))
+
+
+def camera_session(q: float = 0.05, gate_probability=None) -> FusionSession:
+    """A writable session with the bench prior at tick 0 and a camera calibration valid throughout."""
+    session = FusionSession(read_only=False, dt=DT, q=q, gate_probability=gate_probability)
+    session.register_calibration(CalibrationRecord("cam-cal", "camera", "world", 0, 1_000_000))
+    session.initialize(MU0, P0_BENCH, 0)
+    return session
+
+
+def _relative(a, b) -> float:
+    a, b = np.asarray(a, dtype=float), np.asarray(b, dtype=float)
+    return float(np.max(np.abs(a - b)) / np.max(np.abs(b)))
+
+
+def session_gate_agreement(z, gated, p: float, runs) -> dict:
+    """Replay ``runs`` of camera readings through FusionSession(gate_probability=p) and compare with run_gated.
+
+    The session refuses a gated reading (innovation_gate_rejected) and leaves
+    its state as it was, which is exactly run_gated's prediction-only step, so
+    the accept/reject decisions must match reading by reading and the final
+    state (predicted to the last tick) must match to roundoff.
+    """
+    ticks = z.shape[1]
+    mismatches = unexpected = rejected = logged = 0
+    worst, rejected_by_run = 0.0, {}
+    for r in runs:
+        session = camera_session(gate_probability=p)
+        codes = [refusal_code(lambda k=k: session.fuse(Observation("camera", "world", k + 1, tuple(z[r, k]), R_CAMERA,
+                                                                   "cam-cal"))) for k in range(ticks)]
+        accepted = np.array([code == "none" for code in codes])
+        mismatches += int(np.count_nonzero(accepted != np.array([step[r] for step in gated["accepted"]])))
+        unexpected += sum(code not in ("none", "innovation_gate_rejected") for code in codes)
+        rejected += int(np.count_nonzero(~accepted))
+        logged += sum(entry["disposition"] == "refused:innovation_gate_rejected" for entry in session.log)
+        if session.tick < ticks:
+            session.predict(ticks)
+        worst = max(worst, _relative(session.x, gated["estimates"][r, -1]),
+                    _relative(session.P, gated["covariances"][r, -1]))
+        rejected_by_run[int(r)] = ~accepted
+    trials = len(rejected_by_run) * ticks
+    return {"p": p, "runs": len(rejected_by_run), "trials": trials, "session_rejections": rejected,
+            "session_rate": rejected / trials, "decision_mismatches": mismatches, "unexpected_codes": unexpected,
+            "rejections_retained_with_gate_disposition": logged, "max_relative_final_state_difference": worst,
+            "rejected_by_run": rejected_by_run}
 
 
 # T065 ------------------------------------------------------------------------------
@@ -209,8 +263,7 @@ def filter_induced_correlation(ctx):
                     check("analytic", "matrix lag covariance z against A^j P_ss", cv["max_abs_z"], z_cv, "le"),
                     check("invariant", "steady-state Riccati fixed-point residual (relative)", cv["riccati_residual"],
                           1e-12)]},
-                uncertainty=uncertainty("monte_carlo_95ci", 1.96, "each standardized lag-covariance entry has unit "
-                                                                  "sampling standard deviation"),
+                uncertainty=max_abs_z_spread(cv["moments_tested"], "standardized lag-covariance entries"),
                 tolerance=TOL_MC),
         finding("Treating 20 successive filtered outputs as independent underestimates the variance of their "
                 "average by the exact factor V_20 / (P/20), and a naive 95% interval covers far less often",
@@ -305,8 +358,24 @@ def residual_study(seed: int = 66_2026, runs: int = 300, ticks: int = 100, q: fl
                        "anis": values.mean(axis=0)}
     innovation, posterior = (np.stack(series[key], axis=1) for key in ("innovation_S", "posterior_C"))
     same_statistic = float(np.max(np.abs(posterior - innovation) / np.maximum(1.0, innovation)))
+    # The fusion API: the NIS a FusionSession candidate records (and the admission gate reads) for the same
+    # readings must be nu^T S^-1 nu, not nu^T R^-1 nu. Since S - R = H P- H^T > 0, the ratio of the two is at
+    # most max_k lambda_max(S_k^-1 R) < 1 for every nonzero innovation; a session normalizing by R gives 1.
+    api_runs = 3
+    api_nis = np.empty((api_runs, ticks))
+    for r in range(api_runs):
+        session = camera_session(q=q)
+        for k in range(ticks):
+            candidate = session.fuse(Observation("camera", "world", k + 1, tuple(z[r, k]), R_CAMERA, "cam-cal"))
+            api_nis[r, k] = candidate.nis[-1][0]
+    raw = np.stack(series["innovation_R"], axis=1)[:api_runs]
+    api = {"runs": api_runs, "readings": int(api_nis.size),
+           "max_relative_difference_from_schedule_nis": float(np.max(np.abs(api_nis - innovation[:api_runs])
+                                                                     / np.maximum(1.0, innovation[:api_runs]))),
+           "max_ratio_to_raw_R_nis": float(np.max(api_nis / raw)),
+           "ratio_bound": float(max(np.linalg.eigvals(np.linalg.solve(step.S, R_CAMERA)).real.max() for step in steps))}
     return {"seed": seed, "runs": runs, "ticks": ticks, "q": q, "identity_error": identity,
-            "posterior_vs_innovation_nis": same_statistic, "series": result,
+            "posterior_vs_innovation_nis": same_statistic, "series": result, "api": api,
             "steady_S": steps[-1].S, "z_critical": bonferroni(3)}
 
 
@@ -376,6 +445,20 @@ def residual_covariance(ctx):
                 tolerance=TOL_MC, counterexample={
                     "statement": "Post-fit residuals have the sensor covariance R",
                     "witness": {"grand_mean": s["posterior_R"]["grand_mean"], "nominal": 2.0}}),
+        finding("The fusion API normalizes its residuals by the filter covariance: the NIS each FusionSession "
+                "candidate records, which the admission gate's innovation check consumes, equals nu^T S^-1 nu from "
+                "the gain schedule and stays below the raw-R value nu^T R^-1 nu by the factor lambda_max(S^-1 R)",
+                "computational_pipeline", study["api"],
+                {**generator_basis(seed, runs=study["api"]["runs"]), "checks": [
+                    check("cross_implementation", "session NIS against the schedule's nu^T S^-1 nu (relative)",
+                          study["api"]["max_relative_difference_from_schedule_nis"], 1e-9),
+                    check("analytic", "largest ratio of session NIS to raw-R NIS against max_k lambda_max(S_k^-1 R)",
+                          study["api"]["max_ratio_to_raw_R_nis"] - study["api"]["ratio_bound"], 1e-12, "signed_le"),
+                    check("analytic", "bound max_k lambda_max(S_k^-1 R) below one (a raw-R session gives one)",
+                          study["api"]["ratio_bound"], 0.99, "le")]},
+                uncertainty=roundoff(study["api"]["max_relative_difference_from_schedule_nis"],
+                                     "largest relative difference between the session and schedule NIS"),
+                tolerance=TOL_TINY),
         unreal("A real residual monitor normalized by datasheet sensor covariance is correctly calibrated",
                "sensor_performance", seed, "not established: synthetic Gaussian bench only"),
     ]
@@ -392,7 +475,8 @@ def residual_covariance(ctx):
                               "the innovation NIS; outside above (innovation / R) and below (post-fit / R), with "
                               "grand means equal to the exact traces.",
         "experiment": "One seeded Monte Carlo; four normalizations of the same residuals; per-tick ANIS "
-                      "against 99% intervals; grand means against the exact traces with run-level standard errors.",
+                      "against 99% intervals; grand means against the exact traces with run-level standard errors; "
+                      "three runs replayed through FusionSession to compare the NIS its candidates record.",
         "numerical_result": f"innovation/S inside {s['innovation_S']['consistency']['fraction_inside']:.2f} of "
                             f"ticks; post-fit/(R - HP+H^T) equals it to {study['posterior_vs_innovation_nis']:.0e} "
                             f"relative; "
@@ -403,7 +487,8 @@ def residual_covariance(ctx):
                        "exact for the declared model.",
         "failure_modes_checked": ["raw R for innovations", "raw R for post-fit residuals",
                                   "post-fit covariance identity R - H P+ H^T = R S^-1 R",
-                                  "counting the post-fit test as independent evidence (it is the same statistic)"],
+                                  "counting the post-fit test as independent evidence (it is the same statistic)",
+                                  "the fusion API recording a raw-R NIS for the admission gate"],
         "unresolved_assumptions": ["A deployed monitor has no truth; it sees only these residual statistics.",
                                    "q = 0.5 was chosen so the raw-R bias is visible per tick; smaller q shrinks "
                                    "tr(R^-1 H P- H^T) but never removes it."],
@@ -425,7 +510,7 @@ def gating_study(seed: int = 67_2026, runs: int = 400, ticks: int = 100) -> dict
     nis = np.stack([quadratic(nu, step.S) for nu, step in zip(innovations, steps)], axis=1)
     nis_raw = np.stack([quadratic(nu, R_CAMERA) for nu in innovations], axis=1)
     trials = nis.size
-    open_loop, closed_loop = {}, {}
+    open_loop, closed_loop, api = {}, {}, {}
     for p in (0.9, 0.99, 0.999):
         gate = chi2_quantile(p, 2)
         count = int(np.count_nonzero(nis > gate))
@@ -447,6 +532,10 @@ def gating_study(seed: int = 67_2026, runs: int = 400, ticks: int = 100) -> dict
                     "rejection_rate_after_a_rejection": float(after.mean()) if after.size else 0.0,
                     "rejections_followed_by_rejection": int(after.sum())})
         closed_loop[str(p)] = row
+        agreement = session_gate_agreement(z, gated, p, range(API_RUNS))
+        agreement.pop("rejected_by_run")
+        agreement["run_gated_rejections_same_runs"] = int(np.count_nonzero(rejected[:API_RUNS]))
+        api[str(p)] = agreement
     gate99 = chi2_quantile(0.99, 2)
     raw = rate_interval(int(np.count_nonzero(nis_raw > gate99)), trials)
     quantile_error = 0.0
@@ -456,16 +545,18 @@ def gating_study(seed: int = 67_2026, runs: int = 400, ticks: int = 100) -> dict
     x4 = chi2_quantile(0.99, 4)
     closed_form_4 = abs(1 - math.exp(-x4 / 2) * (1 + x4 / 2) - 0.99)
     return {"seed": seed, "runs": runs, "ticks": ticks, "trials": trials, "open_loop": open_loop,
-            "closed_loop": closed_loop, "raw_R_gate_99": raw, "quantile_roundtrip_error": quantile_error,
+            "closed_loop": closed_loop, "session_gate": api, "raw_R_gate_99": raw,
+            "quantile_roundtrip_error": quantile_error,
             "dof4_closed_form_error": closed_form_4, "gates": {str(p): chi2_quantile(p, 2) for p in (0.9, 0.99, 0.999)}}
 
 
-@task("T067", changed_files=FILES, regression_tests=_tests("T067", "test_gating_rates_open_and_closed_loop"))
+@task("T067", changed_files=FILES, regression_tests=_tests("T067", "test_gating_rates_open_and_closed_loop",
+                                                           "test_session_gate_refuses_without_side_effects"))
 def mahalanobis_gating(ctx):
     study = gating_study()
     seed = study["seed"]
     ctx.artifact_json("gating_rates.json", as_json(study))
-    ol, cl = study["open_loop"], study["closed_loop"]
+    ol, cl, api = study["open_loop"], study["closed_loop"], study["session_gate"]
     ps = [0.9, 0.99, 0.999]
     ctx.artifact_text("false_rejection.svg", svg.line_plot(
         [("nominal 1 - p", [1 - p for p in ps], [1 - p for p in ps]),
@@ -522,6 +613,32 @@ def mahalanobis_gating(ctx):
                 tolerance=TOL_MC, counterexample={
                     "statement": "A chi-square gate on raw-R Mahalanobis distance has false-rejection rate 1 - p",
                     "witness": {"rate": study["raw_R_gate_99"]["rate"], "nominal": 0.01}}),
+        finding("The fusion API gates the same way: a FusionSession constructed with gate_probability p refuses "
+                "exactly the readings run_gated rejects in closed loop (same rates at p = 0.9 and 0.99 over the "
+                "replayed runs), retains each with disposition refused:innovation_gate_rejected, and ends in the same "
+                "state to roundoff", "computational_pipeline",
+                {p: {k: row[k] for k in ("runs", "trials", "session_rejections", "session_rate",
+                                         "run_gated_rejections_same_runs", "decision_mismatches",
+                                         "max_relative_final_state_difference")} for p, row in api.items()},
+                {**generator_basis(seed, runs=API_RUNS), "checks": [
+                    check("exact_arithmetic", "reading-by-reading decisions differing from run_gated",
+                          sum(row["decision_mismatches"] for row in api.values()), 0),
+                    check("exact_arithmetic", "session rejections minus run_gated rejections on the same runs",
+                          sum(row["session_rejections"] - row["run_gated_rejections_same_runs"]
+                              for row in api.values()), 0),
+                    check("analytic", "readings the session gate rejected (the gate is exercised)",
+                          min(row["session_rejections"] for row in api.values()), 1, "ge"),
+                    check("exact_arithmetic", "refusals other than innovation_gate_rejected",
+                          sum(row["unexpected_codes"] for row in api.values()), 0),
+                    check("exact_arithmetic", "rejections not retained with the gate disposition",
+                          sum(row["session_rejections"] - row["rejections_retained_with_gate_disposition"]
+                              for row in api.values()), 0),
+                    check("cross_implementation", "final session state against run_gated (relative)",
+                          max(row["max_relative_final_state_difference"] for row in api.values()), 1e-9)]},
+                uncertainty=roundoff(max(row["max_relative_final_state_difference"] for row in api.values()),
+                                     "largest relative difference between the session and run_gated final states; "
+                                     "the decisions are exact"),
+                tolerance=TOL_TINY),
         unreal("A real gate at the 99% quantile rejects 1% of valid real readings", "sensor_performance", seed,
                "not established: real noise may be heavy-tailed, correlated or misstated"),
     ]
@@ -536,17 +653,24 @@ def mahalanobis_gating(ctx):
         "observation_model": "Camera position every tick; no outliers.",
         "expected_invariant": "Open-loop rate in the Wilson interval of 1 - p; closed loop >= 1 - p.",
         "experiment": "Evaluate the gate on the ungated filter's NIS (open loop) and inside run_gated where rejected "
-                      "readings are dropped (closed loop); compare counts with Wilson 99.9% intervals; repeat with "
-                      "the raw-R NIS.",
+                      "readings are dropped (closed loop); compare counts with Wilson 99.9% intervals; replay the "
+                      f"first {API_RUNS} runs through FusionSession(gate_probability=p) and compare decisions and "
+                      "final states with run_gated; repeat the open-loop gate with the raw-R NIS.",
         "numerical_result": "; ".join(f"open p={p}: {row['rate']:.4f}" for p, row in ol.items()) +
                             "; " + "; ".join(f"closed p={p}: {row['rate']:.4f}" for p, row in cl.items()) +
+                            "; session gate over " + ", ".join(
+                                f"p={p}: {row['session_rejections']} rejections, {row['decision_mismatches']} "
+                                f"decisions differing" for p, row in study["session_gate"].items()) +
                             f"; raw-R gate at 0.99: {study['raw_R_gate_99']['rate']:.3f}.",
         "uncertainty": "Wilson 99.9% score intervals on binomial counts; the open-loop independence rests on the "
                        "whiteness of optimal innovations (T065).",
         "failure_modes_checked": ["quantile inversion error", "raw-R normalization", "closed-loop feedback of "
-                                  "rejections", "low-count regime at p = 0.999"],
+                                  "rejections", "low-count regime at p = 0.999", "the fusion API fusing a reading "
+                                  "the gate rejects, or changing state on a rejection"],
         "unresolved_assumptions": ["At p = 0.99 the closed-loop excess is inside the sampling interval here; it is "
                                    "not shown to be zero.",
+                                   f"The fusion API is replayed on {API_RUNS} of the runs (reading-by-reading "
+                                   "agreement there); the rates over all runs come from run_gated.",
                                    "No re-acquisition logic follows repeated rejections (see T073)."],
         "recommended_next_task": "T068: inject outliers and measure detection, false alarms and estimate error.",
     }
@@ -632,6 +756,18 @@ def outlier_study(seed: int = 68_2026, runs: int = 400, ticks: int = 100, rate: 
         worst = int(np.argmax(m_g - m_o))
         difference = m_g - m_u
         wins, ties = int(np.sum(difference < 0)), int(np.sum(difference == 0))
+        if label == "gross":
+            # The fusion API's gate on the same readings: the first 30 runs plus every lock-out run.
+            replayed = sorted(set(range(30)) | {int(r) for r in np.nonzero(locked)[0]})
+            api = session_gate_agreement(z, gated, p, replayed)
+            session_streaks = {r: _longest_run(api["rejected_by_run"][r] & ~contaminated[r]) for r in replayed}
+            api.pop("rejected_by_run")
+            api.update({"replayed_runs": replayed, "run_gated_rejections_same_runs":
+                        int(np.count_nonzero(rejected[replayed])),
+                        "lockout_runs_replayed": int(np.sum(locked[replayed])),
+                        "lockout_runs_locked_out_in_session": int(sum(session_streaks[r] >= 5 for r in replayed
+                                                                      if locked[r]))})
+            out["session_gate"] = api
         out["cases"][label] = {
             "magnitude_m": magnitude, "outliers": int(contaminated.sum()),
             "detection": rate_interval(detected, int(contaminated.sum())),
@@ -650,6 +786,11 @@ def outlier_study(seed: int = 68_2026, runs: int = 400, ticks: int = 100, rate: 
                                       "median": float(np.median(difference))},
             "sign_test": {"gated_better": wins, "ties": ties, "runs": runs,
                           "wins": rate_interval(wins, runs - ties)},
+            "lockout_runs_lost_by_gating": int(np.sum(locked & (difference > 0))),
+            # Decomposition of the realized total: summed per-run MSE difference (gated - ungated) by run group.
+            "mse_difference_sum": {"lockout_runs": float(difference[locked].sum()),
+                                   "other_runs": float(difference[~locked].sum())},
+            "lockout_share_of_other_runs_gain": float(difference[locked].sum() / -difference[~locked].sum()),
             "lockout_runs": int(locked.sum()), "lockout_run_ids": np.nonzero(locked)[0],
             "accepted_first_reading_outliers": int(accepted_first.sum()),
             "lockout_runs_with_accepted_first_outlier": int(np.sum(locked & accepted_first)),
@@ -662,7 +803,8 @@ def outlier_study(seed: int = 68_2026, runs: int = 400, ticks: int = 100, rate: 
     return out
 
 
-@task("T068", changed_files=FILES, regression_tests=_tests("T068", "test_outlier_rejection_detection_lockout_and_cost"))
+@task("T068", changed_files=FILES, regression_tests=_tests("T068", "test_outlier_rejection_detection_lockout_and_cost",
+                                                           "test_session_gate_refuses_without_side_effects"))
 def outlier_rejection(ctx):
     study = outlier_study()
     seed = study["seed"]
@@ -682,6 +824,7 @@ def outlier_rejection(ctx):
     z_crit = bonferroni(2)
     kept = gross["rmse_without_lockout_runs"]
     sign = gross["sign_test"]
+    session = study["session_gate"]
     false_alarm = clean["false_alarm"]
     findings = [
         finding("Gross 1.5 m outliers are detected at the rate predicted by the noncentral chi-square(2) law with "
@@ -695,39 +838,54 @@ def outlier_rejection(ctx):
                 uncertainty=mc95(gross["detection_rate_sd"], "Poisson-binomial standard deviation of the detection "
                                                              "rate"),
                 tolerance=TOL_MC),
-        finding("Over all runs with gross outliers, gating lowers the mean squared error in most runs (sign test) "
-                "but its mean improvement over fusing every reading is not statistically significant, because the "
-                "cold-start lock-out runs lose heavily", "numerical",
-                {"rmse_all_runs": gross["rmse"], "paired_mse_z_gated_minus_ungated":
-                    gross["paired_mse_z_gated_minus_ungated"], "paired_mse_difference": gross["paired_mse_difference"],
-                 "sign_test": sign},
+        finding("Over all runs with gross outliers, gating lowers the per-run mean squared error in most runs "
+                "(sign test), while the cold-start lock-out runs together give back more than half of the summed "
+                "MSE it gains in the other runs; the mean difference, its paired z and the outcome-conditioned "
+                "comparison without the lock-out runs are reported descriptively, not as tests", "numerical",
+                {"rmse_all_runs": gross["rmse"], "sign_test": sign,
+                 "lockout_runs": gross["lockout_runs"],
+                 "lockout_runs_lost_by_gating": gross["lockout_runs_lost_by_gating"],
+                 "mse_difference_sum_gated_minus_ungated_m2": gross["mse_difference_sum"],
+                 "lockout_share_of_other_runs_gain": gross["lockout_share_of_other_runs_gain"],
+                 "descriptive": {"paired_mse_difference": gross["paired_mse_difference"],
+                                 "paired_mse_z_gated_minus_ungated": gross["paired_mse_z_gated_minus_ungated"],
+                                 "post_hoc_rmse_without_lockout_runs": kept,
+                                 "post_hoc_selection": "lock-out runs removed after the fact, selected by the gated "
+                                                       "filter's own failure; favours gating by construction"}},
                 {**generator_basis(seed), "checks": [
-                    check("analytic", "paired per-run MSE difference gated - ungated (z, not significant)",
-                          gross["paired_mse_z_gated_minus_ungated"], z_crit),
                     check("analytic", "Wilson 99.9% lower bound of the fraction of runs where gating wins",
-                          sign["wins"]["wilson"][0], 0.5, "ge")]},
+                          sign["wins"]["wilson"][0], 0.5, "ge"),
+                    check("analytic", "summed MSE excess of the lock-out runs over the summed gain of the others "
+                                      "(decomposition of the realized total)",
+                          gross["lockout_share_of_other_runs_gain"], 0.5, "ge")]},
                 uncertainty=mc95(gross["paired_mse_difference"]["standard_error"],
                                  "run-level standard error of the mean per-run MSE difference (m^2)"),
-                tolerance=TOL_MC, counterexample={
-                    "statement": "Gating that wins in most runs improves the mean error",
-                    "witness": {"gated_better_runs": sign["gated_better"], "runs": sign["runs"],
-                                "paired_z": gross["paired_mse_z_gated_minus_ungated"],
-                                "rmse_gated": gross["rmse"]["gated"], "rmse_ungated": gross["rmse"]["ungated"]}}),
-        finding("Post hoc, conditioning on the outcome: after removing the lock-out runs (selected by the gated "
-                "filter's own failure, which favours gating by construction) the gated RMSE is within 5% of the "
-                "oracle that knows which readings are bad, while fusing every reading is at least 30% worse",
-                "numerical",
-                {"rmse_without_lockout_runs": kept, "rmse_all_runs": gross["rmse"],
-                 "lockout_runs_removed": gross["lockout_runs"], "selection": "post hoc, outcome-conditioned"},
-                {**generator_basis(seed), "checks": [
-                    check("analytic", "gated / oracle RMSE minus one", kept["gated"] / kept["oracle"] - 1.0,
-                          0.05),
-                    check("analytic", "ungated / oracle RMSE", kept["ungated"] / kept["oracle"], 1.3,
-                          "ge")]},
-                uncertainty=mc95(gross["rmse_se"]["gated_without_lockout"],
-                                 "delta-method standard error of the conditioned gated RMSE (m); the selection "
-                                 "bias of the conditioning is not included"),
                 tolerance=TOL_MC),
+        finding("The fusion API reproduces the gated filter on the contaminated readings: FusionSession("
+                "gate_probability=0.99) makes run_gated's accept/reject decision for every reading of the replayed "
+                "runs, including every lock-out run, which locks out in the session too, and ends in the same state "
+                "to roundoff", "computational_pipeline",
+                {k: session[k] for k in ("runs", "trials", "session_rejections", "run_gated_rejections_same_runs",
+                                         "decision_mismatches", "lockout_runs_replayed",
+                                         "lockout_runs_locked_out_in_session",
+                                         "max_relative_final_state_difference")},
+                {**generator_basis(seed, runs=session["runs"]), "checks": [
+                    check("exact_arithmetic", "reading-by-reading decisions differing from run_gated",
+                          session["decision_mismatches"], 0),
+                    check("exact_arithmetic", "session rejections minus run_gated rejections on the same runs",
+                          session["session_rejections"] - session["run_gated_rejections_same_runs"], 0),
+                    check("exact_arithmetic", "lock-out runs replayed minus lock-out runs locked out in the session",
+                          session["lockout_runs_replayed"] - session["lockout_runs_locked_out_in_session"], 0),
+                    check("exact_arithmetic", "lock-out runs not replayed",
+                          gross["lockout_runs"] - session["lockout_runs_replayed"], 0),
+                    check("exact_arithmetic", "refusals other than innovation_gate_rejected",
+                          session["unexpected_codes"], 0),
+                    check("cross_implementation", "final session state against run_gated (relative)",
+                          session["max_relative_final_state_difference"], 1e-9)]},
+                uncertainty=roundoff(session["max_relative_final_state_difference"],
+                                     "largest relative difference between the session and run_gated final states; "
+                                     "the decisions are exact"),
+                tolerance=TOL_TINY),
         finding("Cold-start lock-out: a gross outlier in the first reading passes the gate under the broad prior, "
                 "and the corrupted state then rejects runs of valid readings; every lock-out run starts this way",
                 "numerical",
@@ -807,14 +965,19 @@ def outlier_rejection(ctx):
                               "mean benefit; false alarms ~1%.",
         "experiment": "Run ungated, gated (p = 0.99) and oracle filters (the oracle skips exactly the contaminated "
                       "readings) on the same readings; count detections and false alarms; per-run MSE after a "
-                      "20-tick burn-in; paired per-run MSE tests and a sign test over all runs; identify lock-out "
-                      "runs (>= 5 consecutive valid readings rejected) and, separately and post hoc, compare RMSE "
-                      "without them.",
+                      "20-tick burn-in; a sign test over all runs, with the paired mean difference reported "
+                      "descriptively; identify lock-out runs (>= 5 consecutive valid readings rejected) and, "
+                      "separately and post hoc, describe RMSE without them; replay the first 30 runs and every "
+                      "lock-out run through FusionSession(gate_probability=0.99).",
         "numerical_result": f"gross: detection {gross['detection']['rate']:.3f} (predicted "
                             f"{gross['predicted_detection_rate']:.3f}); all runs RMSE ungated/gated/oracle "
                             f"{gross['rmse']['ungated']:.3f}/{gross['rmse']['gated']:.3f}/{gross['rmse']['oracle']:.3f}"
-                            f" m, paired MSE z {gross['paired_mse_z_gated_minus_ungated']:.2f} (not significant), "
-                            f"gating better in {sign['gated_better']} of {sign['runs']} runs; post hoc without "
+                            f" m, paired MSE z {gross['paired_mse_z_gated_minus_ungated']:.2f} (descriptive), "
+                            f"gating better in {sign['gated_better']} of {sign['runs']} runs; the "
+                            f"{gross['lockout_runs']} lock-out runs give back "
+                            f"{gross['lockout_share_of_other_runs_gain']:.0%} of the summed MSE gained in the others; "
+                            f"fusion API decisions differing from run_gated "
+                            f"{session['decision_mismatches']} of {session['trials']}; post hoc without "
                             f"{gross['lockout_runs']} lock-out runs {kept['ungated']:.3f}/"
                             f"{kept['gated']:.3f}/{kept['oracle']:.3f} m; worst lock-out run RMSE "
                             f"{gross['worst_run']['rmse_gated']:.2f} m. subtle: detection "
@@ -823,15 +986,19 @@ def outlier_rejection(ctx):
                             f" -> {clean['rmse_gated']:.4f} m with gating.",
         "uncertainty": "Detection prediction uses each outlier's own prior covariance from the gated run and assumes "
                        "the prior error is still N(0, P-); lock-out runs violate that assumption. Paired and sign "
-                       "tests use run-level independence. The lock-out-free comparison is conditioned on the "
-                       "gated filter's outcome and is descriptive, not a test.",
+                       "tests use run-level independence. A paired z that is not significant is not evidence that "
+                       "the mean effect is zero, so it is reported, not tested. The lock-out-free comparison is "
+                       "conditioned on the gated filter's outcome and is descriptive, not a test.",
         "failure_modes_checked": ["missed small outliers", "false alarms on clean data", "estimate corruption "
                                   "without gating", "cold-start lock-out", "oracle comparison",
-                                  "outcome-conditioned selection (reported separately from the all-run test)"],
+                                  "outcome-conditioned selection (reported descriptively, never as a test)",
+                                  "reading an absence of significance as an absence of effect",
+                                  "the fusion API's gate diverging from the experiment helper"],
         "unresolved_assumptions": ["Outliers are independent across ticks; bursts and persistent biases defeat a "
                                    "per-reading gate and need T070-style bias states.",
-                                   "Lock-out recovery (covariance inflation or reacquisition) is not implemented in "
-                                   "the gated filter; T073 handles reacquisition explicitly in the session API."],
+                                   "Lock-out recovery (covariance inflation or automatic reacquisition) is "
+                                   "implemented neither in run_gated nor in the session gate; T073's explicit "
+                                   "reacquisition is the only recovery path in the fusion API."],
         "recommended_next_task": "T069: missing data must be handled by prediction only, never by zero-filling.",
     }
     return outcome(fields, findings)

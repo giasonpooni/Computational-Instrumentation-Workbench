@@ -41,8 +41,8 @@ from .sensor_fusion_bench import (BENCH_SEED, H_POS, BenchConfig, bench_digest, 
                                   nees_series, normal_quantile, quadratic, run_shared, sensor_function,
                                   simulate_truth, with_sensor)
 from .sensor_fusion_common import (MU0, P0_BENCH, TESTS, TOL_EXACT, TOL_MC, TOL_ROUNDOFF, TOL_TINY, as_json,
-                                   check, exact, files, generator_basis, gram, mc95, outcome, rate_interval,
-                                   roundoff, uncertainty, unreal)
+                                   check, exact, files, generator_basis, gram, max_abs_z_spread, mc95, outcome,
+                                   rate_interval, roundoff, uncertainty, unreal)
 
 FILES = files("sensor_fusion")
 BENCH_RUNS = 50
@@ -89,21 +89,32 @@ def multi_sensor_bench(ctx):
         count_mismatch = max(count_mismatch, abs(len(ticks) - expected))
         offgrid += int(np.count_nonzero(ticks % spec.every))
 
-    # Separate recomputation of each sensor function from the retained truth (positions are re-read).
+    # Separate recomputation of the trajectory: cumulative sums of the retained initial state and process-noise
+    # draws with the declared dt (p_k = p_0 + sum_{j<k} (dt v_j + w_p,j), v_k = v_0 + sum_{j<k} w_v,j), not the
+    # generator's transition matrix or recursion. Every sensor function is then evaluated on that trajectory
+    # (hypot and complex-angle forms for speed and heading rate), so a position reading is not re-read from the
+    # array it was built from.
     truth = bench["truth"]
-    composition = 0.0
+    x0, w = truth[:, 0], bench["process"]
+    velocity = np.concatenate([x0[:, None, 2:], x0[:, None, 2:] + np.cumsum(w[:, :, 2:], axis=1)], axis=1)
+    position = np.concatenate([x0[:, None, :2], x0[:, None, :2] + np.cumsum(config.dt * velocity[:, :-1]
+                                                                            + w[:, :, :2], axis=1)], axis=1)
+    recomputed = np.concatenate([position, velocity], axis=2)
+    trajectory_error = float(np.max(np.abs(recomputed - truth)))
+    composition = {}
     for spec in config.sensors:
         record = bench["readings"][spec.name]
         ticks = record["ticks"]
         if spec.kind == "position":
-            clean = truth[:, ticks, :2]
+            clean = recomputed[:, ticks, :2]
         elif spec.kind == "speed":
-            clean = np.hypot(truth[:, ticks, 2], truth[:, ticks, 3])[..., None]
+            clean = np.hypot(recomputed[:, ticks, 2], recomputed[:, ticks, 3])[..., None]
         else:
-            now = truth[:, ticks, 2] + 1j * truth[:, ticks, 3]
-            before = truth[:, ticks - 1, 2] + 1j * truth[:, ticks - 1, 3]
+            now = recomputed[:, ticks, 2] + 1j * recomputed[:, ticks, 3]
+            before = recomputed[:, ticks - 1, 2] + 1j * recomputed[:, ticks - 1, 3]
             clean = (np.angle(now * np.conj(before)) / config.dt)[..., None]
-        composition = max(composition, float(np.max(np.abs(record["values"] - clean - record["noise"]))))
+        composition[spec.name] = float(np.max(np.abs(record["values"] - clean - record["noise"])))
+    worst_composition = max(composition.values())
     min_eigen = min(float(np.linalg.eigvalsh(spec.R).min()) for spec in config.sensors)
     asymmetry = max(float(np.max(np.abs(spec.R - spec.R.T))) for spec in config.sensors)
     eigen_roundoff = np.finfo(float).eps * max(float(np.max(np.abs(spec.R))) for spec in config.sensors)
@@ -140,13 +151,19 @@ def multi_sensor_bench(ctx):
                     check("exact_arithmetic", "declared rate times duration", count_mismatch, 0),
                     check("exact_arithmetic", "reading ticks on the declared grid", offgrid, 0)]},
                 uncertainty=exact("integer tick counts"), tolerance=TOL_EXACT),
-        finding("Every raw reading equals the noise-free sensor function of the retained truth plus its retained "
-                "noise draw; h(truth) is recomputed by a separate code path (hypot and complex-angle forms for speed "
-                "and heading rate, positions re-read)", "numerical", composition,
+        finding("Every raw reading of all four sensors equals the noise-free sensor function of a trajectory "
+                "recomputed from the retained initial state and process-noise draws by cumulative sums with the "
+                "declared dt, plus its retained noise draw, to roundoff; the recomputed trajectory equals the "
+                "retained truth to roundoff", "numerical",
+                {"max_abs_residual_by_sensor": composition, "max_abs_trajectory_difference": trajectory_error},
                 {**generator_basis(BENCH_SEED), "checks": [
-                    check("invariant", "hypot and complex-angle recomputation of h(truth)", composition, 1e-12)]},
-                unit="max abs difference", uncertainty=roundoff(composition),
-                tolerance={"abs": 1e-12, "rel": 0.0}),
+                    check("invariant", "cumulative-sum trajectory against the retained truth (max abs, m and m/s)",
+                          trajectory_error, 1e-10),
+                    # The heading rate divides velocity roundoff by |v| dt, so its residual is the largest.
+                    check("invariant", "reading minus h(recomputed trajectory) minus retained noise (max abs over the "
+                                       "four sensors)", worst_composition, 1e-10)]},
+                unit="max abs difference", uncertainty=roundoff(max(worst_composition, trajectory_error)),
+                tolerance={"abs": 1e-10, "rel": 0.0}),
         finding("Changing the tracker rate from 2 Hz to 4 Hz leaves the truth and the camera, encoder and IMU "
                 "streams unchanged (independent spawned PCG64 streams)", "computational_pipeline", stream_changes,
                 {**generator_basis(BENCH_SEED), "checks": [
@@ -180,18 +197,22 @@ def multi_sensor_bench(ctx):
                               "counts equal duration x rate; z - h(truth) equals the retained noise; streams are "
                               "independent of other sensors' settings.",
         "experiment": "Generate twice with the same seed, once with seed+1 and once with a 4 Hz tracker; compare "
-                      "arrays bitwise; recompute h(truth) with hypot and complex angles (positions are the same "
-                      "slice in both paths, so for them the check is only that noise was added once); count reading "
-                      "ticks; check symmetry and positive definiteness of the declared covariances.",
+                      "arrays bitwise; recompute the trajectory from x0 and the retained process noise by cumulative "
+                      "sums with the declared dt and evaluate every sensor function on it (hypot and complex angles "
+                      "for speed and heading rate); count reading ticks; check symmetry and positive definiteness of "
+                      "the declared covariances.",
         "numerical_result": f"0 of {len(names) + 1} arrays differ on regeneration; all differ under seed+1; "
                             f"counts {count_text}; "
-                            f"max composition residual {composition:.2e}; tracker retiming changed "
+                            f"max composition residual {worst_composition:.2e} against the recomputed trajectory "
+                            f"(trajectory difference {trajectory_error:.1e}); tracker retiming changed "
                             f"{stream_changes} other streams.",
         "uncertainty": "None for the determinism and rate claims (exact). The composition residual is floating-"
-                       "point roundoff. Cross-platform byte identity of the digest is not claimed (libm may "
+                       "point roundoff of two summation orders. Cross-platform byte identity of the digest is not "
+                       "claimed (libm may "
                        "differ in the last bit); findings avoid digest values for that reason.",
         "failure_modes_checked": ["seed reuse and seed change", "sensor-rate edits leaking into other streams",
                                   "off-grid timestamps", "angle wrap in the heading-rate model",
+                                  "a generator transition inconsistent with the declared dt",
                                   "non-positive-definite declared covariance"],
         "unresolved_assumptions": ["White-noise acceleration is a modelling choice, not observed vehicle motion.",
                                    "The heading-rate truth of white-noise-acceleration motion is rough; the IMU "
@@ -355,8 +376,7 @@ def known_truth_covariance(ctx):
                 "Carlo bound", "numerical", {"max_abs_z": max_z, "z_critical": z_crit, "moments_tested": family},
                 {**generator_basis(BENCH_SEED, runs=BENCH_RUNS), "checks": [
                     check("analytic", "Gaussian sampling law Var(S_ij) = (R_ij^2 + R_ii R_jj)/N", max_z, z_crit)]},
-                uncertainty=uncertainty("monte_carlo_95ci", 1.96, "each standardized moment has unit sampling "
-                                                                  "standard deviation; the bound is family-wise"),
+                uncertainty=max_abs_z_spread(family, "standardized mean and covariance moments"),
                 tolerance=TOL_MC),
         finding("At this sample size a 10% understatement of every declared variance is detected with probability "
                 "above 0.999 per variance for the 10-20 Hz streams but only about half the time for the 2 Hz tracker "
@@ -489,20 +509,26 @@ def correlated_noise(ctx):
     H = np.vstack([H_POS, H_POS])
     common = 0.09
     R_true = np.block([[0.13 * I2, common * I2], [common * I2, 0.13 * I2]])
-    R_ignored = np.block([[0.13 * I2, 0 * I2], [0 * I2, 0.13 * I2]])
+    R_block = np.block([[0.13 * I2, 0 * I2], [0 * I2, 0.13 * I2]])
     rng = generator(seed)
     truth = simulate_truth(rng, F, Q, MU0, P0_BENCH, MC_RUNS, MC_TICKS)
     ticks = np.arange(1, MC_TICKS + 1)
     z = measure(rng, truth, H, R_true, ticks)
-    readings = [z[:, k] for k in range(MC_TICKS)]
+    # Independent sensor noise (no common mode, same marginal variances), drawn after the correlated readings so
+    # those are unchanged: the same truth seen through a block-diagonal R.
+    z_independent = measure(rng, truth, H, R_block, ticks)
+    # (label, filter R, readings, truth R): both truths, each filtered with the right and the wrong assumption.
+    cases = (("correct", R_true, z, R_true), ("ignored", R_block, z, R_true),
+             ("independent", R_block, z_independent, R_block), ("assumed_correlated", R_true, z_independent, R_block))
     results, curves = {}, {}
-    for label, R_filter in (("correct", R_true), ("ignored", R_ignored)):
+    for label, R_filter, readings_all, R_truth in cases:
+        readings = [readings_all[:, k] for k in range(MC_TICKS)]
         steps = gain_schedule(F, Q, P0_BENCH, [(H, R_filter)] * MC_TICKS)
         estimates, innovations = run_shared(F, MU0, steps, readings)
         nees = nees_series(estimates, truth, steps)
         nis = np.stack([quadratic(nu, step.S) for nu, step in zip(innovations, steps)], axis=1)
         curves[label] = nees.mean(axis=0)
-        predicted = mismatch_moments(F, Q, MU0, P0_BENCH, MU0, steps, [(H, np.zeros(4), R_true)] * MC_TICKS)
+        predicted = mismatch_moments(F, Q, MU0, P0_BENCH, MU0, steps, [(H, np.zeros(4), R_truth)] * MC_TICKS)
         C, white_z, family = _identity_z(_whitened(innovations, steps, 20))
         rmse = float(np.sqrt(np.mean(np.sum((estimates[:, 1:, :2] - truth[:, 1:, :2]) ** 2, axis=-1))))
         results[label] = {"nees": consistency(nees, 4), "nis": consistency(nis, 4),
@@ -513,30 +539,45 @@ def correlated_noise(ctx):
                           "position_rmse": rmse, "whitened_covariance": C, "whitened_max_z": white_z}
     z_crit = normal_quantile(1 - 1e-3 / (2 * family))
     good, bad = results["correct"], results["ignored"]
+    independent, assumed = results["independent"], results["assumed_correlated"]
     ctx.artifact_json("consistency.json", as_json({"seed": seed, "runs": MC_RUNS, "ticks": MC_TICKS,
-                                                   "R_true": R_true, "R_ignored": R_ignored,
+                                                   "R_true_correlated": R_true, "R_block_diagonal": R_block,
+                                                   "cases": {label: {"filter_R": R_filter, "truth_R": R_truth}
+                                                             for label, R_filter, _, R_truth in cases},
                                                    "whitened_z_critical": z_crit, "results": results}))
     ctx.artifact_text("anees.svg", svg.line_plot(
-        [("correct model", ticks, curves["correct"]), ("ignored correlation", ticks, curves["ignored"]),
+        [("correlated noise, correct R", ticks, curves["correct"]),
+         ("correlated noise, correlation ignored", ticks, curves["ignored"]),
+         ("independent noise, correct R", ticks, curves["independent"]),
+         ("independent noise, correlation assumed", ticks, curves["assumed_correlated"]),
          ("99% upper", [1, MC_TICKS], [good["nees"]["interval"][1]] * 2),
          ("99% lower", [1, MC_TICKS], [good["nees"]["interval"][0]] * 2)],
         title="T062 run-averaged NEES (dof 4)", xlabel="tick", ylabel="ANEES", markers=False))
     moments_gap = max(abs(r[key]["grand_mean"] - r[f"predicted_mean_{key}"]) / r[f"{key}_se"]
                       for r in results.values() for key in ("nees", "nis"))
+
+    def consistent(label, claim):
+        row = results[label]
+        return finding(claim, "numerical", {"nees": row["nees"], "nis": row["nis"],
+                                            "whitened_max_z": row["whitened_max_z"], "z_critical": z_crit},
+                       {**generator_basis(seed, runs=MC_RUNS, ticks=MC_TICKS), "checks": [
+                           check("analytic", "fraction of ticks with ANEES in chi2(4N)/N 99% interval",
+                                 row["nees"]["fraction_inside"], 0.9, "ge"),
+                           check("analytic", "fraction of ticks with ANIS in chi2(4N)/N 99% interval",
+                                 row["nis"]["fraction_inside"], 0.9, "ge"),
+                           check("analytic", "whitened innovation covariance vs I (Bonferroni 99.9%)",
+                                 row["whitened_max_z"], z_crit, "le")]},
+                       uncertainty=mc95(row["nees_se"], "run-level standard error of the grand-mean NEES"),
+                       tolerance=TOL_MC)
+
     findings = [
-        finding("With the correct cross-correlated measurement covariance, run-averaged NEES and NIS lie inside "
-                "their 99% chi-square intervals and the whitened innovations have identity covariance",
-                "numerical", {"nees": good["nees"], "nis": good["nis"], "whitened_max_z": good["whitened_max_z"],
-                              "z_critical": z_crit},
-                {**generator_basis(seed, runs=MC_RUNS, ticks=MC_TICKS), "checks": [
-                    check("analytic", "fraction of ticks with ANEES in chi2(4N)/N 99% interval",
-                          good["nees"]["fraction_inside"], 0.9, "ge"),
-                    check("analytic", "fraction of ticks with ANIS in chi2(4N)/N 99% interval",
-                          good["nis"]["fraction_inside"], 0.9, "ge"),
-                    check("analytic", "whitened innovation covariance vs I (Bonferroni 99.9%)",
-                          good["whitened_max_z"], z_crit, "le")]},
-                uncertainty=mc95(good["nees_se"], "run-level standard error of the grand-mean NEES"),
-                tolerance=TOL_MC),
+        consistent("correct", "With the correct cross-correlated measurement covariance, run-averaged NEES and NIS "
+                              "lie inside their per-tick 99% chi-square intervals at 90% or more of ticks and the "
+                              "whitened innovations have identity covariance"),
+        consistent("independent", "With independent camera and tracker noise (no common mode) and the matching "
+                                  "block-diagonal covariance, run-averaged NEES and NIS lie inside their per-tick 99% "
+                                  "chi-square intervals at 90% or more of ticks and the whitened innovations have "
+                                  "identity covariance"),
         finding("Ignoring the camera-tracker cross-correlation makes the filter overconfident: run-averaged NEES "
                 "exceeds the 99% upper bound at nearly every tick", "numerical",
                 {"nees": bad["nees"], "predicted_mean_nees": bad["predicted_mean_nees"]},
@@ -548,8 +589,9 @@ def correlated_noise(ctx):
                     "statement": "Ignoring correlation between sensor noises is harmless",
                     "witness": {"common_mode_covariance": common, "grand_mean_nees": bad["nees"]["grand_mean"],
                                 "nominal": 4.0}}),
-        finding("The ignored-correlation filter still passes the mean-NIS test (grand mean near 4); only the full "
-                "whitened-innovation covariance test exposes the missing cross-correlation", "numerical",
+        finding("The ignored-correlation filter still passes the mean-NIS test (grand mean near 4); among "
+                "innovation-based tests, which need no ground truth, only the whitened-innovation covariance test "
+                "exposes the missing cross-correlation", "numerical",
                 {"nis": bad["nis"], "whitened_max_z": bad["whitened_max_z"], "z_critical": z_crit},
                 {**generator_basis(seed), "checks": [
                     check("analytic", "fraction of ticks with ANIS inside the 99% interval",
@@ -561,8 +603,35 @@ def correlated_noise(ctx):
                     "statement": "A passing mean-NIS chi-square test shows the measurement noise model is correct",
                     "witness": {"grand_mean_nis": bad["nis"]["grand_mean"],
                                 "whitened_cross_term": float(bad["whitened_covariance"][0, 2])}}),
-        finding("Monte Carlo grand-mean NEES and NIS of both filters agree with the exact second-moment prediction "
-                "tr(P_f^-1 E[e e^T]) and tr(S_f^-1 E[nu nu^T]) within 4 run-level standard errors", "numerical",
+        finding("Assuming a common-mode correlation that the noise does not have makes the filter underconfident "
+                "(run-averaged NEES below the 99% lower bound at nearly every tick) and less accurate than the "
+                "block-diagonal filter, while its NIS exceeds the 99% upper bound at nearly every tick: the reverse "
+                "mismatch is neither harmless nor invisible", "numerical",
+                {"nees": assumed["nees"], "nis": assumed["nis"],
+                 "predicted_mean_nees": assumed["predicted_mean_nees"],
+                 "predicted_mean_nis": assumed["predicted_mean_nis"],
+                 "predicted_position_rmse": assumed["predicted_position_rmse"],
+                 "predicted_position_rmse_block_diagonal": independent["predicted_position_rmse"],
+                 "position_rmse": assumed["position_rmse"],
+                 "position_rmse_block_diagonal": independent["position_rmse"]},
+                {**generator_basis(seed), "checks": [
+                    check("analytic", "fraction of ticks with ANEES below the 99% lower bound",
+                          assumed["nees"]["fraction_below"], 0.9, "ge"),
+                    check("analytic", "fraction of ticks with ANIS above the 99% upper bound",
+                          assumed["nis"]["fraction_above"], 0.9, "ge"),
+                    check("analytic", "exact position RMSE (moment recursion) minus that of the block-diagonal "
+                                      "filter", assumed["predicted_position_rmse"]
+                          - independent["predicted_position_rmse"], 0.0, "signed_ge")]},
+                uncertainty=mc95(assumed["nis_se"], "run-level standard error of the grand-mean NIS"),
+                tolerance=TOL_MC, counterexample={
+                    "statement": "Assuming correlation between sensor noises where there is none is a conservative, "
+                                 "harmless choice",
+                    "witness": {"common_mode_assumed": common, "grand_mean_nees": assumed["nees"]["grand_mean"],
+                                "grand_mean_nis": assumed["nis"]["grand_mean"], "nominal": 4.0,
+                                "predicted_position_rmse": assumed["predicted_position_rmse"],
+                                "predicted_position_rmse_block_diagonal": independent["predicted_position_rmse"]}}),
+        finding("Monte Carlo grand-mean NEES and NIS of all four filters agree with the exact moment recursion "
+                "for tr(P_f^-1 E[e e^T]) and tr(S_f^-1 E[nu nu^T]) within 4 run-level standard errors", "numerical",
                 {"max_gap_in_standard_errors": moments_gap,
                  "predicted": {k: {"nees": r["predicted_mean_nees"], "nis": r["predicted_mean_nis"],
                                    "position_rmse": r["predicted_position_rmse"]} for k, r in results.items()},
@@ -570,34 +639,50 @@ def correlated_noise(ctx):
                 {**generator_basis(seed), "checks": [
                     check("analytic", "mismatch_moments exact propagation", moments_gap, 4.0, "le")]},
                 uncertainty=mc95(max(r[f"{key}_se"] for r in results.values() for key in ("nees", "nis")),
-                                 "largest run-level standard error among the four grand means"),
+                                 "largest run-level standard error among the eight grand means"),
                 tolerance=TOL_MC),
-        unreal("Real camera and tracker noises share the common-mode covariance assumed here", "sensor_performance",
-               seed, "not established: the cross-correlation is a declared synthetic parameter"),
+        unreal("Real camera and tracker noises share the common-mode covariance assumed here, or are independent",
+               "sensor_performance", seed, "not established: the cross-correlation is a declared synthetic parameter"),
     ]
     fields = {
-        "hypothesis": "NEES/NIS consistency holds for a filter with the correct cross-correlated R and fails for "
-                      "one that drops the cross-covariance; the failure size is predictable in closed form.",
-        "mathematical_model": "Camera and tracker positions z_c = p + e_m + e_c, z_t = p + e_m + e_t with "
-                              "Var e_c = Var e_t = 0.04 I, common mode Var e_m = 0.09 I: R_true = [[0.13 I, 0.09 I],"
-                              " [0.09 I, 0.13 I]]; the ignoring filter uses blockdiag(0.13 I, 0.13 I). CV motion "
-                              "dt = 0.1 s, q = 0.05. Mismatched moments: joint [x; x_hat] propagated exactly.",
-        "input_data": [f"seed {seed}", f"{MC_RUNS} runs x {MC_TICKS} ticks", "x0 ~ N((0,0,1,0.5), P0)"],
+        "hypothesis": "NEES/NIS consistency holds for a filter whose R matches the truth, whether the sensor noises "
+                      "are correlated or independent, and fails in either direction of mismatch: dropping a real "
+                      "cross-covariance makes the filter overconfident while its mean NIS still passes, and assuming "
+                      "an absent one makes it underconfident while its NIS fails; the size of each failure follows "
+                      "from an exact moment recursion.",
+        "mathematical_model": "Camera and tracker positions z_c = p + e_m + e_c, z_t = p + e_m + e_t. Correlated "
+                              "truth: Var e_c = Var e_t = 0.04 I, common mode Var e_m = 0.09 I, R_true = [[0.13 I, "
+                              "0.09 I], [0.09 I, 0.13 I]]. Independent truth: no common mode, R = blockdiag(0.13 I, "
+                              "0.13 I) (same marginal variances). Each truth is filtered with both R. CV motion "
+                              "dt = 0.1 s, q = 0.05. Mismatched moments: joint [x; x_hat] mean and covariance "
+                              "propagated exactly tick by tick (mismatch_moments).",
+        "input_data": [f"seed {seed}", f"{MC_RUNS} runs x {MC_TICKS} ticks", "x0 ~ N((0,0,1,0.5), P0)",
+                       "one set of correlated readings and one set of independent readings of the same truth"],
         "observation_model": "Stacked 4-vector measurement at every tick; filter prior equals the truth prior.",
-        "expected_invariant": "Correct model: E NEES = 4, E NIS = 4, whitened innovations ~ N(0, I). Ignored "
-                              f"model: E NEES = tr(P^-1 E ee^T) = {bad['predicted_mean_nees']:.2f}, E NIS = "
-                              f"{bad['predicted_mean_nis']:.2f}.",
-        "experiment": "Run both filters on the same readings; per-tick ANEES/ANIS against chi2(4N)/N 99% intervals; "
-                      "sample covariance of Cholesky-whitened innovations (ticks 21-100) against I.",
-        "numerical_result": f"Correct: ANEES inside {good['nees']['fraction_inside']:.2f} of ticks, grand NEES "
-                            f"{good['nees']['grand_mean']:.3f}, NIS {good['nis']['grand_mean']:.3f}. Ignored: "
-                            f"ANEES above bound {bad['nees']['fraction_above']:.2f} of ticks, grand NEES "
-                            f"{bad['nees']['grand_mean']:.3f}; grand NIS {bad['nis']['grand_mean']:.3f} (passes); "
-                            f"whitened max |z| {bad['whitened_max_z']:.1f} vs {z_crit:.2f}.",
+        "expected_invariant": "Matching R: E NEES = 4, E NIS = 4, whitened innovations ~ N(0, I). Ignored "
+                              f"correlation: E NEES = {bad['predicted_mean_nees']:.2f}, E NIS = "
+                              f"{bad['predicted_mean_nis']:.2f}. Assumed correlation: E NEES = "
+                              f"{assumed['predicted_mean_nees']:.2f}, E NIS = {assumed['predicted_mean_nis']:.2f}.",
+        "experiment": "Run the matching and the mismatched filter on each set of readings; per-tick ANEES/ANIS "
+                      "against chi2(4N)/N 99% intervals; sample covariance of Cholesky-whitened innovations "
+                      "(ticks 21-100) against I; grand means against the exact moment recursion.",
+        "numerical_result": f"Correlated noise, correct R: ANEES inside {good['nees']['fraction_inside']:.2f} of "
+                            f"ticks, grand NEES {good['nees']['grand_mean']:.3f}, NIS {good['nis']['grand_mean']:.3f}. "
+                            f"Correlation ignored: ANEES above bound {bad['nees']['fraction_above']:.2f} of ticks, "
+                            f"grand NEES {bad['nees']['grand_mean']:.3f}; grand NIS {bad['nis']['grand_mean']:.3f} "
+                            f"(passes); whitened max |z| {bad['whitened_max_z']:.1f} vs {z_crit:.2f}. Independent "
+                            f"noise, block-diagonal R: ANEES inside {independent['nees']['fraction_inside']:.2f}, "
+                            f"grand NEES {independent['nees']['grand_mean']:.3f}. Correlation assumed: ANEES below "
+                            f"bound {assumed['nees']['fraction_below']:.2f} of ticks (grand "
+                            f"{assumed['nees']['grand_mean']:.3f}), ANIS above bound "
+                            f"{assumed['nis']['fraction_above']:.2f} (grand {assumed['nis']['grand_mean']:.3f}), "
+                            f"exact RMSE {assumed['predicted_position_rmse']:.4f} m vs "
+                            f"{independent['predicted_position_rmse']:.4f} m.",
         "uncertainty": "Per-tick intervals are exact chi-square quantiles; the fraction-inside threshold 0.9 "
                        "allows for time correlation of NEES. Moment agreement uses run-level standard errors.",
-        "failure_modes_checked": ["dropped cross-covariance", "NIS blind spot (trace insensitive to off-diagonal "
-                                  "blocks)", "filter/truth prior mismatch (excluded by construction)",
+        "failure_modes_checked": ["dropped cross-covariance", "assumed cross-covariance that is absent",
+                                  "NIS blind spot (trace insensitive to off-diagonal blocks)",
+                                  "filter/truth prior mismatch (excluded by construction)",
                                   "prediction-vs-simulation disagreement"],
         "unresolved_assumptions": ["White common-mode error; a slowly varying common bias would defeat both "
                                    "filters and needs state augmentation.",

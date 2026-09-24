@@ -3,10 +3,15 @@
 Scope: T069 shows that prediction-only steps grow the covariance exactly as
 F(n dt) P F(n dt)^T + Q(n dt), keep NEES consistent through gaps, and that
 requested substitutes are refused by the session API (zero-filling done by
-hand is catastrophic, by exactly the amount the joint moments predict). T070 gives the camera an unmodelled one-tick clock lag: with a second,
+hand is catastrophic, by exactly the amount the joint moments predict), and
+that refusals raised after a prediction-only gap leave the session untouched.
+T070 gives the camera an unmodelled one-tick clock lag: with a second,
 correctly clocked sensor the innovations acquire a bias detectable by a mean
 test, a filter that estimates the offset as a state removes it, and with the
-stale camera alone the lag is invisible to innovations. T071 expresses a
+stale camera alone the lag is invisible to innovations; declared in the
+camera's calibration record, the lag is applied by the fusion API, which fuses
+each reading at the tick it refers to and refuses one that is older than its
+clock. T071 expresses a
 sensor in a frame rotated by 2 degrees: with a correct-frame second sensor NIS
 inflates as predicted, a single rotated sensor stays NIS-consistent while its
 estimate is wrong, and the session refuses frame-id mismatches outright.
@@ -28,7 +33,9 @@ from .sensor_fusion_bench import (H_POS, batched_update, consistency, cv_model, 
 from .sensor_fusion_common import (MU0, P0_BENCH, R_CAMERA, TESTS, TOL_EXACT, TOL_MC, TOL_TINY, as_json, bonferroni,
                                    check, covariance_z, exact, files, generator_basis, is_not, mc95, outcome,
                                    refusal, refusal_code, roundoff, run_mean_z, unreal)
-from .sensor_fusion_objects import (CalibrationRecord, FrameTransform, FusionSession, Observation)
+
+LATENCY_API_RUNS = 5  # runs replayed through the fusion API with the declared camera latency
+from .sensor_fusion_objects import CalibrationRecord, FrameTransform, FusionSession, Observation
 
 DT, Q_SPECTRAL = 0.1, 0.05
 R_TRACKER = 0.0025 * np.eye(2)
@@ -64,17 +71,42 @@ def gap_study(seed: int = 69_2026, runs: int = 400, ticks: int = 100) -> dict:
         worst = max(worst, error)
         growth.append({"gap_ticks": n, "position_variance_x": float(closed[0, 0]),
                        "cubic_term": Q_SPECTRAL * (n * DT) ** 3 / 3, "relative_error": error})
-    before = (np.array(session.x), np.array(session.P), session.tick)
+    # Refusals after the session has done work: a 50-tick prediction-only gap that loses the track (1 m, 99%).
+    gapped = FusionSession(read_only=False, dt=DT, q=Q_SPECTRAL, track_radius=1.0)
+    gapped.register_calibration(CalibrationRecord("cam-cal", "camera", "world", 0, 1_000_000))
+    gapped.register_calibration(CalibrationRecord("cam-cal-old", "camera", "world", 0, 40))
+    gapped.initialize(MU0, start, 0)
+    after_gap = gapped.handle_gap("camera", 50)
+    value = tuple(after_gap.mean[:2])
+
+    def snapshot():
+        return (gapped.x.tobytes(), gapped.P.tobytes(), gapped.tick, gapped.track_status, gapped._latest)
+
+    before, changed = snapshot(), 0
+
+    def session_code(call):
+        nonlocal changed
+        code = refusal_code(call)
+        changed += snapshot() != before
+        return code
+
+    logged = len(gapped.log)
     codes = {
-        "zero_fill": refusal_code(lambda: session.handle_gap("camera", 51, strategy="zero_fill")),
-        "hold_last": refusal_code(lambda: session.handle_gap("camera", 51, strategy="hold_last")),
+        "zero_fill": session_code(lambda: gapped.handle_gap("camera", 51, strategy="zero_fill")),
+        "hold_last": session_code(lambda: gapped.handle_gap("camera", 51, strategy="hold_last")),
+        "fractional_tick": session_code(lambda: gapped.predict(50.5)),
+        "reading_older_than_clock": session_code(
+            lambda: gapped.fuse(Observation("camera", "world", 45, value, R_CAMERA, "cam-cal"))),
+        "expired_calibration": session_code(
+            lambda: gapped.fuse(Observation("camera", "world", 51, value, R_CAMERA, "cam-cal-old"))),
+        "reading_into_lost_track": session_code(
+            lambda: gapped.fuse(Observation("camera", "world", 51, value, R_CAMERA, "cam-cal"))),
+        # The Observation type refuses these before any session call.
         "nan_reading": refusal_code(lambda: Observation("camera", "world", 51, (math.nan, math.nan),
                                                         R_CAMERA, "cam-cal")),
         "absent_value": refusal_code(lambda: Observation("camera", "world", 51, None, R_CAMERA, "cam-cal")),
-        "fractional_tick": refusal_code(lambda: session.predict(50.5)),
     }
-    unchanged = (bool(np.array_equal(before[0], session.x) and np.array_equal(before[1], session.P))
-                 and session.tick == before[2])
+    refused_log = [entry["disposition"] for entry in gapped.log[logged:]]
 
     # Monte Carlo: a 30-tick block gap plus 20% random dropout, one pattern shared by all runs.
     present = rng.random(ticks) >= 0.2
@@ -105,7 +137,9 @@ def gap_study(seed: int = 69_2026, runs: int = 400, ticks: int = 100) -> dict:
 
     gap_ratio = float(steps[gap_end].post[0, 0] / steps[28].post[0, 0])
     return {"seed": seed, "runs": runs, "ticks": ticks, "missing_ticks": int((~present).sum()),
-            "growth": growth, "max_growth_error": worst, "refusals": codes, "state_unchanged_by_refusals": unchanged,
+            "growth": growth, "max_growth_error": worst, "refusals": codes,
+            "track_status_after_gap": after_gap.track_status, "session_refusals_changing_state": changed,
+            "refused_reading_dispositions": refused_log,
             "nees": consistency(nees, 4), "nees_mean_per_tick": nees.mean(axis=0),
             "nees_grand_z": float(nees_z[0]), "nees_grand_se": float(nees_se[0]),
             "gap_end_max_abs_z": float(np.max(np.abs(z_gap))), "gap_end_covariance": S,
@@ -151,18 +185,36 @@ def missing_data(ctx):
                           study["gap_end_max_abs_z"], study["z_critical"], "le")]},
                 uncertainty=mc95(study["nees_grand_se"], "run-level standard error of the grand-mean NEES"),
                 tolerance=TOL_MC),
-        finding("The session refuses requested substitution strategies (zero_fill, hold_last), NaN and absent "
-                "observation values and a non-integer prediction tick, and leaves its state unchanged by the "
-                "refusals", "computational_pipeline",
-                {**codes, "state_unchanged": study["state_unchanged_by_refusals"]},
-                {"derivation": "FusionSession.handle_gap, FusionSession.predict and Observation validation", "checks": [
+        finding("After a prediction-only gap that loses the track, the session refuses requested substitution "
+                "strategies (zero_fill, hold_last), a non-integer prediction tick, a reading older than its clock, a "
+                "reading under an expired calibration and a reading into the lost track (refused after its "
+                "prediction was computed on copies); none of these refusals changes the state, covariance, clock, "
+                "track status or latest candidate, and every refused reading is retained with its refusal. NaN and "
+                "absent values are refused by the Observation type before any session call", "computational_pipeline",
+                {**codes, "track_status_after_gap": study["track_status_after_gap"],
+                 "session_refusals_changing_state": study["session_refusals_changing_state"],
+                 "refused_reading_dispositions": study["refused_reading_dispositions"]},
+                {"derivation": "FusionSession.handle_gap, predict and fuse, and Observation validation", "checks": [
+                    check("invariant", "track not lost after the 50-tick gap",
+                          is_not(study["track_status_after_gap"], "lost"), 0.0),
                     refusal("handle_gap strategy zero_fill", "zero_fill_refused", codes["zero_fill"]),
                     refusal("handle_gap strategy hold_last", "gap_strategy_refused", codes["hold_last"]),
-                    refusal("Observation with NaN values", "nonfinite_observation", codes["nan_reading"]),
-                    refusal("Observation with no value", "missing_reading", codes["absent_value"]),
                     refusal("predict to tick 50.5", "malformed_tick", codes["fractional_tick"]),
-                    check("invariant", "state changed by a refused call", float(not study["state_unchanged_by_refusals"]),
-                          0.0)]},
+                    refusal("fuse a tick-45 reading after the gap to tick 50", "out_of_order",
+                            codes["reading_older_than_clock"]),
+                    refusal("fuse a tick-51 reading under a calibration valid until tick 40", "calibration_expired",
+                            codes["expired_calibration"]),
+                    refusal("fuse a tick-51 reading into the lost track", "track_lost_requires_reacquisition",
+                            codes["reading_into_lost_track"]),
+                    check("exact_arithmetic", "session refusals that changed the state, covariance, clock, track "
+                                              "status or latest candidate",
+                          study["session_refusals_changing_state"], 0),
+                    check("invariant", "refused readings not retained with their refusal codes",
+                          is_not(study["refused_reading_dispositions"],
+                                 ["refused:out_of_order", "refused:calibration_expired",
+                                  "refused:track_lost_requires_reacquisition"]), 0.0),
+                    refusal("Observation with NaN values", "nonfinite_observation", codes["nan_reading"]),
+                    refusal("Observation with no value", "missing_reading", codes["absent_value"])]},
                 uncertainty=exact("refusal codes and bitwise state comparison"), tolerance=TOL_EXACT),
         finding("Zero-filling missing readings by hand drags the estimate toward the origin and destroys "
                 "consistency by the amount the exact joint moments predict", "numerical",
@@ -194,12 +246,15 @@ def missing_data(ctx):
                        f"{study['missing_ticks']} missing ticks (block 30-59 plus 20% random), shared by all runs"],
         "observation_model": "Camera position when present; absent otherwise (no placeholder value exists).",
         "expected_invariant": "Session covariance = closed form = schedule to roundoff; ANEES inside chi2(4N)/N; "
-                              "refusal codes zero_fill_refused, gap_strategy_refused, nonfinite_observation, "
-                              "missing_reading.",
+                              "refusal codes zero_fill_refused, gap_strategy_refused, malformed_tick, out_of_order, "
+                              "calibration_expired, track_lost_requires_reacquisition, nonfinite_observation, "
+                              "missing_reading, with the session state bitwise unchanged by every session refusal.",
         "experiment": "Advance a FusionSession through gaps of 1, 5, 20 and 50 ticks and compare with the closed "
-                      "form; Monte Carlo NEES through the dropout pattern; request zero-fill, hold-last, NaN/None "
-                      "readings and a fractional tick through the API; zero-fill by hand outside the API as the "
-                      "counterexample, predicted beforehand from the exact joint moments of truth and filter.",
+                      "form; Monte Carlo NEES through the dropout pattern; after a 50-tick gap that loses a 1 m track, "
+                      "request zero-fill, hold-last and a fractional tick and offer an old, an expired and a "
+                      "post-gap reading, comparing the state bitwise after each refusal; build NaN/None "
+                      "observations; zero-fill by hand outside the API as the counterexample, predicted beforehand "
+                      "from the exact joint moments of truth and filter.",
         "numerical_result": f"max relative growth error {study['max_growth_error']:.1e}; ANEES inside "
                             f"{study['nees']['fraction_inside']:.2f} of ticks; gap-end |z| "
                             f"{study['gap_end_max_abs_z']:.2f}; position variance grows "
@@ -210,7 +265,9 @@ def missing_data(ctx):
         "uncertainty": "Closed-form comparison is exact to roundoff; Monte Carlo statements carry 99% per-tick "
                        "intervals and a Bonferroni bound on the gap-end covariance.",
         "failure_modes_checked": ["zero-fill", "hold-last substitution", "NaN placeholder", "None placeholder",
-                                  "fractional prediction tick", "state mutation by a refused call",
+                                  "fractional prediction tick", "late reading after a gap", "expired calibration "
+                                  "after a gap", "reading into a track lost during a gap",
+                                  "state mutation by a refusal raised after prediction work",
                                   "covariance growth mismatch"],
         "unresolved_assumptions": ["Dropouts are missing at random; state-dependent dropouts (occlusion near "
                                    "obstacles) bias the filter even with prediction-only steps.",
@@ -335,15 +392,90 @@ def stale_clock_study(seed: int = 70_2026, runs: int = 200, ticks: int = 200, tr
                  "tau_hat_mean_by_tick": np.mean(tau_hat, axis=1)}
     return {"seed": seed, "runs": runs, "ticks": ticks, "tau_s": tau, "burn_in": burn,
             "tracker_every": tracker_every, "two_sensor": two_sensor, "camera_only": camera_only,
-            "augmented": augmented, "z_critical": bonferroni(16)}
+            "augmented": augmented,
+            "declared_latency": declared_latency_study(F, Q, truth, camera, tracker, tracker_ticks, burn),
+            "z_critical": bonferroni(18)}
+
+
+def declared_latency_study(F, Q, truth, camera, tracker, tracker_ticks, burn) -> dict:
+    """The one-tick camera lag declared in its calibration record and applied by the fusion API.
+
+    ``camera[:, k]`` is the reading stamped at tick k + 1 that refers to tick k.
+    With ``latency_ticks=1`` the session fuses it at tick k; the reference is
+    the same linear filter fed each reading at the tick it refers to.
+    """
+    runs, ticks = camera.shape[0], camera.shape[1]
+    steps = gain_schedule(F, Q, P0_BENCH, [(H_POS, R_CAMERA)] * (ticks - 1))
+    timed, _ = run_shared(F, MU0, steps, [camera[:, k] for k in range(1, ticks)])
+    error = timed[:, burn + 1:, :2] - truth[:, burn + 1:ticks, :2]
+    error_z, error_mean, error_se = run_mean_z(error)
+    lag = CalibrationRecord("cam-lag", "camera", "world", 0, 1_000_000, latency_ticks=1)
+    reference = CalibrationRecord("trk-cal", "tracker", "world", 0, 1_000_000)
+
+    def session():
+        fusion = FusionSession(read_only=False, dt=DT, q=Q_SPECTRAL)
+        fusion.register_calibration(lag)
+        fusion.register_calibration(reference)
+        fusion.initialize(MU0, P0_BENCH, 0)
+        return fusion
+
+    wrong_tick, worst = 0, 0.0
+    for r in range(LATENCY_API_RUNS):
+        fusion = session()
+        for k in range(1, ticks):
+            candidate = fusion.fuse(Observation("camera", "world", k + 1, tuple(camera[r, k]), R_CAMERA, "cam-lag"))
+            wrong_tick += candidate.tick != k
+            worst = max(worst, float(np.max(np.abs(np.asarray(candidate.mean) - timed[r, k]))
+                                     / np.max(np.abs(timed[r, k]))),
+                        float(np.max(np.abs(np.asarray(candidate.covariance) - steps[k - 1].post))
+                              / np.max(np.abs(steps[k - 1].post))))
+
+    # Ordering: a lagged reading delivered after a newer reference reading can no longer be fused at its time.
+    fusion = session()
+    first_tracker = int(tracker_ticks[0])
+    fusion.fuse(Observation("tracker", "world", first_tracker, tuple(tracker[0, 0]), R_TRACKER, "trk-cal"))
+
+    def snapshot():
+        return (fusion.x.tobytes(), fusion.P.tobytes(), fusion.tick, fusion.track_status, fusion._latest)
+
+    before, changed, logged = snapshot(), 0, len(fusion.log)
+
+    def session_code(call):
+        nonlocal changed
+        code = refusal_code(call)
+        changed += snapshot() != before
+        return code
+
+    codes = {
+        "lagged_reading_after_newer_reference": session_code(lambda: fusion.fuse(Observation(
+            "camera", "world", first_tracker, tuple(camera[0, first_tracker - 1]), R_CAMERA, "cam-lag"))),
+        "lagged_reading_before_tick_0": session_code(lambda: fusion.fuse(Observation(
+            "camera", "world", 0, tuple(camera[0, 0]), R_CAMERA, "cam-lag"))),
+        "undelayed_reading_older_than_clock": session_code(lambda: fusion.fuse(Observation(
+            "tracker", "world", first_tracker - 1, tuple(tracker[0, 0]), R_TRACKER, "trk-cal"))),
+        "prediction_backwards": session_code(lambda: fusion.predict(first_tracker - 2)),
+    }
+    refused_log = [entry["disposition"] for entry in fusion.log[logged:]]
+    at_clock = fusion.fuse(Observation("camera", "world", first_tracker + 1, tuple(camera[0, first_tracker]),
+                                       R_CAMERA, "cam-lag"))
+    return {"latency_ticks": lag.latency_ticks, "api_runs": LATENCY_API_RUNS,
+            "api_readings": LATENCY_API_RUNS * (ticks - 1), "readings_fused_at_another_tick": wrong_tick,
+            "max_relative_difference_from_timed_filter": worst,
+            "timed_position_error_mean": error_mean, "timed_position_error_mean_z": error_z,
+            "timed_position_error_se": error_se,
+            "timed_nees": consistency(nees_series(timed, truth[:, :ticks], steps)[:, burn:], 4),
+            "codes": codes, "session_refusals_changing_state": changed, "refused_reading_dispositions": refused_log,
+            "reference_tick": first_tracker, "lagged_reading_at_clock_fused_at": at_clock.tick}
 
 
 @task("T070", changed_files=files("sensor_fusion_robustness"), regression_tests=_tests(
-    "T070", "test_stale_clock_bias_detection_and_augmented_offset"))
+    "T070", "test_stale_clock_bias_detection_and_augmented_offset",
+    "test_out_of_order_fuse_and_predict_leave_no_side_effects_and_latency_is_applied"))
 def stale_clock(ctx):
     study = stale_clock_study()
     seed, zc = study["seed"], study["z_critical"]
     two, one, aug = study["two_sensor"], study["camera_only"], study["augmented"]
+    latency = study["declared_latency"]
     ctx.artifact_json("stale_clock.json", as_json(study))
     ctx.artifact_text("tau_estimate.svg", svg.line_plot(
         [("mean tau estimate", list(range(1, study["ticks"] + 1)), aug["tau_hat_mean_by_tick"]),
@@ -400,12 +532,55 @@ def stale_clock(ctx):
                     "statement": "A stale sensor clock always shows up as a bias in the filter innovations",
                     "witness": as_json({"sensors": "camera only", "camera_mean_z": one["camera_mean_z"],
                                         "position_error_mean_m": one["position_error_mean"]})}),
+        finding("Declared in the camera's calibration record, the one-tick latency is applied by the fusion API: the "
+                "session fuses each lagged reading at the tick it refers to, its estimates equal the correctly timed "
+                "linear filter to roundoff, and that filter's position error is unbiased, so the camera-only bias of "
+                "about -tau E[v] disappears", "numerical",
+                as_json({k: latency[k] for k in ("latency_ticks", "api_runs", "api_readings",
+                                                 "readings_fused_at_another_tick",
+                                                 "max_relative_difference_from_timed_filter",
+                                                 "timed_position_error_mean", "timed_position_error_mean_z",
+                                                 "timed_nees")}
+                        | {"undeclared_camera_only_position_error_mean": one["position_error_mean"]}),
+                {**generator_basis(seed, runs=study["runs"], ticks=study["ticks"]), "checks": [
+                    check("exact_arithmetic", "readings fused at a tick other than stamp minus declared latency",
+                          latency["readings_fused_at_another_tick"], 0),
+                    check("cross_implementation", "session mean and covariance against the correctly timed schedule "
+                                                  "(relative)", latency["max_relative_difference_from_timed_filter"],
+                          1e-9),
+                    check("analytic", "timed filter position error mean against zero (max |z|)",
+                          float(np.max(np.abs(latency["timed_position_error_mean_z"]))), zc, "le"),
+                    check("analytic", "timed filter: fraction of ticks with ANEES in the 99% interval",
+                          latency["timed_nees"]["fraction_inside"], 0.9, "ge")]},
+                uncertainty=mc95(float(np.max(latency["timed_position_error_se"])),
+                                 "largest run-level standard error of the timed filter's mean position error (m)"),
+                tolerance=TOL_MC),
+        finding("The fusion API never fuses a reading at the wrong time: a lagged reading delivered after a newer "
+                "reference reading, a lagged reading that refers to a time before tick 0, an undelayed reading older "
+                "than the clock and a backward prediction are refused with out_of_order, leave the state, covariance, "
+                "clock, track status and latest candidate unchanged and are retained with that refusal, while a "
+                "lagged reading that refers to the current tick is fused at that tick", "computational_pipeline",
+                {k: latency[k] for k in ("codes", "session_refusals_changing_state", "refused_reading_dispositions",
+                                         "reference_tick", "lagged_reading_at_clock_fused_at")},
+                {"derivation": "FusionSession.fuse and predict with CalibrationRecord.latency_ticks", "checks": [
+                    *[refusal(f"{name.replace('_', ' ')}", "out_of_order", code)
+                      for name, code in latency["codes"].items()],
+                    check("exact_arithmetic", "session refusals that changed the state, covariance, clock, track "
+                                              "status or latest candidate", latency["session_refusals_changing_state"],
+                          0),
+                    check("invariant", "refused readings not retained with out_of_order",
+                          is_not(latency["refused_reading_dispositions"], ["refused:out_of_order"] * 3), 0.0),
+                    check("exact_arithmetic", "tick of the lagged reading fused at the clock minus the clock",
+                          latency["lagged_reading_at_clock_fused_at"] - latency["reference_tick"], 0)]},
+                uncertainty=exact("refusal codes, ticks and bitwise state comparison"), tolerance=TOL_EXACT),
         unreal("The recovered offset calibrates the clock of a real camera", "calibration", seed,
                "not established: the lag is a declared synthetic fault"),
     ]
     fields = {
         "hypothesis": "An unmodelled clock offset biases innovations only when another sensor pins the true time; "
-                      "a mean test then detects it, and an offset state in the filter removes it.",
+                      "a mean test then detects it, and an offset state in the filter removes it. A declared "
+                      "latency is applied by the fusion API, which fuses each reading at the tick it refers to and "
+                      "refuses a reading that is older than its clock rather than fusing it at the wrong time.",
         "mathematical_model": "Camera reports z_k = p(t_k - tau) + v = p_k - tau v_k + eta + v with tau = dt = "
                               "0.1 s; tracker (2 Hz, R = 0.0025 I) reports p_k + v. Naive filter: z = p + v. "
                               "Augmented EKF: state (p, v, tau), h = p - tau v, H = [I, -tau I, -v], R + q dt^3/3 I. "
@@ -419,21 +594,37 @@ def stale_clock(ctx):
                               "position error mean is -tau E[v] = (-0.1, -0.05) m.",
         "experiment": "Whiten innovations with their filter covariance, average per run after a 50-tick burn-in, "
                       "and test the grand mean with run-level standard errors for the naive two-sensor, naive "
-                      "camera-only and offset-augmented filters.",
+                      "camera-only and offset-augmented filters; declare latency_ticks = 1 in the camera's "
+                      f"calibration record, replay {LATENCY_API_RUNS} runs through FusionSession against the "
+                      "correctly timed filter and test that filter's position-error mean over all runs; deliver a "
+                      "lagged reading after a newer tracker reading, one referring to before tick 0, an old tracker "
+                      "reading and a backward prediction, comparing the state bitwise after each refusal.",
         "numerical_result": f"naive two-sensor mean-innovation max |z| {detected:.1f} against zero, {agree:.2f} "
                             f"against the exact predicted bias; augmented max "
                             f"|z| {aug_z:.2f}, tau-hat {aug['tau_mean']:.4f} s (run spread {aug['tau_run_std']:.4f}, "
                             f"posterior std {aug['tau_mean_posterior_std']:.4f}), NEES {aug['nees_grand_mean']:.2f}; "
                             f"camera-only innovation |z| {one_z:.2f}, position error mean "
-                            f"({one['position_error_mean'][0]:.3f}, {one['position_error_mean'][1]:.3f}) m.",
+                            f"({one['position_error_mean'][0]:.3f}, {one['position_error_mean'][1]:.3f}) m; with the "
+                            f"latency declared the session matches the timed filter to "
+                            f"{latency['max_relative_difference_from_timed_filter']:.0e} relative and its position "
+                            f"error mean is ({latency['timed_position_error_mean'][0]:.4f}, "
+                            f"{latency['timed_position_error_mean'][1]:.4f}) m; out-of-order refusals: "
+                            f"{sorted(set(latency['codes'].values()))}.",
         "uncertainty": "Run-level z-tests with a Bonferroni family bound; the augmented filter is an EKF whose "
                        "linearization and the ignored correlation of the lagged-state noise with the process noise "
                        "are approximations (NEES tolerance 15%).",
         "failure_modes_checked": ["unmodelled lag with a reference sensor", "unmodelled lag with no reference",
-                                  "offset state convergence", "EKF consistency"],
+                                  "offset state convergence", "EKF consistency", "declared latency applied with the "
+                                  "wrong sign or tick", "lagged reading older than the session clock",
+                                  "undelayed reading older than the session clock", "backward prediction",
+                                  "state mutation by an out-of-order refusal"],
         "unresolved_assumptions": ["The lag is constant and exactly one tick; drifting or jittering clocks need a "
                                    "random-walk offset state.",
-                                   "The offset is observable only while the velocity is nonzero."],
+                                   "The offset is observable only while the velocity is nonzero.",
+                                   "The fusion API applies a declared integer latency; it does not estimate one, and "
+                                   "it refuses rather than retrodicts a reading older than its clock (no "
+                                   "out-of-sequence update), so the caller must deliver readings in the order of "
+                                   "the ticks they refer to."],
         "recommended_next_task": "T071: frame mismatch, the spatial analogue of a stale clock.",
     }
     return outcome(fields, findings)
@@ -470,6 +661,11 @@ def frame_mismatch_study(seed: int = 71_2026, runs: int = 200, ticks: int = 100,
                 "late_z_vs_predicted": float(run_mean_z(nis[:, late, None] - np.array(predicted["nis"][late])[None, :, None])[0][0]),
                 "late_se": float(run_mean_z(nis[:, late, None])[2][0]),
                 "early_se": float(run_mean_z(nis[:, early, None])[2][0]),
+                "early_grand_nis": float(nis[:, early].mean()),
+                "early_predicted_nis": float(np.mean(predicted["nis"][early])),
+                "early_z_vs_nominal": float(run_mean_z(nis[:, early, None] - dof)[0][0]),
+                "early_z_vs_predicted": float(run_mean_z(nis[:, early, None]
+                                                         - np.array(predicted["nis"][early])[None, :, None])[0][0]),
                 "final_nees_se": float(nees[:, -1].std(ddof=1) / math.sqrt(nees.shape[0])),
                 "final_nees": float(nees[:, -1].mean()), "final_predicted_nees": float(predicted["nees"][-1])}
 
@@ -494,7 +690,7 @@ def frame_mismatch_study(seed: int = 71_2026, runs: int = 200, ticks: int = 100,
     dispositions = [entry["disposition"] for entry in session.log]
     return {"seed": seed, "runs": runs, "ticks": ticks, "rotation_deg": degrees,
             "cases": {"mixed_frames": mixed, "transformed": fixed, "rotated_sensor_alone": alone},
-            "api_codes": codes, "log_dispositions": dispositions, "z_critical": bonferroni(3)}
+            "api_codes": codes, "log_dispositions": dispositions, "z_critical": bonferroni(4)}
 
 
 def _frame_summary(case):
@@ -534,17 +730,26 @@ def frame_mismatch(ctx):
                 uncertainty=mc95(mixed["late_se"], "run-level standard error of the late grand NIS"),
                 tolerance=TOL_MC),
         finding("Near the rotation centre (ticks 1-20) the same mismatch goes undetected by the per-tick NIS test at "
-                "this sample size; its predicted inflation there is only about 2%", "numerical",
+                "this sample size, where its predicted inflation is only about 2%; the run-level grand-mean NIS "
+                "there agrees with the exact prediction and comes close to the family bound against the nominal "
+                "value, so a pooled test nearly flags what the per-tick test misses", "numerical",
                 {"early_fraction_inside": mixed["early"]["fraction_inside"],
-                 "early_predicted_nis": float(np.mean(mixed["predicted_nis"][:20]))},
+                 "early_grand_nis": mixed["early_grand_nis"], "early_predicted_nis": mixed["early_predicted_nis"],
+                 "early_z_vs_nominal": mixed["early_z_vs_nominal"],
+                 "early_z_vs_predicted": mixed["early_z_vs_predicted"], "z_critical": zc},
                 {**generator_basis(seed), "checks": [
-                    check("analytic", "fraction of ticks 1-20 inside the 99% interval", mixed["early"]["fraction_inside"],
-                          0.9, "ge")]},
+                    check("analytic", "fraction of ticks 1-20 inside the per-tick 99% interval",
+                          mixed["early"]["fraction_inside"], 0.9, "ge"),
+                    check("analytic", "early grand NIS against the exact prediction (run-level z)",
+                          mixed["early_z_vs_predicted"], zc),
+                    check("analytic", "early grand-mean z against the nominal dof, as a fraction of the family bound",
+                          mixed["early_z_vs_nominal"] / zc, 0.75, "ge")]},
                 uncertainty=mc95(mixed["early_se"], "run-level standard error of the early grand NIS"),
                 tolerance=TOL_MC, counterexample={
                     "statement": "A passing NIS test shows that the sensor frames agree",
                     "witness": {"ticks": "1-20", "fraction_inside": mixed["early"]["fraction_inside"],
-                                "rotation_deg": study["rotation_deg"]}}),
+                                "rotation_deg": study["rotation_deg"], "early_grand_nis": mixed["early_grand_nis"],
+                                "early_z_vs_nominal": mixed["early_z_vs_nominal"]}}),
         finding("A rotated sensor fused alone keeps NIS consistent (its readings form a rotated constant-velocity "
                 "path) while NEES grows: the estimate is confidently in the wrong frame", "numerical",
                 _frame_summary(alone),
@@ -601,7 +806,10 @@ def frame_mismatch(ctx):
                       "ANIS against 99% chi-square intervals; late grand means against exact predictions; then the "
                       "typed API with frame ids.",
         "numerical_result": f"mixed: late ANIS {mixed['late_grand_nis']:.2f} (predicted {mixed['late_predicted_nis']:.2f}), "
-                            f"early inside {mixed['early']['fraction_inside']:.2f}; transformed late inside "
+                            f"early per-tick inside {mixed['early']['fraction_inside']:.2f} (early grand NIS "
+                            f"{mixed['early_grand_nis']:.3f}, predicted {mixed['early_predicted_nis']:.3f}, z "
+                            f"{mixed['early_z_vs_nominal']:.2f} against {mixed['dof']} with bound {zc:.2f}); "
+                            f"transformed late inside "
                             f"{fixed['late']['fraction_inside']:.2f}; rotated alone late ANIS "
                             f"{alone['late_grand_nis']:.2f}, final ANEES {alone['final_nees']:.1f} (predicted "
                             f"{alone['final_predicted_nees']:.1f}); API: {codes['fuse_in_wrong_frame']}.",

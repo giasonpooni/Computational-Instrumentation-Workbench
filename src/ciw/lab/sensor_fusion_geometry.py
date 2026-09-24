@@ -29,8 +29,8 @@ from .jacobi import constant_curvature, perturbed_start, transfer
 from .registry import task
 from .sensor_fusion_bench import chi2_quantile, factor, generator
 from .sensor_fusion_common import (CORE_GEOMETRY, TESTS, TOL_MC, TOL_ROUNDOFF, TOL_TINY, as_json, bonferroni,
-                                   check, covariance_z, files, generator_basis, gram, identity, mc95, outcome,
-                                   rate_interval, roundoff, uncertainty, unreal)
+                                   check, covariance_z, files, generator_basis, gram, identity, max_abs_z_spread,
+                                   mc95, outcome, rate_interval, roundoff, uncertainty, unreal)
 from .sensor_fusion_objects import FrameTransform, Observation
 from .surfaces import HyperbolicPlane, Sphere
 
@@ -74,14 +74,23 @@ def frame_study(seed: int = T063_SEED, samples: int = 100_000) -> dict:
     rng = generator(seed)
     x = mean + rng.standard_normal((samples, 4)) @ factor(P).T
     maps = frame_transforms(theta, translation, scale)
-    per_map, z_all, exact, roundtrip = {}, [], 0.0, 0.0
+    per_map, z_all, exact, roundtrip, asymmetry = {}, [], 0.0, 0.0, 0.0
     d_body = mahalanobis(x - mean, P)
     invariance = {}
     S_x = gram(x - mean) / samples
+    # Expected transformed means from the declared parameters, not from b: the translation moves positions
+    # only, so a translation leaking into the velocity block shifts the sample mean of the velocities.
+    R4 = np.kron(np.eye(2), rotation(theta))
+    shift = np.concatenate([np.asarray(translation, dtype=float), np.zeros(2)])
+    expected = {"rotation": R4 @ mean, "translation": mean + shift, "unit_m_to_mm": scale * mean,
+                "composite": scale * (R4 @ mean + shift)}
+    mean_z = []
     for name, (J, b) in maps.items():
         y = x @ J.T + b
         mu_y = J @ mean + b
         P_y = J @ P @ J.T
+        asymmetry = max(asymmetry, float(np.max(np.abs(P_y - P_y.T)) / np.max(np.abs(P_y))))
+        mean_z.append((y.mean(axis=0) - expected[name]) / np.sqrt(np.diag(P_y) / samples))
         S_y, z = covariance_z(y - mu_y, P_y)
         per_map[name] = {"max_abs_z": float(np.max(np.abs(z))), "predicted": P_y, "sample": S_y}
         z_all.append(z)
@@ -93,6 +102,7 @@ def frame_study(seed: int = T063_SEED, samples: int = 100_000) -> dict:
         invariance[name] = float(np.max(np.abs(d_y - d_body) / d_body))
     z_all = np.concatenate(z_all)
     z_crit = bonferroni(len(z_all))
+    mean_z = np.concatenate(mean_z)
 
     # Counterexamples: transform the vector but not its covariance.
     pos = P[:2, :2]
@@ -112,10 +122,15 @@ def frame_study(seed: int = T063_SEED, samples: int = 100_000) -> dict:
     moved = FrameTransform("body", "world", tuple(map(tuple, R2)), translation).apply(obs)
     api = max(float(np.max(np.abs(np.asarray(moved.covariance) - R2 @ pos @ R2.T))),
               float(np.max(np.abs(np.asarray(moved.value) - (R2 @ mean[:2] + translation)))))
+    moved_cov = np.asarray(moved.covariance)
+    asymmetry = max(asymmetry, float(np.max(np.abs(moved_cov - moved_cov.T)) / np.max(np.abs(moved_cov))))
     return {"seed": seed, "samples": samples, "theta_deg": 35.0, "translation_m": list(translation),
             "scale": scale, "mean": mean, "P_body": P, "per_map": per_map, "max_abs_z": float(np.max(np.abs(z_all))),
             "z_critical": z_crit, "moments_tested": int(len(z_all)), "exact_transport": exact,
-            "roundtrip": roundtrip, "invariance": invariance,
+            "roundtrip": roundtrip, "invariance": invariance, "relative_asymmetry": asymmetry,
+            "mean_max_abs_z": float(np.max(np.abs(mean_z))), "mean_velocity_max_abs_z":
+                float(np.max(np.abs(mean_z.reshape(-1, 4)[:, 2:]))), "mean_z_critical": bonferroni(len(mean_z)),
+            "means_tested": int(len(mean_z)),
             "rotated_only": {"mean_d2": float(rotated_only.mean()), "predicted_mean_d2": predicted_rotated,
                              "standard_error": math.sqrt(var_rotated / samples),
                              "z": float((rotated_only.mean() - predicted_rotated) / math.sqrt(var_rotated / samples)),
@@ -150,17 +165,32 @@ def frame_transform_covariance(ctx):
                 {**generator_basis(seed, samples=study["samples"]), "checks": [
                     check("analytic", "Gaussian sampling law Var(S_ij) = (P'_ij^2 + P'_ii P'_jj)/N", study["max_abs_z"],
                           study["z_critical"], "le")]},
-                uncertainty=uncertainty("monte_carlo_95ci", 1.96, "each standardized covariance entry has unit "
-                                                                  "sampling standard deviation"),
+                uncertainty=max_abs_z_spread(study["moments_tested"], "standardized covariance entries"),
                 tolerance=TOL_MC),
-        finding("Roundoff sanity: the sample covariance of transformed samples equals J S J^T and J^-1 (J P J^T) "
-                "J^-T returns P to roundoff (algebraic identities that check the arithmetic, not the propagation "
-                "law)", "numerical",
-                {"relative_transport_error": study["exact_transport"], "relative_roundtrip_error": study["roundtrip"]},
+        finding("Roundoff sanity: the sample covariance of transformed samples equals J S J^T, J^-1 (J P J^T) "
+                "J^-T returns P, and every transformed covariance (J P J^T and the FrameTransform output) is "
+                "symmetric, to roundoff (algebraic identities that check the arithmetic, not the propagation law)",
+                "numerical",
+                {"relative_transport_error": study["exact_transport"], "relative_roundtrip_error": study["roundtrip"],
+                 "relative_asymmetry": study["relative_asymmetry"]},
                 {**generator_basis(seed), "checks": [
                     check("invariant", "sample covariance of J x + b against J S J^T", study["exact_transport"], 1e-12),
-                    check("invariant", "J^-1 (J P J^T) J^-T against P", study["roundtrip"], 1e-12)]},
-                uncertainty=roundoff(max(study["exact_transport"], study["roundtrip"])), tolerance=TOL_TINY),
+                    check("invariant", "J^-1 (J P J^T) J^-T against P", study["roundtrip"], 1e-12),
+                    check("invariant", "max |P' - P'^T| relative to max |P'| over the transforms and the API output",
+                          study["relative_asymmetry"], 1e-14)]},
+                uncertainty=roundoff(max(study["exact_transport"], study["roundtrip"], study["relative_asymmetry"])),
+                tolerance=TOL_TINY),
+        finding("Transformed sample means match the declared maps: rotation and unit change act on the whole state, "
+                "and the translation moves positions only, so the transformed velocities average to J_v mu_v",
+                "numerical",
+                {"max_abs_z": study["mean_max_abs_z"], "velocity_max_abs_z": study["mean_velocity_max_abs_z"],
+                 "z_critical": study["mean_z_critical"], "means_tested": study["means_tested"]},
+                {**generator_basis(seed, samples=study["samples"]), "checks": [
+                    check("analytic", "sample means of J x + b against means built from the declared rotation, "
+                                      "translation and scale (max |z|)", study["mean_max_abs_z"],
+                          study["mean_z_critical"], "le")]},
+                uncertainty=max_abs_z_spread(study["means_tested"], "standardized transformed means"),
+                tolerance=TOL_MC),
         finding("Mahalanobis distance is invariant under every transform, including the metre-to-millimetre "
                 "unit change, when the covariance is transformed with the vector", "numerical",
                 study["invariance"],
@@ -493,8 +523,8 @@ def jacobi_transfer_covariance(ctx):
                           max(sphere["max_abs_z"], hyper["max_abs_z"]), study["z_critical"], "le"),
                     check("invariant", "batched geodesic RHS against Surface.geodesic_rhs",
                           max(sphere["rhs_consistency"], hyper["rhs_consistency"]), 1e-12)]},
-                uncertainty=uncertainty("monte_carlo_95ci", 1.96, "each standardized covariance entry has unit "
-                                                                  "sampling standard deviation"),
+                uncertainty=max_abs_z_spread(sphere["moments_tested"] + hyper["moments_tested"],
+                                             "standardized covariance entries"),
                 tolerance=TOL_MC),
         finding("Lateral variance collapses at the sphere's conjugate point s = pi: the heading contribution "
                 "vanishes because j_head(pi) = 0, leaving only the initial lateral variance", "numerical",

@@ -11,6 +11,7 @@ from ciw.lab import sensor_fusion as section
 from ciw.lab import sensor_fusion_bench as bench
 from ciw.lab import sensor_fusion_common as common
 from ciw.lab import sensor_fusion_filtering as filtering
+from ciw.lab import sensor_fusion_geometry as section_geometry
 from ciw.lab import sensor_fusion_objects as objects
 from ciw.lab.evidence import AUTHORITY_DOMAINS, COMPUTATIONAL_DOMAINS, PHYSICAL_DOMAINS, finding, validate_finding
 from ciw.lab.registry import load_queue, section_implementations
@@ -113,7 +114,11 @@ def test_bench_is_deterministic_rate_exact_and_stream_independent(reports):
     assert rates["max_count_mismatch"] == 0 and rates["off_grid_ticks"] == 0
     assert {k: v["readings_per_run"] for k, v in rates["per_sensor"].items()} == {
         "camera": 200, "encoder": 400, "imu": 400, "tracker": 40}
-    assert _find(report, "Every raw reading")["value"] < 1e-12
+    composition = _find(report, "Every raw reading")["value"]
+    # Positions are recomputed from x0 and the process noise, not re-read from the array they were built from.
+    assert composition["max_abs_trajectory_difference"] < 1e-10
+    assert set(composition["max_abs_residual_by_sensor"]) == {"camera", "encoder", "imu", "tracker"}
+    assert max(composition["max_abs_residual_by_sensor"].values()) < 1e-10
     assert _find(report, "Changing the tracker rate")["value"] == 0
     # The generator itself: same seed, same bytes; readings retain their declared covariances.
     small = bench.BenchConfig(ticks=20)
@@ -124,8 +129,12 @@ def test_bench_is_deterministic_rate_exact_and_stream_independent(reports):
 
 def test_declared_covariance_matches_and_power_is_quantified(reports):
     report = reports["T061"]
-    moments = _find(report, "Sample means and covariances")["value"]
+    moments_finding = _find(report, "Sample means and covariances")
+    moments = moments_finding["value"]
     assert moments["max_abs_z"] < moments["z_critical"] and moments["moments_tested"] == 28
+    # The uncertainty is the null spread of a max |z| over 28 moments, not a fixed 1.96.
+    assert moments_finding["uncertainty"]["value"] == pytest.approx(
+        common.max_abs_z_spread(28, "moments")["value"]) and moments_finding["uncertainty"]["value"] < 1.0
     power = _find(report, "At this sample size a 10% understatement")
     tracker = power["value"]["power"]["tracker"]
     # Two independent axes, each flagged with probability ~0.286: the stream is flagged about half the time.
@@ -155,12 +164,23 @@ def test_correlated_noise_consistency_and_ignored_correlation_counterexample(rep
     assert bad["counterexample"]["statement"] == "Ignoring correlation between sensor noises is harmless"
     blind = _find(report, "The ignored-correlation filter still passes")["value"]
     assert blind["nis"]["fraction_inside"] >= 0.9 and blind["whitened_max_z"] > blind["z_critical"]
+    assert "among innovation-based tests" in _find(report, "The ignored-correlation filter")["claim"]
+    independent = _find(report, "With independent camera and tracker noise")["value"]
+    assert independent["nees"]["fraction_inside"] >= 0.9 and independent["whitened_max_z"] < independent["z_critical"]
+    assumed = _find(report, "Assuming a common-mode correlation")
+    assert assumed["value"]["nees"]["fraction_below"] >= 0.9 and assumed["value"]["nis"]["fraction_above"] >= 0.9
+    assert assumed["value"]["predicted_position_rmse"] > assumed["value"]["predicted_position_rmse_block_diagonal"]
+    assert "counterexample" in assumed
     predicted = _find(report, "Monte Carlo grand-mean NEES")["value"]
+    assert set(predicted["predicted"]) == {"correct", "ignored", "independent", "assumed_correlated"}
     assert predicted["predicted"]["correct"]["nees"] == pytest.approx(4.0, abs=1e-9)
+    assert predicted["predicted"]["independent"]["nis"] == pytest.approx(4.0, abs=1e-9)
     assert predicted["predicted"]["ignored"]["nees"] > 5.0
+    assert predicted["predicted"]["assumed_correlated"]["nees"] < 3.5
+    assert predicted["max_gap_in_standard_errors"] <= 4.0
 
 
-def test_frame_transform_covariance_and_mahalanobis_invariance(reports):
+def test_frame_transform_covariance_and_mahalanobis_invariance(reports, monkeypatch):
     report = reports["T063"]
     mc = _find(report, "Monte Carlo covariances of rotated")["value"]
     assert mc["max_abs_z"] < mc["z_critical"] and mc["moments_tested"] == 40
@@ -168,6 +188,22 @@ def test_frame_transform_covariance_and_mahalanobis_invariance(reports):
     rotated = _find(report, "Rotating a position measurement")
     assert rotated["value"]["mean_d2"] > 10 and rotated["value"]["rejection_rate"] > 0.3
     assert rotated["value"]["rejection_rate_with_rotated_covariance"] == pytest.approx(0.01, abs=0.003)
+    sanity = _find(report, "Roundoff sanity")["value"]
+    assert sanity["relative_asymmetry"] < 1e-14
+    means = _find(report, "Transformed sample means match")["value"]
+    assert means["max_abs_z"] < means["z_critical"] and means["means_tested"] == 16
+    # Mutation: a translation leaking into the velocity block is caught by the transformed-mean check.
+    declared = section_geometry.frame_transforms
+
+    def leaking(theta, translation, scale):
+        maps = declared(theta, translation, scale)
+        J, b = maps["translation"]
+        maps["translation"] = (J, np.concatenate([b[:2], np.asarray(translation, dtype=float)]))
+        return maps
+
+    monkeypatch.setattr(section_geometry, "frame_transforms", leaking)
+    study = section_geometry.frame_study(samples=20_000)
+    assert study["mean_velocity_max_abs_z"] > study["mean_z_critical"]
     unit = _find(report, "Converting a state to millimetres")["value"]
     assert unit["max_relative_deviation_from_scale_squared"] < 1e-12
     assert _find(report, "The declared 35 degree")["domain"] == "calibration"
@@ -217,6 +253,10 @@ def test_residuals_need_filter_covariance(reports):
     same = _find(report, "Post-fit residuals z - H x+")["value"]
     # Post-fit NIS with R - H P+ H^T is the innovation NIS, not a second consistency result.
     assert same["identity_error"] < 1e-12 and same["max_relative_difference_from_innovation_nis"] < 1e-9
+    # The NIS the fusion API records for the admission gate is normalized by S, not by the raw R.
+    api = _find(report, "The fusion API normalizes its residuals")["value"]
+    assert api["max_relative_difference_from_schedule_nis"] < 1e-9
+    assert api["max_ratio_to_raw_R_nis"] <= api["ratio_bound"] + 1e-12 < 0.99
 
 
 def test_gating_rates_open_and_closed_loop(reports):
@@ -228,6 +268,12 @@ def test_gating_rates_open_and_closed_loop(reports):
     assert closed["value"]["0.9"]["wilson"][0] > 0.1
     assert closed["value"]["0.9"]["rejection_rate_after_a_rejection"] > 0.2
     assert _find(report, "Gating the NIS computed with the raw")["value"]["rate"] > 0.02
+    session = _find(report, "The fusion API gates the same way")["value"]
+    for p, row in session.items():
+        assert row["decision_mismatches"] == 0
+        assert row["session_rejections"] == row["run_gated_rejections_same_runs"] > 0
+        assert row["max_relative_final_state_difference"] < 1e-9
+    assert session["0.9"]["session_rate"] > 0.1
     assert bench.chi2_quantile(0.99, 2) == pytest.approx(-2 * math.log(0.01), rel=1e-14)
     with pytest.raises(ValueError, match="strictly between"):
         bench.chi2_quantile(1.0, 2)
@@ -249,13 +295,19 @@ def test_outlier_rejection_detection_lockout_and_cost(reports):
     gross = _find(report, "Gross 1.5 m outliers")["value"]
     assert gross["detection_rate"] > 0.98 and abs(gross["detection_z"]) < 3
     overall = _find(report, "Over all runs with gross outliers")
-    # Gating wins most runs, but over all runs the mean improvement is not significant.
-    assert abs(overall["value"]["paired_mse_z_gated_minus_ungated"]) < 2
+    # Gating wins most runs; the paired mean difference and the post hoc comparison are descriptive only.
+    assert "counterexample" not in overall
+    assert all("significan" not in check["reference"] for check in overall["basis"]["checks"])
     assert overall["value"]["sign_test"]["gated_better"] > 350
-    post_hoc = _find(report, "Post hoc, conditioning on the outcome")["value"]
-    kept = post_hoc["rmse_without_lockout_runs"]
-    assert kept["gated"] < 1.05 * kept["oracle"] < kept["ungated"]
-    assert post_hoc["rmse_all_runs"]["gated"] > kept["gated"]
+    assert overall["value"]["lockout_share_of_other_runs_gain"] >= 0.5
+    descriptive = overall["value"]["descriptive"]
+    kept = descriptive["post_hoc_rmse_without_lockout_runs"]
+    assert kept["gated"] < overall["value"]["rmse_all_runs"]["gated"]
+    assert not any(f["claim"].startswith("Post hoc") for f in report["findings"])
+    session = _find(report, "The fusion API reproduces the gated filter")["value"]
+    assert session["decision_mismatches"] == 0
+    assert session["session_rejections"] == session["run_gated_rejections_same_runs"]
+    assert session["lockout_runs_replayed"] == session["lockout_runs_locked_out_in_session"] == 10
     lockout = _find(report, "Cold-start lock-out")
     assert lockout["value"]["lockout_runs"] == lockout["value"]["lockout_runs_with_accepted_first_outlier"] > 0
     assert lockout["counterexample"]["witness"]["rmse_gated"] > 1.0
@@ -270,10 +322,15 @@ def test_outlier_rejection_detection_lockout_and_cost(reports):
 def test_missing_data_prediction_only_and_zero_fill_refusal(reports):
     report = reports["T069"]
     assert _find(report, "Prediction-only steps grow")["value"]["max_relative_error"] < 1e-12
-    refusals = _find(report, "The session refuses requested substitution")["value"]
+    refusals = _find(report, "After a prediction-only gap that loses the track")["value"]
     assert refusals == {"zero_fill": "zero_fill_refused", "hold_last": "gap_strategy_refused",
+                        "fractional_tick": "malformed_tick", "reading_older_than_clock": "out_of_order",
+                        "expired_calibration": "calibration_expired",
+                        "reading_into_lost_track": "track_lost_requires_reacquisition",
                         "nan_reading": "nonfinite_observation", "absent_value": "missing_reading",
-                        "fractional_tick": "malformed_tick", "state_unchanged": True}
+                        "track_status_after_gap": "lost", "session_refusals_changing_state": 0,
+                        "refused_reading_dispositions": ["refused:out_of_order", "refused:calibration_expired",
+                                                         "refused:track_lost_requires_reacquisition"]}
     zero = _find(report, "Zero-filling missing readings")["value"]["zero_fill"]
     assert zero["grand_mean_nees"] > 100 and abs(zero["z_vs_predicted"]) < 3.5
     assert zero["grand_mean_nees"] == pytest.approx(zero["predicted_grand_mean_nees"], rel=0.05)
@@ -295,13 +352,26 @@ def test_stale_clock_bias_detection_and_augmented_offset(reports):
     assert max(abs(z) for z in alone["value"]["camera_mean_z"]) < 3
     assert alone["value"]["position_error_mean"][0] == pytest.approx(-0.1, abs=0.02)
     assert _find(report, "The recovered offset")["domain"] == "calibration"
+    declared = _find(report, "Declared in the camera's calibration record")["value"]
+    assert declared["readings_fused_at_another_tick"] == 0
+    assert declared["max_relative_difference_from_timed_filter"] < 1e-9
+    assert max(abs(z) for z in declared["timed_position_error_mean_z"]) < 3.5
+    # With the latency declared the camera-only bias of about -tau E[v] disappears.
+    assert abs(declared["timed_position_error_mean"][0]) < 0.01 < abs(
+        declared["undeclared_camera_only_position_error_mean"][0])
+    order = _find(report, "The fusion API never fuses a reading at the wrong time")["value"]
+    assert set(order["codes"].values()) == {"out_of_order"} and order["session_refusals_changing_state"] == 0
+    assert order["lagged_reading_at_clock_fused_at"] == order["reference_tick"]
 
 
 def test_frame_mismatch_inflation_blind_spot_and_refusal(reports):
     report = reports["T071"]
     mixed = _find(report, "Fusing a tracker expressed")["value"]
     assert mixed["late_fraction_above"] >= 0.9 and mixed["late_grand_nis"] > 6
-    assert _find(report, "Near the rotation centre")["value"]["early_fraction_inside"] >= 0.9
+    early = _find(report, "Near the rotation centre")["value"]
+    assert early["early_fraction_inside"] >= 0.9
+    # The pooled grand-mean test nearly flags what the per-tick test misses, and matches the prediction.
+    assert 0.75 * early["z_critical"] <= early["early_z_vs_nominal"] and abs(early["early_z_vs_predicted"]) < 3
     alone = _find(report, "A rotated sensor fused alone")["value"]
     assert alone["late_fraction_inside"] >= 0.9 and alone["final_nees"] > 100
     api = _find(report, "The session refuses an observation whose frame id")["value"]
@@ -337,6 +407,8 @@ def test_track_lost_prediction_refusals_and_reacquisition(reports):
     assert codes["reacquire_older_than_clock"] == "out_of_order"
     assert codes["reacquire_while_tracking"] == "reacquisition_not_needed"
     assert codes["admit_after_reacquisition"] == "none"
+    # Both readings of every refused reacquisition carry its refusal; none is left as merely recorded.
+    assert codes["refused_reacquisition_readings"] == 6 and "recorded" not in codes["dispositions"]
     two = _find(report, "The two-point reacquisition covariance")["value"]
     assert two["session_vs_error_map"] < 1e-12 and two["formula_vs_error_map"] < 1e-12 and abs(two["nees_z"]) < 4
     turn = _find(report, "Under an unmodelled 0.2 rad/s turn")["value"]
@@ -350,6 +422,8 @@ def test_fused_state_equals_batch_posterior(reports):
     assert all(row["max_relative_mean_difference"] < 1e-9 for row in batch["comparisons"])
     assert [row["K"] for row in batch["dense"]] == [10, 40]
     assert all(row["dense_vs_filter_mean"] < 1e-9 and row["dense_vs_banded"] < 1e-9 for row in batch["dense"])
+    kinds = {check["reference_kind"] for check in _find(report, "The recursive covariance-form")["basis"]["checks"]}
+    assert kinds == {"cross_implementation"}
     exact = _find(report, "In exact rational arithmetic")
     assert exact["value"]["identical"] is True and exact["value"]["filter_mean"] == exact["value"]["batch_mean"]
     # Independent small case: dense and banded batch solvers agree with the filter.
@@ -371,9 +445,17 @@ def test_typed_objects_and_admission_mutations(reports):
     assert all(row["expected"] == row["full_gate"] for row in refused.values())
     assert refused["superseded_same_tick"]["full_gate"] == "stale_candidate"
     assert refused["writable"]["full_gate"] == "read_only_session"
+    # A prediction issued after an inconsistent update, or after a revocation, inherits the refusal.
+    assert refused["prediction_after_inconsistent_update"]["full_gate"] == "inconsistent_innovation"
+    assert refused["prediction_after_revocation"]["full_gate"] == "calibration_revoked"
     mutation = _find(report, "Mutation analysis")["value"]
-    assert mutation["checks"] == 13 and mutation["mutants_killed"] == mutation["scenarios"] == 14
-    assert mutation["sole_guard_scenarios"] == 12 and mutation["backed_up_scenarios"] == ["declared", "provenance"]
+    assert mutation["checks"] == 13 and mutation["mutants_killed"] == mutation["scenarios"] == 16
+    assert mutation["sole_guard_scenarios"] == 14 and mutation["backed_up_scenarios"] == ["declared", "provenance"]
+    assert mutation["without_targeted_check"]["prediction_after_inconsistent_update"] == "admitted"
+    inherited = _find(report, "A candidate carries every innovation")["value"]
+    assert inherited["codes"] == {"update_after_outlier": "inconsistent_innovation",
+                                  "update_after_reinitialization": "none"}
+    assert inherited["innovations_carried_after_admission"] == 1
     assert mutation["without_targeted_check"]["superseded_same_tick"] == "admitted"
     assert mutation["without_targeted_check"]["provenance"] == "stale_candidate"
     typed = _find(report, "Observations, candidates and admitted")["value"]
@@ -416,6 +498,9 @@ def test_defaults_are_read_only_and_not_performed(reports):
     assert _find(report, "Enabling fusion explicitly")["value"]["sensor_fusion"] == "synthetic_only"
     identity = report["provider_runtime_identity"]["sources"]
     assert "src/ciw/declared_workload.py" in identity
+    # T076 runs no generator, so its authority finding cites the audit, not a seed.
+    production = _find(report, "Synthetic fusion output")
+    assert "generator" not in production["basis"] and production["evidence_status"] == "not_established"
 
 
 def _tracking_session(**kwargs):
@@ -470,3 +555,83 @@ def test_calibration_frame_is_checked_and_carried_through_transforms():
     with pytest.raises(objects.FusionRefusal) as caught:
         objects.CalibrationRecord("c", "camera", "world", 0.5, 10)
     assert caught.value.code == "malformed_calibration"
+
+
+def _state(session):
+    return (session.x.tobytes(), session.P.tobytes(), session.tick, session.track_status, session._latest)
+
+
+def test_out_of_order_fuse_and_predict_leave_no_side_effects_and_latency_is_applied():
+    R = np.array([[0.04, 0.012], [0.012, 0.04]])
+    session = _tracking_session()
+    session.fuse(objects.Observation("camera", "world", 5, (0.5, 0.25), R, "cam"))
+    before = _state(session)
+    with pytest.raises(objects.FusionRefusal) as caught:
+        session.fuse(objects.Observation("camera", "world", 4, (0.4, 0.2), R, "cam"))
+    assert caught.value.code == "out_of_order" and _state(session) == before
+    assert session.log[-1]["disposition"] == "refused:out_of_order"
+    with pytest.raises(objects.FusionRefusal) as caught:
+        session.predict(3)
+    assert caught.value.code == "out_of_order" and _state(session) == before
+    # A declared latency re-stamps the reading to the tick it refers to.
+    session.register_calibration(objects.CalibrationRecord("lag", "camera", "world", 0, 1000, latency_ticks=2))
+    assert session.fuse(objects.Observation("camera", "world", 8, (0.6, 0.3), R, "lag")).tick == 6
+    with pytest.raises(objects.FusionRefusal) as caught:
+        session.fuse(objects.Observation("camera", "world", 7, (0.6, 0.3), R, "lag"))  # refers to tick 5 < 6
+    assert caught.value.code == "out_of_order"
+    with pytest.raises(objects.FusionRefusal) as caught:
+        objects.CalibrationRecord("lag", "camera", "world", 0, 1000, latency_ticks=-1)
+    assert caught.value.code == "malformed_calibration"
+
+
+def test_session_gate_refuses_without_side_effects():
+    R = np.array([[0.04, 0.012], [0.012, 0.04]])
+    with pytest.raises(objects.FusionRefusal) as caught:
+        objects.FusionSession(read_only=False, gate_probability=1.0)
+    assert caught.value.code == "malformed_gate"
+    session = _tracking_session(gate_probability=0.99)
+    session.fuse(objects.Observation("camera", "world", 1, (0.1, 0.05), R, "cam"))
+    before = _state(session)
+    with pytest.raises(objects.FusionRefusal) as caught:
+        session.fuse(objects.Observation("camera", "world", 2, (3.2, 3.1), R, "cam"))
+    assert caught.value.code == "innovation_gate_rejected" and _state(session) == before
+    entry = session.log[-1]
+    assert entry["disposition"] == "refused:innovation_gate_rejected"
+    assert entry["nis"] > bench.chi2_quantile(0.99, 2)
+    # The same reading is fused by a session without a declared gate.
+    open_session = _tracking_session()
+    open_session.fuse(objects.Observation("camera", "world", 1, (0.1, 0.05), R, "cam"))
+    assert open_session.fuse(objects.Observation("camera", "world", 2, (3.2, 3.1), R, "cam")).tick == 2
+
+
+def test_candidates_inherit_inconsistent_innovations_and_revocations():
+    R = np.array([[0.04, 0.012], [0.012, 0.04]])
+    admit = {"expected_frame_id": "world", "nis_probability": 0.99, "max_position_std": 10.0}
+    session = _tracking_session()
+    session.fuse(objects.Observation("camera", "world", 1, (0.1, 0.05), R, "cam"))
+    outlier = session.fuse(objects.Observation("camera", "world", 2, (3.2, 3.1), R, "cam"))
+    assert outlier.nis[-1][0] > bench.chi2_quantile(0.99, 2)
+    with pytest.raises(objects.FusionRefusal) as caught:
+        session.admit(session.predict(3), **admit)
+    assert caught.value.code == "inconsistent_innovation"
+    # A re-initialization is the explicit recovery.
+    session.initialize(session.x, np.diag([0.25, 0.25, 0.04, 0.04]), session.tick)
+    assert session.admit(session.predict(4), **admit).tick == 4
+    revoked = _tracking_session()
+    revoked.fuse(objects.Observation("camera", "world", 1, (0.1, 0.05), R, "cam"))
+    revoked.revoke_calibration("cam")
+    with pytest.raises(objects.FusionRefusal) as caught:
+        revoked.admit(revoked.predict(2), **admit)
+    assert caught.value.code == "calibration_revoked"
+
+
+def test_refused_reacquisition_marks_both_readings():
+    R = np.array([[0.04, 0.012], [0.012, 0.04]])
+    session = _tracking_session(track_radius=0.5)
+    session.predict(40)
+    with pytest.raises(objects.FusionRefusal) as caught:
+        session.reacquire(objects.Observation("camera", "world", 41, (0.1, 0.1), R, "cam"),
+                          objects.Observation("camera", "world", 43, (0.2, 0.1), R, "cam"))
+    assert caught.value.code == "reacquisition_needs_consecutive_readings"
+    assert [entry["disposition"] for entry in session.log[-2:]] == [
+        "refused:reacquisition_needs_consecutive_readings"] * 2

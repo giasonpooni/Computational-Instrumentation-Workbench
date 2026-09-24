@@ -1,9 +1,14 @@
 """Typed observations, candidate states and admitted states for the synthetic fusion bench.
 
-Scope: the API boundary used by the sensor-fusion experiments (T069, T071-T076).
+Scope: the API boundary used by the sensor-fusion experiments (T066-T076).
 An :class:`Observation` is a retained reading; a :class:`CandidateState` is what
 a filter prediction or update proposes; an :class:`AdmittedState` exists only
 after :meth:`FusionSession.admit` has evaluated declared consistency checks.
+Every candidate carries the innovations fused since the last admitted,
+initialized or reacquired state and every calibration its state was built
+under since the last initialization or reacquisition, so a prediction issued
+after an inconsistent update, or after a calibration is revoked, inherits the
+refusal instead of passing the gate vacuously.
 A :class:`FusionSession` defaults to read-only with the CIW authority
 vocabulary (``sensor_fusion`` and ``state_admission`` ``not_performed``);
 fusion must be enabled explicitly at construction and is then labelled
@@ -12,10 +17,13 @@ rebound afterwards, so they cannot disagree.
 
 Refusals are explicit and leave the estimate untouched: missing readings are
 never zero-filled, observations in another frame or under an expired, revoked
-or other-frame calibration are retained but not fused, a lost track needs
-explicit two-point reacquisition, time never moves backwards, only the most
-recently issued candidate can be admitted, and nothing is ever admitted
-automatically.
+or other-frame calibration are retained but not fused, a session constructed
+with a ``gate_probability`` refuses a reading whose NIS exceeds that
+chi-square quantile, a calibration record may declare a sensor latency (the
+reading is fused at the tick it refers to, or refused when that tick is older
+than the session clock), a lost track needs explicit two-point reacquisition,
+time never moves backwards, only the most recently issued candidate can be
+admitted, and nothing is ever admitted automatically.
 
 Non-claims: admission here is a software gate over synthetic data. It confers
 no physical truth, calibration validity, safety or production authority.
@@ -122,13 +130,19 @@ class Observation:
 
 @dataclass(frozen=True)
 class CalibrationRecord:
-    """Calibration validity over the half-open tick interval [valid_from, valid_until)."""
+    """Calibration validity over the half-open tick interval [valid_from, valid_until).
+
+    ``latency_ticks`` declares the sensor's clock lag: a reading stamped at
+    tick t refers to the state at tick t - latency_ticks. Validity and fusion
+    use that measurement tick.
+    """
 
     calibration_id: str
     sensor_id: str
     frame_id: str
     valid_from: int
     valid_until: int
+    latency_ticks: int = 0
 
     def __post_init__(self):
         for name in ("calibration_id", "sensor_id", "frame_id"):
@@ -136,6 +150,7 @@ class CalibrationRecord:
                 raise FusionRefusal("malformed_calibration", f"{name} must be a nonempty string")
         _tick(self.valid_from, "valid_from", "malformed_calibration")
         _tick(self.valid_until, "valid_until", "malformed_calibration")
+        _tick(self.latency_ticks, "latency_ticks", "malformed_calibration")
 
     def covers(self, tick: int) -> bool:
         return self.valid_from <= tick < self.valid_until
@@ -164,7 +179,13 @@ class FrameTransform:
 
 @dataclass(frozen=True)
 class CandidateState:
-    """A proposed state. It is never admitted by construction; ``digest`` seals its content."""
+    """A proposed state. It is never admitted by construction; ``digest`` seals its content.
+
+    ``nis`` lists (NIS, dof) of every innovation fused since the last admitted,
+    initialized or reacquired state, and ``calibration_ids`` every calibration
+    fused under since the last initialization or reacquisition, so a later
+    prediction carries the evidence of the updates its state depends on.
+    """
 
     frame_id: str
     tick: int
@@ -267,24 +288,37 @@ class FusionSession:
     equals the CIW vocabulary. ``read_only=False`` enables synthetic fusion only.
     The flag is fixed at construction and the authority record is derived from
     it on every read, so neither can be rebound to disagree with the other.
+
+    ``gate_probability`` declares a chi-square NIS gate: a reading whose
+    innovation NIS exceeds the ``gate_probability`` quantile is refused with
+    ``innovation_gate_rejected`` after the update was computed on copies, so
+    the state is left as it was (the gated filter of T067/T068). ``None``, the
+    default, fuses every admissible reading.
     """
 
     _FIXED = ("read_only", "authority", "_read_only")
 
     def __init__(self, *, frame_id: str = "world", read_only: bool = True, dt: float = 0.1, q: float = 0.05,
                  track_radius: float | None = None, track_probability: float = 0.99,
-                 session_id: str = "synthetic-session"):
+                 gate_probability: float | None = None, session_id: str = "synthetic-session"):
         object.__setattr__(self, "_read_only", bool(read_only))
+        if gate_probability is not None and not (isinstance(gate_probability, float) and 0 < gate_probability < 1):
+            raise FusionRefusal("malformed_gate", "gate_probability must be None or a float strictly between 0 and 1")
         self.frame_id, self.session_id = frame_id, session_id
         self.F, self.Q = cv_model(dt, q)
         self.dt, self.q = dt, q
         self.track_radius, self.track_probability = track_radius, track_probability
+        self.gate_probability = gate_probability
         self.log: list = []
         self.calibrations: dict = {}
         self.revoked: set = set()
         self.admitted: list = []
         self._issued: dict = {}
         self._latest: str | None = None
+        # Innovations since the last admitted, initialized or reacquired state; calibrations since the last
+        # initialization or reacquisition. Every candidate carries both.
+        self._innovations: list = []
+        self._lineage: list = []
         self.x = self.P = None
         self.tick: int | None = None
         self.track_status = "uninitialized"
@@ -325,7 +359,8 @@ class FusionSession:
         if self.read_only:
             self._refuse(entry, "read_only_session", "The session is read-only; sensor fusion is not performed")
 
-    def _admissible_source(self, observation, entry):
+    def _admissible_source(self, observation, entry) -> int:
+        """Refuse an observation the session cannot fuse; return the tick its reading refers to."""
         if observation.frame_id != self.frame_id:
             self._refuse(entry, "frame_mismatch", f"Observation frame {observation.frame_id} differs from session "
                                                   f"frame {self.frame_id}; transform it explicitly first")
@@ -338,17 +373,22 @@ class FusionSession:
             self._refuse(entry, "calibration_frame_mismatch", f"Calibration {record.calibration_id} is declared for "
                                                               f"frame {record.frame_id}, the reading comes from "
                                                               f"{observation.origin_frame_id}")
-        if not record.covers(observation.tick):
+        when = observation.tick - record.latency_ticks
+        if when < 0:
+            self._refuse(entry, "out_of_order", "After its declared latency the reading refers to a time before "
+                                                "tick 0")
+        if not record.covers(when):
             self._refuse(entry, "calibration_expired", "Observation lies outside its calibration validity interval")
         if len(observation.value) != 2:
             self._refuse(entry, "unsupported_observation", "The session fuses two-dimensional positions only")
+        return when
 
     # State ---------------------------------------------------------------------------
-    def _issue(self, sources=(), nis=(), calibration_ids=()) -> CandidateState:
+    def _issue(self, sources=()) -> CandidateState:
         fields = {"frame_id": self.frame_id, "tick": self.tick, "mean": tuple(float(v) for v in self.x),
                   "covariance": _rows(self.P), "sources": tuple(sources),
-                  "nis": tuple((float(v), int(d)) for v, d in nis), "track_status": self.track_status,
-                  "calibration_ids": tuple(calibration_ids), "authority": tuple(sorted(self.authority.items())),
+                  "nis": tuple((float(v), int(d)) for v, d in self._innovations), "track_status": self.track_status,
+                  "calibration_ids": tuple(self._lineage), "authority": tuple(sorted(self.authority.items())),
                   "session_id": self.session_id}
         candidate = CandidateState(digest=_digest({"kind": "candidate", **fields}), **fields)
         self._issued[candidate.digest] = candidate
@@ -390,6 +430,7 @@ class FusionSession:
                                 "The initial covariance must be symmetric positive definite")
         self.x, self.P = mean, covariance
         self.tick, self.track_status = _tick(tick, "tick"), "tracking"
+        self._innovations, self._lineage = [], []
         return self._issue()
 
     def predict(self, tick: int) -> CandidateState:
@@ -413,17 +454,18 @@ class FusionSession:
         return self.predict(tick)
 
     def fuse(self, observation: Observation) -> CandidateState:
-        """Retain the observation, then update the state or refuse with a coded reason."""
+        """Retain the observation, then update the state at the tick it refers to or refuse with a coded reason."""
         entry = self.record(observation)
         self._writable(entry)
-        self._admissible_source(observation, entry)
+        when = self._admissible_source(observation, entry)
         if self.x is None:
             self._refuse(entry, "not_initialized", "The session has no state to update; reacquire explicitly")
-        if observation.tick < self.tick:
-            self._refuse(entry, "out_of_order", "Observation is older than the session state")
-        # The prediction is computed on copies and committed only if the update proceeds, so a refusal
-        # leaves the state, covariance, clock and track status exactly as they were.
-        x, P, status = self._propagated(observation.tick, update_follows=True)
+        if when < self.tick:
+            self._refuse(entry, "out_of_order", "Observation (after its declared latency) is older than the "
+                                                "session state")
+        # The prediction and update are computed on copies and committed only if every check passes, so a
+        # refusal leaves the state, covariance, clock, track status and candidate evidence exactly as they were.
+        x, P, status = self._propagated(when, update_follows=True)
         if status != "tracking":
             self._refuse(entry, "track_lost_requires_reacquisition",
                          "The track is lost; fusion resumes only after explicit reacquisition")
@@ -432,44 +474,62 @@ class FusionSession:
         S = H_POS @ P @ H_POS.T + R
         K = np.linalg.solve(S, H_POS @ P).T
         nu = z - H_POS @ x
+        nis = float(nu @ np.linalg.solve(S, nu))
+        entry["nis"] = nis
+        if self.gate_probability is not None and nis > chi2_quantile(self.gate_probability, len(nu)):
+            self._refuse(entry, "innovation_gate_rejected", f"Innovation NIS {nis:.3g} exceeds the declared "
+                                                            f"{self.gate_probability} chi-square gate")
         A = np.eye(4) - K @ H_POS
         P = A @ P @ A.T + K @ R @ K.T
         self.x, self.P = x + K @ nu, 0.5 * (P + P.T)
-        self.tick, self.track_status = observation.tick, status
+        self.tick, self.track_status = when, status
+        self._innovations.append((nis, len(nu)))
+        if observation.calibration_id not in self._lineage:
+            self._lineage.append(observation.calibration_id)
         entry["disposition"] = "fused"
-        return self._issue((observation.digest,), ((float(nu @ np.linalg.solve(S, nu)), 2),),
-                           (observation.calibration_id,))
+        return self._issue((observation.digest,))
 
     def reacquire(self, first: Observation, second: Observation) -> CandidateState:
         """Explicit two-point initialization from consecutive position readings.
 
         Position error covariance R, velocity error covariance 2R/dt^2 + q dt/3
         and cross covariance R/dt are exact for the constant-velocity truth.
+        A refused reacquisition marks both readings with the refusal code.
         """
         entries = [self.record(first), self.record(second)]
-        self._writable(entries[1])
-        for observation, entry in zip((first, second), entries):
-            self._admissible_source(observation, entry)
-        if self.track_status == "tracking":
-            self._refuse(entries[1], "reacquisition_not_needed", "The track is not lost")
-        if second.tick != first.tick + 1 or second.sensor_id != first.sensor_id:
-            self._refuse(entries[1], "reacquisition_needs_consecutive_readings",
-                         "Two-point reacquisition needs consecutive readings from one sensor")
-        if self.tick is not None and first.tick < self.tick:
-            self._refuse(entries[1], "out_of_order", "Reacquisition readings are older than the session clock")
+        try:
+            self._writable()
+            when = [self._admissible_source(observation, None) for observation in (first, second)]
+            if self.track_status == "tracking":
+                raise FusionRefusal("reacquisition_not_needed", "The track is not lost")
+            if when[1] != when[0] + 1 or second.sensor_id != first.sensor_id:
+                raise FusionRefusal("reacquisition_needs_consecutive_readings",
+                                    "Two-point reacquisition needs consecutive readings from one sensor")
+            if self.tick is not None and when[0] < self.tick:
+                raise FusionRefusal("out_of_order", "Reacquisition readings are older than the session clock")
+        except FusionRefusal as refusal:
+            for entry in entries:
+                entry["disposition"] = f"refused:{refusal.code}"
+            raise
         R1, R2 = np.asarray(first.covariance), np.asarray(second.covariance)
         dt = self.dt
         velocity = (np.asarray(second.value) - np.asarray(first.value)) / dt
         self.x = np.concatenate([second.value, velocity])
         self.P = np.block([[R2, R2 / dt], [R2 / dt, (R1 + R2) / dt ** 2 + self.q * dt / 3 * np.eye(2)]])
-        self.tick, self.track_status = second.tick, "tracking"
+        self.tick, self.track_status = when[1], "tracking"
+        self._innovations = []
+        self._lineage = list(dict.fromkeys((first.calibration_id, second.calibration_id)))
         for entry in entries:
             entry["disposition"] = "reacquired"
-        return self._issue((first.digest, second.digest), (), (first.calibration_id, second.calibration_id))
+        return self._issue((first.digest, second.digest))
 
     def admit(self, candidate, *, expected_frame_id=None, nis_probability=None,
               max_position_std=None) -> AdmittedState:
-        """Admit a candidate only after every declared consistency check passes."""
+        """Admit a candidate only after every declared consistency check passes.
+
+        Admission certifies the innovations the candidate carries, so later
+        candidates carry only innovations fused after it.
+        """
         declared = {"expected_frame_id": expected_frame_id, "nis_probability": nis_probability,
                     "max_position_std": max_position_std}
         code, passed = admission_verdict(self, candidate, declared)
@@ -477,4 +537,5 @@ class FusionSession:
             raise FusionRefusal(code, f"Admission refused at check {len(passed) + 1}: {code}")
         admitted = AdmittedState(candidate, passed, declared, dict(self.authority), _token=_GATE_TOKEN)
         self.admitted.append(admitted)
+        self._innovations = []
         return admitted

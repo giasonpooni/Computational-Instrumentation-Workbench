@@ -31,7 +31,8 @@ from .registry import task
 from .sensor_fusion_bench import (H_POS, batch_posterior, batch_posterior_banded, chi2_quantile, consistency,
                                   cv_model, exact_scalar_filter, gain_schedule, generator, measure,
                                   mismatch_moments, nees_series, run_shared, simulate_truth)
-from .sensor_fusion_common import (DECLARED_WORKLOAD, MU0, P0_BENCH, R_CAMERA, TESTS, TOL_EXACT, TOL_MC, as_json,
+from .sensor_fusion_common import (DECLARED_WORKLOAD, MU0, P0_BENCH, R_CAMERA, TESTS, TOL_EXACT, TOL_MC,
+                                   TOL_ROUNDOFF, as_json,
                                    bonferroni, check, covariance_z, exact, files, generator_basis, identity, is_not,
                                    mc95, outcome, refusal, refusal_code, roundoff, run_mean_z, unreal)
 from .sensor_fusion_objects import (ADMISSION_CHECKS, DEFAULT_AUTHORITY, SYNTHETIC_AUTHORITY, AdmittedState,
@@ -344,15 +345,23 @@ def track_lost_study(seed: int = 73_2026, active: int = 30, radius: float = 1.0,
     # A refused fuse must leave the estimate, clock and status exactly as they were.
     unchanged = (bool(np.array_equal(before[0], session.x) and np.array_equal(before[1], session.P))
                  and (session.tick, session.track_status) == before[2:])
-    codes["reacquire_gap"] = refusal_code(lambda: session.reacquire(obs[first + 1], obs[first + 3]))
-    codes["reacquire_older_than_clock"] = refusal_code(
-        lambda: session.reacquire(obs[observed_lost - 1], obs[observed_lost]))
+    refused_entries = []
+
+    def refused_reacquisition(first_obs, second_obs):
+        """Refusal code of a reacquisition, keeping the log entries it wrote."""
+        start = len(session.log)
+        code = refusal_code(lambda: session.reacquire(first_obs, second_obs))
+        refused_entries.extend(entry["disposition"] for entry in session.log[start:])
+        return code
+
+    codes["reacquire_gap"] = refused_reacquisition(obs[first + 1], obs[first + 3])
+    codes["reacquire_older_than_clock"] = refused_reacquisition(obs[observed_lost - 1], obs[observed_lost])
     clock_after_refusals = session.tick
     reacquired = session.reacquire(obs[first + 1], obs[first + 2])
     formula = two_point_covariance(R_CAMERA, R_CAMERA, DT, Q_SPECTRAL)
     error_map = two_point_error_map(R_CAMERA, R_CAMERA, DT, Q_SPECTRAL)
     reacquire_error = float(np.max(np.abs(np.asarray(reacquired.covariance) - error_map)) / np.max(np.abs(error_map)))
-    codes["reacquire_while_tracking"] = refusal_code(lambda: session.reacquire(obs[first + 2], obs[first + 3]))
+    codes["reacquire_while_tracking"] = refused_reacquisition(obs[first + 2], obs[first + 3])
     resumed = session.fuse(obs[first + 3])
     codes["admit_after_reacquisition"] = refusal_code(lambda: session.admit(resumed, **ADMIT))
     dispositions = [entry["disposition"] for entry in session.log[active:]]
@@ -411,6 +420,8 @@ def track_lost_study(seed: int = 73_2026, active: int = 30, radius: float = 1.0,
             "clock_after_refusals": clock_after_refusals, "reacquire_covariance_error": reacquire_error,
             "formula_vs_error_map": float(np.max(np.abs(formula - error_map)) / np.max(np.abs(error_map))),
             "dispositions": {d: dispositions.count(d) for d in sorted(set(dispositions))},
+            "reacquisition_readings_left_recorded": refused_entries.count("recorded"),
+            "refused_reacquisition_readings": sum(d.startswith("refused:") for d in refused_entries),
             "two_point": {"runs": mc_runs, "max_abs_z": float(np.max(np.abs(z_two))), "z_critical": bonferroni(11),
                           "nees_mean": float(nees.mean()), "nees_z": nees_z, "sample": S, "formula": formula},
             "turn": {"omega_rad_s": omega, "speed_m_s": float(np.linalg.norm(x_active[2:])),
@@ -421,7 +432,7 @@ def track_lost_study(seed: int = 73_2026, active: int = 30, radius: float = 1.0,
 
 
 @task("T073", changed_files=files("sensor_fusion_admission"), regression_tests=_tests(
-    "T073", "test_track_lost_prediction_refusals_and_reacquisition"))
+    "T073", "test_track_lost_prediction_refusals_and_reacquisition", "test_refused_reacquisition_marks_both_readings"))
 def track_lost(ctx):
     study = track_lost_study()
     seed, codes, two, turn = study["seed"], study["codes"], study["two_point"], study["turn"]
@@ -446,9 +457,11 @@ def track_lost(ctx):
                 tolerance={"abs": 1e-9, "rel": 1e-9}),
         finding("A lost track is not admissible and cannot be updated, and the refused update leaves the state, "
                 "covariance and clock unchanged; reacquisition is explicit, needs two consecutive readings no older "
-                "than the session clock, and is refused while tracking", "computational_pipeline",
+                "than the session clock, and is refused while tracking; both readings of a refused "
+                "reacquisition are retained with its refusal code", "computational_pipeline",
                 {**codes, "refused_fuse_left_state_unchanged": study["refused_fuse_left_state_unchanged"],
-                 "clock_after_refusals": study["clock_after_refusals"], "dispositions": study["dispositions"]},
+                 "clock_after_refusals": study["clock_after_refusals"], "dispositions": study["dispositions"],
+                 "refused_reacquisition_readings": study["refused_reacquisition_readings"]},
                 {"derivation": "FusionSession.fuse, reacquire and the admission gate", "checks": [
                     refusal("admit a lost-track candidate", "track_lost", codes["admit_lost"]),
                     refusal("fuse into a lost track", "track_lost_requires_reacquisition", codes["fuse_lost"]),
@@ -462,7 +475,11 @@ def track_lost(ctx):
                           study["clock_after_refusals"] - study["observed_lost_tick"], 0),
                     refusal("reacquire while tracking", "reacquisition_not_needed", codes["reacquire_while_tracking"]),
                     check("invariant", "admission of the first update after reacquisition refused",
-                          is_not(codes["admit_after_reacquisition"], "none"), 0.0)]},
+                          is_not(codes["admit_after_reacquisition"], "none"), 0.0),
+                    check("exact_arithmetic", "readings of the three refused reacquisitions not marked refused",
+                          6 - study["refused_reacquisition_readings"], 0),
+                    check("exact_arithmetic", "readings of a reacquisition left with disposition 'recorded'",
+                          study["reacquisition_readings_left_recorded"], 0)]},
                 uncertainty=exact("refusal codes and bitwise state comparison"), tolerance=TOL_EXACT),
         finding("The two-point reacquisition covariance [[R, R/dt], [R/dt, 2R/dt^2 + q dt/3 I]] is exact for the "
                 "constant-velocity truth", "numerical",
@@ -541,7 +558,8 @@ def track_lost(ctx):
         "failure_modes_checked": ["off-by-one in the loss tick", "fusion into a lost track", "side effects of a "
                                   "refused fusion", "admission of a lost track", "reacquisition from "
                                   "non-consecutive readings", "reacquisition moving the clock backwards",
-                                  "redundant reacquisition", "unmodelled manoeuvre during the gap"],
+                                  "redundant reacquisition", "a refused reacquisition leaving a reading marked "
+                                  "recorded", "unmodelled manoeuvre during the gap"],
         "unresolved_assumptions": ["Under the correct model a coasting track stays consistent (T069); the radius "
                                    "rule is a policy for model validity and data association, not a statistical "
                                    "necessity.",
@@ -635,14 +653,15 @@ def analytic_ground_truth(ctx):
                 "K = 10 and 40, by a dense solve with no recursion over time", "numerical",
                 {"comparisons": study["comparisons"], "dense": study["dense"]},
                 {**generator_basis(seed), "checks": [
-                    check("analytic", "max relative mean difference against the block-eliminated batch posterior",
-                          study["max_mean_difference"], 1e-9),
-                    check("analytic", "max relative covariance difference against the block-eliminated batch "
-                                      "posterior", study["max_covariance_difference"], 1e-9),
-                    check("analytic", "dense normal equations against the filter at K = 10 and 40",
+                    # Filter, block elimination and dense solve are all ciw code: same-origin agreement.
+                    check("cross_implementation", "max relative mean difference against the block-eliminated "
+                                                  "batch posterior", study["max_mean_difference"], 1e-9),
+                    check("cross_implementation", "max relative covariance difference against the block-eliminated "
+                                                  "batch posterior", study["max_covariance_difference"], 1e-9),
+                    check("cross_implementation", "dense normal equations against the filter at K = 10 and 40",
                           study["dense_vs_filter"], 1e-9),
-                    check("invariant", "dense normal equations against block elimination at K = 10 and 40",
-                          study["dense_vs_banded"], 1e-9)]},
+                    check("cross_implementation", "dense normal equations against block elimination at K = 10 "
+                                                  "and 40", study["dense_vs_banded"], 1e-9)]},
                 uncertainty=roundoff(max(study["max_mean_difference"], study["max_covariance_difference"],
                                          study["dense_vs_filter"]),
                                      "largest relative difference between the filter and the batch posteriors"),
@@ -693,7 +712,9 @@ def analytic_ground_truth(ctx):
                             f"ANEES inside {study['nees']['fraction_inside']:.2f} of ticks, grand NEES "
                             f"{study['nees']['grand_mean']:.3f}.",
         "uncertainty": "Floating-point agreement is limited by the conditioning of the information matrix; the "
-                       "rational comparison has no roundoff; NEES consistency carries Monte Carlo error.",
+                       "rational comparison has no roundoff; NEES consistency carries Monte Carlo error. The "
+                       "filter, block elimination and dense solve are all ciw code, so their agreement is recorded "
+                       "as cross_implementation (same origin), not as independent verification.",
         "failure_modes_checked": ["recursion vs batch disagreement", "covariance vs information inverse",
                                   "roundoff hiding a discrepancy (exact arithmetic)", "NEES inconsistency"],
         "unresolved_assumptions": ["Equality with the batch posterior validates the algebra for the declared "
@@ -734,7 +755,8 @@ def _admission_scenarios():
         # access, the internal state of a writable one: only the writable check stands between them.
         session, candidate = tracked()
         frozen = FusionSession(read_only=True, dt=DT, q=Q_SPECTRAL)
-        for name in ("x", "P", "tick", "track_status", "calibrations", "revoked", "_issued", "_latest"):
+        for name in ("x", "P", "tick", "track_status", "calibrations", "revoked", "_issued", "_latest",
+                     "_innovations", "_lineage"):
             setattr(frozen, name, getattr(session, name))
         return frozen, candidate, dict(ADMIT)
 
@@ -796,21 +818,64 @@ def _admission_scenarios():
         outlier = tuple(np.asarray(z[10]) + 3.0)
         return session, session.fuse(Observation("camera", "world", 11, outlier, R_CAMERA, "cam-cal")), dict(ADMIT)
 
+    def innovation_then_predict():
+        # The outlier's update candidate is refused; the prediction issued after it inherits the innovation.
+        session, _ = tracked()
+        outlier = tuple(np.asarray(z[10]) + 3.0)
+        session.fuse(Observation("camera", "world", 11, outlier, R_CAMERA, "cam-cal"))
+        return session, session.predict(12), dict(ADMIT)
+
     def calibration():
         session, candidate = tracked()
         session.revoke_calibration("cam-cal")
         return session, candidate, dict(ADMIT)
+
+    def calibration_then_predict():
+        # A prediction issued after the revocation inherits the calibrations its state was built under.
+        session, _ = tracked()
+        session.revoke_calibration("cam-cal")
+        return session, session.predict(session.tick + 1), dict(ADMIT)
 
     return {"declared": ("declared", declared_missing), "writable": ("writable", writable),
             "typed": ("typed", typed), "finite": ("finite", finite), "covariance": ("covariance", covariance),
             "integrity": ("integrity", integrity), "provenance": ("provenance", provenance),
             "frame": ("frame", frame), "stale_tick": ("fresh", stale), "superseded_same_tick": ("fresh", superseded),
             "track": ("track", track), "uncertainty": ("uncertainty", uncertainty),
-            "innovation": ("innovation", innovation), "calibration": ("calibration", calibration)}, tracked
+            "innovation": ("innovation", innovation),
+            "prediction_after_inconsistent_update": ("innovation", innovation_then_predict),
+            "calibration": ("calibration", calibration),
+            "prediction_after_revocation": ("calibration", calibration_then_predict)}, tracked, z
+
+
+def inheritance_study(tracked, z) -> dict:
+    """What later candidates inherit: an inconsistent innovation keeps later updates out until an explicit
+    re-initialization, and an admission certifies the innovations it carried."""
+    outlier = tuple(np.asarray(z[10]) + 3.0)
+    session, _ = tracked()
+    session.fuse(Observation("camera", "world", 11, outlier, R_CAMERA, "cam-cal"))
+    update = session.fuse(Observation("camera", "world", 12, tuple(z[11]), R_CAMERA, "cam-cal"))
+    codes = {"update_after_outlier": refusal_code(lambda: session.admit(update, **ADMIT))}
+    # Recovery is explicit: a declared re-initialization, after which a consistent update is admissible.
+    session.initialize(session.x, P0_BENCH, session.tick)
+    recovered = session.fuse(Observation("camera", "world", 13, tuple(z[12]), R_CAMERA, "cam-cal"))
+    codes["update_after_reinitialization"] = refusal_code(lambda: session.admit(recovered, **ADMIT))
+    revoked, _ = tracked()
+    revoked.revoke_calibration("cam-cal")
+    prediction = revoked.predict(11)
+    fresh, candidate = tracked()
+    carried_before = len(candidate.nis)
+    fresh.admit(candidate, **ADMIT)
+    after = fresh.fuse(Observation("camera", "world", 11, tuple(z[10]), R_CAMERA, "cam-cal"))
+    return {"codes": codes, "update_after_outlier_innovations": len(update.nis),
+            "update_after_outlier_max_nis": max(value for value, _ in update.nis),
+            "update_after_outlier_own_nis": update.nis[-1][0],
+            "innovations_carried_before_admission": carried_before,
+            "innovations_carried_after_admission": len(after.nis),
+            "calibrations_carried_by_prediction_after_revocation": list(prediction.calibration_ids)}
 
 
 def admission_study() -> dict:
-    scenarios, tracked = _admission_scenarios()
+    scenarios, tracked, z = _admission_scenarios()
     codes = {name: code for name, code, _ in ADMISSION_CHECKS}
     rows = {}
     for scenario, (check_name, build) in scenarios.items():
@@ -851,20 +916,24 @@ def admission_study() -> dict:
             "auto_admitted_before_gate": auto, "admitted_after_gate": len(session.admitted),
             "admitted_checks": list(admitted.checks), "admitted_authority": dict(admitted.authority),
             "admitted_digest_matches_candidate": admitted.candidate_digest == candidate.digest,
-            "type_relations_true": sum(relations), "mutations": mutations}
+            "type_relations_true": sum(relations), "mutations": mutations,
+            "inheritance": inheritance_study(tracked, z)}
 
 
 @task("T075", changed_files=files("sensor_fusion_admission"), regression_tests=_tests(
-    "T075", "test_typed_objects_and_admission_mutations"))
+    "T075", "test_typed_objects_and_admission_mutations",
+    "test_candidates_inherit_inconsistent_innovations_and_revocations"))
 def typed_admission(ctx):
     study = admission_study()
     ctx.artifact_json("admission_mutations.json", as_json(study))
     rows, total = study["rows"], study["scenarios"]
     checks = len(study["checks"])
     mutations = study["mutations"]
+    inherited = study["inheritance"]
     findings = [
         finding("Every admission check refuses the candidates built to violate it, with that check's own refusal "
-                "code, including a candidate superseded by a second update at the same tick", "computational_pipeline",
+                "code, including a candidate superseded by a second update at the same tick and predictions issued "
+                "after an inconsistent update or after a calibration revocation", "computational_pipeline",
                 {name: {k: row[k] for k in ("check", "expected", "full_gate")} for name, row in rows.items()},
                 {"derivation": "ADMISSION_CHECKS in ciw.lab.sensor_fusion_objects", "checks": [
                     refusal(f"admission of a candidate in scenario '{name}' (check '{row['check']}')", row["expected"],
@@ -886,6 +955,25 @@ def typed_admission(ctx):
                     refusal("forged candidate with the provenance check deleted", "stale_candidate",
                             rows["provenance"]["without_this_check"])]},
                 uncertainty=exact("deterministic gate outcomes"), tolerance=TOL_EXACT),
+        finding("A candidate carries every innovation fused since the last admitted, initialized or reacquired state "
+                "and every calibration its state was built under since the last initialization or reacquisition: "
+                "after an inconsistent update a later consistent update is still refused until an explicit "
+                "re-initialization, a prediction after a revocation cites the revoked calibration, and after an "
+                "admission the next candidate carries only the innovations fused after it", "computational_pipeline",
+                inherited,
+                {"derivation": "FusionSession._issue, fuse, initialize, reacquire and admit", "checks": [
+                    refusal("admission of an update fused after the inconsistent one", "inconsistent_innovation",
+                            inherited["codes"]["update_after_outlier"]),
+                    refusal("admission of an update after an explicit re-initialization", "none",
+                            inherited["codes"]["update_after_reinitialization"]),
+                    check("invariant", "prediction after the revocation does not cite the revoked calibration",
+                          is_not(inherited["calibrations_carried_by_prediction_after_revocation"], ["cam-cal"]), 0.0),
+                    check("exact_arithmetic", "innovations carried by the first update after an admission minus one",
+                          inherited["innovations_carried_after_admission"] - 1, 0),
+                    check("exact_arithmetic", "innovations carried by the admitted candidate minus the ten fused",
+                          inherited["innovations_carried_before_admission"] - 10, 0)]},
+                uncertainty=exact("deterministic gate outcomes; the recorded NIS values carry roundoff only"),
+                tolerance=TOL_ROUNDOFF),
         finding("Observations, candidates and admitted states are unrelated types; candidates are never admitted "
                 "automatically; an admitted state exists only through the gate and is immutable",
                 "computational_pipeline",
@@ -913,13 +1001,18 @@ def typed_admission(ctx):
     ]
     fields = {
         "hypothesis": "Keeping observations, candidate states and admitted states as separate types, with a single "
-                      "explicit gate whose every check is load-bearing, guards against a candidate becoming state "
-                      "by accident, naive tampering or omission.",
+                      "explicit gate whose every check is load-bearing and candidates that carry the evidence of "
+                      "every update their state depends on, guards against a candidate becoming state by accident, "
+                      "naive tampering or omission, including a prediction issued after an inconsistent update.",
         "mathematical_model": "Admission = ordered conjunction of declared checks (declared, writable, typed, "
                               "finite, covariance, integrity, provenance, frame, fresh, track, uncertainty, "
                               "innovation, calibration); fresh means the most recently issued candidate at the "
-                              "session tick; fail closed on any exception. Mutation m_i removes check i.",
-        "input_data": ["one synthetic camera run (seed 752026) driving a FusionSession for each scenario",
+                              "session tick; the innovation check covers every innovation since the last admitted, "
+                              "initialized or reacquired state and the calibration check every calibration since the "
+                              "last initialization or reacquisition; fail closed on any exception. Mutation m_i "
+                              "removes check i.",
+        "input_data": ["one synthetic camera run (seed 752026) driving a FusionSession for each scenario and for the "
+                       "inheritance sequence",
                        f"{total} violation scenarios covering all {checks} checks, plus one valid control"],
         "observation_model": "Typed Observation objects; candidates issued by the session and sealed by a content "
                              "digest.",
@@ -927,7 +1020,8 @@ def typed_admission(ctx):
                               "gives a different outcome; no admission without an explicit gate call; AdmittedState "
                               "immutable.",
         "experiment": "Build each violating candidate (private state corruption simulates internal faults), run "
-                      "the full gate and the gate with the targeted check deleted, and exercise construction and "
+                      "the full gate and the gate with the targeted check deleted, follow an outlier update with a "
+                      "prediction, a later update and an explicit re-initialization, and exercise construction and "
                       "mutation of each type.",
         "numerical_result": f"{study['refused_as_expected']}/{total} scenarios refused with the expected code; "
                             f"{study['killed']}/{total} mutants killed; in {study['sole_guard']} scenarios the "
@@ -938,11 +1032,17 @@ def typed_admission(ctx):
         "failure_modes_checked": ["subclass imposter", "tampered mean with a stale digest", "forged digest",
                                   "NaN state", "indefinite covariance", "candidate stale by tick",
                                   "candidate superseded at the same tick", "lost track", "excess uncertainty",
-                                  "inconsistent innovation", "revoked calibration", "read-only session",
-                                  "missing declaration", "frame mismatch"],
+                                  "inconsistent innovation", "prediction issued after an inconsistent update",
+                                  "revoked calibration", "prediction issued after a revocation",
+                                  "read-only session", "missing declaration", "frame mismatch"],
         "unresolved_assumptions": ["Python objects can be forced (object.__setattr__) by code with that intent; the "
                                    "gate defends against accident and naive tampering, not a hostile process.",
-                                   "The declared thresholds are inputs; choosing them is outside this experiment."],
+                                   "The declared thresholds are inputs; choosing them is outside this experiment.",
+                                   "The innovation check applies the declared quantile to each carried innovation, so "
+                                   "a consistent track with n innovations since its last admission is refused with "
+                                   "probability 1 - p^n; frequent admission keeps n small.",
+                                   "After an inconsistent innovation the only recovery is explicit: re-initialization, "
+                                   "or reacquisition once the track is declared lost."],
         "recommended_next_task": "T076: confirm that the session defaults to read-only with sensor fusion and state "
                                  "admission not performed.",
     }
@@ -1059,9 +1159,10 @@ def read_only_defaults(ctx):
                     check("invariant", "enabled session physical_truth is not not_established",
                           is_not(enabled["physical_truth"], "not_established"), 0.0)]},
                 uncertainty=exact("string comparison of declared constants"), tolerance=TOL_EXACT),
-        unreal("Synthetic fusion output is admissible as production state", "production_acceptance", 76_2026,
+        unreal("Synthetic fusion output is admissible as production state", "production_acceptance", None,
                "not established: sensor_fusion and state_admission are not_performed by default and synthetic_only "
-               "when enabled"),
+               "when enabled", source="default-argument and refusal audit of FusionSession against "
+                                      "ciw.declared_workload.AUTHORITY; no synthetic draws"),
     ]
     fields = {
         "hypothesis": "The fusion API cannot estimate, fuse or admit anything unless a caller constructs a writable "

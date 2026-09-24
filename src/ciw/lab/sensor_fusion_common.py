@@ -71,6 +71,22 @@ def mc95(standard_error, basis: str) -> dict:
     return uncertainty("monte_carlo_95ci", 1.96 * float(standard_error), basis)
 
 
+def max_abs_z_spread(family: int, what: str) -> dict:
+    """Null sampling spread of a reported max |z| over ``family`` standardized moments.
+
+    Half-width of the central 95% interval of max |Z_i| for ``family``
+    independent standard normals, whose CDF is (2 Phi(x) - 1)^family: how far
+    the reported maximum moves between seeds when the model holds. It depends
+    on the family size, not on a fixed 1.96.
+    """
+    def quantile(u):
+        return normal_quantile(0.5 + 0.5 * u ** (1.0 / family))
+    return uncertainty("monte_carlo_95ci", 0.5 * (quantile(0.975) - quantile(0.025)),
+                       f"null sampling spread of the reported max |z| over {family} {what}: half-width of the central "
+                       "95% interval of the maximum of that many independent |N(0, 1)| (dependence among the "
+                       "moments changes it)")
+
+
 def roundoff(value, basis: str = "observed floating-point residual of an exact identity") -> dict:
     return uncertainty("roundoff", abs(float(value)), basis)
 
@@ -137,12 +153,18 @@ def as_json(value):
     return value
 
 
-def unreal(claim, domain, seed, statement) -> dict:
+def unreal(claim, domain, seed, statement, *, source=None) -> dict:
     """A real-world conclusion the synthetic bench invites but cannot support.
 
-    Physical and authority domains are ``not_established`` whatever the basis;
-    the generator is recorded so the report shows where the numbers came from.
+    Physical and authority domains are ``not_established`` whatever the basis.
+    With a ``seed`` the generator is recorded so the report shows where the
+    numbers came from; a task that ran no generator passes ``seed=None`` and
+    names what it did examine in ``source``.
     """
+    if seed is None:
+        if not source:
+            raise ValueError("A finding without a generator must name its source")
+        return finding(claim, domain, statement, {"derivation": source, "notes": "no acquisition"})
     return finding(claim, domain, statement, {**generator_basis(seed), "notes": "synthetic draws only; no acquisition"})
 
 
