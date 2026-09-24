@@ -105,6 +105,48 @@ def test_report_answers_all_nineteen_questions_and_rejects_forged_status():
         report.build_report(task, "completed", {"evidence_status": "analytic"}, [record])
 
 
+def test_reports_refuse_a_wrong_shape_by_name_even_when_resealed():
+    task = load_queue()["tasks"][0]
+    record = finding("rate", "numerical", 4.0, {"generator": {"name": "g"}, "checks": [CHECK]})
+    built = report.build_report(task, "completed", {"hypothesis": "h"}, [record])
+
+    def resealed(**changes):
+        edited = json.loads(json.dumps(built))
+        edited.update(changes)
+        for name in [name for name, value in changes.items() if value is None]:
+            del edited[name]
+        edited["report_id"] = report.report_identity(edited)
+        return edited
+
+    for bad in ([], None, "report"):
+        with pytest.raises(EvidenceRefusal, match="Expected"):
+            report.validate_report(bad)
+    with pytest.raises(EvidenceRefusal, match="Expected"):
+        report.validate_report(resealed(schema="ciw.lab-report.v0"))
+    with pytest.raises(EvidenceRefusal, match="missing required fields"):
+        report.validate_report(resealed(hypothesis=None))
+    with pytest.raises(EvidenceRefusal, match="state must be one of"):
+        report.validate_report(resealed(state="finished"))
+    with pytest.raises(EvidenceRefusal, match="findings must be a list"):
+        report.validate_report(resealed(findings={}))
+    relabelled = dict(built["evidence_status"], primary="independently_verified")
+    with pytest.raises(EvidenceRefusal, match="evidence status differs"):
+        report.validate_report(resealed(evidence_status=relabelled))
+    with pytest.raises(EvidenceRefusal, match="Unknown report fields"):
+        report.build_report(task, "completed", {"hypotesis": "h"}, [record])
+
+
+def test_rendered_reports_show_label_counts_and_cut_long_cells_at_the_limit():
+    task = load_queue()["tasks"][0]
+    record = finding("rate", "numerical", 4.0, {"generator": {"name": "g"}, "checks": [CHECK]})
+    lines = report.render_markdown(report.build_report(task, "completed", {}, [record])).splitlines()
+    status = next(line for line in lines if line.startswith("- **") and "`numerically_verified` (findings" in line)
+    assert "findings — numerically_verified: 1;" in status
+    assert report._inline("x" * 600) == "x" * 600
+    assert report._inline("x" * 601) == "x" * 599 + "…"
+    assert report._inline("a|b\nc") == "a\\|b c"
+
+
 def test_completed_task_cannot_hide_an_unestablished_computational_finding():
     task = load_queue()["tasks"][0]
     unsupported = finding("claim", "numerical", 1.0, {})
