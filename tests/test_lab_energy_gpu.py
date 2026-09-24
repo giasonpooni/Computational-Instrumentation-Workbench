@@ -8,13 +8,16 @@ build the kernel.
 import hashlib
 import json
 from datetime import datetime, timedelta
+from pathlib import Path
+import platform
+import sys
 
 import numpy as np
 import pytest
 
 from ciw import energy_records
 from ciw.lab import energy_gpu, energy_gpu_kernels as kernels, energy_gpu_telemetry as telemetry, runner
-from ciw.lab.evidence import COMPUTATIONAL_DOMAINS, PHYSICAL_DOMAINS
+from ciw.lab.evidence import COMPUTATIONAL_DOMAINS, PHYSICAL_DOMAINS, EvidenceRefusal, supported_label
 from ciw.lab.registry import load_queue, section_implementations
 from ciw.lab.report import validate_report
 from ciw.telemetry import canonical
@@ -24,6 +27,8 @@ IMPLEMENTATIONS = section_implementations("energy-gpu")
 TASK_IDS = [f"T{number}" for number in range(115, 126)]
 ENVIRONMENT = (telemetry.LOG_ENV, telemetry.SMI_ENV, telemetry.SMI_OFFSET_ENV, telemetry.RAPL_ENV)
 needs_fixtures = pytest.mark.skipif(telemetry.fixture_bytes() is None, reason="repository fixtures unreachable")
+# The runner's real probe, captured before the module-scoped fixture forces probes off.
+REAL_PROBE_HARDWARE = runner._probe_hardware
 
 
 def run(task_id, context):
@@ -45,6 +50,7 @@ def lab(tmp_path_factory):
             reports[task_id] = run(task_id, context)
         return reports[task_id]
 
+    get.context = context
     yield get
     patch.undo()
 
@@ -104,9 +110,14 @@ def test_every_numerical_finding_declares_uncertainty_and_tolerance(lab):
     for task_id in TASK_IDS:
         for record in lab(task_id)["findings"]:
             if record["domain"] in COMPUTATIONAL_DOMAINS and record["evidence_status"] != "not_established":
-                assert record["uncertainty"] is not None, (task_id, record["claim"])
+                uncertainty = record["uncertainty"]
+                assert uncertainty is not None, (task_id, record["claim"])
+                # A declared uncertainty states a number, not only a kind.
+                assert not isinstance(uncertainty, dict) or uncertainty.get("value") is not None, (task_id, record["claim"])
                 if record["evidence_status"] != "analytic" and isinstance(record["value"], (int, float, list, dict)):
                     assert "regression_tolerance" in record or record["domain"] != "numerical", (task_id, record["claim"])
+                # rel >= 1 would accept any decrease down to zero: a one-sided vacuous regression tolerance.
+                assert record.get("regression_tolerance", {}).get("rel", 0.0) < 1.0, (task_id, record["claim"])
 
 
 def test_cpu_energy_task_counts_work_and_leaves_energy_unestablished(lab):
@@ -128,7 +139,7 @@ def test_cpu_energy_task_counts_work_and_leaves_energy_unestablished(lab):
     assert not any("time" in f["claim"].lower() for f in report["findings"])
 
 
-def test_lab_run_never_reads_energy_counters(tmp_path, clean_environment):
+def test_lab_run_acquires_no_energy_measurement(tmp_path, clean_environment):
     """Even where RAPL answers the probe, T115 reads no counter without an operator capture."""
     def refuse(domains):
         raise AssertionError("the lab runner read an energy counter")
@@ -138,6 +149,62 @@ def test_lab_run_never_reads_energy_counters(tmp_path, clean_environment):
     report = run("T115", runner.Context(tmp_path))
     assert report["state"] == "partial" and physical_labels(report) == {"not_established"}
     assert "no RAPL capture was supplied" in by_claim(report, energy_gpu.GROSS_CPU)["basis"]["notes"][0]
+
+
+def simulated_rapl_capture(tmp_path, monkeypatch, host):
+    """An operator capture made with simulated counters (1 -> 10 J over the workload, 0.5 J over the idle bracket)."""
+    domain = {"zone": "intel-rapl:0", "name": "package-0", "path": "unused", "max_energy_range_uj": 262143328850}
+    readings = iter([[1_000_000], [10_000_000], [10_000_000], [10_500_000]])
+    with monkeypatch.context() as patch:
+        patch.setattr(telemetry, "rapl_domains", lambda root=None, separator=":": [domain])
+        patch.setattr(telemetry, "rapl_read", lambda domains: next(readings))
+        patch.setattr(telemetry, "rapl_host_identity", lambda root=None, separator=":": dict(host))
+        record = telemetry.capture_rapl(tmp_path / "captured.json", repeats=1, sleep=lambda seconds: None)
+    # Fix the brackets' durations so the idle rescaling is deterministic.
+    for bracket in ("workload_bracket", "idle_bracket"):
+        record[bracket]["elapsed_monotonic_ns"] = 400_000_000
+    capture = tmp_path / "capture.json"
+    capture.write_text(json.dumps(record), encoding="utf-8")
+    return record, capture
+
+
+@pytest.mark.skipif(sys.platform == "win32", reason="powercap zone directories contain ':'")
+def test_rapl_probe_is_the_only_counter_read(tmp_path, clean_environment):
+    """The runner's real hardware:rapl probe on a simulated powercap tree is T115's only counter access.
+
+    Without a capture nothing reads energy_uj; with one, the probe reads the
+    simulated counter to confirm readability and its value enters no result.
+    """
+    monkeypatch = clean_environment
+    zone = tmp_path / "powercap" / "intel-rapl:0"
+    zone.mkdir(parents=True)
+    (zone / "energy_uj").write_text("987654321\n", encoding="utf-8")
+    (zone / "name").write_text("package-0\n", encoding="utf-8")
+    monkeypatch.setattr(runner, "POWERCAP", tmp_path / "powercap")
+    monkeypatch.setattr(runner, "_probe_hardware", REAL_PROBE_HARDWARE)
+    reads = []
+    read_text = Path.read_text
+
+    def spy(self, *args, **kwargs):
+        if self.name == "energy_uj":
+            reads.append(self)
+        return read_text(self, *args, **kwargs)
+
+    monkeypatch.setattr(Path, "read_text", spy)
+    report = run("T115", runner.Context(tmp_path / "no-capture"))
+    assert reads == [] and physical_labels(report) == {"not_established"}
+    host = {"cpu_model": "Simulated CPU", "machine": "x86_64", "system": "Linux", "zones": ["intel-rapl:0 package-0"]}
+    record, capture = simulated_rapl_capture(tmp_path, monkeypatch, host)
+    monkeypatch.setattr(telemetry, "rapl_host_identity", lambda root=None, separator=":": dict(host))
+    monkeypatch.setenv(telemetry.RAPL_ENV, str(capture))
+    reads.clear()
+    report = run("T115", runner.Context(tmp_path / "capture"))
+    assert reads == [zone / "energy_uj"]  # the probe, once
+    assert report["provider_runtime_identity"]["requirement_probes"]["hardware:rapl"] is True
+    gross = by_claim(report, energy_gpu.GROSS_CPU)
+    assert gross["evidence_status"] == "hardware_measured"
+    assert gross["value"] == pytest.approx(9.0 / len(kernels.HEADINGS))  # from the capture, not the probed counter
+    assert "987654321" not in json.dumps(report)
 
 
 def test_rapl_helpers_read_counters_and_one_wrap(tmp_path):
@@ -160,21 +227,11 @@ def test_rapl_helpers_read_counters_and_one_wrap(tmp_path):
 def test_rapl_capture_is_analyzed_read_only_and_gated(tmp_path, clean_environment):
     """A simulated operator capture: gross and idle-subtracted energy, retained raw bytes, identity gate."""
     monkeypatch = clean_environment
-    domain = {"zone": "intel-rapl:0", "name": "package-0", "path": "unused", "max_energy_range_uj": 262143328850}
     host = {"cpu_model": "Simulated CPU", "machine": "x86_64", "system": "Linux", "zones": ["intel-rapl:0 package-0"]}
-    readings = iter([[1_000_000], [10_000_000], [10_000_000], [10_500_000]])
-    monkeypatch.setattr(telemetry, "rapl_domains", lambda root=None, separator=":": [domain])
-    monkeypatch.setattr(telemetry, "rapl_read", lambda domains: next(readings))
-    monkeypatch.setattr(telemetry, "rapl_host_identity", lambda root=None, separator=":": dict(host))
-    captured = tmp_path / "captured.json"
-    record = telemetry.capture_rapl(captured, repeats=1, sleep=lambda seconds: None)
+    record, capture = simulated_rapl_capture(tmp_path, monkeypatch, host)
     with pytest.raises(ValueError, match="Refusing to overwrite"):
-        telemetry.capture_rapl(captured, repeats=1)
-    # Fix the brackets' durations so the idle rescaling is deterministic.
-    for bracket in ("workload_bracket", "idle_bracket"):
-        record[bracket]["elapsed_monotonic_ns"] = 400_000_000
-    capture = tmp_path / "capture.json"
-    capture.write_text(json.dumps(record), encoding="utf-8")
+        telemetry.capture_rapl(tmp_path / "captured.json", repeats=1)
+    monkeypatch.setattr(telemetry, "rapl_host_identity", lambda root=None, separator=":": dict(host))
     monkeypatch.setenv(telemetry.RAPL_ENV, str(capture))
     monkeypatch.setattr(runner, "_probe_hardware", lambda name: name == "rapl")
     context = runner.Context(tmp_path / "out")
@@ -214,6 +271,12 @@ def test_gpu_tasks_are_blocked_with_the_recording_protocol(lab, tmp_path, clean_
     t118 = lab("T118")
     assert "TZ=UTC nvidia-smi --query-gpu" in t118["experiment"] and "nsys" in t118["experiment"]
     assert telemetry.SMI_OFFSET_ENV in t118["experiment"]
+    # Kernel-only duration is a named deferred question, not another task's job.
+    assert "nsys stats --report cuda_gpu_kern_sum" in t118["recommended_next_task"]
+    assert "T147" not in t118["recommended_next_task"]
+    # T116's protocol does not run T118 without the sidecar it needs.
+    t116_run = lab("T116")["experiment"].split("(4)")[1]
+    assert "ciw lab run T116 T119" in t116_run and "T118 additionally needs the nvidia-smi sidecar" in t116_run
     assert {f["claim"] for f in t118["findings"]} == set(energy_gpu.T118_UNITS)
     assert {f["claim"] for f in lab("T116")["findings"]} == {energy_gpu.GPU_ENERGY, energy_gpu.NVML_ACCURACY}
     # A GPU host without an operator log, or with an unreadable one, blocks with the same claims.
@@ -281,6 +344,25 @@ def test_operator_log_gate_trust_boundary_is_the_host_identity(tmp_path, clean_e
     assert raw == canonical(log) and entry["sha256"] == acquisition["raw_sha256"]
     assert by_claim(report, energy_gpu.NVML_ACCURACY)["evidence_status"] == "not_established"
     assert report["state"] == "completed"
+    # The pipeline finding recomputes the counter delta and KL from raw data, not by re-running the analysis.
+    pipeline = by_claim(report, "The operator log's measurement counter delta and batch KL values recompute")
+    assert pipeline["evidence_status"] == "numerically_verified"
+    assert pipeline["value"]["recomputed_delta_j"] == pytest.approx(0.2)
+    assert [c["reference_kind"] for c in pipeline["basis"]["checks"]] == ["cross_implementation"] * 2
+
+
+@needs_fixtures
+def test_operator_log_pipeline_check_detects_a_disagreeing_analysis(tmp_path):
+    """The recomputation can fail: an analysis whose gross energy differs from the raw readings is refuted."""
+    log = relabelled_log()
+    raw = canonical(log)
+    analysis = energy_records.analyze(log)
+    analysis["measurement"]["gross_energy_j"] = 0.3
+    context = runner.Context(tmp_path)
+    context.begin("T116")
+    outcome = energy_gpu.operator_log_outcome(context, "T116", raw, log, analysis, dict(log["sensor"]))
+    pipeline = by_claim(outcome, "The operator log's measurement counter delta and batch KL values recompute")
+    assert pipeline["evidence_status"] == "not_established" and outcome["state"] == "partial"
 
 
 def smi_csv(start_utc, rows, offset_hours, newline):
@@ -338,8 +420,11 @@ def test_rust_kernel_matches_python_kernel(lab, tmp_path):
     assert report["state"] == "partial"
     agreement = by_claim(report, energy_gpu.AGREE)
     assert agreement["evidence_status"] == "numerically_verified" and agreement["value"] <= 1e-12
-    kinds = [check["reference_kind"] for check in agreement["basis"]["checks"]]
-    assert kinds == ["cross_implementation", "exact_arithmetic"]
+    # Endpoint agreement carries only the endpoint comparison; the call count is its own finding.
+    assert [check["reference_kind"] for check in agreement["basis"]["checks"]] == ["cross_implementation"]
+    count = by_claim(report, energy_gpu.RUST_COUNT)
+    assert count["evidence_status"] == "numerically_verified"
+    assert count["value"] == 4 * energy_gpu.STEPS * len(kernels.HEADINGS)
     assert by_claim(report, energy_gpu.RUST_ERROR)["value"] < 1e-8
     refusals = by_claim(report, energy_gpu.RUST_REFUSES)
     assert refusals["evidence_status"] == "numerically_verified"
@@ -355,15 +440,34 @@ def test_rust_kernel_matches_python_kernel(lab, tmp_path):
         kernels.run_rust_kernel(identity["executable"], [[1.0, 0.0, 1.0, 0.0]], 1.0, 0)
 
 
-def test_cross_language_agreement_is_not_independent(lab):
+def test_cross_language_agreement_is_not_independent(lab, tmp_path, clean_environment):
+    # Declaring the Rust kernel an independent checker of the Python kernel is refused: both are ciw code.
+    check = {"reference_kind": "high_precision", "reference": "Python RK4 endpoint", "observed": 0.0,
+             "tolerance": 1e-12, "comparison": "abs_le", "passed": True,
+             "producer": {"implementation": "ciw.lab.integrators", "revision": "working-tree"},
+             "checker": {"implementation": "ciw.lab.energy_gpu_kernels.RUST_SOURCE",
+                         "revision": kernels.rust_source_sha256()}}
+    with pytest.raises(EvidenceRefusal, match="share an implementation origin"):
+        supported_label({"independent_check": check}, "numerical")
     report = lab("T117")
-    refusal = by_claim(report, "Declaring the Rust kernel an independent check")
-    assert refusal["evidence_status"] == "numerically_verified"
-    assert refusal["basis"]["checks"][0]["observed_refusal"] == \
-        "independent_check producer and checker share an implementation origin"
     assert all(f["evidence_status"] != "independently_verified" for f in report["findings"])
+    assert not any(f["claim"].startswith("Declaring the Rust kernel") for f in report["findings"])
     for prefix in ("A Julia implementation", "A GPU implementation"):
         assert by_claim(report, prefix)["evidence_status"] == "not_established"
+        assert "was written" in by_claim(report, prefix)["basis"]["notes"][0]
+    # The missing Julia and GPU kernels are stated as such, not blamed on this host.
+    assert energy_gpu.NOT_WRITTEN in report["unresolved_assumptions"]
+    assert "T147" not in report["recommended_next_task"] and "Deferred research question" in report["recommended_next_task"]
+    assert "no NVIDIA GPU answered" in by_claim(report, "A GPU implementation")["basis"]["notes"][0]
+    # On a GPU host with julia on PATH the notes follow the probes and still say no kernel exists.
+    clean_environment.setattr(runner, "_probe_hardware", lambda name: name == "nvidia-gpu")
+    clean_environment.setattr(runner.shutil, "which", lambda name: "/usr/bin/julia" if name == "julia" else None)
+    gpu_host = run("T117", runner.Context(tmp_path))
+    gpu_note = by_claim(gpu_host, "A GPU implementation")["basis"]["notes"][0]
+    assert "an NVIDIA GPU answered" in gpu_note and "no GPU implementation of this kernel was written" in gpu_note
+    assert "julia is on PATH here" in by_claim(gpu_host, "A Julia implementation")["basis"]["notes"][0]
+    assert gpu_host["provider_runtime_identity"]["requirement_probes"] == {"tool:julia": True,
+                                                                          "hardware:nvidia-gpu": True}
     generic = by_claim(report, "Generic Christoffel-symbol RK4")
     assert generic["evidence_status"] == "numerically_verified" and generic["value"] <= 1e-12
     assert generic["basis"]["checks"][0]["reference_kind"] == "cross_implementation"
@@ -381,13 +485,45 @@ def test_energy_per_accepted_result_on_fixtures(lab):
     assert metric["basis"]["checks"][1]["observed"] <= 1e-12  # textbook KL agrees with energy_records
     distinct = by_claim(report, "Energy per distinct accepted result")
     assert distinct["value"] == pytest.approx(0.2) and distinct["evidence_status"] == "numerically_verified"
+    assert distinct["basis"]["checks"][0]["reference"].startswith("distinct binary64 byte strings")
+    fixtures = telemetry.fixture_bytes()
+    assert distinct["basis"]["generator"]["fixture_sha256"] == {
+        name: hashlib.sha256(raw).hexdigest() for name, raw in fixtures.items()}
     withheld = by_claim(report, "The metric is withheld")
     assert sorted(withheld["value"]) == ["missing", "reset", "under-target"]
+    assert [c["observed"] for c in withheld["basis"]["checks"]] == [0.0, 0.0]
     naive = by_claim(report, "Dividing gross energy by executed solves")
     assert naive["value"]["accepted_solves"] == 0 and naive["value"]["naive_j_per_solve"] == pytest.approx(0.05)
     assert "counterexample" in naive
     assert by_claim(report, "Widening the boundary")["value"] == pytest.approx(7.0)
-    assert by_claim(report, "Physical GPU energy per accepted")["evidence_status"] == "not_established"
+    physical = by_claim(report, energy_gpu.T119_PHYSICAL)
+    assert physical["evidence_status"] == "not_established" and "no operator NVML log" in physical["basis"]["notes"][0]
+    assert "ciw lab run T116 T119" in report["recommended_next_task"]
+
+
+@needs_fixtures
+def test_t119_operator_log_is_gated_like_t116(tmp_path, clean_environment):
+    """On a (simulated) GPU host T119 measures energy per accepted solve from the operator log, or withholds it."""
+    log = relabelled_log()
+    context = simulate_gpu_host(clean_environment, tmp_path, log)
+    report = run("T119", context)
+    physical = by_claim(report, energy_gpu.T119_PHYSICAL)
+    assert physical["evidence_status"] == "hardware_measured" and physical["value"] == pytest.approx(0.05)
+    assert [c["reference_kind"] for c in physical["basis"]["checks"]] == ["cross_implementation"] * 2
+    entry, raw = artifact(report, context, "operator-log.json")
+    assert raw == canonical(log) and entry["sha256"] == physical["basis"]["acquisition"]["raw_sha256"]
+    assert report["state"] == "completed"
+    # Without a GPU answering the probe, or for a log declaring a synthetic fixture, the value is withheld.
+    clean_environment.setattr(runner, "_probe_hardware", lambda name: False)
+    no_gpu = run("T119", runner.Context(tmp_path / "no-gpu"))
+    assert by_claim(no_gpu, energy_gpu.T119_PHYSICAL)["evidence_status"] == "not_established"
+    assert no_gpu["state"] == "partial"
+    assert any("no NVIDIA GPU answered" in item for item in no_gpu["unresolved_assumptions"])
+    synthetic = json.loads(telemetry.fixture_bytes()["baseline"])
+    (tmp_path / "synthetic").mkdir()
+    fixture_log = run("T119", simulate_gpu_host(clean_environment, tmp_path / "synthetic", synthetic))
+    assert by_claim(fixture_log, energy_gpu.T119_PHYSICAL)["evidence_status"] == "not_established"
+    assert any("synthetic fixture" in item for item in fixture_log["unresolved_assumptions"])
 
 
 def test_textbook_kl_matches_closed_form_values():
@@ -414,14 +550,31 @@ def test_precision_study_float32_floor_and_counterexample(lab):
     assert value["plateau_median_error_n_ge_128"] > value["crossover_min_error"] >= 1e-7
     counter = by_claim(report, "Lowering precision to float32 cannot reach")
     assert counter["counterexample"]["witness"]["float64_steps"] == 128
-    reach = by_claim(report, "Smallest grid N (>= 16) meeting each accuracy target")["value"]
-    assert reach["1e-07"] == {"float32": None, "float64": 128}
+    reach = by_claim(report, "Smallest grid N (>= 16) meeting each accuracy target")
+    assert reach["value"]["1e-07"] == {"float32": None, "float64": 128}
+    assert reach["regression_tolerance"] == {"abs": 0.0, "rel": 0.0}
     ops = by_claim(report, "Per RK4 step")
-    assert ops["evidence_status"] == "numerically_verified"
-    assert ops["value"]["instrumented"] == {"flops": 80, "transcendentals": 8} and ops["value"]["flops_per_step"] == 80
+    assert ops["evidence_status"] == "numerically_verified" and ops["value"]["flops_per_step"] == 80
+    for name, itemsize in (("float32", 4), ("float64", 8)):
+        row = ops["value"]["instrumented"][name]
+        assert (row["flops"], row["transcendentals"], row["results_outside_dtype"]) == (80, 8, 0)
+        assert row["result_dtypes"] == [name] and row["state_bytes"] == 4 * itemsize
+    assert len(ops["basis"]["checks"]) == 6
     assert physical_labels(report) == {"not_established"}
+    energy = by_claim(report, "float32 lowers the energy per accepted trajectory")
+    assert "no capture path measures a float32 workload" in energy["basis"]["notes"][0]
+    assert report["recommended_next_task"].startswith("Deferred research question: a dtype-parameterized capture")
     # float32 must stay float32 through the whole integration.
     assert kernels.rk4_batch(kernels.initial_states()[:1], 1.0, 4, np.float32).dtype == np.float32
+
+
+def test_operation_count_detects_precision_promotion(monkeypatch):
+    """The per-dtype instrumentation can fail: a float64 step size in the float32 path shows up as promotion."""
+    step = kernels.rk4_step
+    monkeypatch.setattr(kernels, "rk4_step", lambda y, h, dtype: step(y, np.float64(h), dtype))
+    promoted = kernels.counted_operations_per_step(np.float32)
+    assert promoted["results_outside_dtype"] > 0 and "float64" in promoted["result_dtypes"]
+    assert kernels.counted_operations_per_step(np.float64)["results_outside_dtype"] == 0
 
 
 def test_reduction_orders_bound_and_sign_counterexample(lab):
@@ -447,8 +600,16 @@ def test_reduction_orders_bound_and_sign_counterexample(lab):
     guard = by_claim(report, "The bound-guarded sign test")
     assert all(row["decided_orders"] == 0 and row["smallest_order_bound"] > row["largest_abs_sum"]
                for row in guard["value"].values())
-    assert by_claim(report, "Max reductions of this NaN-free, zero-free")["value"] == 1
-    assert by_claim(report, "The IEEE maximum of +0.0 and -0.0")["value"] == [True, False]
+    assert not any(f["claim"].startswith("Max reductions of this NaN-free") for f in report["findings"])
+    select = by_claim(report, "A comparison-select maximum")
+    assert select["value"] == [False, True] and select["evidence_status"] == "numerically_verified"
+    assert "IEEE" not in select["claim"] and "IEEE 754-2019 maximum" in select["basis"]["notes"][0]
+    assert energy_gpu.select_max(0.0, -0.0) == 0.0 and np.signbit(energy_gpu.select_max(-0.0, 0.0))
+    # numpy.max's signed-zero result is architecture-specific: recorded with the machine, never asserted.
+    _, raw = artifact(report, lab.context, "reductions.json")
+    observed = json.loads(raw)["numpy_max_signed_zero_this_build"]
+    assert observed["machine"] == platform.machine() and len(observed["signbits"]) == 2
+    assert all(isinstance(bit, bool) for bit in observed["signbits"])
     assert by_claim(report, "Emulated atomicAdd completion orders")["value"] >= 2
     assert physical_labels(report) == {"not_established"}
     # Order-specific bounds detect a dropped element that the generic gamma_(n-1) bound would miss.
@@ -521,8 +682,10 @@ def test_typed_quantities_refuse_nats_plus_joules(lab):
         assert "free_energy" in audit["value"]["variational_nat_fields"]
         assert audit["value"]["panel_units"]["accuracy"] == ["nat"]
     untyped = by_claim(report, "An untyped sum of free energy")
-    assert "counterexample" in untyped
-    assert untyped["basis"]["checks"][0]["observed"] == pytest.approx(199.8)
+    assert "counterexample" in untyped and untyped["evidence_status"] == "analytic" and "checks" not in untyped["basis"]
+    assert untyped["value"]["sum_with_millijoules"] - untyped["value"]["sum_with_joules"] == pytest.approx(199.8)
+    # The weakest established computational label decides the headline.
+    assert report["evidence_status"]["primary"] == "analytic"
     assert physical_labels(report) == {"not_established"}
 
 
@@ -550,8 +713,17 @@ def test_raw_telemetry_retention_and_tampering(lab):
     assert report["state"] == "completed"
     retained = by_claim(report, "Every fixture retains raw timestamped counter readings")
     assert retained["evidence_status"] == "numerically_verified" and retained["value"]["baseline"]["samples"] == 12
-    assert all(row["identity_fields_present"] == 14 and row["placeholder_values"] == 10
+    # 11 placeholders: ten stand-in strings plus the compute capability given to the placeholder device.
+    assert all(row["identity_fields_present"] == 14 and row["placeholder_values"] == 11
                for row in retained["value"].values())
+    inventory = json.loads(artifact(report, lab.context, "inventory.json")[1])
+    assert "compute_capability" in inventory["baseline"]["placeholder_fields"]
+    # The task retains the fixtures' exact bytes, not a re-serialized excerpt.
+    for name, raw in telemetry.fixture_bytes().items():
+        entry, retained_bytes = artifact(report, lab.context, f"fixture-{name}.json")
+        assert retained_bytes == raw and entry["sha256"] == hashlib.sha256(raw).hexdigest()
+        assert inventory[name]["fixture_sha256"] == entry["sha256"]
+    assert "present in the four synthetic fixtures" in report["numerical_result"]
     tampering = by_claim(report, "The energy-log validator refuses")
     assert tampering["evidence_status"] == "numerically_verified"
     assert len(tampering["basis"]["checks"]) == len(telemetry.TAMPERING)

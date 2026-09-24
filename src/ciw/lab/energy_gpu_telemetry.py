@@ -12,7 +12,10 @@ establishes internal integrity only; neither the declared ``origin`` nor the
 device identity in a log authenticates that a physical device produced it.
 The lab runner calls nothing here that reads an energy counter: counters are
 read only by ``python -m ciw.lab.energy_gpu_telemetry rapl-capture`` (an
-operator action) and by ``ciw energy record``. Nothing here starts GPU work,
+operator action) and by ``ciw energy record``. The runner's own
+``hardware:rapl`` availability probe (``ciw.lab.runner``), made by T115 only
+when a capture is supplied, reads one ``energy_uj`` value to confirm
+readability and discards it. Nothing here starts GPU work,
 changes device settings or estimates energy from time or utilization.
 """
 from __future__ import annotations
@@ -274,8 +277,20 @@ def is_placeholder(value) -> bool:
     return len(set(digits)) == 1 or digits == "0123456789abcdef" * (len(digits) // 16)
 
 
+# Identity values that describe the device itself; they identify nothing when the device's own identity
+# (its UUID or name) is a placeholder, whatever their type (compute capability is a list of integers).
+DEVICE_DERIVED = ("compute_capability",)
+DEVICE_IDENTITY = ("sensor_device_uuid", "sensor_name", "workload_device_uuid")
+
+
 def raw_inventory(log) -> dict:
-    """Count retained raw readings, the identity fields a log carries and how many hold placeholders."""
+    """Count retained raw readings, the identity fields a log carries and how many hold placeholders.
+
+    A field is a placeholder when :func:`is_placeholder` says so, or when it is
+    a device-derived value (compute capability) of a device whose UUID or name
+    is itself a placeholder: such a value was invented for a device that does
+    not exist.
+    """
     samples = [sample for phase in log["phases"] for sample in phase["samples"]]
     timestamped = [s for s in samples if all(s.get(k) is not None for k in
                                              ("read_start_ns", "read_end_ns", "utc_start_ns", "utc_end_ns"))]
@@ -292,11 +307,13 @@ def raw_inventory(log) -> dict:
                 "python_executable_sha256": runtime["python"]["executable_sha256"],
                 "implementation_code_sha256": runtime["implementation"]["code_sha256"],
                 "clock": log["clock"]["implementation"]}
+    invented_device = any(is_placeholder(identity[key]) for key in DEVICE_IDENTITY)
+    placeholders = sorted(k for k, v in identity.items()
+                          if is_placeholder(v) or (k in DEVICE_DERIVED and invented_device and v not in (None, "")))
     return {"samples": len(samples), "timestamped_samples": len(timestamped),
             "raw_counter_readings": len(raw_counters), "batches": sum(len(p["batches"]) for p in log["phases"]),
             "identity_fields": identity, "identity_fields_present": sum(v not in (None, "") for v in identity.values()),
-            "placeholder_values": sum(is_placeholder(v) for v in identity.values()),
-            "placeholder_fields": sorted(k for k, v in identity.items() if is_placeholder(v)),
+            "placeholder_values": len(placeholders), "placeholder_fields": placeholders,
             "origin": log["origin"], "log_digest": log["log_digest"]}
 
 

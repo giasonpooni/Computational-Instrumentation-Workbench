@@ -24,20 +24,25 @@ run.
 ## What this environment could and could not measure
 
 The development host has no RAPL powercap counters, no NVIDIA GPU or NVML,
-no CUDA toolchain and no Julia. `rustc` is available. The lab runner never
-reads an energy counter on any host: CPU and GPU energy come only from
-captures an operator makes outside the runner, which the tasks analyze
-read-only. Consequently:
+no CUDA toolchain and no Julia. `rustc` is available. The lab runner acquires
+no energy measurement on any host: CPU and GPU energy come only from captures
+an operator makes outside the runner, which the tasks analyze read-only. Its
+only counter access is the `hardware:rapl` availability probe, which T115
+makes only when a capture is supplied: it reads one `energy_uj` value to
+confirm readability and discards it
+(`test_rapl_probe_is_the_only_counter_read` exercises the real probe on a
+simulated powercap tree). Consequently:
 
 | Quantity | Status here | Where it is recorded |
 | --- | --- | --- |
 | CPU package energy per trajectory (gross and idle-subtracted) | not measured (no capture) | T115 physical findings, `not_established` |
 | GPU energy per batch; NVML counter accuracy | not measured (no GPU) | T116 `blocked`; physical and sensor-performance findings, `not_established` |
 | RTX 2080 power, temperature, clock, utilization, steady state, batch and kernel time | not measured | T118 `blocked`; eight physical findings, `not_established` |
-| Physical energy per accepted result | not measured | T119 physical finding, `not_established` |
-| Energy of float32 versus float64 | not measured | T120 physical finding, `not_established` |
+| Physical energy per accepted result | not measured (no operator log) | T119 physical finding, `not_established` |
+| Energy of float32 versus float64 | not measurable: no capture path runs a float32 RK4 workload | T120 physical finding, `not_established`; deferred question |
 | Real GPU reduction orders | not observed | T121 physical finding, `not_established` |
-| Julia and GPU implementations of the kernel | not run | T117 findings, `not_established` |
+| Julia and GPU implementations of the sphere RK4 kernel | not written (on any host) | T117 findings, `not_established`; deferred question |
+| RTX 2080 kernel-only duration | not ingested (on any host) | T118 finding, `not_established`; deferred question |
 
 Every joule figure in this section comes from the synthetic fixtures in
 `examples/energy-accuracy` (`origin: synthetic_fixture`) and is a synthetic
@@ -48,51 +53,73 @@ value. Wall-clock and CPU times are retained only as artifacts
 
 - **T115 work proxies.** Fixed-step RK4 spends exactly 4N = 1024
   right-hand-side evaluations per sphere geodesic (N = 256, counted per
-  trajectory), with endpoint error 1.1e-9 against the exact great circle;
-  adaptive Dormand–Prince (rtol 1e-9) uses 295–487 evaluations per
-  trajectory. Energy needs an operator capture (protocol below).
+  trajectory, checked per trajectory), with endpoint error 1.1e-9 against
+  the exact great circle; adaptive Dormand–Prince (rtol 1e-9) uses 295–487
+  evaluations per trajectory (declared cross-platform allowance 12
+  evaluations: two flipped accept/reject decisions of a 6-evaluation FSAL
+  step). Energy needs an operator capture (protocol below).
 - **T117 Python/Rust.** A std-only Rust RK4 kernel is embedded as
   `energy_gpu_kernels.RUST_SOURCE`, compiled with `rustc -O -C
   codegen-units=1` into a temporary directory (the scratch path is remapped,
   so the binary digest is reproducible for a given rustc), and exchanges JSON
-  over stdin/stdout. Its `rhs()` counts its own calls (4N per trajectory).
-  Its endpoints are bitwise identical to the Python closed-form kernel on this
+  over stdin/stdout. Its `rhs()` counts its own calls (4NT = 6144 for the
+  six trajectories, a finding of its own). Its endpoints are bitwise
+  identical to the Python closed-form kernel on this
   Linux host (same operation order, same glibc `sin`/`cos`); the finding
   tolerance is 1e-12, and cross-platform bitwise identity is not claimed. The
   task also sends the kernel a malformed and a nonfinite (pole) input and
   records both refusals. Both agreements (Rust/Python and generic
   Christoffel/closed form) are `cross_implementation` checks: declaring one
   ciw kernel an independent check of another is refused by
-  `ciw.lab.evidence`, so the label is `numerically_verified`, never
-  `independently_verified`. The rustc version and binary digest are in the
-  report's runtime identity, so a label change on a host without rustc can
-  be attributed.
+  `ciw.lab.evidence` (a regression test, not a finding), so the label is
+  `numerically_verified`, never `independently_verified`. The rustc version
+  and binary digest are in the report's runtime identity, so a label change
+  on a host without rustc can be attributed. No Julia or GPU implementation
+  of this sphere kernel exists in the repository (`src/ciw/energy_cuda.py` is
+  the Gaussian VI PTX kernel), so T117 stays `partial` on every host; its
+  Julia and GPU notes derive from the probes but always say no kernel was
+  written. Deferred research question: a CUDA/PTX RK4 kernel of this geodesic
+  (for example through the `ciw.energy_cuda` JIT path) and a Julia kernel
+  with the operation order of `step_rk4`.
 - **T119 energy per accepted result.** Definition:
   `E_acc = (counter(last measurement read) − counter(first measurement read)) / #accepted replica solves`,
   where a replica solve is accepted when its retained batch output has KL ≤
   the declared target. The denominator counts replica solves (identical
   thread work on one declared problem), not distinct results: every replica
   of a batch is a bitwise copy of one output. Baseline fixture: 0.05 J per
-  accepted replica solve and 0.2 J per distinct accepted result (synthetic).
+  accepted replica solve and 0.2 J per distinct accepted result (synthetic;
+  the distinct count is checked against the distinct binary64 byte strings
+  of the accepted outputs, and each fixture's SHA-256 is in the generator).
   The recomputation decodes the outputs directly and scores them with a
   textbook Gaussian KL against an information-form posterior written in the
   task (agreement with `energy_records.analyze` to 1e-12; same ciw origin,
-  so a cross-implementation check). The metric is withheld for the reset,
-  missing-bracket and under-target fixtures. Counterexample: dividing gross
-  energy by executed solves gives 0.05 J/solve for the under-target fixture,
-  which has zero accepted solves. Widening the boundary to the whole run
-  multiplies the metric by 7.
+  so a cross-implementation check). The metric is withheld for exactly the
+  reset, missing-bracket and under-target fixtures, each for its declared
+  defect. Counterexample: dividing gross energy by executed solves gives
+  0.05 J/solve for the under-target fixture, which has zero accepted solves.
+  Widening the boundary to the whole run multiplies the metric by 7. When
+  `CIW_LAB_ENERGY_LOG` names an operator log, T119 recomputes energy per
+  accepted replica solve from its raw readings and outputs and reports it as
+  `hardware_measured` through the T116 acquisition gate (plus a GPU probe
+  that answers in T119); T119 is then `completed`.
 - **T120 precision.** float64 RK4 converges at order 3.96 (N = 16..256).
   float32 reaches its minimum error 5.8e-7 at N = 64, the crossover of
   truncation and roundoff, and then sits on a roundoff plateau (median
   2.5e-6 for N ≥ 128; 1e7 times the float64 error at N = 2048). Both
   precisions execute the same counted arithmetic per step (80 flops,
-  8 sin/cos calls), confirmed by running one step of the same code on
-  counting scalars; the float32 and float64 transcendental implementations
-  themselves differ. The step table gives the smallest grid N (≥ 16) meeting
-  each target, so a 16 is censored at the grid minimum. Counterexample:
+  8 sin/cos calls), confirmed per precision by running one step of the same
+  code on a counting view of a real float32 and a real float64 array, which
+  also records every ufunc result's dtype (no result leaves the declared
+  precision; a float64 step size in the float32 path is detected); the
+  float32 and float64 transcendental implementations themselves differ. The
+  step table gives the smallest grid N (≥ 16) meeting each target, so a 16 is
+  censored at the grid minimum; every tabulated error clears its target by a
+  factor of at least 1.4, so the table is compared exactly. Counterexample:
   float32 cannot reach 1e-7 at any N ≤ 2048, while float64 reaches it at
-  N = 128 — lower precision is not cheaper at every accuracy target.
+  N = 128 — lower precision is not cheaper at every accuracy target. No
+  capture path measures a float32 RK4 workload (T115 brackets the float64
+  generic integrator, T116 the Gaussian VI kernel); a dtype-parameterized
+  capture of `rk4_batch` is the deferred research question.
 - **T122 bounded free energy.** On a declared two-latent Gaussian problem the
   identity F + log Z = KL holds at every iterate to 3e-14 nats; with the
   declared normalization (condition number 7.3) KL decreases monotonically to
@@ -109,13 +136,20 @@ value. Wall-clock and CPU times are retained only as artifacts
   records carry joules in `_j`/`_mj` fields, power in `_mw` fields and nats
   only in `kl_*_nats` and the Gaussian reference; variational records carry
   no joule or watt field; each workbench energy panel has one unit.
-  Counterexample: an untyped `F + E` changes from 8.6 to 208.4 when E is
-  expressed in mJ instead of J.
-- **T124 raw telemetry.** All four fixtures retain 47 raw readings with
-  monotonic and UTC brackets and the 14 device/runtime identity fields; 10 of
-  the 14 hold placeholders (repeated-digit digests, the sequential fixture
-  UUID, "fixture"/"synthetic" names), so the fields exist but identify
-  nothing. Nine tampering classes are refused with specific messages.
+  Counterexample (analytic, dimensional analysis): an untyped `F + E`
+  changes by 999 E when E is expressed in mJ instead of J (from 8.6 to 208.4
+  here). A computed check of that identity could not fail, so the finding is
+  `analytic` and T123's headline, the weakest established label, is
+  `analytic`.
+- **T124 raw telemetry.** An audit of the energy-log format, not of a
+  hardware capture: the task retains the four fixtures' exact bytes as
+  artifacts, and they hold 47 raw readings with monotonic and UTC brackets
+  and the 14 device/runtime identity fields; 11 of the 14 hold placeholders
+  (repeated-digit digests, the sequential fixture UUID, "fixture"/"synthetic"
+  names, and the compute capability given to that placeholder device), so
+  the fields exist but identify nothing. Nine tampering classes are refused
+  with their expected messages (the two field-removal classes share the
+  validator's generic field-set message).
   Counterexamples: a log whose readings were doubled and then resealed
   validates (sealing is integrity, not authenticity), and relabelling a
   fixture as `physical_measurement` makes it eligible for physical comparison
@@ -162,10 +196,18 @@ order). The generic γ₍ₙ₋₁₎ bound alone would miss a dropped element.
   the smallest order bound (Kahan, about 1.0) exceeds every |S| (at most 0.26),
   so the guarded sign test decides in none of the 14 orders on either
   cancellation dataset.
-- Max reductions of this NaN-free, zero-free data are bitwise
-  order-invariant. That does not extend to all IEEE inputs: `np.max` of
-  `[0.0, -0.0]` is −0.0 and of `[-0.0, 0.0]` is +0.0; NaN handling also differs
-  between `np.max` and GPU `fmaxf`.
+- The maximum of NaN-free, zero-free data is its largest element in every
+  order, by definition, so it is not re-checked. Signed zeros break
+  order-invariance for a comparison-select maximum (`a if a >= b else b`,
+  the rule numpy documents for `np.maximum`): it returns its first operand
+  when −0 and +0 compare equal, so the result's sign depends on operand
+  order. This is not an IEEE property — IEEE 754-2019 `maximum` orders −0
+  below +0 and returns +0 either way — and numpy's own `np.max` is
+  architecture-specific here (x86 `maxsd` returns its second operand, giving
+  −0.0 for `[0.0, -0.0]`; aarch64 `fmax` returns +0 in both orders). The
+  finding checks the deterministic comparison-select rule; numpy's result on
+  the running build is retained in `reductions.json` with
+  `platform.machine()` and the numpy version, never asserted.
 
 None of this shows what CUB, cuBLAS or a hand-written kernel does on an RTX
 2080; that is the physical-domain finding left `not_established`, and the
@@ -173,7 +215,9 @@ follow-up is T148 (deterministic reduction policy) and T147 (CPU/GPU outputs).
 
 ## Protocol for a RAPL host (T115)
 
-The capture is an operator action; `ciw lab run` never reads a counter.
+The capture is an operator action; `ciw lab run` acquires no measurement
+(its `hardware:rapl` probe reads one counter value to confirm readability and
+discards it).
 
 1. On a Linux host whose `/sys/class/powercap/intel-rapl:*/energy_uj` is
    readable: `python -m ciw.lab.energy_gpu_telemetry rapl-capture
@@ -213,10 +257,13 @@ refuses an existing output directory, so the capture goes into `$R/capture`):
 5. Kernel durations in a separate pass (profiling perturbs timing and energy):
    `nsys profile --trace=cuda -o $R/nsys python -m ciw energy record --problem examples/energy-accuracy/problem.json --output-dir $R/capture-nsys --duration 10 --gpu-index 0`,
    then `nsys stats --report cuda_gpu_kern_sum $R/nsys.nsys-rep`. Retain the
-   output; the lab does not ingest it yet.
-6. `CIW_LAB_ENERGY_LOG=$R/capture/log.json CIW_LAB_NVIDIA_SMI_CSV=$R/smi.csv CIW_LAB_NVIDIA_SMI_UTC_OFFSET=+00:00 python -m ciw lab run T116 T118 --output-dir <dir>`
+   output; the lab does not ingest it yet (deferred research question:
+   ingest it with its raw bytes retained and bound through the acquisition
+   gate, so T118 can report kernel-only duration).
+6. `CIW_LAB_ENERGY_LOG=$R/capture/log.json CIW_LAB_NVIDIA_SMI_CSV=$R/smi.csv CIW_LAB_NVIDIA_SMI_UTC_OFFSET=+00:00 python -m ciw lab run T116 T118 T119 --output-dir <dir>`
 
-T116 then reports gross device energy per measured batch; the NVML counter's
+T116 then reports gross device energy per measured batch, and T119 the
+energy per accepted replica solve of the same log; the NVML counter's
 accuracy and resolution stay `not_established` (undeclared by NVML, no
 external meter). T118 reports NVML power, temperature and graphics clock over
 the measurement phase, host-bracketed batch durations (these include launch,

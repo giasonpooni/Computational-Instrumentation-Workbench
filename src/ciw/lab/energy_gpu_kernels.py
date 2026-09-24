@@ -89,62 +89,42 @@ def rk4_batch(states, length, steps, dtype=np.float64) -> np.ndarray:
     return y.T
 
 
-class _Counting:
-    """A float that counts the arithmetic and transcendental operations applied to it."""
-
-    __slots__ = ("value", "counts")
-
-    def __init__(self, value, counts):
-        self.value, self.counts = float(value), counts
-
-    def _apply(self, other, operation):
-        self.counts["flops"] += 1
-        other = other.value if isinstance(other, _Counting) else float(other)
-        return _Counting(operation(self.value, other), self.counts)
-
-    def __add__(self, other):
-        return self._apply(other, lambda a, b: a + b)
-
-    def __radd__(self, other):
-        return self._apply(other, lambda a, b: b + a)
-
-    def __sub__(self, other):
-        return self._apply(other, lambda a, b: a - b)
-
-    def __rsub__(self, other):
-        return self._apply(other, lambda a, b: b - a)
-
-    def __mul__(self, other):
-        return self._apply(other, lambda a, b: a * b)
-
-    def __rmul__(self, other):
-        return self._apply(other, lambda a, b: b * a)
-
-    def __truediv__(self, other):
-        return self._apply(other, lambda a, b: a / b)
-
-    def __rtruediv__(self, other):
-        return self._apply(other, lambda a, b: b / a)
-
-    def sin(self):
-        self.counts["transcendentals"] += 1
-        return _Counting(math.sin(self.value), self.counts)
-
-    def cos(self):
-        self.counts["transcendentals"] += 1
-        return _Counting(math.cos(self.value), self.counts)
+ARITHMETIC_UFUNCS = (np.add, np.subtract, np.multiply, np.true_divide)
+TRANSCENDENTAL_UFUNCS = (np.sin, np.cos)
 
 
-def counted_operations_per_step() -> dict:
-    """Instrumented count: run :func:`rk4_step` once on one trajectory of counting scalars.
+def counted_operations_per_step(dtype) -> dict:
+    """Instrumented count of one :func:`rk4_step` on real ``dtype`` arrays, as rk4_batch executes it.
 
-    The step code is the one rk4_batch executes for every precision; only the
-    scalar type differs, so the count applies to float32 and float64 alike.
+    The state is a counting view of an ordinary ``dtype`` array: every ufunc
+    call is counted per element (arithmetic and sin/cos separately) and
+    evaluated on the plain array, and every result dtype is recorded, so a
+    constant or intermediate promoted out of ``dtype`` shows up as a result in
+    another dtype. Array functions (``np.stack``) keep the counting view.
     """
-    counts = {"flops": 0, "transcendentals": 0}
-    y = np.array([[_Counting(v, counts)] for v in initial_states()[0]], dtype=object)
-    rk4_step(y, LENGTH / WORKLOAD_STEPS, np.object_)
-    return counts
+    scalar = np.dtype(dtype).type
+    counts = {"flops": 0, "transcendentals": 0, "other_ufunc_calls": 0, "results_outside_dtype": 0}
+    result_dtypes = set()
+
+    class Counting(np.ndarray):
+        def __array_ufunc__(self, ufunc, method, *inputs, **kwargs):
+            plain = [x.view(np.ndarray) if isinstance(x, Counting) else x for x in inputs]
+            result = getattr(ufunc, method)(*plain, **kwargs)
+            key = ("flops" if ufunc in ARITHMETIC_UFUNCS else
+                   "transcendentals" if ufunc in TRANSCENDENTAL_UFUNCS else "other_ufunc_calls")
+            counts[key] += int(np.size(result))
+            result_dtypes.add(np.asarray(result).dtype.name)
+            counts["results_outside_dtype"] += np.asarray(result).dtype != np.dtype(scalar)
+            return result.view(Counting) if isinstance(result, np.ndarray) else result
+
+        def __array_function__(self, func, types, args, kwargs):
+            result = super().__array_function__(func, types, args, kwargs)
+            return result.view(Counting) if isinstance(result, np.ndarray) else result
+
+    y = np.asarray(initial_states()[:1], dtype=scalar).T.copy().view(Counting)
+    final = rk4_step(y, scalar(LENGTH / WORKLOAD_STEPS), scalar)
+    return dict(counts, result_dtypes=sorted(result_dtypes), final_dtype=final.dtype.name,
+                state_bytes=4 * np.dtype(scalar).itemsize)
 
 
 def embed(theta, phi) -> np.ndarray:
