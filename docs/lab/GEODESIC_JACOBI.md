@@ -296,8 +296,9 @@ drift orders: Euler 0.98–1.02, midpoint 1.98–2.03, RK4 3.91–4.02. Evidence
 nothing renormalizes: a speed-1.3 start keeps g = 1.69 to 2.1e-8 (RK4, 128
 steps) and 6e-11 (adaptive, rtol 1e-10), and stays at least 0.6 away from 1
 under Euler and midpoint too; an AST scan of every state-update function
-(`integrators.step_*`, `integrate_fixed`, `richardson_rk4`,
-`integrate_adaptive`, `jacobi.rhs`, `jacobi.transfer`, `Surface.geodesic_rhs`,
+(`integrators.step_*`, including the implicit `step_gauss`, `integrate_fixed`,
+`integrate_implicit`, `richardson_rk4`, `integrate_adaptive`, `jacobi.rhs`,
+`jacobi.transfer`, `Surface.geodesic_rhs`,
 `Surface.christoffel`) finds no norm-like or square-root call (except the
 allow-listed RMS error norm of the adaptive controller, which scales the step,
 not the state), no ±½ power, no division by a sqrt/norm/hypot/abs expression

@@ -1249,8 +1249,9 @@ RENORM_STEPS = (64, 128, 256, 512)
 def state_update_code():
     """Every function through which an integrated state passes after its initial data is set."""
     return (integrators.step_euler, integrators.step_midpoint, integrators.step_rk4, integrators.integrate_fixed,
-            integrators.richardson_rk4, integrators.integrate_adaptive, jacobi.rhs, jacobi.transfer,
-            surfaces.Surface.geodesic_rhs, surfaces.Surface.christoffel)
+            integrators.step_gauss, integrators.integrate_implicit, integrators.richardson_rk4,
+            integrators.integrate_adaptive, jacobi.rhs, jacobi.transfer, surfaces.Surface.geodesic_rhs,
+            surfaces.Surface.christoffel)
 
 
 def _called(node) -> str | None:
