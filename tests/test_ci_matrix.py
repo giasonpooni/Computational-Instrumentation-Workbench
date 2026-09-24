@@ -89,8 +89,8 @@ def test_run_expands_placeholders_without_a_shell(tmp_path, monkeypatch):
                 "gates": []}
     ci_matrix.run("probe", registry=registry)
     (argv, kwargs), = calls
-    assert argv[0] == sys.executable and argv[3] == str(ROOT / "results" / "probe")
-    assert argv[5] == str(tmp_path / "ciw-probe" / "x") and kwargs["check"] is True and "shell" not in kwargs
+    assert argv[0] == sys.executable and Path(argv[3]) == ROOT / "results" / "probe"
+    assert Path(argv[5]) == tmp_path / "ciw-probe" / "x" and kwargs["check"] is True and "shell" not in kwargs
 
 
 def test_provider_descriptor_binds_the_julia_worker():
