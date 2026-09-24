@@ -4,7 +4,6 @@ No provider is imported or executed, and no optimizer or ensemble estimator is
 rerun. Checks bind supplied matrices, iterates, objectives and prediction/count
 evidence. They do not authenticate an execution or a declared sampling law.
 """
-from copy import deepcopy
 import math
 
 import numpy as np

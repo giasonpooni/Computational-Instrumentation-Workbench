@@ -6,11 +6,11 @@ simulation declaration is an operator assertion, not hardware authentication.
 from __future__ import annotations
 
 from copy import deepcopy
-from hashlib import sha256
-import json
 import math
 
 import numpy as np
+
+from .telemetry import canonical
 
 SOURCE_SCHEMA = "ciw.thermal-observer-source.v1"
 REQUEST_SCHEMA = "ciw.thermal-observer-request.v1"
@@ -30,14 +30,6 @@ POLICY = {"plant": "two_capacity_linear_thermal",
           "physical_validation": "not_established", "state_admission": "not_performed",
           "proof": "not_requested"}
 TOLERANCES = {"absolute": 1e-7, "relative": 1e-8}
-
-
-def canonical(value):
-    return json.dumps(value, sort_keys=True, separators=(",", ":"), ensure_ascii=False, allow_nan=False).encode("utf-8")
-
-
-def digest(value):
-    return "sha256:" + sha256(canonical(value)).hexdigest()
 
 
 def _keys(value, expected):

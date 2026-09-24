@@ -13,7 +13,7 @@ import numpy as np
 from . import free_energy_math as mathematics
 from . import free_energy_native as native
 from .free_energy_profile import KIND, SOURCE_SCHEMA, POLICY, validate_source, csg_request, problems
-from .declared_workload import AUTHORITY, DeclaredWorkflow, RESULT_SCHEMA, MAX_BYTES, _verification
+from .declared_workload import AUTHORITY, DeclaredWorkflow, RESULT_SCHEMA, MAX_BYTES
 from .exchange import _identity
 from .telemetry import canonical, digest, byte_digest, _bundle_digest, _keys
 

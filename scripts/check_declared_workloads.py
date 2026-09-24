@@ -1,6 +1,5 @@
 """Install CIW outside its source tree and exercise real SRA and SCR providers."""
 import argparse
-import json
 import os
 from pathlib import Path
 import shutil

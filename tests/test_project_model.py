@@ -71,3 +71,16 @@ def test_project_keeps_unresolved_physical_edges_explicit_and_rejects_cycles():
     with pytest.raises(ValueError, match="Missing references"):
         project.connect(value, {"edge_id": "edge:bad-evidence", "relation": "evidence",
                                 "from": "evidence:missing", "to": "signal:known", "resolution": "resolved"})
+
+
+def test_project_context_updates_append_history_and_require_evidence():
+    value = project.put(project.create("project:context", "Context"), _evidence())
+    updated = project.set_context(value, {"place": {"value": "cell-3", "evidence_refs": ["evidence:manual"]}})
+    assert updated["history"][-1]["operation"] == "context"
+    assert len(updated["history"]) == len(value["history"]) + 1
+    assert project.inspect(updated)["context_status"] == {"place": "evidence_bound"}
+    assert project.inspect(value)["context"] is None
+    with pytest.raises(ValueError, match="evidence"):
+        project.set_context(value, {"place": {"value": "cell-3", "evidence_refs": []}})
+    with pytest.raises(ValueError, match="context field"):
+        project.set_context(value, {"colour": {"value": None, "evidence_refs": []}})

@@ -13,7 +13,6 @@ from importlib import resources
 import json
 import math
 from pathlib import Path
-import sys
 import uuid
 
 from .adapters.protocol import AdapterRefusal

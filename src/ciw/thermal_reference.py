@@ -6,7 +6,6 @@ capacity-scaled symmetric eigensystem. It does not consume Julia matrices.
 """
 from __future__ import annotations
 
-import math
 
 import numpy as np
 

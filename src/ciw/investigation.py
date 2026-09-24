@@ -12,7 +12,6 @@ import json
 import sys
 import tempfile
 import uuid
-from datetime import datetime, timezone
 from importlib.resources import files
 from pathlib import Path
 
@@ -20,7 +19,7 @@ from .adapters.protocol import AdapterRefusal, InstrumentManifest
 from .adapters.subprocess import PinnedSubprocessAdapter
 from .core.identities import digest, evidence_id
 from .operations.registry import Operation
-from .session import Session, read_json
+from .session import Session
 
 
 RCI_OPERATION = "rci.calibrate.v1"
