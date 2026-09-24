@@ -6,10 +6,12 @@ writes into a version 3 workspace. ``tests/test_retained_compatibility.py``
 requires the current code to reopen it without executing a provider and to
 reproduce every retained numerical identity.
 
-Run this only when the retained format changes on purpose, and say so in the
-commit: regenerating it silently would hide exactly the incompatibility the
-fixture exists to catch. ``manifest.json`` records where each input came from
-and the identities the test pins.
+Run this only when the retained format or a reference changes on purpose, and
+say so in the commit: regenerating it silently would hide exactly the
+incompatibility the fixture exists to catch. A regeneration also makes the
+replay branch of the gate live again, since replay requires the retained
+runtime identity, which covers the reference source files. ``manifest.json``
+records where each input came from and the identities the test pins.
 """
 from __future__ import annotations
 

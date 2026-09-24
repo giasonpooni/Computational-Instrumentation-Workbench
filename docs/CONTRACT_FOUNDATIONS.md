@@ -109,11 +109,30 @@ provenance. The energy workflow keeps its own verification method, a request
 derived from the log digest and run identity, and its flat pre-existing runtime
 identity, so energy workspaces saved before the consolidation still reopen.
 The shared module is part of every reference's algorithm identity, so a change
-to it is a runtime change for replay. A committed retained workspace under
-`tests/fixtures/retained/` is the reopen gate for every change to the shared
-module or its subclasses: the current code must validate each retained bundle,
-reproduce its numerical identity from the retained source, and replay it
-freshly or refuse on runtime identity alone.
+to it is a runtime change for replay.
+
+Reopening is deliberately more tolerant than replay. The machine-manifest and
+project-graph references are pure arithmetic and must reproduce a retained
+result bit for bit. The energy, thermal and uncertainty-validation references
+run through the host's linear-algebra kernels, which OpenBLAS selects by CPU
+core type, so their roundoff-level quantities (error metrics near zero,
+conditioned covariances) differ between hosts without changing any
+classification; their reopen check compares structure, labels, counts and
+decimal strings exactly and numbers with the shared binary64 tolerance
+(`close_data` in `reference_workflow.py`, relative 1e-9, absolute 1e-12).
+Replay still requires the fresh numerical result to match the retained one
+exactly: on a host whose kernels round differently, replay of one of these
+three kinds is refused as a numerical mismatch while the retained bundle stays
+valid. The published runtime identity records Python and NumPy versions but
+not the kernel, so such a refusal names the numbers rather than the runtime;
+recording the kernel in the identity is open work.
+
+A committed retained workspace under `tests/fixtures/retained/` is the reopen
+gate for every change to the shared module or its subclasses: the current code
+must validate each retained bundle, reproduce its numbers from the retained
+source (bit for bit for the exact kinds, within tolerance for the others), and
+replay it freshly, refuse on runtime identity, or refuse as a numerical
+mismatch for a kernel-sensitive kind only.
 
 ## Current boundary and next gate
 

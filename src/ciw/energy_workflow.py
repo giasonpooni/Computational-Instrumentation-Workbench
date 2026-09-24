@@ -116,6 +116,15 @@ class EnergyAccuracyWorkflow(base.ReferenceWorkflow):
     def _check_runtime(self, runtime):
         _check_runtime(runtime)
 
+    def _check_data(self, result, source):
+        # Statuses, reasons, counts, decimal counter strings and structure must
+        # match exactly.  The accuracy metrics compare each retained batch with
+        # the Gaussian reference, whose conditioning runs through the host's
+        # linear-algebra kernels; the resulting roundoff-level errors differ
+        # between CPUs without changing any classification, so numbers are
+        # compared with the shared binary64 tolerance.
+        base.close_data(result["data"], self._native_data(source))
+
 
 def _verification(bundle, reproduced):
     return EnergyAccuracyWorkflow()._verification(bundle, reproduced)

@@ -19,6 +19,7 @@ import subprocess
 
 import pytest
 
+from ciw import reference_workflow as base
 from ciw.instruments import make_demo_run
 from ciw.session import Session
 from ciw.telemetry import canonical
@@ -37,6 +38,11 @@ def _call(session, kind, payload):
     response = session.handle({"protocol_version": 1, "request_id": "compat-" + kind, "type": kind, "payload": payload})
     assert response["type"] == "response", response
     return response["payload"]
+
+
+def _tolerant(kind):
+    """Kinds whose reopen check allows binary64 rounding; the rest must match bit for bit."""
+    return type(_workflow(kind))._check_data is not base.ReferenceWorkflow._check_data
 
 
 def _first_number(node, path=()):
@@ -121,36 +127,58 @@ def test_every_retained_bundle_validates_against_the_current_reference(retained)
         assert raw == base64.b64decode(sources[record["source_id"]]["bytes_b64"], validate=True), record["kind"]
 
 
-def test_fresh_execution_of_the_retained_sources_reproduces_the_numerical_identities(retained, manifest):
+def test_fresh_execution_of_the_retained_sources_reproduces_the_retained_numbers(retained, manifest):
+    # Machine manifest and project graph are pure arithmetic and must reproduce
+    # the numerical identity bit for bit. Energy, thermal and uncertainty
+    # validation run through the host's linear-algebra kernels, so their
+    # retained numbers must lie within the reopen tolerance of a fresh execution.
     sources = {source["source_id"]: source for source in retained["sources"]}
+    records = {record["kind"]: record for record in retained["bundles"]}
+    exact = {"machine-manifest", "project-graph"}
+    assert {entry["kind"] for entry in manifest["bundles"] if not _tolerant(entry["kind"])} == exact
     for entry in manifest["bundles"]:
         raw = base64.b64decode(sources[entry["source_id"]]["bytes_b64"], validate=True)
         fresh = _workflow(entry["kind"]).create_session(raw, {})
-        assert fresh["steps"][0]["numerical_result_id"] == entry["numerical_result_id"], entry["kind"]
         assert fresh["steps"][0]["execution_id"] != entry["execution_id"]
         assert fresh["bundle_digest"] != entry["bundle_id"]
+        retained_data = records[entry["kind"]]["native"]["steps"][0]["result"]["data"]
+        base.close_data(retained_data, fresh["steps"][0]["result"]["data"])
+        if entry["kind"] in exact:
+            assert fresh["steps"][0]["numerical_result_id"] == entry["numerical_result_id"], entry["kind"]
 
 
-def test_replay_is_a_fresh_matching_occurrence_or_refused_on_runtime_identity_alone(retained, manifest):
+def test_replay_is_fresh_and_matching_or_refused_for_a_stated_reason(retained, manifest):
+    # Three outcomes are legitimate. A replay records a fresh occurrence with
+    # the same numerical identity; a changed reference runtime identity refuses
+    # before anything runs; and, for the kernel-sensitive kinds only, a host
+    # whose linear-algebra kernels round differently refuses the replay as a
+    # numerical mismatch while the retained bundle stays valid. Nothing else is.
     restored = Workbench.restore(retained)
     outcomes = {}
     for entry in manifest["bundles"]:
         native = restored.get_bundle(entry["bundle_id"])
         step = native["steps"][0]
-        current = _workflow(entry["kind"])._runtime_identity()
-        if canonical(current) == canonical(native["runtimes"][step["runtime_ref"]]):
-            replayed = restored.replay({"bundle_id": entry["bundle_id"]})
-            fresh = restored.get_bundle(replayed["bundle"]["bundle_id"])
-            assert fresh["steps"][0]["numerical_result_id"] == entry["numerical_result_id"]
-            assert fresh["steps"][0]["execution_id"] != entry["execution_id"]
-            assert replayed["replay_receipt"]["source_bundle_digest"] == entry["bundle_id"]
-            assert replayed["replay_receipt"]["numerical_match"] is True
-            outcomes[entry["kind"]] = "replayed"
-        else:
+        workflow = _workflow(entry["kind"])
+        if canonical(workflow._runtime_identity()) != canonical(native["runtimes"][step["runtime_ref"]]):
             with pytest.raises(ValueError, match="runtime identity differs"):
                 restored.replay({"bundle_id": entry["bundle_id"]})
-            assert restored.get_bundle(entry["bundle_id"]) == native
-            outcomes[entry["kind"]] = "refused"
+            outcomes[entry["kind"]] = "refused_runtime_identity"
+        else:
+            try:
+                replayed = restored.replay({"bundle_id": entry["bundle_id"]})
+            except ValueError as exc:
+                assert "replay numerical result differs" in str(exc), entry["kind"]
+                assert _tolerant(entry["kind"]), entry["kind"]
+                outcomes[entry["kind"]] = "refused_numerical_mismatch"
+            else:
+                fresh = restored.get_bundle(replayed["bundle"]["bundle_id"])
+                assert fresh["steps"][0]["numerical_result_id"] == entry["numerical_result_id"]
+                assert fresh["steps"][0]["execution_id"] != entry["execution_id"]
+                assert replayed["replay_receipt"]["source_bundle_digest"] == entry["bundle_id"]
+                assert replayed["replay_receipt"]["numerical_match"] is True
+                outcomes[entry["kind"]] = "replayed"
+        assert restored.get_bundle(entry["bundle_id"]) == native
+        assert workflow._validate(native)
     assert set(outcomes) == KINDS
     assert restored.pending_operations == 0
 

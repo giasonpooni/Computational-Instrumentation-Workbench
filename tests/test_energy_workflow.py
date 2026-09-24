@@ -135,6 +135,27 @@ def test_resealed_authority_runtime_and_occurrence_tampering_is_refused(retained
         EnergyAccuracyWorkflow()._validate(changed)
 
 
+def test_reopen_tolerates_kernel_level_rounding_of_error_metrics_but_not_changed_conclusions(retained):
+    workflow = EnergyAccuracyWorkflow()
+    rounded = deepcopy(retained[1])
+    for step in (rounded["steps"][0], rounded["verification"]["reproduction"]):
+        batch = step["result"]["data"]["phases"][1]["batches"][0]
+        batch["kl_nats"] += 1e-30
+        batch["mean_max_abs_error"] = 0.0
+        step["result"]["data"]["measurement"]["max_kl_nats"] += 1e-30
+    assert workflow._validate(reseal_bundle(rounded)) == retained[0]
+    for change, message in (
+            (lambda data: data["phases"][1]["batches"][0].update(target_met=False), "differs from the deterministic reference"),
+            (lambda data: data["measurement"].update(qualified_solves=3), "differs numerically"),
+            (lambda data: data["phases"][3].update(counter_delta_mj="1"), "differs from the deterministic reference"),
+            (lambda data: data["phases"][1]["batches"][0].update(kl_nats=1e-3), "differs numerically")):
+        changed = deepcopy(retained[1])
+        for step in (changed["steps"][0], changed["verification"]["reproduction"]):
+            change(step["result"]["data"])
+        with pytest.raises(ValueError, match=message):
+            workflow._validate(reseal_bundle(changed))
+
+
 def test_historical_runtime_can_be_inspected_but_drift_refuses_fresh_analysis(retained):
     changed = deepcopy(retained[1])
     changed["runtimes"]["energy"]["code_sha256"] = "a"*64

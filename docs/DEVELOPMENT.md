@@ -146,9 +146,15 @@ changes. It reopens `tests/fixtures/retained/workbench.json`, a committed
 snapshot of one executed bundle per provider-free kind built from the committed
 example inputs, validates every retained bundle against the current reference
 without a provider, executes each retained source afresh and requires the same
-numerical identity, and replays each bundle: a replay must be a fresh
-occurrence with the same numerical identity, or be refused solely because the
-reference runtime identity changed. Regenerate the snapshot with
+numbers (bit for bit for machine manifest and project graph, within the shared
+binary64 tolerance for energy, thermal and uncertainty validation, whose
+linear-algebra kernels differ between hosts), and replays each bundle. Three
+replay outcomes are accepted: a fresh occurrence with the same numerical
+identity; a refusal because the reference runtime identity changed; or, for
+the three kernel-sensitive kinds only, a refusal as a numerical mismatch that
+leaves the retained bundle valid. The snapshot was made on a host whose
+OpenBLAS kernels are the SkylakeX set; `OPENBLAS_CORETYPE=Haswell` or
+`Prescott` reproduces the other outcomes locally. Regenerate the snapshot with
 `python tests/fixtures/retained/generate.py` only when the retained format
 changes on purpose, and say so in the commit; a silent regeneration hides
 exactly the incompatibility the gate exists to catch.

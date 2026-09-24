@@ -20,6 +20,8 @@ from __future__ import annotations
 import base64
 from copy import deepcopy
 from hashlib import sha256
+import json
+import math
 import re
 import uuid
 
@@ -43,11 +45,40 @@ RECEIPT_KEYS = {"schema", "source_bundle_digest", "replayed_bundle_digest", "num
                 "admission", "replay_id"}
 BUNDLE_KEYS = {"schema", "session_id", "created_at", "source", "configuration", "runtimes", "steps",
                "bundle_digest", "verification"}
+# Tolerance for a reopen on another host.  Linear-algebra kernels differ
+# between CPUs (OpenBLAS selects them by core type), so a reference that
+# reports roundoff-level quantities cannot be reproduced bit for bit
+# everywhere; conclusions, labels, counts and structure are still exact.
+REL_TOL = 1e-9
+ABS_TOL = 1e-12
 
 
 def _text(value, limit=512):
     if not isinstance(value, str) or not value.strip() or len(value) > limit:
         raise ValueError("Require bounded nonempty text")
+
+
+def _number(value):
+    return isinstance(value, (int, float)) and not isinstance(value, bool)
+
+
+def close_data(retained, fresh, path="data", *, rel_tol=REL_TOL, abs_tol=ABS_TOL):
+    """Structural equality with binary64 tolerance on numbers, so a reopen on another platform holds."""
+    if isinstance(retained, dict) or isinstance(fresh, dict):
+        if not isinstance(retained, dict) or not isinstance(fresh, dict) or retained.keys() != fresh.keys():
+            raise ValueError(f"Retained {path} differs in structure from the deterministic reference")
+        for key in retained:
+            close_data(retained[key], fresh[key], f"{path}.{key}", rel_tol=rel_tol, abs_tol=abs_tol)
+    elif isinstance(retained, list) or isinstance(fresh, list):
+        if not isinstance(retained, list) or not isinstance(fresh, list) or len(retained) != len(fresh):
+            raise ValueError(f"Retained {path} differs in length from the deterministic reference")
+        for index, (left, right) in enumerate(zip(retained, fresh)):
+            close_data(left, right, f"{path}[{index}]", rel_tol=rel_tol, abs_tol=abs_tol)
+    elif _number(retained) and _number(fresh):
+        if not math.isclose(retained, fresh, rel_tol=rel_tol, abs_tol=abs_tol):
+            raise ValueError(f"Retained {path} differs numerically from the deterministic reference")
+    elif retained != fresh or type(retained) is not type(fresh):
+        raise ValueError(f"Retained {path} differs from the deterministic reference")
 
 
 def algorithm_identity(profile, files, **versions):
@@ -139,7 +170,10 @@ class ReferenceWorkflow:
     # ---------------------------------------------------------- occurrences
     def _step(self, source, evidence_id, execution_id=None):
         occurrence = execution_id or "execution-" + uuid.uuid4().hex
-        data = self._native_data(source)
+        # A retained step holds plain JSON values, so an in-memory bundle equals
+        # its reopened form leaf for leaf; the canonical encoding is idempotent
+        # through this round trip, so no identity changes.
+        data = json.loads(canonical(self._native_data(source)))
         result = {
             "schema": self.result_schema,
             "operation_id": self.operation,

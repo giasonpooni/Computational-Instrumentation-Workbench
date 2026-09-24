@@ -61,8 +61,8 @@ TRUTH_ORIGINS = {"synthetic_fixture", "declared_reference"}
 DEPENDENCE = {"declared_independent", "unknown"}
 STATISTICAL_SCOPE = {"declared_independent": "finite_sample_consistency_under_declared_independence",
                      "unknown": "diagnostic_only_cross_sample_dependence_unknown"}
-REL_TOL = 1e-9
-ABS_TOL = 1e-12
+REL_TOL = base.REL_TOL
+ABS_TOL = base.ABS_TOL
 
 
 def _text(value, limit=512):
@@ -234,25 +234,6 @@ def _native_data(source):
     }
 
 
-def _close(retained, fresh, path="data"):
-    """Structural equality with binary64 tolerance on numbers, so a reopen on another platform holds."""
-    if isinstance(retained, dict) or isinstance(fresh, dict):
-        if not isinstance(retained, dict) or not isinstance(fresh, dict) or retained.keys() != fresh.keys():
-            raise ValueError(f"Retained {path} differs in structure from the deterministic reference")
-        for key in retained:
-            _close(retained[key], fresh[key], f"{path}.{key}")
-    elif isinstance(retained, list) or isinstance(fresh, list):
-        if not isinstance(retained, list) or not isinstance(fresh, list) or len(retained) != len(fresh):
-            raise ValueError(f"Retained {path} differs in length from the deterministic reference")
-        for index, (left, right) in enumerate(zip(retained, fresh)):
-            _close(left, right, f"{path}[{index}]")
-    elif type(retained) in (int, float) and type(fresh) in (int, float) and type(retained) is not bool and type(fresh) is not bool:
-        if not math.isclose(retained, fresh, rel_tol=REL_TOL, abs_tol=ABS_TOL):
-            raise ValueError(f"Retained {path} differs numerically from the deterministic reference")
-    elif retained != fresh or type(retained) is not type(fresh):
-        raise ValueError(f"Retained {path} differs from the deterministic reference")
-
-
 class UncertaintyValidationWorkflow(base.ReferenceWorkflow):
     kind = KIND
     schema = SCHEMA
@@ -282,7 +263,7 @@ class UncertaintyValidationWorkflow(base.ReferenceWorkflow):
         # Statuses, names and structure must match exactly; the statistics are
         # compared with a binary64 tolerance because linear solves may round
         # differently across platforms without changing any conclusion.
-        _close(result["data"], _native_data(source))
+        base.close_data(result["data"], _native_data(source))
 
 
 def _verification(bundle, reproduced):
