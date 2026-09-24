@@ -132,7 +132,9 @@ hosts more finely than a given reference needs, which only makes a refusal
 conservative. The pure-Python project graph records no probe. A retained
 identity from before the probe existed still reopens, and replay of it is
 refused because identities are compared whole. A replay refusal names the
-differing fields, for example `algorithm.kernel_probe`.
+differing fields, for example `algorithm.kernel_probe`, and
+`ciw workspace verify` reports the same comparison for every retained bundle
+of a saved workspace before anyone asks for a replay.
 
 A committed retained workspace under `tests/fixtures/retained/` is the reopen
 gate for every change to the shared module or its subclasses: the current code

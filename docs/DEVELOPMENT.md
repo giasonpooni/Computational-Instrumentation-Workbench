@@ -68,7 +68,19 @@ relevant compatibility and replay checks. The covariance examples in `examples/a
 python -m pip install -e '.[dev]'
 python -m pytest -q
 python scripts/check_adapters.py
+python -m ciw workspace verify tests/fixtures/retained/workbench.json
 ```
+
+`ciw workspace verify` reopens a saved workspace, or a retained workbench
+file, offline: no provider, no process, no write outside a temporary
+directory. It reports whether every retained source and bundle validates and,
+per bundle, whether this host could replay it. A provider-free reference
+compares its current runtime identity with the retained one and names the
+differing fields (`algorithm.kernel_probe` on a host whose linear-algebra
+kernels round differently); a provider-backed kind is reported as needing a
+repository binding. The exit status is 0 when the file is valid, 1 when a
+retained item is refused (the report names it) and 2 when the file is not a
+workspace at all.
 
 The adapter script clones the explicitly pinned current and historical
 scientific sources. Source-dependent tests skip when their documented checkout

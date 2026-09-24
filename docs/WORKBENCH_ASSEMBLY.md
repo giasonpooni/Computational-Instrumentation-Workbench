@@ -117,6 +117,7 @@ python -m ciw operation execute ciw.calibrated-observable.v1 --source SOURCE_ID 
 python -m ciw bundle get BUNDLE_ID
 python -m ciw bundle inspect BUNDLE_ID
 python -m ciw bundle replay BUNDLE_ID --timeout 300
+python -m ciw workspace verify results/session/workspace.json
 python -m ciw send workspace.save
 ```
 

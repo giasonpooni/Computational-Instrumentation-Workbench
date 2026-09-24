@@ -357,6 +357,11 @@ def parser() -> argparse.ArgumentParser:
         remote_arguments(action)
     inspect = commands.add_parser("inspect", help="Inspect a saved result/workspace without executing it")
     inspect.add_argument("path", type=Path)
+    workspace = commands.add_parser("workspace", help="Verify a saved workspace offline")
+    workspace_actions = workspace.add_subparsers(dest="workspace_command", required=True)
+    workspace_verify = workspace_actions.add_parser(
+        "verify", help="Reopen a workspace or retained workbench file without a provider and report replayability here")
+    workspace_verify.add_argument("path", type=Path)
     proof = commands.add_parser("proof", help="Freshly verify a retained registered SCR heat proof")
     proof_actions = proof.add_subparsers(dest="proof_command", required=True)
     proof_verify = proof_actions.add_parser("verify", help="Run the full registered-ELF verifier without producing a new proof")
@@ -636,6 +641,12 @@ def main(argv: list[str] | None = None) -> int:
             asyncio.run(watch_remote(args.url))
         elif args.command == "inspect":
             print_json(read_json(args.path))
+        elif args.command == "workspace":
+            from .workspace_verify import verify
+            report = verify(args.path)
+            print_json(report)
+            if report["status"] != "valid":
+                return 1
         elif args.command == "proof":
             from .adapters.subprocess import _json
             from .exchange import _read

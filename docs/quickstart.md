@@ -30,6 +30,7 @@ ciw demo --output recordings/demo.json
 ciw analyze stats --recording recordings/demo.json --channel q --start 2 --end 8 --output-dir results/stats
 ciw analyze spectrum --recording recordings/demo.json --channel q --start 0 --end 12 --output-dir results/spectrum
 ciw inspect results/spectrum/workspace.json
+ciw workspace verify results/spectrum/workspace.json
 ```
 
 Both calculations emit structured JSON with independent evidence, operation, execution and result identities. The output directory contains a complete source recording, immutable result JSON and a portable `workspace.json`. Inspecting a file does not execute a calculation. Use separate output directories to retain distinct workspace snapshots; a subsequent analysis in the same directory updates its `workspace.json` while keeping individual result files.
