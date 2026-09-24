@@ -332,6 +332,11 @@ exception by its type, not its message, when it may name a path.
   Declare only figures whose plotted data are wall-clock timings: a figure
   that differs for another reason (platform numerics) is fixed, not declared.
 - Budget: the whole section run ≤ 60 s and its tests ≤ 60 s on one CPU core.
+  One exception is recorded: with the `telemetry-stack` provider bound,
+  T077's telemetry session takes the exchange-provenance section over the
+  budget, and [EXCHANGE_PROVENANCE.md](EXCHANGE_PROVENANCE.md) gives the
+  measurement (on Python 3.12, the lab gate's interpreter) and why the session
+  cannot be cut; without that binding the section is within it.
   The clean-room gate pins `OPENBLAS_NUM_THREADS=1`; do not rely on BLAS
   threading, and avoid large dense solves where a structured solver exists.
   Each artifact is at most 2 MiB (`runner.MAX_ARTIFACT_BYTES`); retain sampled

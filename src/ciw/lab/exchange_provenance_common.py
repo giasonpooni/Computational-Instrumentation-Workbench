@@ -541,6 +541,9 @@ def exchange_artifact(schema: str, body: dict, field: str) -> dict:
 # ------------------------------------------------------------------ telemetry stack (T077)
 # A fixed revision that is not the GSIE pin, so the forged-runtime witness is deterministic.
 FORGED_REVISION = hashlib.sha1(b"ciw-lab forged provider revision").hexdigest()
+# Runtime identity fields telemetry._runtime does not compare on replay: a forged adapter version and an injected key.
+FORGED_ADAPTER_VERSION = "ciw-lab-forged-adapter-v9"
+INJECTED_RUNTIME_KEY = ("audited_by", "ciw-lab forged independent audit")
 
 
 def telemetry_manifest() -> dict:
@@ -590,17 +593,21 @@ def build_telemetry_fixture(root: Path, stack) -> dict:
     retains the bundled synthetic telemetry source, executes ``ciw.telemetry.v1``
     with the bundled configuration (no reconciliation, so CBSR is bound but does
     not execute), saves, replays, saves again, classifies the saved workspace with
-    ``ciw.lab.bridge`` and reopens it offline. Then a forger's edit of the first
-    save: the GSIE runtime revision replaced and every unkeyed digest over it
-    recomputed (bundle digest, SET verification identity, catalog identity and
-    replay-receipt seal); it is reopened and, when accepted, replayed with the
-    stack bound. Runtime identities are returned as CIW retains them, host paths
-    included; callers keep those out of reports.
+    ``ciw.lab.bridge`` and reopens it offline. Then two forgeries of the first
+    save, each with every unkeyed digest over it recomputed (bundle digest, SET
+    verification identity, catalog identity and replay-receipt seal), are
+    reopened: a replaced GSIE runtime revision, which a replay with the stack
+    bound then meets, and a replaced GSIE adapter_version with an injected key,
+    which meets only the runtime identity comparison that replay makes before
+    executing (``telemetry._runtime`` with the retained identity as expected; a
+    full replay would add about 48 more interpreter probes). Runtime identities
+    are returned as CIW retains them, host paths included; callers keep those
+    out of reports.
     """
     import sys
     from ..instruments import make_demo_run
     from ..session import Session
-    from ..telemetry import _bundle_digest, replay_session
+    from ..telemetry import _bundle_digest, _runtime, replay_session
     from .bridge import classify_workspace
     from .runner import repository_path
     examples = repository_path("examples", "telemetry")
@@ -623,33 +630,49 @@ def build_telemetry_fixture(root: Path, stack) -> dict:
     available = next(entry["available"] for entry in reopened.workbench.describe_operations()
                      if entry["operation_id"] == "ciw.telemetry.v1")
     again = save(reopened)
-    forged = deepcopy(first["workspace"])
-    record = forged["workbench"]["bundles"][0]
-    native = record["native"]
-    native["runtimes"]["gsie"]["revision"] = FORGED_REVISION
-    native["bundle_digest"] = record["bundle_id"] = _bundle_digest(native)
-    native["verification"]["subject_ref"] = native["bundle_digest"]
-    reseal_exchange_identity(native["verification"], "verification_id")
-    reseal_catalog(forged)
-    outcome, forged_session = reopen(forged, root)
-    forged_replay = None
-    if forged_session is not None:
-        # The workflow replay Workbench.replay runs, on the reopened retained bundle with the stack bound: it
-        # builds the pinned adapters and compares each with the retained identity before executing anything.
-        retained = forged_session.workbench.get_bundle(record["bundle_id"])
+
+    def forge(edit):
+        """Reopen the first save with the GSIE runtime identity edited and every unkeyed digest recomputed."""
+        forged = deepcopy(first["workspace"])
+        record = forged["workbench"]["bundles"][0]
+        native = record["native"]
+        edit(native["runtimes"]["gsie"])
+        native["bundle_digest"] = record["bundle_id"] = _bundle_digest(native)
+        native["verification"]["subject_ref"] = native["bundle_digest"]
+        reseal_exchange_identity(native["verification"], "verification_id")
+        reseal_catalog(forged)
+        outcome, forged_session = reopen(forged, root)
+        retained = forged_session.workbench.get_bundle(record["bundle_id"]) if forged_session is not None else None
+        return outcome, retained
+
+    def attempt_replay(call):
         try:
-            replay_session(retained, {role: bindings[role] for role in retained["runtimes"]})
+            call()
         except ValueError as exc:  # AdapterRefusal is a ValueError too
-            forged_replay = {"outcome": "refused", "error": type(exc).__name__, "message": str(exc)}
-        else:
-            forged_replay = {"outcome": "accepted", "error": None, "message": None}
-    interpreter = Path(sys.executable)
-    return {"bound_roles": sorted(bindings), "configuration_roles": sorted(native["runtimes"]),
-            "original": session.workbench.get_bundle(executed["bundle_id"]),
+            return {"outcome": "refused", "error": type(exc).__name__, "message": str(exc)}
+        return {"outcome": "accepted", "error": None, "message": None}
+
+    def forged_fields(runtime):
+        runtime["adapter_version"] = FORGED_ADAPTER_VERSION
+        runtime[INJECTED_RUNTIME_KEY[0]] = INJECTED_RUNTIME_KEY[1]
+
+    outcome, retained = forge(lambda runtime: runtime.update(revision=FORGED_REVISION))
+    # The workflow replay Workbench.replay runs, on the reopened retained bundle with the stack bound: it builds the
+    # pinned adapters and compares each with the retained identity before executing anything.
+    forged_replay = None if retained is None else attempt_replay(
+        lambda: replay_session(retained, {role: bindings[role] for role in retained["runtimes"]}))
+    fields_outcome, retained = forge(forged_fields)
+    # That comparison for the edited role alone: the adapter replay_session builds for GSIE, with the retained
+    # identity as expected (the other roles are unedited and compared as in the honest replay).
+    fields_comparison = None if retained is None else attempt_replay(
+        lambda: _runtime("gsie", bindings, retained["runtimes"]["gsie"]))
+    interpreter, original = Path(sys.executable), session.workbench.get_bundle(executed["bundle_id"])
+    return {"bound_roles": sorted(bindings), "configuration_roles": sorted(original["runtimes"]), "original": original,
             "replay": session.workbench.get_bundle(replayed["bundle"]["bundle_id"]),
             "receipt": replayed["replay_receipt"], "saved": saved["workspace"], "again": again["workspace"],
             "telemetry_available_after_reopen": available, "classification": classification["items"],
             "forged": {"reopen": outcome, "replay": forged_replay},
+            "forged_fields": {"reopen": fields_outcome, "replay_comparison": fields_comparison},
             "bound_paths": {role: str(path.resolve()) for role, path in bindings.items()},
             "interpreter": str(interpreter.absolute()),
             "interpreter_sha256": hashlib.sha256(interpreter.read_bytes()).hexdigest()}

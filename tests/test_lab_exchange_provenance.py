@@ -123,6 +123,9 @@ SEAL_CLAIM = ("The catalog's replay_receipt_seal binds each retained replay rece
               "deletion reopen")
 FORGED_CLAIM = ("A telemetry bundle whose GSIE runtime revision is forged, with every unkeyed digest over it "
                 "recomputed, reopens, and a replay on the bound stack refuses it")
+FORGED_FIELDS_CLAIM = ("A telemetry bundle whose GSIE runtime identity carries a forged adapter_version and an "
+                       "injected key, with every unkeyed digest over it recomputed, reopens, and the runtime identity "
+                       "comparison a replay makes before executing accepts it")
 PATHS_CLAIM = ("A saved telemetry workspace retains the host paths of the bound provider checkouts and interpreter in "
                "its runtime identities")
 
@@ -136,7 +139,7 @@ def test_identity_matrix(lab):
     assert telemetry is bool(_telemetry_stack())
     # Partial: the ESM candidate rows need an ESM binding that the lab gate does not provision.
     _labels(report, "provider_backed" if telemetry else "numerically_verified",
-            {"numerically_verified": 6 if telemetry else 4, "not_established": 2,
+            {"numerically_verified": 7 if telemetry else 4, "not_established": 2,
              **({"provider_backed": 4} if telemetry else {})}, state="partial")
     summary = report["findings"][0]["value"]
     unexercised = ["ESM candidate_id / candidate execution_id"] + ([] if telemetry else [ep.RUNTIME_ROW])
@@ -144,7 +147,7 @@ def test_identity_matrix(lab):
     assert summary["unexercised_rows"] == unexercised
     assert report["unresolved_assumptions"][0].startswith("Partial: ESM candidate_id")
     assert ("no telemetry stack is bound" in report["unresolved_assumptions"][0]) is not telemetry
-    assert summary["properties"] == summary["properties_held"] == (118 if telemetry else 106)
+    assert summary["properties"] == summary["properties_held"] == (119 if telemetry else 106)
     assert summary["rederived_properties"] == (16 if telemetry else 14)
     assert summary["reopen_stability_properties"] == (25 if telemetry else 24)
     assert summary["derivation_classes"]["fresh_event_uuid"] == 5
@@ -218,19 +221,34 @@ def test_identity_matrix_telemetry_runtimes(lab):
     assert forged["evidence_status"] == "numerically_verified"
     assert forged["value"] == {"reopen": "accepted", "replay": ep.RUNTIME_MISMATCH}
     assert forged["counterexample"]["statement"].startswith("Reopening a workspace checks every retained provider")
+    # Replay compares only the listed fields: a forged adapter_version with an injected key reopens and passes.
+    fields = found[FORGED_FIELDS_CLAIM]
+    assert fields["evidence_status"] == "numerically_verified"
+    assert fields["value"] == {"reopen": "accepted", "replay_comparison": "accepted"}
+    assert fields["counterexample"]["witness"]["compared_fields"] == list(ep.REPLAY_COMPARED)
+    assert fields["counterexample"]["witness"]["edit"] == {
+        "runtimes.gsie.adapter_version": common.FORGED_ADAPTER_VERSION,
+        "runtimes.gsie." + common.INJECTED_RUNTIME_KEY[0]: common.INJECTED_RUNTIME_KEY[1]}
     paths = found[PATHS_CLAIM]
     assert paths["evidence_status"] == "numerically_verified" and "counterexample" in paths
     assert paths["value"] == {"telemetry_bundles": 2, "runtime_identities": 8, "naming_the_bound_checkout_path": 8,
                               "naming_the_interpreter_path": 8, "telemetry_bound_after_reopen": False}
     row = next(row for row in json.loads(_artifact(lab, "T077", "identity-matrix.json"))["rows"]
                if row["identity"] == ep.RUNTIME_ROW)
-    assert row["exercised"] and len(row["properties"]) == 12 and all(row["properties"].values())
+    assert row["exercised"] and len(row["properties"]) == 13 and all(row["properties"].values())
     assert row["observed_refusals"] == {"forged_revision_reopen": "accepted",
-                                        "forged_revision_replay": ep.RUNTIME_MISMATCH}
+                                        "forged_revision_replay": ep.RUNTIME_MISMATCH,
+                                        "forged_adapter_version_and_injected_key_reopen": "accepted",
+                                        "forged_adapter_version_and_injected_key_replay_comparison": "accepted"}
+    assert row["across_replay"] == ep.REPLAY_COMPARISON and "every field" not in row["across_replay"]
     identity = report["provider_runtime_identity"]
     assert {role: entry["state"] for role, entry in identity[common.TELEMETRY_ROLE].items()} == dict.fromkeys(
         common.TELEMETRY_REPOSITORIES, "ready")
     assert sorted(identity["executed_runtimes"]) == sorted(ep.EXECUTED_ROLES)
+    # The T165 runtime inventory names each telemetry checkout once, by role, as T097 and T098 name theirs.
+    from ciw.lab.research_portfolio import runtime_identities
+    named = {entry["runtime"] for entry in runtime_identities(identity)}
+    assert named <= set(common.TELEMETRY_REPOSITORIES) and set(ep.EXECUTED_ROLES) <= named
     retained = json.loads(_artifact(lab, "T077", "telemetry-runtimes.json"))
     assert retained["executed_roles"] == sorted(ep.EXECUTED_ROLES) and retained["replay_runtimes_equal"] is True
     assert retained["bound_roles"] == sorted(common.TELEMETRY_REPOSITORIES)
@@ -538,6 +556,21 @@ def test_telemetry_binding_and_esm_question_match_the_provisioning_scripts():
     assert esm["repository"].split("/")[1] not in text and "check_workbench_candidates.py" not in text
     assert esm["revision"] in common.ESM_CANDIDATE_QUESTION
     assert esm["replay_ciw_revision"] in common.ESM_CANDIDATE_QUESTION
+
+
+def test_unmatched_telemetry_runtime_is_refuted():
+    """A retained runtime identity that ciw.lab.bridge does not match to its declared pin alone records that failed
+    comparison as a check: the claim is refuted (not_established with a failed check), not silently unsupported."""
+    runtime = {"schema": "ciw.subprocess-runtime.v1", "revision": "0" * 40, "source_tree": "1" * 40,
+               "module": "geometric_state_inference", "source_root": "src"}
+    pin = {"role": "gsie", "matched": ["ciw/telemetry-runtimes.json[gsie]"], "problem": None}
+    matched = ep._executed_runtime_finding("gsie", runtime, pin)
+    assert matched["evidence_status"] == "provider_backed" and "checks" not in matched["basis"]
+    for row in ({"role": "gsie", "matched": [], "problem": "revision is not a declared pin"}, {}):
+        record = ep._executed_runtime_finding("gsie", runtime, row)
+        assert record["evidence_status"] == "not_established" and "provider" not in record["basis"]
+        assert [check["passed"] for check in record["basis"]["checks"]] == [False]
+        assert ep._state([record]) == "partial"
 
 
 def test_telemetry_checkouts_name_each_unusable_checkout(tmp_path):

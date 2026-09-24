@@ -23,10 +23,24 @@ pinned in `src/ciw/telemetry-runtimes.json` is bound as `telemetry-stack`: one
 directory holding the PPDA, STFE, GSIE, SET and CBSR checkouts under their
 repository names, as `scripts/check_telemetry.py --stack-root` lays them out.
 `scripts/check_lab.py` provisions and binds it, and sets
-`CIW_LAB_TELEMETRY_STACK` for the tests. Without the stack the section runs in
-about 14 s and its tests in about 14 s on one core; with it, about 52 s and
-53 s, nearly all of it CIW's pinned adapters probing their interpreter (a
-subprocess per runtime check).
+`CIW_LAB_TELEMETRY_STACK` for the tests.
+
+**Time budget (a recorded exception).** Without the stack the section runs in
+about 14 s and its tests in about 13 s on one core. With it, on Python 3.12,
+the lab gate's interpreter, the section run and its tests each take about
+62–69 s of wall time (52–57 s of CPU time) on one core with
+`OPENBLAS_NUM_THREADS=1`; on Python 3.11 about 47–52 s. That is over the 60 s
+budget of the [authoring rules](AUTHORING.md), and the exception is recorded
+here. Nearly all of the extra time is 106 interpreter probes by CIW's pinned
+adapters: each starts `python -I -B -X pycache_prefix=<new directory>`, which
+recompiles `importlib.metadata` and its imports from source (about 0.35 s each
+on 3.12, 0.25 s on 3.11), and CIW probes a runtime whenever it constructs or
+re-checks its adapter. Binding the five checkouts takes 10, the execution with
+its reproduction and SET verification 44, and the replay 48; the two forgeries
+take 2 each, because they stop at the runtime identity comparison. The
+binding, execution and replay are what the runtime row observes, so the lab
+keeps them whole, and the second forgery meets only the replay's comparison,
+not a full replay (about 48 more probes).
 
 ## What was built
 
@@ -99,7 +113,7 @@ Both controls hold.
 ## Identity matrix (T077)
 
 The matrix has 31 identities. 29 are exercised offline, with 106 predicted
-properties; with the telemetry stack bound, 30 are exercised, with 118. Every
+properties; with the telemetry stack bound, 30 are exercised, with 119. Every
 predicted property holds. Of them, 14 (16 with the stack) are re-derivations
 of a CIW digest with the lab's own canonical JSON and SHA-256 (same
 implementation origin, recorded as `cross_implementation`). The others observe
@@ -169,7 +183,7 @@ as `artifacts/T077/telemetry-runtimes.json`.
 | ESM `requestId` / `inspectedAt` | caller-declared | equality of request and response only | n/a | n/a | `candidate_evidence.py:validate_response` |
 | ESM `bundleBytesDigest` | byte hash of the bytes CIW passes (its canonical serialization of the bundle) | those exact bytes; a digest over another layout of the same bundle is refused | n/a | n/a | `validate_response`, `workbench.py:Workbench._validate_candidate` |
 | ESM `candidate_id` / candidate execution | content hash / fresh uuid4 | response bytes, policy, adapter identity | n/a | stable | `workbench.py:Workbench._validate_candidate` (not exercised offline) |
-| pinned-provider runtime identity (`ciw.subprocess-runtime.v1`) | CIW's pinned revision, module and source root (`ciw/telemetry-runtimes.json`) beside Git's tree of the bound checkout, the interpreter's SHA-256 and probed versions, and the host's checkout and interpreter paths | the pinned revision plus host-measured tree, interpreter digest and versions, and **host paths** | compared on replay (every field but the host paths; a forged revision is refused) | stable, bound by `bundle_digest`; **the pin is not re-checked on reopen** | `adapters/subprocess.py:PinnedSubprocessAdapter.runtime_identity`, `telemetry.py:_runtime`, `_validate_retained`, `workbench.py:Workbench.bind_workflow` (observed with the telemetry stack bound; without it, read from the declared-workload code: pin and format checked on reopen) |
+| pinned-provider runtime identity (`ciw.subprocess-runtime.v1`) | CIW's pinned revision, module and source root (`ciw/telemetry-runtimes.json`) beside Git's tree of the bound checkout, the interpreter's SHA-256 and probed versions, and the host's checkout and interpreter paths | the pinned revision plus host-measured tree, interpreter digest and versions, and **host paths** | telemetry: revision, source tree, module, source root, interpreter digest, Python and dependency versions compared (PPDA also its source digest and scope); a forged revision is refused, but **`schema`, `adapter_version` and unknown keys are not compared** (a forged `adapter_version` with an injected key passes). Declared workloads compare every field but the host paths (read from code) | stable, bound by `bundle_digest`; **the pin is not re-checked on reopen** | `adapters/subprocess.py:PinnedSubprocessAdapter.runtime_identity`, `telemetry.py:_runtime`, `_validate_retained`, `workbench.py:Workbench.bind_workflow` (observed with the telemetry stack bound; without it, read from the declared-workload code: pin and format checked on reopen) |
 
 The log's producer identities are placeholders in the fixture (`aaaa…`,
 `cccc…`, `dddd…`) and CIW checks only their format: a resealed log with other
@@ -203,10 +217,13 @@ records a tree for these revisions.
 
 Labels follow what ran. Each executed runtime's retained identity is a
 `provider_backed` finding: a pinned runtime's record that matches the pin CIW
-declares, with repository, revision and tree in its basis. CIW's own
-recomputations and the lab's comparisons (trees, interpreter digest, replay and
-reopen stability, the classification) are the row's `numerically_verified`
-properties. Two counterexamples come from the same session:
+declares, with repository, revision and tree in its basis. A retained
+identity that `ciw.lab.bridge` does not match to its declared pin alone would
+record that failed comparison as a check, so the claim would be refuted rather
+than left unsupported. CIW's own recomputations and the lab's comparisons
+(trees, interpreter digest, replay and reopen stability, the classification)
+are the row's `numerically_verified` properties. Three counterexamples come
+from the same session:
 
 - **The pin is not re-checked on reopen.** The first save with its GSIE
   revision replaced and every unkeyed digest over it recomputed (bundle digest,
@@ -215,6 +232,17 @@ properties. Two counterexamples come from the same session:
   Only a replay on the bound stack refuses it (`Telemetry replay runtime
   identity mismatch`). The declared-workload code's reopen-time pin check, read
   from the code for the unbound row, does not cover telemetry bundles.
+- **Replay compares only some runtime fields.** `telemetry._runtime` compares
+  the retained `revision`, `source_tree`, `module`, `source_root`,
+  `python_sha256`, `python_version` and `dependencies` with the live adapter's
+  (PPDA's also `source_sha256` and `execution_scope`). It does not compare
+  `schema` or `adapter_version`, and it does not refuse unknown keys. The
+  first save with the GSIE `adapter_version` replaced and an `audited_by` key
+  injected, every unkeyed digest recomputed as above, reopens, and that
+  comparison (for GSIE, with the reopened retained identity as expected, as
+  `replay_session` calls it) accepts it. The full replay is not run on this
+  forgery: after the comparison it re-executes the pinned code, about 48 more
+  interpreter probes (see the time budget above).
 - **Host paths are retained.** Each saved runtime identity (8 over the original
   and the replay) records the bound checkout's `repository_root` and the
   interpreter's `python_executable`, although reopening restores no binding
@@ -537,11 +565,16 @@ the key-custody question below is unchanged.
    |mean| ≤ rms ≤ max(|min|, |max|) as well as the bounds; the
    `numerical_result_id` is recomputed from the retained numbers and cannot
    tell whether they are statistics of the recording.
-5. **Re-check telemetry runtime pins on reopen.** A telemetry bundle's retained
-   runtime identities are checked against CIW's pins only by a replay (T077's
-   forged revision reopens); reopen could compare each with
-   `ciw/telemetry-runtimes.json` as the declared workloads do, and leave the
-   host's paths out of the retained identity.
+5. **Re-check telemetry runtime pins on reopen, and compare whole identities.**
+   A telemetry bundle's retained runtime identities are checked against CIW's
+   pins only by a replay (T077's forged revision reopens); reopen could compare
+   each with `ciw/telemetry-runtimes.json` as the declared workloads do, and
+   leave the host's paths out of the retained identity. Replay and reopen
+   should also compare the whole retained identity except the host paths, as
+   the declared workloads' replay does, and refuse unknown keys: today
+   `schema`, `adapter_version` and any injected key are not compared (T077's
+   forged `adapter_version` with an injected key reopens and passes the replay
+   comparison).
 6. **Seal or retire legacy results.** Either seal legacy `analysis.stats` results
    or refuse to reopen them without an explicit legacy flag.
 7. **Label historical runtimes.** On reopen, label a retained energy runtime that
@@ -622,7 +655,9 @@ next queue task, which has already run.
   telemetry-shaped record. T090 mutates only the CIW-internal oscillator
   provider identity and CIW's own energy analysis identity; of the
   pinned-provider subprocess runtime identities (`ciw.subprocess-runtime.v1`)
-  only T077's one forged GSIE revision was tried.
+  only T077's forged GSIE revision and forged GSIE `adapter_version` with an
+  injected key were tried, and the second only against the replay's runtime
+  identity comparison, not a full replay.
 - A `provider_backed` telemetry runtime finding says that the retained record
   of a pinned runtime matches the pin CIW declares. CIW records no source tree
   for the telemetry pins, the pins are public and the seals unkeyed, so a

@@ -39,8 +39,9 @@ import uuid
 
 from .evidence import finding, holds as compare
 from .exchange_provenance_common import (
-    ESM_CANDIDATE_QUESTION, FORGED_CODE, FORGED_DIGEST, FORGED_RUNTIME, FORGED_SESSION, FORGED_TIME,
-    KEY_CUSTODY_QUESTION, KIND, OPERATION, TELEMETRY_OWNER, TELEMETRY_REPOSITORIES, TELEMETRY_ROLE, Mutant, View,
+    ESM_CANDIDATE_QUESTION, FORGED_ADAPTER_VERSION, FORGED_CODE, FORGED_DIGEST, FORGED_RUNTIME, FORGED_SESSION,
+    FORGED_TIME, INJECTED_RUNTIME_KEY, KEY_CUSTODY_QUESTION, KIND, OPERATION, TELEMETRY_OWNER, TELEMETRY_REPOSITORIES,
+    TELEMETRY_ROLE, Mutant, View,
     attempt, build_session_fixture, build_telemetry_fixture, build_variant_fixture, build_verification, check_esm,
     edited_log, esm_case, exchange_artifact, fixture_available, forge_receipt, measurement_edit, reforge,
     reforge_source, relabel, reopen, request, reseal_catalog, reseal_oscillator, reseal_receipt, restep, role_labels,
@@ -95,7 +96,9 @@ NEXT_STEPS = {
              "by binding the pinned ESM runtime and its CIW replay checkout to the telemetry session T077 runs on the "
              "telemetry-stack binding (the deferred research question among the unresolved assumptions), and, as CIW "
              "changes, have reopen check a telemetry bundle's pinned runtime identities against CIW's pins, which "
-             "today only a replay compares."),
+             "today only a replay compares, and have replay and reopen compare the whole retained identity but the "
+             "host paths and refuse unknown keys, which today let a forged adapter_version with an injected key "
+             "reopen and pass the replay comparison."),
     "T078": ("Deferred research question: exercise exact byte retention for the source kinds other than "
              "energy-accuracy (they share workbench._source but have their own parsers), and retain the oscillator "
              "recording's input bytes, which are supplied as parsed JSON and so do not exist to retain."),
@@ -1589,6 +1592,15 @@ def identity_matrix(fixture: dict, variants: dict, root: Path, mutations: dict, 
 
 RUNTIME_ROW = "pinned-provider runtime identity (ciw.subprocess-runtime.v1)"
 RUNTIME_MISMATCH = "Telemetry replay runtime identity mismatch"
+# The retained runtime identity fields telemetry._runtime compares on replay (PPDA's adds REPLAY_COMPARED_PPDA); schema,
+# adapter_version, the host paths and any other key are not compared.
+REPLAY_COMPARED = ("revision", "source_tree", "module", "source_root", "python_sha256", "python_version",
+                   "dependencies")
+REPLAY_COMPARED_PPDA = ("source_sha256", "execution_scope")
+REPLAY_COMPARISON = ("compared field by field on replay: " + ", ".join(REPLAY_COMPARED) + " (PPDA also "
+                     + " and ".join(REPLAY_COMPARED_PPDA) + "); a forged revision is refused, while schema, "
+                     "adapter_version and unknown keys are not compared (a forged adapter_version with an injected "
+                     "key passes)")
 # Host-dependent fields of a retained runtime identity: kept out of reports and artifacts.
 HOST_FIELDS = ("repository_root", "python_executable")
 EXECUTED_ROLES = ("ppda", "stfe", "gsie", "set")
@@ -1614,6 +1626,7 @@ def _runtime_properties(telemetry: dict) -> tuple:
     forged = session["forged"]
     reopened = "accepted" if forged["reopen"]["outcome"] == "accepted" else forged["reopen"]["message"]
     replayed = (forged["replay"] or {}).get("message") or (forged["replay"] or {}).get("outcome") or "not run"
+    fields_reopened, fields_compared = _forged_fields_outcomes(session)
     properties = {
         "schema_and_adapter_version": sorted(runtimes) == sorted(EXECUTED_ROLES) and all(
             runtime["schema"] == "ciw.subprocess-runtime.v1" and runtime["adapter_version"] == "ciw-pinned-subprocess-v1"
@@ -1635,6 +1648,8 @@ def _runtime_properties(telemetry: dict) -> tuple:
         "stable_across_replay": session["replay"]["runtimes"] == runtimes and session["receipt"]["numerical_match"]
         is True,
         "forged_revision_refused_by_replay": replayed == RUNTIME_MISMATCH,
+        "forged_adapter_version_and_injected_key_pass_the_replay_comparison":
+            fields_reopened == "accepted" and fields_compared == "accepted",
         "pin_not_rechecked_on_reopen": reopened == "accepted",
         "classified_provider_backed_by_ciw_lab_classify": len(classified) == 2 and bool(rows) and all(
             "provider_backed" in item["labels"] for item in classified) and all(
@@ -1642,7 +1657,17 @@ def _runtime_properties(telemetry: dict) -> tuple:
             and all(pin.startswith("ciw/telemetry-runtimes.json[") for pin in row["matched"]) for row in rows),
         "stable_across_reopen": bool(saved) and again[:len(saved)] == saved,
     }
-    return properties, {"forged_revision_reopen": reopened, "forged_revision_replay": replayed}
+    return properties, {"forged_revision_reopen": reopened, "forged_revision_replay": replayed,
+                        "forged_adapter_version_and_injected_key_reopen": fields_reopened,
+                        "forged_adapter_version_and_injected_key_replay_comparison": fields_compared}
+
+
+def _forged_fields_outcomes(session: dict) -> tuple:
+    """Reopen and replay-comparison outcomes of the forged GSIE adapter_version with an injected key."""
+    forged = session["forged_fields"]
+    reopened = "accepted" if forged["reopen"]["outcome"] == "accepted" else forged["reopen"]["message"]
+    compared = forged["replay_comparison"] or {}
+    return reopened, compared.get("message") or compared.get("outcome") or "not run"
 
 
 def _runtime_row(telemetry: dict | None) -> dict:
@@ -1657,7 +1682,8 @@ def _runtime_row(telemetry: dict | None) -> dict:
         "versions are probed; repository_root and python_executable are the host's paths",
         "the pinned provider revision plus host-measured tree, interpreter digest and versions, and the host's "
         "checkout and interpreter paths",
-        "compared on replay (every field but the host paths; a forged revision is refused)",
+        REPLAY_COMPARISON if exercised else
+        "compared on replay (declared workloads: every field but the host paths; read from code)",
         "stable; bound by bundle_digest, and the pin is not re-checked on reopen" if exercised else
         "pin and format checked (declared workloads; read from code)",
         ["src/ciw/adapters/subprocess.py:PinnedSubprocessAdapter.runtime_identity", "src/ciw/telemetry.py:_runtime",
@@ -1745,36 +1771,42 @@ def _telemetry(ctx) -> dict:
     return ctx.memo("exchange-provenance.telemetry", compute)
 
 
+def _executed_runtime_finding(role: str, runtime: dict, row: dict) -> dict:
+    """One executed runtime's retained identity: ``provider_backed`` when ciw.lab.bridge matches it to its declared
+    pin alone; otherwise the failed pin comparison is recorded as a check, so the claim is refuted, not unsupported."""
+    declared = f"ciw/telemetry-runtimes.json[{role}]"
+    repository = f"{TELEMETRY_OWNER}/{TELEMETRY_REPOSITORIES[role]}"
+    value = {"repository": repository, "schema": runtime["schema"], "revision": runtime["revision"],
+             "source_tree": runtime["source_tree"], "module": runtime["module"],
+             "source_root": runtime["source_root"], "matched": row.get("matched"),
+             "tree_pinned": row.get("tree_pinned")}
+    if row.get("matched") == [declared] and not row.get("problem"):
+        basis = {"provider": {"repository": repository, "revision": runtime["revision"],
+                              "source_tree": runtime["source_tree"], "executed": True},
+                 "notes": f"Returned by CIW's pinned subprocess adapter for the {role} checkout of the bound "
+                          f"telemetry stack; ciw.lab.bridge matches the retained identity to {declared}. CIW "
+                          "records no source tree for this revision (tree_pinned false), so the tree is as "
+                          "retained; T077 compares it with the bound checkout in the identity matrix. Interpreter "
+                          "digest, versions and host paths are in telemetry-runtimes.json, never compared."}
+    else:
+        problem = row.get("problem") or "ciw.lab.bridge found no pin row for it"
+        basis = {"checks": [_exact(f"retained {role} runtime identity not matched to {declared} alone by "
+                                   f"ciw.lab.bridge (matched {row.get('matched')}; {problem})", 1)],
+                 "notes": f"The retained {role} runtime identity is not {declared}: {problem}."}
+    return finding(f"The executed {role} runtime of the telemetry session is retained with CIW's "
+                   "ciw/telemetry-runtimes.json pin", "provenance", value, basis,
+                   uncertainty=EXACT_UNC, tolerance=EXACT)
+
+
 def _runtime_findings(telemetry: dict) -> list:
-    """What actually ran: each executed runtime's retained identity, labelled by the pin it matches, and two
-    counterexamples observed on the session (a forged revision reopens; host paths are retained)."""
+    """What actually ran: each executed runtime's retained identity, labelled by the pin it matches, and three
+    counterexamples observed on the session (a forged revision reopens; a forged adapter_version with an injected key
+    reopens and passes the replay comparison; host paths are retained)."""
     session = telemetry["fixture"]
     runtimes = session["original"]["runtimes"]
     original = next(item for item in _classified(session) if item["identity"] == session["original"]["bundle_digest"])
     pins = {row["role"]: row for row in original.get("runtime_pins", []) if row["role"]}
-    findings = []
-    for role in EXECUTED_ROLES:
-        runtime, row = runtimes[role], pins.get(role, {})
-        declared = f"ciw/telemetry-runtimes.json[{role}]"
-        repository = f"{TELEMETRY_OWNER}/{TELEMETRY_REPOSITORIES[role]}"
-        value = {"repository": repository, "schema": runtime["schema"], "revision": runtime["revision"],
-                 "source_tree": runtime["source_tree"], "module": runtime["module"],
-                 "source_root": runtime["source_root"], "matched": row.get("matched"),
-                 "tree_pinned": row.get("tree_pinned")}
-        if row.get("matched") == [declared] and not row.get("problem"):
-            basis = {"provider": {"repository": repository, "revision": runtime["revision"],
-                                  "source_tree": runtime["source_tree"], "executed": True},
-                     "notes": f"Returned by CIW's pinned subprocess adapter for the {role} checkout of the bound "
-                              f"telemetry stack; ciw.lab.bridge matches the retained identity to {declared}. CIW "
-                              "records no source tree for this revision (tree_pinned false), so the tree is as "
-                              "retained; T077 compares it with the bound checkout in the identity matrix. Interpreter "
-                              "digest, versions and host paths are in telemetry-runtimes.json, never compared."}
-        else:
-            basis = {"notes": f"The retained {role} runtime identity is not {declared}: "
-                              f"{row.get('problem') or 'ciw.lab.bridge found no pin row for it'}."}
-        findings.append(finding(f"The executed {role} runtime of the telemetry session is retained with CIW's "
-                                "ciw/telemetry-runtimes.json pin", "provenance", value, basis,
-                                uncertainty=EXACT_UNC, tolerance=EXACT))
+    findings = [_executed_runtime_finding(role, runtimes[role], pins.get(role, {})) for role in EXECUTED_ROLES]
     forged = session["forged"]
     reopened = "accepted" if forged["reopen"]["outcome"] == "accepted" else forged["reopen"]["message"]
     replayed = (forged["replay"] or {}).get("message") or (forged["replay"] or {}).get("outcome") or "not run"
@@ -1791,6 +1823,24 @@ def _runtime_findings(telemetry: dict) -> list:
                                      "CIW's pin",
                         "witness": {"edit": "runtimes.gsie.revision replaced by a revision that is not the pin",
                                     "recomputed": recomputed, "reopen": reopened, "replay": replayed}}))
+    fields_reopened, fields_compared = _forged_fields_outcomes(session)
+    findings.append(_verified(
+        "A telemetry bundle whose GSIE runtime identity carries a forged adapter_version and an injected key, with "
+        "every unkeyed digest over it recomputed, reopens, and the runtime identity comparison a replay makes "
+        "before executing accepts it", {"reopen": fields_reopened, "replay_comparison": fields_compared},
+        [_invariant("forged GSIE adapter_version and injected key: reopen accepted (1 = accepted)",
+                    1.0 if fields_reopened == "accepted" else 0.0, 1.0, "ge"),
+         _refusal("replay runtime identity comparison (telemetry._runtime for gsie, with the reopened retained "
+                  "identity as expected, as replay_session calls it) of the forged identity with the telemetry "
+                  "stack bound", "accepted", fields_compared)],
+        counterexample={"statement": "A telemetry replay compares every retained runtime identity field except the "
+                                     "host paths",
+                        "witness": {"edit": {"runtimes.gsie.adapter_version": FORGED_ADAPTER_VERSION,
+                                             f"runtimes.gsie.{INJECTED_RUNTIME_KEY[0]}": INJECTED_RUNTIME_KEY[1]},
+                                    "recomputed": recomputed, "reopen": fields_reopened,
+                                    "replay_comparison": fields_compared,
+                                    "compared_fields": list(REPLAY_COMPARED),
+                                    "compared_for_ppda_only": list(REPLAY_COMPARED_PPDA)}}))
     retained = [(role, runtime, record) for record in _telemetry_bundles(session["saved"])
                 for role, runtime in sorted(record["native"]["runtimes"].items())]
     checkout = sum(runtime.get("repository_root") == session["bound_paths"].get(role) for role, runtime, _ in retained)
@@ -1826,7 +1876,7 @@ def _telemetry_artifact(telemetry: dict) -> dict:
             classification=[{"bundle": "original" if item["identity"] == session["original"]["bundle_digest"]
                              else "replay", "labels": item["labels"], "runtime_pins": item.get("runtime_pins", [])}
                             for item in _classified(session)],
-            forged=session["forged"])
+            forged=session["forged"], forged_fields=session["forged_fields"])
     return record
 
 
@@ -1851,7 +1901,8 @@ T077_PLAN = _fields(
     "by catalog position); cite the mutation matrix's receipt-deletion and resealed-statistics rows. With the "
     "telemetry stack bound (--provider telemetry-stack=<dir>), check each checkout against its "
     "ciw/telemetry-runtimes.json pin, then execute, replay, save, classify (ciw.lab.bridge) and reopen a telemetry "
-    "session in the shared workbench, and reopen and replay a forged GSIE runtime revision. Planned but not "
+    "session in the shared workbench, reopen and replay a forged GSIE runtime revision, and reopen a forged GSIE "
+    "adapter_version with an injected key and meet it with the replay's runtime identity comparison. Planned but not "
     "reachable here: " + ESM_UNEXERCISED,
     "not run", "not run", [], [], NEXT_STEPS["T077"],
     inputs=SESSION_INPUTS + [VARIANT_INPUT, ESM_INPUT, EXCHANGE_INPUT, TELEMETRY_INPUT])
@@ -1972,7 +2023,9 @@ def identity_matrix_task(ctx):
     telemetry_result = (
         f"telemetry stack: {len(session['configuration_roles'])} runtimes executed "
         f"({', '.join(session['configuration_roles'])}) of {len(session['bound_roles'])} bound checkouts at their "
-        f"pins; forged GSIE revision on reopen: {session['forged']['reopen']['outcome']}"
+        f"pins; forged GSIE revision on reopen: {session['forged']['reopen']['outcome']}; forged GSIE "
+        f"adapter_version with an injected key on reopen and in the replay comparison: "
+        f"{', '.join(_forged_fields_outcomes(session))}"
         if session else f"telemetry stack: {telemetry['reason']}")
     fields.update(
         experiment=T077_PLAN["experiment"] + " " + COMPARISON + " Matrix retained as identity-matrix.json/.md "
@@ -2005,6 +2058,8 @@ def identity_matrix_task(ctx):
                                "ESM digest over a non-canonical layout of the same bundle",
                                "telemetry checkout off its pin or with modified bytes",
                                "forged telemetry runtime revision on reopen and on replay",
+                               "forged telemetry runtime adapter_version and injected key on reopen and in the replay "
+                               "comparison",
                                "host paths in retained runtime identities"],
         unresolved_assumptions=[
             "Partial: " + " ".join(reasons[identity] for identity in unexercised),
@@ -2026,8 +2081,10 @@ def identity_matrix_task(ctx):
             ESM_CANDIDATE_QUESTION, KEY_CUSTODY_QUESTION],
         recommended_next_task=NEXT_STEPS["T077"])
     if telemetry["bound"]:
+        # Checkouts and executed runtimes are both keyed by role, with no repository name, so the T165 runtime
+        # inventory (research_portfolio.runtime_identities) names each checkout once, by role, as T097 and T098 do.
         fields["provider_runtime_identity"] = {
-            TELEMETRY_ROLE: {role: {key: record.get(key) for key in ("repository", "state", "head", "tree", "matched")}
+            TELEMETRY_ROLE: {role: {key: record.get(key) for key in ("state", "head", "tree", "matched")}
                              for role, record in telemetry["checkouts"].items()},
             **({"executed_runtimes": {role: {key: runtime[key] for key in (
                 "schema", "revision", "source_tree", "module", "source_root", "python_sha256", "python_version",
