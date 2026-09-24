@@ -5,6 +5,7 @@ import base64
 import json
 import os
 from pathlib import Path
+import subprocess
 
 import pytest
 
@@ -99,10 +100,25 @@ def test_native_exchange_survives_save_reopen_and_replay(monkeypatch, tmp_path):
     assert replay["bundle"]["bundle_id"] != summary["bundle_id"]
 
 
+def _git(repo, *arguments):
+    subprocess.run(["git", "-C", str(repo), *arguments], check=True,
+                   stdout=subprocess.PIPE, stderr=subprocess.PIPE)
+
+
 def test_provider_revision_mismatch_is_refused(tmp_path):
+    # A directory that is not a checkout is refused before any revision check.
+    empty = tmp_path / "not-a-checkout"
+    empty.mkdir()
+    with pytest.raises(ValueError, match="readable git checkout"):
+        adapter._runtime(empty)
+    # A real checkout at any other commit is refused by the exchange pin.
     fake = tmp_path / "provider"
     fake.mkdir()
-    with pytest.raises(ValueError, match="revision"):
+    _git(fake, "init", "-q")
+    _git(fake, "config", "core.autocrlf", "false")
+    _git(fake, "-c", "user.name=CIW Test", "-c", "user.email=ciw@example.test",
+         "-c", "commit.gpgsign=false", "commit", "-q", "--allow-empty", "-m", "fixture")
+    with pytest.raises(ValueError, match="revision differs from the exchange pin"):
         adapter._runtime(fake)
 
 
