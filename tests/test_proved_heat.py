@@ -447,3 +447,45 @@ def test_fresh_verification_retains_its_own_memory_measurement(monkeypatch):
     report = workflow.verify_session(bundle, {})
     assert report["memory"] == measured
     assert bundle["steps"][0]["result"]["data"]["timings"]["memory"] == module.UNMEASURED_MEMORY
+
+
+def _leaves(value, path=()):
+    if isinstance(value, dict):
+        for key, item in value.items():
+            yield from _leaves(item, path + (key,))
+    elif isinstance(value, list):
+        for index, item in enumerate(value):
+            yield from _leaves(item, path + (index,))
+    else:
+        yield path
+
+
+def test_every_single_leaf_change_to_a_retained_replay_is_refused():
+    """Runner-owned envelopes and proof-owned verification leave no unbound field."""
+    workflow = ProvedHeatWorkflow()
+    original, fresh = fake_bundle(), fake_bundle()
+    receipt = {"schema": "ciw.proved-heat-replay.v1", "source_bundle_digest": original["bundle_digest"],
+               "replayed_bundle_digest": fresh["bundle_digest"], "numerical_match": True,
+               "verification": workflow._receipt_verification(original, fresh), "admission": "not_performed"}
+    receipt["replay_id"] = digest(receipt)
+    fresh["replay_receipts"] = [receipt]
+    workflow.validate_replay(original, fresh, receipt)
+    checked = 0
+    for bundle in (original, fresh):
+        for path in _leaves(bundle):
+            if path == ("bundle_digest",):
+                continue
+            for reseal in (False, True):
+                changed = deepcopy(bundle)
+                parent = changed
+                for key in path[:-1]:
+                    parent = parent[key]
+                value = parent[path[-1]]
+                parent[path[-1]] = (value + "x" if isinstance(value, str) else not value if isinstance(value, bool)
+                                    else value + 1 if isinstance(value, (int, float)) else "x")
+                if reseal:
+                    changed["bundle_digest"] = bundle_digest(changed)
+                with pytest.raises(ValueError):
+                    workflow._validate(changed)
+                checked += 1
+    assert checked > 500

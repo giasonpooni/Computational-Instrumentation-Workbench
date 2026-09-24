@@ -153,7 +153,12 @@ energy: CSG, then GSIE and PLSR) uses the same runner. It seals each companion
 call with `StageChain`, re-checks the sequence with `check_chain` (exact roles
 and operations in order, cumulative `input_refs`, distinct occurrences) and
 overrides `_step`, `_validate_step` and `_check_runtimes`. The bundle,
-verification and replay receipt remain the runner's records. Canonical
+verification and replay receipt remain the runner's records.
+
+A pipeline verified by a proof instead of a reproduction (proved heat: an SP1
+proof checked against the registered guest) overrides `_verify`,
+`_check_verification` and `_check_receipts`; the bundle, source evidence and
+step envelopes stay the runner's (`_check_envelope`, `check_step`). Canonical
 record content and its identities live in
 [`ciw.core.canonical`](../src/ciw/core/canonical.py).
 

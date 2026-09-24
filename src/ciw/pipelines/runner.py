@@ -28,6 +28,11 @@ companion call with ``StageChain`` and re-checks the sequence with
 runtimes are not one subprocess checkout, ``_check_runtimes``. The bundle,
 verification and receipt records stay the runner's.
 
+A pipeline whose verification is not a same-runtime reproduction (a proof
+checked by a registered verifier) overrides ``_verify``,
+``_check_verification`` and ``_check_receipts``; the source, bundle and step
+envelopes stay the runner's.
+
 A class that overrides only these hooks is a ``generic_runner`` pipeline;
 ``pipelines.check`` enforces that. Records are the ones the hand-written
 workflows produced, so retained workspaces reopen and replay unchanged.
@@ -118,6 +123,7 @@ def check_step(step, *, role: str, operation: str, source: dict, input_refs: lis
     """Refuse a step unless every identity in it binds this source, operation and native data.
 
     ``check_data`` may be ``None`` when the caller checks the data itself.
+    ``numerical`` is the expected projection, or a function of the checked data.
     """
     exact_keys(step, STEP_FIELDS)
     if (step["runtime_ref"] != role or step["operation_id"] != operation or step["input_refs"] != input_refs or
@@ -134,8 +140,11 @@ def check_step(step, *, role: str, operation: str, source: dict, input_refs: lis
             result["result_id"] != step["result_id"] or
             result["result_id"] != digest({key: value for key, value in result.items() if key != "result_id"})):
         raise ValueError(f"{label} result binding mismatch")
-    same(step["numerical_result"], {"operation_id": operation, "data": result["data"]} if numerical is None else numerical,
-         f"{label} numerical projection mismatch")
+    if numerical is None:
+        numerical = {"operation_id": operation, "data": result["data"]}
+    elif callable(numerical):
+        numerical = numerical(result["data"])
+    same(step["numerical_result"], numerical, f"{label} numerical projection mismatch")
     for key, content in (("request_sha256", source), ("result_sha256", result),
                          ("numerical_result_id", step["numerical_result"])):
         if step[key] != digest(content):
@@ -328,29 +337,40 @@ class PipelineRunner:
             raise ValueError("Verification must bind fresh native reproduction and limited authority")
         _identity(proof, "verification_id")
 
+    def _check_envelope(self, bundle):
+        """The bundle, source evidence and configuration bindings; returns ``(raw, source, evidence_ref)``."""
+        exact_keys(bundle, BUNDLE_FIELDS, {"replay_receipts"})
+        if (len(canonical(bundle)) > self.MAX_BYTES or bundle["schema"] != self.schema or
+                bundle["bundle_digest"] != bundle_digest(bundle)):
+            raise ValueError(f"{self.LABEL} session bundle binding mismatch")
+        if not isinstance(bundle["session_id"], str) or not _SESSION.fullmatch(bundle["session_id"]):
+            raise ValueError(f"Invalid {self.LABEL} session occurrence")
+        text(bundle["created_at"])
+        evidence, = bundle["source"]["evidence"]
+        raw = base64.b64decode(evidence["bytes_b64"], validate=True)
+        source = self._source(raw)
+        if (evidence != {"artifact_ref": byte_digest(raw), "sha256": byte_digest(raw),
+                         "bytes_b64": base64.b64encode(raw).decode()} or
+                bundle["source"] != {"experiment_id": source["experiment_id"], "experiment_digest": digest(source),
+                                     "evidence": [evidence]} or
+                canonical(bundle["configuration"]) != canonical(source["configuration"])):
+            raise ValueError(f"{self.LABEL} source/configuration binding mismatch")
+        return raw, source, evidence["artifact_ref"]
+
+    def _check_receipts(self, bundle):
+        check_receipts(bundle, self.kind)
+
+    def _verify(self, bundle, source, evidence, bound):
+        return verification(bundle, self._step(source, evidence, bound))
+
     def _validate(self, bundle):
         try:
-            exact_keys(bundle, BUNDLE_FIELDS, {"replay_receipts"})
-            if (len(canonical(bundle)) > self.MAX_BYTES or bundle["schema"] != self.schema or
-                    bundle["bundle_digest"] != bundle_digest(bundle)):
-                raise ValueError(f"{self.LABEL} session bundle binding mismatch")
-            if not isinstance(bundle["session_id"], str) or not _SESSION.fullmatch(bundle["session_id"]):
-                raise ValueError(f"Invalid {self.LABEL} session occurrence")
-            text(bundle["created_at"])
-            evidence, = bundle["source"]["evidence"]
-            raw = base64.b64decode(evidence["bytes_b64"], validate=True)
-            source = self._source(raw)
-            if (evidence != {"artifact_ref": byte_digest(raw), "sha256": byte_digest(raw),
-                             "bytes_b64": base64.b64encode(raw).decode()} or
-                    bundle["source"] != {"experiment_id": source["experiment_id"], "experiment_digest": digest(source),
-                                         "evidence": [evidence]} or
-                    canonical(bundle["configuration"]) != canonical(source["configuration"])):
-                raise ValueError(f"{self.LABEL} source/configuration binding mismatch")
+            raw, source, evidence = self._check_envelope(bundle)
             self._check_runtimes(bundle["runtimes"])
             step, = bundle["steps"]
-            self._validate_step(step, source, evidence["artifact_ref"])
-            self._check_verification(bundle, bundle["verification"], source, evidence["artifact_ref"])
-            check_receipts(bundle, self.kind)
+            self._validate_step(step, source, evidence)
+            self._check_verification(bundle, bundle["verification"], source, evidence)
+            self._check_receipts(bundle)
             return raw
         except _MALFORMED as exc:
             raise ValueError(f"Malformed {self.LABEL} session") from exc
@@ -376,7 +396,7 @@ class PipelineRunner:
                                            "bytes_b64": base64.b64encode(raw).decode()}]},
                   "configuration": deepcopy(source["configuration"]), "runtimes": {self.role: bound[1]}, "steps": [step]}
         bundle["bundle_digest"] = bundle_digest(bundle)
-        bundle["verification"] = verification(bundle, self._step(source, evidence, bound))
+        bundle["verification"] = self._verify(bundle, source, evidence, bound)
         self._validate(bundle)
         return bundle
 

@@ -19,11 +19,12 @@ import uuid
 from .adapters.protocol import AdapterRefusal
 from .adapters.subprocess import PinnedSubprocessAdapter, _json
 from .declared_workload import (
-    AUTHORITY, DeclaredWorkflow, HEAT_POLICY, RESULT_SCHEMA, _check_data, _commit, _read_bound, _text,
+    AUTHORITY, HEAT_POLICY, _check_data, _commit, _read_bound, _text,
 )
 from .exchange import _identity
-from .core.canonical import canonical, digest, byte_digest, bundle_digest, utc_now, exact_keys
+from .core.canonical import canonical, digest, byte_digest, exact_keys
 from .pipelines import pin_map
+from .pipelines.runner import PipelineRunner, check_step, seal_step
 
 MAX_BYTES = 24 * 1024 * 1024
 PROOF_LIMIT = 8 * 1024 * 1024
@@ -213,18 +214,20 @@ def _verification(bundle, occurrence):
         "authority": deepcopy(AUTHORITY)})
 
 
-class ProvedHeatWorkflow(DeclaredWorkflow):
+class ProvedHeatWorkflow(PipelineRunner):
+    """SCR heat execution proved by SP1; verification is a registered-guest proof check, not reproduction."""
+
     MAX_BYTES = MAX_BYTES
-    ROLES = {"scr", "engine", "prover", "guest"}
-    SOURCE_SCHEMA = "ciw.proved-heat-source.v1"
+    LABEL = "Proved heat"
+    ROLES = frozenset({"scr", "engine", "prover", "guest"})
+    EXTRA_ROLES = frozenset({"engine", "prover", "guest"})
 
     def __init__(self, kind="proved-heat"):
         if kind != "proved-heat":
             raise ValueError("Unsupported proved operation")
-        self.kind, self.role, self.pin = kind, "scr", PIN
-        self.schema, self.operation = "ciw.proved-heat-session.v1", "ciw.proved-heat.v1"
+        super().__init__(kind, {**PIN, "role": "scr"})
 
-    def _source(self, raw):
+    def parse_source(self, raw):
         return _source(raw)
 
     def _adapters(self, repositories, expected=None):
@@ -305,84 +308,39 @@ class ProvedHeatWorkflow(DeclaredWorkflow):
         _same(self._runtime_projection(adapter.runtime_identity()), self._runtime_projection(provider), "SCR changed during execution")
         return answer
 
+    def _numerical(self, data):
+        return {"operation_id": self.operation, "data": data["native"]}
+
     def _step(self, source, evidence_id, bound):
         data = self._invoke(source, bound)
         _data(source, data)
-        occurrence = "execution-" + uuid.uuid4().hex
-        result = {"schema": RESULT_SCHEMA, "operation_id": self.operation, "execution_ref": occurrence,
-            "input_refs": [evidence_id], "data": data, "authority": deepcopy(AUTHORITY)}
-        result["result_id"] = digest(result)
-        numerical = {"operation_id": self.operation, "data": deepcopy(data["native"])}
-        return {"runtime_ref": "scr", "operation_id": self.operation, "execution_id": occurrence,
-            "input_refs": [evidence_id], "request": deepcopy(source), "request_sha256": digest(source),
-            "result": result, "result_sha256": digest(result), "result_id": result["result_id"],
-            "numerical_result": numerical, "numerical_result_id": digest(numerical)}
+        return seal_step(self.role, self.operation, source, [evidence_id], data, self._numerical(data))
 
     def _validate_step(self, step, source, evidence):
-        exact_keys(step, {"runtime_ref", "operation_id", "execution_id", "input_refs", "request", "request_sha256",
-            "result", "result_sha256", "result_id", "numerical_result", "numerical_result_id"})
-        if (step["runtime_ref"] != "scr" or step["operation_id"] != self.operation or step["input_refs"] != [evidence] or
-                not isinstance(step["execution_id"], str) or not re.fullmatch(r"execution-[a-f0-9]{32}", step["execution_id"])):
-            raise ValueError("Invalid proved heat execution or source binding")
-        _same(step["request"], source, "Proof request differs from retained source")
-        result = step["result"]
-        exact_keys(result, {"schema", "operation_id", "execution_ref", "input_refs", "data", "authority", "result_id"})
-        _data(source, result["data"])
-        _same(result["authority"], AUTHORITY, "A proof cannot confer physical or admission authority")
-        if (result["schema"] != RESULT_SCHEMA or result["operation_id"] != self.operation or
-                result["execution_ref"] != step["execution_id"] or result["input_refs"] != [evidence] or
-                result["result_id"] != step["result_id"] or result["result_id"] != digest({k:v for k,v in result.items() if k != "result_id"})):
-            raise ValueError("Proved heat result binding mismatch")
-        _same(step["numerical_result"], {"operation_id": self.operation, "data": result["data"]["native"]}, "Numerical identity must exclude proof bytes and timing")
-        for key, content in (("request_sha256", source), ("result_sha256", result), ("numerical_result_id", step["numerical_result"])):
-            if step[key] != digest(content):
-                raise ValueError("Proved heat step content identity mismatch")
+        check_step(step, role=self.role, operation=self.operation, source=source, input_refs=[evidence],
+                   check_data=_data, label=self.LABEL, numerical=self._numerical)
 
-    def _execute(self, raw, bound):
-        source, evidence = self._source(raw), byte_digest(raw)
-        step = self._step(source, evidence, bound)
-        bundle = {"schema": self.schema, "session_id": "session-" + uuid.uuid4().hex, "created_at": utc_now(),
-            "source": {"experiment_id": source["experiment_id"], "experiment_digest": digest(source),
-                "evidence": [{"artifact_ref": evidence, "sha256": evidence, "bytes_b64": base64.b64encode(raw).decode()}]},
-            "configuration": deepcopy(source["configuration"]), "runtimes": {"scr": bound[1]}, "steps": [step]}
-        bundle["bundle_digest"] = bundle_digest(bundle)
-        bundle["verification"] = _verification(bundle, "verification-" + uuid.uuid4().hex)
-        self._validate(bundle)
-        return bundle
+    def _check_runtimes(self, runtimes):
+        exact_keys(runtimes, {"scr"})
+        self._check_runtime(runtimes["scr"])
 
-    def _validate(self, bundle):
-        """Validate stored bindings only; never execute or assert fresh proof trust."""
-        try:
-            exact_keys(bundle, {"schema", "session_id", "created_at", "source", "configuration", "runtimes", "steps", "bundle_digest", "verification"}, {"replay_receipts"})
-            if len(canonical(bundle)) > MAX_BYTES or bundle["schema"] != self.schema or bundle["bundle_digest"] != bundle_digest(bundle):
-                raise ValueError("Proved heat bundle exceeds budget or content binding differs")
-            if not isinstance(bundle["session_id"], str) or not re.fullmatch(r"session-[a-f0-9]{32}", bundle["session_id"]):
-                raise ValueError("Invalid proved heat session occurrence")
-            _text(bundle["created_at"])
-            evidence, = bundle["source"]["evidence"]
-            raw = base64.b64decode(evidence["bytes_b64"], validate=True)
-            source = self._source(raw)
-            _same(evidence, {"artifact_ref": byte_digest(raw), "sha256": byte_digest(raw), "bytes_b64": base64.b64encode(raw).decode()}, "Exact source binding mismatch")
-            _same(bundle["source"], {"experiment_id": source["experiment_id"], "experiment_digest": digest(source), "evidence": [evidence]}, "Source identity mismatch")
-            _same(bundle["configuration"], source["configuration"], "Source policy mismatch")
-            exact_keys(bundle["runtimes"], {"scr"})
-            self._check_runtime(bundle["runtimes"]["scr"])
-            step, = bundle["steps"]
-            self._validate_step(step, source, evidence["artifact_ref"])
-            report = bundle["verification"]
-            occurrence = report["verification_operation_id"]
-            if not isinstance(occurrence, str) or not re.fullmatch(r"verification-[a-f0-9]{32}", occurrence):
-                raise ValueError("Invalid verification occurrence")
-            _same(report, _verification(bundle, occurrence), "Historical verification report differs from its retained statement")
-            _identity(report, "verification_id")
-            receipts = bundle.get("replay_receipts", [])
-            if not isinstance(receipts, list) or len(receipts) > 1:
-                raise ValueError("A proved heat occurrence retains at most one replay receipt")
-            for receipt in receipts:
-                self._check_receipt(bundle, receipt)
-            return raw
-        except (KeyError, TypeError, IndexError, AttributeError, OverflowError, RecursionError) as exc:
-            raise ValueError("Malformed proved heat session") from exc
+    def _verify(self, bundle, source, evidence, bound):
+        return _verification(bundle, "verification-" + uuid.uuid4().hex)
+
+    def _check_verification(self, bundle, report, source, evidence):
+        """The retained statement only; never execute or assert fresh proof trust."""
+        occurrence = report["verification_operation_id"]
+        if not isinstance(occurrence, str) or not re.fullmatch(r"verification-[a-f0-9]{32}", occurrence):
+            raise ValueError("Invalid verification occurrence")
+        _same(report, _verification(bundle, occurrence), "Historical verification report differs from its retained statement")
+        _identity(report, "verification_id")
+
+    def _check_receipts(self, bundle):
+        receipts = bundle.get("replay_receipts", [])
+        if not isinstance(receipts, list) or len(receipts) > 1:
+            raise ValueError("A proved heat occurrence retains at most one replay receipt")
+        for receipt in receipts:
+            self._check_receipt(bundle, receipt)
 
     def verify_session(self, bundle, repositories):
         """Fresh cryptographic verification of retained bytes; no native rerun or proof production."""
