@@ -417,17 +417,24 @@ def test_t081_defers_cross_platform_reproduction_as_one_question(lab):
     assumptions = report["unresolved_assumptions"]
     platform = [a for a in assumptions if "platform" in a.lower()]
     assert platform == [ep.PLATFORM_QUESTION_T081]
-    for fragment in ("Windows x86-64", "macOS arm64", "Linux x86-64", "numerical_result_id",
-                     "equals the retained energy_numerical_result_id", "numerical-identity.json"):
+    for fragment in ("Windows x86-64", "macOS arm64", "Linux x86-64", "numerical_result_id", "three OpenBLAS kernels",
+                     "energy_numerical_result retained in T081's numerical-identity.json", "leaf by leaf"):
         assert fragment in platform[0], fragment
-    # The id the question compares against is retained verbatim (not masked by relabel) in the named artifact and
-    # in the identity finding's value, which the regression gate compares exactly.
-    retained = json.loads(_artifact(lab, "T081", "numerical-identity.json"))["energy_numerical_result_id"]
-    assert retained.startswith("sha256:") and len(retained) == len("sha256:") + 64
-    int(retained.removeprefix("sha256:"), 16)
+    assert "OpenBLAS kernels SkylakeX, Haswell and Sandybridge" in report["uncertainty"]
+    # The id hashes floats whose last bits depend on the BLAS kernel, so the regression gate compares only what the
+    # claim is about; the id is retained verbatim (not masked by relabel) in the named artifact, beside the numerical
+    # result it hashes.
     identity = report["findings"][0]
     assert identity["claim"].startswith("The energy numerical_result_id is identical")
-    assert identity["value"]["energy_numerical_result_id"] == retained
+    assert identity["value"] == {"occurrences": 12, "distinct_numerical_result_ids": 1, "distinct_result_ids": 12,
+                                 "recomputation_mismatches": 0}
+    assert not any("sha256:" in json.dumps(record["value"]) for record in report["findings"])
+    artifact = json.loads(_artifact(lab, "T081", "numerical-identity.json"))
+    retained = artifact["energy_numerical_result_id"]
+    assert retained.startswith("sha256:") and len(retained) == len("sha256:") + 64
+    int(retained.removeprefix("sha256:"), 16)
+    assert set(artifact["energy_numerical_result"]) == {"operation_id", "data"}
+    assert ep._sha(artifact["energy_numerical_result"]) == retained
     # It is the baseline log's identity that T078 retains for its source records.
     lab("T078")
     records = json.loads(_artifact(lab, "T078", "source-retention.json"))["records"]

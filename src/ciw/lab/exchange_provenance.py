@@ -140,12 +140,14 @@ NEXT_STEPS = {
 }
 # The one cross-platform question T081 defers: float-valued numerical identities on another platform.
 PLATFORM_QUESTION_T081 = (
-    "Deferred research question (cross-platform reproduction): run T081 on Windows x86-64 and macOS arm64 besides "
-    "the retained Linux x86-64 run and check that every float-valued numerical_result_id of the energy-accuracy "
-    "bundles (originals, sibling, replays, replay after reopen, separate session) equals the retained "
-    "energy_numerical_result_id exactly (kept in T081's numerical-identity.json and in its identity finding's value, "
-    "which ciw lab verify compares exactly); a mismatch would mean the canonical float serialization or the analysis "
-    "arithmetic depends on the platform, and no second platform has been compared.")
+    "Deferred research question (cross-platform reproduction): the energy numerical_result_id hashes the analysed "
+    "floats bit for bit, so it links occurrences on one arithmetic platform only (three OpenBLAS kernels on one "
+    "Linux x86-64 host gave three ids, each shared by every occurrence of its run). Run T081 on Windows x86-64 and "
+    "macOS arm64, check that each run again has one numerical_result_id over its occurrences, and compare its energy "
+    "numerical result leaf by leaf with the energy_numerical_result retained in T081's numerical-identity.json: do "
+    "all differences stay at rounding level, and should CIW link occurrences across platforms by such a tolerance "
+    "comparison, or by an identity over declared-precision data, instead of the bit-exact id (a CIW change, not "
+    "made here)?")
 LOG_DIGEST = "Retained log digest differs"
 ESM_SCOPE = "Native ESM inspection binding or scope mismatch"
 
@@ -2003,8 +2005,9 @@ T081_PLAN = _fields(
     "numerical edits that leave the retained source bytes unchanged, but not a forger who rewrites and reseals the "
     "source log itself. Oscillator results lack a numerical identity and their statistics are only bounds-checked.",
     "numerical_result_id = sha256(canon({operation_id, data})) with data = analyze(parse(bytes)) deterministic "
-    "in-process; data.log_digest = sha256(canon(log without log_digest)). For statistics, |mean| <= rms <= "
-    "max(|min|, |max|) holds for every sample set (Cauchy-Schwarz and the maximum bound).",
+    "in-process, its last float bits set by the BLAS kernel; data.log_digest = sha256(canon(log without "
+    "log_digest)). For statistics, |mean| <= rms <= max(|min|, |max|) holds for every sample set (Cauchy-Schwarz "
+    "and the maximum bound).",
     "exactly one numerical_result_id over the baseline occurrences and a different one for the metadata variant; "
     "edits that keep the source bytes are refused where content is recomputed and survive where it is only sealed; "
     "energy-source.resealed and oscillator-stats.impossible-moments reopen.",
@@ -2040,9 +2043,12 @@ def numerical_identity(ctx):
     inequalities = _moments(computed)
     rows, harness = _task_rows(ctx, "T081"), _mutations(ctx)["harness"]
     _retain_rows(ctx, rows, "numerical-mutations")
-    # The baseline's numerical_result_id is a content identity (stable across runs), so it is retained verbatim,
-    # outside relabel(), which would mask any sha256 value: a second platform compares its own id with this one.
-    baseline_numerical = natives["B0"]["steps"][0]["numerical_result_id"]
+    # The baseline's numerical_result_id hashes analysed floats whose last bits depend on the BLAS kernel, so it is
+    # stable across runs on one arithmetic platform only. It stays out of the compared finding values and is retained
+    # here verbatim, outside relabel() (which would mask any sha256 value), with the numerical result it hashes, so
+    # another platform can compare that result leaf by leaf.
+    baseline_step = natives["B0"]["steps"][0]
+    baseline_numerical = baseline_step["numerical_result_id"]
     identity = relabel(
         {"occurrences": [{"bundle": role, "step": natives[role]["steps"][0]["execution_id"],
                           "numerical_result_id_equal_to_B0": natives[role]["steps"][0]["numerical_result_id"]
@@ -2050,14 +2056,15 @@ def numerical_identity(ctx):
          "metadata_variant": {key: metadata[key] for key in ("experiment_id", "data_keys_differing_from_baseline")},
          "statistics": {"computed": computed, "direct": direct, "max_relative_difference": relative}},
         role_labels(fixture))
-    ctx.artifact_json("numerical-identity.json", {"energy_numerical_result_id": baseline_numerical, **identity})
+    ctx.artifact_json("numerical-identity.json", {"energy_numerical_result_id": baseline_numerical,
+                                                  "energy_numerical_result": baseline_step["numerical_result"],
+                                                  **identity})
     findings = [
         _verified("The energy numerical_result_id is identical across original, sibling, replay, replay after offline "
                   "reopen, replay of a replay and a separate session (same process and code) of one canonically "
                   "identical log",
                   {"occurrences": len(occurrences), "distinct_numerical_result_ids": len(numerical),
-                   "distinct_result_ids": len(result_ids), "recomputation_mismatches": recomputed,
-                   "energy_numerical_result_id": baseline_numerical},
+                   "distinct_result_ids": len(result_ids), "recomputation_mismatches": recomputed},
                   [_count("distinct numerical_result_id values", len(numerical), 1),
                    _count("distinct result_id values (fresh occurrences)", len(result_ids), len(occurrences)),
                    _rederived("numerical_result_id differs from the lab's sha256 over {operation_id, data}",
@@ -2116,10 +2123,16 @@ def numerical_identity(ctx):
                          f"{len(result_ids)} result_id; metadata variant data differs only in "
                          f"{metadata['data_keys_differing_from_baseline']}; statistics max relative difference "
                          f"{relative:.1e}; mutants: {_summary(rows)}",
-        uncertainty="Stability was observed within one process and platform; numerical_result_id hashes floats, so "
-                    "a different BLAS or NumPy build could change the last bits of analysed data and therefore the "
-                    "identity across platforms (not tested here). Value integrity after reopen is relative to the "
-                    "retained source bytes, which are themselves unauthenticated.",
+        uncertainty="Stability was observed within one process on one arithmetic platform. numerical_result_id hashes "
+                    "the analysed floats bit for bit, and their last bits depend on the BLAS kernel: regenerating T081 "
+                    "on one Linux x86-64 host under the OpenBLAS kernels SkylakeX, Haswell and Sandybridge "
+                    "(OPENBLAS_CORETYPE, NumPy 2.4.3) gave one id over the 12 occurrences of each run but three "
+                    "different ids, because 12 (Haswell) and 13 (Sandybridge) of the 47 analysed floats differed from "
+                    "the SkylakeX values by at most 2.2e-16 (the reference mean and covariance entries by at most "
+                    "2.8e-16 relative; the others are filter errors at rounding level). The identity finding therefore "
+                    "compares counts; this run's id and the numerical result it hashes are retained in "
+                    "numerical-identity.json. Value integrity after reopen is relative to the retained source bytes, "
+                    "which are themselves unauthenticated.",
         failure_modes_checked=["occurrence leaking into numerical identity", "replay after reopen", "replay of a "
                                "replay", "separate session", "metadata-only resealed log edit",
                                "sealed and unsealed data edits with the source bytes unchanged",

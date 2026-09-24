@@ -168,7 +168,11 @@ Rules that are never relaxed:
 3. Claims are deterministic text: never embed fresh identities (execution or
    result UUIDs, temporary paths, timestamps) in a claim, because the
    regression gate matches findings across runs by claim. Put such values in
-   artifacts or in the finding's value when they are stable.
+   artifacts, or in the finding's value when they are stable on every
+   platform: a content identity over float results (T081's
+   `numerical_result_id`) changes with the BLAS kernel, so it belongs in an
+   artifact while the value holds what the claim is about (the count of
+   distinct identities).
 4. A finding that honestly records an unestablished computational claim in a
    completed task sets `expected_not_established=True` (exactly the boolean
    `True`) with no checks and no independent check. A computational finding
