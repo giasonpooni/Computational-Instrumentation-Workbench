@@ -3,6 +3,7 @@ from __future__ import annotations
 
 from copy import deepcopy
 import math
+import os
 
 import numpy as np
 import pytest
@@ -10,7 +11,7 @@ import pytest
 from ciw.lab import surfaces_discrete as sd
 from ciw.lab.evidence import COMPUTATIONAL_DOMAINS, validate_finding
 from ciw.lab.registry import _REGISTRY, load_queue
-from ciw.lab.runner import Context, _close, _witness, run_task
+from ciw.lab.runner import PROSE_FIELDS, Context, _close, _witness, run_task
 from ciw.lab.surfaces import SAMPLING_DOMAINS, GaussianBump, Sphere, SurfaceRefusal, Torus
 from ciw.lab.surfaces_discrete_ad import DualSurface, formulas
 from ciw.lab.surfaces_discrete_charts import (Atlas, SphereAtlas, graph_atlas, great_circle, integrate_atlas,
@@ -387,14 +388,36 @@ def test_single_chart_near_pole_counterexample():
 
 @pytest.mark.lab_task("T036")
 def test_meridian_depends_on_the_step_grid():
-    study = sd.meridian_study(step_counts=(355, 399, 400))
+    hundredth = sd.MERIDIAN_SEED / 100
+    study = sd.meridian_study(step_counts=(355, 399, 400, 421), sweep_seeds=(hundredth, sd.MERIDIAN_SEED))
     rows = {row["steps"]: row for row in study["rows"]}
-    # v_phi starts at exactly 0 but rounding in g_12 seeds it.
-    assert study["drift"]["v_phi_at_start"] == 0.0 and study["drift"]["max_abs_v_phi"] > 0.0
-    assert rows[400]["grid_distance"] > 5e-3 and rows[400]["error"] <= 1e-10
-    assert rows[399]["grid_distance"] < sd.NEAR_POLE and rows[399]["error"] > 1e-8
-    assert rows[355]["grid_distance"] < 1e-6 and rows[355]["error"] is None
+    # Unseeded, rounding leaves a kernel-dependent angular momentum (0 on some OpenBLAS kernels), never above the bound.
+    natural = study["natural"]
+    assert abs(natural["g12_at_start"]) <= sd.NATURAL_SEED_BOUND
+    assert abs(natural["v_phi_at_start"]) <= sd.NATURAL_SEED_BOUND
+    assert natural["momentum_before_first_crossing"] <= sd.NATURAL_SEED_BOUND
+    # The declared seed decides the outcome: the 400-step grid crosses both poles, grids within d* fail.
+    assert study["seed"] == sd.MERIDIAN_SEED and sd.NATURAL_SEED_BOUND / sd.MERIDIAN_SEED <= 1.0001e-4
+    assert rows[400]["stage_distance"] > 10 * rows[400]["failure_radius"]
+    assert rows[400]["error"] == pytest.approx(1.0334e-7, rel=1e-3)
+    for steps in (355, 399, 421):
+        assert rows[steps]["stage_distance"] < rows[steps]["failure_radius"] and rows[steps]["error"] is None
+    assert rows[355]["stage_distance"] < 1e-6
     assert rows[355]["failure"].startswith("FloatingPointError: rk4 produced a nonfinite state")
+    # The sweep skips the declared seed and runs the step counts within SWEEP_BAND d*. At a hundredth of the seed
+    # d* shrinks by 100^(1/5): 421 now lies beyond it and does not fail.
+    [entry] = study["sweep"]
+    swept = {row["steps"]: row for row in entry["rows"]}
+    assert entry["seed"] == hundredth and sorted(swept) == [355, 399, 421]
+    assert swept[399]["error"] is None and swept[421]["stage_distance"] > swept[421]["failure_radius"]
+    assert swept[421]["error"] is not None
+    # At 400 steps, far from d*, the error is linear in the seed; the natural seed's bound is 1e-3 of a tenth of it.
+    seeded = study["at_steps"]
+    assert seeded["rerun_seed"] == pytest.approx(sd.MERIDIAN_SEED / sd.SEED_RATIO)
+    assert sd.SEED_RATIO * sd.NATURAL_SEED_BOUND / sd.MERIDIAN_SEED <= 1.0001e-3
+    assert rows[400]["error"] == pytest.approx(sd.SEED_RATIO * seeded["rerun_error"], rel=1e-2)
+    assert seeded["momentum_after_crossings"] == pytest.approx(rows[400]["error"], rel=1e-2)
+    assert sd.failure_radius(1e-12, 2 * math.pi / 400) == pytest.approx((1e-12 * (2 * math.pi / 400) ** 4) ** 0.2)
 
 
 @pytest.mark.lab_task("T036")
@@ -426,18 +449,45 @@ def test_t036_report(tmp_path):
     assert single["counterexample"]["statement"].startswith("Fixed-step RK4")
     assert findings["Chart-switching geodesic integration is ready for tool paths over physical parts"][
         "evidence_status"] == "not_established"
-    meridian = findings["At 400 RK4 steps chart A alone crosses both poles on the exact meridian to within 1e-10"]
-    assert meridian["evidence_status"] == "numerically_verified" and meridian["value"]["log10_error"] <= -10
-    grid = findings["On the exact meridian chart A alone fails or loses accuracy whenever a step point lands within "
-                    "1e-4 of a pole (350 to 450 RK4 steps)"]
+    meridian = findings["From a declared angular-momentum seed of 1e-12, chart A alone crosses both poles of the "
+                        "meridian at 400 RK4 steps to within 1e-6"]
+    assert meridian["evidence_status"] == "numerically_verified" and meridian["value"]["error"] <= 1e-6
+    # A seeded value's regression tolerance is the natural seed's largest share of it.
+    share = sd.NATURAL_SEED_BOUND / sd.MERIDIAN_SEED
+    assert meridian["regression_tolerance"] == {"abs": 0.0, "rel": share}
+    proportional = findings["At 400 RK4 steps the meridian error of chart A alone is proportional to the declared "
+                            "seed: 10 times the error from a seed of 1e-13 matches the error from 1e-12 to within 1e-2"]
+    assert proportional["evidence_status"] == "numerically_verified"
+    assert proportional["value"]["error_ratio"] == pytest.approx(sd.SEED_RATIO, rel=1e-2)
+    assert proportional["regression_tolerance"] == {"abs": 0.0, "rel": (1 + sd.SEED_RATIO) * share}
+    grid = findings["Across declared seeds from 1e-15 to 1e-10, chart A alone fails on the meridian whenever an RK4 "
+                    "stage point lands within 0.9 d* of a pole and never beyond 1.5 d*, d* = (L0 h^4)^(1/5), but no "
+                    "single multiple of d* separates the outcomes at every seed (350 to 450 RK4 steps at 1e-12, the "
+                    "step counts within 2 d* at the other half-decade seeds)"]
     assert grid["evidence_status"] == "numerically_verified"
-    assert 399 in grid["counterexample"]["witness"]["steps_near_pole"]
-    assert grid["counterexample"]["witness"]["failed_steps"] == [355]
+    assert grid["counterexample"]["witness"]["failed_steps"] == [355, 377, 399, 421, 443]
+    assert grid["regression_tolerance"] == {"abs": 0.0, "rel": share}
+    # At the declared seed d* separates the outcomes exactly; across the sweep they overlap around it.
+    value, declared = grid["value"], grid["value"]["at_declared_seed"]
+    assert value["seeds"] == len(sd.SWEEP_SEEDS)
+    assert declared["largest_ratio_failed"] < 1 < declared["smallest_ratio_not_failed"]
+    assert sd.BAND_INNER < value["smallest_ratio_not_failed"] < 1 < value["largest_ratio_failed"] < sd.BAND_OUTER
+    assert value["failed_at_declared_seed_not_at_smaller_seed"] == [399, 421, 443]
+    natural = findings["Without a declared seed, rounding seeds at most 1e-16 of angular momentum on the meridian "
+                       "before its first pole crossing (400 RK4 steps)"]
+    assert natural["evidence_status"] == "numerically_verified"
+    assert natural["regression_tolerance"] == {"abs": sd.NATURAL_SEED_BOUND, "rel": 0.0}
     graph = findings["The graph atlas integrates geodesics through and near the Gaussian-bump apex, where its polar "
                      "chart alone fails or loses accuracy"]
     assert graph["evidence_status"] == "numerically_verified" and graph["value"]["min_switches"] >= 1
-    assert report["evidence_status"]["counts"]["numerically_verified"] == 10
+    assert report["evidence_status"]["counts"]["numerically_verified"] == 12
     assert "src/ciw/lab/integrators.py" in report["provider_runtime_identity"]["sources"]
+    # The BLAS kernel choice is recorded beside the sources, never in the compared prose; an empty override is
+    # no override (OpenBLAS detects the kernel from the CPU).
+    kernel = report["provider_runtime_identity"]["blas_kernel"]
+    assert kernel["openblas_coretype"] == (os.environ.get("OPENBLAS_CORETYPE") or None)
+    assert kernel["openblas_coretype"] is None or all(kernel["openblas_coretype"] not in str(report[name])
+                                                      for name in PROSE_FIELDS)
     _common_report_checks(report)
 
 
