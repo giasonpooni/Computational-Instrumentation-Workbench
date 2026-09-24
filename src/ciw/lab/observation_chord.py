@@ -1,9 +1,13 @@
 """Chord versus geodesic length along surface geodesics (T046, T047).
 
 Scope: the closed-form chord expansion derived in docs/lab/OBSERVATION.md,
-an optional sympy re-derivation used as an independent check, and the
-numerical studies that compare both with geodesics integrated by
-``ciw.lab.jacobi`` on ``ciw.lab.surfaces`` (sphere, torus, cylinder).
+two optional sympy references (a symbolic expansion of the Frenet-Serret
+Taylor recursion, and an exact rational expansion of explicit polynomial
+space curves that does not use the Frenet recursion), and the numerical
+studies that compare the expansion with geodesics integrated by
+``ciw.lab.jacobi`` on ``ciw.lab.surfaces`` (sphere, torus, cylinder). The
+curve models of the sympy references are written in this module; sympy
+performs their series expansion, simplification and exact arithmetic.
 
 For a unit-speed curve with curvature kappa(s) and torsion tau(s) the chord
 c(s) = |gamma(s) - gamma(0)| satisfies
@@ -141,8 +145,66 @@ def sympy_versus_closed_form() -> dict:
             "sympy": sp.__version__}
 
 
-def sympy_cylinder_series(angles_deg) -> dict:
-    """sympy expansion of the exact helix chord against the closed-form coefficients."""
+# Explicit polynomial space curves g(t) = (t, a2 t^2 + a3 t^3 + a4 t^4, b3 t^3 + b4 t^4) with exact
+# rational coefficients (a2, a3, a4, b3, b4); together they give generic kappa0, kappa0', kappa0'', tau0.
+EXPLICIT_CURVES = (("1/2", "1/3", "-1/5", "2/7", "3/11"), ("3/4", "-2/9", "1/6", "-5/8", "1/13"),
+                   ("-2/5", "1/7", "3/10", "4/9", "-1/3"))
+
+
+def sympy_explicit_curve_check(curves=EXPLICIT_CURVES, order: int = 7) -> dict:
+    """Chord coefficients of explicit polynomial space curves in exact rational arithmetic (no Frenet recursion).
+
+    For each curve g(t), sympy expands the arc length s(t) = int |g'| dt,
+    reverts it to t(s), expands the chord |g(t(s)) - g(0)| in s, and expands
+    the curvature |g' x g''| / |g'|^3 and torsion (g' x g'') . g''' / |g' x g''|^2
+    to obtain kappa0, kappa0', kappa0'' and tau0 with respect to arc length.
+    The closed-form c1..c5 at those values must equal the chord coefficients
+    exactly (rational residual 0). This route shares neither the Frenet-Serret
+    Taylor recursion of :func:`sympy_general_series` nor the hand derivation;
+    the curve model is written here and sympy performs the series and the
+    exact arithmetic.
+    """
+    import sympy as sp
+
+    t, s = sp.symbols("t s")
+
+    def truncated(expr, var, n=order):
+        poly = sp.Poly(sp.expand(expr), var)
+        return sum((c * var ** m[0] for m, c in zip(poly.monoms(), poly.coeffs()) if m[0] < n), sp.Integer(0))
+
+    rows, nonzero = [], 0
+    for coefficients in curves:
+        a2, a3, a4, b3, b4 = (sp.Rational(value) for value in coefficients)
+        g = sp.Matrix([t, a2 * t ** 2 + a3 * t ** 3 + a4 * t ** 4, b3 * t ** 3 + b4 * t ** 4])
+        d1 = g.diff(t)
+        d2, d3 = d1.diff(t), d1.diff(t, 2)
+        arc = sp.integrate(sp.series(sp.sqrt(d1.dot(d1)), t, 0, order).removeO(), t)
+        inverse = s
+        for _ in range(order):  # fixed-point series reversion of s = arc(t)
+            inverse = truncated(s - (arc.subs(t, inverse) - inverse), s)
+        chord = sp.series(sp.sqrt(sp.expand(g.dot(g))), t, 0, order).removeO()
+        chord_s = truncated(chord.subs(t, inverse), s, 6)
+        cross = d1.cross(d2)
+        kappa = sp.series(sp.sqrt(sp.expand(cross.dot(cross))) / sp.sqrt(sp.expand(d1.dot(d1))) ** 3,
+                          t, 0, 4).removeO()
+        tau = sp.series(sp.expand(cross.dot(d3)) / sp.expand(cross.dot(cross)), t, 0, 2).removeO()
+        kappa_s = truncated(kappa.subs(t, inverse), s, 3)
+        k0, k1, k2 = (sp.diff(kappa_s, s, n).subs(s, 0) for n in range(3))
+        tau0 = truncated(tau.subs(t, inverse), s, 1).subs(s, 0)
+        c3, c4, c5 = closed_form_coefficients(k0, k1, tau0, k2)
+        closed = {1: sp.Integer(1), 2: sp.Integer(0), 3: c3, 4: c4, 5: c5}
+        residuals = {n: sp.nsimplify(chord_s.coeff(s, n) - closed[n]) for n in range(1, 6)}
+        nonzero += sum(residual != 0 for residual in residuals.values())
+        rows.append({"a2_a3_a4_b3_b4": list(coefficients), "kappa0": str(k0), "kappa0_prime": str(k1),
+                     "kappa0_second": str(k2), "tau0": str(tau0),
+                     "chord_coefficients": {f"c{n}": str(chord_s.coeff(s, n)) for n in range(1, 6)},
+                     "residuals": {f"c{n}": str(residuals[n]) for n in range(1, 6)}})
+    return {"curves": rows, "residuals_checked": 5 * len(curves), "nonzero_residuals": int(nonzero),
+            "sympy": sp.__version__}
+
+
+def sympy_cylinder_series() -> dict:
+    """sympy expansion of the exact helix chord against the closed-form coefficients (symbolic in R, alpha)."""
     import sympy as sp
 
     s, radius = sp.symbols("s R", positive=True)
@@ -153,20 +215,9 @@ def sympy_cylinder_series(angles_deg) -> dict:
     kappa, tau = sp.cos(alpha) ** 2 / radius, sp.sin(alpha) * sp.cos(alpha) / radius
     closed3, _, closed5 = closed_form_coefficients(kappa, 0, tau)
     symbolic_residual = [sp.simplify(c3 - closed3), sp.simplify(c5 - closed5)]
-    rows, worst = [], 0.0
-    for degrees in angles_deg:
-        a = math.radians(degrees)
-        k, t = helix_curvature_torsion(1.0, a)
-        closed = closed_form_coefficients(k, 0.0, t)
-        exact_alpha = sp.pi * sp.Rational(degrees, 180)
-        values = [float(c.subs({alpha: exact_alpha, radius: 1}).evalf(30)) for c in (c3, c5)]
-        difference = max(abs(values[0] - closed[0]), abs(values[1] - closed[2]))
-        worst = max(worst, difference)
-        rows.append({"alpha_deg": degrees, "sympy_c3": values[0], "sympy_c5": values[1],
-                     "closed_c3": closed[0], "closed_c5": closed[2], "abs_difference": difference})
-    return {"c3": str(c3), "c5": str(c5), "symbolic_residuals": [str(r) for r in symbolic_residual],
-            "symbolic_zero": all(r == 0 for r in symbolic_residual), "angles": rows,
-            "max_abs_difference": worst, "sympy": sp.__version__}
+    return {"c3": str(c3), "c5": str(c5), "closed_c3": str(sp.simplify(closed3)),
+            "closed_c5": str(sp.simplify(closed5)), "symbolic_residuals": [str(r) for r in symbolic_residual],
+            "nonzero_residuals": int(sum(r != 0 for r in symbolic_residual)), "sympy": sp.__version__}
 
 
 # Integrated geodesics ------------------------------------------------------------
@@ -308,7 +359,9 @@ def cylinder_integrated(angles_deg, radius: float, length_factor=0.3, steps=60) 
         kappa, _ = helix_curvature_torsion(radius, alpha)
         rows.append({"alpha_deg": degrees, "radius": radius,
                      "max_chord_error": float(np.max(np.abs(chord - helix_chord(s, radius, alpha)))),
-                     "max_s_minus_c": float(np.max(s - chord)), "fitted": float(coefficients[0]),
+                     # Over s > 0 only: s = 0 gives s - c = 0 exactly and would anchor a one-sided maximum.
+                     "max_abs_s_minus_c": float(np.max(np.abs(s[selected] - chord[selected]))),
+                     "fitted": float(coefficients[0]),
                      "predicted": kappa ** 2 / 24,
                      "normalized_error": float(abs(coefficients[0] - kappa ** 2 / 24) * 24 * radius ** 2),
                      "normalized_fit_truncation": float(truncation * 24 * radius ** 2)})

@@ -11,8 +11,9 @@ finding in its physical, calibration, sensor-performance or authority domain.
 
 Code: `src/ciw/lab/observation.py` (task registrations) with helpers
 `observation_modes.py` (typed records, refusals, mappings, retention),
-`observation_chord.py` (chord expansion, sympy check, integrated geodesics),
-`observation_camera.py` (pinhole stereo rig, distortion, triangulation) and
+`observation_chord.py` (chord expansion, sympy references, integrated geodesics),
+`observation_camera.py` (pinhole stereo rig, distortion, triangulation,
+circular markers under perspective, shared-phase rounding) and
 `observation_signals.py` (encoder, IMU, timing, Kalman/RTS, statistics).
 Tests: `tests/test_lab_observation.py`.
 
@@ -22,7 +23,7 @@ python -m ciw lab report T046 --retained out/lab
 python -m pytest -q tests/test_lab_observation.py
 ```
 
-The section runs in about 6 s and its tests in about 8 s on one core. sympy
+The section runs in about 9 s and its tests in about 13 s on one core. sympy
 (T046, T047) and scipy (T057) are optional. Without them the derivation
 findings are labelled `analytic` instead of `independently_verified`, and the
 Riccati fixed-point and chi-square-quantile findings of T057 are
@@ -109,17 +110,32 @@ s⁶) gives
 
 which reduces to the constant-curvature value above when κ' = κ'' = 0.
 
-sympy expands the same series from a Frenet–Serret Taylor recursion with
-polynomial κ(s), τ(s) (the recursion is set up in
-`observation_chord.sympy_general_series`; sympy does the expansion and the
-series of the square root). Each residual sympy(cₙ) − closed(cₙ) for
-n = 1…5, and the constant-curvature c₅, is simplified as a polynomial in
-(κ₀, κ₀', κ₀'', τ₀); the check passes only if all six residuals are
-identically zero. That symbolic identity is the `independent_check` of T046.
-A shared conceptual error in the Frenet equations would pass both sides; an
-independent re-derivation through a different matrix recursion (review of
-this section) agreed with the closed form, but it is not part of the run
-and is not evidence here.
+T046 compares the closed form with two sympy references. Both curve models
+are written in `observation_chord`; sympy performs their series expansion,
+simplification and exact arithmetic, so sympy's independence covers that
+algebra, not the model definitions.
+
+* **Frenet–Serret Taylor recursion** (`sympy_general_series`). sympy expands
+  the series with polynomial κ(s), τ(s). Each residual sympy(cₙ) − closed(cₙ)
+  for n = 1…5, and the constant-curvature c₅, is simplified as a polynomial
+  in (κ₀, κ₀', κ₀'', τ₀); the check passes only if all six residuals are
+  identically zero. This route uses the same Frenet equations as the hand
+  derivation, so a shared conceptual error in them would pass both sides. It
+  is recorded as an ordinary `exact_arithmetic` check, not as the independent
+  comparison.
+* **Explicit polynomial space curves** (`sympy_explicit_curve_check`). For
+  three curves g(t) = (t, a₂t² + a₃t³ + a₄t⁴, b₃t³ + b₄t⁴) with rational
+  coefficients, sympy expands the arc length s(t) = ∫|g'| dt, reverts it to
+  t(s), and expands the chord |g(t(s)) − g(0)| in s. κ and τ come from the
+  cross-product formulas κ = |g' × g''|/|g'|³ and
+  τ = (g' × g'')·g'''/|g' × g''|², re-expanded in s, which gives κ₀, κ₀',
+  κ₀'' and τ₀. The closed-form c₁…c₅ at those values must equal the chord
+  coefficients exactly: all 15 rational residuals are 0. This route uses
+  neither the Frenet recursion nor the hand derivation, and it is the
+  `independent_check` of T046. It is evaluated at three curves, not
+  symbolically, because the fully symbolic version is too slow for the run
+  budget. A closed form that is wrong as a polynomial would have to vanish at
+  all three points by coincidence.
 
 Counterexamples found by the task:
 
@@ -168,20 +184,31 @@ chart), a forward model independent of the closed-form helix chord that the
 conversion inverts; the recovered arcs agree to 3e-17 m.
 
 ### T046 Chord-versus-geodesic correction
-Hand derivation and sympy (symbolic identity of every coefficient). Sphere
+Hand derivation and the two sympy references above: a symbolic identity for
+every coefficient through the Frenet recursion, and exact rational agreement
+on three explicit curves without it. Sphere
 geodesics integrated by `ciw.lab.jacobi` (RK4, R = 0.5, 1, 2) are checked
 against 2R sin(s/2R) and a fitted s³ coefficient. Then the torus and helix
 counterexamples above.
 
 ### T047 Cylinder coefficient
-sympy series of the exact chord. Least-squares fits of (s − c)/s³ = a + bs² + ds⁴
-at seven angles and two radii. Geodesics integrated on
-`ciw.lab.surfaces.Cylinder`. Rulings against circumferential paths.
+sympy series of the exact helix chord. The expression
+√((2R sin(s cos α/2R))² + (s sin α)²) is written in
+`observation_chord.sympy_cylinder_series`. It does not use the Frenet
+expansion. Its c₃ and c₅ minus the closed form at κ = cos²α/R,
+τ = sin α cos α/R simplify to 0 symbolically in R and α. The check counts the
+residuals that do not (`exact_arithmetic`, observed 0). Least-squares fits of
+(s − c)/s³ = a + bs² + ds⁴ at seven angles and two radii. Geodesics integrated
+on `ciw.lab.surfaces.Cylinder`. Rulings against circumferential paths. On the
+rulings the check bounds max |s − c|/R over s > 0 (two-sided, about 3e-16).
+The s = 0 sample, where s − c = 0 exactly, is excluded so that it cannot
+anchor the bound.
 
 ### T048 Synthetic camera measurements
 Declared pinhole stereo pair: f = 2400 px, 2048 × 1536 px, baseline 0.2 m,
 converging at 0.6 m. Markers every 15 mm along three helices (α = 0°, 45°,
-90°) on a cylinder with R = 0.1 m, all visible in both images. Noise-free DLT
+90°) on a cylinder with R = 0.1 m. All 27 are checked to be front-facing and
+inside both images. Noise-free DLT
 and ray-midpoint triangulation are compared with truth (the two triangulations
 are a same-origin `cross_implementation` check). The chord-for-geodesic
 substitution bias equals s − c(s) exactly; it is largest on the
@@ -190,16 +217,25 @@ ruling, and these orderings are checked. With 0.25 px pixel noise and integer
 rounding (grid phase drawn independently per marker, camera and axis), the
 per-helix mean squared chord and converted-arc errors match first-order
 propagation, σ_c² = (σ² + 1/12)ΣJ² and σ_s = σ_c/c'(s), within the 99.9 %
-Monte Carlo bound (chord RMS about 0.19 mm overall). For the longest
-circumferential chord the bias is 64 times the noise RMS.
+Monte Carlo bound (chord RMS about 0.19 mm overall; 500 trials give 1.7–2.1 %
+relative standard error per helix RMS). For the longest circumferential chord
+the bias is 64 times the noise RMS. Independence of the rounding errors
+between markers is a property of this generator, not a checked failure mode;
+T051 studies a shared phase.
 
 ### T049 Calibration perturbations
-Pixels from the true rig are triangulated with a believed rig. The believed rig
-has a focal error on both cameras, a right-camera principal-point error and a
-right-camera rotation about its centre. The central-difference Jacobian is
-compared with closed forms on a rectified rig (∂c/∂f = ΔZ²/(cf) and
-∂Z/∂c_x = −Z²/(bf)) and checked by step halving. First-order predictions are
-compared with direct recomputation over five scales; the residual slope is 2.
+Pixels from the true rig are triangulated with a believed rig. Its 12 declared
+parameters are the focal length (common to both cameras, plus an extra
+right-camera error), the left and right principal points, and the right
+camera's rotation about its centre and the shift of that centre (the x shift
+changes the baseline). Chords are invariant under a rigid motion of the whole
+believed rig. A left-camera pose error is therefore equivalent to a
+right-camera pose error and is not listed separately. Aspect ratio and skew
+are not perturbed; the report names them as omitted. The central-difference
+Jacobian is compared with three closed forms on a rectified rig:
+∂c/∂f = ΔZ²/(cf), ∂Z/∂c_x = −Z²/(bf) for the right camera, and ∂c/∂b = c/b.
+It is checked by step halving. First-order predictions are compared with
+direct recomputation over five scales; the residual slope is 2.
 Errors that change horizontal disparity dominate: for the 0.12 m chord, 1 mrad
 of right-camera yaw moves it by 0.36 mm and 1 px of horizontal principal point
 by 0.15 mm, against about 6 µm for 1 mrad of pitch and 2 µm for 1 px of
@@ -208,6 +244,9 @@ vertical principal point. The dominance is checked only between like units
 pixel-against-milliradian ratio would depend on an arbitrary unit choice.
 Counterexample: a common focal error leaves same-depth chords unchanged (the
 rectified-rig map is X_b = X, Z_b = Z f_b/f), so it is not a uniform scale.
+A baseline error is one. A believed baseline b' scales X, Y and Z by b'/b, so
+every chord scales by b'/b; for 1 mm this holds to 2e-16 m over all 24 pairs.
+On the converged rig, 1 mm of baseline moves the 0.12 m chord by 0.59 mm.
 
 ### T050 Perspective and lens distortion
 Brown–Conrady radial and tangential distortion,
@@ -226,8 +265,11 @@ bias scales as k₁ r²: slope 2 in the mean image radius and 1 in k₁. The mar
 pairs (0, 2), (0, 4), (1, 3)) are shifted across the image in five steps. The
 first-order prediction J_pix·δ_pix holds to 0.3 % at |k₁| ≤ 0.1, the bias is
 odd in k₁, the fitted log–log slope in radius is 2.04 (checked within 0.1 of
-2; pairwise slopes rise from 2.00 to 2.18 at the largest radius, where the r⁴
-and perspective terms grow), and the slope in |k₁| is within 1e-4 of 1.
+2), and the slope in |k₁| is within 1e-4 of 1. Pairwise slopes rise from 2.00
+to 2.18 at the largest radius. Two causes contribute, and the run does not
+separate them: the higher-order terms of f k₁((r + dr)³ − r³), and the pixel
+Jacobian and displacement directions changing as the markers move (k₂ = 0 in
+these runs).
 Undistorting with the true (k₁, k₂, p₁, p₂) model removes the bias to
 6e-16 m.
 
@@ -242,17 +284,64 @@ and the point at 0.636 map to the same pixel (515 px apart before
 distortion); fixed-point undistortion run to convergence (400 iterations)
 returns the monotone-branch preimage 0.636, not 0.85.
 
+Perspective: circular markers. The markers in T048 are points. A real marker
+is often a flat disc, and a detector reports the centre of its image ellipse.
+Under full perspective that centre is not the image of the disc's centre.
+Take a disc with centre C = (X, Y, Z), unit normal n and radius ρ, in camera
+coordinates. Its image conic has the dual H diag(ρ², ρ², −1) Hᵀ with
+H = [e₁ e₂ C]. The ellipse centre is the pole of the line at infinity,
+Z C − ρ² t, with t = e_z − n_z n the in-plane component of the optical axis:
+
+    x_e = (Z X − ρ² t_x)/(Z² − ρ² t_z),   offset from X/Z = ρ²(X t_z − Z t_x)/(Z (Z² − ρ² t_z))
+
+and likewise for y. The offset is O(f ρ²/Z²). It vanishes for a
+fronto-parallel disc (t = 0) and under any affine (weak-perspective)
+projection, because affine maps preserve ellipse centres. On the optical axis
+it reduces to the familiar eccentricity f ρ² sin β cos β/(Z² − ρ² sin² β)
+for a tilt β.
+
+Each of the 27 T048 markers becomes a disc of radius 2, 4 or 8 mm in the
+cylinder's tangent plane. Its image centre is located as the centre of the
+conic through 64 projected rim points, a forward computation that does not use
+the closed form. The closed form matches it to 2.3e-13 px. Two controls give
+0 offset to rounding: fronto-parallel discs, and the weak-perspective
+projection. The largest offset is 0.011, 0.045 and 0.178 px (slope 2.0000 in
+ρ). Triangulating the ellipse centres biases the chords by J_pix·δ_pix to
+first order (residual 4e-4 relative). At 8 mm the bias reaches 80 µm on the
+circumferential helix, 40 µm at 45° and 12 µm on the ruling, with slope 2 in
+ρ. For comparison, the 0.25 px noise gives a chord RMS of about 0.19 mm.
+Counterexample: the ellipse centre is not the projected marker centre
+(marker 10, left camera, 0.178 px at 8 mm). Distortion and perspective are
+studied separately; a real detector (edge or intensity centroid) is not
+modelled.
+
 ### T051 Quantization and pixel noise
 e = round(x + n) − x has variance σ² + 1/12 when the sub-pixel phase is
 uniform, because the rounding error is then uniform and independent of n. This
 is checked at five values of σ. Counterexample: an integer-aligned coordinate
-with σ = 0.1 px has essentially no rounding error. Chord standard deviations
-follow √((σ² + 1/12) Σ J²), which assumes independent errors in the eight
-pixel coordinates of a pair. The generator therefore draws the grid phase
-independently per marker, camera and axis; a phase shared by all markers of a
-camera would correlate their rounding errors and bias the variance by up to
-about 2 %. The law is checked against 4000 seeded stereo trials with 99.9 %
-bounds (max |z| = 1.8).
+with σ = 0.1 px has almost no total error. At x = 512 the rounding error is
+q = −n (variance σ²), which cancels the Gaussian noise, so e = n + q is 0
+unless |n| > 1/2. The error variance, exactly 2Φ(−5) = 5.7e-7 px², is far
+below both σ² + 1/12 and σ² (checked below 1 % of σ²). Chord standard
+deviations follow √((σ² + 1/12) Σ J²), which assumes independent errors in the
+eight pixel coordinates of a pair. The generator therefore draws the grid
+phase independently per marker, camera and axis. The law is checked against
+4000 seeded stereo trials with 99.9 % bounds (max |z| = 1.8).
+
+Shared grid phase. If one phase per camera and axis is shared by all markers,
+the rounding errors of a pair's two markers on the same camera and axis are
+correlated. With d = frac(x₁ − x₂), the sawtooth Fourier series gives
+
+    Cov(e₁, e₂) = Σ_k cos(2πkd) exp(−4π²k²σ²)/(2π²k²)   (= 1/12 − d(1 − d)/2 for σ = 0)
+
+so the chord variance is J Σ Jᵀ. The same 4000-trial stereo Monte Carlo with a
+shared phase matches J Σ Jᵀ for all six pairs at σ = 0 and σ = 0.25 px (max
+|z| = 2.4). At σ = 0 it refutes the independent law: the predicted variance
+departs from it by −44 % to +0.3 %, and the independent law gives |z| = 25.6.
+At σ = 0.25 px the Gaussian noise damps the correlation. The predicted
+departure is −2.2 % to −0.5 %, too small for 4000 trials to resolve, and it is
+recorded from the exact series. A real rig's grid phase is neither
+independent per marker nor exactly shared.
 
 ### T052 Encoder bias, scale and backlash
 Reading = (1 + s)·play_b(x) + β + noise. The play error lies in [0, b] and
@@ -277,7 +366,8 @@ variance moving between axes).
 
 ### T054 Asynchronous timestamps
 Sensor B (30 Hz) is interpolated to sensor A's times (100 Hz). A clock offset
-δ gives e = −vδ + O(δ²), slope 2, below the curvature bound. After linear
+δ gives e = −vδ + O(δ²), slope 2, below the curvature bound, over seven
+offsets δ = 1e-4 to 1e-2 s (geometric). At δ = 2e-3 s, after linear
 interpolation the error is exactly −Sδ, where S is the interpolant slope. For
 a tone A sin(ωt + φ) sampled every h, S = Aω cos(ωt_mid + φ)·sinc(ωh/2), and
 averaging cos(ω(t − t_mid)) over the position within the interval gives a
@@ -285,8 +375,8 @@ second sinc(ωh/2). The regression of −Sδ on −vδ is therefore the
 velocity-power-weighted sinc²(ωh/2) ≈ 1 − (ωh)²/12, predicted 0.99208 against
 0.99190 observed (checked within 5e-4; the secant factor alone,
 1 − (ωh)²/24 = 0.99602, would fail). Jitter adds S²σ_j²((1 − w)² + w²). A
-declared `ClockMapping` removes the offset exactly. Combining the clocks
-without a mapping is refused.
+declared `ClockMapping` removes the declared 1/256 s offset of clock B
+exactly. Combining the clocks without a mapping is refused.
 
 ### T055 Dropped observations
 Drops stay `None` at their sequence positions. Zero-filled streams and values
@@ -298,10 +388,13 @@ neighbour-median detector finds every fill when the signal is 50σ from zero,
 so value-based detection works in favourable signals. The witness is a
 stationary encoder axis whose 0.5 µm vibration is quantized to the declared
 1 µm resolution, so genuine readings of exactly 0 counts are common. Of the 46
-dropped samples, 26 had a genuine reading of 0 counts; filling exactly those
-gaps with zeros reproduces the complete acquired stream bit for bit. Two
-histories (no fills, and 26 fills) then have identical values, so no rule that
-sees values alone can recover the fill positions of both. On the same stream
+dropped samples, 26 had a genuine reading of 0 counts. Both histories are
+built as typed records: the complete acquired stream, and the same stream
+with those 26 samples dropped (`with_drops`) and then zero-filled
+(`zero_fill`). Their values agree bit for bit, and exactly 26 positions were
+filled. No rule that sees values alone can therefore recover the fill
+positions of both. Provenance can: `admit_stream` accepts the complete stream
+and refuses the zero-filled one (`zero_filled_missing`). On the same stream
 the "flag every exact zero" rule flags 107 genuine readings and the
 neighbour-median detector misses all 46 fills. Provenance (the raw
 reference) is required.
