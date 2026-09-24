@@ -105,6 +105,22 @@ def test_a_changed_retained_number_is_reported_against_its_bundle_only(tmp_path)
     assert workspace_verify.verify(workspace)["status"] == "invalid"
 
 
+def test_live_session_serves_the_same_replayability_report(tmp_path):
+    retained = json.loads(FIXTURE.read_text(encoding="utf-8"))
+    session = Session.from_workspace(_workspace(tmp_path, retained), tmp_path / "reopened")
+    def call(payload):
+        return session.handle({"protocol_version": 1, "request_id": "replayability", "type": "bundle.replayability", "payload": payload})
+    response = call({})
+    assert response["type"] == "response", response
+    served = response["payload"]
+    offline = workspace_verify.verify(FIXTURE)
+    assert served["host"] == offline["host"]
+    assert served["bundles"] == offline["bundles"]
+    assert {entry["replay_here"] for entry in served["bundles"]} <= {workspace_verify.MATCHES, workspace_verify.DIFFERS}
+    assert call({"bundle_id": "x"})["type"] == "error"
+    assert session.workbench.serialize() == retained
+
+
 def test_terminal_verb_prints_the_report_and_exits_by_status(tmp_path, capsys):
     assert main(["workspace", "verify", str(FIXTURE)]) == 0
     report = json.loads(capsys.readouterr().out)

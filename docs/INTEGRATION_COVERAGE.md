@@ -40,7 +40,13 @@ The live Session now hosts `ciw.telemetry.v1`, `ciw.calibrated-observable.v1` an
 `source.*`, `bundle.*` and `fusion.list` expose retained inputs, native bundles
 and candidate contexts; result and execution lists include those native records
 alongside existing session operations. Workspace format 3 retains this content,
-and reopening validates it without executing or rebinding a provider.
+and reopening validates it without executing or rebinding a provider. A
+committed retained workspace under `tests/fixtures/retained/` gates that reopen
+for every provider-free kind; NumPy-backed references record a numerical
+kernel probe in their runtime identity, so a host whose linear-algebra kernels
+round differently is refused replay for that stated reason; and
+`ciw workspace verify` reports offline which retained bundles this host could
+replay and which identity fields differ otherwise.
 
 PPDA batch projection and STFE window/quality/feature receipts now have native
 instrument views. Telemetry and calibrated process bundles can use separate

@@ -318,6 +318,12 @@ class Session:
         if kind == "bundle.list":
             _keys(payload, set())
             return {"bundles": self.workbench.list_bundles()}
+        if kind == "bundle.replayability":
+            # Read-only: compares retained runtime identities with this host's
+            # and names the differing fields; nothing executes or rebinds.
+            _keys(payload, set())
+            from .workspace_verify import bundle_reports, host_identity
+            return {"host": host_identity(), "bundles": bundle_reports(self.workbench)}
         if kind == "bundle.get":
             _keys(payload, {"bundle_id"}, {"bundle_id"})
             return self.workbench.get_bundle(payload["bundle_id"])

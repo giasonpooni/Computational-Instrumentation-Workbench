@@ -24,6 +24,7 @@ from pathlib import Path
 
 import numpy as np
 
+from ciw.numerical_backend import linear_algebra_backend
 from ciw.telemetry import canonical
 from ciw.workbench import OPERATIONS, Workbench
 
@@ -69,10 +70,14 @@ def build():
                         "execution_id": native["steps"][0]["execution_id"],
                         "result_id": native["steps"][0]["result_id"],
                         "numerical_result_id": native["steps"][0]["numerical_result_id"],
-                        "code_sha256": runtime.get("algorithm", runtime)["code_sha256"]})
+                        "code_sha256": runtime.get("algorithm", runtime)["code_sha256"],
+                        **({"kernel_probe": runtime.get("algorithm", runtime)["kernel_probe"]}
+                           if "kernel_probe" in runtime.get("algorithm", runtime) else {})})
     manifest = {"schema": SCHEMA, "generated_at": datetime.datetime.now(datetime.timezone.utc).isoformat(timespec="seconds"),
                 "generator": "tests/fixtures/retained/generate.py", "python_version": platform.python_version(),
-                "numpy_version": np.__version__, "bundles": bundles}
+                "numpy_version": np.__version__, "linear_algebra": linear_algebra_backend(),
+                "kernel_probe": bundles[0]["kernel_probe"] if bundles and "kernel_probe" in bundles[0] else None,
+                "bundles": bundles}
     return workbench.serialize(), manifest
 
 

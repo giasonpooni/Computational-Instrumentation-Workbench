@@ -20,6 +20,7 @@ import tempfile
 import numpy as np
 
 from . import reference_workflow as base
+from .numerical_backend import linear_algebra_backend
 from .session import Session, read_json
 from .workbench import OPERATIONS, Workbench, _validate_record, _workflow
 
@@ -32,7 +33,7 @@ PROVIDER = "requires_provider_binding"
 
 def host_identity():
     return {"python_version": platform.python_version(), "numpy_version": np.__version__,
-            "kernel_probe": base.numerical_kernel_probe()}
+            "kernel_probe": base.numerical_kernel_probe(), "linear_algebra": linear_algebra_backend()}
 
 
 def _form(value):
@@ -54,7 +55,8 @@ def _replay_assessment(kind, native, available):
             "differences": differences}
 
 
-def _bundle_reports(workbench):
+def bundle_reports(workbench):
+    """Per-bundle identities and replayability on this host for a restored or live workbench."""
     available = {kind for kind, operation in OPERATIONS.items()
                  if any(row["available"] and row["operation_id"] == operation for row in workbench.describe_operations())}
     reports = []
@@ -115,7 +117,7 @@ def verify(path):
         report.update(status="invalid", refusal=str(exc),
                       bundles=_diagnose(retained) if isinstance(retained, dict) else [])
         return report
-    bundles = _bundle_reports(workbench)
+    bundles = bundle_reports(workbench)
     report.update(status="valid", refusal=None, bundles=bundles,
                   replayable_here=sum(1 for entry in bundles if entry["replay_here"] == MATCHES))
     return report

@@ -130,6 +130,21 @@ process and across a signalled restart of the native service:
 `::test_resume_reopens_exact_evidence_and_results_without_computation`,
 `::test_posix_signal_shutdown_and_restart_preserve_exact_saved_json`.
 
+Implemented: the provider-free references (energy accuracy, thermal observer,
+machine manifest, project graph, uncertainty validation) share one lifecycle in
+`src/ciw/reference_workflow.py`; a committed retained workspace made from the
+example inputs must reopen, reproduce its numbers (bit for bit for the exact
+kinds, within the shared binary64 tolerance for the kernel-sensitive ones)
+and replay freshly or refuse for a stated reason:
+`tests/test_retained_compatibility.py` (eight tests). NumPy-backed references
+record a numerical kernel probe in their algorithm identity; identities from
+before the probe reopen and are refused replay naming the field:
+`tests/test_reference_kernel.py`. `ciw workspace verify` reopens a workspace
+offline and reports validity and per-bundle replayability with the differing
+identity fields: `tests/test_workspace_verify.py`. The energy reopen check
+tolerates roundoff-level differences but not changed conclusions:
+`tests/test_energy_workflow.py::test_reopen_tolerates_kernel_level_rounding_of_error_metrics_but_not_changed_conclusions`.
+
 Partial: the `runtime_mismatch` refusal of a saved revision outside the
 current-or-historical allowlist, `RUNTIME_UNAVAILABLE` and `RUNTIME_IO` are
 implemented and asserted by no test. Refusal of a version-1 workspace carrying

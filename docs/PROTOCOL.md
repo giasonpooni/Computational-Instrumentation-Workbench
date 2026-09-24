@@ -42,6 +42,7 @@ a `ciw.spatial-view.v1` packet respectively. Its only broadcast is
 | `result.get` | `{result_id: string}` | RESULT (only results from this running session) |
 | `result.list` | `{}` | `{results: [RESULT_SUMMARY]}`; discover stored analyses without running them |
 | `workspace.save` | `{}` | `{workspace_file: string}`; saves to the service output directory |
+| `bundle.replayability` | `{}` | `{host: {python_version, numpy_version, kernel_probe, linear_algebra}, bundles: [{kind, bundle_id, operation_id, execution_ids, result_ids, numerical_result_ids, replay_here, runtime_roles, differences, ...}]}`; read-only. `replay_here` is `runtime_identity_matches`, `runtime_identity_differs` (with the differing identity fields, such as `algorithm.kernel_probe`) or `requires_provider_binding`; nothing executes or rebinds |
 
 The initial selection is `{run_id, channel:"q", interval_s:[0,duration_s], cursor_s:0, coordinate_frame:"oscillator-state", revision:0}`. Analysis intervals are half-open `[start,end)` and independent of the playback cursor. Updates must specify the observed expected_revision; stale updates fail with `revision_conflict` and clients refresh. Analysis responses capture the selection revision and exact interval that produced them; results never mutate. Cursor updates do not recalculate analyses. Empty or reversed intervals, out-of-range cursors, unknown channels, nonfinite numbers and unsupported versions are rejected.
 
