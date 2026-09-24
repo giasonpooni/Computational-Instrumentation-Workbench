@@ -457,22 +457,179 @@ def exact_comparison_study(exact, steiner_levels=STEINER_LEVELS, ks=(1, 3, 7), h
 
 
 def traced_exact_study(configs=TRACED_EXACT, starts=STARTS):
-    """Straightest geodesics against the exact distance between their endpoints, both inserted as vertices."""
+    """Straightest geodesics against the exact distance between their endpoints, both inserted as vertices.
+
+    The propagation from the start runs to the traced length, so the exact distance from the start is also known
+    at every edge crossing of the trace (``cut_point``): where the trace stops being a shortest path.
+    """
     rows = []
     for level, length in configs:
         mesh = G.icosphere(level)
+        defect = G.angle_defect(mesh)[0]
         for index, (u0, heading) in enumerate(starts):
             start = sphere_start(mesh, u0, heading)
             tr = G.trace(mesh, start["face"], start["point"], start["direction"], length)
-            row = {"level": level, "length": length, "start": index, "status": tr.status}
+            row = {"level": level, "length": length, "start": index, "status": tr.status, "h": mesh.mean_edge()}
             if tr.completed:
                 refined, (a, b) = E.insert_points(mesh, [(start["face"], start["point"]),
                                                          (tr.end_face, tr.end_point)])
-                exact = float(E.ExactGeodesic(refined).distances(a, targets=[b])[b])
+                propagation = E.ExactGeodesic(refined).propagate(a, limit=tr.length)
+                exact = float(propagation.distances[b])
                 row.update(traced=tr.length, exact=exact, excess=tr.length - exact,
                            shortest=bool(abs(tr.length - exact) <= SHORTEST))
+                row["cut"] = cut_point(mesh, defect, refined, propagation, tr, b)
             rows.append(row)
     return {"configs": [list(c) for c in configs], "shortest_tolerance": SHORTEST, "rows": rows}
+
+
+def arclengths(points) -> np.ndarray:
+    """Cumulative polyline length at every point."""
+    return np.r_[0.0, np.cumsum(np.linalg.norm(np.diff(np.asarray(points), axis=0), axis=1))]
+
+
+def _nearest_on_polyline(points, polyline):
+    """(distance, arclength of the nearest polyline point) for each point, by projection onto every segment."""
+    points, polyline = np.asarray(points, dtype=float), np.asarray(polyline, dtype=float)
+    a, ab = polyline[:-1], np.diff(polyline, axis=0)
+    length = np.linalg.norm(ab, axis=1)
+    t = np.clip(np.einsum("psi,si->ps", points[:, None] - a[None], ab) / np.maximum(length ** 2, 1e-300), 0.0, 1.0)
+    gap = np.linalg.norm(points[:, None] - (a[None] + t[..., None] * ab[None]), axis=2)
+    best = np.argmin(gap, axis=1)
+    rows = np.arange(len(points))
+    return gap[rows, best], arclengths(polyline)[best] + t[rows, best] * length[best]
+
+
+# Cut points: an excess of traced length over the exact distance above CUT_EXCESS (rounding stays below 1e-14 here)
+# marks a point past the cut point; bisection locates it; the other shortest path is traced from CUT_PAST mean
+# edges past it; an independent solver brackets it with probes CUT_PROBE resolutions before and after it.
+CUT_EXCESS = 1e-12
+CUT_BISECTIONS = 40
+CUT_PAST = 0.02
+CUT_PROBE = 10.0
+CUT_ROUNDING = 1e-12  # the most an excess before the cut point may show (rounding of lengths near 1)
+
+
+def cut_point(mesh, defect, refined, propagation, tr, end) -> dict:
+    """Where a straightest geodesic on a sphere mesh stops being a shortest path from its start (its cut point).
+
+    The excess e(s) = s - d(s) of traced length over the exact distance from the start never decreases along
+    the trace (a subpath of a shortest path is shortest). It is sampled at every edge crossing and at the
+    endpoint, ``d`` coming from the recorded windows (at the endpoint it must equal the vertex distance). The
+    first sample whose excess passes CUT_EXCESS brackets the cut point with the sample before it; bisection
+    inside that face segment finds where the excess passes CUT_EXCESS, and since the excess rises linearly past
+    the cut point, moving back by CUT_EXCESS over its slope gives the cut point (``arclength``), with that move
+    plus the bisection width as its ``resolution``. Just past it the other shortest path is back-traced from
+    the recorded windows; with the trace it bounds a digon, whose ``enclosed`` vertices (a gnomonic
+    point-in-polygon test, exact for polylines on a mesh inscribed in a sphere about the origin) carry the
+    curvature that closes it. ``trigger`` is the passed vertex whose isolated-cone cut ray the trace would
+    cross first (``single_cone_cut``); ``nearest`` is the passed vertex closest to the trace before the cut.
+    ``probes`` are the trace points CUT_PROBE resolutions before and after the cut point, with their
+    window-evaluated distances, at which an independent exact solver can bracket it.
+    """
+    points = np.asarray(tr.points)
+    s = arclengths(points)
+
+    def at(arclength, j):
+        """The trace point at an arclength inside segment j (from point j to point j + 1)."""
+        t = 0.0 if s[j + 1] == s[j] else (arclength - s[j]) / (s[j + 1] - s[j])
+        return points[j] + t * (points[j + 1] - points[j])
+
+    def excess_at(arclength, j):
+        x = at(arclength, j)
+        return float(arclength - propagation.distance_at(refined.locate(x)[0], x))
+
+    excess = [excess_at(s[j + 1], j) for j in range(len(points) - 1)]
+    end_gap = float(s[-1] - excess[-1] - propagation.distances[end])
+    first = next((j for j, e in enumerate(excess) if e > CUT_EXCESS), None)
+    h = mesh.mean_edge()
+    result = {"samples": len(excess), "max_excess_decrease": max((a - b for a, b in zip(excess, excess[1:])),
+                                                                  default=0.0),
+              "endpoint_window_minus_vertex": end_gap, "bracket": None, "arclength": None, "resolution": None,
+              "enclosed": None, "enclosed_defect": None, "probes": None}
+    if first is not None:
+        lo, hi = float(s[first]), float(s[first + 1])
+        for _ in range(CUT_BISECTIONS):
+            mid = 0.5 * (lo + hi)
+            lo, hi = (mid, hi) if excess_at(mid, first) <= CUT_EXCESS else (lo, mid)
+        # The excess rises linearly past the cut point: extrapolate its zero from the bisected CUT_EXCESS crossing
+        # with the secant slope to the sample past it; the correction bounds the error.
+        slope = excess[first] / max(float(s[first + 1]) - hi, 1e-300)
+        correction = CUT_EXCESS / slope
+        past = min(hi + CUT_PAST * h, float(s[-1]))
+        j = min(int(np.searchsorted(s, past)) - 1, len(points) - 2)
+        x = at(past, j)
+        other = propagation.path_to_point(refined.locate(x)[0], x)
+        loop = np.vstack([points[:j + 1], [x], other["points"][1:-1]])
+        enclosed = enclosed_vertices(mesh.vertices, loop)
+        # Probe points CUT_PROBE resolutions before and after the cut point, where an independent exact solver must
+        # find the trace shortest and not shortest (an excess above CUT_EXCESS) to bracket it at that resolution.
+        resolution = correction + (s[first + 1] - s[first]) / 2 ** CUT_BISECTIONS
+        probes = {"arclengths": [], "segments": [], "points": [], "distances": []}
+        for arclength in (max(hi - correction - CUT_PROBE * resolution, 0.0),
+                          min(hi - correction + CUT_PROBE * resolution, float(s[-1]))):
+            k = min(max(int(np.searchsorted(s, arclength)) - 1, 0), len(points) - 2)
+            x = at(arclength, k)
+            probes["arclengths"].append(float(arclength))
+            probes["segments"].append(k)
+            probes["points"].append(x)
+            probes["distances"].append(float(propagation.distance_at(refined.locate(x)[0], x)))
+        result.update(bracket=[float(s[first]), float(s[first + 1])], arclength=hi - correction, resolution=resolution,
+                      enclosed=enclosed, enclosed_defect=float(sum(defect[v] for v in enclosed)), probes=probes)
+    upto = len(points) if first is None else first + 2  # the polyline up to the sample past the cut point
+    gap, along = _nearest_on_polyline(mesh.vertices, points[:upto])
+    passed = np.flatnonzero((along > 0.0) & (along < s[upto - 1]))
+    nearest = int(passed[np.argmin(gap[passed])])
+    predictions = np.array([single_cone_cut(along[v], gap[v], defect[v]) for v in passed])
+    trigger = int(passed[np.argmin(predictions)]) if np.isfinite(predictions).any() else None
+    result["nearest"] = {"vertex": nearest, "distance_over_h": float(gap[nearest] / h),
+                         "arclength": float(along[nearest]), "angle_defect": float(defect[nearest])}
+    result["trigger"] = None if trigger is None else {
+        "vertex": trigger, "prediction": float(np.min(predictions)), "distance_over_h": float(gap[trigger] / h),
+        "arclength": float(along[trigger]), "angle_defect": float(defect[trigger])}
+    return result
+
+
+def enclosed_vertices(vertices, loop) -> list:
+    """Vertices inside a closed polyline loop drawn on a mesh inscribed in a sphere about the origin.
+
+    Central (gnomonic) projection about the loop's mean direction maps every
+    straight segment to a straight segment (it lies in a plane through the
+    origin), so an even-odd test in the projection plane is exact for the
+    polyline; the loop must lie in the open hemisphere about that direction.
+    Of a loop's two sides the one in that hemisphere is taken.
+    """
+    loop = np.asarray(loop, dtype=float)
+    center = loop.mean(axis=0)
+    center /= np.linalg.norm(center)
+    t1 = np.cross(center, [0.0, 0.0, 1.0] if abs(center[2]) < 0.9 else [1.0, 0.0, 0.0])
+    t1 /= np.linalg.norm(t1)
+    t2 = np.cross(center, t1)
+    if np.min(loop @ center) <= 0.0:
+        raise ValueError("The loop leaves the hemisphere about its mean direction")
+    polygon = np.stack([loop @ t1, loop @ t2], axis=1) / (loop @ center)[:, None]
+    front = np.flatnonzero(np.asarray(vertices) @ center > 0.0)
+    q = np.stack([vertices[front] @ t1, vertices[front] @ t2], axis=1) / (vertices[front] @ center)[:, None]
+    a, b = polygon, np.roll(polygon, -1, axis=0)
+    straddles = (a[None, :, 1] > q[:, None, 1]) != (b[None, :, 1] > q[:, None, 1])
+    with np.errstate(divide="ignore", invalid="ignore"):
+        x = a[None, :, 0] + (q[:, None, 1] - a[None, :, 1]) * (b[None, :, 0] - a[None, :, 0]) / (
+            b[None, :, 1] - a[None, :, 1])
+    inside = np.sum(straddles & (x > q[:, None, 0]), axis=1) % 2 == 1
+    return [int(v) for v in front[inside]]
+
+
+def single_cone_cut(along, lateral, defect) -> float:
+    """Arclength at which a straight line crosses the cut ray of one cone vertex of angle defect ``defect``.
+
+    With every other vertex flat, the cut locus of the start is the ray from the vertex directly away from it.
+    A line from the start that passes the vertex, seen at angle phi from the line at distance r (in the
+    development, ``along`` = r cos phi and ``lateral`` = r sin phi), crosses that ray at arclength
+    r sin(defect / 2) / sin(defect / 2 - phi) when phi < defect / 2, and never otherwise.
+    """
+    phi, r = math.atan2(lateral, along), math.hypot(along, lateral)
+    if not 0.0 < defect or phi >= 0.5 * defect:
+        return math.inf
+    return r * math.sin(0.5 * defect) / math.sin(0.5 * defect - phi)
 
 
 def _l_shape(size=8) -> G.TriMesh:
@@ -577,6 +734,506 @@ def insertion_study(level=2, torus=(12, 6)):
                      "issues": [code for code, _ in G.inspect(refined.vertices, refined.faces, require_closed=True)],
                      "max_abs_change": worst})
     return {"rows": rows, "max_abs_change": max(r["max_abs_change"] for r in rows)}
+
+
+# ---------------------------------------------------------------- vertex continuation and shortest paths
+PS = "polthier_schmies"
+# Cube-corner traces: start (u, w, 0) on the face z = 0 aimed at the corner, then CUBE_RUN past it.
+CUBE_STARTS = ((0.61, 0.23), (0.19, 0.53))
+CUBE_RUN = 0.5
+# One-vertex fans: total angles / pi (cones, flat, saddles), start and end radii, the start's polar angle as a
+# fraction of the first apex angle, end polar angles from the start / pi, and the lateral offset (times the start
+# radius) of the rays that pass the centre on either side.
+FAN_ANGLES = (1.5, 1.8, 2.0, 2.2, 2.5)
+FAN_TRIANGLES = 6
+FAN_RADII = (0.45, 0.35)
+FAN_START = 0.37
+FAN_ENDS = (0.3, 0.6, 0.9, 1.1, 1.3)
+FAN_OFFSET = 1e-6
+# Vertex hits of generic traces: tangentially jittered icospheres (validated with the centre declared), seeded
+# uniform start points and headings, and the edge-parameter distances to a vertex that are counted.
+HIT_LEVELS = (2, 3, 4, 5)
+HIT_JITTER = 0.1
+HIT_TRACES = 200
+HIT_LENGTH = 1.0
+HIT_TAUS = (1e-1, 1e-2, 1e-3, 1e-4)
+# Shortest-path back-tracing: seeded sources and targets per mesh.
+PATH_SOURCES = 3
+PATH_TARGETS = 6
+# A path side angle this far below pi, or a turn this large at an edge, is a bend (rounding stays below 1e-12).
+BEND = 1e-9
+# A vertex this close to a path polyline lies on the path. Whether a path passing a vertex straight lists it as a
+# path point is a rounding tie (a pseudo-source or a window ray through it), so passes are counted geometrically.
+ON_PATH = 1e-12
+
+
+def _unit(vector) -> np.ndarray:
+    return vector / np.linalg.norm(vector)
+
+
+def _development_point(n, radius, height_step, x, z) -> np.ndarray:
+    """The prism cylinder's point at development coordinates (x along the circumference, z up)."""
+    chord = 2 * radius * math.sin(math.pi / n)
+    i = math.floor(x / chord)
+    t = x / chord - i
+    ring = [radius * np.array([math.cos(2 * math.pi * k / n), math.sin(2 * math.pi * k / n)]) for k in (i, i + 1)]
+    xy = (1 - t) * ring[0] + t * ring[1]
+    return np.array([xy[0], xy[1], z])
+
+
+def _leaving_face(mesh, point, direction) -> int:
+    """The face through which a ray from ``point`` (possibly a vertex or on an edge) leaves along ``direction``."""
+    return mesh.locate(point + 1e-7 * mesh.mean_edge() * np.asarray(direction))[0]
+
+
+def continuation_study(size=8, n=16, radius=1.0, height=4.0, cube=4):
+    """Straightest geodesics continued through vertices by the Polthier-Schmies rule, against closed forms.
+
+    Flat vertices (planar grids, prism cylinders): the trace must stay a straight line of the development,
+    whether it passes one vertex or runs along a row of vertices. Cube corner (total angle 3 pi / 2, a cone): a
+    ray on the face z = 0 aimed at the corner at angle gamma < pi / 4 from the x axis leaves on the face x = 0 at
+    pi / 4 + gamma from the y axis (3 pi / 4 on both sides), and the exact distance between its endpoints is
+    sqrt(r1^2 + r2^2 - 2 r1 r2 cos(3 pi / 4)) (the endpoint lies on the start's cut ray, reached around both
+    sides), shorter than the continued path r1 + r2.
+    """
+    rows = []
+    for shear, start, targets in ((0.0, (0.43, 0.61), ((0.75, 0.75), (0.25, 0.25))),
+                                  (0.5, (0.763, 0.507), ((0.9375, 0.625), (0.4375, 0.375)))):
+        mesh = G.plane_mesh(size, size, shear=shear)
+        point = np.array([start[0], start[1], 0.0])
+        face = mesh.locate(point)[0]
+        for target in targets:
+            direction = _unit(np.array([target[0], target[1], 0.0]) - point)
+            tr = G.trace(mesh, face, point, direction, 0.5, vertex_rule=PS)
+            rows.append({"mesh": mesh.name, "shear": shear, "kind": "aimed at a vertex", "status": tr.status,
+                         "vertices_passed": len(tr.vertices),
+                         "error": float(np.max(np.abs(tr.end_point - (point + 0.5 * direction))))})
+    plane = G.plane_mesh(size, size)
+    for vertex, direction, length, kind in (((1, 2), (1.0, 1.0), 0.8, "along a diagonal row of vertices"),
+                                            ((1, 3), (1.0, 0.0), 0.7, "along a grid row of vertices")):
+        point = plane.vertices[vertex[1] * (size + 1) + vertex[0]]
+        direction = _unit(np.array([direction[0], direction[1], 0.0]))
+        tr = G.trace(plane, _leaving_face(plane, point, direction), point, direction, length, vertex_rule=PS)
+        rows.append({"mesh": plane.name, "shear": 0.0, "kind": kind, "status": tr.status,
+                     "vertices_passed": len(tr.vertices),
+                     "error": float(np.max(np.abs(tr.end_point - (point + length * direction))))})
+    m = max(4, int(round(height / (2 * radius * math.sin(math.pi / n)))))  # as in cylinder_study
+    cylinder = G.cylinder_mesh(n, m, radius, height)
+    chord, step = 2 * radius * math.sin(math.pi / n), height / m
+    for x0, z0, dx, dz, length, kind in (
+            (1.5 * chord, 0.5, 2.5 * chord, 2.0 - 0.5, None, "aimed at a vertex"),
+            (3 * chord, step, 0.0, 1.0, 2.5, "along a column of vertices"),
+            (5 * chord, step, chord, step, 1.5, "along a diagonal row of vertices")):
+        norm = math.hypot(dx, dz)
+        dx, dz = dx / norm, dz / norm
+        length = norm + 0.6 if length is None else length
+        point = _development_point(n, radius, step, x0, z0)
+        sector = int(math.floor(x0 / chord + 1e-9))
+        tangent = _unit(_development_point(n, radius, step, (sector + 1) * chord, 0.0)
+                        - _development_point(n, radius, step, sector * chord, 0.0))
+        direction = dx * tangent + dz * np.array([0.0, 0.0, 1.0])
+        tr = G.trace(cylinder, _leaving_face(cylinder, point, direction), point, direction, length, vertex_rule=PS)
+        expected = _development_point(n, radius, step, x0 + length * dx, z0 + length * dz)
+        rows.append({"mesh": cylinder.name, "shear": None, "kind": kind, "status": tr.status,
+                     "vertices_passed": len(tr.vertices), "error": float(np.max(np.abs(tr.end_point - expected)))})
+    box = G.cube_mesh(cube)
+    corners = []
+    for u, w in CUBE_STARTS:
+        point = np.array([u, w, 0.0])
+        face = box.locate(point)[0]
+        r1 = float(np.linalg.norm(point))
+        tr = G.trace(box, face, point, -point / r1, r1 + CUBE_RUN, vertex_rule=PS)
+        gamma = math.atan2(w, u)
+        turn = math.pi / 4 + min(gamma, math.pi / 2 - gamma)
+        side = (0.0, CUBE_RUN * math.cos(turn), CUBE_RUN * math.sin(turn))
+        expected = np.array(side if gamma < math.pi / 4 else (side[1], 0.0, side[2]))
+        refined, (a, b) = E.insert_points(box, [(face, point), (tr.end_face, tr.end_point)])
+        exact = float(E.ExactGeodesic(refined).distances(a, targets=[b])[b])
+        closed = math.sqrt(r1 ** 2 + CUBE_RUN ** 2 - 2 * r1 * CUBE_RUN * math.cos(0.75 * math.pi))
+        corners.append({"start": [u, w], "status": tr.status, "vertices_passed": len(tr.vertices),
+                        "endpoint_error": float(np.max(np.abs(tr.end_point - expected))), "traced": tr.length,
+                        "exact": exact, "closed_form": closed, "exact_minus_closed_form": exact - closed,
+                        "traced_minus_exact": tr.length - exact})
+    return {"flat": rows, "flat_max_error": max(r["error"] for r in rows),
+            "flat_vertices_passed": [r["vertices_passed"] for r in rows], "cube": {"k": cube, "rows": corners}}
+
+
+def fan_point(mesh, polar, radius):
+    """(face, point) at a polar angle (around vertex 0, from ring vertex 1) and a distance from it on a fan."""
+    n = mesh.params["n"]
+    apex = mesh.params["total_angle"] / n
+    turns = math.floor(polar / apex)
+    face = int(turns) % n
+    local = polar - turns * apex
+    center = mesh.vertices[0]
+    edge = _unit(mesh.vertices[1 + face] - center)
+    return face, center + radius * (math.cos(local) * edge + math.sin(local) * np.cross(mesh.face_normals[face],
+                                                                                        edge))
+
+
+def fan_polar(mesh, face, point):
+    """Polar angle (around vertex 0, from ring vertex 1) and distance from vertex 0 of a point of fan face ``face``."""
+    apex = mesh.params["total_angle"] / mesh.params["n"]
+    center = mesh.vertices[0]
+    edge = _unit(mesh.vertices[1 + face] - center)
+    offset = np.asarray(point) - center
+    local = math.atan2(float(np.dot(np.cross(edge, offset), mesh.face_normals[face])), float(np.dot(edge, offset)))
+    return face * apex + local, float(np.linalg.norm(offset))
+
+
+def fan_study(angles=FAN_ANGLES, n=FAN_TRIANGLES, radii=FAN_RADII, start=FAN_START, ends=FAN_ENDS,
+              offset=FAN_OFFSET):
+    """The Polthier-Schmies continuation through one cone, flat or saddle vertex of total angle theta.
+
+    Every fan is flat except at its centre, so a point at distance r2 and polar angle phi from a start at
+    distance r1 is sqrt(r1^2 + r2^2 - 2 r1 r2 cos(min(phi, theta - phi, pi))) away: around the centre on the
+    nearer side when that side's angle is below pi, through the centre (r1 + r2) otherwise. The continued trace
+    ends at phi = theta / 2, so it is shortest exactly when theta >= 2 pi; rays passing the centre at a small
+    lateral offset on either side end at phi = pi and phi = theta - pi, whose bisector the continuation is.
+    """
+    r1, r2 = radii
+    rows = []
+    for fraction in angles:
+        theta = fraction * math.pi
+        mesh = G.fan_mesh(n, theta)
+        issues = [code for code, _ in G.inspect(mesh.vertices, mesh.faces)]
+        polar0 = start * theta / n
+        face, point = fan_point(mesh, polar0, r1)
+        inward = _unit(mesh.vertices[0] - point)
+        tr = G.trace(mesh, face, point, inward, r1 + r2, vertex_rule=PS)
+        back = G.trace(mesh, tr.end_face, tr.end_point, -tr.end_direction, r1 + r2, vertex_rule=PS)
+        polar, radius = fan_polar(mesh, tr.end_face, tr.end_point)
+        side = np.cross(mesh.face_normals[face], inward)
+        one_sided = []
+        for sign in (1.0, -1.0):
+            aim = _unit(mesh.vertices[0] + sign * offset * r1 * side - point)
+            passing = G.trace(mesh, face, point, aim, r1 + r2, vertex_rule=PS)
+            one_sided.append((fan_polar(mesh, passing.end_face, passing.end_point)[0] - polar0) % theta)
+        limits = min(max(abs(one_sided[0] - math.pi), abs(one_sided[1] - (theta - math.pi))),
+                     max(abs(one_sided[1] - math.pi), abs(one_sided[0] - (theta - math.pi))))
+        grid = [fan_point(mesh, polar0 + phi * math.pi, r2) for phi in ends]
+        refined, ids = E.insert_points(mesh, [(face, point), (tr.end_face, tr.end_point)] + grid)
+        propagation = E.ExactGeodesic(refined).propagate(ids[0])
+        continued = (polar - polar0) % theta
+        closed = [math.sqrt(r1 ** 2 + r2 ** 2 - 2 * r1 * r2 * math.cos(min(phi, theta - phi, math.pi)))
+                  for phi in [continued] + [e * math.pi for e in ends]]
+        exact = [float(propagation.distances[v]) for v in ids[1:]]
+        through = [min(e * math.pi, theta - e * math.pi) >= math.pi for e in ends]
+        measured = [abs(d - (r1 + r2)) <= SHORTEST for d in exact[1:]]
+        path = propagation.path(ids[1])
+        # Whether the shortest path passes the centre is decided geometrically: at theta = 2 pi it may be
+        # back-traced through the centre's pseudo-source or along a window ray through the centre, a rounding tie.
+        through_centre = point_to_polyline([refined.vertices[0]], path["points"]) <= ON_PATH
+        rows.append({"total_angle_over_pi": fraction, "issues": issues, "status": tr.status,
+                     "vertices_passed": len(tr.vertices), "polar_minus_half": continued - 0.5 * theta,
+                     "radius_error": radius - r2, "reverse_error": float(np.max(np.abs(back.end_point - point))),
+                     "one_sided_polar": one_sided, "one_sided_limit_error": limits,
+                     "traced_minus_exact": tr.length - exact[0], "exact_minus_closed_form": [
+                         d - c for d, c in zip(exact, closed)],
+                     "through_expected": through, "through_measured": measured,
+                     "path_through_centre": through_centre,
+                     "refined": {"vertices": refined.vertices, "faces": refined.faces, "start": ids[0],
+                                 "ends": ids[1:], "closed_form": closed}})
+    return {"triangles": n, "radii": list(radii), "start_fraction": start, "ends_over_pi": list(ends),
+            "offset": offset, "rows": rows}
+
+
+def vertex_hit_study(levels=HIT_LEVELS, amplitude=HIT_JITTER, traces=HIT_TRACES, length=HIT_LENGTH, taus=HIT_TAUS,
+                     seed=SEED + 200):
+    """How often generic straightest geodesics on irregular meshes pass within a tolerance of a vertex.
+
+    Jittered icospheres are refined at fixed jitter amplitude (in units of h); seeded traces start at uniform
+    points of uniformly chosen faces with uniform headings and run ``length`` with the Polthier-Schmies rule.
+    For every edge crossing the edge-parameter distance to the nearer endpoint is recorded; a crossing within
+    ``VERTEX_TOLERANCE`` is a vertex hit that the rule continues.
+    """
+    rows = []
+    for level in levels:
+        jittered = _jitter_unvalidated(G.icosphere(level), amplitude, seed + level)
+        mesh = G.TriMesh.build(jittered.vertices, jittered.faces, jittered.name, require_closed=True, center=ORIGIN)
+        rng = np.random.Generator(np.random.PCG64(seed + 100 + level))
+        faces = rng.integers(len(mesh.faces), size=traces)
+        uniform = rng.random((traces, 3))
+        margins, passes, statuses = [], 0, set()
+        for face, (u, v, heading) in zip(faces, uniform):
+            root = math.sqrt(u)
+            point = mesh.point(face, [1 - root, root * (1 - v), root * v])
+            corners = mesh.vertices[mesh.faces[face]]
+            e1 = _unit(corners[1] - corners[0])
+            direction = math.cos(2 * math.pi * heading) * e1 + math.sin(2 * math.pi * heading) * np.cross(
+                mesh.face_normals[face], e1)
+            tr = G.trace(mesh, int(face), point, direction, length, vertex_rule=PS)
+            statuses.add(tr.status)
+            passes += len(tr.vertices)
+            margins += crossing_margins(mesh, tr)
+        margins = np.array(margins)
+        near = [int(np.sum(margins < tau)) for tau in taus]
+        rows.append({"level": level, "h": mesh.mean_edge(), "vertices": len(mesh.vertices), "traces": traces,
+                     "crossings": len(margins), "crossings_per_trace": len(margins) / traces, "near": near,
+                     "near_over_2tau": [c / (2 * tau * len(margins)) for c, tau in zip(near, taus)],
+                     "vertex_hits": passes, "min_margin": float(np.min(margins)), "statuses": sorted(statuses)})
+    crossings = sum(r["crossings"] for r in rows)
+    pooled = [sum(r["near"][k] for r in rows) / (2 * tau * crossings) for k, tau in enumerate(taus)]
+    return {"amplitude": amplitude, "length": length, "taus": list(taus), "tolerance": G.VERTEX_TOLERANCE,
+            "rows": rows, "crossings": crossings, "pooled_near_over_2tau": pooled,
+            "vertex_hits": sum(r["vertex_hits"] for r in rows),
+            "crossing_order": fitted_order([r["h"] for r in rows], [r["crossings_per_trace"] for r in rows])}
+
+
+def crossing_margins(mesh, tr) -> list:
+    """Edge-parameter distance to the nearer endpoint at every edge crossing of a trace (vertex passes excluded).
+
+    A vertex pass is a trace point equal to the next vertex of ``tr.vertices``; the face after it may share an
+    edge with the face before it, so faces sharing an edge do not make a crossing.
+    """
+    margins, passes = [], list(tr.vertices)
+    for i, (f, g) in enumerate(zip(tr.faces, tr.faces[1:])):
+        if passes and np.array_equal(tr.points[i + 1], mesh.vertices[passes[0]]):
+            passes.pop(0)
+            continue
+        shared = sorted(set(mesh.faces[f].tolist()) & set(mesh.faces[g].tolist()))
+        if len(shared) != 2:
+            continue
+        a, b = mesh.vertices[shared[0]], mesh.vertices[shared[1]]
+        t = float(np.linalg.norm(np.asarray(tr.points[i + 1]) - a) / np.linalg.norm(b - a))
+        margins.append(min(t, 1.0 - t))
+    return margins
+
+
+def _jitter_torus(n_phi, n_theta, amplitude, seed, major=2.0, minor=1.0) -> G.TriMesh:
+    """Torus grid with every vertex moved along the smooth torus by seeded Gaussian noise of amplitude * step in its
+    two angles."""
+    rng = np.random.Generator(np.random.PCG64(seed))
+    base = G.torus_mesh(n_phi, n_theta, major, minor)
+    i, j = np.divmod(np.arange(n_phi * n_theta), n_theta)
+    phi = 2 * math.pi * (i + amplitude * rng.standard_normal(len(i))) / n_phi
+    theta = 2 * math.pi * (j + amplitude * rng.standard_normal(len(j))) / n_theta
+    rho = major + minor * np.cos(theta)
+    vertices = np.stack([rho * np.cos(phi), rho * np.sin(phi), minor * np.sin(theta)], axis=1)
+    return G.TriMesh.build(vertices, base.faces, f"{base.name}-jitter{amplitude:g}-s{seed}", require_closed=True,
+                           params={"amplitude": amplitude, "seed": seed})
+
+
+def path_meshes(seed=SEED + 300) -> list:
+    """Meshes of the back-tracing study: a convex and a saddle-bearing irregular closed mesh, a reflex boundary
+    corner and a saddle fan with points inserted (so that paths through its centre run between vertices)."""
+    sphere = _jitter_unvalidated(G.icosphere(2), 0.1, seed)
+    fan = G.fan_mesh(FAN_TRIANGLES, 2.5 * math.pi)
+    points = [fan_point(fan, (0.1 + 0.37 * k) * fan.params["total_angle"] / 3.0, 0.3 + 0.1 * (k % 3))
+              for k in range(7)]
+    fan_refined, _ = E.insert_points(fan, points)
+    return [G.TriMesh.build(sphere.vertices, sphere.faces, sphere.name, require_closed=True, center=ORIGIN),
+            _jitter_torus(24, 12, 0.1, seed + 1), _l_shape(8),
+            G.TriMesh(fan_refined.vertices, fan_refined.faces, fan.name + "-inserted", fan.params)]
+
+
+def vertex_classes(mesh) -> np.ndarray:
+    """Per vertex: 'boundary', 'saddle', 'flat' or 'cone' by its angle sum against 2 pi (BEND tolerance)."""
+    excess = -G.angle_defect(mesh)[0]  # angle sum minus 2 pi
+    kind = np.where(excess > BEND, "saddle", np.where(excess < -BEND, "cone", "flat")).astype(object)
+    kind[mesh.boundary_vertices] = "boundary"
+    return kind
+
+
+def _fan_positions(mesh, vertex):
+    """Faces around a vertex in counterclockwise order: {face: (corner, angle position of its first edge)}, total."""
+    incident = np.flatnonzero(np.any(mesh.faces == vertex, axis=1))
+    face = int(incident[0])
+    if mesh.boundary_vertices[vertex]:
+        # Start at the face whose clockwise neighbour (across the edge v -> first) is missing.
+        for f in incident:
+            k = int(np.flatnonzero(mesh.faces[f] == vertex)[0])
+            if mesh.neighbors[f, k] < 0:
+                face = int(f)
+    positions, total, f = {}, 0.0, face
+    while f >= 0 and f not in positions:
+        k = int(np.flatnonzero(mesh.faces[f] == vertex)[0])
+        ids = mesh.faces[f]
+        a = mesh.vertices[ids[(k + 1) % 3]] - mesh.vertices[vertex]
+        b = mesh.vertices[ids[(k + 2) % 3]] - mesh.vertices[vertex]
+        positions[f] = (k, total)
+        total += math.atan2(float(np.linalg.norm(np.cross(a, b))), float(np.dot(a, b)))
+        f = int(mesh.neighbors[f, (k + 2) % 3])
+    return positions, total
+
+
+def side_angles(mesh, vertex, before, face_before, after, face_after) -> tuple:
+    """Angles between a path's two segments at a vertex, measured around it on each side (one side at the boundary).
+
+    ``before`` and ``after`` are the neighbouring path points, in faces ``face_before`` and ``face_after``.
+    """
+    positions, total = _fan_positions(mesh, vertex)
+    center = mesh.vertices[vertex]
+
+    def position(face, point):
+        k, start = positions[face]
+        first = mesh.vertices[mesh.faces[face, (k + 1) % 3]] - center
+        offset = np.asarray(point) - center
+        return start + math.atan2(float(np.dot(np.cross(first, offset), mesh.face_normals[face])),
+                                  float(np.dot(first, offset)))
+
+    a, b = position(face_before, before), position(face_after, after)
+    if mesh.boundary_vertices[vertex]:
+        return (abs(b - a),)
+    turn = (b - a) % total
+    return turn, total - turn
+
+
+def edge_turn(mesh, before, point, after, face_before, face_after) -> float:
+    """|a1 + a2 - pi| at a path point on the edge shared by two faces: zero when the unfolded path is straight."""
+    shared = sorted(set(mesh.faces[face_before].tolist()) & set(mesh.faces[face_after].tolist()))
+    axis = _unit(mesh.vertices[shared[1]] - mesh.vertices[shared[0]])
+    return abs(_angle(np.asarray(before) - point, axis) + _angle(axis, np.asarray(after) - point) - math.pi)
+
+
+def point_to_polyline(points, polyline) -> float:
+    """Largest distance from the points to the polyline (point-to-segment distances)."""
+    return float(np.max(_nearest_on_polyline(points, polyline)[0]))
+
+
+def path_checks(mesh, path, classes) -> dict:
+    """Checks of one back-traced path that use no part of the solver: surface membership, straightness, bends.
+
+    ``on_path`` counts, by class, the mesh vertices other than the path's ends within ON_PATH of its polyline:
+    a geometric count, where the path points listed at vertices depend on rounding ties for straight passes.
+    """
+    points, faces, at_vertex = path["points"], path["faces"], path["vertices"]
+    member = face_membership(mesh, points)
+    off_surface = sum(not (member[k, f] and member[k + 1, f]) for k, f in enumerate(faces))
+    turns, sides, bends = [], [], {"saddle": 0, "boundary": 0, "flat": 0, "cone": 0}
+    for k in range(1, len(points) - 1):
+        if min(np.linalg.norm(points[k - 1] - points[k]), np.linalg.norm(points[k + 1] - points[k])) <= 1e-14:
+            continue  # a repeated point (a crossing at the end of a window's own edge)
+        if at_vertex[k] < 0:
+            turns.append(edge_turn(mesh, points[k - 1], points[k], points[k + 1], faces[k - 1], faces[k]))
+            continue
+        angles = side_angles(mesh, at_vertex[k], points[k - 1], faces[k - 1], points[k + 1], faces[k])
+        sides.append(min(angles) - math.pi)
+        if max(abs(a - math.pi) for a in angles) > BEND:
+            bends[classes[at_vertex[k]]] += 1
+    others = np.setdiff1d(np.arange(len(mesh.vertices)), [v for v in (at_vertex[0], at_vertex[-1]) if v >= 0])
+    gap, _ = _nearest_on_polyline(mesh.vertices[others], points)
+    on_path = {kind: int(np.sum(classes[others[gap <= ON_PATH]] == kind)) for kind in bends}
+    return {"off_surface": int(off_surface), "max_turn": max(turns, default=0.0),
+            "min_side_minus_pi": min(sides, default=0.0), "bends": bends, "on_path": on_path}
+
+
+def path_study(meshes=None, sources=PATH_SOURCES, targets=PATH_TARGETS, seed=SEED + 310):
+    """Shortest paths back-traced from the exact solver's windows, checked without the solver's own geometry.
+
+    Per seeded pair: the polyline's length against the exact distance, every segment inside the face it is
+    assigned to (a point-in-face test), straight across every edge it crosses (equal angles on both sides), and
+    at every vertex it passes an angle of at least pi on each side (on the one side at a boundary vertex), so that
+    it bends only at saddle and reflex boundary vertices; and the path back-traced from the other end, reversed.
+    The vertices a path passes are counted geometrically (``on_path``), by class.
+    """
+    meshes = path_meshes() if meshes is None else meshes
+    rng = np.random.Generator(np.random.PCG64(seed))
+    rows = []
+    for mesh in meshes:
+        solver = E.ExactGeodesic(mesh)
+        classes = vertex_classes(mesh)
+        n = len(mesh.vertices)
+        pairs, worst = [], {"length_error": 0.0, "outside_interval": 0.0, "off_surface": 0, "max_turn": 0.0,
+                            "min_side_minus_pi": math.inf, "reverse_distance": 0.0}
+        bends = {"saddle": 0, "boundary": 0, "flat": 0, "cone": 0}
+        on_path = dict(bends)
+        for source in rng.choice(n, size=sources, replace=False):
+            forward = solver.propagate(int(source))
+            chosen = rng.choice(np.delete(np.arange(n), source), size=targets, replace=False)
+            for target in chosen:
+                path = forward.path(int(target))
+                checks = path_checks(mesh, path, classes)
+                backward = solver.propagate(int(target)).path(int(source))
+                reverse = max(point_to_polyline(path["points"], backward["points"]),
+                              point_to_polyline(backward["points"], path["points"]))
+                worst["length_error"] = max(worst["length_error"], abs(path["length"] - path["distance"]))
+                worst["outside_interval"] = max(worst["outside_interval"], path["outside_interval"])
+                worst["off_surface"] += checks["off_surface"]
+                worst["max_turn"] = max(worst["max_turn"], checks["max_turn"])
+                worst["min_side_minus_pi"] = min(worst["min_side_minus_pi"], checks["min_side_minus_pi"])
+                worst["reverse_distance"] = max(worst["reverse_distance"], reverse)
+                for kind in bends:
+                    bends[kind] += checks["bends"][kind]
+                    on_path[kind] += checks["on_path"][kind]
+                pairs.append({"source": int(source), "target": int(target), "distance": path["distance"],
+                              "points": path["points"]})
+        rows.append({"mesh": mesh.name, "vertices": n, "pairs": len(pairs), "on_path": on_path, "bends": bends,
+                     "saddle_vertices": int(np.sum(classes == "saddle")), **worst,
+                     "mesh_arrays": {"vertices": mesh.vertices, "faces": mesh.faces}, "paths": pairs})
+    return {"sources": sources, "targets": targets, "rows": rows}
+
+
+def _polyline_distance(a, b) -> float:
+    return max(point_to_polyline(a, b), point_to_polyline(b, a))
+
+
+def continuation_independent_study(fans, paths, traced):
+    """pygeodesic (Kirsanov's exact MMP) on the fans, the back-traced paths and the cut points, when it imports.
+
+    Fans: exact distances from the start to the continued endpoint and the grid points, against the closed form.
+    Paths: pygeodesic's own path between the same vertices (``geodesicDistance`` returns it, target first),
+    against the back-traced polyline, and its distance. Cut points: exact distances from the start to the probe
+    points CUT_PROBE resolutions before and after each distinct cut point, each inserted as a vertex alone (the
+    second of two points that close would be snapped onto an edge of the first's split, and moved): the traced
+    length may exceed them by at most rounding before the cut and must exceed them by more than CUT_EXCESS after
+    it, which brackets the cut point independently (``cut_bracket_margin``, the smaller of the two margins); and
+    they are compared with the window-evaluated distances.
+    """
+    result = {"pygeodesic": package_version("pygeodesic")}
+    if not result["pygeodesic"]:
+        return result
+    from pygeodesic.geodesic import PyGeodesicAlgorithmExact
+    fan_gap = 0.0
+    for row in fans["rows"]:
+        refined = row["refined"]
+        algorithm = PyGeodesicAlgorithmExact(refined["vertices"], refined["faces"].astype(np.int32))
+        reference, _ = algorithm.geodesicDistances(np.array([refined["start"]], dtype=np.int32), None)
+        fan_gap = max(fan_gap, max(abs(float(reference[v]) - c) for v, c in zip(refined["ends"],
+                                                                                refined["closed_form"])))
+    path_distance, path_length = 0.0, 0.0
+    for row in paths["rows"]:
+        arrays = row["mesh_arrays"]
+        algorithm = PyGeodesicAlgorithmExact(arrays["vertices"], arrays["faces"].astype(np.int32))
+        for pair in row["paths"]:
+            distance, polyline = algorithm.geodesicDistance(pair["source"], pair["target"])
+            path_distance = max(path_distance, _polyline_distance(pair["points"], np.asarray(polyline)))
+            path_length = max(path_length, abs(float(distance) - pair["distance"]))
+    cut_gap, probes, before, after = 0.0, 0, -math.inf, math.inf
+    for row in distinct_cuts(traced["rows"]):
+        cut = row["cut"]
+        mesh = G.icosphere(row["level"])
+        u0, heading = STARTS[row["start"]]
+        start = sphere_start(mesh, u0, heading)
+        tr = G.trace(mesh, start["face"], start["point"], start["direction"], row["length"])
+        probe = cut["probes"]
+        for side, (j, x, arclength, d) in enumerate(zip(probe["segments"], probe["points"], probe["arclengths"],
+                                                        probe["distances"])):
+            refined, (a, b) = E.insert_points(mesh, [(start["face"], start["point"]), (tr.faces[j], x)])
+            algorithm = PyGeodesicAlgorithmExact(refined.vertices, refined.faces.astype(np.int32))
+            reference, _ = algorithm.geodesicDistances(np.array([a], dtype=np.int32), None)
+            if side == 0:
+                before = max(before, arclength - float(reference[b]))
+            else:
+                after = min(after, arclength - float(reference[b]))
+            cut_gap = max(cut_gap, abs(float(reference[b]) - d))
+            probes += 1
+    result.update(fan_max_abs=fan_gap, path_max_distance=path_distance, path_length_max_abs=path_length,
+                  cut_probe_max_abs=cut_gap, cut_probes=probes, cut_excess_before=before, cut_excess_after=after)
+    if probes:
+        result["cut_bracket_margin"] = min(CUT_ROUNDING - before, after - CUT_EXCESS)
+    return result
+
+
+def distinct_cuts(rows) -> list:
+    """Traced rows with a cut point, one per level and start: traces from one start on one level coincide up to
+    the shorter length, so a shorter trace that is cut repeats the cut point of a longer one."""
+    seen, distinct = set(), []
+    for row in rows:
+        if (row.get("cut") or {}).get("arclength") is not None and (row["level"], row["start"]) not in seen:
+            seen.add((row["level"], row["start"]))
+            distinct.append(row)
+    return distinct
 
 
 # ---------------------------------------------------------------- Jacobi fields and curvature

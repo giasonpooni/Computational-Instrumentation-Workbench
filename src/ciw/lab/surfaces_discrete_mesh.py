@@ -122,11 +122,13 @@ def fields(hypothesis, model, inputs, observation, invariant, experiment, result
 
 # Each task's next step names its own open question, never a queue task that has already run.
 NEXT_STEPS = {
-    "T038": ("Deferred research question: continue traced geodesics through vertices by the Polthier-Schmies rule "
-             "(they are refused as vertex_hit now) and measure how often generic traces need it on irregular meshes; "
-             "back-trace the shortest path polyline from the exact solver's windows, which return distances only; and "
-             "locate where straightest geodesics stop being shortest (the cut locus of the start point, whose branches "
-             "end at vertices) as a function of refinement and of the distance to the nearest vertex."),
+    "T038": ("Deferred research question: predict the cut point of a straightest geodesic whose digon with the "
+             "other shortest path encloses several vertices (the isolated-cone prediction holds only for one-vertex "
+             "digons), for example from the cut locus of the start computed where two of the exact solver's windows "
+             "give equal distances, and locate cut points on saddle-bearing meshes; and test with enough seeded "
+             "traces per level whether the fraction of straightest geodesics of length L that stay shortest tends, "
+             "under refinement, to a limit set by the enclosed curvature (about exp(-K L^2 / 6) if the vertices whose "
+             "cut rays a trace can cross fall independently) rather than to 1."),
     "T039": ("Deferred research question: measure the heat-method convergence rate for time steps t = m h^2 over a "
              "range of m (only m = 1, as Crane et al. recommend, is used here) and the endpoint-error order for "
              "geodesic directions sampled over their angle to the lattice rows, on which the retained empirical order "
@@ -428,6 +430,299 @@ def _exact_findings(exact, external, comparison, traced, analytic, insertion):
     return findings
 
 
+def cut_summary(traced) -> dict:
+    """Cut points of the traced-exact study: per trace, and the one-vertex and several-vertex digons among the
+    distinct cut points (a cut shorter trace repeats the cut point of the longer one from its start)."""
+    done = [r for r in traced["rows"] if r["status"] == "completed"]
+    cut = [r for r in done if r["cut"]["arclength"] is not None]
+    distinct = S.distinct_cuts(done)
+    single = [r for r in distinct if len(r["cut"]["enclosed"]) == 1]
+    several = [r for r in distinct if len(r["cut"]["enclosed"]) > 1]
+    uncut = [r for r in done if r["cut"]["arclength"] is None]
+
+    def prediction(r):
+        return math.inf if r["cut"]["trigger"] is None else r["cut"]["trigger"]["prediction"]
+    table = [[r["level"], r["length"], r["start"], r["cut"]["arclength"],
+              None if r["cut"]["trigger"] is None else r["cut"]["trigger"]["prediction"],
+              None if r["cut"]["enclosed"] is None else len(r["cut"]["enclosed"]),
+              None if r["cut"]["trigger"] is None else r["cut"]["trigger"]["distance_over_h"]] for r in done]
+    # Empty sets give values that pass vacuously; the counts of cut points and one-vertex digons are checked apart.
+    return {"done": done, "cut": cut, "distinct": distinct, "single": single, "several": several, "uncut": uncut,
+            "table": table, "prediction": prediction,
+            "single_error": max((abs(prediction(r) - r["cut"]["arclength"]) - r["cut"]["resolution"] for r in single),
+                                default=0.0),
+            "later_than_predicted": max((r["cut"]["arclength"] - prediction(r) - r["cut"]["resolution"] for r in cut
+                                         if math.isfinite(prediction(r))), default=0.0),
+            "uncut_margin": min((prediction(r) - r["length"] for r in uncut if math.isfinite(prediction(r))),
+                                default=0.0),
+            "mismatched": sum((r["cut"]["arclength"] is None) != r["shortest"] for r in done),
+            "max_decrease": max(r["cut"]["max_excess_decrease"] for r in done),
+            "endpoint_gap": max(abs(r["cut"]["endpoint_window_minus_vertex"]) for r in done),
+            "max_resolution": max((r["cut"]["resolution"] for r in cut), default=0.0),
+            "trigger_distance": {str(level): max((r["cut"]["trigger"]["distance_over_h"] for r in cut
+                                                  if r["level"] == level), default=None)
+                                 for level in sorted({r["level"] for r in done})}}
+
+
+def _continuation_findings(continuation, fans, hits, paths, traced, independent):
+    """Findings of the vertex continuation, the back-traced shortest paths and the cut points."""
+    roundoff = _u("roundoff", 1e-14, "double-precision rounding of unfoldings, angle sums and exact distances "
+                                     "(largest disagreement with the closed forms observed below 1e-14)")
+    closed = {"abs": 1e-12, "rel": 0.0}
+    flat = continuation["flat"]
+    findings = [finding(
+        "Straightest geodesics continued through flat vertices by the Polthier-Schmies rule stay straight lines of "
+        "the development on planar and prism-cylinder meshes", "numerical",
+        {"traces": len(flat), "vertices_passed": continuation["flat_vertices_passed"],
+         "max_error": continuation["flat_max_error"]},
+        {"generator": generator(f"{STUD}.continuation_study", meshes=sorted({r["mesh"] for r in flat})),
+         "checks": [check("largest endpoint distance from the straight line of the development (planar grids, a "
+                          "sheared grid and a prism cylinder, aimed at vertices and along rows of vertices)",
+                          continuation["flat_max_error"], 1e-12, kind="analytic"),
+                    check("fewest vertices a trace passed through", min(continuation["flat_vertices_passed"]), 1.0,
+                          "ge", kind="exact_arithmetic")]},
+        unit="normalized length", uncertainty=roundoff, tolerance=closed)]
+    cube = continuation["cube"]["rows"]
+    findings.append(finding(
+        "At a cube corner (total angle 3 pi / 2) the Polthier-Schmies continuation leaves at 3 pi / 4 on both sides: "
+        "its endpoint and the exact distance between its endpoints equal their closed forms, and the continued "
+        "path is longer than that distance", "numerical",
+        {"k": continuation["cube"]["k"], "starts": [r["start"] for r in cube],
+         "endpoint_error": max(r["endpoint_error"] for r in cube),
+         "exact_minus_closed_form": max(abs(r["exact_minus_closed_form"]) for r in cube),
+         "traced_minus_exact": [r["traced_minus_exact"] for r in cube]},
+        {"generator": generator(f"{GEOM}.cube_mesh", k=continuation["cube"]["k"], starts=[r["start"] for r in cube],
+                                run=S.CUBE_RUN),
+         "checks": [check("largest endpoint distance from (0, r2 cos(pi/4 + gamma), r2 sin(pi/4 + gamma)) (or its "
+                          "mirror image) for a ray arriving at angle gamma from the x axis",
+                          max(r["endpoint_error"] for r in cube), 1e-12, kind="analytic"),
+                    check("largest |exact distance - sqrt(r1^2 + r2^2 - 2 r1 r2 cos(3 pi / 4))| (the endpoint is "
+                          "reached around both sides of the corner)",
+                          max(abs(r["exact_minus_closed_form"]) for r in cube), 1e-12, kind="analytic"),
+                    check("smallest continued length minus exact distance (closed form about 0.08)",
+                          min(r["traced_minus_exact"] for r in cube), 1e-3, "signed_ge", kind="analytic")]},
+        unit="normalized length", uncertainty=roundoff, tolerance=closed))
+
+    rows = fans["rows"]
+    r1, r2 = fans["radii"]
+    closed_error = max(max(abs(d) for d in r["exact_minus_closed_form"]) for r in rows)
+    shortest = [abs(r["traced_minus_exact"]) <= S.SHORTEST for r in rows]
+    fan_value = closed_error
+    fan_basis = {
+        "generator": generator(f"{GEOM}.fan_mesh", triangles=fans["triangles"],
+                               total_angles_over_pi=[r["total_angle_over_pi"] for r in rows], radii=fans["radii"]),
+        "checks": [check("largest |exact distance - sqrt(r1^2 + r2^2 - 2 r1 r2 cos(min(phi, theta - phi, pi)))| "
+                         "from the start to the continued endpoint and to points at five polar angles phi (ciw "
+                         "window propagation)", closed_error, 1e-12, kind="analytic"),
+                   check("largest |polar angle of the continued endpoint - theta / 2| and |its distance from the "
+                         "vertex - r2|", max(max(abs(r["polar_minus_half"]), abs(r["radius_error"])) for r in rows),
+                         1e-12, kind="analytic"),
+                   check("largest distance from the start of the trace run back from the endpoint (the rule is "
+                         "symmetric)", max(r["reverse_error"] for r in rows), 1e-12, kind="invariant"),
+                   check("fans where the continued path is a shortest path (within 1e-10) exactly when theta is "
+                         "not below 2 pi, counted as mismatches",
+                         sum(s != (r["total_angle_over_pi"] >= 2.0) for s, r in zip(shortest, rows)), 0.0, "le",
+                         kind="exact_arithmetic"),
+                   check("validation issues of the fans", sum(len(r["issues"]) for r in rows), 0.0, "le",
+                         kind="exact_arithmetic")]}
+    if independent.get("fan_max_abs") is not None:
+        fan_value = max(fan_value, independent["fan_max_abs"])
+        fan_basis["independent_check"] = dict(
+            check("pygeodesic.geodesic.PyGeodesicAlgorithmExact (Kirsanov's exact MMP) distances from the start to "
+                  "the continued endpoints and the grid points on the same fans, against the closed form",
+                  independent["fan_max_abs"], 1e-12, kind="analytic"),
+            producer=_ciw_producer(f"{GEOM}.trace", GEOMETRY),
+            checker={"implementation": "pygeodesic.geodesic.PyGeodesicAlgorithmExact",
+                     "revision": independent["pygeodesic"]})
+    findings.append(finding(
+        "Through one vertex of total angle theta the Polthier-Schmies continuation ends at polar angle theta / 2 on "
+        "both sides, where the exact distance from the start takes its closed form (and agrees with pygeodesic's "
+        "exact MMP when installed), so the continued geodesic is shortest exactly when theta is at least 2 pi",
+        "numerical",
+        {"total_angles_over_pi": [r["total_angle_over_pi"] for r in rows],
+         "traced_minus_exact": [r["traced_minus_exact"] for r in rows], "max_closed_form_error": fan_value,
+         "shortest_path_through_vertex": [r["path_through_centre"] for r in rows]},
+        fan_basis, unit="normalized length", uncertainty=roundoff, tolerance=closed))
+
+    offset = fans["offset"] * (r1 + r2) / r2
+    limit_gap = max(abs(r["one_sided_limit_error"] - offset) for r in rows)
+    mismatched = sum(e != m for r in rows for e, m in zip(r["through_expected"], r["through_measured"]))
+    cone = min(rows, key=lambda r: r["total_angle_over_pi"])
+    # The continuation against the nearer one-sided endpoint, relative to its first-order gap |2 pi - theta| / 2.
+    curved = [(r, r["total_angle_over_pi"] * math.pi) for r in rows if r["total_angle_over_pi"] != 2.0]
+    apart = min(min(abs(0.5 * theta + r["polar_minus_half"] - p) for p in r["one_sided_polar"])
+                / abs(math.pi - 0.5 * theta) for r, theta in curved)
+    findings.append(finding(
+        "At a saddle vertex every end direction between the one-sided limits of the geodesics passing it is reached "
+        "by a shortest path through the vertex, at a cone vertex none is, and the Polthier-Schmies continuation "
+        "bisects the two limits", "numerical",
+        {"total_angles_over_pi": [r["total_angle_over_pi"] for r in rows], "ends_over_pi": fans["ends_over_pi"],
+         "through_measured": [r["through_measured"] for r in rows],
+         "one_sided_polar": [r["one_sided_polar"] for r in rows], "first_order_offset": offset,
+         "continued_gap_ratio": apart},
+        {"generator": generator(f"{STUD}.fan_study", triangles=fans["triangles"], offset=fans["offset"]),
+         "checks": [check("end points at polar angle phi from the start with a shortest path through the vertex "
+                          "(exact distance r1 + r2 within 1e-10) where min(phi, theta - phi) < pi, or none where it "
+                          "is at least pi, counted as mismatches", mismatched, 0.0, "le", kind="exact_arithmetic"),
+                    check("largest |deviation of the one-sided endpoints from polar angles pi and theta - pi - "
+                          "epsilon (r1 + r2) / r2| for rays aimed epsilon r1 beside the vertex (first order in "
+                          "epsilon)", limit_gap, 1e-9, kind="analytic"),
+                    check("smallest |polar angle of the continued endpoint - the nearer one-sided endpoint| over the "
+                          "cone and saddle fans, divided by |2 pi - theta| / 2 (the continuation is the limit of "
+                          "neither side)", apart, 0.5, "ge", kind="analytic")]},
+        unit="rad", uncertainty=_u("truncation_bound", fans["offset"] ** 2, "second-order terms of the lateral offset"),
+        tolerance={"abs": 1e-9, "rel": 0.0},
+        counterexample={"statement": "A straightest geodesic through a vertex is the limit of the straightest "
+                                     "geodesics that pass it on either side",
+                        "witness": {"total_angle_over_pi": cone["total_angle_over_pi"],
+                                    "one_sided_polar": cone["one_sided_polar"],
+                                    "continued_polar": 0.5 * cone["total_angle_over_pi"] * math.pi}}))
+
+    hit_rows = hits["rows"]
+    pooled = hits["pooled_near_over_2tau"]
+    uniform = [(tau, ratio) for tau, ratio in zip(hits["taus"], pooled) if tau >= 1e-2]
+    findings.append(finding(
+        "Generic straightest geodesics on jittered icospheres pass through no vertex: none of the seeded traces "
+        "crosses an edge within the vertex tolerance, near-vertex crossings occur at the uniform rate 2 tau per "
+        "crossing, and crossings per trace grow like 1/h", "numerical",
+        {"levels": [r["level"] for r in hit_rows], "traces": [r["traces"] for r in hit_rows],
+         "crossings": [r["crossings"] for r in hit_rows], "vertex_hits": hits["vertex_hits"],
+         "taus": hits["taus"], "near": [r["near"] for r in hit_rows], "pooled_near_over_2tau": pooled,
+         "crossing_order": hits["crossing_order"], "min_margin": min(r["min_margin"] for r in hit_rows),
+         "expected_hits": 2 * hits["tolerance"] * hits["crossings"]},
+        {"generator": generator(f"{STUD}.vertex_hit_study", levels=[r["level"] for r in hit_rows],
+                                amplitude=hits["amplitude"], traces=hit_rows[0]["traces"], length=hits["length"],
+                                seed=S.SEED + 200),
+         "checks": [check(f"edge crossings within the vertex tolerance {hits['tolerance']:g} (continued by the rule)",
+                          hits["vertex_hits"], 0.0, "le", kind="exact_arithmetic"),
+                    check("largest |crossings within tau of a vertex / (2 tau crossings) - 1| for tau = "
+                          + ", ".join(f"{tau:g}" for tau, _ in uniform) + " (uniform edge parameter near the ends)",
+                          max(abs(ratio - 1) for _, ratio in uniform), 0.2, "le", kind="self_convergence"),
+                    check("fitted order of crossings per trace against h, plus 1", hits["crossing_order"] + 1.0, 0.1,
+                          kind="self_convergence")]},
+        uncertainty=_u("monte_carlo_95ci", -math.log(0.05) / hits["crossings"],
+                       f"one-sided 95% upper bound on the per-crossing vertex-hit probability from no hit in "
+                       f"{hits['crossings']} seeded crossings (-ln 0.05 / N, the rule of three)")
+        if hits["vertex_hits"] == 0 else _binomial(hits["vertex_hits"] / hits["crossings"], hits["crossings"]),
+        tolerance=TIGHT))
+
+    path_rows = paths["rows"]
+    bends = {kind: sum(r["bends"][kind] for r in path_rows) for kind in ("saddle", "boundary", "flat", "cone")}
+    reverse = max(r["reverse_distance"] for r in path_rows)
+    path_value = reverse
+    path_basis = {
+        "generator": generator(f"{STUD}.path_study", meshes=[r["mesh"] for r in path_rows], sources=paths["sources"],
+                               targets=paths["targets"], seed=S.SEED + 310),
+        "checks": [check("largest |back-traced polyline length - exact distance|",
+                         max(r["length_error"] for r in path_rows), 1e-12, kind="invariant"),
+                   check("path segments not inside the face they are assigned to (point-in-face test: plane offset "
+                         "and barycentric coordinates within 1e-12)", sum(r["off_surface"] for r in path_rows), 0.0,
+                         "le", kind="exact_arithmetic"),
+                   check("largest turn across an edge, |a1 + a2 - pi| between the segments and the edge",
+                         max(r["max_turn"] for r in path_rows), S.BEND, "le", kind="invariant"),
+                   check("smallest angle between the segments at a vertex on either side (the inside at a boundary "
+                         "vertex) minus pi", min(r["min_side_minus_pi"] for r in path_rows), -S.BEND, "signed_ge",
+                         kind="invariant"),
+                   check("bends at cone or flat vertices", bends["cone"] + bends["flat"], 0.0, "le",
+                         kind="exact_arithmetic"),
+                   check("fewer bends at saddle vertices or at boundary vertices than one (both kinds exercised)",
+                         min(bends["saddle"], bends["boundary"]), 1.0, "ge", kind="exact_arithmetic"),
+                   check("largest distance between the path and the path back-traced from the other end",
+                         reverse, S.BEND, "le", kind="invariant")]}
+    if independent.get("path_max_distance") is not None:
+        path_value = max(path_value, independent["path_max_distance"])
+        path_basis["independent_check"] = dict(
+            check("pygeodesic.geodesic.PyGeodesicAlgorithmExact.geodesicDistance paths between the same vertex pairs: "
+                  "largest distance from a point of either polyline to the other", independent["path_max_distance"],
+                  S.BEND, "le", kind="exact_arithmetic"),
+            producer=_ciw_producer(f"{SOLV}.Propagation.path", SOLVER),
+            checker={"implementation": "pygeodesic.geodesic.PyGeodesicAlgorithmExact",
+                     "revision": independent["pygeodesic"]})
+    findings.append(finding(
+        "Shortest paths back-traced from the exact solver's windows have the exact length, lie on the surface, run "
+        "straight across every edge and bend only at saddle and reflex boundary vertices (and match pygeodesic's "
+        "paths when installed)", "numerical",
+        {"meshes": [r["mesh"] for r in path_rows], "pairs": sum(r["pairs"] for r in path_rows), "bends": bends,
+         "vertices_on_paths": {kind: sum(r["on_path"][kind] for r in path_rows) for kind in bends},
+         "max_length_error": max(r["length_error"] for r in path_rows), "max_path_distance": path_value},
+        path_basis, unit="normalized length", uncertainty=roundoff, tolerance={"abs": 1e-9, "rel": 0.0}))
+
+    summary = cut_summary(traced)
+    cut_basis = {
+        "generator": generator(f"{STUD}.traced_exact_study", configs=traced["configs"], cut_excess=S.CUT_EXCESS),
+        "checks": [check("largest decrease of the excess of traced length over the exact distance from one sample "
+                         "to the next (it never decreases along a geodesic)", summary["max_decrease"], ROUNDING,
+                         "signed_le", kind="invariant"),
+                   check("largest |window-evaluated distance at the endpoint - the endpoint vertex's distance|",
+                         summary["endpoint_gap"], ROUNDING, kind="invariant"),
+                   check("traces with a cut point that the endpoint distance calls shortest, or without one that it "
+                         "does not", summary["mismatched"], 0.0, "le", kind="exact_arithmetic"),
+                   check("distinct cut points whose digon encloses exactly one vertex", len(summary["single"]), 1.0,
+                         "ge", kind="exact_arithmetic"),
+                   check("largest |isolated-cone prediction - cut point| minus the cut point's resolution, over "
+                         "digons enclosing one vertex", summary["single_error"], 0.0, "signed_le", kind="analytic"),
+                   check("largest cut point minus the smallest isolated-cone prediction, minus the resolution",
+                         summary["later_than_predicted"], 0.0, "signed_le", kind="analytic"),
+                   check("smallest isolated-cone prediction minus the trace length over traces without a cut point",
+                         summary["uncut_margin"], 0.0, "signed_ge", kind="analytic")]}
+    probe_value = summary["endpoint_gap"]
+    if independent.get("cut_bracket_margin") is not None:
+        probe_value = max(probe_value, independent["cut_probe_max_abs"])
+        cut_basis["independent_check"] = dict(
+            check("pygeodesic.geodesic.PyGeodesicAlgorithmExact distances from the start to the trace points "
+                  f"{S.CUT_PROBE:g} resolutions before and after each of the {len(summary['distinct'])} distinct cut "
+                  f"points, each inserted as a vertex alone: the smaller of {S.CUT_ROUNDING:g} minus the excess of "
+                  f"the traced length over them before the cut point and that excess minus {S.CUT_EXCESS:g} after "
+                  "it (the cut point bracketed independently)",
+                  independent["cut_bracket_margin"], 0.0, "signed_ge", kind="exact_arithmetic"),
+            producer=_ciw_producer(f"{SOLV}.Propagation.distance_at", SOLVER),
+            checker={"implementation": "pygeodesic.geodesic.PyGeodesicAlgorithmExact",
+                     "revision": independent["pygeodesic"]})
+    findings.append(finding(
+        "The first cut point of every declared straightest geodesic, where its length first exceeds the exact "
+        "distance from its start, comes no later than the smallest isolated-cone prediction r sin(delta / 2) / "
+        "sin(delta / 2 - phi) over the vertices it passes, and equals it when the digon between the trace and the "
+        "other shortest path encloses one vertex", "numerical",
+        {"traces": len(summary["done"]), "cut": len(summary["cut"]), "distinct_cut_points": len(summary["distinct"]),
+         "one_vertex_digons": len(summary["single"]),
+         "several_vertex_digons": len(summary["several"]), "max_resolution": summary["max_resolution"],
+         "max_distance_error": probe_value, "cut_points": summary["table"],
+         "trigger_distance_over_h_by_level": summary["trigger_distance"]},
+        cut_basis, unit="normalized length",
+        uncertainty=_u("truncation_bound", summary["max_resolution"], "largest cut-point resolution: the excess "
+                       f"threshold {S.CUT_EXCESS:g} over the excess slope, plus the bisection width"),
+        tolerance={"abs": 1e-8, "rel": 0.0}))
+    claim = ("A straightest geodesic can stop being shortest before every single vertex's isolated-cone prediction, "
+             "when the digon between it and the other shortest path encloses several vertices")
+    if not summary["several"]:
+        findings.append(_missing_witness(claim, "cut points whose digon encloses more than one vertex"))
+        return findings, summary
+    witness = max(summary["several"], key=lambda r: summary["prediction"](r) - r["cut"]["arclength"])
+    early = min(summary["prediction"](r) - r["cut"]["arclength"] - r["cut"]["resolution"] for r in summary["several"])
+    findings.append(finding(
+        claim, "numerical",
+        {"traces": len(summary["several"]), "witness": {
+            "level": witness["level"], "start": witness["start"], "length": witness["length"],
+            "cut_point": witness["cut"]["arclength"], "prediction": summary["prediction"](witness),
+            "enclosed_vertices": witness["cut"]["enclosed"], "enclosed_defect": witness["cut"]["enclosed_defect"]}},
+        {"generator": generator(f"{STUD}.traced_exact_study", configs=traced["configs"], cut_excess=S.CUT_EXCESS),
+         "checks": [check("cut points whose digon encloses more than one vertex", len(summary["several"]), 1.0, "ge",
+                          kind="exact_arithmetic"),
+                    check("smallest isolated-cone prediction minus cut point, minus the resolution, over those",
+                          early, 0.0, "signed_ge", kind="analytic")]},
+        unit="normalized length", uncertainty=_u("truncation_bound", summary["max_resolution"],
+                                                 "largest cut-point resolution"),
+        tolerance={"abs": 1e-8, "rel": 0.0},
+        counterexample={"statement": "The first cut point of a straightest geodesic on a convex polyhedral surface is "
+                                     "where it crosses the cut ray of one vertex, as if that vertex carried all the "
+                                     "curvature",
+                        "witness": {"level": witness["level"], "start": witness["start"],
+                                    "cut_point": witness["cut"]["arclength"],
+                                    "prediction": summary["prediction"](witness),
+                                    "enclosed_vertices": witness["cut"]["enclosed"]}}))
+    return findings, summary
+
+
 @task("T038", changed_files=FILES + (SOLVER,), regression_tests=(
     NEXT_STEP_TEST,
     f"{TESTS}::test_tracer_is_exact_on_developable_meshes",
@@ -442,6 +737,12 @@ def _exact_findings(exact, external, comparison, traced, analytic, insertion):
     f"{TESTS}::test_paths_and_approximations_never_beat_the_exact_distance",
     f"{TESTS}::test_exact_checks_fall_back_without_external_packages",
     f"{TESTS}::test_ciw_producers_of_t038_independent_checks_carry_a_revision",
+    f"{TESTS}::test_vertex_continuation_on_flat_and_cone_vertices",
+    f"{TESTS}::test_fan_continuation_bisects_the_total_angle",
+    f"{TESTS}::test_generic_traces_do_not_hit_vertices",
+    f"{TESTS}::test_back_traced_paths_are_shortest_and_bend_only_at_saddles_and_boundaries",
+    f"{TESTS}::test_cut_points_match_the_isolated_cone_prediction",
+    f"{TESTS}::test_continuation_paths_and_cut_points_agree_with_pygeodesic",
     f"{TESTS}::test_solver_task_report"))
 def mesh_geodesic_solver(ctx):
     traces = _memo(ctx, "sphere-traces", S.sphere_trace_study)
@@ -455,6 +756,12 @@ def mesh_geodesic_solver(ctx):
     traced = _memo(ctx, "traced-exact", S.traced_exact_study)
     analytic = _memo(ctx, "exact-analytic", S.exact_analytic_study)
     insertion = _memo(ctx, "exact-insertion", S.insertion_study)
+    continuation = _memo(ctx, "continuation", S.continuation_study)
+    fans = _memo(ctx, "fans", S.fan_study)
+    hits = _memo(ctx, "vertex-hits", S.vertex_hit_study)
+    paths = _memo(ctx, "paths", S.path_study)
+    continued = _memo(ctx, "continuation-independent",
+                      lambda: S.continuation_independent_study(fans, paths, traced))
     statuses = sorted({t["status"] for row in traces["rows"] for t in row["traces"]})
     completed = sum(r["completed"] for r in traces["rows"])
     plane_error = max(r["max_trace_error"] for r in plane["rows"])
@@ -471,6 +778,13 @@ def mesh_geodesic_solver(ctx):
         "exact": dict(exact, rows=[{k: v for k, v in r.items() if k != "distances"} for r in exact["rows"]]),
         "independent": external, "comparison": comparison, "traced": traced, "analytic": analytic,
         "insertion": insertion}))
+    ctx.artifact_json("vertex-continuation.json", jsonable({
+        "continuation": continuation, "fans": dict(fans, rows=[{k: v for k, v in r.items() if k != "refined"}
+                                                               for r in fans["rows"]]),
+        "vertex_hits": hits}))
+    ctx.artifact_json("shortest-paths.json", jsonable({
+        "paths": dict(paths, rows=[{k: v for k, v in r.items() if k != "mesh_arrays"} for r in paths["rows"]]),
+        "independent": continued}))
 
     # The claim and prose are the same with and without scipy; only the basis (and label) records scipy.
     dijkstra_basis = {"generator": generator(f"{GEOM}.icosphere", level=independent["level"]),
@@ -539,6 +853,8 @@ def mesh_geodesic_solver(ctx):
                 unit="normalized length", uncertainty=roundoff, tolerance=TIGHT),
     ]
     findings += _exact_findings(exact, external, comparison, traced, analytic, insertion)
+    extra, cuts = _continuation_findings(continuation, fans, hits, paths, traced, continued)
+    findings += extra
     findings.append(_physical("Straightest geodesics on a mesh reconstructed from a real scan reproduce the "
                               "geodesics of the scanned physical surface"))
 
@@ -593,62 +909,143 @@ def mesh_geodesic_solver(ctx):
               "in " + ", ".join(f"{sum(t['shortest'] for t in r)} of {len(r)}" for r in per_level)
               + " traces on levels 1-4, and the largest excess of a trace over the exact distance is "
               + ", ".join(f"{max(t['excess'] for t in r):.1e}" for r in per_level)
-              + f"; {sum(r['shortest'] for r in short)} of {len(short)} length-1 traces on level 2 are shortest.")
+              + f"; {sum(r['shortest'] for r in short)} of {len(short)} length-1 traces on level 2 are shortest. "
+              + continuation_text(continuation, fans, hits, paths, continued, cuts))
     return {"state": task_state(findings), "findings": findings, "fields": fields(
         "Unfolding across edges (straight in faces, equal angles at edges) yields exact straightest geodesics on "
-        "developable meshes. Window propagation (Chen-Han with the Xin-Wang priority queue, saddle, reflex-boundary "
-        "and flat pseudo-sources and pruning against vertex distances) yields the exact polyhedral distance, the "
-        "length of the globally shortest surface path, so that edge-graph, Steiner-graph and locally shortest paths "
-        "never fall below it; whether traced straightest geodesics shorter than pi are shortest paths is tested against "
-        "it.",
+        "developable meshes, and continuing through a vertex with half its total angle on each side (the "
+        "Polthier-Schmies rule) keeps them straight lines of the development through flat vertices. Window "
+        "propagation (Chen-Han with the Xin-Wang priority queue, saddle, reflex-boundary and flat pseudo-sources and "
+        "pruning against vertex distances) yields the exact polyhedral distance, the length of the globally shortest "
+        "surface path, so that edge-graph, Steiner-graph and locally shortest paths never fall below it, and its "
+        "windows back-trace that path; whether traced straightest geodesics shorter than pi are shortest paths, and "
+        "where they stop being shortest, is tested against it.",
         "Straightest geodesic: in each face a straight segment; at an edge the direction keeps its edge component and "
-        "the magnitude of its perpendicular component (rotation about the edge). Exact distance: windows (an edge "
-        "interval with its source unfolded into the plane and the source's own distance) propagated face by face in "
-        "increasing order of the smallest distance they carry; every vertex whose angle sum is not below flat by more "
-        "than 1e-9 re-emits windows as a pseudo-source; a window part that a path through a vertex of its edge "
-        "or faces beats by more than a rounding margin is pruned; surface points become vertices by planar face and "
-        "edge splits. Graph distances: Dijkstra on the edge graph and on the graph of k Steiner points per edge; "
-        "vertex hits are refused by the tracer.",
+        "the magnitude of its perpendicular component (rotation about the edge); at a vertex of total angle theta, "
+        "with the Polthier-Schmies rule, it leaves at theta / 2 from the reversed incoming direction on both sides. "
+        "Exact distance: windows (an edge interval with its source unfolded into the plane and the source's own "
+        "distance) propagated face by face in increasing order of the smallest distance they carry; every vertex "
+        "whose angle sum is not below flat by more than 1e-9 re-emits windows as a pseudo-source; a window part that "
+        "a path through a vertex of its edge or faces beats by more than a rounding margin is pruned; surface points "
+        "become vertices by planar face and edge splits. Each window records its parent window or pseudo-source, and "
+        "each vertex the window or pseudo-source that set its distance, so a shortest path is back-traced along the "
+        "rays to the unfolded sources; the distance at any surface point is the best of its face's windows and "
+        "vertices. Cut point of a trace: where its length first exceeds the exact distance from its start; for one "
+        "cone vertex of angle defect delta, seen from the start at distance r and angle phi from the trace, the trace "
+        "crosses the vertex's cut ray at r sin(delta / 2) / sin(delta / 2 - phi) when phi < delta / 2. Graph "
+        "distances: Dijkstra on the edge graph and on the graph of k Steiner points per edge.",
         ["icosphere levels 1-7 (unit sphere) for traces, 1-4 with three sources each for exact distances",
          "torus 24x12 (R = 2, r = 1; 120 saddle vertices)", "prism cylinder R=1, n=8..128 sectors (traces), "
          "n = 8, 16, 32 (exact)", "sheared planar 8x8 grids (shear 0-1.5) and an L-shaped 8x8 grid",
-         "refined cube, 4x4 squares per face", "six declared sphere geodesics (chart point, heading)"],
-        "No physical observation; traced endpoints, lengths, exact and graph distances in normalized units.",
-        "Planar and prism meshes are intrinsically flat, so traces must equal straight lines of the development and "
-        "exact distances the shortest segments of the development (bent at the L-shape's reflex corner); cube corners "
-        "are 1, sqrt 2 and sqrt 5 apart; exact distances are symmetric, change by at most an edge length along an "
-        "edge, do not change when points are inserted as vertices and never exceed the length of any surface path; "
-        "Steiner distances with nested point sets are nonincreasing in k, and every graph edge joins two points of "
-        "one face.",
+         "refined cube, 4x4 squares per face", "six declared sphere geodesics (chart point, heading)",
+         "one-vertex fans of six triangles with total angles 1.5, 1.8, 2, 2.2 and 2.5 pi",
+         "tangentially jittered icospheres (0.1 h), levels 2-5, 200 seeded generic traces of length 1 each",
+         "a jittered icosphere-2, a jittered 24x12 torus, the L-shaped grid and a 2.5 pi fan for back-traced paths"],
+        "No physical observation; traced endpoints, lengths, exact and graph distances, path polylines and cut "
+        "points in normalized units.",
+        "Planar and prism meshes are intrinsically flat, so traces, through vertices too, must equal straight lines of "
+        "the development and exact distances the shortest segments of the development (bent at the L-shape's reflex "
+        "corner); cube corners are 1, sqrt 2 and sqrt 5 apart; exact distances are symmetric, change by at most an "
+        "edge length along an edge, do not change when points are inserted as vertices and never exceed the length "
+        "of any surface path; Steiner distances with nested point sets are nonincreasing in k, and every graph edge "
+        "joins two points of one face; a back-traced shortest path has the exact length, lies on the surface and is "
+        "straight except at saddle and reflex boundary vertices; the excess of a trace's length over the exact "
+        "distance from its start never decreases.",
         "Trace declared geodesics; compare with exact developments; re-derive lengths by a second ciw implementation "
         "(strip layout from edge lengths); compare Dijkstra with a dense Floyd-Warshall and, when installed, "
         "scipy.sparse.csgraph; test every Steiner-graph edge for a common face; compute exact distances on meshes with "
         "closed forms, from three sources on icospheres and a torus (compared with pygeodesic when installed) and "
         "between vertex pairs (compared with potpourri3d's FlipOut when installed); compare the edge graph, Steiner "
-        "graphs, the heat method and traced lengths with them.",
+        "graphs, the heat method and traced lengths with them. Continue traces through flat, cone and saddle vertices "
+        "and compare with closed forms and exact distances; count vertex hits of seeded generic traces on jittered "
+        "meshes; back-trace shortest paths between seeded vertex pairs and check them without the solver (and against "
+        "pygeodesic's paths when installed); locate each declared trace's cut point from the exact distances along "
+        "it, back-trace the other shortest path there and count the vertices between the two.",
         result,
         "Deterministic computation; floating-point rounding only (exact distances agree with the closed forms to "
-        "about 1e-14). The strip layout, Floyd-Warshall, source symmetry, edge Lipschitz and edge-graph path checks "
-        "are ciw code (same origin); the scipy, pygeodesic and potpourri3d comparisons are independent. " + ordering
-        + " A trace counts as shortest when it is within 1e-10 of the exact distance; the others exceed it by at "
-        f"least {separation:.1e}.",
-        ["vertex hits (refused, none occurred in the declared set)", "boundary reached", "tracing through a face "
-         "without an exit edge", "strip unfolding sign conventions", "graph duplicates from shared face edges",
+        "about 1e-14). The strip layout, Floyd-Warshall, source symmetry, edge Lipschitz, edge-graph path and "
+        "reverse-path checks are ciw code (same origin); the scipy, pygeodesic and potpourri3d comparisons are "
+        "independent. " + ordering + " A trace counts as shortest when it is within 1e-10 of the exact distance; the "
+        f"others exceed it by at least {separation:.1e}. A cut point is located to within {cuts['max_resolution']:.1e} "
+        f"(the excess threshold {S.CUT_EXCESS:g} over the excess slope). The vertex-hit rate rests on "
+        f"{hits['crossings']} seeded crossings; a count of zero bounds it only to about 3 / {hits['crossings']} per "
+        "crossing at 95%, and the rate 2 tau per crossing is observed for tau of 0.1 and 0.01 only (near-vertex "
+        "crossings come in clusters, so smaller counts scatter more than Poisson counts).",
+        ["vertex hits of the declared sphere traces (refused, none occurred)", "boundary reached", "tracing through a "
+         "face without an exit edge", "strip unfolding sign conventions", "graph duplicates from shared face edges",
          "saddle vertices (torus) and a reflex boundary corner (L-shape) as pseudo-sources of the exact solver",
          "flat vertices (planes, cylinders, the torus's flat rings, inserted points) as pseudo-sources",
          "rays through vertices on regular grids (planes, cylinders, cube)",
          "points inserted inside a face and on an edge", "scipy absent (Floyd-Warshall only; the Dijkstra finding is "
          "then numerically_verified)", "pygeodesic or potpourri3d absent (their findings then rest on the same-origin "
-         "checks and are numerically_verified)"],
-        ["The exact solver returns distances, not the shortest path polyline: back-tracing the path from its windows "
-         "is not implemented, so the shortest path itself is not drawn or compared.",
-         "Exactness holds in exact arithmetic; computed distances carry rounding, and the pruning margin (1e-10 of "
+         "checks and are numerically_verified)",
+         "traces continued through flat vertices, along rows of vertices and along mesh edges, and started at a vertex",
+         "continuation through cone (cube corner, fans) and saddle vertices, and its reversal",
+         "tied shortest paths on symmetric meshes (the back-traced paths are compared on generic jittered meshes, "
+         "and on the L-shape and the saddle fan, which are simply connected and nonpositively curved, so that their "
+         "shortest paths are unique)",
+         "straight passes through vertices, which the back-trace lists or not by a rounding tie (counted "
+         "geometrically, as vertices on the path)",
+         "path points at vertices (side angles around the fan) and on edges (turn across the edge)",
+         "cut points past the last edge crossing of a trace", "digons enclosing several vertices"],
+        ["Exactness holds in exact arithmetic; computed distances carry rounding, and the pruning margin (1e-10 of "
          "the mean edge) keeps near-ties. The solver is a Python loop meant for meshes of a few thousand vertices; "
          "the largest here has 2562.",
-         "Vertex hits are refused rather than continued by the Polthier-Schmies angle-bisection rule.",
-         "Where a straightest geodesic stops being shortest (where it crosses the cut locus of its start point) is "
-         "observed per trace, not predicted."],
+         "Where several shortest paths tie, the back-trace returns one of them (the one whose window reached the "
+         "target first); ties are not enumerated.",
+         "At a boundary vertex no continuation is declared: the trace stops there as boundary_reached.",
+         "The isolated-cone prediction of the cut point is established only for digons enclosing one vertex on the "
+         "declared icosphere traces; cut points whose digon encloses several vertices are observed, not predicted, "
+         "and cut points on saddle-bearing meshes are not located.",
+         "The vertex-hit rate is measured for isotropic tangential jitter; meshes and traces aligned with rows of "
+         "vertices (regular grids, traces aimed at vertices) need the vertex rule systematically."],
         NEXT_STEPS["T038"])}
+
+
+def continuation_text(continuation, fans, hits, paths, independent, cuts) -> str:
+    """The report sentences on the vertex continuation, the back-traced paths and the cut points."""
+    rows = fans["rows"]
+    cube = continuation["cube"]["rows"]
+    path_rows = paths["rows"]
+    bends = {kind: sum(r["bends"][kind] for r in path_rows) for kind in ("saddle", "boundary")}
+    path_distance = max([r["reverse_distance"] for r in path_rows] + [independent.get("path_max_distance") or 0.0])
+    fan_error = max([max(abs(d) for d in r["exact_minus_closed_form"]) for r in rows]
+                    + [independent.get("fan_max_abs") or 0.0])
+    pooled = dict(zip(hits["taus"], hits["pooled_near_over_2tau"]))
+    text = (f"Continued through vertices by the Polthier-Schmies rule, {len(continuation['flat'])} traces on planar "
+            f"and prism-cylinder meshes pass {sum(continuation['flat_vertices_passed'])} flat vertices and stay "
+            f"straight lines of the development to {continuation['flat_max_error']:.1e}; through a cube corner the "
+            f"endpoint matches its closed form to {max(r['endpoint_error'] for r in cube):.1e} and the continued "
+            "path exceeds the exact distance by " + ", ".join(f"{r['traced_minus_exact']:.3f}" for r in cube)
+            + ". On fans of total angle " + ", ".join(f"{r['total_angle_over_pi']:g}" for r in rows)
+            + " pi the exact distances from the start (and pygeodesic's, when installed) equal the closed form to "
+            f"{fan_error:.1e}, and the continued path exceeds the exact distance by "
+            + ", ".join(f"{r['traced_minus_exact']:.1e}" for r in rows) + f"; rays passing the vertex "
+            f"{fans['offset']:g} r1 aside end at polar angles pi and theta - pi (on the 1.5 pi fan "
+            + ", ".join(f"{p:.4f}" for p in min(rows, key=lambda r: r["total_angle_over_pi"])["one_sided_polar"])
+            + " rad). Of " + f"{sum(r['traces'] for r in hits['rows'])} generic traces on jittered icospheres "
+            f"(levels {hits['rows'][0]['level']}-{hits['rows'][-1]['level']}, {hits['crossings']} edge crossings, "
+            f"{hits['rows'][-1]['crossings_per_trace']:.1f} per trace at the finest level, order "
+            f"{hits['crossing_order']:.2f} in h) {hits['vertex_hits']} came within {hits['tolerance']:g} of a vertex; "
+            "crossings within tau of a vertex, over 2 tau, are " + ", ".join(
+                f"{ratio:.3f} (tau={tau:g})" for tau, ratio in pooled.items())
+            + f", and the closest crossing was {min(r['min_margin'] for r in hits['rows']):.1e} of an edge from a "
+            f"vertex. {sum(r['pairs'] for r in path_rows)} shortest paths back-traced on {len(path_rows)} meshes have "
+            f"the exact length to {max(r['length_error'] for r in path_rows):.1e}, bend at {bends['saddle']} saddle "
+            f"and {bends['boundary']} boundary vertices only, and agree with the paths back-traced from the other end "
+            f"(and pygeodesic's, when installed) to {path_distance:.1e}. Of {len(cuts['done'])} declared traces, "
+            f"{len(cuts['cut'])} have a cut point before their length ({len(cuts['distinct'])} distinct: a shorter "
+            f"trace from the same start repeats a longer one's); in {len(cuts['single'])} the digon between the trace "
+            "and the other shortest path encloses one vertex and the cut point equals that vertex's isolated-cone "
+            f"prediction to within its resolution (largest {cuts['max_resolution']:.1e})")
+    if cuts["several"]:
+        witness = cuts["several"][0]
+        text += (f"; in {len(cuts['several'])} it encloses several vertices and comes earlier (level "
+                 f"{witness['level']}, trace {witness['start']}: {len(witness['cut']['enclosed'])} vertices, cut at "
+                 f"{witness['cut']['arclength']:.4f} against {cuts['prediction'](witness):.4f})")
+    return text + (". The vertex that cuts passes within " + ", ".join(
+        f"{v:.4f}" if v is not None else "none" for v in cuts["trigger_distance"].values())
+        + " h (largest per level) of the trace.")
 
 
 # ---------------------------------------------------------------- T039

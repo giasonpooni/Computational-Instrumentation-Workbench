@@ -6,8 +6,9 @@ the named refusal states and, above all, what the results do not establish.
 
 **Scope.** Generated meshes only (icosphere, latitude–longitude sphere, prism
 cylinder, Schwarz lantern, planar grids, an L-shaped grid, torus grids, a
-refined cube) in normalized units, with smooth references from
-`ciw.lab.surfaces` and `ciw.lab.jacobi`.
+refined cube, one-vertex cone and saddle fans, jittered icospheres and tori)
+in normalized units, with smooth references from `ciw.lab.surfaces` and
+`ciw.lab.jacobi`.
 
 **Non-claims.** No scanned surface, scanner, tracker or tape was measured. Every
 statement about real scanned surfaces, real sensors or production thresholds is
@@ -21,21 +22,21 @@ spread of pairwise local orders) and a regression tolerance.
 
 | File | Contents |
 | --- | --- |
-| `src/ciw/lab/surfaces_discrete_mesh_geometry.py` | mesh type, generators, validator, tracer, distances, curvature, strip unfolding |
-| `src/ciw/lab/surfaces_discrete_mesh_exact.py` | exact polyhedral distances (window propagation), surface points inserted as vertices |
+| `src/ciw/lab/surfaces_discrete_mesh_geometry.py` | mesh type, generators, validator, tracer (with the vertex rule), distances, curvature, strip unfolding |
+| `src/ciw/lab/surfaces_discrete_mesh_exact.py` | exact polyhedral distances (window propagation), back-traced shortest paths, distances at surface points, surface points inserted as vertices |
 | `src/ciw/lab/surfaces_discrete_mesh_studies.py` | deterministic studies (plain numbers) |
 | `src/ciw/lab/surfaces_discrete_mesh.py` | task registrations T038–T044, findings and report fields |
-| `tests/test_lab_surfaces_discrete_mesh.py` | regression tests (about 40 s) |
+| `tests/test_lab_surfaces_discrete_mesh.py` | regression tests (about 45 s) |
 
 ## Algorithms
 
 ### Straightest geodesics (T038)
 
 T038 delivers an initial-value tracer (straightest geodesics from a point and
-a heading), approximate distances (edge graph, Steiner graph, heat method) and
-the exact polyhedral distance between two surface points (below), against
-which the others are compared. The exact solver returns distances, not the
-shortest path polyline.
+a heading, continued through vertices on request), approximate distances
+(edge graph, Steiner graph, heat method) and the exact polyhedral distance
+between two surface points (below), against which the others are compared,
+with the shortest path polyline back-traced from the exact solver's windows.
 
 A geodesic is traced as an initial-value problem in the Polthier–Schmies
 sense: straight inside a face, and at an edge with unit direction `ê` the
@@ -53,12 +54,52 @@ candidates.
 
 Declared rules:
 
-- **Vertex hits are refused** (`vertex_hit`) when the edge parameter of a
-  crossing is within `1e-9` of an endpoint. The Polthier–Schmies continuation
-  (bisect the total vertex angle) is not implemented; it is a declared
-  extension, not a silent default.
+- **Vertex hits** are crossings whose edge parameter is within `1e-9` of an
+  endpoint. By default they are refused (`vertex_hit`); every study of
+  T039–T044 and the declared sphere traces use that default and meet none.
+  With `vertex_rule="polthier_schmies"` the trace continues (below).
 - **Boundaries stop the trace** (`boundary_reached`) and the partial path and
-  its length are retained.
+  its length are retained. Under the vertex rule a trace that reaches a
+  boundary vertex stops there too: no continuation is declared at the
+  boundary.
+
+#### Continuation through a vertex
+
+Polthier and Schmies (1998) define a straightest geodesic through a vertex of
+total angle `θ` (the sum of its corner angles) by equal angles on both sides:
+the outgoing direction leaves the reversed incoming direction by `θ/2`,
+measured around the vertex in either sense. `straightest_continuation` walks
+the vertex's fan counterclockwise from the arriving face, accumulating corner
+angles, and places the outgoing direction in the face that holds the angle
+`θ/2`; the trace is first moved onto the vertex (by at most `1e-9` of that
+edge's length, keeping its direction) and then leaves through the edge
+opposite the vertex. A trace that starts at a vertex leaves through the face
+it is declared in. At a flat vertex (`θ = 2π`) the rule is straight
+continuation, so traces through vertices of planar and developable meshes
+stay straight lines of the development.
+
+The rule is unique, but it is a choice, and it means different things at
+different vertices:
+
+- **Flat vertex (`θ = 2π`).** The continuation is the limit of the geodesics
+  passing the vertex on either side, and it is locally shortest.
+- **Cone vertex (`θ < 2π`).** A ray passing just beside the vertex leaves
+  with angle `π` on the side it passed and `θ − π` on the other, so the two
+  one-sided limits differ by the angle defect `2π − θ`; the continuation is
+  their bisector, the limit of neither, so straightest geodesics do not
+  depend continuously on their initial direction there. No shortest path
+  passes through a cone vertex. For a single cone vertex the continued ray
+  runs along the cut locus of its start (the ray from the vertex opposite the
+  start): its endpoint at distance `r2` from the vertex is reached by two
+  shortest paths, around either side, of length
+  `sqrt(r1² + r2² − 2 r1 r2 cos(θ/2))` for a start at distance `r1`.
+- **Saddle vertex (`θ > 2π`).** Every outgoing direction whose angles on both
+  sides are at least `π` continues a locally shortest path (on the fans
+  below, a shortest one): a fan of width `θ − 2π`, bounded by the two
+  one-sided limits. The rule picks its middle. The shortest continuation
+  through a saddle is therefore not unique, while the straightest one is.
+- **Boundary vertex.** The fan does not close; no rule is declared and the
+  trace stops.
 
 ### Exact polyhedral distance (T038)
 
@@ -106,14 +147,41 @@ interval is reached at distance `σ + |s − x|`.
   polyhedral metric, and every distance, is unchanged; the refined mesh stays
   closed and consistently oriented.
 
+- **Back-traced paths.** `ExactGeodesic.propagate` records, for every
+  window, the window it was propagated from or the pseudo-source that emitted
+  it, and for every vertex the window or pseudo-source that last lowered its
+  distance (`Propagation`). `path(target)` follows that chain: from the target
+  along the ray to the window's unfolded source, crossing each ancestor
+  window's edge in turn, to the pseudo-source, and on from there; a vertex
+  relaxed by a pseudo-source along an edge continues along that edge. The
+  polyline runs from the target to the source, with the face of every
+  segment. Where several shortest paths tie, it is the one whose window
+  reached the target first; ties are not enumerated. A path that passes a
+  vertex straight (a flat vertex, a vertex of a straight boundary edge) is
+  reached both through that vertex's pseudo-source and along a window ray
+  through it, so whether the vertex is listed as a path point is a rounding
+  tie that last-bit changes of the coordinates decide; the polyline is the
+  same either way. The studies therefore decide whether a path passes a
+  vertex geometrically (the vertex within `1e-12` of the polyline).
+- **Distances at surface points.** `distance_at(face, point)` is the smallest
+  of `σ + |s − x|` over the recorded windows of the point's face (and of the
+  face across, for a point on an edge) whose ray reaches the point, and
+  `d(v) + |v x|` over those faces' vertices: a shortest path's last segment
+  starts at a vertex of the point's face or enters it through a window.
+  `path_to_point` back-traces from there. Both need a propagation that did not
+  stop at a target (`limit=` stops once every distance up to the limit is
+  final).
+
 The loop is plain Python. Icosphere-4 (2562 vertices) propagates about 141000
-windows per source; the studies stop there. The solver returns distances only:
-back-tracing the path polyline through the windows is not implemented.
+windows per source; the studies stop there. Recording parents adds about 5 %
+to a propagation.
 
 **Independent implementations.** When installed (the `lab` extra pins both),
 two C++ libraries check the solver: `pygeodesic` 0.1.11, a wrapper of
 Kirsanov's implementation of the exact MMP algorithm (Surazhsky et al. 2005),
-compared at every vertex from the same sources; and `potpourri3d` 1.4.0, whose
+compared at every vertex from the same sources, and whose
+`geodesicDistance` also returns its own back-traced path (target first),
+compared with ciw's polyline; and `potpourri3d` 1.4.0, whose
 `EdgeFlipGeodesicSolver` (geometry-central's FlipOut, Sharp and Crane 2020)
 shortens the edge-graph path between two vertices to a *locally* shortest
 geodesic, so its length is at least the exact distance and equals it when that
@@ -204,8 +272,8 @@ with the first one (all are attached to the exception):
 | `open_boundary` | validation | boundary edges on a mesh declared closed |
 | `point_outside_face` | tracing | start point not on the start face |
 | `invalid_direction` | tracing | zero, nonfinite or non-tangent start direction |
-| `boundary_reached` | tracing | a hole or the outer boundary reached before the length |
-| `vertex_hit` | tracing | the straightest continuation is not unique |
+| `boundary_reached` | tracing | a hole or the outer boundary (or, under the vertex rule, a boundary vertex) reached before the length |
+| `vertex_hit` | tracing | a vertex reached under the default rule, which declares no continuation |
 | `step_budget_exceeded` | tracing | face-crossing budget exhausted |
 | `unreachable_target` | query | target in another component |
 | `boundary_vertex_curvature` | query | angle defect requested at a boundary vertex |
@@ -303,12 +371,154 @@ Compared with the exact distance from vertex 0 (valence 5):
   sandwich of the distance: for large enough k the Steiner distance would fall
   below that traced length. This is a counterexample to "a straightest
   geodesic shorter than π on a mesh inscribed in the sphere is a shortest
-  path". It is consistent with the structure of the cut locus of a point on a
-  convex polyhedron, a tree with a leaf at every vertex: a straightest
-  geodesic passing a vertex closely crosses the branch that ends there, after
-  which the path around the vertex's other side is shorter. The excess falls
-  with refinement because the curvature concentrated at each vertex does.
-  Where a trace crosses the cut locus is observed per trace, not predicted.
+  path". The excess falls with refinement because the curvature concentrated
+  at each vertex does. Where each trace stops being shortest is located below
+  (cut points).
+
+### Vertex continuation, back-traced paths and cut points (T038)
+
+**Continuation through vertices.** Nine traces with the vertex rule on flat
+vertices (8 × 8 planar grids, one sheared by 0.5, and a 16-sector prism
+cylinder), aimed at vertices and run along rows of vertices, pass 24 vertices
+(1 to 6 each) and stay straight lines of the development to `4.4e-16`. At a
+corner of the refined cube (`θ = 3π/2`, a cone) a ray on the face `z = 0`
+arriving at angle `γ < π/4` from the `x` axis leaves on the face `x = 0` at
+`π/4 + γ` from the `y` axis; both declared rays match that closed form to
+`1.7e-16`, the exact distance between their endpoints equals
+`sqrt(r1² + r2² − 2 r1 r2 cos(3π/4))` to `4.4e-16`, and the continued paths
+are longer than it by 0.086 and 0.081.
+
+On one-vertex fans of six triangles (flat except at the centre), a trace from
+a point at `r1 = 0.45` aimed at the centre and continued `r2 = 0.35` past it:
+
+| Total angle θ | continued − exact | continued path shortest | end angles φ/π (of 0.3, 0.6, 0.9, 1.1, 1.3) with a shortest path through the vertex |
+| --- | --- | --- | --- |
+| 1.5π (cone) | 6.0e-2 | no | none |
+| 1.8π (cone) | 9.7e-3 | no | none |
+| 2π (flat) | 0 | yes | none |
+| 2.2π (saddle) | 0 | yes | 1.1 |
+| 2.5π (saddle) | 0 | yes | 1.1, 1.3 |
+
+- Every exact distance from the start (to the continued endpoint and to the
+  five grid points) equals `sqrt(r1² + r2² − 2 r1 r2 cos(min(φ, θ − φ, π)))`
+  to `5.3e-15` (ciw's window propagation and, when installed, pygeodesic), the
+  continued endpoint sits at polar angle `θ/2`, and a trace run back from the
+  endpoint returns to the start to `2.6e-16`. The shortest path to the
+  continued endpoint passes the centre (the centre lies within `1e-12` of the
+  back-traced polyline) exactly on the flat and saddle fans; on the cones it
+  misses the centre by 0.15 and 0.062. On the flat fan the path is listed
+  through the centre or not by a rounding tie (above), so passing is decided
+  geometrically.
+- The set of end directions reached by a shortest path through the vertex is
+  `[π, θ − π]`, empty for cones, a single direction at a flat vertex and a fan
+  of width `θ − 2π` at a saddle; the grid points classify accordingly on every
+  fan.
+- Rays aimed `10⁻⁶ r1` beside the centre end at polar angles `π` and `θ − π`
+  (on the 1.5π fan, 3.1416 and 1.5708), each displaced by the first-order
+  `10⁻⁶ (r1 + r2)/r2 = 2.29e-6` (agreement to `1e-15`). The
+  continuation, at `θ/2`, is their bisector and the limit of neither: on every
+  cone and saddle fan it lies `|2π − θ|/2` from the nearer one-sided endpoint
+  (the ratio is 0.99999 at worst, the offset above), a counterexample to "a
+  straightest geodesic through a vertex is the limit of the geodesics that
+  pass it".
+
+**How often generic traces need the rule.** 200 seeded traces of length 1 per
+level on tangentially jittered icospheres (0.1 h, validated with the centre
+declared), uniform start points of uniformly chosen faces, uniform headings:
+
+| Level | h | edge crossings | per trace | within 0.1 | within 0.01 | within 1e-3 | within 1e-4 |
+| --- | --- | --- | --- | --- | --- | --- | --- |
+| 2 | 0.302 | 1479 | 7.4 | 297 | 40 | 2 | 0 |
+| 3 | 0.152 | 2950 | 14.8 | 617 | 58 | 6 | 0 |
+| 4 | 0.076 | 5937 | 29.7 | 1157 | 113 | 7 | 0 |
+| 5 | 0.038 | 11944 | 59.7 | 2436 | 238 | 9 | 0 |
+
+None of the 22310 crossings came within the `1e-9` vertex tolerance (the
+closest was `2.5e-4` of an edge from a vertex); by itself, a count of zero
+bounds the per-crossing probability only to `−ln 0.05 / 22310 = 1.3e-4` at
+95 % (the rule of three), the uncertainty the finding records. Crossings
+within `τ` of a
+vertex, divided by `2τ` times the crossings, are 1.010 and 1.006 for
+`τ = 0.1` and `0.01`: the edge parameter is uniform near the ends, so a
+crossing needs the rule with probability about `2 × 10⁻⁹`, about `4.5e-5`
+hits expected in the whole study. Crossings per trace grow like `1/h` (fitted
+order −1.01), so at fixed length the chance per trace grows like `τ L/h`, and
+stays negligible at this tolerance. Below `τ = 0.01` the counts are small
+(24 in all at `10⁻³`, a ratio of 0.54) and scatter more than Poisson counts:
+a close pass crosses several spokes of the same vertex, so near-vertex
+crossings come in clusters, and the uniform rate is claimed for `τ = 0.1` and
+`0.01` only. Traces aimed at vertices or along rows of vertices (the flat
+rows above, regular grids) need the rule at every vertex.
+
+**Back-traced shortest paths.** 18 seeded vertex pairs on each of a jittered
+icosphere-2, a jittered 24 × 12 torus (142 saddle vertices), the L-shaped grid
+and the 2.5π fan with seven points inserted (72 paths): lengths equal the
+exact distances to `1.3e-15`; every segment lies in its assigned face (point
+in face test); every edge crossing is straight (`|a1 + a2 − π| ≤ 1.4e-13`);
+at every vertex the path passes, the angle on each side is at least `π`
+(on the inside at a boundary vertex) to `1.3e-15`. Of the 31 vertices the
+paths pass (within `1e-12` of the polyline, the paths' ends excluded), 12 are
+bends, at saddle (8) and reflex boundary (4) vertices only; the other 19, all
+on the L-shape, are passed straight (15 flat interior vertices and 4 vertices
+of straight boundary edges). Passes are counted geometrically: whether the
+back-trace lists a straight pass as a path point is a rounding tie (above):
+on the L-shape that count is 7 as generated and 11 to 17 under `2e-16`
+relative noise in the coordinates (six seeds), while the geometric count stays
+23. Paths agree
+with the paths back-traced from the other end, and with pygeodesic's paths,
+to `1.9e-15`. Tied shortest paths are avoided on purpose: the jittered
+meshes are generic, and the L-shape and the saddle fan are simply connected
+with no interior vertex of angle below `2π` (nonpositively curved), so their
+shortest paths are unique. Where shortest paths tie (as between symmetric
+vertex pairs of the regular torus), each implementation returns one of them,
+and their polylines need not agree.
+
+**Cut points.** Along a trace the excess `e(s) = s − d(s)` of its length over
+the exact distance from its start never decreases (a subpath of a shortest
+path is shortest; measured decreases stay below `5e-16`), so the trace is
+shortest up to one cut point and never after. It is located from the windows
+of one propagation from the start (distances at every edge crossing and the
+endpoint, then bisection on `e > 10⁻¹²` and extrapolation of the linear rise
+of `e`). Just past it, the other shortest path is back-traced; with the trace
+it bounds a digon, and a gnomonic point-in-polygon test (exact for polylines
+on a mesh inscribed in the sphere) lists the vertices inside. For one cone
+vertex of angle defect `δ`, seen from the start at distance `r` and angle `φ`
+from the trace, the trace crosses the vertex's cut ray at
+
+    s* = r sin(δ/2) / sin(δ/2 − φ)   (when φ < δ/2; never otherwise).
+
+Of the 30 declared traces, 15 have a cut point before their length. They are
+14 distinct cut points: the level-2 length-1 trace from start 4 is the first
+half of the length-2 trace from the same start and repeats its cut point
+(traces from one start on one level coincide up to the shorter length), so
+counts below are of distinct cut points.
+
+- In 13 the digon encloses exactly one vertex, and the cut point equals that
+  vertex's isolated-cone prediction to within the cut point's resolution
+  (largest `4.0e-7`, at level 4, where the excess rises slowly); the observed
+  differences are at most `7.5e-9`.
+- In one (level 2, trace 5) it encloses two vertices (defects 0.074 and
+  0.082) and comes at 1.1710, earlier than either vertex alone predicts
+  (1.3190): a counterexample to "the first cut point is where the trace
+  crosses one vertex's cut ray".
+- The 15 traces without a cut point have no isolated-cone prediction within
+  their length. No trace is cut later than its smallest prediction.
+- The vertex that cuts passes within 0.108, 0.042, 0.011 and 0.0066 h of the
+  trace (largest per level, levels 1–4): the distance shrinks faster than h,
+  as `φ < δ/2` with `δ ∝ h²` requires. Distance alone does not decide: on
+  level 3 a trace passes a vertex at 0.0095 h and stays shortest to length 2,
+  while another is cut by a vertex passed at 0.0108 h.
+- pygeodesic (when installed) brackets every distinct cut point on its own:
+  at the trace points 10 resolutions before and after it, each inserted as a
+  vertex alone, the traced length exceeds pygeodesic's distance from the
+  start by at most `1.3e-15` before (shortest) and by at least `1.0e-11`
+  after (above the `10⁻¹²` threshold), so the cut point lies within 10
+  resolutions (`4.0e-6` at most) of where the windows put it. The
+  window-evaluated distances at those 28 points agree with pygeodesic's to
+  `2.2e-15`. Each probe gets its own refined mesh: on level 1 the two probes
+  are `7e-10` apart, and inserted together the second lies within the edge
+  snapping of point insertion (`1e-9` of an edge) of an edge of the first's
+  split and is moved by `4e-10`, which moves its distance as much.
 
 ### Convergence under refinement (T039)
 
@@ -641,11 +851,18 @@ Residual `r = y − d(V_nominal)` with `y = d(V_nominal + η) + ε`,
 - Pointwise convergence of the barycentric angle-defect curvature anywhere on
   the icosphere family (valence-5 vertices and mirror-plane valence-6 vertices
   are counterexamples; the off-mirror maximum stalls at level 7).
-- That traced geodesics are globally shortest: many are not (T038), and where
-  one stops being shortest is observed, not predicted. The exact solver gives
-  distances only, not the shortest path itself, and is exact only up to
-  rounding and the `1e-10` pruning margin; its speed limits it to meshes of a
-  few thousand vertices.
+- That traced geodesics are globally shortest: many are not (T038). Their cut
+  points are predicted only where the digon with the other shortest path
+  encloses one vertex, on the declared icosphere traces; a digon enclosing
+  several vertices cuts earlier, unpredicted, and cut points on saddle-bearing
+  meshes are not located. The exact solver and its back-traced paths are exact
+  only up to rounding and the `1e-10` pruning margin, return one path where
+  shortest paths tie, and are limited by speed to meshes of a few thousand
+  vertices.
+- That generic traces on other meshes never need the vertex rule: the rate
+  is measured on tangentially jittered icospheres; meshes and traces aligned
+  with rows of vertices need it systematically, and at boundary vertices no
+  continuation is declared.
 - Detection of self-intersections, unwelded seams, duplicate faces or other
   defects outside the catalogue. Detection of inverted faces with small bends
   when no centre is declared. Freedom from false `folded_face` refusals on
@@ -662,12 +879,21 @@ Residual `r = y − d(V_nominal)` with `y = d(V_nominal + η) + ε`,
 
 ## Open questions and next tasks
 
-1. Back-trace the shortest path polyline from the exact solver's windows, and
-   locate where straightest geodesics stop being shortest (their crossing of
-   the start point's cut locus) as a function of refinement and of the
-   distance to the nearest vertex.
-2. Implement the Polthier–Schmies vertex rule and measure how often generic
-   traces need it on irregular meshes.
+1. Predict the cut point of a straightest geodesic whose digon with the other
+   shortest path encloses several vertices, for example from the start's cut
+   locus computed where two of the exact solver's windows give equal
+   distances, and locate cut points on saddle-bearing meshes. Test, with
+   enough seeded traces per level, whether the fraction of straightest
+   geodesics of length `L` that stay shortest tends under refinement to a
+   limit set by the enclosed curvature rather than to 1: an isolated vertex at
+   distance `r` cuts before `L` when `φ < (δ/2)(1 − r/L)`, a region of area
+   `δ L²/6`, so with one vertex per area `A_v` and `δ ≈ K A_v` a trace meets
+   about `K L²/6` such vertices, and if they fall independently it stays
+   shortest with probability about `exp(−K L²/6)` whatever `h` (0.51 for
+   `L = 2` on the unit sphere; 10 of the 24 declared length-2 traces stay
+   shortest).
+2. Declare a continuation at boundary vertices (the trace stops there now)
+   and measure how often traces on meshes with holes reach one.
 3. Re-trace per Monte Carlo sample to quantify geodesic-distance uncertainty
    past the strip-dependent corridor-switching threshold.
 4. Derive the valence-6 plateau on the icosahedral mirror planes (star shape of
