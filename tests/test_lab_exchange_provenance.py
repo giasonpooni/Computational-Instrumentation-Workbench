@@ -400,11 +400,12 @@ def test_shared_deferred_questions_are_recorded_where_they_apply(lab):
     for question in (common.KEY_CUSTODY_QUESTION, common.TELEMETRY_STACK_QUESTION):
         assert question.startswith("Deferred research question (")
     # The telemetry question's statement about provisioning must match the scripts and pins it names.
-    from ciw.lab.runner import repository_path
+    from ciw.lab.runner import PACKAGE_ROOT, repository_path
     root = repository_path()
-    if root is None:
-        pytest.skip("repository scripts are not available")
-    pins = json.loads((root / "src" / "ciw" / "telemetry-runtimes.json").read_text(encoding="utf-8"))
+    if root is None or not (root / "scripts" / "check_lab.py").is_file():
+        pytest.skip("repository scripts are not available (the clean room copies no scripts/)")
+    # The pins are package data, so the installed package is read, not the repository's source tree.
+    pins = json.loads((PACKAGE_ROOT / "telemetry-runtimes.json").read_text(encoding="utf-8"))
     provisioned = set(_literal(root / "scripts" / "check_lab.py", "REPOSITORIES"))
     variables = set(_literal(root / "scripts" / "reproduce_lab.py", "TEST_VARIABLES"))
     assert sorted(pins) == ["cbsr", "gsie", "ppda", "set", "stfe"]

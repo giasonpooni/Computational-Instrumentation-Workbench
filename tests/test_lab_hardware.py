@@ -582,8 +582,8 @@ def test_the_clean_room_verifies_retained_hardware_runs_without_a_comparison(tmp
 
 def test_lab_docs_describe_hardware_runs():
     root = Path(__file__).resolve().parents[1]
-    if not (root / "docs" / "LAB.md").is_file():
-        pytest.skip("docs/ is not available")
+    if not (root / "docs" / "LAB.md").is_file() or not (root / "lab" / "hardware" / "README.md").is_file():
+        pytest.skip("docs/ or the retained lab/ directory is not available (the clean room copies no lab/)")
 
     def text(*parts):
         return " ".join((root.joinpath(*parts)).read_text(encoding="utf-8").split())
