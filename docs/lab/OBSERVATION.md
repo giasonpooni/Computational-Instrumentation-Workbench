@@ -336,6 +336,15 @@ to 2.18 at the largest radius. Two causes contribute, and the run does not
 separate them: the higher-order terms of f k₁((r + dr)³ − r³), and the pixel
 Jacobian and displacement directions changing as the markers move (k₂ = 0 in
 these runs).
+J_pix is taken by central differences with a 0.01 px step. The first-order
+residual compares two nearly equal biases, so it carries J's rounding error:
+the triangulation's rounding (BLAS camera products and the LAPACK SVD, about
+1e-15 m) over twice the step, which depends on the OpenBLAS kernel. With a
+1e-3 px step the residual differed between kernels by up to 1.5e-6 relative,
+beyond its regression tolerance of 1e-6. With 0.01 px it differs by at most
+2.6e-8 across the SkylakeX, Haswell, Sandybridge, Nehalem and Katmai kernels
+(about 40 times below the tolerance), and the step's h² truncation shifts it
+by 1.5e-6 relative, the same on every kernel.
 Undistorting with the true (k₁, k₂, p₁, p₂) model removes the bias to
 6e-16 m.
 
@@ -373,7 +382,9 @@ the closed form. The closed form matches it to 2.3e-13 px. Two controls give
 0 offset to rounding: fronto-parallel discs, and the weak-perspective
 projection. The largest offset is 0.011, 0.045 and 0.178 px (slope 2.0000 in
 ρ). Triangulating the ellipse centres biases the chords by J_pix·δ_pix to
-first order (residual 4e-4 relative). At 8 mm the bias reaches 80 µm on the
+first order (residual 4e-4 relative; with the same 0.01 px step it differs
+between the five kernels by at most 5.6e-8 relative, about 18 times below its
+tolerance of 1e-6). At 8 mm the bias reaches 80 µm on the
 circumferential helix, 40 µm at 45° and 12 µm on the ruling, with slope 2 in
 ρ. For comparison, the 0.25 px noise gives a chord RMS of about 0.19 mm.
 Counterexample: the ellipse centre is not the projected marker centre
