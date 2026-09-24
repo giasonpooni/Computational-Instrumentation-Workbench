@@ -339,9 +339,10 @@ wrong aggregate, never by re-reading what was just written:
   figure that differs is recorded as a counterexample to byte reproducibility;
   a timing-free figure that differs refutes it; figures not re-executed leave
   the task `partial`;
-- for T168, a static tie analysis (a registered test names its task and
-  mentions an evidence label), itself checked on probe cases, and the JUnit
-  outcomes the reports recorded.
+- for T168, a static tie analysis (a registered test declares its task with a
+  `lab_task` marker and mentions an evidence label; markers naming a task that
+  does not register the test are counted), itself checked on probe cases, and
+  the JUnit outcomes the reports recorded.
 
 Every count finding declares an exact uncertainty and a zero regression
 tolerance. The release digest (T165) covers task states, headline labels,

@@ -94,6 +94,8 @@ def _expect(label):
     return label
 
 
+@pytest.mark.lab_task("T019", "T020", "T021", "T022", "T023", "T024", "T025", "T026", "T027", "T028", "T029", "T030",
+                      "T031", "T032")
 def test_every_task_is_registered_and_completes(reports):
     assert set(IMPLEMENTATIONS) == set(TASKS)
     for tid in TASKS:
@@ -111,6 +113,8 @@ def test_every_task_is_registered_and_completes(reports):
                 assert {"kind", "value", "basis"} <= set(record["uncertainty"]), (tid, record["claim"])
 
 
+@pytest.mark.lab_task("T019", "T020", "T021", "T022", "T023", "T024", "T025", "T026", "T027", "T028", "T029", "T030",
+                      "T031", "T032")
 def test_next_steps_name_forward_work(reports):
     """Every completed task's next step is its own open question, never a queue task that has already run."""
     for tid in TASKS:
@@ -121,6 +125,7 @@ def test_next_steps_name_forward_work(reports):
     assert "T137" in library and "triangle meshes" in library
 
 
+@pytest.mark.lab_task("T024", "T025", "T032")
 def test_focus_margin_claims_state_the_canonical_definition(reports):
     """'Focus margin' is s_c - L over conjugate points (zeros of j_head), stated wherever a claim uses it."""
     mentions = 0
@@ -138,6 +143,8 @@ def test_focus_margin_claims_state_the_canonical_definition(reports):
     assert "s_c the first zero of j_head" in _label(reports["T032"], "Torus outer equator")["claim"]
 
 
+@pytest.mark.lab_task("T019", "T020", "T021", "T022", "T023", "T024", "T025", "T026", "T027", "T028", "T029", "T030",
+                      "T031", "T032")
 def test_every_finding_has_its_expected_label(reports):
     for tid in TASKS:
         findings = reports[tid]["findings"]
@@ -150,6 +157,7 @@ def test_every_finding_has_its_expected_label(reports):
 
 
 # ---------------------------------------------------------------- lattice
+@pytest.mark.lab_task("T019", "T026")
 def test_gauss_reduction_is_exact():
     canonical, M, _ = lat.gauss_reduce((5, 2, 7))
     assert canonical == (5, 2, 7) and M == ((1, 0), (0, 1))
@@ -172,6 +180,7 @@ def test_gauss_reduction_is_exact():
         lat.gram(((1, 2), (2, 1)))
 
 
+@pytest.mark.lab_task("T019")
 def test_vector_reduction_check_detects_a_wrong_boundary_rule(monkeypatch):
     assert ftt.vector_reduction_check() == {"compared": 3048, "mismatches": 0}
     original = lat.gauss_reduce
@@ -184,6 +193,7 @@ def test_vector_reduction_check_detects_a_wrong_boundary_rule(monkeypatch):
     assert ftt.vector_reduction_check()["mismatches"] > 0
 
 
+@pytest.mark.lab_task("T019")
 def test_t019_reduction_and_refusals(reports):
     report = reports["T019"]
     first = _label(report, "Every enumerated SL(2,Z) basis")
@@ -201,6 +211,7 @@ def test_t019_reduction_and_refusals(reports):
     assert "det(M)^2 det G" in refusals["basis"]["derivation"]
 
 
+@pytest.mark.lab_task("T019")
 def test_ftr_refusal_makes_task_partial(tmp_path):
     checkout = tmp_path / "not-a-checkout"
     checkout.mkdir()
@@ -213,6 +224,7 @@ def test_ftr_refusal_makes_task_partial(tmp_path):
     assert len(report["findings"]) == len(LABELS["T019"])
 
 
+@pytest.mark.lab_task("T019", "T020", "T026")
 def test_provider_output_is_refused_when_unreadable_or_incomplete():
     cases = ftt.ftr_cases()
     request = ftt.ftr_request(cases)
@@ -232,6 +244,7 @@ def test_provider_output_is_refused_when_unreadable_or_incomplete():
         assert info.value.code == code
 
 
+@pytest.mark.lab_task("T019", "T020", "T026")
 @pytest.mark.skipif(not (os.environ.get("CIW_LAB_FTR_REPO") and os.environ.get("CIW_LAB_FTR_PYTHON")),
                     reason="set CIW_LAB_FTR_REPO and CIW_LAB_FTR_PYTHON to run the pinned FTR comparison")
 def test_ftr_provider_agreement(tmp_path):
@@ -254,6 +267,7 @@ def test_ftr_provider_agreement(tmp_path):
 
 
 # ---------------------------------------------------------------- windings
+@pytest.mark.lab_task("T020")
 def test_winding_flow_and_intersections():
     start = (Fraction(1, 7), Fraction(2, 11))
     primitive = lat.trace_lattice_flow(3, -2, start)
@@ -278,6 +292,7 @@ def test_winding_flow_and_intersections():
         lat.classify_winding(0, 0)
 
 
+@pytest.mark.lab_task("T020")
 def test_t020_winding_classification(reports):
     report = reports["T020"]
     first = _label(report, "Every winding with")
@@ -297,6 +312,7 @@ def test_t020_winding_classification(reports):
 
 
 # ---------------------------------------------------------------- flat routes and ties
+@pytest.mark.lab_task("T021")
 def test_t021_shortest_is_least_sensitive(reports):
     report = reports["T021"]
     numeric = _label(report, "On the test flat torus")
@@ -306,6 +322,7 @@ def test_t021_shortest_is_least_sensitive(reports):
     assert "constant K <= 0" in scope["claim"] and "sinh" in scope["basis"]["derivation"]
 
 
+@pytest.mark.lab_task("T022")
 def test_t022_degenerate_representatives(reports):
     report = reports["T022"]
     assert _label(report, "Square-torus half-period")["value"] == \
@@ -320,6 +337,7 @@ def test_t022_degenerate_representatives(reports):
     assert ties["counterexample"]["witness"]["binary64"] < ties["counterexample"]["witness"]["exact"]
 
 
+@pytest.mark.lab_task("T023")
 def test_t023_heading_sensitivity(reports):
     report = reports["T023"]
     zeros = _label(report, "Zeros of the return distance")
@@ -333,6 +351,7 @@ def test_t023_heading_sensitivity(reports):
 
 
 # ---------------------------------------------------------------- curved routes
+@pytest.mark.lab_task("T024", "T025", "T032")
 def test_route_helpers():
     a = {"length": 1.0, "heading": 0.1, "amplification": 2.0, "focus_margin": None}
     b = {"length": 2.0, "heading": 0.2, "amplification": 1.0, "focus_margin": 3.0}
@@ -354,6 +373,7 @@ def test_route_helpers():
     assert all(math.isfinite(check["observed"]) for check in basis["checks"])
 
 
+@pytest.mark.lab_task("T024")
 def test_independent_disagreement_makes_t024_partial_not_blocked(tmp_path, monkeypatch):
     disagreement = {"j_head": 2e-8, "conjugate": 1e-7, "endpoint": 1e-9, "presence_mismatches": 1, "failed": 1,
                     "rows": [], "revision": "scipy x, sympy y"}
@@ -365,6 +385,7 @@ def test_independent_disagreement_makes_t024_partial_not_blocked(tmp_path, monke
     assert len(report["findings"]) == len(LABELS["T024"])
 
 
+@pytest.mark.lab_task("T024", "T032")
 def test_sympy_field_matches_the_closed_form_batch_field():
     pytest.importorskip("sympy")
     import numpy as np
@@ -377,6 +398,7 @@ def test_sympy_field_matches_the_closed_form_batch_field():
             assert np.allclose(rhs(0.0, y), routes.batch_field(surface)(y[None, :])[0], atol=1e-13)
 
 
+@pytest.mark.lab_task("T024", "T025")
 def test_t024_t025_route_ranking_and_front(reports):
     report = reports["T024"]
     table = _label(report, "Every fan-search route")["value"]
@@ -418,6 +440,7 @@ def test_pareto_second_computation_detects_a_wrong_dominance_rule(reports, tmp_p
     assert report["evidence_status"]["primary"] == NE
 
 
+@pytest.mark.lab_task("T032")
 def test_t032_counterexample_library(reports):
     report = reports["T032"]
     assert len([f for f in report["findings"] if "counterexample" in f]) == 5
@@ -443,6 +466,7 @@ def test_t032_counterexample_library(reports):
 
 
 # ---------------------------------------------------------------- invariance and surfaces
+@pytest.mark.lab_task("T026")
 def test_t026_modular_invariance(reports):
     report = reports["T026"]
     first = _label(report, "Length spectrum")
@@ -462,6 +486,7 @@ def test_t026_modular_invariance(reports):
     assert _label(report, "A det-2 integer matrix")["value"]["area_sq_ratio"] == "4"
 
 
+@pytest.mark.lab_task("T027", "T029")
 def test_t027_t029_surfaces_and_cones(reports):
     records = _label(reports["T027"], "L-shape and regular octagon")["value"]
     assert records["L-shape"]["genus"] == records["octagon"]["genus"] == 2
@@ -479,6 +504,7 @@ def test_t027_t029_surfaces_and_cones(reports):
     assert hexagon["counterexample"]["witness"]["vertex_classes"] == 2
 
 
+@pytest.mark.lab_task("T029")
 def test_gauss_bonnet_check_detects_wrong_vertex_classes(tmp_path, monkeypatch):
     # All corners in separate classes: V - E + F changes consistently, so only the independent chi catches it.
     monkeypatch.setattr(surf.PolygonSurface, "vertex_classes",
@@ -488,6 +514,7 @@ def test_gauss_bonnet_check_detects_wrong_vertex_classes(tmp_path, monkeypatch):
     assert _label(report, "Gauss-Bonnet")["evidence_status"] == NE
 
 
+@pytest.mark.lab_task("T027", "T028")
 def test_surface_helpers_exact():
     octagon = surf.regular_octagon()
     s = surf.Surd(0, Fraction(1, 2))
@@ -500,6 +527,7 @@ def test_surface_helpers_exact():
     assert info.value.code == "SADDLE_CONNECTION"
 
 
+@pytest.mark.lab_task("T028")
 def test_t028_glued_edge_flow(reports):
     report = reports["T028"]
     assert _label(report, "All 96 tested")["value"] == {"closed": 90, "saddle_connections": 6, "undecided": 0}
@@ -529,6 +557,7 @@ def test_generic_flow_check_uses_the_euclidean_vertex_distance():
 
 
 # ---------------------------------------------------------------- discrete and perturbed metrics
+@pytest.mark.lab_task("T030")
 def test_t030_grid_metrication(reports):
     report = reports["T030"]
     grid4 = _label(report, "4- and 8-neighbour")
@@ -544,6 +573,7 @@ def test_t030_grid_metrication(reports):
         {"metrication.svg", "fast-marching-error.svg"}
 
 
+@pytest.mark.lab_task("T031")
 def test_t031_route_switch(reports):
     report = reports["T031"]
     threshold = _label(report, "The shortest route switches")
@@ -559,6 +589,7 @@ def test_t031_route_switch(reports):
     assert ftt.flip_threshold(Fraction(1, 64))[0] == Fraction(1, 16)
 
 
+@pytest.mark.lab_task("T021", "T022", "T027", "T029", "T031")
 def test_regeneration_is_within_tolerance(tmp_path):
     cheap = ["T021", "T022", "T027", "T029", "T031"]
     for name in ("a", "b"):

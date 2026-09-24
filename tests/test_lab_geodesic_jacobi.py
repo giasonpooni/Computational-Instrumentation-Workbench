@@ -85,6 +85,7 @@ def test_registrations_name_existing_tests():
         assert "src/ciw/lab/geodesic_jacobi.py" in implementation.changed_files
 
 
+@pytest.mark.lab_task("T001")
 def test_t001_symbolic_derivations_match_surfaces(lab):
     pytest.importorskip("sympy")
     report = lab("T001")
@@ -119,6 +120,7 @@ def test_t001_symbolic_derivations_match_surfaces(lab):
     assert table["discrepancies"]["plane-polar"]["symbolic_curvature_is_zero"] is True
 
 
+@pytest.mark.lab_task("T001")
 def test_t001_without_sympy_is_partial(tmp_path):
     report = _run(BareContext(tmp_path), "T001")
     assert report["state"] == "partial"
@@ -133,6 +135,7 @@ def test_t001_without_sympy_is_partial(tmp_path):
     assert all(p["max_abs_intrinsic_curvature"] < 1e-6 for p in polar["value"].values())
 
 
+@pytest.mark.lab_task("T001")
 def test_t001_self_consistency_helpers():
     sphere, hyperbolic = gj.surface("sphere"), gj.surface("hyperbolic-plane")
     assert gjt.intrinsic_curvature(sphere, np.array([1.1, 0.3])) == pytest.approx(1.0, abs=1e-7)
@@ -159,6 +162,7 @@ def test_t001_self_consistency_helpers():
     assert points.shape == (gjt.SAMPLES_PER_CHART, 2) and np.array_equal(points, again)
 
 
+@pytest.mark.lab_task("T002")
 def test_t002_references_agree(lab):
     for name in ("sympy", "mpmath", "scipy"):
         pytest.importorskip(name)
@@ -192,6 +196,7 @@ def test_t002_references_agree(lab):
     assert labels["Clairaut's integral rho^2 phi' is conserved along the torus reference path"] == "numerically_verified"
 
 
+@pytest.mark.lab_task("T002")
 def test_t002_without_optional_modules(tmp_path):
     report = _run(BareContext(tmp_path), "T002")
     assert report["state"] == "partial"
@@ -201,6 +206,7 @@ def test_t002_without_optional_modules(tmp_path):
     assert any("Unavailable optional modules" in item for item in report["unresolved_assumptions"])
 
 
+@pytest.mark.lab_task("T003")
 def test_adaptive_checks_reject_fourth_order_variant(lab):
     lab("T003")
     real = gjt.adaptive_summary(lab.ctx, "dp54", integrators.integrate_adaptive)
@@ -214,6 +220,7 @@ def test_adaptive_checks_reject_fourth_order_variant(lab):
     assert abs(fourth[-1, 0] - math.e) > abs(fifth[-1, 0] - math.e)
 
 
+@pytest.mark.lab_task("T003")
 def test_t003_integrator_orders(lab):
     report = lab("T003")
     assert report["state"] == "completed"
@@ -244,6 +251,7 @@ def test_t003_integrator_orders(lab):
     assert max(flat["value"].values()) < 1e-12
 
 
+@pytest.mark.lab_task("T004")
 def test_t004_speed_drift_and_no_renormalization(lab):
     report = lab("T004")
     assert report["state"] == "completed"
@@ -268,6 +276,7 @@ def test_t004_speed_drift_and_no_renormalization(lab):
     assert scan["value"]["normalization_calls"] == 0 and scan["domain"] == "computational_pipeline"
 
 
+@pytest.mark.lab_task("T004")
 def test_integrator_code_path_has_no_normalization():
     assert gjt.normalization_calls() == []
 
@@ -307,6 +316,7 @@ def test_integrator_code_path_has_no_normalization():
         assert np.max(np.abs(g - 1.69)) < tolerance and np.min(np.abs(g - 1.0)) > 0.6, method
 
 
+@pytest.mark.lab_task("T005")
 def test_t005_separation_law(lab):
     report = lab("T005")
     assert report["state"] == "completed"
@@ -346,6 +356,7 @@ def test_t005_separation_law(lab):
         assert any("CSG provider comparison did not run" in item for item in report["unresolved_assumptions"])
 
 
+@pytest.mark.lab_task("T005")
 @pytest.mark.skipif(not os.environ.get("CIW_LAB_CSG_REPO"), reason="CIW_LAB_CSG_REPO names no CSG checkout")
 def test_t005_csg_provider_agreement(tmp_path):
     ctx = runner.Context(tmp_path, {"csg": Path(os.environ["CIW_LAB_CSG_REPO"])})
@@ -375,6 +386,7 @@ def _git_prefix(repo, tmp_path):
             "-c", "commit.gpgsign=false", "-c", f"core.hooksPath={tmp_path / 'no-hooks'}"]
 
 
+@pytest.mark.lab_task("T005", "T008")
 def test_csg_checkout_refusals(tmp_path, monkeypatch):
     # No repository above tmp_path can be discovered, so a plain directory is unreadable by construction.
     monkeypatch.setenv("GIT_CEILING_DIRECTORIES", str(tmp_path))
@@ -488,6 +500,7 @@ def test_csg_refusal_prediction_follows_the_core_dirtiness_rule(tmp_path, monkey
     assert "including untracked files under its source root (1)" in str(stray.value)
 
 
+@pytest.mark.lab_task("T005")
 def test_csg_output_is_refused_unless_complete():
     cases = [{"arclength": [0.0, 0.5, 1.0], "gaussian_curvature": 1.0}]
     summary = {"matrices": [[[1, 0], [0, 1]]] * 3, "determinant": [1.0] * 3,
@@ -504,6 +517,7 @@ def test_csg_output_is_refused_unless_complete():
             gj._check_csg_output(broken, cases)
 
 
+@pytest.mark.lab_task("T005", "T008")
 def test_csg_execution_refusals_are_expected_from_their_stage(tmp_path, monkeypatch):
     pin = gj.csg_pin()
     identity = {"repository": gj.CSG_REPOSITORY, "revision": pin["revision"], "source_tree": pin["source_tree"],
@@ -541,6 +555,7 @@ def test_csg_execution_refusals_are_expected_from_their_stage(tmp_path, monkeypa
     assert record["evidence_status"] == "not_established"
 
 
+@pytest.mark.lab_task("T006")
 def test_t006_finite_differences(lab):
     report = lab("T006")
     assert report["state"] == "completed"
@@ -557,6 +572,7 @@ def test_t006_finite_differences(lab):
     assert counter["counterexample"] and counter["value"]["log10_error_ratio_1e-11_over_best"] >= 1
 
 
+@pytest.mark.lab_task("T007")
 def test_t007_determinant(lab):
     report = lab("T007")
     assert report["state"] == "completed"
@@ -582,6 +598,7 @@ def test_t007_determinant(lab):
     assert gjt.per_step_determinant("rk4", h, 0.0) == 1.0
 
 
+@pytest.mark.lab_task("T007")
 def test_t007_symbolic_step_determinants():
     pytest.importorskip("sympy")
     table = gjt.symbolic_step_determinants()
@@ -590,6 +607,7 @@ def test_t007_symbolic_step_determinants():
     assert table["midpoint"]["2"] == "0" and table["midpoint"]["3"] == "k1/4"
 
 
+@pytest.mark.lab_task("T008")
 def test_t008_conjugate_and_focal_points(lab):
     report = lab("T008")
     assert report["state"] == "completed"
@@ -625,6 +643,7 @@ def test_t008_conjugate_and_focal_points(lab):
     assert abs(counter["value"]["focal"] - counter["value"]["conjugate"] / 2) > 0.3 and counter["counterexample"]
 
 
+@pytest.mark.lab_task("T008")
 def test_t008_envelope_comparison_rejects_wrong_curvature(lab):
     """The two-sided bracket fails for a bump chord column integrated with 5K or 0.5K, where the global bound cannot."""
     u0, heading, length = gjt.BUMP_CHORDS[0], 0.0, gjt.BUMP_CHORD_LENGTH
@@ -645,6 +664,7 @@ def test_t008_envelope_comparison_rejects_wrong_curvature(lab):
     assert gjt.comparison_angles(solution, [math.pi / 2])[0] == pytest.approx(math.pi / 2, abs=1e-12)
 
 
+@pytest.mark.lab_task("T008")
 def test_t008_missing_witness_is_recorded_not_raised(lab, tmp_path, monkeypatch):
     original = gjt.sturm_study
 
@@ -672,6 +692,7 @@ def test_t008_missing_witness_is_recorded_not_raised(lab, tmp_path, monkeypatch)
                for note in report["unresolved_assumptions"])
 
 
+@pytest.mark.lab_task("T009")
 def test_t009_columns_rank_paths_differently(lab):
     report = lab("T009")
     assert report["state"] == "completed"
@@ -703,6 +724,7 @@ def _numeric(value) -> bool:
     return any(_numeric(item) for item in items)
 
 
+@pytest.mark.lab_task("T001", "T002", "T003", "T004", "T005", "T006", "T007", "T008", "T009")
 def test_every_numerical_finding_declares_uncertainty_and_tolerance(lab):
     for task_id in SECTION:
         for record in lab(task_id)["findings"]:
@@ -714,6 +736,7 @@ def test_every_numerical_finding_declares_uncertainty_and_tolerance(lab):
             assert set(record["regression_tolerance"]) == {"abs", "rel"}, record["claim"]
 
 
+@pytest.mark.lab_task("T001", "T002", "T003", "T004", "T005", "T006", "T007", "T008", "T009")
 def test_figures_fit_their_legend_and_title_space(lab):
     legend_x = str(svg.WIDTH - svg.RIGHT + 38)
     for task_id in SECTION:
@@ -735,6 +758,7 @@ CAPTURE_ROUTE = ("ctx.capture(", "--capture ", "raw_sha256", "calibration", "run
                  "stays not_established even when such data exist")
 
 
+@pytest.mark.lab_task("T001", "T002", "T003", "T004", "T005", "T006", "T007", "T008", "T009")
 def test_every_next_step_is_a_deferred_research_question(lab):
     """A completed task's next step names its own open question, not a queue task that has already run."""
     gated = []
@@ -754,6 +778,7 @@ def test_every_next_step_is_a_deferred_research_question(lab):
     assert "trajectory-log" not in runner.CAPTURE_INSTRUMENTS
 
 
+@pytest.mark.lab_task("T006")
 def test_perturbation_helpers_are_geometric():
     sphere = gj.surface("sphere")
     spec = gj.path("sphere")

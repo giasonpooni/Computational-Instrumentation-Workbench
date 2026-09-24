@@ -97,6 +97,7 @@ def _finding(report, prefix):
 
 
 # --------------------------------------------------------------- T155
+@pytest.mark.lab_task("T155")
 def test_label_function_matches_the_reference_oracle_exhaustively():
     result = research_portfolio.label_invariants()
     assert result["grammar"] == {"derivation": 2, "generator": 2, "checks": 4, "provider": 3, "independent_check": 8,
@@ -134,6 +135,7 @@ def test_label_oracle_catches_a_label_function_that_departs_from_the_rules(monke
     assert research_portfolio.label_invariants()["violation_count"] > 0
 
 
+@pytest.mark.lab_task("T155")
 def test_formal_specifications_cover_the_queue(retained, tmp_path):
     report = _run("T155", retained)
     labels = _labels(report)
@@ -170,6 +172,7 @@ def test_formal_specifications_complete_when_every_unit_is_exercised(retained, m
     assert _finding(report, "Specification documents are exercised")["value"] == 2
 
 
+@pytest.mark.lab_task("T155")
 def test_rule_10_screen_closes_the_computational_domain_loophole(retained, monkeypatch):
     probe = research_portfolio.rule10_probe()
     assert probe["violation_count"] == 0 and probe["claims"] == len(research_portfolio.RULE10_PROBES)
@@ -199,6 +202,7 @@ def test_rule_10_screen_closes_the_computational_domain_loophole(retained, monke
     assert loophole["evidence_status"]["primary"] == "not_established"
 
 
+@pytest.mark.lab_task("T155", "T157")
 def test_next_steps_name_open_work_rather_than_work_done_elsewhere(retained):
     # T155 already enumerates the finite grammar, so a SAT encoding over it adds nothing: the open part is
     # off-grammar bases (property-based tests or Lean).
@@ -209,6 +213,7 @@ def test_next_steps_name_open_work_rather_than_work_done_elsewhere(retained):
     assert "ciw lab verify" in step and "(T168)" not in step and "regression fixture" not in step
 
 
+@pytest.mark.lab_task("T155")
 def test_specification_units_list_the_counterexamples_of_their_tasks(retained, monkeypatch):
     units = {"SPECIFICATIONS.md: A": {"T010"}, "B.md": {"T021"}}
     monkeypatch.setattr(research_portfolio, "specification_documents",
@@ -247,6 +252,7 @@ def test_specification_chord_paragraph_is_not_restated_as_refuted():
 
 
 # --------------------------------------------------------------- T156
+@pytest.mark.lab_task("T156")
 def test_textbook_and_contribution_ledger(retained, monkeypatch):
     report = _run("T156", retained)
     labels = _labels(report)
@@ -276,6 +282,7 @@ def test_textbook_and_contribution_ledger(retained, monkeypatch):
 
 
 # --------------------------------------------------------------- T157
+@pytest.mark.lab_task("T157")
 def test_counterexample_catalogue(retained):
     catalogue = _run("T157", retained)
     record = catalogue["findings"][0]
@@ -317,6 +324,7 @@ def _retain_figures(directory, monkeypatch, fakes):
     monkeypatch.setattr(research_portfolio, "REGENERATED", tuple(fakes))
 
 
+@pytest.mark.lab_task("T158")
 def test_figures_are_reproducible(tmp_path, monkeypatch):
     _retain_figures(tmp_path, monkeypatch, {"T010": _figure_task("T010")})
     report = _run("T158", tmp_path)
@@ -326,6 +334,7 @@ def test_figures_are_reproducible(tmp_path, monkeypatch):
     assert report["state"] == "completed" and report["evidence_status"]["primary"] == "numerically_verified"
 
 
+@pytest.mark.lab_task("T158")
 def test_a_changed_figure_is_a_mismatch_and_a_timing_figure_a_counterexample(tmp_path, monkeypatch):
     _retain_figures(tmp_path, monkeypatch, {"T010": _figure_task("T010", varying=True),
                                             "T013": _figure_task("T013", timing=True, varying=True)})
@@ -355,6 +364,7 @@ def test_figures_not_reexecuted_leave_the_task_partial(tmp_path, monkeypatch):
 
 
 # --------------------------------------------------------------- T159
+@pytest.mark.lab_task("T159")
 def test_uncertainty_table_restates_every_numerical_finding(retained):
     report = _run("T159", retained)
     assert set(_labels(report).values()) == {"numerically_verified"} and report["state"] == "completed"
@@ -374,6 +384,7 @@ def test_uncertainty_table_restates_every_numerical_finding(retained):
     assert research_portfolio._uncertainty_table_problems(cut, rows_json)
 
 
+@pytest.mark.lab_task("T159")
 def test_uncertainty_listing_separates_unmeasured_records(retained):
     # A physical claim recorded as not established with a count and no basis measured nothing (T139's "0 records").
     _retain(retained, "T139", "partial",
@@ -399,6 +410,7 @@ def test_uncertainty_listing_separates_unmeasured_records(retained):
     assert research_portfolio._uncertainty_table_problems(text, [dict(row, measured=True) for row in rows])
 
 
+@pytest.mark.lab_task("T159")
 def test_uncertainty_listing_names_the_per_quantity_budgets_it_holds(tmp_path):
     exact = {"kind": "exact", "value": 0, "basis": "closed form"}
     _retain(tmp_path, "T021", "completed", [finding("Heading sensitivity equals path length on a flat torus",
@@ -424,6 +436,7 @@ def test_uncertainty_listing_names_the_per_quantity_budgets_it_holds(tmp_path):
                                                     "form T140 uses.")
 
 
+@pytest.mark.lab_task("T159", "T165")
 def test_raw_recounts_derive_the_components_of_findings_retained_without_origin(retained):
     """Rule 11: a finding retained before basis components were recorded has no origin key; readers derive it."""
     from ciw.lab.evidence import finding_origin
@@ -467,6 +480,7 @@ def test_headline_never_cuts_a_number():
 
 
 # --------------------------------------------------------------- T160-T162
+@pytest.mark.lab_task("T160", "T161", "T162")
 @pytest.mark.parametrize("task_id", ["T160", "T161", "T162"])
 def test_paper_drafts_trace_to_reports(retained, task_id):
     if task_id == "T162":
@@ -494,6 +508,7 @@ SECTIONS = ("Abstract", "Introduction", "Methods", "Results", "Discussion", "Lim
             "References", "Appendix: every finding")
 
 
+@pytest.mark.lab_task("T160", "T161", "T162")
 @pytest.mark.parametrize("task_id", ["T160", "T161", "T162"])
 def test_paper_drafts_have_a_structure_and_qualify_their_labels(retained, task_id):
     # T010 cites a sympy reference written in ciw: its qualification must reach the draft's methods.
@@ -548,6 +563,7 @@ NO_SYMPY = ("Without sympy the variable-curvature references integrate the ciw e
             "integrator may be independent, the equations are not")
 
 
+@pytest.mark.lab_task("T161")
 def test_drafts_carry_every_qualification_of_independently_verified_rows(retained):
     # T034's independently_verified row is qualified in hyphenated wording, and by a sentence no phrase names;
     # its statement about noise is statistical independence, not a qualification.
@@ -574,6 +590,7 @@ def test_drafts_carry_every_qualification_of_independently_verified_rows(retaine
     assert research_portfolio.INDEPENDENCE_LIMITS.search("they come from ciw-written assembly of sympy derivatives")
 
 
+@pytest.mark.lab_task("T162")
 def test_draft_next_step_names_completed_tasks_with_open_physical_claims(retained):
     # T113 completed, but its bench claims stay open: the next step names it and does not say the unfinished
     # tasks' steps close the draft's limitations.
@@ -620,6 +637,7 @@ def test_a_corrupted_draft_row_fails_the_citation_check(retained):
 
 
 # --------------------------------------------------------------- T163
+@pytest.mark.lab_task("T163")
 def test_portfolio_shows_every_label_in_use(retained):
     report = _run("T163", retained)
     record = report["findings"][0]
@@ -632,6 +650,7 @@ def test_portfolio_shows_every_label_in_use(retained):
     assert "- GPU energy per batch: " in text
 
 
+@pytest.mark.lab_task("T163")
 def test_portfolio_qualifies_labels_and_states_customer_demand(retained):
     report = _run("T163", retained)
     assert _labels(report)[research_portfolio.PORTFOLIO_QUALIFIED] == "numerically_verified"
@@ -653,6 +672,7 @@ def test_portfolio_qualifies_labels_and_states_customer_demand(retained):
 
 
 # --------------------------------------------------------------- T164
+@pytest.mark.lab_task("T164")
 def test_clean_room_marker_is_recognized(tmp_path, monkeypatch):
     monkeypatch.delenv("CIW_LAB_CLEAN_ROOM", raising=False)
     report = _run("T164", tmp_path)
@@ -693,6 +713,7 @@ def _clean_room(monkeypatch, wheel_path):
         "wheel_sha256": hashlib.sha256(wheel_path.read_bytes()).hexdigest(), "wheel_path": str(wheel_path)}))
 
 
+@pytest.mark.lab_task("T164")
 def test_clean_room_needs_the_installed_package_to_be_the_named_wheel(tmp_path, monkeypatch):
     import ciw
     package = Path(ciw.__file__).resolve().parent
@@ -711,6 +732,7 @@ def test_clean_room_needs_the_installed_package_to_be_the_named_wheel(tmp_path, 
     assert observation["conditions"]["installed_from_wheel"] is True and "wheel_sha256" not in json.dumps(observation)
 
 
+@pytest.mark.lab_task("T164")
 def test_clean_room_prose_does_not_carry_the_wheel_digest(tmp_path, monkeypatch):
     import hashlib
     import shutil
@@ -754,6 +776,7 @@ def test_installed_package_is_compared_file_by_file_with_the_wheel(tmp_path):
 
 
 # --------------------------------------------------------------- T165
+@pytest.mark.lab_task("T165")
 def test_release_report_inventories_nested_runtimes(retained, tmp_path):
     release = _run("T165", retained)
     assert release["state"] == "completed"
@@ -786,6 +809,7 @@ def test_release_report_inventories_nested_runtimes(retained, tmp_path):
     assert refuted["state"] == "partial" and refuted["evidence_status"]["primary"] == "not_established"
 
 
+@pytest.mark.lab_task("T165")
 def test_release_report_lists_each_runtime_once_and_states_its_scope(retained):
     from ciw.core.identities import content_identity
     # T097 records the heads of the exchange checkouts, T098 heads and trees of the same checkouts; two Rust
@@ -828,6 +852,7 @@ def test_release_report_lists_each_runtime_once_and_states_its_scope(retained):
 
 
 # --------------------------------------------------------------- T166
+@pytest.mark.lab_task("T166")
 def test_unresolved_assumption_ledger(retained):
     _run("T155", retained, keep=True)  # this section's earlier reports are in the ledger too
     _retain(retained, "T023", "completed", [finding("f", "numerical", 1, {"checks": [CHECK]})], unresolved_assumptions=[])
@@ -843,6 +868,7 @@ def test_unresolved_assumption_ledger(retained):
 
 
 # --------------------------------------------------------------- T167
+@pytest.mark.lab_task("T167")
 def test_unmeasured_ledger(retained):
     unmeasured = _run("T167", retained)
     document = json.loads((retained / "artifacts" / "T167" / "unmeasured.json").read_text(encoding="utf-8"))
@@ -867,6 +893,7 @@ def test_unmeasured_ledger(retained):
     assert unmeasured["physical_validation_status"]["status"] == "not_established" and unmeasured["state"] == "completed"
 
 
+@pytest.mark.lab_task("T166", "T167")
 def test_ledgers_list_cross_cutting_open_items(retained):
     check = finding("g", "numerical", 1, {"checks": [CHECK]}, uncertainty={"kind": "exact", "value": 0, "basis": "b"})
     _retain(retained, "T081", "completed", [check], unresolved_assumptions=[
@@ -904,6 +931,7 @@ PTX_CLAIM = ("The gaussian_vi PTX kernel on the GPU reproduces the NumPy referen
              "common Gaussian VI workload")
 
 
+@pytest.mark.lab_task("T167")
 def test_unmeasured_ledger_separates_code_from_hardware(tmp_path):
     from ciw.lab.energy_gpu_workload import NO_GPU_PROBE
     from ciw.lab.runner import CAPTURE_INSTRUMENTS
@@ -979,6 +1007,7 @@ def test_unmeasured_ledger_separates_code_from_hardware(tmp_path):
     assert report["state"] == "completed" and labels["Physical validity of the lab's computational results"] == "not_established"
 
 
+@pytest.mark.lab_task("T167")
 def test_unmeasured_classifier_is_checked_on_probe_records(retained, monkeypatch):
     # Every hand-labelled record gets its label, and each need the ledger uses is exercised by one.
     assert research_portfolio._unmeasured_probe_errors() == []
@@ -1012,18 +1041,24 @@ def test_aggregates_block_without_prior_reports(tmp_path):
 
 # --------------------------------------------------------------- T168
 TIED_TESTS = '''
+import pytest
+
+@pytest.mark.lab_task("T010")
 def test_t010_runs_and_labels(lab):
     assert lab("T010")["findings"][0]["evidence_status"] == "numerically_verified"
 
+@pytest.mark.lab_task("T116")
 def test_values_only(lab):
     assert lab("T116")["findings"][0]["value"] is None
 
 def test_unrelated():
     assert 1 + 1 == 2
 
+@pytest.mark.lab_task("T168")
 def test_t168_labels(lab):
     assert lab("T168")["findings"][0]["evidence_status"] == "numerically_verified"
 '''
+OWN = "tests/test_fake.py::test_t168_labels"
 
 
 def _fake_repository(root, monkeypatch):
@@ -1032,6 +1067,7 @@ def _fake_repository(root, monkeypatch):
     monkeypatch.setenv("CIW_LAB_REPOSITORY_ROOT", str(root))
 
 
+@pytest.mark.lab_task("T168")
 def test_regression_coverage_is_checked(retained, tmp_path, monkeypatch):
     _fake_repository(tmp_path / "repo", monkeypatch)
     tied, values = "tests/test_fake.py::test_t010_runs_and_labels", "tests/test_fake.py::test_values_only"
@@ -1039,7 +1075,8 @@ def test_regression_coverage_is_checked(retained, tmp_path, monkeypatch):
     def registry(t010, t116=(values,)):
         # Only the fixture's tasks, so real section registrations cannot leak in.
         fakes = {"T010": Implementation("T010", None, regression_tests=t010),
-                 "T116": Implementation("T116", None, regression_tests=t116)}
+                 "T116": Implementation("T116", None, regression_tests=t116),
+                 "T168": Implementation("T168", None, regression_tests=(OWN,))}
         monkeypatch.setattr(research_portfolio, "load_implementations", lambda: (fakes, {}))
 
     registry((tied,))
@@ -1047,9 +1084,15 @@ def test_regression_coverage_is_checked(retained, tmp_path, monkeypatch):
     labels = _labels(report)
     rows = json.loads((retained / "artifacts" / "T168" / "regression-coverage.json").read_text(encoding="utf-8"))
     assert {row["task_id"]: row["tied"] for row in rows}["T010"] == [tied]
+    # Every registration is declared by its test's marker, and no marker names a task that does not register it.
+    assert "3 task-to-node registrations (3 distinct node ids), 3 declared by a lab_task marker" \
+        in report["numerical_result"]
+    assert _finding(report, "Task-to-node registrations whose")["value"] == 0
+    assert _finding(report, "Declarations in lab_task markers")["value"] == 0
     # T116's test asserts values only, and T021, T098 and T147 register no test at all.
     assert _finding(report, "Tasks without a registered test that both")["value"] == 1
-    assert labels["Tasks without a registered test that both names the task and asserts an evidence label"] == "numerically_verified"
+    assert labels["Tasks without a registered test that both declares the task with a lab_task marker and asserts "
+                  "an evidence label"] == "numerically_verified"
     assert _finding(report, "Completed or partial tasks lacking")["value"] == 3
     assert labels["Completed or partial tasks lacking a regression test"] == "not_established"
     # No JUnit outcomes were recorded in these reports: the pass/fail finding is honestly unestablished.
@@ -1062,17 +1105,34 @@ def test_regression_coverage_is_checked(retained, tmp_path, monkeypatch):
             tests_passed=[], extra={"tests_failed": [f"pytest: {tied}"]})
     failing = _run("T168", retained)
     assert _labels(failing)["Registered regression tests failing in the JUnit record of this run"] == "not_established"
+    # A registration whose test's marker names another task is undeclared; a marker naming a task that does not
+    # register the test is a stray declaration. Either keeps the task partial, and the next step says so first.
+    registry((tied,), t116=(tied,))
+    report = _run("T168", retained)
+    assert _finding(report, "Task-to-node registrations whose")["value"] == 1
+    assert _finding(report, "Declarations in lab_task markers")["value"] == 1
+    assert "Registrations whose test's lab_task marker does not name the task: T116: " + tied \
+        in report["unresolved_assumptions"]
+    assert ("Declarations in lab_task markers naming a task that does not register the test: "
+            "tests/test_fake.py::test_values_only: T116") in report["unresolved_assumptions"]
+    assert report["state"] == "partial"
+    assert report["recommended_next_task"].startswith("Make each registered test's lab_task marker name exactly the "
+                                                      "tasks that register it (1 registrations undeclared, 1 ")
     registry(("tests/test_fake.py::test_does_not_exist",))
     report = _run("T168", retained)
     assert report["state"] == "partial" and _finding(report, "Registered regression node ids")["value"] == 1
+    assert report["recommended_next_task"].startswith("Register node ids that resolve to test functions (1 dangling)")
 
 
+@pytest.mark.lab_task("T168")
 def test_regression_outcomes_add_up_and_name_the_own_node(tmp_path, monkeypatch):
     _fake_repository(tmp_path / "repo", monkeypatch)
-    tied, own = "tests/test_fake.py::test_t010_runs_and_labels", "tests/test_fake.py::test_t168_labels"
+    tied, values = "tests/test_fake.py::test_t010_runs_and_labels", "tests/test_fake.py::test_values_only"
+    # T116 (no report in this run) registers the test its marker names, so no declaration is stray.
     fakes = {"T010": Implementation("T010", None, regression_tests=(tied,)),
              "T021": Implementation("T021", None, regression_tests=(tied,)),
-             "T168": Implementation("T168", None, regression_tests=(own,))}
+             "T116": Implementation("T116", None, regression_tests=(values,)),
+             "T168": Implementation("T168", None, regression_tests=(OWN,))}
     monkeypatch.setattr(research_portfolio, "load_implementations", lambda: (fakes, {}))
     run = tmp_path / "run"
     _retain(run, "T010", "completed", [finding("f", "numerical", 1, {"checks": [CHECK]})], tests_passed=[f"pytest: {tied}"])
@@ -1087,28 +1147,55 @@ def test_regression_outcomes_add_up_and_name_the_own_node(tmp_path, monkeypatch)
     report = _run("T168", run)
     assert "3 task-to-node registrations (2 distinct node ids)" in report["numerical_result"]
     assert "2 not recorded (1 of them T168's own node" in report["numerical_result"]
+    # T021 shares T010's test, whose marker does not name T021.
+    assert "2 declared by a lab_task marker; 1 registrations whose marker does not name the task" \
+        in report["numerical_result"]
     assert report["state"] == "partial"
     assert any(a.startswith("1 task-to-node registrations of other tasks have no outcome")
                for a in report["unresolved_assumptions"])
 
 
-def test_regression_tie_analysis_is_checked_on_probe_cases():
+def test_regression_tie_analysis_is_checked_on_probe_cases(monkeypatch):
     assert research_portfolio._tie_probe_errors() == []
     index = {}
     research_portfolio._index_source("tests/test_fake.py", TIED_TESTS, index)
-    assert research_portfolio._tie("T010", "", "tests/test_fake.py::test_t010_runs_and_labels", index) == (True, True)
-    assert research_portfolio._tie("T010", "", "tests/test_fake.py::test_unrelated", index) == (False, False)
-    assert research_portfolio._tie("T116", "", "tests/test_fake.py::test_values_only", index) == (True, False)
+    assert research_portfolio._tie("T010", "tests/test_fake.py::test_t010_runs_and_labels", index) == (True, True)
+    assert research_portfolio._tie("T010", "tests/test_fake.py::test_unrelated", index) == (False, False)
+    assert research_portfolio._tie("T116", "tests/test_fake.py::test_values_only", index) == (True, False)
+    # A task id in a test's name or source no longer ties it: only a marker declares.
+    assert research_portfolio._tie("T168", "tests/test_fake.py::test_t168_labels", index) == (True, True)
+    assert research_portfolio._tie("T116", "tests/test_fake.py::test_t010_runs_and_labels", index) == (False, True)
+    # A probe that reads markers wrongly is caught before the counts are trusted.
+    monkeypatch.setattr(research_portfolio, "_declared_tasks", lambda decorators: frozenset({"T901"}))
+    assert research_portfolio._tie_probe_errors()
 
 
 def test_every_section_registration_is_tied_to_its_task():
     implementations, _ = load_implementations()
     index = research_portfolio._test_index(Path(__file__).resolve().parent)
     for task_id in SECTION:
-        implementation = implementations[task_id]
-        function = getattr(implementation.run, "__name__", "")
-        assert any(research_portfolio._tie(task_id, function, node, index) == (True, True)
-                   for node in implementation.regression_tests), task_id
+        assert any(research_portfolio._tie(task_id, node, index) == (True, True)
+                   for node in implementations[task_id].regression_tests), task_id
+
+
+def test_every_registered_regression_test_declares_exactly_its_tasks():
+    """Each registered node's lab_task marker names every task that registers it, and no other task."""
+    implementations, _ = load_implementations()
+    registered = {task_id: implementation.regression_tests for task_id, implementation in implementations.items()}
+    tests = Path(__file__).resolve().parent
+    files = {node.split("::")[0] for nodes in registered.values() for node in nodes}
+    if not all((tests.parent / path).is_file() for path in files):
+        pytest.skip("the registered test modules are not beside this one")
+    index = research_portfolio._test_index(tests)
+    undeclared = [f"{task_id}: {node}" for task_id, nodes in registered.items() for node in nodes
+                  if not research_portfolio._tie(task_id, node, index)[0]]
+    assert undeclared == []
+    assert research_portfolio._stray_declarations(index, registered) == []
+
+
+def test_the_lab_task_marker_is_registered(pytestconfig):
+    # pyproject.toml registers it here; in the clean room, the pytest.ini that scripts/reproduce_lab.py writes.
+    assert any(line.startswith("lab_task(") for line in pytestconfig.getini("markers"))
 
 
 def test_regression_node_ids_resolve_class_methods_and_async_tests(tmp_path):

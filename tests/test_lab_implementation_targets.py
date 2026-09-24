@@ -88,6 +88,7 @@ def test_refusal_that_does_not_happen_is_a_refuted_finding_not_a_blocked_task(tm
         "evidence_status"] == "numerically_verified"
 
 
+@pytest.mark.lab_task("T142")
 def test_t142_kernel_counts_and_ranking(tmp_path):
     report, findings = _run("T142", tmp_path)
     available = _rust_build() is not None
@@ -119,6 +120,7 @@ def test_t142_kernel_counts_and_ranking(tmp_path):
     assert "seconds_per_call" in timings["timings"]
 
 
+@pytest.mark.lab_task("T142")
 def test_rust_fused_sphere_loop(rust_probe):
     result = targets.rust_sphere_agreement(steps=200, length=2.0)
     assert result["max_abs_difference"] <= 1e-11
@@ -128,6 +130,7 @@ def test_rust_fused_sphere_loop(rust_probe):
     assert any(flag.startswith("--remap-path-prefix=<build dir>=") for flag in rust_probe["identity"]["flags"])
 
 
+@pytest.mark.lab_task("T143")
 def test_t143_interface_inventory(tmp_path):
     report, findings = _run("T143", tmp_path)
     _assert_clean(report, "completed", "analytic")
@@ -160,6 +163,7 @@ def test_t143_interface_inventory(tmp_path):
         arch.validate_inventory([dict(arch.INTERFACES[0], identity=[pin])])
 
 
+@pytest.mark.lab_task("T144")
 def test_t144_architecture_scan(tmp_path):
     report, findings = _run("T144", tmp_path)
     _assert_clean(report, "completed", "numerically_verified")
@@ -196,6 +200,7 @@ def test_t144_architecture_scan(tmp_path):
     assert "ciw.core.identities" in relative["imports"] and "ciw.lab.evidence" in relative["imports"]
 
 
+@pytest.mark.lab_task("T145")
 def test_t145_julia_partial_with_plan(tmp_path):
     report, findings = _run("T145", tmp_path)
     _assert_clean(report, "partial", "analytic")
@@ -211,6 +216,7 @@ def test_t145_julia_partial_with_plan(tmp_path):
         assert symbolic["evidence_status"] == "independently_verified" and symbolic["value"] <= 1e-12
 
 
+@pytest.mark.lab_task("T145")
 def test_sympy_torus_geometry_matches_core():
     pytest.importorskip("sympy")
     result = targets.sympy_torus_check(samples=4)
@@ -218,6 +224,7 @@ def test_sympy_torus_geometry_matches_core():
     assert result["metric_off_diagonal"] == "0"
 
 
+@pytest.mark.lab_task("T146")
 def test_t146_reference_float_rule(monkeypatch):
     # The reference encoder never calls json: it must work with json.dumps disabled.
     monkeypatch.setattr(json, "dumps", lambda *args, **kwargs: pytest.fail("reference encoder used json.dumps"))
@@ -234,6 +241,7 @@ def test_t146_reference_float_rule(monkeypatch):
         assert serial.format_float(x) == repr(x), x
 
 
+@pytest.mark.lab_task("T146")
 def test_t146_python_canonicalizers_and_vectors(tmp_path):
     assert serial.canonical_bytes([1e16, 1e15, 1e-5, 1e-4, -0.0, 5e-324, 1.0]) == \
         b"[1e+16,1000000000000000.0,1e-05,0.0001,-0.0,5e-324,1.0]"
@@ -280,6 +288,7 @@ def test_t146_python_canonicalizers_and_vectors(tmp_path):
         [0x5B, 0x22, 0xE9, 0x22, 0x2C, 0x22, 0x65, 0x301, 0x22, 0x5D]
 
 
+@pytest.mark.lab_task("T146")
 def test_t146_rust_byte_identity(rust_probe):
     accepted, invalid = serial.vectors(), serial.invalid_vectors()
     corpus = serial.float_corpus()
@@ -301,6 +310,7 @@ MISS_CLAIM = ("The float32 policy misses dropped partial products up to about it
 BITWISE_CLAIM = "Bitwise policy detects reduction-order differences between float64 CPU orders"
 
 
+@pytest.mark.lab_task("T147")
 def test_t147_harness_detects_differences(tmp_path):
     report, findings = _run("T147", tmp_path)
     _assert_clean(report, "partial", "numerically_verified")
@@ -342,6 +352,7 @@ def test_t147_harness_detects_differences(tmp_path):
     assert kernels.ulp_distance(np.array([1.0]), np.array([np.nextafter(1.0, 2.0)]))[0] == 1.0
 
 
+@pytest.mark.lab_task("T147")
 @pytest.mark.parametrize("scale", [3.0, 1.0 / 3.0])
 def test_t147_fault_study_is_judged_by_the_harness(tmp_path, monkeypatch, scale):
     """A harness with a wrong tolerance or a bitwise mode that flags nothing refutes the fault findings."""
@@ -363,6 +374,7 @@ def test_t147_fault_study_is_judged_by_the_harness(tmp_path, monkeypatch, scale)
     assert report["evidence_status"]["primary"] == "not_established"
 
 
+@pytest.mark.lab_task("T148")
 def test_t148_reduction_policies(tmp_path):
     case = [1.0, 1e100, 1.0, -1e100]
     assert kernels.sum_kahan(case) == 0.0 and kernels.sum_neumaier(case) == 2.0 and kernels.sum_exact(case) == 2.0
@@ -395,6 +407,7 @@ def test_t148_reduction_policies(tmp_path):
     assert all(row["exact"] == 1 for row in distinct["value"].values())
 
 
+@pytest.mark.lab_task("T149")
 def test_t149_telemetry_only_frames(tmp_path):
     assert fpga.crc32(b"123456789") == 0xCBF43926
     frame = fpga.encode_frame(2 ** 32 - 1, 5, 7, [-1, 2 ** 31 - 1])
@@ -442,6 +455,7 @@ def test_t149_telemetry_only_frames(tmp_path):
         "not_established"
 
 
+@pytest.mark.lab_task("T150")
 def test_t150_bitstream_identity(tmp_path):
     report, findings = _run("T150", tmp_path)
     _assert_clean(report, "completed", "numerically_verified")
@@ -470,6 +484,7 @@ def test_t150_bitstream_identity(tmp_path):
     assert refused.value.code == "toolchain_installation_mismatch"
 
 
+@pytest.mark.lab_task("T151")
 def test_t151_compatibility_and_rollback(tmp_path):
     report, findings = _run("T151", tmp_path)
     _assert_clean(report, "completed", "numerically_verified")
@@ -483,6 +498,7 @@ def test_t151_compatibility_and_rollback(tmp_path):
     assert not fpga.compatible(fpga.COMPATIBILITY, "1.4.1", "2.0", "revB")
 
 
+@pytest.mark.lab_task("T152")
 def test_t152_loss_latency_staleness(tmp_path):
     report, findings = _run("T152", tmp_path)
     _assert_clean(report, "completed", "numerically_verified")
@@ -509,6 +525,7 @@ def test_t152_loss_latency_staleness(tmp_path):
     assert abs(float(fpga.latency_cdf(2_000_000 + 500_000)) - (1 - 2 * math.exp(-1))) < 1e-12
 
 
+@pytest.mark.lab_task("T153")
 def test_t153_writes_disabled_by_default(tmp_path):
     policy = authority.ActuatorWritePolicy()
     with pytest.raises(authority.AuthorityRefusal) as refused:
@@ -547,6 +564,7 @@ def test_t153_writes_disabled_by_default(tmp_path):
     assert findings["The lab holds actuator write authority"]["domain"] == "actuator_authority"
 
 
+@pytest.mark.lab_task("T154")
 def test_t154_control_outputs_are_proposals(tmp_path):
     report, findings = _run("T154", tmp_path)
     _assert_clean(report, "completed", "numerically_verified")
@@ -617,6 +635,7 @@ def _simulated_gpu(monkeypatch, outputs=None, unavailable=None):
     monkeypatch.setattr(common, "run_gpu", lambda: result)
 
 
+@pytest.mark.lab_task("T147")
 def test_t147_common_workload_comparison_follows_the_gpu_probe(tmp_path, monkeypatch):
     """T147 judges the PTX kernel's outputs under T148's fixed-order policy where a GPU answers, and only there."""
     monkeypatch.setattr(runner, "_probe_hardware", lambda name: False)
@@ -661,6 +680,7 @@ def test_t147_common_workload_comparison_follows_the_gpu_probe(tmp_path, monkeyp
     assert report["state"] == "partial" and report["evidence_status"]["primary"] == "not_established"
 
 
+@pytest.mark.lab_task("T147")
 def test_t147_identity_digests_the_common_workload_sources(tmp_path, monkeypatch):
     """The kernel, planner and information-system modules that define the workload are part of T147's identity."""
     monkeypatch.setattr(runner, "_probe_hardware", lambda name: False)
@@ -671,6 +691,7 @@ def test_t147_identity_digests_the_common_workload_sources(tmp_path, monkeypatch
     assert identity["common_workload"] == common.workload()
 
 
+@pytest.mark.lab_task("T146", "T148", "T149")
 def test_ciw_producers_of_independent_checks_carry_a_revision(tmp_path):
     """Every ciw-side producer of an independent check names the package version and its module digest (C7)."""
     from ciw import __version__
@@ -689,6 +710,7 @@ def test_ciw_producers_of_independent_checks_carry_a_revision(tmp_path):
                 assert len(check["producer"]["source_sha256"]) == 64
 
 
+@pytest.mark.lab_task("T142", "T148")
 def test_next_steps_point_at_work_that_delivers(tmp_path):
     """No next step points at a queue task (all of T142-T154 have run); open work is a named question."""
     implementations = section_implementations("implementation-targets")

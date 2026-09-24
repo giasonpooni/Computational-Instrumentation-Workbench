@@ -105,6 +105,7 @@ def test_every_section_task_is_registered_with_its_regression_test():
         assert ep.MODULE in implementation.changed_files
 
 
+@pytest.mark.lab_task("T077")
 def test_identity_matrix(lab):
     report = lab("T077")
     # Partial: two planned rows (ESM candidate, pinned-provider runtime) cannot run offline.
@@ -150,6 +151,7 @@ def test_identity_matrix(lab):
         "producer_edit_unsealed": "Retained log digest differs", "producer_edit_resealed": "accepted"}
 
 
+@pytest.mark.lab_task("T078")
 def test_exact_source_bytes(lab):
     report = lab("T078")
     _labels(report, "numerically_verified", {"numerically_verified": 4, "not_established": 1})
@@ -173,6 +175,7 @@ def test_exact_source_bytes(lab):
     assert report["physical_validation_status"]["status"] == "not_established"
 
 
+@pytest.mark.lab_task("T079")
 def test_whitespace_variants(lab):
     report = lab("T079")
     _labels(report, "numerically_verified", {"numerically_verified": 5})
@@ -193,6 +196,7 @@ def test_whitespace_variants(lab):
     assert report["findings"][4]["value"]["observed"] == ep.BOM_MESSAGE
 
 
+@pytest.mark.lab_task("T080")
 def test_identity_separation(lab):
     report = lab("T080")
     _labels(report, "numerically_verified", {"numerically_verified": 4, "not_established": 1})
@@ -209,6 +213,7 @@ def test_identity_separation(lab):
                                                          "execution:E1": "result:R2", "execution:E2": "result:R1"}
 
 
+@pytest.mark.lab_task("T081")
 def test_numerical_identity(lab):
     report = lab("T081")
     _labels(report, "numerically_verified", {"numerically_verified": 9, "not_established": 1})
@@ -240,6 +245,7 @@ def test_numerical_identity(lab):
     assert tolerances["oscillator-stats.resealed"] == {"abs": 0.0, "rel": 0.0}
 
 
+@pytest.mark.lab_task("T082")
 def test_fresh_occurrences(lab):
     report = lab("T082")
     _labels(report, "numerically_verified", {"numerically_verified": 3, "not_established": 1})
@@ -257,6 +263,7 @@ def test_fresh_occurrences(lab):
     _retained_rows(lab, "T082")
 
 
+@pytest.mark.lab_task("T083")
 def test_replay_receipt_binding(lab):
     report = lab("T083")
     _labels(report, "numerically_verified", {"numerically_verified": 5, "not_established": 2})
@@ -278,6 +285,7 @@ def test_replay_receipt_binding(lab):
         "bundle:B0b": ["bundle:B0"], "bundle:B1": ["bundle:B0"]})}
 
 
+@pytest.mark.lab_task("T084", "T085")
 def test_receipt_digest_mutations(lab):
     source, replayed = lab("T084"), lab("T085")
     for report in (source, replayed):
@@ -298,6 +306,7 @@ def test_receipt_digest_mutations(lab):
     assert witness["replay_predates_source"] is True and witness["receipt_source"] == "bundle:B0"
 
 
+@pytest.mark.lab_task("T086", "T087", "T088")
 def test_verification_mutations(lab):
     subject, method, independent = lab("T086"), lab("T087"), lab("T088")
     _labels(subject, "numerically_verified", {"numerically_verified": 3, "not_established": 1})
@@ -328,6 +337,7 @@ def test_verification_mutations(lab):
         assert shown == {field: value, "verification_status": "not_verified"}
 
 
+@pytest.mark.lab_task("T089", "T090")
 def test_admission_and_runtime_mutations(lab):
     admission, runtime = lab("T089"), lab("T090")
     _labels(admission, "numerically_verified", {"numerically_verified": 2, "not_established": 2})
@@ -363,6 +373,8 @@ def test_admission_and_runtime_mutations(lab):
     _retained_rows(lab, "T090")
 
 
+@pytest.mark.lab_task("T077", "T078", "T079", "T080", "T081", "T082", "T083", "T084", "T085", "T086", "T087", "T088",
+                      "T089", "T090")
 def test_next_steps_name_forward_work(lab):
     """Each next step names the task's own open question, never the next queue task (which has already run)."""
     for task_id in TASKS:
@@ -386,6 +398,8 @@ def _literal(path, name):
     return ast.literal_eval(node.value)
 
 
+@pytest.mark.lab_task("T077", "T078", "T079", "T080", "T081", "T082", "T083", "T084", "T085", "T086", "T087", "T088",
+                      "T089", "T090")
 def test_shared_deferred_questions_are_recorded_where_they_apply(lab):
     """Key custody and the telemetry stack are recorded as deferred questions in every report that depends on them."""
     key_tasks = {"T077", "T078"} | {f"T0{n}" for n in range(80, 91)}
@@ -399,7 +413,14 @@ def test_shared_deferred_questions_are_recorded_where_they_apply(lab):
             assert task_id in key_tasks
     for question in (common.KEY_CUSTODY_QUESTION, common.TELEMETRY_STACK_QUESTION):
         assert question.startswith("Deferred research question (")
-    # The telemetry question's statement about provisioning must match the scripts and pins it names.
+
+
+def test_telemetry_question_matches_the_provisioning_scripts():
+    """The telemetry question's statement about provisioning must match the scripts and pins it names.
+
+    It reads scripts/, which the clean room does not copy, so it is kept apart from the registered test above,
+    which must run where the JUnit record is written.
+    """
     from ciw.lab.runner import PACKAGE_ROOT, repository_path
     root = repository_path()
     if root is None or not (root / "scripts" / "check_lab.py").is_file():
@@ -412,6 +433,7 @@ def test_shared_deferred_questions_are_recorded_where_they_apply(lab):
     assert set(pins) & provisioned == {"ppda", "set"} and not {"stfe", "gsie", "cbsr"} & variables
 
 
+@pytest.mark.lab_task("T081")
 def test_t081_defers_cross_platform_reproduction_as_one_question(lab):
     report = lab("T081")
     assumptions = report["unresolved_assumptions"]

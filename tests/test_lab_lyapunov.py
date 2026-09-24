@@ -99,6 +99,7 @@ def _completed(report, primary):
 
 # Provider-free references ------------------------------------------------------
 
+@pytest.mark.lab_task("T101")
 def test_reference_witness_is_exactly_indefinite():
     exact = L._witness_exact()
     assert exact["exact_form_units"] == [[-4.0, 5.0], [5.0, -6.0]]
@@ -120,6 +121,7 @@ def test_exact_classification_and_resolution_formula():
     assert L.EPSILON_STAR == pytest.approx(10 * np.finfo(float).eps, rel=1e-14)
 
 
+@pytest.mark.lab_task("T101")
 def test_t101_threshold_is_analytic():
     _, meta = L._t101_family()
     normal = [m for m in meta if m["family"] == "F1" and m["normal"]]
@@ -134,11 +136,13 @@ def test_t101_threshold_is_analytic():
                    "the normal range"]["evidence_status"] == "numerically_verified"
 
 
+@pytest.mark.lab_task("T102")
 def test_eigvalsh_scaling_window():
     inside, _ = L._eigvalsh_window()
     assert inside and all(inside)
 
 
+@pytest.mark.lab_task("T102")
 def test_discrete_razor_edge_sits_at_the_threshold():
     rng = R.generator(4242)
     for side in (-1.0, 1.0):
@@ -149,6 +153,7 @@ def test_discrete_razor_edge_sits_at_the_threshold():
         assert R.resolution_bin(R.exact_form(A, P, "discrete"), R.resolution(A, P, "discrete")) in L.BAND
 
 
+@pytest.mark.lab_task("T103")
 def test_level_gate_prediction():
     rows = L.level_scan()
     missed, spurious = L._level_counts(rows, "documented_exceeded")
@@ -158,6 +163,7 @@ def test_level_gate_prediction():
     assert R.documented_level_exceeded(1.0, 0, 0.5) and not R.documented_level_exceeded(1.0, 0, 2.0)
 
 
+@pytest.mark.lab_task("T104")
 def test_edge_case_exact_classes():
     cases = {c["name"]: c for c in L.edge_cases()}
     assert all(c["exact_zero"] and c["exact_class"] == "negative_semidefinite"
@@ -171,6 +177,7 @@ def test_edge_case_exact_classes():
     assert L.expected_codes("negative_definite", "below -2 res") == {"CERTIFIED_WITH_MARGIN"}
 
 
+@pytest.mark.lab_task("T105")
 def test_conversion_scan():
     scan = L.conversion_scan(400)
     collision = scan["witnesses"].get("collision 0.001")
@@ -180,6 +187,7 @@ def test_conversion_scan():
     assert scan["formula_disagreements"]["0.001"] >= 1
 
 
+@pytest.mark.lab_task("T106")
 def test_documented_decision_order():
     predictions = L._path_cases(L.status_paths(), [])[1]
     assert [predictions[f"required_margin (margin 2)#{j}"] for j in range(6)] == (
@@ -191,6 +199,7 @@ def test_documented_decision_order():
     assert set(predictions.values()) == set(L.ROUNDING_FREE_CODES)
 
 
+@pytest.mark.lab_task("T108")
 def test_documented_rule_is_monotone():
     for member in L.near_threshold_family(108, 12):
         info = R.documented_code(member["A"], member["P"], member["x"])
@@ -204,6 +213,7 @@ def test_documented_rule_is_monotone():
     assert L.monotonicity_violations(regained)["passing_regained"] == 1
 
 
+@pytest.mark.lab_task("T106")
 def test_transition_graph():
     graph = L.transition_graph()
     statuses = {key: entry["status"] for key, entry in graph.items()}
@@ -233,6 +243,7 @@ def test_transition_graph():
     assert "x" in L.coverage_markdown(coverage) and "!" not in L.coverage_markdown(coverage).split("\n\n")[1]
 
 
+@pytest.mark.lab_task("T103")
 def test_representability_reference():
     assert R.representable(Fraction(0)) and R.representable(Fraction(1, 3))
     assert R.representable(Fraction(R.TINY)) and not R.representable(Fraction(R.TINY) / 3)
@@ -241,6 +252,7 @@ def test_representability_reference():
     assert R.representable(Fraction(9, 16) * Fraction(R.TINY))
 
 
+@pytest.mark.lab_task("T101", "T102", "T103", "T104", "T106", "T109")
 def test_checks_are_unconditional_and_observed_values_are_computed():
     """No check is added only after its outcome was observed, and none records a literal observed value.
 
@@ -270,6 +282,7 @@ def test_checks_are_unconditional_and_observed_values_are_computed():
     assert problems == []
 
 
+@pytest.mark.lab_task("T109")
 def test_numpy_misreads_exact_jordan_block():
     cases = [c for c in L.adversarial_cases() if c["group"] == "Jordan"]
     largest = max(cases, key=lambda c: c["A"].shape[0])
@@ -289,6 +302,8 @@ def test_bridge_refuses_unusable_interpreter():
     assert caught.value.code in ("PLSR_PYTHON_UNSUPPORTED", "PLSR_UNAVAILABLE")
 
 
+@pytest.mark.lab_task("T101", "T102", "T103", "T104", "T105", "T106", "T107", "T108", "T109", "T110", "T111", "T113",
+                      "T114")
 @pytest.mark.parametrize("task_id", PROVIDER_TASKS)
 def test_provider_tasks_are_partial_without_the_provider(task_id, tmp_path):
     report = _run(task_id, tmp_path)
@@ -301,6 +316,8 @@ def test_provider_tasks_are_partial_without_the_provider(task_id, tmp_path):
     assert report["recommended_next_task"] == L.NEXT_STEPS[task_id]
 
 
+@pytest.mark.lab_task("T101", "T102", "T103", "T104", "T105", "T106", "T107", "T108", "T109", "T110", "T111", "T112",
+                      "T113", "T114")
 def test_next_steps_name_forward_work(tmp_path):
     """Each next step is the task's own open question, never the next queue task, which has already run."""
     assert sorted(L.NEXT_STEPS) == [f"T1{n:02d}" for n in range(1, 15)]
@@ -324,6 +341,7 @@ def test_next_steps_name_forward_work(tmp_path):
     assert _run("T112", tmp_path)["recommended_next_task"] == L.NEXT_STEPS["T112"]
 
 
+@pytest.mark.lab_task("T101", "T102")
 @pytest.mark.parametrize("task_id", ["T101", "T102"])
 def test_t101_t102_defer_cross_platform_reproduction_as_one_question(task_id, tmp_path):
     assumptions = _run(task_id, tmp_path)["unresolved_assumptions"]
@@ -334,6 +352,7 @@ def test_t101_t102_defer_cross_platform_reproduction_as_one_question(task_id, tm
         assert fragment in L.PLATFORM_QUESTION, fragment
 
 
+@pytest.mark.lab_task("T106")
 def test_t106_offline_findings_without_the_provider(tmp_path):
     report = _run("T106", tmp_path)
     assert _label(report, "A CERTIFIED_WITH_MARGIN verdict (operationally_acceptable) authorizes actuation") \
@@ -342,6 +361,7 @@ def test_t106_offline_findings_without_the_provider(tmp_path):
         == "numerically_verified"
 
 
+@pytest.mark.lab_task("T112")
 def test_t112_iss_branch(tmp_path):
     report = _run("T112", tmp_path)
     assert report["state"] == "completed" and report["evidence_status"]["primary"] == "analytic"
@@ -364,6 +384,7 @@ def test_t112_iss_branch(tmp_path):
     assert report["physical_validation_status"]["status"] == "not_established"
 
 
+@pytest.mark.lab_task("T113")
 def test_adapter_keeps_metadata_outside():
     windows = X.adapter_windows()
     outcomes = {w["name"]: X.adapt(w["envelope"]) for w in windows}
@@ -395,6 +416,7 @@ def _exponential_label():
     return "independently_verified" if optional else "numerically_verified"
 
 
+@pytest.mark.lab_task("T114")
 def test_t114_servo_pilot_spec(tmp_path):
     report = _run("T114", tmp_path)
     # Without the provider the monitor scan runs only in the CIW transcription: partial, not completed.
@@ -428,6 +450,7 @@ def test_t114_servo_pilot_spec(tmp_path):
     assert spec["lyapunov_check_scope"]["runtime_codes"]["scan_evaluated_by"].startswith("CIW transcription")
 
 
+@pytest.mark.lab_task("T114")
 def test_level_set_extent_is_checked_independently():
     _, models = X.servo_models()
     P, _ = X.servo_certificate(models)
@@ -439,6 +462,7 @@ def test_level_set_extent_is_checked_independently():
     assert X.level_set_boundary_extent(P, 4.0 * level) > 1.0
 
 
+@pytest.mark.lab_task("T112", "T114")
 def test_research_tasks_without_optional_modules(tmp_path, monkeypatch):
     # The plain CI job has NumPy only: neither exponential check may depend on SciPy or mpmath. SymPy is
     # blocked too: an unimported SymPy would import the blocked mpmath when the runner records module versions.
@@ -478,6 +502,7 @@ def test_bridge_verifies_the_source_pin():
     assert identity["commit"] == "19ea6967060166ba09db6cd4563bd87bd6b3d196"
 
 
+@pytest.mark.lab_task("T101")
 @needs_provider
 def test_t101_resolution_floor(reports):
     report = reports["T101"]
@@ -499,6 +524,7 @@ def test_t101_resolution_floor(reports):
                and "formation_error_units" in f["value"])
 
 
+@pytest.mark.lab_task("T102")
 @needs_provider
 def test_t102_power_of_two_scaling(reports):
     report = reports["T102"]
@@ -517,6 +543,7 @@ def test_t102_power_of_two_scaling(reports):
     assert set(outside["value"]) == {"evaluations", "unsound"}
 
 
+@pytest.mark.lab_task("T103")
 @needs_provider
 def test_t103_overflow_underflow(reports):
     report = reports["T103"]
@@ -541,6 +568,7 @@ def test_t103_overflow_underflow(reports):
     assert conservative["value"]["representable_but_flagged"] == 2 and conservative["counterexample"]
 
 
+@pytest.mark.lab_task("T101", "T103")
 @needs_provider
 def test_t101_t103_retain_the_subnormal_witness_once(reports):
     """T101 keeps the subnormal-witness finding; T103 cites it and re-evaluates the witness for its artifact only."""
@@ -555,6 +583,7 @@ def test_t101_t103_retain_the_subnormal_witness_once(reports):
     assert not [m for m in reports["T103"]["failure_modes_checked"] if "witness" in m or "T101" in m]
 
 
+@pytest.mark.lab_task("T104")
 @needs_provider
 def test_t104_semidefinite_edges(reports):
     report = reports["T104"]
@@ -569,6 +598,7 @@ def test_t104_semidefinite_edges(reports):
     assert candidates["evidence_status"] == "numerically_verified"
 
 
+@pytest.mark.lab_task("T105")
 @needs_provider
 def test_t105_unit_scales(reports):
     report = reports["T105"]
@@ -592,6 +622,7 @@ def test_t105_unit_scales(reports):
     assert _label(report, "The declared stiffness box") == "not_established"
 
 
+@pytest.mark.lab_task("T106")
 @needs_provider
 def test_t106_status_coverage(reports):
     report = reports["T106"]
@@ -619,6 +650,7 @@ def test_t106_status_coverage(reports):
     assert _label(report, "A CERTIFIED_WITH_MARGIN verdict") == "not_established"
 
 
+@pytest.mark.lab_task("T107")
 @needs_provider
 def test_t107_inconclusive_band(reports):
     report = reports["T107"]
@@ -638,6 +670,7 @@ def test_t107_inconclusive_band(reports):
     assert set(_finding(report, "Share of exactly")["value"]) == {"inconclusive_share"}
 
 
+@pytest.mark.lab_task("T108")
 @needs_provider
 def test_t108_margin_monotonicity(reports):
     report = reports["T108"]
@@ -651,6 +684,7 @@ def test_t108_margin_monotonicity(reports):
     assert _label(report, "Monotonicity of the verdict") == "analytic"
 
 
+@pytest.mark.lab_task("T109")
 @needs_provider
 def test_t109_adversarial_eigenvalues(reports):
     report = reports["T109"]
@@ -680,6 +714,7 @@ def test_t109_adversarial_eigenvalues(reports):
     assert _label(report, "numpy.linalg.eigvals misplaces") == "numerically_verified"
 
 
+@pytest.mark.lab_task("T110")
 @needs_provider
 def test_t110_time_interpretation(reports):
     report = reports["T110"]
@@ -697,6 +732,7 @@ def test_t110_time_interpretation(reports):
     assert _finding(report, "A discrete plant refuses")["value"]["code"] == "raises ValueError"
 
 
+@pytest.mark.lab_task("T111")
 @needs_provider
 def test_t111_routes(reports):
     report = reports["T111"]
@@ -729,6 +765,7 @@ def test_t111_routes(reports):
     assert _label(report, "For n = 1 the PLSR verdict") == "numerically_verified"
 
 
+@pytest.mark.lab_task("T114")
 @needs_provider
 def test_t114_level_set_and_monitor(reports):
     report = reports["T114"]
@@ -744,6 +781,7 @@ def test_t114_level_set_and_monitor(reports):
     assert _label(report, "The declared level set {V <= c} lies inside") == "numerically_verified"
 
 
+@pytest.mark.lab_task("T113")
 @needs_provider
 def test_t113_residual_adapter(reports):
     report = reports["T113"]

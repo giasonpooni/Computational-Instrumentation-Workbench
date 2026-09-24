@@ -82,6 +82,7 @@ def test_reports_answer_every_question_and_never_claim_physical_validation(run):
             assert (directory / artifact["path"]).is_file()
 
 
+@pytest.mark.lab_task("T010")
 def test_t010_near_focus_and_post_focus_counterexamples(run):
     report = run[1]["T010"]
     equator = _labelled(report, "outer equator the separation at the conjugate point scales as eps^3")
@@ -129,6 +130,7 @@ def test_t010_near_focus_and_post_focus_counterexamples(run):
     assert all(f["evidence_status"] == "numerically_verified" for f in report["findings"])
 
 
+@pytest.mark.lab_task("T010", "T017")
 def test_t010_t017_name_the_separation_observable(run):
     """Error profiles depend on the observable, so each report names it (chord in T010; per family in T017)."""
     reports = run[1]
@@ -143,6 +145,7 @@ def test_t010_t017_name_the_separation_observable(run):
     assert "Great-circle or hyperbolic distance (closed form) or embedded chord" not in validity
 
 
+@pytest.mark.lab_task("T014")
 def test_t014_defers_cross_platform_reproduction_as_one_question(run):
     assumptions = run[1]["T014"]["unresolved_assumptions"]
     platform = [a for a in assumptions if "platform" in a]
@@ -152,16 +155,21 @@ def test_t014_defers_cross_platform_reproduction_as_one_question(run):
         assert fragment in platform[0], fragment
 
 
+@pytest.mark.lab_task("T010", "T011", "T012", "T013", "T014", "T015", "T016", "T017", "T018")
 def test_next_steps_name_forward_work(run):
     """Every completed task's next step is its own open question, never a queue task that has already run."""
     for task_id, report in run[1].items():
         text = report["recommended_next_task"]
         assert text.startswith("Deferred research question"), (task_id, text)
+        # Moving on to a research question presumes the task's own claims are established.
+        assert report["state"] == "completed", task_id
+        assert report["evidence_status"]["primary"] == "numerically_verified", task_id
     # T018 used to point back to T005 and T010 to T017/T008; neither names a queue task as its next step now.
     assert "T005" not in run[1]["T018"]["recommended_next_task"]
     assert "T017" not in run[1]["T010"]["recommended_next_task"]
 
 
+@pytest.mark.lab_task("T011")
 def test_t011_chart_invariance_and_fold_amplification(run):
     report = run[1]["T011"]
     converged = _labelled(report, "agree in every chart")
@@ -180,6 +188,7 @@ def test_t011_chart_invariance_and_fold_amplification(run):
     assert _labelled(report, "identity chart")["value"] == 0.0
 
 
+@pytest.mark.lab_task("T011")
 def test_chart_maps_have_exact_derivatives():
     charts = [core.PolynomialWarp((0.4, -0.2), 0.3), core.QuadraticShear((0.4, -0.2), 0.8),
               core.ExponentialStretch((0.4, -0.2), 0.6), core.NearFold((0.4, -0.2), 0.1, 0),
@@ -205,6 +214,7 @@ def test_chart_maps_have_exact_derivatives():
     assert Reparametrized(torus, chart).speed_squared(a0, ta) == pytest.approx(1.0, abs=1e-12)
 
 
+@pytest.mark.lab_task("T012")
 def test_t012_frame_invariance_and_refusal(run):
     report = run[1]["T012"]
     assert _labelled(report, "Ambient rotations")["value"] < 1e-11
@@ -236,6 +246,7 @@ def test_t012_frame_invariance_and_refusal(run):
     assert refusal["basis"]["checks"][0]["observed_refusal"] == "Frame change requires a proper rotation matrix"
 
 
+@pytest.mark.lab_task("T013")
 def test_t013_flat_limit(run):
     report = run[1]["T013"]
     # Both core classes return a literal K = 0: equal Jacobi columns are context, not a verified finding.
@@ -258,6 +269,7 @@ def test_t013_flat_limit(run):
     assert _labelled(report, "physical cylinder")["evidence_status"] == "not_established"
 
 
+@pytest.mark.lab_task("T014")
 def test_t014_reversal_and_truncation(run):
     report = run[1]["T014"]
     orders = _labelled(report, "Reversal error orders")
@@ -276,6 +288,7 @@ def test_t014_reversal_and_truncation(run):
     assert _labelled(report, "Adaptive restart")["value"] <= 10.0
 
 
+@pytest.mark.lab_task("T015")
 def test_t015_long_horizon_drift(run):
     report = run[1]["T015"]
     adaptive = _labelled(report, "energy error grows linearly with length")["value"]
@@ -307,6 +320,7 @@ def test_t015_long_horizon_drift(run):
     assert _labelled(report, "leaves the polar chart")["value"] < 320.0
 
 
+@pytest.mark.lab_task("T016")
 def test_t016_negative_curvature_is_not_stiffness(run):
     report = run[1]["T016"]
     assert _labelled(report, "grow like sinh(kL)/k")["value"]["max_adaptive_relative_error"] < 1e-8
@@ -339,8 +353,14 @@ def test_t016_negative_curvature_is_not_stiffness(run):
     assert saddle["value"]["local_exponents"][-1] == pytest.approx(math.sqrt(2.0), abs=0.01)
     assert all(b < a for a, b in zip(saddle["value"]["local_exponents"][2:], saddle["value"]["local_exponents"][3:]))
     assert saddle["counterexample"]["witness"]["log_j_head"] < 0.1 * saddle["counterexample"]["witness"]["sqrt_peak_times_L"]
+    # The instability finding and both counterexamples are numerically verified, like every finding of the task.
+    for record in (stiffness, implicit, saddle):
+        assert record["evidence_status"] == "numerically_verified", record["claim"]
+    assert all(f["evidence_status"] == "numerically_verified" for f in report["findings"])
+    assert report["evidence_status"]["primary"] == "numerically_verified"
 
 
+@pytest.mark.lab_task("T017")
 def test_t017_validity_domains(run):
     report = run[1]["T017"]
     generic_finding = _labelled(report, "shrinks to zero linearly at the conjugate point")
@@ -398,6 +418,7 @@ def test_validity_bound_and_step_search_helpers():
     assert gjl.resolved_from([1.0, 12.0, None, 20.0, 30.0, 40.0]) == 8 and gjl.resolved_from([1.0] * 6) is None
 
 
+@pytest.mark.lab_task("T018")
 def test_t018_resolvability_report(run):
     directory, reports = run
     report = reports["T018"]
@@ -441,6 +462,7 @@ def test_t018_resolvability_report(run):
     assert near["midpoint"]["truncation_resolved_from_steps"] == 4
 
 
+@pytest.mark.lab_task("T018")
 def test_optional_scipy_cross_check_agrees_with_adaptive_references(run):
     pytest.importorskip("scipy")
     rows = json.loads((run[0] / "artifacts" / "T018" / "resolvability.json").read_text(encoding="utf-8"))

@@ -82,6 +82,7 @@ def _common_report_checks(report):
     assert report["recommended_next_task"].startswith("Deferred research question")
 
 
+@pytest.mark.lab_task("T033", "T035", "T037")
 def test_next_steps_do_not_hand_work_to_tasks_that_did_not_deliver_it():
     """T042 defines mesh refusal states and T043 propagates vertex noise; neither owns T033's, T035's or T037's work."""
     from ciw.lab.surfaces_discrete_mesh_geometry import MESH_CODES, QUERY_CODES, TRACE_CODES
@@ -98,6 +99,7 @@ def test_next_steps_do_not_hand_work_to_tasks_that_did_not_deliver_it():
 
 
 # ------------------------------------------------------------------ T033
+@pytest.mark.lab_task("T033")
 def test_conformance_suite_accepts_every_surface():
     surfaces = conformance_surfaces()
     assert {"plane-polar", "gaussian-bump-shear", "rotated-torus"} <= set(surfaces)
@@ -111,6 +113,7 @@ def test_conformance_suite_accepts_every_surface():
         assert result["worst"]["gauss_equation"] <= THRESHOLDS["gauss_equation"]
 
 
+@pytest.mark.lab_task("T033")
 def test_conformance_suite_rejects_seeded_mutants():
     results = {key: conformance(surface, domain, 12, SEED) for key, (surface, domain) in mutant_surfaces().items()}
     assert not any(result["conforms"] for result in results.values())
@@ -139,12 +142,14 @@ class _NaNAtFirstPoint(Sphere):
         return math.nan if tuple(u) == self.first_sample else super().gaussian_curvature(u)
 
 
+@pytest.mark.lab_task("T033")
 def test_conformance_reports_nonfinite_residuals():
     result = conformance(_NaNAtFirstPoint(1.0), DOMAINS["sphere"], 12, SEED)
     assert result["failed"] == ["gauss_equation"] and result["nonfinite"] == ["gauss_equation"]
     assert result["worst"]["gauss_equation"] == "nonfinite" and not result["conforms"]
 
 
+@pytest.mark.lab_task("T033")
 def test_brioschi_recovers_supplied_curvature():
     surfaces = conformance_surfaces()
     for key in ("torus", "gaussian-bump", "hyperbolic-plane", "plane-polar"):
@@ -163,6 +168,7 @@ def test_brioschi_recovers_supplied_curvature():
     assert brioschi(np.diag([1.0, math.sin(t) ** 2]), dg, d2g) == pytest.approx(1.0, abs=1e-14)
 
 
+@pytest.mark.lab_task("T033")
 def test_t033_report(tmp_path):
     report = _run("T033", tmp_path)
     assert report["state"] == "completed"
@@ -182,6 +188,7 @@ def test_t033_report(tmp_path):
 
 
 # ------------------------------------------------------------------ T034
+@pytest.mark.lab_task("T034")
 def test_dual_numbers_match_closed_forms():
     cases = sd.dual_self_test()
     assert len(cases) == 8
@@ -189,6 +196,7 @@ def test_dual_numbers_match_closed_forms():
     assert cases["d/dx [x d/dy (x + y)]"]["dual"] == pytest.approx(1.0, abs=1e-15)
 
 
+@pytest.mark.lab_task("T034")
 def test_dual_derivatives_match_surface_interface():
     surfaces = conformance_surfaces()
     forms = formulas(surfaces)
@@ -202,6 +210,7 @@ def test_dual_derivatives_match_surface_interface():
             assert dual.intrinsic_curvature(u) == pytest.approx(surface.gaussian_curvature(u), rel=1e-11, abs=1e-12)
 
 
+@pytest.mark.lab_task("T034")
 def test_sympy_references_match_surface_interface():
     sp = pytest.importorskip("sympy")
     from ciw.lab.surfaces_discrete_ad import diffgeom_reference, symbolic_reference
@@ -224,6 +233,7 @@ def test_sympy_references_match_surface_interface():
     assert not sp.simplify(expression).atoms(sp.Float)
 
 
+@pytest.mark.lab_task("T034")
 def test_t034_report(tmp_path):
     pytest.importorskip("sympy")
     report = _run("T034", tmp_path)
@@ -266,6 +276,7 @@ class _NoSympy(Context):
         return False if requirement == "module:sympy" else super().available(requirement)
 
 
+@pytest.mark.lab_task("T034")
 def test_t034_degrades_without_sympy(tmp_path):
     report = _run("T034", tmp_path, _NoSympy)
     assert report["state"] == "partial"
@@ -278,6 +289,7 @@ def test_t034_degrades_without_sympy(tmp_path):
 
 
 # ------------------------------------------------------------------ T035
+@pytest.mark.lab_task("T035")
 def test_finite_difference_error_is_v_shaped():
     study = sd.fd_study(points=4)
     for key in sd.FD_SURFACES:
@@ -294,6 +306,7 @@ def test_finite_difference_error_is_v_shaped():
     assert max(study["surfaces"]["plane"]["median_error"]) == 0.0
 
 
+@pytest.mark.lab_task("T035")
 def test_t035_report(tmp_path):
     report = _run("T035", tmp_path)
     assert report["state"] == "completed"
@@ -309,6 +322,7 @@ def test_t035_report(tmp_path):
 
 
 # ------------------------------------------------------------------ T036
+@pytest.mark.lab_task("T036")
 def test_atlas_transitions_are_exact():
     study = sd.transition_study(count=48, dense=256)
     assert study["used"] > 20
@@ -344,6 +358,7 @@ def _great_circle_run(delta, steps=200):
     return atlas, start, tangent, u0, v0, integrate_atlas(atlas, "A", u0, v0, 2 * math.pi, steps)
 
 
+@pytest.mark.lab_task("T036")
 def test_atlas_geodesic_through_pole_matches_great_circle():
     for delta in (0.0, 1e-3):
         atlas, start, tangent, _, _, run = _great_circle_run(delta)
@@ -354,6 +369,7 @@ def test_atlas_geodesic_through_pole_matches_great_circle():
         assert run["min_active_det"] >= atlas.threshold
 
 
+@pytest.mark.lab_task("T036")
 def test_single_chart_near_pole_counterexample():
     atlas, start, tangent, u0, v0, run = _great_circle_run(1e-3)
     single, failure = sd._single(atlas.charts["A"], u0, v0, 2 * math.pi, 200)
@@ -369,6 +385,7 @@ def test_single_chart_near_pole_counterexample():
     assert failure is None and single_error > 10 * atlas_error
 
 
+@pytest.mark.lab_task("T036")
 def test_meridian_depends_on_the_step_grid():
     study = sd.meridian_study(step_counts=(355, 399, 400))
     rows = {row["steps"]: row for row in study["rows"]}
@@ -380,6 +397,7 @@ def test_meridian_depends_on_the_step_grid():
     assert rows[355]["failure"].startswith("FloatingPointError: rk4 produced a nonfinite state")
 
 
+@pytest.mark.lab_task("T036")
 def test_graph_atlas_transitions_and_apex_geodesics():
     bump = GaussianBump(0.5, 1.0)
     atlas = graph_atlas(bump)
@@ -395,6 +413,7 @@ def test_graph_atlas_transitions_and_apex_geodesics():
         "atlas_error"]
 
 
+@pytest.mark.lab_task("T036")
 def test_t036_report(tmp_path):
     report = _run("T036", tmp_path)
     assert report["state"] == "completed"
@@ -423,6 +442,7 @@ def test_t036_report(tmp_path):
 
 
 # ------------------------------------------------------------------ T037
+@pytest.mark.lab_task("T037")
 def test_singularity_scans_classify_every_case():
     results = {a.name: scan(a) for a in sd.approaches()}
     # Every declared approach is read as its true type except the removable cube-root chart blow-up (rule 4).
@@ -440,6 +460,7 @@ def test_singularity_scans_classify_every_case():
     assert results["plane-polar-origin"]["circumference_ratio"] == pytest.approx(1.0, abs=1e-9)
 
 
+@pytest.mark.lab_task("T037")
 def test_singularity_detection_limits():
     for name, (approach, truth) in sd.limit_approaches().items():
         observed = scan(approach)["classification"]
@@ -453,6 +474,7 @@ def test_singularity_detection_limits():
     assert cartesian["circumference_ratio"] == pytest.approx(0.8317, abs=1e-3)
 
 
+@pytest.mark.lab_task("T037")
 def test_singularity_refusal_codes():
     for cases in (sd.refusal_cases(), sd.propagated_refusal_cases()):
         assert {name: observed for name, (_, observed) in cases.items()} == \
@@ -476,6 +498,7 @@ def test_singularity_refusal_codes():
     assert require_regular(Torus(2.0, 1.0), np.array([0.1, 0.2]))["condition"] < 10
 
 
+@pytest.mark.lab_task("T037")
 def test_t037_report(tmp_path):
     report = _run("T037", tmp_path)
     assert report["state"] == "completed"

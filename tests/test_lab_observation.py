@@ -98,6 +98,7 @@ def test_every_section_task_is_registered_with_tests():
     assert "src/ciw/lab/observation_chord.py" in IMPLEMENTATIONS["T045"].changed_files
 
 
+@pytest.mark.lab_task("T045")
 def test_t045_modes_and_refusals(tmp_path):
     report = _run("T045", tmp_path)
     _completed(report, [NV, NV, NV, NV, NV, NE])
@@ -126,6 +127,7 @@ def test_t045_modes_and_refusals(tmp_path):
     assert "trust anchor" in step and "No hardware_measured observation exists" in step
 
 
+@pytest.mark.lab_task("T045")
 def test_reconstructed_distance_carries_the_t044_split(tmp_path):
     report = _run("T045", tmp_path)
     split = _find(report, "A model-derived surface distance carries separate geometry and sensor")
@@ -195,6 +197,7 @@ def _fields(record):
     return fields
 
 
+@pytest.mark.lab_task("T046")
 def test_t046_chord_expansion(tmp_path):
     report = _run("T046", tmp_path)
     _completed(report, [_derivation_label(), NV, NV, NV, NV, NE], primary=_derivation_primary())
@@ -244,6 +247,7 @@ def test_explicit_curve_route_detects_a_wrong_closed_form(monkeypatch):
     assert chord.sympy_explicit_curve_check(one_curve)["nonzero_residuals"] == 1
 
 
+@pytest.mark.lab_task("T046", "T047")
 def test_chord_derivation_degrades_without_sympy(tmp_path):
     ctx = _Without(tmp_path, {"module:sympy"})
     for task_id in ("T046", "T047"):
@@ -253,6 +257,7 @@ def test_chord_derivation_degrades_without_sympy(tmp_path):
         assert "independent_check" not in derivation["basis"] and "checks" not in derivation["basis"]
 
 
+@pytest.mark.lab_task("T047")
 def test_t047_cylinder_coefficient(tmp_path):
     report = _run("T047", tmp_path)
     _completed(report, [_derivation_label(), NV, NV, NV, NV, NE], primary=_derivation_primary())
@@ -273,6 +278,7 @@ def test_t047_cylinder_coefficient(tmp_path):
     assert flat["counterexample"] and flat["value"]["s_minus_c"] == pytest.approx(0.1 - 2 * math.sin(0.05), rel=1e-12)
 
 
+@pytest.mark.lab_task("T048")
 def test_t048_synthetic_camera(tmp_path):
     report = _run("T048", tmp_path)
     _completed(report, [NV, NV, NV, NV, NV, NE])
@@ -295,6 +301,7 @@ def test_t048_synthetic_camera(tmp_path):
     assert sensor["domain"] == "sensor_performance" and sensor["evidence_status"] == "not_established"
 
 
+@pytest.mark.lab_task("T049")
 def test_t049_calibration_perturbations(tmp_path):
     report = _run("T049", tmp_path)
     _completed(report, [NV, NV, NV, NV, NV, NE])
@@ -319,6 +326,7 @@ def test_t049_calibration_perturbations(tmp_path):
     assert _find(report, "The declared perturbation")["domain"] == "calibration"
 
 
+@pytest.mark.lab_task("T050")
 def test_t050_lens_distortion(tmp_path):
     report = _run("T050", tmp_path)
     _completed(report, [NV, NV, NV, NV, NV, NV, NE, NE])
@@ -340,6 +348,7 @@ def test_t050_lens_distortion(tmp_path):
     assert (2 / 3) / math.sqrt(3 * 0.5) > corner > (2 / 3) / math.sqrt(3 * 0.6)
 
 
+@pytest.mark.lab_task("T050")
 def test_t050_perspective_markers(tmp_path):
     from ciw.lab import observation_camera as cam
 
@@ -382,6 +391,7 @@ def test_shared_phase_rounding_covariance():
     assert abs(cam.shared_phase_rounding_covariance(0.0, 0.5)) < 1e-4
 
 
+@pytest.mark.lab_task("T051")
 def test_t051_quantization_noise(tmp_path):
     report = _run("T051", tmp_path)
     _completed(report, [NV, NV, NV, NV, NE])
@@ -399,6 +409,7 @@ def test_t051_quantization_noise(tmp_path):
     assert min(departures["0"]) < -0.3 and -0.05 < min(departures["0.25"]) < 0
 
 
+@pytest.mark.lab_task("T052")
 def test_t052_encoder_backlash(tmp_path):
     report = _run("T052", tmp_path)
     _completed(report, [NV, NV, NV, NV, NE])
@@ -413,6 +424,7 @@ def test_t052_encoder_backlash(tmp_path):
     assert _find(report, "Backlash error stays")["basis"]["checks"][1]["comparison"] == "signed_le"
 
 
+@pytest.mark.lab_task("T053")
 def test_t053_imu_drift(tmp_path):
     report = _run("T053", tmp_path)
     _completed(report, [NV, NV, NV, NV, NV, NE])
@@ -425,6 +437,7 @@ def test_t053_imu_drift(tmp_path):
         assert max(abs(z) for row in isotropy[name] for z in row) <= observation.Z999
 
 
+@pytest.mark.lab_task("T054")
 def test_t054_asynchronous_timestamps(tmp_path):
     report = _run("T054", tmp_path)
     _completed(report, [NV, NV, NV, NV, NE])
@@ -445,6 +458,7 @@ def test_t054_asynchronous_timestamps(tmp_path):
     assert codes == ["clock_mismatch", "none", "epoch_mismatch"]
 
 
+@pytest.mark.lab_task("T055")
 def test_t055_dropped_observations(tmp_path):
     report = _run("T055", tmp_path)
     _completed(report, [NV, NV, NV, NV, NV, NE])
@@ -470,6 +484,7 @@ def test_t055_dropped_observations(tmp_path):
     assert refused.value.code == "zero_filled_missing"
 
 
+@pytest.mark.lab_task("T056")
 def test_t056_stale_observations(tmp_path):
     report = _run("T056", tmp_path)
     _completed(report, [NV, NV, NV, NV, NE])
@@ -482,6 +497,7 @@ def test_t056_stale_observations(tmp_path):
     assert "acquisition_age(record" in constant["reference"] and constant["observed"] < 1e-12
 
 
+@pytest.mark.lab_task("T057")
 def test_t057_filter_and_smoother(tmp_path):
     report = _run("T057", tmp_path)
     scipy_label = IV if _scipy() else NV
@@ -496,6 +512,7 @@ def test_t057_filter_and_smoother(tmp_path):
     _completed(degraded, [NV, NV, NV, NV, NV, NV, NE])
 
 
+@pytest.mark.lab_task("T058")
 def test_t058_frame_and_clock_basis(tmp_path):
     report = _run("T058", tmp_path)
     _completed(report, [NV, NV, NV, NV, NV, NE])
@@ -511,6 +528,7 @@ def test_t058_frame_and_clock_basis(tmp_path):
                for assumption in report["unresolved_assumptions"])
 
 
+@pytest.mark.lab_task("T059")
 def test_t059_retained_without_admission(tmp_path):
     report = _run("T059", tmp_path)
     _completed(report, [NV, NV, NV, NV, NV, NV, NV, NE])
@@ -528,6 +546,7 @@ def test_t059_retained_without_admission(tmp_path):
     assert store.update(record, 1.0)["mean"] == [0.02125]
 
 
+@pytest.mark.lab_task("T059")
 def test_state_store_defaults_to_read_only(tmp_path):
     report = _run("T059", tmp_path)
     defaults = _find(report, "A state store defaults to read-only")
@@ -563,6 +582,7 @@ def test_state_store_defaults_to_read_only(tmp_path):
     assert writable.authority["state_admission"] == writable.authority["sensor_fusion"] == "synthetic_only"
 
 
+@pytest.mark.lab_task("T059")
 def test_variance_split_survives_retention_and_digesting(tmp_path):
     report = _run("T059", tmp_path)
     split = _find(report, "The geometry and sensor variance components")["value"]
@@ -579,6 +599,7 @@ def test_variance_split_survives_retention_and_digesting(tmp_path):
     assert "variance_components" not in observation.example_observation("tracker_measurement").record()
 
 
+@pytest.mark.lab_task("T059")
 def test_state_update_takes_the_declared_variance(tmp_path):
     report = _run("T059", tmp_path)
     split = _find(report, "The geometry and sensor variance components")
@@ -618,6 +639,7 @@ def test_state_update_takes_the_declared_variance(tmp_path):
     assert intake.declared_covariance(derived)[0, 0] == total
 
 
+@pytest.mark.lab_task("T058", "T059")
 def test_intake_import_failure_blocks_only_its_tasks(tmp_path):
     """An intake that cannot be imported blocks T058 and T059, not the other observation tasks."""
     script = textwrap.dedent("""
@@ -644,6 +666,7 @@ def test_intake_import_failure_blocks_only_its_tasks(tmp_path):
     assert all("sensor_fusion_intake" in outcome["reasons"][t] for t in ("T058", "T059"))
 
 
+@pytest.mark.lab_task("T059")
 def test_intake_refuses_unadmitted_records(tmp_path):
     report = _run("T059", tmp_path)
     fused = _find(report, "The fusion intake refuses a retained but unadmitted record")
@@ -670,6 +693,7 @@ def test_intake_refuses_unadmitted_records(tmp_path):
     assert route.trace()[0]["state_admission"] == "synthetic_only"
 
 
+@pytest.mark.lab_task("T058")
 def test_intake_maps_frames_and_clocks_or_refuses(tmp_path):
     report = _run("T058", tmp_path)
     mapped = _find(report, "A section-4 record reaches the fusion session only through declared")

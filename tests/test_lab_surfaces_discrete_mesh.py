@@ -72,6 +72,7 @@ def test_primary_labels(reports):
 
 
 # ---------------------------------------------------------------- T038
+@pytest.mark.lab_task("T038")
 def test_tracer_is_exact_on_developable_meshes():
     plane = S.plane_study(shears=(0.0, 1.5), size=4, length=0.2)
     assert all(r["statuses"] == ["completed"] * 4 for r in plane["rows"])
@@ -84,6 +85,7 @@ def test_tracer_is_exact_on_developable_meshes():
     assert traces["rows"][0]["max_unfold_minus_trace"] <= 1e-11
 
 
+@pytest.mark.lab_task("T038")
 def test_graph_distances_and_steiner_sandwich():
     nested = S.steiner_nested_study(level=1, ks=(0, 1, 3), starts=S.STARTS[:3])
     assert nested["max_increase_with_k"] <= 1e-12
@@ -104,6 +106,7 @@ def test_graph_distances_and_steiner_sandwich():
     assert S.edges_outside_faces(mesh, nodes, np.r_[rows, 0], np.r_[cols, far]) == 1
 
 
+@pytest.mark.lab_task("T038")
 def test_solver_task_report(reports):
     report = reports["T038"]
     # Partial: an exact two-point polyhedral geodesic (MMP/ICH) is not delivered, and the report says so.
@@ -124,6 +127,7 @@ def test_solver_task_report(reports):
     assert any(a["path"].endswith("sphere-traces.json") for a in report["generated_artifacts"])
 
 
+@pytest.mark.lab_task("T038")
 def test_dijkstra_check_falls_back_without_scipy(monkeypatch, tmp_path, reports):
     monkeypatch.setattr(S, "optional_version", lambda name: None)
     result = S.dijkstra_independent(level=1)
@@ -136,6 +140,7 @@ def test_dijkstra_check_falls_back_without_scipy(monkeypatch, tmp_path, reports)
 
 
 # ---------------------------------------------------------------- T039
+@pytest.mark.lab_task("T039")
 def test_convergence_orders_on_small_levels():
     traces = S.sphere_trace_study(levels=(2, 3, 4), starts=S.STARTS[:3])
     order = S.fitted_order([r["h"] for r in traces["rows"]], [r["mean_length_defect"] for r in traces["rows"]])
@@ -154,6 +159,7 @@ def test_convergence_orders_on_small_levels():
     assert heat[2] < heat[1] < heat[0]
 
 
+@pytest.mark.lab_task("T039")
 def test_convergence_task_report(reports):
     report = reports["T039"]
     _completed_with_unestablished_physics(report)
@@ -172,6 +178,7 @@ def test_convergence_task_report(reports):
 
 
 # ---------------------------------------------------------------- T040
+@pytest.mark.lab_task("T040")
 def test_flat_jacobi_counterexample_and_valence_limit():
     study = S.jacobi_study(levels=(2, 3), deltas=(0.1, 1e-5), starts=S.STARTS[:2])
     tiny = [r for r in study["rows"] if r["delta"] == 1e-5]
@@ -198,6 +205,7 @@ def test_icosahedral_mirror_classes():
     assert edge.sum() == 12 + 30 * 3  # three interior subdivision points on each of the 30 base edges
 
 
+@pytest.mark.lab_task("T040")
 def test_jacobi_task_report(reports):
     report = reports["T040"]
     _completed_with_unestablished_physics(report)
@@ -217,6 +225,7 @@ def test_jacobi_task_report(reports):
 
 
 # ---------------------------------------------------------------- T041
+@pytest.mark.lab_task("T041")
 def test_schwarz_lantern_counterexample():
     study = S.lantern_study(ns=(4, 8, 16), folded_n=4)
     for row in study["rows"]:
@@ -232,6 +241,7 @@ def test_schwarz_lantern_counterexample():
     assert study["folded"]["min_normal_radial"] > 0  # refused as folded with no face pointing inward
 
 
+@pytest.mark.lab_task("T041")
 def test_rank_correlation_matches_average_ranks():
     assert M._average_ranks([3.0, 1.0, 3.0, 2.0]).tolist() == [3.5, 1.0, 3.5, 2.0]
     assert M.spearman([1, 2, 3, 4], [10, 20, 30, 40]) == pytest.approx(1.0)
@@ -242,6 +252,7 @@ def test_rank_correlation_matches_average_ranks():
     assert M.spearman(x, y) == pytest.approx(float(stats.spearmanr(x, y).statistic), abs=1e-12)
 
 
+@pytest.mark.lab_task("T041")
 def test_quality_task_report(reports):
     report = reports["T041"]
     _completed_with_unestablished_physics(report)
@@ -284,6 +295,7 @@ def test_rank_finding_without_scipy(monkeypatch, tmp_path):
     assert report["evidence_status"]["primary"] == "numerically_verified"
 
 
+@pytest.mark.lab_task("T041", "T042")
 def test_fold_check_misses_small_bend_inversions():
     amplitude, offset = S.INVERTED_JITTER
     mesh = S._jitter_unvalidated(G.icosphere(3), amplitude, S.SEED + offset)
@@ -313,6 +325,7 @@ def test_uv_sphere_names_include_twist():
 
 
 # ---------------------------------------------------------------- T042
+@pytest.mark.lab_task("T042")
 def test_every_defect_has_a_named_refusal():
     study = S.refusal_study()
     assert all(c["observed"] == c["expected"] for c in study["cases"]), study["cases"]
@@ -333,6 +346,7 @@ def test_every_defect_has_a_named_refusal():
     assert refused.value.code == "mesh_too_large"
 
 
+@pytest.mark.lab_task("T042")
 def test_refusal_task_report(reports):
     report = reports["T042"]
     _completed_with_unestablished_physics(report)
@@ -350,6 +364,7 @@ def test_refusal_task_report(reports):
 
 
 # ---------------------------------------------------------------- T043
+@pytest.mark.lab_task("T043")
 def test_linearization_matches_monte_carlo_and_breaks():
     study = S.uncertainty_study(level=3, sigmas=(1e-3, 1e-2), samples=2000)
     assert study["strip"]["start_index"] == S.MARKER_START
@@ -364,6 +379,7 @@ def test_linearization_matches_monte_carlo_and_breaks():
             assert abs(values[0]["ratio"] - 1) <= 0.12 and values[1]["ratio"] >= 1.25
 
 
+@pytest.mark.lab_task("T043")
 def test_corridor_threshold_depends_on_the_strip():
     study = S.corridor_study(sigmas=(1e-3, 1e-2), samples=1000)
     fractions = {r["start_index"]: r["left_fraction"] for r in study["rows"]}
@@ -378,6 +394,7 @@ def test_corridor_threshold_depends_on_the_strip():
     assert declared - fractions[best][1] > 4 * math.sqrt(0.5 / 1000)  # well beyond binomial noise
 
 
+@pytest.mark.lab_task("T043")
 def test_per_vertex_uncertainty_matches_monte_carlo():
     mesh = G.icosphere(2)
     n, sigma = len(mesh.vertices), 1e-4
@@ -417,6 +434,7 @@ def test_per_vertex_uncertainty_matches_monte_carlo():
     assert refused.value.code == "folded_face"
 
 
+@pytest.mark.lab_task("T043")
 def test_uncertainty_task_report(reports):
     report = reports["T043"]
     _completed_with_unestablished_physics(report)
@@ -446,6 +464,7 @@ def test_uncertainty_task_report(reports):
     assert legend["sha256"]
 
 
+@pytest.mark.lab_task("T043")
 def test_t043_reconciles_the_two_declared_strip_estimates(reports):
     """Two seeded studies estimate the declared strip's leave fraction; the report checks their agreement."""
     report = reports["T043"]
@@ -470,6 +489,7 @@ def test_t043_reconciles_the_two_declared_strip_estimates(reports):
     assert M.agreement_text(apart).startswith("the two independent estimates differ beyond")
 
 
+@pytest.mark.lab_task("T043")
 def test_t043_says_when_the_two_declared_strip_estimates_differ(reports, mesh_ctx, tmp_path):
     """When the corridor study disagrees with the propagation study, the report text does not claim agreement."""
     ctx = runner.Context(tmp_path)
@@ -495,6 +515,7 @@ def test_t043_says_when_the_two_declared_strip_estimates_differ(reports, mesh_ct
     assert f"largest z {check['observed']:.2f} against 1.96" in text
 
 
+@pytest.mark.lab_task("T038", "T039", "T040", "T041", "T042", "T043", "T044")
 def test_next_steps_name_forward_work(reports):
     """A completed task's next step is its own open question, never a queue task that already ran."""
     for task_id, report in reports.items():
@@ -520,6 +541,7 @@ def test_next_steps_name_forward_work(reports):
     assert "scan-export" not in runner.CAPTURE_INSTRUMENTS
 
 
+@pytest.mark.lab_task("T044")
 def test_t044_next_step_names_what_t045_leaves_open(reports, tmp_path):
     """T045 carries the split T044 asked for; T044's next step names only the mesh form, which T045 leaves open."""
     pytest.importorskip("ciw.lab.observation")
@@ -539,6 +561,7 @@ def test_t044_next_step_names_what_t045_leaves_open(reports, tmp_path):
 
 
 # ---------------------------------------------------------------- T044
+@pytest.mark.lab_task("T044")
 def test_law_of_total_variance_split():
     study = S.variance_split_study(geometry_sigmas=(1e-3,), sensor_sigmas=(5e-4,), outer=300, inner=8, fresh=4000,
                                    repeats=(1, 64))
@@ -556,6 +579,7 @@ def test_law_of_total_variance_split():
     assert normal["geometry_variance_mc"] == pytest.approx(normal["geometry_variance_linear"], rel=0.1)
 
 
+@pytest.mark.lab_task("T044")
 def test_variance_split_task_report(reports):
     report = reports["T044"]
     _completed_with_unestablished_physics(report)
