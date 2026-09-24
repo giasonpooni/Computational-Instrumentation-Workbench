@@ -1,5 +1,6 @@
 """Covariance argument parsing and refusal exit codes at the terminal boundary."""
 import json
+from pathlib import Path
 
 import pytest
 
@@ -37,7 +38,7 @@ def test_covariance_interpreter_aliases_bind_the_same_option(tmp_path, monkeypat
     assert code == 0
     (action, _, kwargs), = calls
     assert action == "execute" and kwargs["parameters"] == {"map": "declared"}
-    assert str(kwargs["python_executable"]) == "/trusted/python" and kwargs["jspt_repo"] == tmp_path
+    assert kwargs["python_executable"] == Path("/trusted/python") and kwargs["jspt_repo"] == tmp_path
 
 
 def test_non_object_covariance_parameters_exit_two_before_execution(tmp_path, monkeypatch, capsys):
