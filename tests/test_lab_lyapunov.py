@@ -312,8 +312,9 @@ def test_t114_servo_pilot_spec(tmp_path):
 
 
 def test_research_tasks_without_optional_modules(tmp_path, monkeypatch):
-    # The plain CI job has NumPy only: neither exponential check may depend on SciPy or mpmath.
-    for name in ("scipy", "scipy.linalg", "mpmath"):
+    # The plain CI job has NumPy only: neither exponential check may depend on SciPy or mpmath. SymPy is
+    # blocked too: an unimported SymPy would import the blocked mpmath when the runner records module versions.
+    for name in ("scipy", "scipy.linalg", "mpmath", "sympy"):
         monkeypatch.setitem(sys.modules, name, None)
     augmented = np.zeros((3, 3))
     _, models = X.servo_models()
@@ -492,6 +493,7 @@ def test_t109_adversarial_eigenvalues(reports):
     assert sound["value"]["violations"] == 0 and sound["evidence_status"] == "independently_verified"
     agreement = _finding(report, "PLSR Lyapunov solutions agree")
     assert agreement["evidence_status"] == "independently_verified"
+    assert "within 10 n^2 u cond(P)" in agreement["claim"]  # the claim states the bound the check applies
     assert agreement["value"]["max_normalised_difference"] <= 10.0
     assert agreement["value"]["max_relative_difference"] < 1e-12
     assert _finding(report, "Certified non-normal plants")["value"]["max_ratio"] <= 1.0
@@ -542,6 +544,8 @@ def test_t111_routes(reports):
     assert verdicts["evidence_status"] == "independently_verified"
     thin = _finding(report, "The scalar route sees decrease")
     assert thin["value"]["plsr_codes"] == {"DECREASE_NOT_DEFINITE": 64} and thin["counterexample"]
+    assert thin["value"]["exactly_indefinite"] is True and thin["evidence_status"] == "numerically_verified"
+    assert len(thin["basis"]["checks"]) == 4  # indefiniteness, scalar decrease, PLSR code, no certificate
     assert _label(report, "For n = 1 the PLSR verdict") == "numerically_verified"
 
 

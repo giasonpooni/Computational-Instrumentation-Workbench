@@ -1438,7 +1438,8 @@ def unit_scales(ctx):
                 tolerance=EXACT_TOL, uncertainty=_roundoff(0.0, "scalar IEEE products and quotients; identical on "
                                                                 "every conforming platform")),
     ]
-    witness_codes = {key: _code(results[key]) for key in (f"{n}|{l}" for n in witness_bounds for l in ("SI", "x1e-3"))}
+    witness_codes = {key: _code(results[key])
+                     for key in (f"{n}|{unit}" for n in witness_bounds for unit in ("SI", "x1e-3"))}
     for name in witness_bounds:
         si, converted = witness_codes[f"{name}|SI"], witness_codes[f"{name}|x1e-3"]
         collision = name.startswith("collision")
@@ -2001,9 +2002,14 @@ def margin_monotonicity(ctx):
                 {"provider": base, "checks": [_refusal(f"required_margin = {k}", "raises ValueError", v)
                                               for k, v in invalid.items()]}, tolerance=EXACT_TOL, uncertainty=EXACT),
     ] + offline
-    fields["numerical_result"] = (f"{evaluations} verdicts over {len(family)} cases: violations {totals}; threshold "
-                                  f"mismatches {threshold_mismatch}; invalid margins {invalid}. No counterexample "
-                                  "to monotonicity was found (a finite search, not a proof).")
+    violations = sum(totals.values())
+    fields["numerical_result"] = (
+        f"{evaluations} verdicts over {len(family)} cases: violations {totals}; threshold mismatches "
+        f"{threshold_mismatch}; invalid margins {invalid}."
+        + (" No counterexample to monotonicity was found (a finite search, not a proof)."
+           if violations == 0 and threshold_mismatch == 0 else
+           f" {violations} monotonicity violations and {threshold_mismatch} threshold mismatches refute the "
+           "property."))
     fields["uncertainty"] = "Exact comparisons on the runtime's own margins; no tolerance enters the property."
     return _finish(fields, findings, PROVIDER_FILES, identity)
 
@@ -2089,7 +2095,7 @@ def adversarial_eigenvalues(ctx):
         "PLSR solve_lyapunov outcome and verdicts with P = I, with the independent P and with PLSR's own P; "
         "numpy eigenvalues; exact rational checks of every certifying verdict and of every candidate P.",
         "No certifying verdict without an exactly valid certificate; PLSR and independent P agree to within "
-        "n^2 u cond(P); certified transients respect sqrt(cond P); every solver refusal comes from a documented "
+        "10 n^2 u cond(P); certified transients respect sqrt(cond P); every solver refusal comes from a documented "
         "gate.",
         "Phase 1: PLSR solves and verdicts with P = I and the independent P; phase 2: verdicts with PLSR's P. "
         "CIW checks certificates exactly, computes transient peaks in closed form and compares numpy's spectral "
@@ -2235,8 +2241,8 @@ def adversarial_eigenvalues(ctx):
                 tolerance={"abs": 2.0, "rel": 0.0},
                 uncertainty=_platform(0.0, "the violation count is exact; the number of certifying verdicts may move "
                                            "by one or two near the resolution")),
-        finding("PLSR Lyapunov solutions agree with an independent solver to within n^2 u cond(P) on every solved "
-                "adversarial case", "numerical",
+        finding("PLSR Lyapunov solutions agree with an independent solver to within 10 n^2 u cond(P) on every "
+                "solved adversarial case", "numerical",
                 {"cases": len(agreement), "max_relative_difference": max_relative,
                  "max_normalised_difference": max_normalised},
                 {"provider": base, "independent_check": _independent(
@@ -2597,6 +2603,10 @@ def quadratic_routes(ctx):
     thin_codes = _counts(_code(first["results"][f"thin{j}"]) for j in range(len(samples)))
     thin_form = R.exact_form(thin_A, np.eye(2))
     thin_scalar_negative = sum(R.exact_quadratic(x, thin_form) < 0 for x in samples)
+    # Exactly indefinite: the form and its negation each have a positive eigenvalue.
+    thin_class = R.exact_class(thin_form)
+    thin_indefinite = (thin_class == "has_positive_eigenvalue"
+                       and R.exact_class(R.negate(thin_form)) == "has_positive_eigenvalue")
     scalar_codes = {f"{a:g}": _code(first["results"][f"scalar{k}"]) for k, a in enumerate(T111_SCALARS)}
     scalar_mismatch = sum((code == "CERTIFIED_WITH_MARGIN") != (a < 0.0)
                           for a, code in zip(T111_SCALARS, scalar_codes.values())
@@ -2636,10 +2646,15 @@ def quadratic_routes(ctx):
                 tolerance=EXACT_TOL, uncertainty=_roundoff(0.0, "stability margins of at least 0.05")),
         finding("The scalar route sees decrease at every sampled state of an indefinite form that PLSR reports "
                 "DECREASE_NOT_DEFINITE", "numerical",
-                {"samples": len(samples), "scalar_negative": int(thin_scalar_negative), "plsr_codes": thin_codes},
+                {"samples": len(samples), "scalar_negative": int(thin_scalar_negative), "plsr_codes": thin_codes,
+                 "exact_class": thin_class, "exactly_indefinite": thin_indefinite},
                 {"provider": base, "checks": [
+                    _check("1 if the exact decrease form diag(-1, 1e-6) is not indefinite, else 0",
+                           0.0 if thin_indefinite else 1.0, 0.0, kind="exact_arithmetic"),
                     _check("samples with positive scalar decrease", len(samples) - thin_scalar_negative, 0.0,
                            kind="exact_arithmetic"),
+                    _check("samples PLSR did not report DECREASE_NOT_DEFINITE",
+                           len(samples) - thin_codes.get("DECREASE_NOT_DEFINITE", 0), 0.0, kind="invariant"),
                     _check("samples PLSR certified", sum(v for k, v in thin_codes.items() if k in R.CERTIFYING), 0.0,
                            kind="invariant")]},
                 tolerance=EXACT_TOL,
@@ -2667,7 +2682,8 @@ def quadratic_routes(ctx):
         + ("the matrix routes agree with each other on margin-separated plants" if routes_agree else
            "the matrix routes disagree on some margin-separated plants")
         + ("; sampled scalar decrease cannot stand in for them." if thin_scalar_negative == len(samples)
-           and "DECREASE_NOT_DEFINITE" in thin_codes else "; the thin-cone probe did not separate the routes."))
+           and thin_indefinite and thin_codes.get("DECREASE_NOT_DEFINITE", 0) == len(samples)
+           else "; the thin-cone probe did not separate the routes."))
     fields["uncertainty"] = ("Solver differences are at rounding level; route agreement holds only with the stated "
                              "stability margins. The subnormal scalar entries are reported, not asserted.")
     return _finish(fields, findings, PROVIDER_FILES, identity)
@@ -2713,7 +2729,8 @@ def iss_branch(ctx):
          "Disturbances: constant w_bar; worst-case switching w_bar sign(B^T P x); resonant sinusoid at 2 rad/s; "
          "random levels held for 0.2 s (PCG64 seed 112)", "Scalar x' = -x + w, w = w_bar",
          "Exact ZOH simulation, h = 0.005 s, 30 s from x(0) = 0; reachable-set integral by the trapezoid rule on "
-         "the exact sampled impulse response (h and h/2, 60 s, 4001 directions)"],
+         "the exact sampled impulse response (h and h/2, 60 s, 361-direction grid refined by 60 golden-section "
+         "steps)"],
         "sup_t sqrt(V(x(t))) and sup_t |x(t)| of the synthetic simulations against the analytic bound and the "
         "sharp reachable-set supremum.",
         "Every simulated sup sqrt(V) is at most the sharp supremum, which is at most the ISS bound; the "
