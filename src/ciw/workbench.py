@@ -23,8 +23,13 @@ from .pipelines import load as _load_descriptors
 _METHODS = {kind: value["verification"]["method"] for kind, value in _load_descriptors().items()}
 DECLARED_KINDS = frozenset(kind for kind, method in _METHODS.items() if method != "pinned_set_replay_verification")
 REPRODUCED_KINDS = frozenset(kind for kind in DECLARED_KINDS if _METHODS[kind] != "fresh_registered_guest_verification")
-UPSTREAM_KINDS = {"identified-design": "calibrated-observable", "schematic-companions": "schematic-assessment",
-                  "acquired-calibrated-window": "acquired-dataset", "identified-stability": "identified-design"}
+# One selected upstream kind per kind that binds exactly one; kinds that
+# select an ordered set of upstream bundles bind them in their workflow.
+_INPUTS = {kind: value["inputs"] for kind, value in _load_descriptors().items()}
+UPSTREAM_KINDS = {kind: inputs["upstream_kinds"][0] for kind, inputs in _INPUTS.items()
+                  if inputs["upstream_cardinality"] == "one"}
+ORDERED_UPSTREAM_KINDS = frozenset(kind for kind, inputs in _INPUTS.items()
+                                   if inputs["upstream_cardinality"] == "ordered_many")
 INSTRUMENT_ROLES = frozenset({"ppda", "tbrt", "mcur", "stfe", "gsie", "cbsr", "fdir", "oit", "sra", "scr", "cse", "rci", "fsrt", "jspt", "gte", "plsr", "ftr", "csg", "cggt", "isgt", "tsde", "energy", "exchange", "thermal", "machine"})
 
 SCHEMA = "ciw.retained-workbench.v1"
@@ -186,7 +191,7 @@ def _summary(record):
     if record["kind"] == "proved-heat":
         summary["cryptographic_verification"] = "not_performed_by_inspection"
         summary["verification_trust_scope"] = verification["trust_scope"]
-    if record["kind"] == "residual-monitor":
+    if record["kind"] in ORDERED_UPSTREAM_KINDS:
         summary["upstream_bundle_ids"] = _workflow(record["kind"]).requested_upstream_ids(
             base64.b64decode(native["source"]["evidence"][0]["bytes_b64"], validate=True))
     return summary
@@ -559,7 +564,7 @@ class Workbench:
                      "source_kind": kind, "available": kind in self._bindings,
                      **_surface(kind),
                      "requires_upstream_bundle": kind in UPSTREAM_KINDS,
-                     **({"requires_upstream_bundles": "explicit_ordered_source_selection"} if kind == "residual-monitor" else {})}
+                     **({"requires_upstream_bundles": "explicit_ordered_source_selection"} if kind in ORDERED_UPSTREAM_KINDS else {})}
                     for kind, operation in OPERATIONS.items()] + [
                         {"operation_id": operation, "role": "candidate_evidence", "requires_bundle": "explicit_retained_native_bundle",
                          "available": any(action == "inspect" or adapter.capture_available for adapter in self._candidate_adapters.values()),
@@ -830,7 +835,7 @@ class Workbench:
             expected = self._upstream_ids(bundle)
         elif subject is not None:
             raise ValueError("A refused execution has no subject bundle")
-        elif kind == "residual-monitor":
+        elif kind in ORDERED_UPSTREAM_KINDS:
             expected = _workflow(kind).requested_upstream_ids(base64.b64decode(source["bytes_b64"], validate=True))
         elif kind in UPSTREAM_KINDS:
             if len(upstream) != 1 or self._bundles[upstream[0]]["kind"] != UPSTREAM_KINDS[kind]:
@@ -886,7 +891,7 @@ class Workbench:
                     raise ValueError("Select a retained upstream bundle of the declared kind")
                 upstream = deepcopy(self._bundles[upstream_id]["native"])
             upstream_ids = [upstream_id] if upstream_id is not None else []
-            if kind == "residual-monitor":
+            if kind in ORDERED_UPSTREAM_KINDS:
                 raw = base64.b64decode(source["bytes_b64"], validate=True)
                 requested = _workflow(kind).requested_upstream_ids(raw)
                 if any(identity not in self._bundles for identity in requested):
@@ -1080,7 +1085,7 @@ class Workbench:
 
     def _upstream_ids(self, record):
         ids = [record["upstream_bundle_id"]] if record["upstream_bundle_id"] is not None else []
-        if record["kind"] == "residual-monitor":
+        if record["kind"] in ORDERED_UPSTREAM_KINDS:
             ids += _workflow(record["kind"]).requested_upstream_ids(
                 base64.b64decode(record["native"]["source"]["evidence"][0]["bytes_b64"], validate=True))
         return ids

@@ -400,7 +400,7 @@ def _check_runner(kind: str, runner: str, workflow) -> None:
 def check(descriptors: dict | None = None) -> dict:
     """Bind descriptors to code: kinds, operation ids, roles, pins, upstreams, guides, investigations."""
     from .. import kernel
-    from ..workbench import OPERATIONS, UPSTREAM_KINDS
+    from ..workbench import OPERATIONS
     descriptors = load() if descriptors is None else descriptors
     investigations = load_investigations()
     expected = kernel.FROZEN_KINDS
@@ -416,9 +416,16 @@ def check(descriptors: dict | None = None) -> dict:
         workflow_roles = set(getattr(flow, "ROLES", ()))
         if roles != workflow_roles:
             raise ValueError(f"{kind}: descriptor roles {sorted(roles)} differ from bound roles {sorted(workflow_roles)}")
-        upstream = [UPSTREAM_KINDS[kind]] if kind in UPSTREAM_KINDS else []
-        if kind != "residual-monitor" and value["inputs"]["upstream_kinds"] != upstream:
-            raise ValueError(f"{kind}: descriptor upstream differs from the registered upstream")
+        cardinality, upstream = value["inputs"]["upstream_cardinality"], value["inputs"]["upstream_kinds"]
+        if ((cardinality == "one" and len(upstream) != 1) or
+                any(item not in descriptors or item == kind for item in upstream)):
+            raise ValueError(f"{kind}: descriptor upstream must name {cardinality} other frozen kind(s)")
+        if (cardinality == "one") != callable(getattr(flow, "validate_upstream", None)):
+            raise ValueError(f"{kind}: a single upstream is bound by exactly the workflow's validate_upstream")
+        if any((cardinality == "ordered_many") != callable(getattr(flow, hook, None))
+               for hook in ("validate_upstreams", "requested_upstream_ids")):
+            raise ValueError(f"{kind}: ordered upstreams are selected and bound by exactly the workflow's "
+                             "requested_upstream_ids and validate_upstreams")
         import_module(value["implementation"]["module"])
         _check_runner(kind, value["implementation"]["runner"], flow)
         if not callable(resolve_symbol(value["implementation"]["view"]["symbol"])):
