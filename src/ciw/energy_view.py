@@ -12,7 +12,7 @@ def project(record, source, declaration, revision):
                   "result_id": step["result_id"], "execution_id": step["execution_id"]}
     basis = {"origin": data["origin"], "hardware_provenance": data["hardware_provenance"],
              "measurement_scope": data["measurement_scope"], "measurement_run_id": declaration["run_id"],
-             "log_digest": data["log_digest"], "replay_scope": "fresh_analysis_of_same_retained_measurement"}
+             "log_digest": data["log_digest"], "replay_scope": bundle["verification"]["method"]}
     phases = data["phases"]
     energy = [phase for phase in phases if phase["gross_energy_j"] is not None]
     measurement = data["measurement"]
