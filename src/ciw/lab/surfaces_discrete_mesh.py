@@ -193,16 +193,21 @@ def mesh_geodesic_solver(ctx):
                 "scipy.sparse.csgraph when installed)", "numerical", dijkstra_value, dijkstra_basis,
                 unit="normalized length", uncertainty=_u("roundoff", dijkstra_value, "summation-order rounding"),
                 tolerance={"abs": 1e-12, "rel": 0.0}),
-        finding("Nested Steiner-graph distances never increase with k and never fall below the chord", "numerical",
-                {"max_increase_with_k": nested["max_increase_with_k"], "max_chord_excess": nested["max_chord_excess"],
+        finding("Nested Steiner-graph distances never increase with k, and every Steiner-graph edge lies inside one "
+                "mesh face", "numerical",
+                {"max_increase_with_k": nested["max_increase_with_k"],
+                 "edges_outside_faces": nested["edges_outside_faces"], "edges_checked": nested["edges_checked"],
                  "vertex0_to_last": nested["vertex0_to_last"]},
                 {"derivation": "With k = 2^j - 1 the node sets are nested and every face keeps all node pairs, so each "
-                               "coarser graph edge is an edge of the finer graph; every graph path is a surface path, "
-                               "which is at least as long as the chord",
+                               "coarser graph edge is an edge of the finer graph; a segment between two points of one "
+                               "planar convex face lies in that face, so every graph path is a surface path and graph "
+                               "distances bound the (uncomputed) polyhedral distance from above",
                  "checks": [check("max over vertices of distance(k') - distance(k) for nested k' > k",
                                   nested["max_increase_with_k"], 1e-12, "signed_le", kind="invariant"),
-                            check("max over vertices of chord - graph distance", nested["max_chord_excess"], 1e-12,
-                                  "signed_le", kind="invariant")]},
+                            check("graph edges (k = 0, 1, 3, 7, with traced endpoints) whose end nodes share no face, "
+                                  "by a point-in-face test (plane offset and barycentric coordinates within 1e-12) "
+                                  "independent of the graph construction", nested["edges_outside_faces"], 0.0, "le",
+                                  kind="exact_arithmetic")]},
                 uncertainty=roundoff, tolerance=TIGHT),
         finding("Steiner distances between traced endpoints stay above the traced length and approach it as k grows",
                 "numerical", {"min_gap": nested["min_gap"], "mean_gap_by_k": {str(k): v for k, v in mean_gap.items()}},
@@ -220,10 +225,16 @@ def mesh_geodesic_solver(ctx):
               f"{development:.1e}; unfolded strip length equals traced length to {unfold:.1e} over {completed} "
               f"sphere traces (statuses {statuses}); edge Dijkstra agrees with its reference shortest-path "
               f"implementations to {dijkstra_value:.1e}; Steiner distances to traced endpoints exceed the traced "
-              f"length by mean " + ", ".join(f"{mean_gap[k]:.2e} (k={k})" for k in ks) + ".")
-    return {"state": "completed", "findings": findings, "fields": fields(
+              f"length by mean " + ", ".join(f"{mean_gap[k]:.2e} (k={k})" for k in ks) + f"; "
+              f"{nested['edges_outside_faces']} of {nested['edges_checked']} Steiner-graph edges leave a face. "
+              "Delivered: an initial-value straightest-geodesic tracer and approximate edge-graph, Steiner and "
+              "heat-method distances. Not delivered: an exact two-point polyhedral distance (MMP, ICH or edge "
+              "flipping), so no polyhedral distance is computed to compare these with.")
+    # Partial: the task asks for a geodesic solver; the exact two-point (shortest-path) solver was not implemented.
+    return {"state": "partial", "findings": findings, "fields": fields(
         "Unfolding across edges (straight in faces, equal angles at edges) yields exact straightest geodesics on "
-        "developable meshes, and graph distances bound polyhedral distances from above.",
+        "developable meshes, and Steiner-graph paths are surface paths (every graph edge lies in one face), so their "
+        "lengths are upper bounds on the polyhedral distance; the polyhedral distance itself is not computed here.",
         "Straightest geodesic: in each face a straight segment; at an edge the direction keeps its edge component and "
         "the magnitude of its perpendicular component (rotation about the edge). Distances: Dijkstra on the edge "
         "graph and on the graph of k Steiner points per edge (all pairs inside each face); vertex hits are refused.",
@@ -231,10 +242,12 @@ def mesh_geodesic_solver(ctx):
          "sheared planar 8x8 grids (shear 0-1.5)", "six declared sphere geodesics (chart point, heading)"],
         "No physical observation; traced endpoints, lengths and graph distances in normalized units.",
         "Planar and prism meshes are intrinsically flat, so traces must equal straight lines of the development; "
-        "Steiner distances with nested point sets are nonincreasing in k and bounded below by chords.",
+        "Steiner distances with nested point sets are nonincreasing in k, and every graph edge joins two points of "
+        "one face.",
         "Trace declared geodesics; compare with exact developments; re-derive lengths by a second ciw implementation "
         "(strip layout from edge lengths); compare Dijkstra with a dense Floyd-Warshall and, when installed, "
-        "scipy.sparse.csgraph; sandwich traced lengths by Steiner distances.",
+        "scipy.sparse.csgraph; test every Steiner-graph edge for a common face; sandwich traced lengths by Steiner "
+        "distances.",
         result,
         "Deterministic computation; floating-point rounding only (differences at 1e-15 relative). The strip layout "
         "and Floyd-Warshall are ciw code (same origin); only the scipy comparison is independent. The Steiner "
@@ -242,11 +255,15 @@ def mesh_geodesic_solver(ctx):
         ["vertex hits (refused, none occurred in the declared set)", "boundary reached", "tracing through a face "
          "without an exit edge", "strip unfolding sign conventions", "graph duplicates from shared face edges",
          "scipy absent (Floyd-Warshall only; the Dijkstra finding is then numerically_verified)"],
-        ["Vertex hits are refused rather than continued by the Polthier-Schmies angle-bisection rule.",
-         "The Steiner graph is an approximation scheme; no exact polyhedral (MMP/ICH) distance is implemented.",
+        ["Partial delivery: the solver is an initial-value tracer (straightest geodesics from a point and heading) "
+         "plus approximate distances. No exact two-point polyhedral geodesic (MMP, ICH or iterative edge flipping) "
+         "is implemented, so no shortest path between two given points is solved exactly and the graph and heat "
+         "distances are not compared with an exact polyhedral distance.",
+         "Vertex hits are refused rather than continued by the Polthier-Schmies angle-bisection rule.",
          "Traced geodesics are shortest paths only when no shorter corridor exists; not proved here."],
-        "T039: measure convergence of these traces and distances under refinement; then implement an exact "
-        "polyhedral distance (MMP or ICH) as an independent reference.")}
+        "Complete T038: implement an exact two-point polyhedral geodesic (MMP or ICH, or iterative edge flipping) and "
+        "compare it with the Steiner, heat-method and traced lengths; T039 measures convergence of the delivered "
+        "tracer and distances.")}
 
 
 # ---------------------------------------------------------------- T039
@@ -548,11 +565,6 @@ def mesh_jacobi_comparison(ctx):
                                 "witness": {"levels": seam["levels"],
                                             "base_edge_max_error": seam["base_edge_max_error"],
                                             "median_max_error": seam["median_max_error"]}}),
-        finding("Discrete Gauss-Bonnet holds: angle defects sum to 4 pi on icospheres and 0 on tori", "numerical", gb,
-                {"derivation": "Discrete Gauss-Bonnet: sum of angle defects = 2 pi chi for a closed mesh",
-                 "checks": [check("max |sum of defects - 2 pi chi|", gb, 1e-9, kind="invariant")]},
-                uncertainty=_u("roundoff", gb, "accumulated rounding of the angle sum"),
-                tolerance={"abs": 1e-9, "rel": 0.0}),
         finding("Angle-defect curvature on regular torus grids converges at second order to the sign-changing K",
                 "numerical", {"order": o_torus["fit"], "local_orders": o_torus["local"],
                               "max_error": [r["max_error"] for r in trows]},
@@ -573,7 +585,8 @@ def mesh_jacobi_comparison(ctx):
               f"Valence-6 max error on base-edge arcs " + ", ".join(f"{v:.2e}" for v in seam["base_edge_max_error"])
               + ", on face medians " + ", ".join(f"{v:.2e}" for v in seam["median_max_error"])
               + ", off the mirror planes " + ", ".join(f"{v:.2e}" for v in seam["off_mirror_max_error"])
-              + f" (levels 4-7); torus order {o_torus['fit']:.2f}; Gauss-Bonnet residual {gb:.1e}.")
+              + f" (levels 4-7); torus order {o_torus['fit']:.2f}. Implementation sanity check (not a finding: "
+              f"discrete Gauss-Bonnet holds for any closed mesh whose triangle angles sum to pi): residual {gb:.1e}.")
     return {"state": "completed", "findings": findings, "fields": fields(
         "Mesh Jacobi fields and angle-defect curvature approximate the smooth ones only in the right order of limits "
         "and at vertices whose stars become regular.",
@@ -595,7 +608,7 @@ def mesh_jacobi_comparison(ctx):
         "the two limits are asserted. The expected wedge vertex count is a heuristic for evenly spread vertices.",
         ["pairs straddling a vertex (jumps)", "identical face sequences (flat regime)", "valence-5 versus valence-6 "
          "vertices", "Voronoi versus barycentric area", "mirror-plane versus generic valence-6 vertices",
-         "Gauss-Bonnet exactness"],
+         "Gauss-Bonnet sum (implementation sanity check only; an identity for every closed mesh)"],
         ["The valence-6 plateau (about 2.6e-3) lives on the icosahedral mirror planes (base-edge arcs and base-face "
          "medians). The mixed Voronoi area converges on the same vertices, so their stars stay irregular (Voronoi "
          "cell different from A/3) under refinement; why is not derived (a kink of the recursive midpoint map across "
@@ -636,28 +649,41 @@ def _permutation_p(x, y, permutations=2000, seed=S.SEED + 70) -> float:
     return float((extreme + 1) / (permutations + 1))
 
 
-def _scipy_spearman(table, samples):
-    """Largest |ciw - scipy.stats.spearmanr| over the table on the same rounded inputs, or None without scipy."""
+def discordant_pairs(x, y) -> int:
+    """Pairs ordered oppositely by x and y (ties count as neither)."""
+    x, y = np.asarray(x, dtype=float), np.asarray(y, dtype=float)
+    i, j = np.triu_indices(len(x), 1)
+    return int(np.sum(np.sign(x[i] - x[j]) * np.sign(y[i] - y[j]) < 0))
+
+
+def _scipy_spearman(comparisons):
+    """Largest |ciw - scipy.stats.spearmanr| over (samples, metric, error, value), or None without scipy."""
     if S.optional_version("scipy") is None:
         return None
     from scipy.stats import spearmanr
     worst = 0.0
-    for metric, row in table.items():
-        for error, value in row.items():
-            x = [float(f"{r[metric]:.12g}") for r in samples]
-            y = [float(f"{r[error]:.12g}") for r in samples]
-            worst = max(worst, abs(float(spearmanr(x, y).statistic) - value))
+    for samples, metric, error, value in comparisons:
+        x = [float(f"{r[metric]:.12g}") for r in samples]
+        y = [float(f"{r[error]:.12g}") for r in samples]
+        worst = max(worst, abs(float(spearmanr(x, y).statistic) - value))
     return worst
+
+
+def _fold_code(issues):
+    """The dihedral fold code when present, else the first structural code (None when valid)."""
+    return "folded_face" if "folded_face" in issues else (issues[0] if issues else None)
 
 
 @task("T041", changed_files=FILES, regression_tests=(
     f"{TESTS}::test_schwarz_lantern_counterexample",
     f"{TESTS}::test_rank_correlation_matches_average_ranks",
+    f"{TESTS}::test_fold_check_misses_small_bend_inversions",
     f"{TESTS}::test_quality_task_report"))
 def mesh_quality_effects(ctx):
     quality = _memo(ctx, "quality", S.quality_study)
     lantern = _memo(ctx, "lantern", S.lantern_study)
     plane = _memo(ctx, "plane", S.plane_study)
+    folds = _memo(ctx, "fold-rates", S.fold_rate_study)
     jitter = quality["jitter"]
     valid = [r for r in jitter if not r["issues"]]
     amplitudes = sorted({r["amplitude"] for r in valid})
@@ -674,13 +700,22 @@ def mesh_quality_effects(ctx):
             spread = max(spread, 4.303 * float(np.std([r["curvature_rms"] for r in group], ddof=1)) / math.sqrt(3))
     rms_steps = [b["curvature_rms"] - a["curvature_rms"] for a, b in zip(averaged, averaged[1:])]
     angle_steps = [a["min_angle_deg"] - b["min_angle_deg"] for a, b in zip(averaged, averaged[1:])]
-    # Fold refusal is checked row by row against an independent geometric indicator (inward face normals).
-    large = [r for r in jitter if r["amplitude"] >= 0.2]
-    fold_checks = [refusal(f"validator on {r['mesh']} ({r['inverted_faces']} inverted faces)",
-                           "folded_face" if r["inverted_faces"] > 0 else "none",
-                           r["issues"][0] if r["issues"] else None) for r in jitter]
-    large_accepted = sum(not r["issues"] for r in large)
-    small_refused = sum(bool(r["issues"]) for r in jitter if r["amplitude"] < 0.2)
+    # Declared seeds: the dihedral fold check (no centre declared) against inverted faces, mesh by mesh.
+    fold_checks = [refusal(f"structural and dihedral checks on {r['mesh']} ({r['inverted_faces']} inverted faces)",
+                           "folded_face" if r["inverted_faces"] > 0 else "none", _fold_code(r["structural_issues"]))
+                   for r in jitter]
+    frows = {r["amplitude"]: r for r in folds["rows"]}
+    further = len(folds["seeds"])
+    inverted_accepted = sum(r["inverted_accepted"] for r in folds["rows"])
+    clean_refused = sum(r["clean_refused"] for r in folds["rows"])
+    fold_meshes = sum(r["meshes"] for r in folds["rows"])
+    at_02 = frows[0.2]
+    inverted_02 = at_02["inverted_refused"] + at_02["inverted_accepted"]
+    fold_witness = folds["witness"]
+    fold_generator = generator(f"{STUD}.fold_rate_study", level=folds["level"], amplitudes=list(frows),
+                               seeds=[folds["seeds"][0], folds["seeds"][-1]], per_amplitude=further)
+    fold_table = [{k: r[k] for k in ("amplitude", "meshes", "inverted_refused", "inverted_accepted", "clean_refused",
+                                     "clean_accepted")} for r in folds["rows"]]
     regular = next(r for r in jitter if r["amplitude"] == 0)
     better = [r for r in valid
               if r["geodesic_mean"] < regular["geodesic_mean"] and r["min_angle_deg"] < regular["min_angle_deg"]]
@@ -699,9 +734,16 @@ def mesh_quality_effects(ctx):
     metrics, errors = ("min_angle_deg", "max_radius_ratio"), ("curvature_rms", "voronoi_curvature_rms",
                                                               "curvature_max", "geodesic_mean", "area_error")
     table = {m: {e: spearman([r[m] for r in samples], [r[e] for r in samples]) for e in errors} for m in metrics}
-    p_values = {e: _permutation_p([r["max_radius_ratio"] for r in samples], [r[e] for r in samples])
-                for e in ("voronoi_curvature_rms", "geodesic_mean")}
-    scipy_gap = _scipy_spearman(table, samples)
+    ranked = ("voronoi_curvature_rms", "geodesic_mean")
+    p_values = {e: _permutation_p([r["max_radius_ratio"] for r in samples], [r[e] for r in samples]) for e in ranked}
+    families = {"latitude_longitude": uv, "jitter": valid}
+    within = {f: {e: spearman([r["max_radius_ratio"] for r in rs], [r[e] for r in rs]) for e in ranked}
+              for f, rs in families.items()}
+    discordant = {e: discordant_pairs([r["max_radius_ratio"] for r in samples], [r[e] for r in samples])
+                  for e in ranked}
+    scipy_gap = _scipy_spearman([(samples, m, e, v) for m, row in table.items() for e, v in row.items()]
+                                + [(families[f], "max_radius_ratio", e, v) for f, row in within.items()
+                                   for e, v in row.items()])
     lrows = lantern["rows"]
     last = lrows[-1]
     hausdorff_gap = max(abs(r["hausdorff_sampled"] - r["hausdorff_closed_form"]) for r in lrows)
@@ -713,8 +755,11 @@ def mesh_quality_effects(ctx):
     plane_error = max(r["max_trace_error"] for r in plane["rows"])
     graph_excess = [r["max_graph_excess"] for r in plane["rows"]]
     ctx.artifact_json("quality.json", jsonable({"quality": quality, "seed_averaged": averaged,
-                                                "spearman": table, "permutation_p_radius_ratio": p_values,
-                                                "scipy_max_abs_difference": scipy_gap, "plane": plane}))
+                                                "spearman": table, "spearman_within_family": within,
+                                                "discordant_pairs": discordant,
+                                                "permutation_p_radius_ratio": p_values,
+                                                "scipy_max_abs_difference": scipy_gap, "plane": plane,
+                                                "fold_rates": folds}))
     ctx.artifact_json("schwarz-lantern.json", jsonable(lantern))
     ctx.artifact_text("schwarz-lantern.svg", svg.line_plot([
         ("area / (2 pi R H)", [r["n"] for r in lrows], [r["area_ratio"] for r in lrows]),
@@ -741,22 +786,56 @@ def mesh_quality_effects(ctx):
                 uncertainty=_u("monte_carlo_95ci", spread, "largest t-interval half-width (2 dof) of a three-seed "
                                "mean curvature RMS"),
                 tolerance=TIGHT),
-        finding("Jittered meshes are refused as folded exactly when a face is inverted, which happens at every jitter "
-                "of 0.2 h or more", "numerical",
-                {"meshes": [r["mesh"] for r in large], "issues": [r["issues"][:1] for r in jitter],
-                 "curvature_rms": [r["curvature_rms"] for r in large],
-                 "inverted_faces": [r["inverted_faces"] for r in jitter]},
-                {"generator": generator(f"{STUD}.quality_study", level=3, jitter=amplitudes + [0.2, 0.3],
-                                        seed=S.SEED),
-                 "checks": fold_checks + [
-                     check("jittered meshes at 0.2 h or more that pass validation", large_accepted, 0.0, "le",
-                           kind="exact_arithmetic"),
-                     check("jittered meshes below 0.2 h that are refused", small_refused, 0.0, "le",
-                           kind="exact_arithmetic"),
-                     check("smallest unguarded curvature RMS among meshes jittered by 0.2 h or more",
-                           min((r["curvature_rms"] for r in large), default=0.0), 1.0, "ge",
-                           kind="self_convergence")]},
-                uncertainty=EXACT, tolerance=TIGHT),
+        finding("For the three declared seeds per amplitude, the dihedral fold check refuses exactly the jittered "
+                "meshes that have an inverted face", "numerical",
+                {"meshes": [r["mesh"] for r in jitter], "inverted_faces": [r["inverted_faces"] for r in jitter],
+                 "structural_issues": [r["structural_issues"][:1] for r in jitter]},
+                {"generator": generator(f"{STUD}.quality_study", level=3,
+                                        jitter=sorted({r["amplitude"] for r in jitter}), seeds=[1, 2, 3], seed=S.SEED),
+                 "checks": fold_checks},
+                uncertainty=EXACT, tolerance=EXACT_TOLERANCE),
+    ]
+    if fold_witness is None:
+        findings.append(_missing_witness(
+            f"Over {further} further seeds per amplitude the dihedral fold check accepts some jittered meshes with an "
+            "inverted face", "jittered meshes with an inverted face accepted by the dihedral fold check"))
+    else:
+        findings.append(finding(
+            f"Over {further} further seeds per amplitude the dihedral fold check accepts some jittered meshes with an "
+            "inverted face", "numerical", {"rates": fold_table, "witness": fold_witness},
+            {"generator": fold_generator,
+             "checks": [check("jittered meshes with an inverted face that pass the structural and dihedral checks",
+                              inverted_accepted, 1.0, "ge", kind="exact_arithmetic"),
+                        check("witness inverted face: unit normal . radial direction at its centroid",
+                              fold_witness["normal_radial"], 0.0, "signed_le", kind="exact_arithmetic"),
+                        check(f"witness mesh: smallest adjacent unit-normal dot minus the fold threshold "
+                              f"{S.G.FOLD_COSINE}", fold_witness["min_adjacent_normal_dot"] - S.G.FOLD_COSINE, 0.0,
+                              "signed_ge", kind="exact_arithmetic")]},
+            uncertainty=_binomial(at_02["inverted_accepted"] / at_02["meshes"], at_02["meshes"]), tolerance=TIGHT,
+            counterexample={"statement": "The dihedral fold check (folded_face) refuses every jittered icosphere "
+                                         "that has an inverted face",
+                            "witness": {k: fold_witness[k] for k in ("amplitude", "seed", "face", "normal_radial",
+                                                                     "corner_angles_deg", "neighbour_normal_dots")}}))
+    findings += [
+        finding(f"A tangential jitter of 0.2 h inverts a face for some but not all of {further} further seeds",
+                "numerical", {"inverted_fraction": {str(a): (r["inverted_refused"] + r["inverted_accepted"])
+                                                    / r["meshes"] for a, r in frows.items()}},
+                {"generator": fold_generator,
+                 "checks": [check("meshes jittered by 0.2 h without an inverted face", at_02["meshes"] - inverted_02,
+                                  1.0, "ge", kind="exact_arithmetic"),
+                            check("meshes jittered by 0.2 h with an inverted face", inverted_02, 1.0, "ge",
+                                  kind="exact_arithmetic")]},
+                uncertainty=_binomial(inverted_02 / at_02["meshes"], at_02["meshes"]), tolerance=TIGHT,
+                counterexample={"statement": "Tangential jitter of 0.2 h or more inverts a face of the level-3 "
+                                             "icosphere for every seed",
+                                "witness": {"amplitude": 0.2, "meshes": at_02["meshes"],
+                                            "without_inverted_face": at_02["meshes"] - inverted_02}}),
+        finding(f"Over {further} further seeds per amplitude the dihedral fold check refuses no jittered mesh "
+                "without an inverted face", "numerical", {"rates": fold_table},
+                {"generator": fold_generator,
+                 "checks": [check("jittered meshes without an inverted face refused by the structural and dihedral "
+                                  "checks", clean_refused, 0.0, "le", kind="exact_arithmetic")]},
+                uncertainty=_binomial(clean_refused / fold_meshes, fold_meshes), tolerance=EXACT_TOLERANCE),
     ]
     if witness is None:
         findings.append(_missing_witness("A mesh with a smaller minimum angle can have a smaller geodesic error",
@@ -830,25 +909,34 @@ def mesh_quality_effects(ctx):
             counterexample={"statement": "Within one mesh family better triangle quality (larger minimum angle, "
                                          "smaller radius ratio) implies smaller curvature error",
                             "witness": {"better_quality": good["mesh"], "worse_quality": poor["mesh"]}}))
+    uv_within = within["latitude_longitude"]
     rank_basis = {"generator": generator(f"{STUD}.quality_study", meshes=len(samples), seed=S.SEED),
-                  "checks": [check("Spearman rho of max radius ratio with Voronoi curvature RMS",
-                                   table["max_radius_ratio"]["voronoi_curvature_rms"], 0.6, "ge",
+                  "checks": [check("Spearman rho of max radius ratio with Voronoi curvature RMS (pooled meshes)",
+                                   table["max_radius_ratio"]["voronoi_curvature_rms"], 0.6, "signed_ge",
                                    kind="self_convergence"),
-                             check("Spearman rho of max radius ratio with geodesic error",
-                                   table["max_radius_ratio"]["geodesic_mean"], 0.6, "ge", kind="self_convergence"),
-                             check("largest one-sided permutation p-value (2000 seeded permutations)",
-                                   max(p_values.values()), 0.01, "le", kind="self_convergence")]}
+                             check("Spearman rho of max radius ratio with geodesic error (pooled meshes)",
+                                   table["max_radius_ratio"]["geodesic_mean"], 0.6, "signed_ge",
+                                   kind="self_convergence"),
+                             check("largest one-sided permutation p-value (2000 seeded permutations; assumes the "
+                                   "pooled meshes are exchangeable, although the jitter meshes are three noise fields "
+                                   "scaled to each amplitude)", max(p_values.values()), 0.01, "le",
+                                   kind="self_convergence"),
+                             check("largest Spearman rho of max radius ratio with either error within the "
+                                   "latitude-longitude family (1e-12 rounding allowance)",
+                                   max(uv_within.values()), 1e-12, "signed_le", kind="self_convergence")]}
     if scipy_gap is not None:
         rank_basis["independent_check"] = dict(
-            check("scipy.stats.spearmanr on the same rounded inputs, largest difference over the table", scipy_gap,
-                  1e-12, kind="exact_arithmetic"),
+            check("scipy.stats.spearmanr on the same rounded inputs, largest difference over the pooled table and "
+                  "the within-family coefficients", scipy_gap, 1e-12, kind="exact_arithmetic"),
             producer={"implementation": PRODUCER, "revision": "working tree"},
             checker={"implementation": "scipy.stats.spearmanr", "revision": S.optional_version("scipy")})
     findings.append(finding(
-        "Maximum radius ratio ranks the mixed-Voronoi curvature error and the geodesic error across the valid "
-        "642-vertex meshes", "numerical", {"spearman": table, "permutation_p": p_values, "meshes": len(samples)},
+        "Maximum radius ratio is positively rank-correlated with the mixed-Voronoi curvature error and the geodesic "
+        "error across the pooled valid 642-vertex meshes, but not within the latitude-longitude family", "numerical",
+        {"spearman": table, "spearman_within_family": within, "discordant_pairs": discordant,
+         "pairs": len(samples) * (len(samples) - 1) // 2, "permutation_p": p_values, "meshes": len(samples)},
         rank_basis, uncertainty=_u("reference_error", 1.06 / math.sqrt(len(samples) - 3),
-                                   "approximate standard error of a Spearman coefficient from n meshes"),
+                                   "approximate standard error of a Spearman coefficient from n exchangeable meshes"),
         tolerance=TIGHT))
     findings += [
         finding("Schwarz lantern meshes converge in Hausdorff distance but not in area", "numerical",
@@ -902,12 +990,18 @@ def mesh_quality_effects(ctx):
                                              "curvature",
                                 "witness": {"n": last["n"], "tilt_deg": last["max_normal_tilt_deg"],
                                             "total_abs_mean_curvature": last["total_abs_mean_curvature"]}}),
-        finding("A strongly pleated lantern (m = n^2) is refused as folded", "numerical", lantern["folded"],
+        finding("A strongly pleated lantern (m = n^2) is refused as folded although no face normal points towards "
+                "the axis", "numerical", lantern["folded"],
                 {"generator": generator(f"{GEOM}.cylinder_mesh", lantern=True, n=lantern["folded"]["n"],
                                         q=lantern["folded"]["q"]),
                  "checks": [refusal("validator on the m = n^2 lantern", "folded_face",
-                                    lantern["folded"]["issues"][0] if lantern["folded"]["issues"] else None)]},
-                uncertainty=EXACT, tolerance=EXACT_TOLERANCE),
+                                    lantern["folded"]["issues"][0] if lantern["folded"]["issues"] else None),
+                            check("smallest unit face normal . outward radial direction", lantern["folded"]
+                                  ["min_normal_radial"], 0.0, "signed_ge", kind="exact_arithmetic")]},
+                uncertainty=EXACT, tolerance=TIGHT,
+                counterexample={"statement": "The dihedral fold check refuses a mesh only when a face is inverted",
+                                "witness": {"q": lantern["folded"]["q"], "n": lantern["folded"]["n"],
+                                            "min_normal_radial": lantern["folded"]["min_normal_radial"]}}),
         finding("Straightest geodesics on planar meshes are exact at any tested triangle quality, while edge-graph "
                 "distance error changes with the edge directions",
                 "numerical", {"max_trace_error": plane_error, "max_graph_excess": graph_excess,
@@ -925,8 +1019,22 @@ def mesh_quality_effects(ctx):
     rr = table["max_radius_ratio"]
     parts = ["Jitter (seed-averaged, valid meshes): curvature RMS "
              + ", ".join(f"{a['curvature_rms']:.4f}@{a['amplitude']:g}" for a in averaged)
-             + f"; {len(refused)} of {len(large)} jittered meshes at 0.2 h or more are refused as folded, each with "
-             "inverted faces, and no mesh below 0.2 h is refused."]
+             + f"; for the declared seeds {len(refused)} of {len(jitter)} jittered meshes are refused, and the "
+             "dihedral fold refusals coincide with inverted faces mesh by mesh. Over "
+             f"{further} further seeds per amplitude (inverted and accepted by the dihedral check / inverted and "
+             "refused / no inverted face): "
+             + ", ".join(f"{r['inverted_accepted']}/{r['inverted_refused']}/{r['clean_refused'] + r['clean_accepted']}"
+                         f"@{r['amplitude']:g}" for r in folds["rows"])
+             + f"; {clean_refused} meshes without an inverted face are refused."]
+    if fold_witness is not None:
+        parts.append(f"Inversion missed by the dihedral check: seed {fold_witness['seed']} at "
+                     f"{fold_witness['amplitude']:g} h, face {fold_witness['face']} (normal . radial "
+                     f"{fold_witness['normal_radial']:.2f}, corner angles "
+                     + ", ".join(f"{a:.1f}" for a in fold_witness["corner_angles_deg"])
+                     + f" deg, smallest adjacent normal dot {fold_witness['min_adjacent_normal_dot']:.2f} > "
+                     f"{S.G.FOLD_COSINE:g}), unguarded curvature RMS "
+                     f"{fold_witness['unguarded_curvature_rms']:.2f}; with the sphere centre declared it is refused "
+                     "as inverted_face.")
     if witness is not None:
         parts.append(f"Min angle vs geodesic error counterexample: {regular['mesh']} ({regular['min_angle_deg']:.1f} "
                      f"deg, {regular['geodesic_mean']:.4f}) vs {witness['mesh']} ({witness['min_angle_deg']:.1f} deg, "
@@ -940,10 +1048,14 @@ def mesh_quality_effects(ctx):
                      f"{uv_pair[0]['min_angle_deg']:.1f} deg, radius ratio {uv_pair[0]['max_radius_ratio']:.2f}) has "
                      f"larger errors than {uv_pair[1]['mesh']} ({uv_pair[1]['min_angle_deg']:.1f} deg, "
                      f"{uv_pair[1]['max_radius_ratio']:.2f}).")
-    parts.append(f"Spearman over {len(samples)} valid meshes: radius ratio vs Voronoi RMS "
-                 f"{rr['voronoi_curvature_rms']:.3f}, vs geodesic error {rr['geodesic_mean']:.3f}, vs barycentric RMS "
-                 f"{rr['curvature_rms']:.3f}; min angle vs barycentric RMS "
-                 f"{table['min_angle_deg']['curvature_rms']:.3f}, vs Voronoi RMS "
+    parts.append(f"Spearman over {len(samples)} pooled valid meshes: radius ratio vs Voronoi RMS "
+                 f"{rr['voronoi_curvature_rms']:.3f}, vs geodesic error {rr['geodesic_mean']:.3f} (discordant pairs "
+                 f"{discordant['voronoi_curvature_rms']} and {discordant['geodesic_mean']} of "
+                 f"{len(samples) * (len(samples) - 1) // 2}), vs barycentric RMS {rr['curvature_rms']:.3f}; within the "
+                 f"latitude-longitude family {uv_within['voronoi_curvature_rms']:.3f} and "
+                 f"{uv_within['geodesic_mean']:.3f}, within the jitter family "
+                 f"{within['jitter']['voronoi_curvature_rms']:.3f} and {within['jitter']['geodesic_mean']:.3f}; min "
+                 f"angle vs barycentric RMS {table['min_angle_deg']['curvature_rms']:.3f}, vs Voronoi RMS "
                  f"{table['min_angle_deg']['voronoi_curvature_rms']:.3f}.")
     parts.append(f"Lantern (m={lantern['q']:g} n^2, n={last['n']}): Hausdorff {last['hausdorff_sampled']:.2e}, area "
                  f"ratio {last['area_ratio']:.4f} (limit {lantern['limit_area_ratio']:.4f}), traced height "
@@ -958,44 +1070,61 @@ def mesh_quality_effects(ctx):
         "Under isotropic tangential jitter of the icosphere at fixed vertex count, worse triangle quality comes with "
         "larger curvature error; within the latitude-longitude family and across families quality metrics do not "
         "order the errors pairwise (and the barycentric estimator's cross-family ranking reverses with the mixed "
-        "Voronoi area), although the maximum radius ratio ranks the Voronoi-area curvature and geodesic errors "
-        "over all tested meshes; Hausdorff convergence does not imply convergence of area, distances, normals or "
-        "mean curvature.",
+        "Voronoi area); the maximum radius ratio is positively rank-correlated with the Voronoi-area curvature and "
+        "geodesic errors over the pooled meshes, an association carried by the jitter family that vanishes within "
+        "the latitude-longitude family; the dihedral fold check is neither necessary nor sufficient for an inverted "
+        "face; Hausdorff convergence does not imply convergence of area, distances, normals or mean curvature.",
         "Quality: minimum angle and radius ratio R_circ / (2 r_in). Curvature: angle defect over the barycentric area "
         "A/3 or the mixed Voronoi area. Schwarz lantern with m = q n^2 bands: face height sqrt((H/m)^2 + R^2 (1 - "
         "cos(pi/n))^2), so area and developed height tend to sqrt(1 + (pi^2 q R / 2H)^2) times their cylinder values "
         "while d_H = R (1 - cos(pi/n)) -> 0.",
-        ["icosphere level 3 (642 vertices), tangential jitter 0-0.3 h, 3 seeds", "latitude-longitude spheres with 642 "
+        ["icosphere level 3 (642 vertices), tangential jitter 0-0.3 h, 3 seeds (the same three noise fields scaled "
+         "to each amplitude)", f"fold rates: jitter 0.1, 0.15, 0.2, 0.3 h with {further} further seeds each "
+         f"({folds['seeds'][0]}-{folds['seeds'][-1]})", "latitude-longitude spheres with 642 "
          "vertices (20x32, 10x64, 40x16, 20x32 twisted by 0.08 and 0.16 rad per ring)",
          "Schwarz lanterns q=0.25, n=4..64; q=1, n=8", "sheared planar grids"],
         "Curvature error against K = 1, geodesic endpoint error against great circles, area error; lantern area, "
         "developed height, Hausdorff distance, normal tilt and total absolute mean curvature.",
-        "Monotone trend within the jitter family; fold refusal exactly when a face normal points inward; lantern "
-        "closed forms for area, height, Hausdorff distance and tilt; angle defects of the lantern are exactly zero.",
-        "Measure quality metrics and errors for each mesh (both area choices); fold detection by the validator "
-        "against inverted faces; rank correlations with a permutation test; trace lantern geodesics from the bottom "
-        "boundary to the top boundary.",
+        "Monotone trend within the jitter family; lantern closed forms for area, height, Hausdorff distance and "
+        "tilt; angle defects of the lantern are exactly zero. No invariant links the dihedral fold check to inverted "
+        "faces: it bounds the bend between neighbours (over about 154 degrees), so an inverted sliver with smaller "
+        "bends passes and a crease without an inverted face (the q = 1 lantern) is refused; the rates are measured.",
+        "Measure quality metrics and errors for each mesh (both area choices); compare the dihedral fold check with "
+        "inverted faces (face normal towards the sphere centre) mesh by mesh for the declared seeds and as rates over "
+        "further seeds; rank correlations, pooled and within each family, with a permutation test; trace lantern "
+        "geodesics from the bottom boundary to the top boundary.",
         " ".join(parts),
         "Deterministic given the seeds; with three seeds per amplitude the monotone trend is a seed-average "
-        "(t-interval reported per finding) and a different seed set could reorder neighbouring amplitudes. Rank "
-        "correlations over 15 meshes have a standard error near 0.3.",
-        ["folded (inverted) faces from large jitter, checked against inward normals", "degenerate triangles",
+        "(t-interval reported per finding) and a different seed set could reorder neighbouring amplitudes; the three "
+        "seeds are the same noise fields scaled, so amplitudes are not independent samples. Fold rates are counts "
+        f"over {further} seeds per amplitude (binomial 95% half-widths per finding). Rank correlations over 15 "
+        "meshes have a standard error near 0.3, and the permutation p-value treats the pooled meshes as "
+        "exchangeable, which the replicated noise fields and the two families are not.",
+        ["inverted faces from large jitter against the dihedral fold check, per mesh and as rates",
+         "inverted faces missed by the dihedral check (recorded; refused as inverted_face when the centre is "
+         "declared)", "degenerate triangles",
          "vertex hits on skewed meshes (none)", "pole valence on latitude-longitude spheres",
          "lantern pleat folding (refused at q = 1)", "tied ranks in the Spearman statistic (average ranks)",
          "estimator dependence of quality rankings (barycentric versus Voronoi area)"],
         ["Quality metrics are summarised by the worst triangle; per-region error attribution is not attempted.",
          "Only tangential jitter is studied here; normal noise is the subject of T043.",
-         "The radius-ratio ranking is observed on 15 meshes from two families; it is not a general law."],
-        "T042: name the refusal states for invalid or incomplete surface data (including folded faces).")}
+         "The radius-ratio association is observed on 15 pooled meshes from two families and is carried by the "
+         "jitter family (within the latitude-longitude family it is not positive); it is not a general law.",
+         "Meshes that pass only the structural and dihedral checks may still contain inverted faces; the valid set "
+         "here is validated with the sphere centre declared."],
+        "T042: name the refusal states for invalid or incomplete surface data (including folded and inverted "
+        "faces).")}
 
 
 # ---------------------------------------------------------------- T042
 @task("T042", changed_files=FILES, regression_tests=(
     f"{TESTS}::test_every_defect_has_a_named_refusal",
+    f"{TESTS}::test_fold_check_misses_small_bend_inversions",
     f"{TESTS}::test_refusal_task_report"))
 def mesh_refusal_states(ctx):
     study = _memo(ctx, "refusals", S.refusal_study)
     cases = study["cases"]
+    undetected = study["undetected_inversion"]
     control_issues = sum(len(c["issues"]) for c in study["controls"])
     expected_multiple = ["nonfinite_vertex", "inconsistent_orientation", "unreferenced_vertex"]
     partial_gap = abs(study["boundary_partial_length"] - study["boundary_analytic_length"])
@@ -1037,6 +1166,18 @@ def mesh_refusal_states(ctx):
                 counterexample={"statement": "Curvature and normal formulas can be evaluated safely on unvalidated "
                                              "meshes",
                                 "witness": {"mesh": "square plus a collinear face", "defect": "zero-area face"}}),
+        finding("Without a declared centre the validator accepts a jittered icosphere with an inverted face",
+                "computational_pipeline", undetected,
+                {"generator": generator(f"{STUD}._jitter_unvalidated", level=3, jitter=undetected["amplitude"],
+                                        seed=undetected["seed"]),
+                 "checks": [check("issues reported by the structural and dihedral checks",
+                                  len(undetected["structural_issues"]), 0.0, "le", kind="exact_arithmetic"),
+                            check("faces whose normal points towards the sphere centre", undetected["inverted_faces"],
+                                  1.0, "ge", kind="exact_arithmetic")]},
+                uncertainty=EXACT, tolerance=EXACT_TOLERANCE,
+                counterexample={"statement": "Structural validation, including the dihedral fold check, refuses "
+                                            "every mesh with an inverted face",
+                                "witness": {"amplitude": undetected["amplitude"], "seed": undetected["seed"]}}),
         _physical("The refusal catalogue covers every defect present in real scanned surface data"),
     ]
     codes = sorted({c["expected"] for c in cases})
@@ -1044,11 +1185,16 @@ def mesh_refusal_states(ctx):
               f"expected code ({len(codes)} distinct codes); {control_issues} issues on {len(study['controls'])} valid "
               f"controls; multiple-defect report {study['multiple_defects']}; boundary partial length "
               f"{study['boundary_partial_length']:.15g} (analytic {study['boundary_analytic_length']:.15g}); unguarded "
-              f"zero-area evaluation gave {study['unguarded_nonfinite_curvatures']} nonfinite curvature values.")
+              f"zero-area evaluation gave {study['unguarded_nonfinite_curvatures']} nonfinite curvature values; the "
+              f"jittered icosphere (seed {undetected['seed']}, {undetected['amplitude']:g} h) with "
+              f"{undetected['inverted_faces']} inverted face passes the structural and dihedral checks and is refused "
+              "as inverted_face only when the sphere centre is declared.")
     return {"state": "completed", "findings": findings, "fields": fields(
         "Each declared defect class in the mesh, trace and query catalogues (MESH_CODES, TRACE_CODES, QUERY_CODES) is "
-        "detected before geometry is computed and reported under a stable name, and valid meshes pass; defects "
-        "outside the catalogue are not claimed.",
+        "detected before geometry is computed and reported under a stable name (inverted_face only for a mesh "
+        "declared star-shaped about a centre), and valid meshes pass; defects outside the catalogue, including "
+        "inverted faces of meshes without a declared centre whose bends stay below the fold threshold, are not "
+        "claimed.",
         "Validation order: " + ", ".join(S.G.MESH_CODES) + ". Tracing refusals: " + ", ".join(S.G.TRACE_CODES)
         + ". Query refusals: " + ", ".join(S.G.QUERY_CODES) + ".",
         [f"{c['case']} ({c['stage']})" for c in cases],
@@ -1058,14 +1204,20 @@ def mesh_refusal_states(ctx):
         "code.",
         result,
         "Exact (categorical); thresholds are declared: zero area at 2A/l_max^2 <= 1e-12, vertex hit at edge "
-        "parameter <= 1e-9, fold at adjacent normal dot <= -0.9.",
+        "parameter <= 1e-9, fold at adjacent normal dot <= -0.9, inverted face at det(p0 - c, p1 - c, p2 - c) <= 0 "
+        "for a declared centre c.",
         codes + ["unguarded evaluation on zero-area faces"],
         ["Thresholds are relative and unitless; scans with very different scales may need other thresholds.",
          "Not detected: self-intersections between non-adjacent faces; unwelded seams (coincident duplicate vertices "
          "pass validation and surface only as boundary_reached during tracing); duplicate faces; near-degenerate "
-         "slivers just above the 2A/l_max^2 = 1e-12 threshold.",
+         "slivers just above the 2A/l_max^2 = 1e-12 threshold; inverted faces whose bend to every neighbour stays "
+         "below about 154 degrees when no centre is declared (a jittered icosphere is recorded; T041 measures how "
+         "often this happens).",
+         "The declared-centre test assumes the surface is star-shaped about that centre; it would refuse valid "
+         "surfaces that are not (a torus about its own centre), so it is applied only on request.",
          "False-positive risk: a legitimate sharp crease with a dihedral bend over about 154 degrees is refused as "
-         "folded_face (the embedded m = n^2 lantern is refused although it does not overlap itself)."],
+         "folded_face (the embedded m = n^2 lantern is refused although it does not overlap itself and no face "
+         "points inward)."],
         "T043: propagate vertex noise to geodesic length, normals and curvature on validated meshes.")}
 
 
@@ -1073,12 +1225,14 @@ def mesh_refusal_states(ctx):
 @task("T043", changed_files=FILES, regression_tests=(
     f"{TESTS}::test_linearization_matches_monte_carlo_and_breaks",
     f"{TESTS}::test_corridor_threshold_depends_on_the_strip",
+    f"{TESTS}::test_per_vertex_uncertainty_matches_monte_carlo",
     f"{TESTS}::test_uncertainty_task_report"))
 def mesh_vertex_uncertainty(ctx):
     study = _memo(ctx, "uncertainty", S.uncertainty_study)
     corridors = _memo(ctx, "corridors", S.corridor_study)
     scaling = _memo(ctx, "scaling", S.scaling_study)
     refinement = _memo(ctx, "refinement-noise", S.refinement_noise_study)
+    field = _memo(ctx, "vertex-field", S.vertex_field_study)
     samples = study["samples"]
     items = {o["observable"]: o for o in study["observables"]}
     distance = items["marker geodesic distance"]
@@ -1100,6 +1254,19 @@ def mesh_vertex_uncertainty(ctx):
     declared = next(r for r in crow if r["start_index"] == study["strip"]["start_index"])
     others = [r for r in crow if r is not declared]
     worst = max(crow, key=lambda r: r["left_fraction"][at])
+    declared_small = max(f for sg, f in zip(corridors["sigmas"], declared["left_fraction"]) if sg <= 1e-3)
+    # Robustness at larger noise: z of (declared - other) left fraction, smallest over sigma >= 3e-3.
+    wide = [i for i, sg in enumerate(corridors["sigmas"]) if sg >= 3e-3]
+    n_corridor = corridors["samples"]
+
+    def _z_less(row):
+        z = []
+        for i in wide:
+            a, b = declared["left_fraction"][i], row["left_fraction"][i]
+            z.append((a - b) / math.sqrt(max(a * (1 - a) + b * (1 - b), 0.5 / n_corridor) / n_corridor))
+        return min(z)
+    narrower = [r for r in others if r["vertex_margin"] < declared["vertex_margin"]]
+    robust = max(narrower, key=_z_less) if narrower else None
     slopes = scaling["slopes"]
     local = scaling["local_slopes"]
     slope_k = [v for k, v in slopes.items() if k.startswith("angle-defect")]
@@ -1108,8 +1275,20 @@ def mesh_vertex_uncertainty(ctx):
     srows = scaling["rows"]
     marker_share = min(r["marker-face part"] / r["interior part"] for r in srows)
     rrows = refinement["rows"]
+    fmodels = {m["covariance"]: m for m in field["models"]}
+    far = field["far_vertex"]
+    # The per-vertex field at the two studied vertices against the two-vertex propagation (separate one-ring code).
+    sampled = [(fmodels["isotropic"]["curvature_sd"][0], items["angle-defect curvature at valence-5 vertex 0"]),
+               (fmodels["isotropic"]["normal_sd"][0], items["vertex normal at valence-5 vertex 0"]),
+               (fmodels["isotropic"]["curvature_sd"][far],
+                items["angle-defect curvature at valence-6 vertex far from valence 5"]),
+               (fmodels["isotropic"]["normal_sd"][far], items["vertex normal at valence-6 vertex far from valence 5"])]
+    field_gap = max(abs(sd / (field["sigma"] * o["gradient_norm"]) - 1) for sd, o in sampled)
+    field_summary = {name: {k: v for k, v in m.items() if not isinstance(v, np.ndarray)}
+                     for name, m in fmodels.items()}
     ctx.artifact_json("vertex-uncertainty.json", jsonable({"propagation": study, "corridors": corridors,
-                                                           "scaling": scaling, "refinement": refinement}))
+                                                           "scaling": scaling, "refinement": refinement,
+                                                           "per_vertex_field": field}))
     short = {"marker geodesic distance": "marker distance", "vertex normal at valence-5 vertex 0": "normal v5",
              "angle-defect curvature at valence-5 vertex 0": "K v5",
              "vertex normal at valence-6 vertex far from valence 5": "normal v6",
@@ -1143,14 +1322,14 @@ def mesh_vertex_uncertainty(ctx):
                 counterexample={"statement": "A fixed face corridor (fixed mesh combinatorics) represents the "
                                              "perturbed marker geodesic at every tested vertex-noise level",
                                 "witness": {"sigma": 1e-2, "left_fraction": corridor_large}}),
-        finding("The noise level at which a fixed face corridor fails depends on the strip, and the declared strip is "
-                "the most robust of the six", "numerical",
+        finding("The noise level at which a fixed face corridor fails depends on the strip, and the declared strip, "
+                "which has the largest vertex margin of the six, stays in its corridor for sigma <= 1e-3", "numerical",
                 {"sigmas": corridors["sigmas"], "strips": crow},
                 {"generator": generator(f"{STUD}.corridor_study", level=corridors["level"],
                                         samples=corridors["samples"], seed=S.SEED + 30),
                  "checks": [check("largest left fraction over the six strips at sigma = 1e-3",
                                   worst["left_fraction"][at], 0.1, "ge", kind="self_convergence"),
-                            check("declared strip's left fraction at sigma = 1e-3", declared["left_fraction"][at], 0.0,
+                            check("declared strip's largest left fraction for sigma <= 1e-3", declared_small, 0.0,
                                   "le", kind="self_convergence"),
                             check("declared strip margin minus the largest other margin",
                                   declared["vertex_margin"] - max(r["vertex_margin"] for r in others), 0.0,
@@ -1161,6 +1340,35 @@ def mesh_vertex_uncertainty(ctx):
                                 "witness": {"start_index": worst["start_index"], "sigma": 1e-3,
                                             "vertex_margin": worst["vertex_margin"],
                                             "left_fraction": worst["left_fraction"][at]}}),
+    ]
+    robust_claim = ("A strip with a smaller vertex margin than the declared strip leaves its face corridor less often "
+                    "at every tested sigma >= 3e-3")
+    if robust is None:
+        findings.append(_missing_witness(robust_claim, "strips with a smaller margin that leave their corridor less "
+                                                       "often than the declared strip"))
+    else:
+        findings.append(finding(
+            robust_claim, "numerical",
+            {"sigmas": corridors["sigmas"],
+             "declared": {k: declared[k] for k in ("start_index", "vertex_margin", "left_fraction")},
+             "more_robust": {k: robust[k] for k in ("start_index", "vertex_margin", "left_fraction")}},
+            {"generator": generator(f"{STUD}.corridor_study", level=corridors["level"], samples=n_corridor,
+                                    seed=S.SEED + 30),
+             "checks": [check("smallest z over sigma >= 3e-3 of (declared - witness strip) left fraction, binomial "
+                              "standard error of the difference", _z_less(robust), 3.0, "signed_ge",
+                              kind="self_convergence"),
+                        check("declared strip margin minus the witness strip margin",
+                              declared["vertex_margin"] - robust["vertex_margin"], 0.0, "signed_ge",
+                              kind="exact_arithmetic")]},
+            uncertainty=_binomial(declared["left_fraction"][wide[0]], n_corridor), tolerance=TIGHT,
+            counterexample={"statement": "The strip with the largest vertex margin leaves its fixed face corridor "
+                                         "least often at every tested noise level",
+                            "witness": {"declared_start_index": declared["start_index"],
+                                        "more_robust_start_index": robust["start_index"],
+                                        "sigmas": [corridors["sigmas"][i] for i in wide],
+                                        "declared_left_fraction": [declared["left_fraction"][i] for i in wide],
+                                        "witness_left_fraction": [robust["left_fraction"][i] for i in wide]}}))
+    findings += [
         finding("Linearized vertex-noise propagation matches Monte Carlo for vertex normals at every tested sigma, "
                 "with no normal sign flips", "numerical",
                 {"ratios": {o["observable"]: [r["ratio"] for r in o["rows"]] for o in normals},
@@ -1228,16 +1436,43 @@ def mesh_vertex_uncertainty(ctx):
                 uncertainty=_mc(refinement["samples"]), tolerance=TIGHT,
                 counterexample={"statement": "Refining the mesh reduces the error of angle-defect curvature",
                                 "witness": {"sigma": refinement["sigma"], "coarse": rrows[0], "fine": rrows[-1]}}),
+        finding("Linearized per-vertex standard deviations of vertex normals and angle-defect curvature match Monte "
+                "Carlo at every vertex of icosphere-3 under isotropic and normal-dominant vertex covariances",
+                "numerical", {"models": field_summary, "vertices": field["vertices"],
+                              "two_vertex_cross_check_max_rel": field_gap},
+                {"generator": generator(f"{STUD}.vertex_field_study", level=field["level"], samples=field["samples"],
+                                        seed=S.SEED + 60, sigma=field["sigma"], normal_sigma=field["normal_sigma"],
+                                        tangential_sigma=field["tangential_sigma"]),
+                 "checks": [check(f"max over vertices of |z| of MC / linear {quantity} ({name} covariance; "
+                                  "z = (ratio - 1) / sqrt(2 / (N - 1)), 5 bounds all vertices jointly)",
+                                  fmodels[name][f"max_abs_z_{quantity}"], 5.0, "le", kind="self_convergence")
+                            for name in fmodels for quantity in ("curvature", "normal")]
+                 + [check("per-vertex field (G.vertex_uncertainty) against the two-vertex propagation Jacobians at "
+                          "vertex 0 and the far valence-6 vertex, max relative difference", field_gap, 1e-6, "le",
+                          kind="cross_implementation")]},
+                uncertainty=_mc(field["samples"]), tolerance=TIGHT),
         _physical("Isotropic Gaussian vertex noise of the tested sigma describes the error of a real scanner",
                   "calibration"),
     ]
+    robust_text = (f"; strip {robust['start_index']} (margin {robust['vertex_margin']:.4f}) leaves less often than the "
+                   "declared strip at sigma >= 3e-3 ("
+                   + ", ".join(f"{robust['left_fraction'][i]:.3f} vs {declared['left_fraction'][i]:.3f}" for i in wide)
+                   + ")") if robust is not None else ""
+    iso, aniso = fmodels["isotropic"], fmodels["normal-dominant"]
     result = (f"Icosphere-{study['level']} (h={study['h']:.4f}), {samples} samples per sigma, declared strip "
               f"{study['strip']['start_index']} (largest margin of six): fixed-corridor distance variance ratio within "
               f"{distance_dev:.3f} of 1 (sigma<=1e-2), but the segment leaves the corridor in "
               + ", ".join(f"{float(v):.3f}@{k}" for k, v in invalid.items())
               + " of samples; over all six strips the left fraction at sigma=1e-3 ranges "
               f"{min(r['left_fraction'][at] for r in crow):.3f}-{worst['left_fraction'][at]:.3f} (smallest margin "
-              f"{worst['vertex_margin']:.4f}). Normal ratio within {normal_dev:.3f}, {flips} sign flips (min n.n0 "
+              f"{worst['vertex_margin']:.4f}){robust_text}. Per-vertex field over all {field['vertices']} vertices "
+              f"({field['samples']} samples): isotropic sigma={field['sigma']:g} gives curvature SD "
+              f"{iso['curvature_sd_range'][0]:.4f}-{iso['curvature_sd_range'][1]:.4f} and normal SD "
+              f"{iso['normal_sd_range'][0]:.2e}-{iso['normal_sd_range'][1]:.2e} rad, max |z| "
+              f"{iso['max_abs_z_curvature']:.2f} and {iso['max_abs_z_normal']:.2f}; normal-dominant (sigma_n="
+              f"{field['normal_sigma']:g}, sigma_t={field['tangential_sigma']:g}) max |z| "
+              f"{aniso['max_abs_z_curvature']:.2f} and {aniso['max_abs_z_normal']:.2f}; two-vertex cross-check "
+              f"{field_gap:.1e}. Normal ratio within {normal_dev:.3f}, {flips} sign flips (min n.n0 "
               f"{min_dot:.4f}); curvature ratio within {curvature_dev:.3f} for sigma<=1e-3 but >= {breakdown:.2f} at "
               f"sigma=1e-2 (sigma/h^2={1e-2 / h2:.2f}). Sensitivity slopes (declared geodesic {scaling['start_index']} "
               "at every level): " + ", ".join(f"{short.get(k, k)}: {v:.2f}" for k, v in slopes.items())
@@ -1246,21 +1481,30 @@ def mesh_vertex_uncertainty(ctx):
               + ", ".join(f"{r['total_rms_error']:.3f}@L{r['level']}" for r in rrows) + ".")
     return {"state": "completed", "findings": findings, "fields": fields(
         "Gaussian vertex noise propagates to geodesic length and normals nearly linearly, while angle-defect "
-        "curvature needs sigma << h^2 / R for linearization and becomes noisier as the mesh is refined; the "
-        "fixed-corridor distance stays meaningful only below a strip-dependent noise level.",
-        "Linearization Var[f] = sigma^2 |grad f|^2 with a central finite-difference Jacobian (step 1e-6) over the "
-        "vertices that affect f; seeded Monte Carlo with the same isotropic noise. Marker distance = planar distance "
-        "after unfolding a fixed face strip with barycentric markers.",
+        "curvature needs sigma << h^2 / R for linearization and becomes noisier as the mesh is refined; linearized "
+        "per-vertex normal and curvature standard deviations under a declared vertex covariance match Monte Carlo at "
+        "every vertex in the linear regime; the fixed-corridor distance stays meaningful only below a "
+        "strip-dependent noise level that the vertex margin alone does not order.",
+        "Linearization Var[f] = sigma^2 |grad f|^2 (or sum_j J_j C_j J_j^T for a declared per-vertex covariance C_j) "
+        "with a central finite-difference Jacobian (step 1e-6) over the vertices that affect f; seeded Monte Carlo "
+        "with the same noise. Marker distance = planar distance after unfolding a fixed face strip with barycentric "
+        "markers.",
         ["icosphere levels 2-5 (level 3 for Monte Carlo)", "sigma = 1e-4, 1e-3, 3e-3, 1e-2 (normalized units, R = 1)",
          f"markers on declared geodesic {S.MARKER_START} of six (length 1), chosen because it has the largest vertex "
-         "margin on icosphere-3, i.e. the best case for a fixed corridor; all six strips are reported for corridor "
-         "validity", "valence-5 vertex 0 and the valence-6 vertex farthest from valence-5 vertices"],
-        "Synthetic isotropic Gaussian displacement of every vertex; no scanner model beyond that.",
+         "margin on icosphere-3 (a larger margin does not make it the most robust strip at sigma >= 3e-3); all six "
+         "strips are reported for corridor validity",
+         "two-vertex study: valence-5 vertex 0 and the valence-6 vertex farthest from valence-5 vertices",
+         f"per-vertex field: all {field['vertices']} vertices, isotropic sigma = {field['sigma']:g} and "
+         f"normal-dominant covariance (sigma_n = {field['normal_sigma']:g}, sigma_t = {field['tangential_sigma']:g})"],
+        "Synthetic Gaussian displacement of every vertex (isotropic, or the declared normal-dominant covariance); no "
+        "scanner model beyond that.",
         "MC/linear variance ratio near 1 in the linear regime; ratio > 1 once second-order terms matter; exponents "
         "-2, -1, 0.",
         "For each observable and sigma: FD Jacobian, predicted variance, 4000 seeded samples, ratio, bias and normal "
-        "sign flips; corridor-leaving fractions for all six strips; gradient norms of one declared geodesic across "
-        "levels split into marker-face and interior parts; total error versus level at fixed sigma.",
+        "sign flips; corridor-leaving fractions for all six strips; per-vertex linearized normal and curvature "
+        "standard deviations (G.vertex_uncertainty) against whole-mesh Monte Carlo at every vertex; gradient norms of "
+        "one declared geodesic across levels split into marker-face and interior parts; total error versus level at "
+        "fixed sigma.",
         result,
         f"Monte Carlo relative 95% half-width of a variance with {samples} samples is about "
         f"{1.96 * math.sqrt(2 / (samples - 1)):.3f}; checks use 0.1. The fixed-strip distance is the geodesic "
@@ -1272,9 +1516,14 @@ def mesh_vertex_uncertainty(ctx):
          "Markers are attached barycentrically to faces, so tangential vertex noise drags them; this dominates the "
          "marker-distance gain (see T044).",
          "The corridor threshold depends on the strip: roughly where sigma reaches the smallest distance between the "
-         "unfolded segment and a strip vertex (edge margin times h), although strips with equal margins differ "
-         "because other near-vertex crossings matter. Past it the perturbed geodesic can switch corridors, its "
-         "distance is a minimum over corridors, and re-tracing per sample is not done."],
+         "unfolded segment and a strip vertex (edge margin times h), but the margin does not order the strips: "
+         "strips with equal margins differ, and a smaller-margin strip leaves less often than the declared strip at "
+         "sigma >= 3e-3, because other near-vertex crossings matter. Past it the perturbed geodesic can switch "
+         "corridors, its distance is a minimum over corridors, and re-tracing per sample is not done.",
+         "Normals are always derived from the noisy vertices; an input uncertainty model for independently measured "
+         "normals (for example scanner-reported normals) is not implemented and is deferred.",
+         "The per-vertex field is checked at sigma where linearization holds (sigma R / h^2 about 0.01); at larger "
+         "sigma the curvature SD is underestimated as in the two-vertex study."],
         "T044: separate geometry uncertainty from sensor noise for a marker-distance observation.")}
 
 
@@ -1284,6 +1533,9 @@ def mesh_vertex_uncertainty(ctx):
     f"{TESTS}::test_variance_split_task_report"))
 def geometry_versus_sensor_uncertainty(ctx):
     study = _memo(ctx, "variance-split", S.variance_split_study)
+    corridors = _memo(ctx, "corridors", S.corridor_study)
+    at = corridors["sigmas"].index(1e-3)
+    narrowest = min(corridors["rows"], key=lambda r: r["vertex_margin"])
     scenarios = study["scenarios"]
     outer, inner, fresh = study["outer"], study["inner"], study["fresh"]
     split = study["gain_split"]
@@ -1308,6 +1560,7 @@ def geometry_versus_sensor_uncertainty(ctx):
     z_normal_total = (normal_only["total_mc"] / normal_only["predicted_total"] - 1) / se
     tangential_fraction = split["tangential"] ** 2 / split["total"] ** 2
     marker_fraction = split["marker"] ** 2 / split["total"] ** 2
+    # Bookkeeping identities (hold for any data or gradient): kept as sanity values, not as evidence.
     pythagoras = abs(split["tangential"] ** 2 + split["normal"] ** 2 - split["total"] ** 2) / split["total"] ** 2
     ctx.artifact_json("variance-split.json", jsonable({**study, "z_fresh": z_fresh, "z_within": z_within,
                                                         "z_between": z_between, "z_averaging": z_avg,
@@ -1322,15 +1575,8 @@ def geometry_versus_sensor_uncertainty(ctx):
                "geometry_share": s["geometry_share"], "dominant": "geometry" if s["geometry_share"] > 0.5 else "sensor"}
               for s in scenarios]
     nested_share_gap = baseline["between_corrected"] / baseline["nested_total"] - baseline["geometry_share"]
-    strip_note = f"declared strip {study['strip_start_index']} (largest margin; best case, T043)"
+    strip_note = f"declared strip {study['strip_start_index']} (largest vertex margin, T043)"
     findings = [
-        finding("Nested Monte Carlo sums of squares decompose exactly into between and within parts", "numerical",
-                anova, {"generator": generator(f"{STUD}.variance_split_study", outer=outer, inner=inner,
-                                               seed=S.SEED + 100),
-                        "checks": [check("max relative ANOVA residual (SST - SSB - SSW) / SST", anova, 1e-10,
-                                         kind="invariant")]},
-                uncertainty=_u("roundoff", anova, "accumulated rounding of the sums of squares"),
-                tolerance={"abs": 1e-10, "rel": 0.0}),
         finding("Residual variance equals geometry variance plus sensor variance in every scenario", "numerical",
                 {"fresh_ratio": [s["fresh_ratio"] for s in scenarios], "z": z_fresh,
                  "corridor_left_fraction": corridor_left},
@@ -1373,8 +1619,7 @@ def geometry_versus_sensor_uncertainty(ctx):
                 {"derivation": "Isotropic noise splits exactly into normal and tangential parts: |grad d|^2 = "
                                "|grad_n d|^2 + |grad_t d|^2. On a smooth surface tangential noise only "
                                "re-parameterises the mesh to first order, except that it drags barycentric markers",
-                 "checks": [check("|tangential^2 + normal^2 - total^2| / total^2", pythagoras, 1e-12, kind="invariant"),
-                            check("tangential fraction of |grad d|^2", tangential_fraction, 0.5, "ge",
+                 "checks": [check("tangential fraction of |grad d|^2", tangential_fraction, 0.5, "ge",
                                   kind="self_convergence"),
                             check("marker-face fraction of |grad d|^2", marker_fraction, 0.5, "ge",
                                   kind="self_convergence")]},
@@ -1418,7 +1663,8 @@ def geometry_versus_sensor_uncertainty(ctx):
     ]
     result = (f"Distance gain |grad d| = {study['gain']:.4f} (nominal distance {study['nominal_distance']:.6f}; "
               f"tangential {split['tangential']:.4f}, normal {split['normal']:.4f}; marker-face vertices "
-              f"{split['marker']:.4f}, interior {split['interior']:.4f}); ANOVA residual {anova:.1e}; fresh "
+              f"{split['marker']:.4f}, interior {split['interior']:.4f}); bookkeeping sanity values (identities, not "
+              f"evidence): ANOVA residual {anova:.1e}, normal/tangential split residual {pythagoras:.1e}; fresh "
               "total/predicted ratios " + ", ".join(f"{s['fresh_ratio']:.3f}" for s in scenarios)
               + f" (max |z| {max(abs(z) for z in z_fresh):.2f}); isotropic baseline (sigma_g=1e-3, sigma_s=5e-4) "
               f"geometry share {baseline['geometry_share']:.3f}, crossover sensor sigma "
@@ -1438,21 +1684,24 @@ def geometry_versus_sensor_uncertainty(ctx):
         "design: within-group variance estimates sigma_s^2, corrected between-group variance estimates the geometry "
         "part.",
         [f"icosphere level 3, fixed marker strip {study['strip_start_index']} from T043 (the declared geodesic with "
-         "the largest vertex margin, the best case for a fixed corridor)",
+         "the largest vertex margin of six)",
          "sigma_g in {1e-4, 1e-3}, sigma_s in {1e-4, 5e-4, 2e-3}",
          f"nested {outer} x {inner} and fresh {fresh} samples",
          "averaging K = 1, 4, 16, 64 at sigma_g=1e-3, sigma_s=2e-3", "normal-only noise at sigma_g=1e-3, sigma_s=5e-4"],
         "Synthetic: the as-built surface differs from the nominal mesh by Gaussian vertex noise (isotropic, or along "
         "the normals) and a synthetic sensor adds Gaussian noise to the distance; markers are barycentric in their "
         "faces, so tangential vertex noise moves them.",
-        "Exact ANOVA identity; totals within sampling error of sigma_s^2 + sigma_g^2 |grad d|^2; floor at the "
-        "geometry variance; exact normal/tangential split of |grad d|^2.",
+        "Within-group variance near sigma_s^2 and corrected between-group variance near the linearized geometry "
+        "variance; totals within sampling error of sigma_s^2 + sigma_g^2 |grad d|^2; floor at the geometry variance "
+        "under averaging. (The ANOVA sum-of-squares identity and the normal/tangential split of |grad d|^2 hold for "
+        "any data and are recorded only as bookkeeping sanity values.)",
         "Nested and fresh seeded Monte Carlo per scenario; normal-only fresh Monte Carlo; z-scores use the Gaussian "
         "variance standard error.",
         result,
         "z-scores use sqrt(2/(N-1)) relative standard errors of Gaussian variances; the geometry variance uses the "
         "T043 linearization, which holds for this declared strip at these sigma (no sample left its corridor), not "
-        "for every strip (T043 reports up to 38% leaving at sigma_g = 1e-3 for the smallest-margin strip). When "
+        f"for every strip (T043 reports {narrowest['left_fraction'][at]:.1%} leaving at sigma_g = 1e-3 for the "
+        f"smallest-margin strip {narrowest['start_index']}). When "
         "sigma_s^2 / inner greatly exceeds the geometry variance the corrected between-group estimate is dominated by "
         "sensor noise (it can be negative, as at sigma_g = 1e-4, sigma_s = 2e-3); consistency there is not a useful "
         "estimate of the geometry part.",

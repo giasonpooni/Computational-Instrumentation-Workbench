@@ -15,8 +15,8 @@ TASKS = ("T038", "T039", "T040", "T041", "T042", "T043", "T044")
 IMPLEMENTATIONS = module_implementations("surfaces_discrete_mesh")
 DIJKSTRA_CLAIM = ("Heap Dijkstra edge-graph distances agree with a dense Floyd-Warshall recomputation (and "
                   "scipy.sparse.csgraph when installed)")
-RANK_CLAIM = ("Maximum radius ratio ranks the mixed-Voronoi curvature error and the geodesic error across the valid "
-              "642-vertex meshes")
+RANK_CLAIM = ("Maximum radius ratio is positively rank-correlated with the mixed-Voronoi curvature error and the "
+              "geodesic error across the pooled valid 642-vertex meshes, but not within the latitude-longitude family")
 
 
 def _run(task_id, ctx):
@@ -39,8 +39,8 @@ def _value(report, prefix):
     return next(f for f in report["findings"] if f["claim"].startswith(prefix))
 
 
-def _completed_with_unestablished_physics(report):
-    assert report["state"] == "completed"
+def _completed_with_unestablished_physics(report, state="completed"):
+    assert report["state"] == state
     assert report["physical_validation_status"]["status"] == "not_established"
     assert report["evidence_status"]["primary"] in ("numerically_verified", "independently_verified")
     for record in report["findings"]:
@@ -80,21 +80,32 @@ def test_tracer_is_exact_on_developable_meshes():
 
 def test_graph_distances_and_steiner_sandwich():
     nested = S.steiner_nested_study(level=1, ks=(0, 1, 3), starts=S.STARTS[:3])
-    assert nested["max_increase_with_k"] <= 1e-12 and nested["max_chord_excess"] <= 1e-12
+    assert nested["max_increase_with_k"] <= 1e-12
+    assert nested["edges_outside_faces"] == 0 and nested["edges_checked"] > 1000
     assert nested["min_gap"] >= -1e-12
     assert np.mean(nested["gap_to_traced"]["3"]) <= np.mean(nested["gap_to_traced"]["1"])
     independent = S.dijkstra_independent(level=2)
     assert independent["floyd_max_abs"] <= 1e-12
     if independent["scipy"]:
         assert independent["scipy_max_abs"] <= 1e-12
+    # The face test can fail: an edge between Steiner nodes of two faces that share no edge is detected.
     mesh = G.icosphere(1)
-    chord = np.linalg.norm(mesh.vertices - mesh.vertices[0], axis=1)
-    assert np.all(G.edge_distances(mesh, 0) >= chord - 1e-12)  # every surface path is at least the chord
+    (indptr, indices, _), _, _ = G.steiner_graph(mesh, 1)
+    nodes = G.steiner_nodes(mesh, 1)
+    rows, cols = S._graph_edges(indptr, indices)
+    assert S.edges_outside_faces(mesh, nodes, rows, cols) == 0
+    far = int(np.argmax(np.linalg.norm(nodes - nodes[0], axis=1)))
+    assert S.edges_outside_faces(mesh, nodes, np.r_[rows, 0], np.r_[cols, far]) == 1
 
 
 def test_solver_task_report(reports):
     report = reports["T038"]
-    _completed_with_unestablished_physics(report)
+    # Partial: an exact two-point polyhedral geodesic (MMP/ICH) is not delivered, and the report says so.
+    _completed_with_unestablished_physics(report, state="partial")
+    assert any(a.startswith("Partial delivery") for a in report["unresolved_assumptions"])
+    steiner = _value(report, "Nested Steiner-graph distances never increase with k")
+    assert steiner["value"]["edges_outside_faces"] == 0
+    assert "chord" not in " ".join(c["reference"] for c in steiner["basis"]["checks"])
     labels = _labels(report)
     scipy_present = S.optional_version("scipy") is not None
     assert labels[DIJKSTRA_CLAIM] == ("independently_verified" if scipy_present else "numerically_verified")
@@ -194,6 +205,9 @@ def test_jacobi_task_report(reports):
     assert valence["value"]["valence5_values"][-1] == pytest.approx(4.5 - 1.5 * math.sqrt(5), abs=1e-4)
     mirror = _value(report, "Barycentric angle-defect curvature does not converge pointwise")
     assert mirror["counterexample"]["statement"].startswith("Angle-defect curvature with the barycentric area")
+    # Gauss-Bonnet holds for any closed mesh, so it is a sanity value in the prose, not a finding.
+    assert not any("Gauss-Bonnet" in f["claim"] for f in report["findings"])
+    assert "sanity check" in report["numerical_result"]
 
 
 # ---------------------------------------------------------------- T041
@@ -209,6 +223,7 @@ def test_schwarz_lantern_counterexample():
     assert study["rows"][-1]["area_ratio"] > 1.5 and study["rows"][-1]["hausdorff_sampled"] < 0.02
     assert abs(study["rows"][-1]["max_normal_tilt_deg"] - study["limit_tilt_deg"]) <= 0.2
     assert study["folded"]["issues"][0] == "folded_face"
+    assert study["folded"]["min_normal_radial"] > 0  # refused as folded with no face pointing inward
 
 
 def test_rank_correlation_matches_average_ranks():
@@ -228,20 +243,30 @@ def test_quality_task_report(reports):
     assert labels[RANK_CLAIM] == ("independently_verified" if S.optional_version("scipy") else "numerically_verified")
     counterexamples = [f for f in report["findings"] if "counterexample" in f]
     assert len(counterexamples) >= 6
-    folded = _value(report, "Jittered meshes are refused as folded exactly when a face is inverted")
+    folded = _value(report, "For the three declared seeds per amplitude, the dihedral fold check refuses exactly")
     refusals = [c for c in folded["basis"]["checks"] if c["reference_kind"] == "refusal"]
     inverted = folded["value"]["inverted_faces"]
-    assert len(refusals) == len(inverted) == 16
+    assert len(refusals) == len(inverted) == len(folded["value"]["meshes"])
     for check, count in zip(refusals, inverted):
         assert check["expected_refusal"] == ("folded_face" if count > 0 else "none")
         assert check["observed_refusal"] == check["expected_refusal"]
-    assert sum(count > 0 for count in inverted) == 6
+    missed = _value(report, "Over 60 further seeds per amplitude the dihedral fold check accepts some")
+    assert missed["counterexample"]["statement"].startswith("The dihedral fold check (folded_face) refuses every")
+    assert missed["value"]["witness"]["normal_radial"] < 0
+    assert missed["value"]["witness"]["issues_with_centre"] == ["inverted_face"]
+    rates = {r["amplitude"]: r for r in missed["value"]["rates"]}
+    assert rates[0.2]["inverted_accepted"] > 0 and rates[0.2]["clean_accepted"] > 0
+    assert "counterexample" in _value(report, "A tangential jitter of 0.2 h inverts a face for some but not all")
+    assert _value(report, "Over 60 further seeds per amplitude the dihedral fold check refuses no")["value"]["rates"]
+    assert "fold refusal exactly when" not in report["expected_invariant"]
+    ranked = _value(report, "Maximum radius ratio is positively rank-correlated")
+    assert max(ranked["value"]["spearman_within_family"]["latitude_longitude"].values()) <= 1e-12
     within = _value(report, "Within the latitude-longitude family")
     assert within["value"]["better_quality"]["mesh"] == "uv-sphere-40x16"
     voronoi = _value(report, "With the mixed Voronoi area the regular icosphere")
     assert voronoi["evidence_status"] == "numerically_verified"
     lantern = _value(report, "A strongly pleated lantern")
-    assert lantern["regression_tolerance"] == {"abs": 0, "rel": 0}
+    assert lantern["value"]["min_normal_radial"] > 0 and "counterexample" in lantern
     authority = [f for f in report["findings"] if f["domain"] == "production_acceptance"]
     assert authority and authority[0]["evidence_status"] == "not_established"
 
@@ -251,6 +276,29 @@ def test_rank_finding_without_scipy(monkeypatch, tmp_path):
     report = _run("T041", runner.Context(tmp_path))
     assert _labels(report)[RANK_CLAIM] == "numerically_verified"
     assert report["evidence_status"]["primary"] == "numerically_verified"
+
+
+def test_fold_check_misses_small_bend_inversions():
+    amplitude, offset = S.INVERTED_JITTER
+    mesh = S._jitter_unvalidated(G.icosphere(3), amplitude, S.SEED + offset)
+    inverted = S.inverted_faces(mesh)
+    assert len(inverted) == 1
+    assert G.inspect(mesh.vertices, mesh.faces, require_closed=True) == []  # the dihedral check misses it
+    table = G._edge_table(mesh.faces, len(mesh.vertices))
+    dots = np.einsum("ij,ij->i", mesh.face_normals[table["pair_first"] // 3],
+                     mesh.face_normals[table["pair_second"] // 3])
+    assert dots.min() > G.FOLD_COSINE
+    with pytest.raises(G.MeshRefusal) as refused:
+        G.TriMesh.build(mesh.vertices, mesh.faces, require_closed=True, center=np.zeros(3))
+    assert refused.value.code == "inverted_face"
+    vertices, faces = S._octahedron()
+    assert [c for c, _ in G.inspect(vertices, faces[:, ::-1], center=np.zeros(3))] == ["inverted_face"]
+    for valid in (G.icosphere(2), G.uv_sphere(10, 16, twist=0.1)):
+        assert G.inspect(valid.vertices, valid.faces, require_closed=True, center=np.zeros(3)) == []
+    rates = S.fold_rate_study(amplitudes=(0.2,), seeds=(offset, 1001))
+    row = rates["rows"][0]
+    assert row["inverted_accepted"] == 1 and row["refused_with_centre"] == row["meshes"] - row["clean_accepted"]
+    assert rates["witness"]["seed"] == S.SEED + offset and rates["witness"]["issues_with_centre"] == ["inverted_face"]
 
 
 def test_uv_sphere_names_include_twist():
@@ -287,7 +335,12 @@ def test_refusal_task_report(reports):
     assert len(checks) >= 23 and all(c["reference_kind"] == "refusal" and c["passed"] for c in checks)
     assert refusals["value"]["aimed-at-vertex"] == "vertex_hit"
     assert refusals["value"]["strip-faces-not-adjacent"] == "invalid_strip"
+    assert refusals["value"]["jittered-inverted-face"] == "inverted_face"
     assert any("Self-intersections" in a or "self-intersections" in a for a in report["unresolved_assumptions"])
+    assert any("inverted faces whose bend to every neighbour" in a for a in report["unresolved_assumptions"])
+    undetected = _value(report, "Without a declared centre the validator accepts a jittered icosphere")
+    assert undetected["value"]["structural_issues"] == [] and undetected["value"]["inverted_faces"] >= 1
+    assert "counterexample" in undetected
 
 
 # ---------------------------------------------------------------- T043
@@ -306,16 +359,70 @@ def test_linearization_matches_monte_carlo_and_breaks():
 
 
 def test_corridor_threshold_depends_on_the_strip():
-    study = S.corridor_study(sigmas=(1e-3,), samples=1000)
-    fractions = {r["start_index"]: r["left_fraction"][0] for r in study["rows"]}
+    study = S.corridor_study(sigmas=(1e-3, 1e-2), samples=1000)
+    fractions = {r["start_index"]: r["left_fraction"] for r in study["rows"]}
     margins = {r["start_index"]: r["vertex_margin"] for r in study["rows"]}
-    assert max(margins, key=margins.get) == S.MARKER_START and fractions[S.MARKER_START] == 0.0
-    assert fractions[min(margins, key=margins.get)] > 0.1
+    # What is claimed: the declared strip has the largest margin and stays in its corridor at sigma = 1e-3 ...
+    assert max(margins, key=margins.get) == S.MARKER_START and fractions[S.MARKER_START][0] == 0.0
+    assert fractions[min(margins, key=margins.get)][0] > 0.1
+    # ... but it is not the most robust strip at larger sigma: a smaller-margin strip leaves less often.
+    declared = fractions[S.MARKER_START][1]
+    best = min((i for i in fractions if i != S.MARKER_START), key=lambda i: fractions[i][1])
+    assert margins[best] < margins[S.MARKER_START]
+    assert declared - fractions[best][1] > 4 * math.sqrt(0.5 / 1000)  # well beyond binomial noise
+
+
+def test_per_vertex_uncertainty_matches_monte_carlo():
+    mesh = G.icosphere(2)
+    n, sigma = len(mesh.vertices), 1e-4
+    field = G.vertex_uncertainty(mesh, sigma ** 2)
+    same = [G.vertex_uncertainty(mesh, np.full(n, sigma ** 2)),
+            G.vertex_uncertainty(mesh, np.broadcast_to(sigma ** 2 * np.eye(3), (n, 3, 3)))]
+    for other in same:
+        assert np.allclose(other["curvature_sd"], field["curvature_sd"], rtol=1e-12)
+        assert np.allclose(other["normal_sd"], field["normal_sd"], rtol=1e-12)
+    # Against the two-vertex propagation (separate one-ring code) at vertex 0.
+    _, items = S.observables(mesh)
+    gradients = {o["name"]: np.sqrt(np.sum(S._fd_jacobian(o["function"], mesh.vertices[o["ids"]]) ** 2))
+                 for o in items}
+    assert field["curvature_sd"][0] == pytest.approx(sigma * gradients["angle-defect curvature at valence-5 vertex 0"],
+                                                     rel=1e-6)
+    assert field["normal_sd"][0] == pytest.approx(sigma * gradients["vertex normal at valence-5 vertex 0"], rel=1e-6)
+    # Against whole-mesh Monte Carlo at every vertex.
+    rng = np.random.Generator(np.random.PCG64(7))
+    samples = 1000
+    normals, curvature = G.batch_vertex_fields(mesh.vertices[None] + rng.standard_normal((samples, n, 3)) * sigma,
+                                               mesh.faces)
+    normal0, curvature0 = (a[0] for a in G.batch_vertex_fields(mesh.vertices[None], mesh.faces))
+    se = math.sqrt(2 / (samples - 1))
+    assert np.max(np.abs(np.var(curvature, axis=0, ddof=1) / field["curvature_sd"] ** 2 - 1)) <= 5 * se
+    tilt = np.mean(np.sum((normals - normal0) ** 2, axis=2), axis=0)
+    assert np.max(np.abs(tilt / field["normal_sd"] ** 2 - 1)) <= 5 * se
+    assert np.allclose(curvature0, field["curvature"], atol=1e-12)
+    # Boundary vertices have no curvature; invalid covariances and meshes are refused.
+    plane = G.vertex_uncertainty(G.plane_mesh(3, 3), 1e-8)
+    assert np.isnan(plane["curvature_sd"][~plane["interior"]]).all()
+    assert np.isfinite(plane["curvature_sd"][plane["interior"]]).all()
+    with pytest.raises(ValueError):
+        G.vertex_uncertainty(mesh, -np.eye(3)[None].repeat(n, axis=0))
+    bad = G.TriMesh(np.array([[0, 0, 0], [1, 0, 0], [1, 1, 0], [0.8, 0.2, 0.0]]), np.array([[0, 1, 2], [0, 2, 3]]))
+    with pytest.raises(G.MeshRefusal) as refused:
+        G.vertex_uncertainty(bad, 1e-8)
+    assert refused.value.code == "folded_face"
 
 
 def test_uncertainty_task_report(reports):
     report = reports["T043"]
     _completed_with_unestablished_physics(report)
+    robust = _value(report, "A strip with a smaller vertex margin than the declared strip")
+    assert robust["counterexample"]["statement"].startswith("The strip with the largest vertex margin")
+    assert robust["value"]["more_robust"]["vertex_margin"] < robust["value"]["declared"]["vertex_margin"]
+    field = _value(report, "Linearized per-vertex standard deviations of vertex normals and angle-defect curvature")
+    assert field["value"]["vertices"] == 642 and field["value"]["two_vertex_cross_check_max_rel"] <= 1e-6
+    kinds = {c["reference_kind"] for c in field["basis"]["checks"]}
+    assert kinds == {"self_convergence", "cross_implementation"}
+    assert "best case" not in " ".join(report["input_data"])
+    assert any("independently measured normals" in a for a in report["unresolved_assumptions"])
     slopes = _value(report, "Sensitivity to vertex noise")["value"]["slopes"]
     assert slopes["angle-defect curvature at valence-5 vertex 0"] == pytest.approx(-2.0, abs=0.25)
     assert abs(slopes["marker geodesic distance"]) <= 0.2
@@ -362,3 +469,10 @@ def test_variance_split_task_report(reports):
     assert averaging["counterexample"]["statement"].startswith("Averaging repeated measurements")
     domains = {f["domain"] for f in report["findings"] if f["evidence_status"] == "not_established"}
     assert domains == {"sensor_performance", "physical"}
+    # Identities that hold for any data are sanity values in the prose, not evidence.
+    assert not any("sums of squares" in f["claim"] for f in report["findings"])
+    references = " ".join(c["reference"] for f in report["findings"] for c in f["basis"].get("checks", []))
+    assert "tangential^2 + normal^2" not in references and "best case" not in references
+    corridors = S.corridor_study()
+    narrowest = min(corridors["rows"], key=lambda r: r["vertex_margin"])
+    assert f"{narrowest['left_fraction'][corridors['sigmas'].index(1e-3)]:.1%}" in report["uncertainty"]

@@ -23,11 +23,18 @@ spread of pairwise local orders) and a regression tolerance.
 | `src/ciw/lab/surfaces_discrete_mesh_geometry.py` | mesh type, generators, validator, tracer, distances, curvature, strip unfolding |
 | `src/ciw/lab/surfaces_discrete_mesh_studies.py` | deterministic studies (plain numbers) |
 | `src/ciw/lab/surfaces_discrete_mesh.py` | task registrations T038–T044, findings and report fields |
-| `tests/test_lab_surfaces_discrete_mesh.py` | regression tests (about 20 s) |
+| `tests/test_lab_surfaces_discrete_mesh.py` | regression tests (about 25 s) |
 
 ## Algorithms
 
 ### Straightest geodesics (T038)
+
+T038 is **partial**. It delivers an initial-value tracer (straightest
+geodesics from a point and a heading) and approximate distances (edge graph,
+Steiner graph, heat method). It does not deliver an exact two-point
+polyhedral geodesic (MMP, ICH or iterative edge flipping), so no shortest path
+between two given points is solved exactly and the approximate distances are
+never compared with an exact polyhedral distance.
 
 A geodesic is traced as an initial-value problem in the Polthier–Schmies
 sense: straight inside a face, and at an edge with unit direction `ê` the
@@ -62,8 +69,13 @@ Declared rules:
   report prose are the same in both environments.
 - **Steiner graph**: `k` equally spaced points per edge, all node pairs inside
   each face joined. Every graph edge is a straight segment in a face, so graph
-  distances are upper bounds; with `k = 2^j − 1` the node sets are nested and
-  distances cannot increase with `k`.
+  distances are upper bounds on the (uncomputed) polyhedral distance; with
+  `k = 2^j − 1` the node sets are nested and distances cannot increase with
+  `k`. That every edge lies in a face is checked by a point-in-face test
+  (plane offset and barycentric coordinates) that does not use the graph
+  construction; the test fails on an edge joining two faces that share no
+  edge. (An earlier check that graph distances never fall below the chord was
+  dropped: it holds for any graph with Euclidean edge weights.)
 - **Heat method** (Crane, Weischedel and Wardetzky 2013) with `t = h²`, lumped
   mass and cotangent Laplacian. The heat solution decays like `exp(−d²/4t)`, and
   its far-field gradient direction needs relative accuracy, so both systems are
@@ -88,9 +100,19 @@ Declared rules:
 - Angle defect `K_v = (2π − Σθ)/(A_v/3)` with the barycentric area `A_v/3`;
   also with the mixed Voronoi area of Meyer, Desbrun, Schröder and Barr.
   Boundary vertices are refused (`boundary_vertex_curvature`).
-- Discrete Gauss–Bonnet `Σ(2π − Σθ) = 2πχ` is exact for closed meshes and is
-  checked (residual about `4e-11`).
+- Discrete Gauss–Bonnet `Σ(2π − Σθ) = 2πχ` is an identity for every closed
+  mesh whose triangle angles sum to π, whatever vertex the angles are assigned
+  to. Its residual (about `4e-11`) is reported only as an implementation
+  sanity check, not as a finding.
 - Vertex normals: area-weighted sums of the one-ring face normals.
+- Per-vertex uncertainty: `vertex_uncertainty(mesh, covariance)` returns the
+  linearized standard deviations of every vertex normal (RMS tilt,
+  `sqrt(trace Cov n)`) and every angle-defect curvature under a declared
+  covariance of independent vertex errors: one variance, one variance per
+  vertex, or a 3×3 matrix per vertex. The Jacobians are one-ring central
+  differences. Boundary vertices get no curvature, and invalid meshes or
+  covariances are refused. `batch_vertex_fields` evaluates normals and
+  curvature of whole noisy meshes for the Monte Carlo comparison.
 
 ## Refusal states (T042)
 
@@ -108,6 +130,7 @@ with the first one (all are attached to the exception):
 | `inconsistent_orientation` | validation | both faces traverse an interior edge in the same direction |
 | `non_manifold_vertex` | validation | vertex joins several edge-connected face fans (bowtie) |
 | `folded_face` | validation | neighbouring unit normals with dot `≤ −0.9` (bend over 154°) |
+| `inverted_face` | validation | face oriented towards a declared centre, `det(p₀ − c, p₁ − c, p₂ − c) ≤ 0` (only when `center=c` is passed) |
 | `unreferenced_vertex` | validation | vertex in no face |
 | `disconnected_components` | validation | more than one face component (when connectivity is required) |
 | `open_boundary` | validation | boundary edges on a mesh declared closed |
@@ -121,23 +144,45 @@ with the first one (all are attached to the exception):
 | `mesh_too_large` | query | the direct heat method's vertex limit is exceeded |
 | `invalid_strip` | query | consecutive strip faces do not share an edge |
 
-T042 constructs 23 defect cases (21 distinct codes); all are refused with the
-expected code, four valid controls report no issue, and a mesh with three
-defects reports all three in the declared order. The counterexample recorded
-alongside: evaluating curvature and normals on an unvalidated zero-area face
-produces nonfinite values, so the refusals are necessary, not cosmetic. The
-fold check was added after T041 showed that tangential jitter of `0.2 h` folds
-faces while every structural check still passes; T041 now checks the fold
-refusal of every jittered mesh against an independent indicator (a face normal
-pointing into the sphere).
+T042 constructs 25 defect cases (22 distinct codes). All are refused with the
+expected code, five valid controls report no issue (two of them validated
+with a declared centre), and a mesh with three defects reports all three in
+the declared order. Two counterexamples are recorded alongside:
+
+- Evaluating curvature and normals on an unvalidated zero-area face produces
+  nonfinite values, so the refusals are necessary, not cosmetic.
+- Without a declared centre, the validator accepts a jittered icosphere-3
+  (seed 20261940, 0.2 h) with an inverted face.
+
+**Folds and inversions.** The dihedral fold check (`folded_face`) was added
+after T041's declared seeds showed tangential jitter of `0.2 h` folding faces.
+It bounds the bend between neighbours, so it is not an inversion test:
+
+- An inverted sliver whose bend to every neighbour stays below about 154°
+  passes it. Over 60 further seeds per amplitude, 7 meshes at 0.2 h and 1 at
+  0.15 h have such a face (T041).
+- A crease with no inverted face can fail it. The `q = 1` lantern is refused
+  although its smallest face-normal radial component is +0.20.
+
+For a mesh that is star-shaped about a known point, `inspect(..., center=c)`
+and `TriMesh.build(..., center=c)` also refuse faces oriented towards `c` as
+`inverted_face`. T041 validates its spheres this way. The test assumes
+star-shapedness: it would refuse a valid torus about its own centre, so it
+runs only on request.
 
 The hypothesis is scoped to the declared catalogue. **Not detected:**
-self-intersections between non-adjacent faces, unwelded seams (coincident
-duplicate vertices pass validation and surface only as `boundary_reached`
-during tracing), duplicate faces, and near-degenerate slivers just above the
-`1e-12` threshold. **False positives:** a legitimate sharp crease with a bend
-over about 154° is refused as `folded_face` (the embedded `m = n²` lantern of
-T041 is refused although it does not overlap itself).
+
+- self-intersections between non-adjacent faces;
+- unwelded seams (coincident duplicate vertices pass validation and surface
+  only as `boundary_reached` during tracing);
+- duplicate faces;
+- near-degenerate slivers just above the `1e-12` threshold;
+- inverted faces with bends below the fold threshold when no centre is
+  declared.
+
+**False positives:** a legitimate sharp crease with a bend over about 154° is
+refused as `folded_face`. The embedded `m = n²` lantern of T041 is refused
+although it does not overlap itself and no face points inward.
 
 ## Results
 
@@ -149,11 +194,12 @@ T041 is refused although it does not overlap itself).
 | Prism cylinder, n = 8…128: trace vs exact development of the mesh | `8.0e-15` |
 | 42 sphere traces (levels 1–7): strip layout length vs traced length | `3.1e-15` |
 | Edge Dijkstra vs Floyd–Warshall and scipy | `8.9e-16` (`independently_verified` with scipy) |
-| Nested Steiner distances, k = 0, 1, 3, 7 | never increase, never below the chord |
+| Nested Steiner distances, k = 0, 1, 3, 7 | never increase; 0 of 115740 graph edges leave a face |
 | Steiner distance − traced length (level 2, length 1) | mean 3.0e-2 (k=1), 1.3e-2 (k=3), 5.3e-3 (k=7), all positive |
 
 The Steiner sandwich is consistent with the traced geodesics being shortest
-paths; it does not prove it.
+paths; it does not prove it, and no exact polyhedral distance is computed to
+settle it (T038 is partial for that reason).
 
 ### Convergence under refinement (T039)
 
@@ -251,12 +297,15 @@ unit sphere; the smooth `ciw.lab.jacobi` transfer reproduces `sin L` to 7e-11.
   explained, and no closed form is derived. The RMS error over all vertices
   still falls because these vertices become a vanishing fraction.
 - **Torus grids** (sign-changing K): the angle-defect curvature converges at
-  order 1.93; Gauss–Bonnet sums are 0 on tori and 4π on spheres to 4e-11.
+  order 1.93. (Gauss–Bonnet sums are 0 on tori and 4π on spheres to 4e-11, an
+  identity that is reported as a sanity check only.)
 
 ### Mesh quality at fixed vertex count (T041)
 
 642-vertex icosphere with tangential Gaussian jitter (standard deviation
-`a·h`, three seeds) and 642-vertex latitude–longitude spheres:
+`a·h`, three seeds, which are the same three noise fields scaled to each
+amplitude) and 642-vertex latitude–longitude spheres. Meshes are validated
+with the sphere centre declared, so the valid set excludes inverted faces:
 
 | Jitter a | mean min angle | curvature RMS (barycentric) | curvature RMS (Voronoi) | geodesic mean error |
 | --- | --- | --- | --- | --- |
@@ -264,15 +313,35 @@ unit sphere; the smooth `ciw.lab.jacobi` transfer reproduces `sin L` to 7e-11.
 | 0.05 | 40.1° | 0.0225 | 0.0048 | 0.0117 |
 | 0.10 | 25.3° | 0.0333 | 0.0108 | 0.0132 |
 | 0.15 | 9.7° | 0.0607 | 0.0408 | 0.0173 |
-| 0.2, 0.3 | folded, refused (`folded_face`) | 1.5–28 (unguarded) | — | — |
+| 0.2, 0.3 (declared seeds) | refused (`folded_face`) | 1.5–28 (unguarded) | — | — |
 
 - **Within the isotropic tangential-jitter family**, curvature error grows
   monotonically as quality falls (seed-averaged; the three-seed t-interval is
   reported with the finding).
-- **Folds.** All six meshes jittered by 0.2 h or more are refused as
-  `folded_face`, each has inward-pointing faces (2–50), and none of the ten
-  meshes below 0.2 h is refused or has an inverted face; the refusal is checked
-  mesh by mesh against that independent indicator.
+- **Folds, declared seeds only.** For the three declared seeds the dihedral
+  fold refusals coincide mesh by mesh with inverted faces (face normal
+  pointing towards the sphere centre). All six meshes at 0.2 h and 0.3 h are
+  inverted and refused; none of the ten below is. This holds for these seeds,
+  not in general.
+- **Folds over 60 further seeds per amplitude** (seeds 20261939–20261998):
+
+  | Jitter a | inverted, accepted by the dihedral check | inverted, refused | no inverted face |
+  | --- | --- | --- | --- |
+  | 0.1 | 0 | 0 | 60 |
+  | 0.15 | 1 | 1 | 58 |
+  | 0.2 | 7 | 32 | 21 |
+  | 0.3 | 0 | 60 | 0 |
+
+  So 0.2 h does not always invert a face (21 of 60 meshes have none), and the
+  dihedral check misses inverted slivers. The recorded witness is the clearest
+  miss, seed 20261944 at 0.2 h: face 854 has normal·radial −0.34 and corner
+  angles 3.7°, 4.3° and 172.0°, while the smallest adjacent-normal dot in the
+  mesh is −0.44 (a bend of about 116°, far below the 154° threshold).
+  Unguarded, its curvature RMS is 0.43. No mesh
+  without an inverted face was refused (0 of 240). With the centre declared,
+  every inverted mesh is refused as `inverted_face`. Conversely, the `q = 1`
+  lantern is refused as folded with no inward face. The dihedral check is
+  therefore neither necessary nor sufficient for an inversion.
 - **Counterexamples.** A jittered mesh with min angle 40.9° has a smaller
   geodesic error (0.0099) than the regular icosphere (54.1°, 0.0123). Across
   families, the 20×32 latitude–longitude sphere (min angle 10.8°) has a
@@ -284,15 +353,22 @@ unit sphere; the smooth `ciw.lab.jacobi` transfer reproduces `sin L` to 7e-11.
   angle 11.1°, radius ratio 2.87) has larger errors under both area choices
   (0.0272 and 0.0150) than 10×64 (5.5°, 5.48; 0.0198 and 0.0111), so neither
   quality metric orders errors pairwise inside a family either.
-- **Rank correlations** over the 15 valid meshes (average ranks, checked
-  against `scipy.stats.spearmanr` when installed): the maximum radius ratio
-  ranks the Voronoi curvature RMS (ρ = 0.825) and the geodesic error
-  (ρ = 0.789; one-sided permutation p ≤ 0.01 for both), but not the barycentric
-  RMS (0.275). Minimum angle: −0.021 with the barycentric RMS, −0.661 with the
-  Voronoi RMS, −0.799 with the maximum curvature error (values equal to 12
-  significant digits share their average rank). With 15 meshes from two
-  families the standard error of ρ is about 0.3; the ranking is an observation,
-  not a law.
+- **Rank correlations** over the 15 pooled valid meshes (average ranks,
+  checked against `scipy.stats.spearmanr` when installed). The maximum radius
+  ratio is positively rank-correlated with the Voronoi curvature RMS
+  (ρ = 0.825; 18 of 105 pairs discordant) and with the geodesic error
+  (ρ = 0.789; 20 of 105 discordant). It does not rank either error: the
+  association is carried by the jitter family (ρ = 0.915 and 0.855 within it).
+  Within the five latitude–longitude spheres it vanishes or reverses
+  (ρ = 0.0 and −0.3). For example, 40×16 has ratio 2.87 and Voronoi RMS 0.0150,
+  while 10×64 has ratio 5.48 and Voronoi RMS 0.0111. There is no association
+  with the barycentric RMS (0.275). Minimum angle gives −0.021 with the
+  barycentric RMS, −0.661 with the Voronoi RMS and −0.799 with the maximum
+  curvature error. Values equal to 12 significant digits share their average
+  rank. The one-sided permutation p ≤ 0.01 treats the pooled meshes as
+  exchangeable, which the replicated noise fields and the two families are
+  not. With 15 meshes the standard error of ρ is about 0.3, so this is an
+  observation, not a law.
 - On planar meshes, straightest geodesics are exact at every tested quality,
   whereas the edge-graph error follows edge directions (0.082 at shear 0 down to
   0.018 at shear 1.5, although the minimum angle falls from 45° to 11.9°).
@@ -316,15 +392,17 @@ unit sphere; the smooth `ciw.lab.jacobi` transfer reproduces `sin L` to 7e-11.
   absolute mean curvature grows like n² (exponent 2.01; 38.6 to 11441 against
   the smooth π). Hausdorff convergence therefore implies convergence of none of
   area, geodesic distance, normals or mean curvature. The strongly pleated
-  lantern with m = n² is refused as `folded_face`.
+  lantern with m = n² is refused as `folded_face`, although no face normal
+  points towards the axis (smallest radial component +0.20).
 
 ### Uncertainty on vertices, normals and curvature (T043)
 
 Isotropic Gaussian vertex noise `σ` on icosphere-3 (h = 0.151), 4000 seeded
 samples per `σ`, compared with the linearization `Var f = σ² |∇f|²` (central
 finite differences, step 1e-6). The markers sit on declared geodesic 5 of six,
-**chosen because it has the largest vertex margin on icosphere-3** — the best
-case for a fixed face corridor.
+chosen because it has the largest vertex margin on icosphere-3. It stays in
+its corridor for `σ ≤ 1e-3`, but a larger margin does not make it the most
+robust strip at larger noise (see the corridor table).
 
 | Observable | gain `|∇f|` | MC/linear at σ = 1e-4, 1e-3, 3e-3, 1e-2 |
 | --- | --- | --- |
@@ -335,6 +413,20 @@ case for a fixed face corridor.
 | angle-defect curvature, valence-6 vertex | 164 | 0.990, 1.020, 1.041, **1.386** |
 
 No sampled vertex normal flipped sign (smallest `n·n₀` 0.98).
+
+- **Per-vertex field.** The table above covers two sample vertices. The
+  per-vertex function `vertex_uncertainty` gives the linearized normal and
+  curvature standard deviation at every vertex under a declared vertex
+  covariance. On icosphere-3 it is compared with whole-mesh Monte Carlo (2000
+  samples) at all 642 vertices, for two covariances:
+  - isotropic, σ = 1e-4: curvature SD 0.0164–0.0261, normal SD
+    5.1e-4–6.5e-4 rad; max |z| over vertices 2.99 (curvature) and 2.35
+    (normal);
+  - normal-dominant, σ_n = 3e-4 and σ_t = 1e-4: max |z| 3.11 and 2.37.
+
+  At vertex 0 and at the far valence-6 vertex it agrees with the two-vertex
+  propagation to 1e-12. Normals are always derived from the noisy vertices;
+  an input uncertainty model for independently measured normals is deferred.
 
 - **Linearization criterion for curvature.** For a cone of ring radius `ℓ`
   and apex height `e`, the defect is `2π(1 − ℓ/sqrt(ℓ² + e²)) ≈ π e²/ℓ²`. On a
@@ -368,8 +460,12 @@ No sampled vertex normal flipped sign (smallest `n·n₀` 0.98).
   | 5 (declared) | 0.0528 | 0 | 0 | 0.03 | 0.41 |
 
   The threshold scales roughly with the smallest segment-to-vertex distance
-  (edge margin × h), but strips with equal margins (3 and 4) differ because
-  other near-vertex crossings matter. Past it the perturbed geodesic can switch
+  (edge margin × h), but the margin does not order the strips. Strips with
+  equal margins (3 and 4) differ, and strip 1 (margin 0.0507) leaves its
+  corridor less often than the declared strip 5 at σ = 3e-3 (0 against 0.028)
+  and at 1e-2 (0.26 against 0.41). Other near-vertex crossings matter. This is
+  recorded as a counterexample to "the largest-margin strip is the most
+  robust". Past it the perturbed geodesic can switch
   corridors, its distance becomes a minimum over corridors, and the
   fixed-corridor variance no longer describes the geodesic distance. Re-tracing
   per sample is not done.
@@ -381,13 +477,16 @@ Residual `r = y − d(V_nominal)` with `y = d(V_nominal + η) + ε`,
 `Var r = σ_s² + Var_η d ≈ σ_s² + σ_g² |∇d|²` (law of total variance), with
 `|∇d| = 1.05` for the declared marker pair (nominal distance 1.0).
 
-- The nested design (1000 geometry samples × 16 sensor readings) decomposes the
-  sums of squares exactly (ANOVA residual 3e-16). Within-group variance matches
-  `σ_s²` and the corrected between-group variance matches the geometry part to
-  within 4 standard errors in all six scenarios; fresh Monte Carlo totals
-  (20000 samples) match `σ_s² + σ_g²|∇d|²` with ratios 0.986–1.007.
-- **Where the geometry variance comes from.** `|∇d|² = 1.106` splits exactly
-  into a tangential part `1.004²` (91 %) and a normal part `0.312²` (9 %), and
+- Nested design: 1000 geometry samples × 16 sensor readings. Within-group
+  variance matches `σ_s²`, and the corrected between-group variance matches
+  the linearized geometry part, to within 4 standard errors in all six
+  scenarios. Fresh Monte Carlo totals (20000 samples) match
+  `σ_s² + σ_g²|∇d|²` with ratios 0.986–1.007. The ANOVA sum-of-squares
+  identity (residual 3e-16) holds for any balanced data, so it is reported as a
+  bookkeeping sanity value, not as evidence.
+- **Where the geometry variance comes from.** `|∇d|² = 1.106` splits (by
+  orthogonal projection, an identity not counted as evidence) into a
+  tangential part `1.004²` (91 %) and a normal part `0.312²` (9 %), and
   by vertex group into the two marker faces `1.012²` and the interior strip
   `0.284²`. On a smooth surface tangential vertex noise only re-parameterises
   the mesh to first order; here it matters because it drags the barycentric
@@ -406,8 +505,9 @@ Residual `r = y − d(V_nominal)` with `y = d(V_nominal + η) + ε`,
   noise (it is −0.33 of the geometry variance at σ_g = 1e-4, σ_s = 2e-3): the
   design cannot resolve the geometry part there.
 - The linearization holds for the declared strip at these σ_g (no sample left
-  its corridor); T043 shows it would not for the smallest-margin strip at
-  σ_g = 1e-3.
+  its corridor). T043 shows it would not for the smallest-margin strip 0,
+  which leaves its corridor in 37.1 % of samples at σ_g = 1e-3. That fraction
+  is read from T043's corridor study, not hard-coded.
 
 ## What these results do not establish
 
@@ -420,19 +520,27 @@ Residual `r = y − d(V_nominal)` with `y = d(V_nominal + η) + ε`,
   the icosphere family (valence-5 vertices and mirror-plane valence-6 vertices
   are counterexamples; the off-mirror maximum stalls at level 7).
 - That traced geodesics are globally shortest (the Steiner sandwich is
-  consistent with it only).
+  consistent with it only), or any exact two-point polyhedral distance (none is
+  implemented; T038 is partial).
 - Detection of self-intersections, unwelded seams, duplicate faces or other
-  defects outside the catalogue; freedom from false `folded_face` refusals on
+  defects outside the catalogue. Detection of inverted faces with small bends
+  when no centre is declared. Freedom from false `folded_face` refusals on
   sharp creases.
+- That jitter of a given amplitude always, or never, inverts a face. The fold
+  rates are counts over 60 seeds of one generator.
 - That minimum angle or radius ratio predicts error on meshes outside the 15
-  tested ones, or any production acceptance threshold on them.
+  tested ones (the radius-ratio association vanishes within the
+  latitude–longitude family), or any production acceptance threshold on them.
+- Uncertainty of independently measured normals (normals here are always
+  derived from noisy vertices).
 - Which of geometry or sensor noise dominates for a real part: that depends on
   the noise model (isotropic versus normal-only) as well as on the sigmas.
 
 ## Open questions and next tasks
 
-1. Implement an exact polyhedral distance (MMP or ICH) as an independent
-   reference for the Steiner and heat-method distances.
+1. Complete T038: implement an exact two-point polyhedral distance (MMP or
+   ICH, or iterative edge flipping) as a reference for the Steiner,
+   heat-method and traced lengths.
 2. Implement the Polthier–Schmies vertex rule and measure how often generic
    traces need it on irregular meshes.
 3. Re-trace per Monte Carlo sample to quantify geodesic-distance uncertainty
@@ -441,7 +549,9 @@ Residual `r = y − d(V_nominal)` with `y = d(V_nominal + η) + ε`,
    the recursive midpoint subdivision in the limit).
 5. Replace isotropic independent vertex noise by correlated, anisotropic scanner
    models once acquired scan data exist (physical, currently blocked).
-6. Carry the geometry/sensor split into the typed observation modes of T045.
+6. An inversion test for closed meshes that are not star-shaped (for example,
+   a winding-number or orientation test against a declared outward field).
+7. Carry the geometry/sensor split into the typed observation modes of T045.
 
 ## Reproduce
 

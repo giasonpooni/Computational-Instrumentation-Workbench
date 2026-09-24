@@ -2,12 +2,15 @@
 
 Scope: deterministic mesh generators (icosphere, latitude-longitude sphere,
 prism cylinder, Schwarz lantern, planar grid, torus grid), a validator that
-names every structural defect it refuses, straightest geodesics traced by
-unfolding across edges (Polthier-Schmies: straight inside a face, equal angles
-on both sides of an edge), graph distances on the edge graph and on a
-Steiner-point graph, a direct heat-method distance for small meshes,
-angle-defect Gaussian curvature, batched one-ring vertex normals and the
-planar unfolding of a face strip.
+names every structural defect it refuses (and, for a mesh declared
+star-shaped about a centre, every face oriented towards that centre),
+straightest geodesics traced by unfolding across edges (Polthier-Schmies:
+straight inside a face, equal angles on both sides of an edge), graph
+distances on the edge graph and on a Steiner-point graph, a direct
+heat-method distance for small meshes, angle-defect Gaussian curvature,
+batched one-ring vertex normals, linearized per-vertex standard deviations of
+normals and curvature under a declared vertex covariance, and the planar
+unfolding of a face strip.
 
 Declared rules: a traced geodesic that reaches a vertex (within a relative
 edge-parameter tolerance) is refused with ``vertex_hit`` rather than continued
@@ -31,11 +34,12 @@ DEGENERATE_RATIO = 1e-12      # 2 * area / longest_edge^2 at or below this is a 
 VERTEX_TOLERANCE = 1e-9       # edge parameter distance to an endpoint that counts as a vertex hit
 ON_FACE_TOLERANCE = 1e-9      # distance to a face (relative to its longest edge) for a start point
 FOLD_COSINE = -0.9            # adjacent unit normals with dot at or below this (bend > 154 degrees) are folded
+# A face is inverted about a declared centre c when det(p0 - c, p1 - c, p2 - c) <= 0 (clockwise seen from outside).
 
 # Named refusal codes in the order the validator reports them.
 MESH_CODES = ("invalid_shape", "empty_mesh", "nonfinite_vertex", "invalid_face_index", "degenerate_face",
               "non_manifold_edge", "inconsistent_orientation", "non_manifold_vertex", "folded_face",
-              "unreferenced_vertex", "disconnected_components", "open_boundary")
+              "inverted_face", "unreferenced_vertex", "disconnected_components", "open_boundary")
 TRACE_CODES = ("point_outside_face", "invalid_direction", "boundary_reached", "vertex_hit",
                "step_budget_exceeded")
 QUERY_CODES = ("unreachable_target", "boundary_vertex_curvature", "mesh_too_large", "invalid_strip")
@@ -51,8 +55,14 @@ class MeshRefusal(ValueError):
 
 
 # ---------------------------------------------------------------- validation
-def inspect(vertices, faces, *, require_connected=True, require_closed=False) -> list:
-    """Every structural defect as (code, message), in MESH_CODES order; empty when valid."""
+def inspect(vertices, faces, *, require_connected=True, require_closed=False, center=None) -> list:
+    """Every structural defect as (code, message), in MESH_CODES order; empty when valid.
+
+    ``center`` declares the mesh star-shaped about that point with outward
+    orientation; faces oriented towards it are then refused as ``inverted_face``.
+    Without a declared centre an inverted face is detected only when its bend to
+    a neighbour exceeds the fold threshold (``folded_face``).
+    """
     issues = []
     vertices = np.asarray(vertices, dtype=float)
     faces = np.asarray(faces)
@@ -97,6 +107,12 @@ def inspect(vertices, faces, *, require_connected=True, require_closed=False) ->
         folded = int(np.sum(dots <= FOLD_COSINE))
         if folded:
             issues.append(("folded_face", f"{folded} interior edges join faces with nearly opposite normals"))
+    if center is not None and not len(bad) and not len(degenerate) and not edges["misoriented"]:
+        center = np.asarray(center, dtype=float)
+        orientation = np.einsum("ij,ij->i", cross, vertices[faces[:, 0]] - center)
+        inverted = np.flatnonzero(orientation <= 0)
+        if len(inverted):
+            issues.append(("inverted_face", f"Faces {inverted[:5].tolist()} are oriented towards the declared centre"))
     unused = np.flatnonzero(np.bincount(faces.ravel(), minlength=len(vertices)) == 0)
     if len(unused):
         issues.append(("unreferenced_vertex", f"Vertices {unused[:5].tolist()} belong to no face"))
@@ -214,9 +230,11 @@ class TriMesh:
         self.boundary_vertices[boundary.ravel()] = True
 
     @classmethod
-    def build(cls, vertices, faces, name="mesh", *, require_connected=True, require_closed=False, params=None):
+    def build(cls, vertices, faces, name="mesh", *, require_connected=True, require_closed=False, center=None,
+              params=None):
         """Validate and construct; refuse with the first named defect (all defects are attached)."""
-        issues = inspect(vertices, faces, require_connected=require_connected, require_closed=require_closed)
+        issues = inspect(vertices, faces, require_connected=require_connected, require_closed=require_closed,
+                         center=center)
         if issues:
             code, message = issues[0]
             raise MeshRefusal(code, message, issues)
@@ -604,10 +622,7 @@ def steiner_graph(mesh: TriMesh, k: int, extra=()):
     distances cannot increase as j grows.
     """
     n, n_edges = len(mesh.vertices), len(mesh.edges)
-    fractions = (np.arange(1, k + 1) / (k + 1)) if k else np.zeros(0)
-    a, b = mesh.vertices[mesh.edges[:, 0]], mesh.vertices[mesh.edges[:, 1]]
-    steiner = (a[:, None, :] + fractions[None, :, None] * (b - a)[:, None, :]).reshape(-1, 3)
-    nodes = np.concatenate([mesh.vertices, steiner])
+    nodes = steiner_nodes(mesh, k)
     ids = [mesh.faces]
     for local in range(3):
         # Node order inside a face is irrelevant: every pair of its nodes is joined.
@@ -625,6 +640,14 @@ def steiner_graph(mesh: TriMesh, k: int, extra=()):
     weights = np.linalg.norm(nodes[src] - nodes[dst], axis=1)
     keep = src != dst
     return _csr(len(nodes), src[keep], dst[keep], weights[keep]), extra_ids, n_edges * k
+
+
+def steiner_nodes(mesh: TriMesh, k: int) -> np.ndarray:
+    """Vertices followed by k equally spaced points on every edge (edge-major order), as in ``steiner_graph``."""
+    fractions = (np.arange(1, k + 1) / (k + 1)) if k else np.zeros(0)
+    a, b = mesh.vertices[mesh.edges[:, 0]], mesh.vertices[mesh.edges[:, 1]]
+    steiner = (a[:, None, :] + fractions[None, :, None] * (b - a)[:, None, :]).reshape(-1, 3)
+    return np.concatenate([mesh.vertices, steiner])
 
 
 def vertex_distance(mesh: TriMesh, source: int, target: int) -> float:
@@ -832,6 +855,121 @@ def one_ring(mesh: TriMesh, vertex: int):
     ids = [vertex] + sorted(set(mesh.faces[incident].ravel().tolist()) - {vertex})
     local = {v: i for i, v in enumerate(ids)}
     return np.array(ids), [tuple(local[int(v)] for v in mesh.faces[f]) for f in incident]
+
+
+def batch_vertex_fields(positions, faces):
+    """Unit vertex normals (N, n, 3) and angle-defect curvature (N, n) for a batch of whole-mesh positions.
+
+    A mesh-level evaluator (per-face corners accumulated with bincount), separate
+    from the one-ring code used by ``vertex_uncertainty``. Curvature at boundary
+    vertices is not a curvature; callers mask them.
+    """
+    positions = np.asarray(positions, dtype=float)
+    batch, n = positions.shape[:2]
+    faces = np.asarray(faces, dtype=np.int64)
+    offset = (np.arange(batch) * n)[:, None]
+    normal = np.zeros((batch * n, 3))
+    angle = np.zeros(batch * n)
+    area = np.zeros(batch * n)
+    for k in range(3):
+        p0, p1, p2 = (positions[:, faces[:, (k + j) % 3]] for j in range(3))
+        a, b = p1 - p0, p2 - p0
+        cross = np.cross(a, b)
+        size = np.linalg.norm(cross, axis=2)
+        index = (offset + faces[:, k][None, :]).ravel()
+        for d in range(3):
+            normal[:, d] += np.bincount(index, weights=cross[..., d].ravel(), minlength=batch * n)
+        angle += np.bincount(index, weights=np.arctan2(size, np.einsum("bfi,bfi->bf", a, b)).ravel(),
+                             minlength=batch * n)
+        area += np.bincount(index, weights=size.ravel() / 6.0, minlength=batch * n)
+    normal = normal.reshape(batch, n, 3)
+    return normal / np.linalg.norm(normal, axis=2)[..., None], ((2 * math.pi - angle) / area).reshape(batch, n)
+
+
+def _ring_groups(mesh: TriMesh):
+    """One-rings grouped by (ring size, face count): local ids (centre first) and faces rotated centre-first."""
+    order = np.argsort(mesh.faces.ravel(), kind="stable")
+    counts = np.bincount(mesh.faces.ravel(), minlength=len(mesh.vertices))
+    starts = np.r_[0, np.cumsum(counts)]
+    groups = {}
+    for vertex in range(len(mesh.vertices)):
+        corners = order[starts[vertex]:starts[vertex + 1]]
+        rotated = [[int(mesh.faces[c // 3, (c % 3 + j) % 3]) for j in range(3)] for c in corners]
+        ids = [vertex] + sorted({v for tri in rotated for v in tri} - {vertex})
+        local = {v: i for i, v in enumerate(ids)}
+        entry = groups.setdefault((len(ids), len(rotated)), {"vertices": [], "ids": [], "faces": []})
+        entry["vertices"].append(vertex)
+        entry["ids"].append(ids)
+        entry["faces"].append([[local[v] for v in tri] for tri in rotated])
+    return [{k: np.array(v, dtype=np.int64) for k, v in g.items()} for _, g in sorted(groups.items())]
+
+
+def _ring_fields(positions, faces):
+    """Vertex normal (m, B, 3) and angle-defect curvature (m, B) at local vertex 0 of one-rings (m, B, r, 3)."""
+    m, batch = positions.shape[:2]
+    rows, cols = np.arange(m)[:, None, None], np.arange(batch)[None, :, None]
+    p0, p1, p2 = (positions[rows, cols, faces[:, None, :, k]] for k in range(3))
+    a, b = p1 - p0, p2 - p0
+    cross = np.cross(a, b)
+    size = np.linalg.norm(cross, axis=3)
+    normal = cross.sum(axis=2)
+    angle = np.arctan2(size, np.einsum("mbfi,mbfi->mbf", a, b)).sum(axis=2)
+    return normal / np.linalg.norm(normal, axis=2)[..., None], (2 * math.pi - angle) / (size.sum(axis=2) / 6.0)
+
+
+def _vertex_covariance(covariance, n) -> np.ndarray:
+    covariance = np.asarray(covariance, dtype=float)
+    if covariance.ndim == 0:
+        covariance = np.broadcast_to(covariance * np.eye(3), (n, 3, 3))
+    elif covariance.shape == (n,):
+        covariance = covariance[:, None, None] * np.eye(3)[None]
+    if covariance.shape != (n, 3, 3) or not np.all(np.isfinite(covariance)):
+        raise ValueError("The vertex covariance must be a variance, n variances or n finite 3x3 matrices")
+    if np.max(np.abs(covariance - np.swapaxes(covariance, 1, 2))) > 1e-12 * max(np.max(np.abs(covariance)), 1e-300):
+        raise ValueError("The vertex covariance matrices must be symmetric")
+    if np.min(np.linalg.eigvalsh(covariance)) < -1e-12 * max(np.max(np.abs(covariance)), 1e-300):
+        raise ValueError("The vertex covariance matrices must be positive semidefinite")
+    return covariance
+
+
+def vertex_uncertainty(mesh: TriMesh, covariance, tau: float = 1e-6) -> dict:
+    """Linearized per-vertex standard deviations of the unit vertex normal and the angle-defect curvature.
+
+    ``covariance`` is the declared coordinate covariance of independent vertex
+    errors: one variance for every vertex (isotropic), n variances, or n 3x3
+    matrices. Jacobians are central differences (step ``tau``) over each
+    vertex's one-ring, so Var f = sum_j J_j C_j J_j^T. ``normal_sd`` is the
+    root-mean-square normal tilt (radians, first order), sqrt(trace Cov(n));
+    ``curvature_sd`` is NaN at boundary vertices, where the angle defect is not a
+    curvature. The mesh is validated first; an invalid mesh is refused.
+    """
+    issues = inspect(mesh.vertices, mesh.faces, require_connected=False)
+    if issues:
+        raise MeshRefusal(issues[0][0], issues[0][1], issues)
+    n = len(mesh.vertices)
+    covariance = _vertex_covariance(covariance, n)
+    normal_sd, curvature_sd = np.empty(n), np.empty(n)
+    normal0, curvature0 = np.empty((n, 3)), np.empty(n)
+    for group in _ring_groups(mesh):
+        ids, faces = group["ids"], group["faces"]
+        r = ids.shape[1]
+        steps = np.zeros((6 * r, r * 3))
+        steps[np.arange(3 * r) * 2, np.arange(3 * r)] = tau
+        steps[np.arange(3 * r) * 2 + 1, np.arange(3 * r)] = -tau
+        base = mesh.vertices[ids]
+        normals, curvature = _ring_fields(base[:, None] + steps.reshape(6 * r, r, 3)[None], faces)
+        jn = ((normals[:, 0::2] - normals[:, 1::2]) / (2 * tau)).reshape(len(ids), r, 3, 3)
+        jk = ((curvature[:, 0::2] - curvature[:, 1::2]) / (2 * tau)).reshape(len(ids), r, 3)
+        local = covariance[ids]
+        vertices = group["vertices"]
+        normal_sd[vertices] = np.sqrt(np.einsum("mlco,mlcd,mldo->m", jn, local, jn))
+        curvature_sd[vertices] = np.sqrt(np.einsum("mlc,mlcd,mld->m", jk, local, jk))
+        n0, k0 = _ring_fields(base[:, None], faces)
+        normal0[vertices], curvature0[vertices] = n0[:, 0], k0[:, 0]
+    curvature_sd[mesh.boundary_vertices] = np.nan
+    curvature0[mesh.boundary_vertices] = np.nan
+    return {"normal_sd": normal_sd, "curvature_sd": curvature_sd, "normal": normal0, "curvature": curvature0,
+            "interior": ~mesh.boundary_vertices}
 
 
 def strip_unfold_distance(positions, strip, start_bary, end_bary):

@@ -33,8 +33,15 @@ TRACE_LEVELS = (1, 2, 3, 4, 5, 6, 7)
 VALENCE5_LIMIT = 4.5 - 1.5 * math.sqrt(5.0)  # 3 / (4 cos^2(pi / 5)) for a regular valence-5 star
 EDGE_GRAPH_FLOOR = math.sqrt(5.0) - 2.0      # 1 / cos(pi / 5) - 1: two hops between rows 72 degrees apart
 # Declared marker geodesic for T043/T044: STARTS[5] has the largest vertex margin of the six on
-# icosphere-3, so it is the best case for a fixed face corridor; corridor_study reports all six.
+# icosphere-3 and stays in its face corridor for sigma <= 1e-3. The largest margin does not make it the
+# most robust strip at larger noise (T043 records a smaller-margin strip that leaves its corridor less
+# often at sigma >= 3e-3); corridor_study reports all six.
 MARKER_START = 5
+ORIGIN = np.zeros(3)
+# Seed offsets (from SEED) of the jitter fold-rate study; disjoint from quality_study's seeds 1-3.
+FOLD_SEEDS = tuple(range(1001, 1061))
+# Declared jittered icosphere-3 with an inverted face whose bends stay below the fold threshold (T042).
+INVERTED_JITTER = (0.2, 1002)
 
 
 def optional_version(name: str) -> str | None:
@@ -216,17 +223,45 @@ def distance_study(levels=(1, 2, 3, 4), ks=(1, 3), heat_levels=(1, 2, 3)):
     return {"source": "vertex 0 (valence 5)", "rows": rows}
 
 
+def face_membership(mesh, points, tolerance=1e-12) -> np.ndarray:
+    """Boolean (points, faces): the point lies on the closed face (plane offset and barycentric coordinates)."""
+    points = np.asarray(points, dtype=float)
+    p0 = mesh.vertices[mesh.faces[:, 0]]
+    offset = np.einsum("pfi,fi->pf", points[:, None, :] - p0[None], mesh.face_normals)
+    v = mesh.vertices[mesh.faces]
+    e1, e2 = v[:, 1] - v[:, 0], v[:, 2] - v[:, 0]
+    d = points[:, None, :] - p0[None]
+    d11, d12, d22 = (np.einsum("fi,fi->f", x, y) for x, y in ((e1, e1), (e1, e2), (e2, e2)))
+    d1, d2 = np.einsum("pfi,fi->pf", d, e1), np.einsum("pfi,fi->pf", d, e2)
+    den = d11 * d22 - d12 * d12
+    b1, b2 = (d22 * d1 - d12 * d2) / den, (d11 * d2 - d12 * d1) / den
+    return (np.abs(offset) <= tolerance) & (b1 >= -tolerance) & (b2 >= -tolerance) & (1 - b1 - b2 >= -tolerance)
+
+
+def edges_outside_faces(mesh, nodes, rows, cols) -> int:
+    """Graph edges whose two end nodes lie on no common face, by a geometric test independent of the construction.
+
+    A segment between two points of one (convex, planar) face lies in that face,
+    so zero means every graph edge is a surface path.
+    """
+    packed = np.packbits(face_membership(mesh, nodes), axis=1)
+    return int(np.sum(~np.any(packed[rows] & packed[cols], axis=1)))
+
+
+def _graph_edges(indptr, indices):
+    return np.repeat(np.arange(len(indptr) - 1), np.diff(indptr)), np.asarray(indices)
+
+
 def steiner_nested_study(level=2, ks=(0, 1, 3, 7), trace_length=1.0, starts=STARTS):
-    """Nested Steiner graphs: distances cannot increase with k; traced geodesics are lower sandwiches."""
+    """Nested Steiner graphs: distances cannot increase with k, every graph edge lies in a face, and traced
+    geodesics are lower sandwiches."""
     mesh = G.icosphere(level)
     n = len(mesh.vertices)
-    chord = np.linalg.norm(mesh.vertices - mesh.vertices[0], axis=1)
-    previous, increases, below_chord, table = None, [], [], {}
+    previous, increases, table = None, [], {}
     for k in ks:
         (indptr, indices, weights), _, _ = G.steiner_graph(mesh, k)
         d = G.dijkstra(indptr, indices, weights, 0)[:n]
         table[k] = d
-        below_chord.append(float(np.max(chord - d)))
         if previous is not None:
             increases.append(float(np.max(d - previous)))
         previous = d
@@ -238,14 +273,19 @@ def steiner_nested_study(level=2, ks=(0, 1, 3, 7), trace_length=1.0, starts=STAR
         if tr.completed:
             traced.append(tr.length)
             locations.append(((start["face"], start["point"]), (tr.end_face, tr.end_point)))
-    gaps = {}
-    for k in ks[1:]:
-        extra = [loc for pair in locations for loc in pair]
+    gaps, outside, checked = {}, 0, 0
+    extra = [loc for pair in locations for loc in pair]
+    for k in ks:
         (indptr, indices, weights), ids, _ = G.steiner_graph(mesh, k, extra=extra)
-        gaps[k] = [float(G.dijkstra(indptr, indices, weights, ids[2 * i], ids[2 * i + 1])[ids[2 * i + 1]] - ell)
-                   for i, ell in enumerate(traced)]
+        nodes = np.concatenate([G.steiner_nodes(mesh, k)] + [np.asarray(p, dtype=float)[None] for _, p in extra])
+        rows, cols = _graph_edges(indptr, indices)
+        outside += edges_outside_faces(mesh, nodes, rows, cols)
+        checked += len(rows) // 2
+        if k in ks[1:]:
+            gaps[k] = [float(G.dijkstra(indptr, indices, weights, ids[2 * i], ids[2 * i + 1])[ids[2 * i + 1]] - ell)
+                       for i, ell in enumerate(traced)]
     return {"level": level, "ks": list(ks), "max_increase_with_k": max(increases),
-            "max_chord_excess": max(below_chord), "traced_lengths": traced,
+            "edges_outside_faces": outside, "edges_checked": checked, "traced_lengths": traced,
             "gap_to_traced": {str(k): v for k, v in gaps.items()},
             "min_gap": min(min(v) for v in gaps.values()), "vertex0_to_last": {str(k): float(table[k][-1]) for k in ks}}
 
@@ -386,8 +426,21 @@ def curvature_study(levels=TRACE_LEVELS, torus_sizes=(8, 16, 32, 64)):
 
 
 # ---------------------------------------------------------------- mesh quality
+def inverted_faces(mesh, center=ORIGIN) -> np.ndarray:
+    """Faces whose unit normal points towards the centre at their centroid (the fold indicator of T041)."""
+    centroid = mesh.vertices[mesh.faces].mean(axis=1) - center
+    return np.flatnonzero(np.einsum("ij,ij->i", mesh.face_normals, centroid) < 0)
+
+
 def mesh_errors(mesh, starts=STARTS, length=TRACE_LENGTH):
-    issues = [code for code, _ in G.inspect(mesh.vertices, mesh.faces, require_closed=True)]
+    """Quality metrics and errors of a unit-sphere mesh, measured whether or not it validates.
+
+    ``issues`` come from the validator with the sphere centre declared (so an
+    inverted face is refused); ``structural_issues`` from the structural and
+    dihedral checks alone.
+    """
+    structural = [code for code, _ in G.inspect(mesh.vertices, mesh.faces, require_closed=True)]
+    issues = [code for code, _ in G.inspect(mesh.vertices, mesh.faces, require_closed=True, center=ORIGIN)]
     with np.errstate(divide="ignore", invalid="ignore"):
         defect, area, _ = G.angle_defect(mesh)
         k = defect / area
@@ -400,9 +453,9 @@ def mesh_errors(mesh, starts=STARTS, length=TRACE_LENGTH):
         statuses.append(tr.status)
         if tr.completed:
             geodesic.append(great_circle_errors(s, tr.end_point, length)["endpoint"])
-    centroid = mesh.vertices[mesh.faces].mean(axis=1)
-    inverted = int(np.sum(np.einsum("ij,ij->i", mesh.face_normals, centroid) < 0))
-    return {"mesh": mesh.name, "vertices": len(mesh.vertices), "issues": issues, "inverted_faces": inverted,
+    inverted = len(inverted_faces(mesh))
+    return {"mesh": mesh.name, "vertices": len(mesh.vertices), "issues": issues, "structural_issues": structural,
+            "inverted_faces": inverted,
             "min_angle_deg": quality["min_angle_deg"], "max_radius_ratio": quality["max_radius_ratio"],
             "curvature_rms": float(np.sqrt(np.mean((k - 1) ** 2))), "curvature_max": float(np.max(np.abs(k - 1))),
             "voronoi_curvature_rms": float(np.sqrt(np.mean((voronoi - 1) ** 2))),
@@ -441,6 +494,61 @@ def _jitter_unvalidated(mesh, amplitude, seed):
                      {"amplitude": amplitude, "seed": seed})
 
 
+def fold_rate_study(level=3, amplitudes=(0.1, 0.15, 0.2, 0.3), seeds=FOLD_SEEDS):
+    """Dihedral fold check against inverted faces over many seeds of the tangential jitter generator.
+
+    Categories per amplitude: inverted (a face normal points into the sphere) or
+    not, refused by the structural and dihedral checks (no centre declared) or
+    not; plus refusals with the sphere centre declared. The witness is the
+    clearest miss: the accepted inverted mesh with the largest
+    min(-normal . radial, smallest adjacent normal dot - FOLD_COSINE), i.e.
+    both clearly inverted and clearly below the fold threshold.
+    """
+    base = G.icosphere(level)
+    rows, witness = [], None
+    for amplitude in amplitudes:
+        row = {"amplitude": amplitude, "meshes": len(seeds), "inverted_refused": 0, "inverted_accepted": 0,
+               "clean_refused": 0, "clean_accepted": 0, "refused_with_centre": 0, "accepted_inverted_seeds": []}
+        for offset in seeds:
+            mesh = _jitter_unvalidated(base, amplitude, SEED + offset)
+            inverted = inverted_faces(mesh)
+            structural = [c for c, _ in G.inspect(mesh.vertices, mesh.faces, require_closed=True)]
+            declared = [c for c, _ in G.inspect(mesh.vertices, mesh.faces, require_closed=True, center=ORIGIN)]
+            key = ("inverted" if len(inverted) else "clean") + ("_refused" if structural else "_accepted")
+            row[key] += 1
+            row["refused_with_centre"] += bool(declared)
+            if len(inverted) and not structural:
+                row["accepted_inverted_seeds"].append(SEED + offset)
+                candidate = _inverted_witness(mesh, inverted, amplitude, SEED + offset, declared)
+                if witness is None or _miss_margin(candidate) > _miss_margin(witness):
+                    witness = candidate
+        rows.append(row)
+    return {"level": level, "seeds": [SEED + s for s in seeds], "fold_cosine": G.FOLD_COSINE, "rows": rows,
+            "witness": witness}
+
+
+def _miss_margin(witness) -> float:
+    return min(-witness["normal_radial"], witness["min_adjacent_normal_dot"] - G.FOLD_COSINE)
+
+
+def _inverted_witness(mesh, inverted, amplitude, seed, declared_issues):
+    centroid = mesh.vertices[mesh.faces].mean(axis=1)
+    radial = np.einsum("ij,ij->i", mesh.face_normals, centroid / np.linalg.norm(centroid, axis=1)[:, None])
+    face = int(inverted[np.argmin(radial[inverted])])
+    with np.errstate(divide="ignore", invalid="ignore"):
+        defect, area, _ = G.angle_defect(mesh)
+    table = G._edge_table(mesh.faces, len(mesh.vertices))
+    dots = np.einsum("ij,ij->i", mesh.face_normals[table["pair_first"] // 3],
+                     mesh.face_normals[table["pair_second"] // 3])
+    return {"amplitude": amplitude, "seed": seed, "inverted_faces": len(inverted), "face": face,
+            "normal_radial": float(radial[face]), "corner_angles_deg": np.degrees(mesh.corner_angles()[face]).tolist(),
+            "neighbour_normal_dots": [float(mesh.face_normals[face] @ mesh.face_normals[g])
+                                      for g in mesh.neighbors[face]],
+            "min_adjacent_normal_dot": float(np.min(dots)),
+            "unguarded_curvature_rms": float(np.sqrt(np.mean((defect / area - 1) ** 2))),
+            "issues_with_centre": declared_issues}
+
+
 def lantern_study(q=0.25, ns=(4, 8, 16, 32, 64), radius=1.0, height=1.0, folded_q=1.0, folded_n=8, samples=4):
     """Schwarz lantern with m = q n^2 bands: Hausdorff distance -> 0 while area and height do not converge."""
     rows = []
@@ -476,9 +584,12 @@ def lantern_study(q=0.25, ns=(4, 8, 16, 32, 64), radius=1.0, height=1.0, folded_
     limit = math.sqrt(1 + (math.pi ** 2 * radius * q / (2 * height)) ** 2)
     tilt = math.degrees(math.atan(math.pi ** 2 * radius * q / (2 * height)))
     folded_issues = [c for c, _ in G.inspect(folded.vertices, folded.faces)]
+    centroid = folded.vertices[folded.faces].mean(axis=1) * np.array([1.0, 1.0, 0.0])
+    radial = np.einsum("ij,ij->i", folded.face_normals, centroid / np.linalg.norm(centroid, axis=1)[:, None])
     return {"q": q, "limit_area_ratio": limit, "limit_tilt_deg": tilt,
             "smooth_total_abs_mean_curvature": math.pi * height, "rows": rows,
-            "folded": {"q": folded_q, "n": folded_n, "issues": folded_issues}}
+            "folded": {"q": folded_q, "n": folded_n, "issues": folded_issues,
+                       "min_normal_radial": float(np.min(radial))}}
 
 
 def _dihedral(mesh) -> float:
@@ -532,6 +643,11 @@ def refusal_study():
     fold = square.copy()
     fold[3] = [0.8, 0.2, 0.0]
     build_case("fold-over", "folded_face", fold, np.array([[0, 1, 2], [0, 2, 3]]))
+    build_case("inward-oriented-octahedron", "inverted_face", octa_v, octa_f[:, ::-1], center=ORIGIN)
+    amplitude, offset = INVERTED_JITTER
+    jittered = _jitter_unvalidated(G.icosphere(3), amplitude, SEED + offset)
+    build_case("jittered-inverted-face", "inverted_face", jittered.vertices, jittered.faces, require_closed=True,
+               center=ORIGIN)
     build_case("unreferenced-vertex", "unreferenced_vertex", np.vstack([octa_v, [[3, 3, 3]]]), octa_f)
     build_case("two-components", "disconnected_components", np.vstack([octa_v, octa_v + 5]),
                np.vstack([octa_f, octa_f + 6]))
@@ -580,10 +696,12 @@ def refusal_study():
                       np.full(3, 1 / 3), np.full(3, 1 / 3)))})
 
     controls = []
-    for mesh, closed in ((G.icosphere(2), True), (G.cylinder_mesh(12, 6), False),
-                         (G.plane_mesh(5, 5, shear=0.4), False), (G.torus_mesh(16, 8), True)):
-        controls.append({"mesh": mesh.name, "issues": [c for c, _ in G.inspect(mesh.vertices, mesh.faces,
-                                                                                require_closed=closed)]})
+    for mesh, closed, center in ((G.icosphere(2), True, ORIGIN), (G.uv_sphere(10, 16, twist=0.1), True, ORIGIN),
+                                 (G.cylinder_mesh(12, 6), False, None), (G.plane_mesh(5, 5, shear=0.4), False, None),
+                                 (G.torus_mesh(16, 8), True, None)):
+        controls.append({"mesh": mesh.name, "center_declared": center is not None,
+                         "issues": [c for c, _ in G.inspect(mesh.vertices, mesh.faces, require_closed=closed,
+                                                            center=center)]})
     several = octa_v.copy()
     several[1, 0] = np.inf
     several_f = octa_f.copy()
@@ -595,7 +713,10 @@ def refusal_study():
         defect, area, _ = G.angle_defect(raw)
         unguarded = defect / area
         normals_nonfinite = int(np.sum(~np.isfinite(raw.face_normals)))
-    return {"cases": cases, "controls": controls, "multiple_defects": multiple,
+    undetected = {"amplitude": amplitude, "seed": SEED + offset, "inverted_faces": len(inverted_faces(jittered)),
+                  "structural_issues": [c for c, _ in G.inspect(jittered.vertices, jittered.faces,
+                                                                require_closed=True)]}
+    return {"cases": cases, "controls": controls, "multiple_defects": multiple, "undetected_inversion": undetected,
             "boundary_partial_length": boundary.length, "boundary_analytic_length": 1.0 - start[0],
             "unguarded_nonfinite_curvatures": int(np.sum(~np.isfinite(unguarded))),
             "unguarded_nonfinite_normals": normals_nonfinite}
@@ -761,6 +882,56 @@ def corridor_study(level=3, sigmas=(1e-4, 1e-3, 3e-3, 1e-2), samples=4000, lengt
                      "margin_times_h": strip["margin"] * mesh.mean_edge(), "faces": strip["faces"],
                      "left_fraction": fractions})
     return {"level": level, "h": mesh.mean_edge(), "sigmas": list(sigmas), "samples": samples, "rows": rows}
+
+
+def vertex_field_study(level=3, sigma=1e-4, normal_sigma=3e-4, tangential_sigma=1e-4, samples=2000,
+                       seed=SEED + 60, chunk=250):
+    """Per-vertex linearized normal and curvature standard deviations against Monte Carlo at every vertex.
+
+    Two declared vertex covariances: isotropic sigma^2 I, and normal-dominant
+    sigma_t^2 (I - u u^T) + sigma_n^2 u u^T with u the unit-sphere normal. The
+    linearization is ``G.vertex_uncertainty`` (one-ring finite differences); the
+    Monte Carlo evaluates the whole mesh with ``G.batch_vertex_fields``.
+    """
+    mesh = G.icosphere(level)
+    n = len(mesh.vertices)
+    unit = mesh.vertices / np.linalg.norm(mesh.vertices, axis=1)[:, None]
+    outer = np.einsum("ni,nj->nij", unit, unit)
+    covariances = {"isotropic": np.broadcast_to(sigma ** 2 * np.eye(3), (n, 3, 3)).copy(),
+                   "normal-dominant": tangential_sigma ** 2 * (np.eye(3)[None] - outer) + normal_sigma ** 2 * outer}
+    normal0, curvature0 = (a[0] for a in G.batch_vertex_fields(mesh.vertices[None], mesh.faces))
+    valence = np.bincount(mesh.faces.ravel())
+    se = math.sqrt(2.0 / (samples - 1))
+    rng = np.random.Generator(np.random.PCG64(seed))
+    models = []
+    for name, covariance in covariances.items():
+        linear = G.vertex_uncertainty(mesh, covariance)
+        root = np.linalg.cholesky(covariance)
+        s1, s2, tilt = np.zeros(n), np.zeros(n), np.zeros(n)
+        for start in range(0, samples, chunk):
+            size = min(chunk, samples - start)
+            noise = np.einsum("nij,bnj->bni", root, rng.standard_normal((size, n, 3)))
+            normals, curvature = G.batch_vertex_fields(mesh.vertices[None] + noise, mesh.faces)
+            shift = curvature - curvature0
+            s1 += shift.sum(axis=0)
+            s2 += (shift ** 2).sum(axis=0)
+            tilt += np.sum((normals - normal0) ** 2, axis=2).sum(axis=0)
+        curvature_ratio = ((s2 - s1 ** 2 / samples) / (samples - 1)) / linear["curvature_sd"] ** 2
+        normal_ratio = (tilt / samples) / linear["normal_sd"] ** 2
+        models.append({
+            "covariance": name, "curvature_sd": linear["curvature_sd"], "normal_sd": linear["normal_sd"],
+            "curvature_ratio": curvature_ratio, "normal_ratio": normal_ratio,
+            "max_abs_z_curvature": float(np.max(np.abs(curvature_ratio - 1)) / se),
+            "max_abs_z_normal": float(np.max(np.abs(normal_ratio - 1)) / se),
+            "median_curvature_ratio": float(np.median(curvature_ratio)),
+            "median_normal_ratio": float(np.median(normal_ratio)),
+            "curvature_sd_range": [float(np.min(linear["curvature_sd"])), float(np.max(linear["curvature_sd"]))],
+            "normal_sd_range": [float(np.min(linear["normal_sd"])), float(np.max(linear["normal_sd"]))],
+            "valence5_curvature_sd": float(np.mean(linear["curvature_sd"][valence == 5])),
+            "valence6_curvature_sd_median": float(np.median(linear["curvature_sd"][valence == 6]))})
+    return {"level": level, "h": mesh.mean_edge(), "vertices": n, "samples": samples, "sigma": sigma,
+            "normal_sigma": normal_sigma, "tangential_sigma": tangential_sigma, "far_vertex": far_valence6_vertex(mesh),
+            "models": models}
 
 
 def scaling_study(levels=(2, 3, 4, 5), index=MARKER_START):
