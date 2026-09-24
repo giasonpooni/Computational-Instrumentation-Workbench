@@ -335,6 +335,11 @@ class ProvedHeatWorkflow(PipelineRunner):
         _same(report, _verification(bundle, occurrence), "Historical verification report differs from its retained statement")
         _identity(report, "verification_id")
 
+    def summary_fields(self, bundle):
+        """Inspection never performs the cryptographic check; it reports the retained trust scope."""
+        return {"cryptographic_verification": "not_performed_by_inspection",
+                "verification_trust_scope": bundle["verification"]["trust_scope"]}
+
     def _check_receipts(self, bundle):
         receipts = bundle.get("replay_receipts", [])
         if not isinstance(receipts, list) or len(receipts) > 1:

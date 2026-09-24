@@ -23,6 +23,8 @@ from .pipelines import load as _load_descriptors
 _METHODS = {kind: value["verification"]["method"] for kind, value in _load_descriptors().items()}
 DECLARED_KINDS = frozenset(kind for kind, method in _METHODS.items() if method != "pinned_set_replay_verification")
 REPRODUCED_KINDS = frozenset(kind for kind in DECLARED_KINDS if _METHODS[kind] != "fresh_registered_guest_verification")
+# A contract-validated kind is declared but retains no single sealed native step of its own.
+CONTRACT_KINDS = frozenset(kind for kind, method in _METHODS.items() if method == "pinned_set_contract_validation")
 # One selected upstream kind per kind that binds exactly one; kinds that
 # select an ordered set of upstream bundles bind them in their workflow.
 _INPUTS = {kind: value["inputs"] for kind, value in _load_descriptors().items()}
@@ -192,9 +194,9 @@ def _summary(record):
         "retained_verification_outcome": verification.get("outcome"),
         "validation": "content_consistent", "numerical_replay": "not_performed_by_inspection",
         "state_admission": "not_performed"}
-    if record["kind"] == "proved-heat":
-        summary["cryptographic_verification"] = "not_performed_by_inspection"
-        summary["verification_trust_scope"] = verification["trust_scope"]
+    extra = getattr(_workflow(record["kind"]), "summary_fields", None)
+    if extra is not None:
+        summary.update(extra(native))
     if record["kind"] in ORDERED_UPSTREAM_KINDS:
         summary["upstream_bundle_ids"] = _workflow(record["kind"]).requested_upstream_ids(
             base64.b64decode(native["source"]["evidence"][0]["bytes_b64"], validate=True))
@@ -359,7 +361,7 @@ def _validate_links(record, bundles):
             if (other["bundle_id"] != record["bundle_id"] and other["kind"] == record["kind"]
                     and not occurrences.isdisjoint(occurrences_of(other["native"]))):
                 raise ValueError(workflow.FRESH_OCCURRENCE_MESSAGE)
-    if record["kind"] in DECLARED_KINDS and record["kind"] != "instrument-exchange":
+    if record["kind"] in DECLARED_KINDS - CONTRACT_KINDS:
         occurrences = {native["steps"][0]["execution_id"]}
         if record["kind"] in REPRODUCED_KINDS:
             occurrences.add(native["verification"]["reproduction"]["execution_id"])
@@ -390,7 +392,7 @@ def _validate_links(record, bundles):
         validate_replay = getattr(workflow, "validate_replay", None)
         if validate_replay is not None:
             validate_replay(original["native"], native, receipt)
-        if record["kind"] in REPRODUCED_KINDS and record["kind"] != "instrument-exchange":
+        if record["kind"] in REPRODUCED_KINDS - CONTRACT_KINDS:
             workflow = _workflow(record["kind"])
             raw = workflow._validate(original["native"])
             workflow._check_verification(original["native"], receipt["verification"], workflow._source(raw),
@@ -406,12 +408,20 @@ def _validate_links(record, bundles):
         if (_canonical(original["native"]["configuration"]) != _canonical(native["configuration"]) or
                 [step["operation_id"] for step in old_steps] != [step["operation_id"] for step in new_steps]):
             raise ValueError("Replay must preserve the original operation graph and configuration")
+        # A role whose result is content-addressed may legitimately repeat an identical result on replay.
+        reusable = getattr(_workflow(record["kind"]), "REUSABLE_RESULT_ROLES", frozenset())
         if any(old["numerical_result_id"] != new["numerical_result_id"] or
                old["execution_id"] == new["execution_id"] or
                (old["result_id"] == new["result_id"] and not
-                (record["kind"] == "telemetry" and old["runtime_ref"] == "ppda" and old["result"] == new["result"]))
+                (old["runtime_ref"] in reusable and old["result"] == new["result"]))
                for old, new in zip(old_steps, new_steps)):
             raise ValueError("Replay must preserve numerical identity and create fresh occurrences")
+
+
+def _own_child(record, native):
+    """A native session the record embeds as its own child (an acquired window's derived window)."""
+    child = record["native"].get("child_window")
+    return child is not None and child["bundle_digest"] == native["bundle_digest"]
 
 
 def _context(record, sources):
@@ -1071,10 +1081,10 @@ class Workbench:
         with self._lock:
             return deepcopy([{**{k: step[k] for k in ("execution_id", "operation_id", "runtime_ref", "input_refs", "result_id")},
                 "bundle_id": record["bundle_id"], "native_bundle_id": native["bundle_digest"],
-                "source_id": (record["source_id"] if native["bundle_digest"] == record["bundle_id"] or record["kind"] == "acquired-calibrated-window"
+                "source_id": (record["source_id"] if native["bundle_digest"] == record["bundle_id"] or _own_child(record, native)
                               else self._bundles[record["upstream_bundle_id"]]["source_id"]),
                 **({"native_source_evidence_id": native["source"]["evidence"][0]["artifact_ref"]}
-                   if record["kind"] == "acquired-calibrated-window" else {}),
+                   if _own_child(record, native) else {}),
                 "status": "completed"}
                 for record, native, step in self._native_steps()])
 

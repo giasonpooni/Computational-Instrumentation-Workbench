@@ -446,6 +446,8 @@ def _adapters(configuration, repositories, expected=None):
 
 
 REQUIRED_ROLES = frozenset({"ppda", "stfe", "gsie", "set"})
+# PPDA projections are content-addressed: a replay may repeat an identical PPDA result.
+REUSABLE_RESULT_ROLES = frozenset({"ppda"})
 
 
 def check_bindings(bindings):
