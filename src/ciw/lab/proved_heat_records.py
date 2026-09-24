@@ -7,7 +7,8 @@ Scope: one passing run of the proved-heat gate (the steps of
 (``ciw.lab-proved-heat-run.v1``: how, where and with which toolchains it was
 produced, as role names and versions, never host paths), the gate outputs
 needed to re-check its claims (the proof-bearing bundles gzip-compressed, so a
-retained proof can be re-verified later with ``ciw proof verify``) and
+retained proof can be re-verified later with ``ciw proof verify`` after
+decompressing it, ``gunzip -k gate/original.json.gz``) and
 ``manifest.json`` (``ciw.lab-proved-heat-manifest.v1``: the SHA-256 and size of
 every retained file and of the gate's own bytes inside each compressed one).
 :func:`inspect_record` recomputes every digest; compares the gate's SCR and SP1
@@ -25,7 +26,10 @@ copies CIW's public pins and recomputes every digest passes. The gate binds its
 engine and prover as operator-asserted executables, not attested builds, and
 its times, memory and proof sizes are measurements of the recording host. Gate
 outputs are retained as the gate wrote them, so they name that host's temporary
-and checkout locations as identity metadata.
+and checkout locations as identity metadata: ``build.json``'s guest ELF path,
+and the SCR runtime identity (checkout root and interpreter) inside the bundles
+and ``gate/reverification.json``, which their bundle digests and verification
+id seal, so they cannot be redacted.
 """
 from __future__ import annotations
 
@@ -53,7 +57,7 @@ GATE_EXECUTION = "real_sp1_proof_fresh_replay_and_verification"
 HOST_BINDING = "operator_asserted_not_attested"
 RUN_FILE, MANIFEST_FILE = "run.json", "manifest.json"
 # Gate outputs retained, from their path in the gate's output directory to their retained path; the large ones are
-# gzip-compressed. The two bundles hold the proofs, so a retained proof can be re-verified later.
+# gzip-compressed. The two bundles hold the proofs, so a retained proof can be re-verified later (decompressed).
 RETAINED = {"build.json": "build.json", "source-checks.json": "source-checks.json.gz",
             "gate/gate.json": "gate/gate.json", "gate/source.json": "gate/source.json",
             "gate/reverification.json": "gate/reverification.json", "gate/tests.xml": "gate/tests.xml",
@@ -78,6 +82,13 @@ LOCAL_RUN_OPTIONAL = {"observations", "notes"}
 RUN_KEYS = {"schema", "run_id", "host", "date", "started_utc", "record_origin", "procedure", "steps", "host_facts",
             "toolchains", "sources", "compiler_archive", "observations", "notes", "omitted", "limitations", "note"}
 RECORD_ORIGINS = ("written_by_driver", "written_after_the_run")
+# How a retained run was produced (procedure.kind); T099 words its assumptions by it.
+PROCEDURE_KINDS = ("local_workflow_replay",)
+# run.json fields that must be objects, and those that must be lists of sentences.
+RUN_OBJECTS = ("procedure", "host_facts", "toolchains", "sources", "compiler_archive", "observations", "omitted")
+RUN_SENTENCES = ("notes", "limitations")
+# The operator's execution-cli toolchain observation T099 reads from run.json observations, when present.
+TOOLCHAIN_EXPERIMENT = "execution_cli_toolchain_experiment"
 LIMITATIONS = [
     "The gate binds its engine and prover as operator_asserted_not_attested executables: the record shows which "
     "bytes ran, not that they were built from the pinned sources.",
@@ -217,6 +228,17 @@ def _tests(raw: bytes | None, problem) -> list:
     return names
 
 
+def _toolchain_builds(experiment) -> list | None:
+    """The builds of an execution-cli toolchain observation, or None unless each names its toolchain, source and
+    SHA-256."""
+    builds = experiment.get("builds") if isinstance(experiment, dict) else None
+    if not isinstance(builds, list) or not builds or not all(
+            isinstance(build, dict) and isinstance(build.get("toolchain"), str) and isinstance(build.get("source"), str)
+            and _HEX64.fullmatch(str(build.get("sha256"))) for build in builds):
+        return None
+    return builds
+
+
 def _check_run(run, run_id: str, problem) -> None:
     if not isinstance(run, dict) or run.get("schema") != RUN_SCHEMA:
         problem("run_record", f"{RUN_FILE} is not {RUN_SCHEMA}")
@@ -240,6 +262,18 @@ def _check_run(run, run_id: str, problem) -> None:
                 problem("run_record", f"{RUN_FILE} records step {step.get('name')!r} ending with {step.get('exit_code')}")
             elif step.get("status") not in ("ran", "not_run"):
                 problem("run_record", f"{RUN_FILE} step {step.get('name')!r} has no status ran or not_run")
+    for key in RUN_OBJECTS:
+        if key in run and not isinstance(run[key], dict):
+            problem("run_record", f"{RUN_FILE} {key} is not an object")
+    for key in RUN_SENTENCES:
+        if key in run and not (isinstance(run[key], list) and all(isinstance(text, str) for text in run[key])):
+            problem("run_record", f"{RUN_FILE} {key} is not a list of sentences")
+    if isinstance(run.get("procedure"), dict) and run["procedure"].get("kind") not in PROCEDURE_KINDS:
+        problem("run_record", f"{RUN_FILE} procedure kind is not one of {', '.join(PROCEDURE_KINDS)}")
+    experiment = run["observations"].get(TOOLCHAIN_EXPERIMENT) if isinstance(run.get("observations"), dict) else None
+    if experiment is not None and not _toolchain_builds(experiment):
+        problem("run_record", f"{RUN_FILE} observations.{TOOLCHAIN_EXPERIMENT} does not list its builds by "
+                              "toolchain, source and SHA-256")
     problems = _host_paths(run, RUN_FILE)
     for text in problems:
         problem("run_record", text)

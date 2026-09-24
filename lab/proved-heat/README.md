@@ -25,14 +25,18 @@ touches this directory.
 | `<run-id>/source-checks.json.gz` | The SP1 build-source check: tracked sources unchanged by the build, the clean reference and the generated files left out of it |
 | `<run-id>/gate/gate.json` | `ciw.proved-heat-gate.v1`: status, SCR and SP1 pins, native artifact digests, tests passed, installed wheel and the gate's measurements |
 | `<run-id>/gate/tests.xml` | The gate's JUnit record |
-| `<run-id>/gate/source.json`, `gate/original.json.gz`, `gate/replay.json.gz` | The heat source and the original and replayed proved-heat bundles with their proofs, so a retained proof can be re-verified later with `ciw proof verify` |
+| `<run-id>/gate/source.json`, `gate/original.json.gz`, `gate/replay.json.gz` | The heat source and the original and replayed proved-heat bundles with their proofs, so a retained proof can be re-verified later with `ciw proof verify` after decompressing it (`gunzip -k gate/original.json.gz`) |
 | `<run-id>/gate/reverification.json` | The gate's re-verification of the original bundle's retained proof |
 
 The gate outputs are retained as the gate wrote them, so they name the
-recording host's temporary and checkout locations as identity metadata; the
-session workspace the gate also writes is left out (its two bundles are the
-retained ones) and so are the driver's console logs, both named with their
-reason in `run.json`.
+recording host's temporary and checkout locations as identity metadata:
+`build.json`'s `elf_path`, and the SCR runtime identity (`repository_root` and
+`python_executable`) in both bundles and in `gate/reverification.json`'s
+verifier runtimes. The bundle digests and the verification id seal those
+identities, so they cannot be redacted without invalidating the record;
+`run.json` and `manifest.json` hold no host path. The session workspace the
+gate also writes is left out (its two bundles are the retained ones) and so are
+the driver's console logs, both named with their reason in `run.json`.
 
 `ciw lab verify`, `ciw lab proved-heat verify --retained lab` and
 `scripts/check_lab.py` check each record for integrity only: every file

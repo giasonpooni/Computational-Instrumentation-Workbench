@@ -40,6 +40,8 @@ PROVER = b"synthetic sp1-host bytes, not a prover"
 MEMORY = {"status": "measured", "unit": "byte", "bytes": 2 * 1024 * 1024, "scope": "max_waited_child_peak_rss"}
 RUN_ID = "synthetic-2026-09-24"
 SHOWN = f"pinned provider run ({providers.REPOSITORIES['scr']}@a59aba283b03)"
+# T099's stand-in pinned-toolchain build fails when asked to build these bytes.
+FAILED_BUILD = b""
 
 
 def _source() -> dict:
@@ -289,13 +291,30 @@ def test_a_resealed_record_naming_other_pins_is_refused(tmp_path, path, change, 
      "bundles: gate/reverification.json subject_ref"),
     ("gate/original.json.gz", lambda bundle: bundle["steps"][0]["result"]["data"]["native"].update(values=[0] * 5),
      "bundles: gate/original.json is refused by CIW's proved-heat validator"),
+    ("run.json", lambda run: run.update(procedure="x"), "run_record: run.json procedure is not an object"),
+    ("run.json", lambda run: run["procedure"].update(kind="ci_upload"),
+     "run_record: run.json procedure kind is not one of local_workflow_replay"),
+    ("run.json", lambda run: run.update(observations=["x"]), "run_record: run.json observations is not an object"),
+    ("run.json", lambda run: run.update(toolchains=3), "run_record: run.json toolchains is not an object"),
+    ("run.json", lambda run: run.update(host_facts="x"), "run_record: run.json host_facts is not an object"),
+    ("run.json", lambda run: run.update(sources=[]), "run_record: run.json sources is not an object"),
+    ("run.json", lambda run: run.update(compiler_archive="x"),
+     "run_record: run.json compiler_archive is not an object"),
+    ("run.json", lambda run: run.update(omitted=[]), "run_record: run.json omitted is not an object"),
+    ("run.json", lambda run: run.update(notes="x"), "run_record: run.json notes is not a list of sentences"),
+    ("run.json", lambda run: run.update(limitations={}),
+     "run_record: run.json limitations is not a list of sentences"),
+    ("run.json", lambda run: run.update(observations={records.TOOLCHAIN_EXPERIMENT: {"builds": [{"sha256": "x"}]}}),
+     f"run_record: run.json observations.{records.TOOLCHAIN_EXPERIMENT} does not list its builds"),
 ], ids=["failed-gate", "gate-schema", "attested-claim", "run-schema", "host-path", "engine", "reverification",
-        "bundle"])
+        "bundle", "procedure", "procedure-kind", "observations", "toolchains", "host-facts", "sources",
+        "compiler-archive", "omitted", "notes", "limitations", "toolchain-experiment"])
 def test_a_resealed_record_with_a_wrong_schema_status_or_bundle_is_refused(tmp_path, path, change, expected):
     record = retain(tmp_path)
     _edit(record, path, change)
-    problems = records.inspect_record(record)["problems"]
-    assert any(problem.startswith(expected) for problem in problems), problems
+    inspected = records.inspect_record(record)
+    assert any(problem.startswith(expected) for problem in inspected["problems"]), inspected["problems"]
+    assert inspected["summary"] is None
 
 
 def test_a_skipped_native_test_is_refused(tmp_path):
@@ -395,7 +414,8 @@ def _repository(path: Path) -> Path:
 def _t099(tmp_path, monkeypatch, record=None, pinned=ENGINE):
     """T099 on a synthetic SCR checkout with stand-in builds and engine run.
 
-    ``pinned`` is the engine bytes the CI-pinned toolchain builds, or None when that toolchain is not installed.
+    ``pinned`` is the engine bytes the CI-pinned toolchain builds, :data:`FAILED_BUILD` when that build fails, or
+    None when that toolchain is not installed.
     """
     if shutil.which("git") is None:
         pytest.skip("git is not available")
@@ -416,8 +436,11 @@ def _t099(tmp_path, monkeypatch, record=None, pinned=ENGINE):
 
     def build_engine(scr, builds=2, toolchain=None):
         assert toolchain == section.PINNED_TOOLCHAIN and builds == 1
-        return {"builds": [{"returncode": 0, "binary_sha256": sha256(pinned).hexdigest(), "byte_count": len(pinned),
-                            "log_tail": []}], "binary": pinned, "command": f"cargo +{toolchain} build (stand-in)",
+        row = ({"returncode": 101, "binary_sha256": None, "byte_count": None, "log_tail": ["error (stand-in)"]}
+               if pinned == FAILED_BUILD else
+               {"returncode": 0, "binary_sha256": sha256(pinned).hexdigest(), "byte_count": len(pinned),
+                "log_tail": []})
+        return {"builds": [row], "binary": pinned or None, "command": f"cargo +{toolchain} build (stand-in)",
                 "cargo": f"cargo {toolchain} (stand-in)", "rustc": f"rustc {toolchain} (stand-in)", "toolchain": toolchain}
     monkeypatch.setattr(providers, "build_engine", build_engine)
     bound = {"scr": str(scr), **({section.PROVED_HEAT_RECORD: str(record)} if record else {})}
@@ -468,19 +491,23 @@ def test_t099_labels_a_valid_proved_heat_record_provider_backed(tmp_path, monkey
 
 
 @pytest.mark.lab_task("T099")
-@pytest.mark.parametrize("defect", ["changed-byte", "other-pin"])
-def test_t099_refuses_a_tampered_proved_heat_record_by_name(tmp_path, monkeypatch, defect):
+@pytest.mark.parametrize("defect, category", [("changed-byte", "integrity"), ("other-pin", "pins"),
+                                              ("malformed-run", "run_record")])
+def test_t099_refuses_a_tampered_proved_heat_record_by_name(tmp_path, monkeypatch, defect, category):
     record = retain(tmp_path)
     if defect == "changed-byte":
         _flip_last_byte(record)
-    else:
+    elif defect == "other-pin":
         _edit(record, "gate/gate.json", lambda gate: gate["scr"].update(tree="0" * 40))
+    else:
+        # Resealed, so only the run record's shape refuses it; T099 must refuse it by name rather than fail on it.
+        _edit(record, "run.json", lambda run: run.update(procedure="x", observations=["x"]))
     report = _t099(tmp_path, monkeypatch, record=record)
     assert report["state"] == "partial" and report["evidence_status"]["primary"] == "not_established"
     refused = _claim(report, section.RECORD_CLAIM)
     assert refused["evidence_status"] == "not_established" and "expected_not_established" not in refused
     failing = {check["reference"] for check in refused["basis"]["checks"] if not check["passed"]}
-    assert failing == {"record problems (integrity)" if defect == "changed-byte" else "record problems (pins)"}
+    assert failing == {f"record problems ({category})"}
     for claim in (section.GUEST_CLAIM, section.PROOF_CLAIM, section.REVERIFY_CLAIM):
         found = _claim(report, claim)
         assert found["evidence_status"] == "not_established" and found["expected_not_established"] is True
@@ -517,6 +544,60 @@ def test_t099_refutes_a_pinned_rebuild_that_differs_from_the_gate_engine(tmp_pat
     assert refuted["value"]["equal_to_gate_engine"] is False
     assert _claim(report, section.GUEST_CLAIM)["evidence_status"] == "provider_backed"
     assert "different from the gate's" in report["numerical_result"]
+    # The prose reports the refutation; it never says the rebuild reproduced the gate's engine.
+    assert _claim(report, section.ATTESTED_CLAIM)["basis"]["notes"]["engine"] == section._ENGINE_REBUILT["differs"]
+    assert not any("reproducible from the pinned source where" in text for text in report["unresolved_assumptions"])
+    assert any(section._ENGINE_ASSUMPTION["differs"] in text for text in report["unresolved_assumptions"])
+
+
+def _experiment(*builds) -> dict:
+    """run.json observations with an execution-cli toolchain observation of ``(toolchain, source, engine bytes)``."""
+    return {"observations": {records.TOOLCHAIN_EXPERIMENT: {
+        "kind": "operator_observation", "builds": [{"toolchain": toolchain, "source": source,
+                                                    "sha256": sha256(data).hexdigest()}
+                                                   for toolchain, source, data in builds]}}}
+
+
+SEPARATED = _experiment(("rustc pinned", "<scr>", ENGINE), ("rustc pinned", "<scr>, built again", ENGINE),
+                        ("rustc newer", "<scr>", b"newer engine"), ("rustc newer", "a second clone", b"newer engine"))
+UNSEPARATED = _experiment(("rustc pinned", "<scr>", ENGINE), ("rustc pinned", "a second clone", b"path-dependent"))
+
+
+@pytest.mark.lab_task("T099")
+@pytest.mark.parametrize("outcome, pinned, observation", [
+    ("equal", ENGINE, SEPARATED), ("differs", b"another engine", SEPARATED), ("failed", FAILED_BUILD, SEPARATED),
+    ("not_installed", None, SEPARATED), ("equal", ENGINE, UNSEPARATED)],
+    ids=["equal", "differs", "failed", "not-installed", "unseparated-observation"])
+def test_t099_words_the_pinned_rebuild_and_the_toolchain_observation_by_what_happened(tmp_path, monkeypatch, outcome,
+                                                                                     pinned, observation):
+    # With a valid record, every sentence about the pinned-toolchain rebuild follows its outcome, and the record's
+    # toolchain observation is counted from the record, never asserted beyond it.
+    report = _t099(tmp_path, monkeypatch, record=retain(tmp_path, local_changes=observation), pinned=pinned)
+    assert report["state"] == ("completed" if outcome == "equal" else "partial")
+    rebuilt = _claim(report, section.PINNED_CLAIM)
+    if outcome == "not_installed":
+        assert rebuilt["expected_not_established"] is True and rebuilt["value"].startswith("not built")
+    else:
+        assert rebuilt["value"]["equal_to_gate_engine"] is (outcome == "equal")
+        assert rebuilt["evidence_status"] == ("numerically_verified" if outcome == "equal" else "not_established")
+    attested = _claim(report, section.ATTESTED_CLAIM)
+    assert attested["evidence_status"] == "not_established"
+    assert attested["basis"]["notes"]["engine"] == section._ENGINE_REBUILT[outcome]
+    assumptions = report["unresolved_assumptions"]
+    assert any(section._ENGINE_ASSUMPTION[outcome] in text for text in assumptions), assumptions
+    toolchains = assumptions[0]
+    assert section._REBUILT_HERE[outcome] in toolchains
+    assert section._pinned_result(outcome) in report["numerical_result"]
+    if observation is SEPARATED:
+        assert toolchains.startswith("The engine digest depends on the Rust toolchain and not on the checkout path")
+        assert ("2 builds with rustc pinned gave the gate's engine digest; 2 builds with rustc newer gave one other "
+                "digest") in toolchains
+    else:
+        assert toolchains.startswith("The bound record's run.json toolchain observation does not separate")
+        assert "2 builds with rustc pinned gave 2 different digests" in toolchains
+    assert "checkout paths" not in toolchains
+    kept = _artifact(tmp_path, "proved-heat-record.json")
+    assert kept["summary"]["observations"] == observation["observations"]
 
 
 def _repository_record() -> str | None:
@@ -544,7 +625,7 @@ def test_t099_rebuilds_the_gate_engine_with_the_pinned_toolchain(tmp_path):
 
 def test_t099_registers_the_record_tests_in_this_file():
     nodes = [node for node in registry._REGISTRY["T099"].regression_tests if node.startswith(section.RECORD_TESTS)]
-    assert len(nodes) == 5
+    assert len(nodes) == 6
     for node in nodes:
         assert node.split("::")[1] in globals(), node
 
@@ -677,6 +758,16 @@ def test_refresh_keeps_proved_heat_records_and_requires_their_binding(tmp_path, 
     with pytest.raises(SystemExit, match="proved-heat-record"):
         refresh.main()
     (run / "gate.json").write_text(json.dumps({**gate, "providers": [*gate["providers"], "proved-heat-record=/r"]}))
+    # T099 without the CI-pinned toolchain would be retained partial and regress in CI, whose lab gate installs it.
+    pinned = f"tool:cargo+{section.PINNED_TOOLCHAIN}"
+    for probes in (None, {"tool:cargo": True}, {"tool:cargo": True, pinned: False}):
+        if probes is not None:
+            (run / "reports" / "T099.json").write_text(json.dumps(
+                {"task_id": "T099", "provider_runtime_identity": {"requirement_probes": probes}}))
+        with pytest.raises(SystemExit, match="CI-pinned rustup toolchain"):
+            refresh.main()
+    (run / "reports" / "T099.json").write_text(json.dumps(
+        {"task_id": "T099", "provider_runtime_identity": {"requirement_probes": {"tool:cargo": True, pinned: True}}}))
     assert refresh.main() == 0
     assert kept.read_text() == '{"schema": "ciw.lab-proved-heat-run.v1"}'
 
@@ -698,6 +789,24 @@ def test_the_local_driver_knows_every_workflow_step_and_refuses_without_prerequi
     next(iter(changed["jobs"].values()))["steps"].append({"name": "Upload somewhere", "run": "true"})
     with pytest.raises(SystemExit, match="does not know"):
         driver.plan(changed)
+    # A step setting, job default or workflow-wide env the driver would not replay is refused, not dropped.
+    for change in (lambda job: next(step for step in job["steps"] if step.get("name") == driver.GATE_STEPS[2])
+                   .update(env={"RUSTFLAGS": "-C target-cpu=native"}),
+                   lambda job: job.update(defaults={"run": {"shell": "sh"}})):
+        changed = deepcopy(workflow)
+        change(next(iter(changed["jobs"].values())))
+        with pytest.raises(SystemExit, match="does not replay"):
+            driver.plan(changed)
+    with pytest.raises(SystemExit, match="does not replay"):
+        driver.plan({**workflow, "env": {"CARGO_PROFILE_RELEASE_LTO": "fat"}})
+    job_env = next(iter(workflow["jobs"].values()))["env"]
+    caller = {"PATH": "/usr/bin", "RUSTFLAGS": "-C target-cpu=native", "CARGO_PROFILE_RELEASE_LTO": "fat",
+              "RUSTUP_TOOLCHAIN": "stable", "CARGO_BUILD_JOBS": "4", "CARGO_TARGET_DIR": "target",
+              "CARGO_INCREMENTAL": "1", "CARGO_HOME": "cargo-home"}
+    refused = driver.build_variable_problems(caller, job_env)
+    assert [problem.split()[0] for problem in refused] == ["CARGO_PROFILE_RELEASE_LTO", "RUSTFLAGS",
+                                                           "RUSTUP_TOOLCHAIN"]
+    assert driver.build_variable_problems({"PATH": "/usr/bin"}, job_env) == []
     arguments = driver.argparse.Namespace(scr=tmp_path / "no-scr", sp1=tmp_path / "no-sp1",
                                           compiler_archive=tmp_path / "no-archive", python=Path(sys.executable))
     problems = driver.prerequisite_problems(arguments, pins)

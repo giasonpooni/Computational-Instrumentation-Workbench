@@ -268,11 +268,13 @@ a task pointer.
   workflow end to end; attest the engine a bound replay uses.
 - T098: authenticate checkouts and toolchains (signed commits or tags), and
   settle CIW's several SCR and SET pins.
-- T099: have CI run the proved-heat gate itself and retain its output as a
-  second record; attest the engine and prover the gate binds, so that its host
-  binding is no longer operator-asserted; and rebuild `sp1-host` with the
+- T099: retain the output of a CI run of the proved-heat gate (the workflow
+  runs it and uploads its outputs, which nothing retains) as a second record,
+  extending `ciw lab proved-heat retain` to accept that artifact, which has no
+  `local-run.json`; attest the engine and prover the gate binds, so that its
+  host binding is no longer operator-asserted; and rebuild `sp1-host` with the
   pinned toolchain on a second host to learn whether the prover digest, like
-  the engine's, depends only on the toolchain.
+  the engine's on the recording host, depends only on the toolchain.
 - T100: keyed seals or a provider-signed runtime identity, so a copied pin no
   longer classifies `provider_backed`; a pin comparison on reopen; source trees
   recorded in CIW's pin tables for the revisions `pins_without_tree` lists, so

@@ -348,7 +348,8 @@ and proved-heat gate runs enter `lab/` only through `ciw lab hardware retain`
 and `ciw lab proved-heat retain` (see [Hardware evidence](#hardware-evidence)
 and [Proved-heat gate records](#proved-heat-gate-records)). When
 `lab/proved-heat/` holds a record, it also refuses a run that bound none as
-`proved-heat-record`.
+`proved-heat-record`, or whose T099 did not find the CI-pinned rustup
+toolchain (its `tool:cargo+1.94.0` probe), which CI's lab gate installs.
 
 `lab/` holds the retained run: `reports/T*.json`, `artifacts/T*/` (tables,
 SVG figures, drafts and ledgers), `queue-state.json` and `REPORTS.md`, the
@@ -522,8 +523,10 @@ retained record:
    --sp1 <fresh SP1 clone> --compiler-archive <Succinct archive> --python
    <Python 3.12>`. It reads the workflow file, refuses when a provisioning
    step's result is missing (tools, toolchains, the archive's pinned SHA-256,
-   clean checkouts at the pinned revisions and trees) or when the workflow has
-   a step it does not know, runs the gate steps unchanged and in order, and
+   clean checkouts at the pinned revisions and trees), while a variable that
+   would change the built bytes (`RUSTFLAGS`, `CARGO_PROFILE_*` and the like)
+   is set, or when the workflow has a step or step setting it does not
+   replay, runs the gate steps unchanged and in order, and
    writes `results/proved-heat/` as the workflow does, plus `local-run.json`
    (`ciw.proved-heat-local-run.v1`: which steps ran and for how long, how the
    others were satisfied, host facts, toolchain versions and source
@@ -550,8 +553,9 @@ receipt and re-verification report pass CIW's offline proved-heat validation,
 carry runtime identities that are proved-heat pins
 (`ciw.lab.bridge.declared_pins`) and name the engine, prover and guest the
 gate record names. No proof is
-re-verified; `ciw proof verify` can re-verify a retained proof on a host with
-the pinned binaries. `lab/proved-heat/local-2026-09-24/` holds the first
+re-verified; `ciw proof verify` can re-verify a retained proof, once
+decompressed (`gunzip -k gate/original.json.gz`), on a host with the pinned
+binaries. `lab/proved-heat/local-2026-09-24/` holds the first
 record, a local replay of the workflow's gate steps; CI has not run the gate
 for it.
 

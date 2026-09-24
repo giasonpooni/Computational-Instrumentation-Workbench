@@ -16,7 +16,8 @@ run cannot reproduce a hardware run or a proved-heat gate run, which are
 retained with ``ciw lab hardware retain`` and ``ciw lab proved-heat retain``.
 When ``lab/proved-heat/`` holds a record, the run must have bound one as
 ``proved-heat-record`` (``scripts/check_lab.py`` does, as in the CI
-comparison). Review ``git diff lab`` and ``ciw lab verify`` output before
+comparison) and T099 must have found the CI-pinned rustup toolchain, which
+CI's lab gate installs. Review ``git diff lab`` and ``ciw lab verify`` output before
 committing a refresh.
 """
 from __future__ import annotations
@@ -41,6 +42,19 @@ REQUIRED_PROVIDERS = ("csg", "ftr", "scr", "set", "ppda", "scr-exchange", "plsr-
 # Refusal codes of those providers (CSG_TREE_MISMATCH, FTR_INTERPRETER_UNBOUND, PLSR_UNAVAILABLE, ...): a
 # report carrying one did not run its bound provider, whatever the binding was named.
 PROVIDER_REFUSAL = re.compile(r"\b(?:CSG|FTR|PLSR)_[A-Z]+(?:_[A-Z]+)*\b")
+
+
+def pinned_toolchain_probed(run: Path) -> bool:
+    """Whether T099's report in ``run`` found the CI-pinned rustup toolchain (every ``tool:cargo+<toolchain>`` probe
+    succeeded, and there is one). Without it T099 is partial here and completed in CI, whose lab gate installs it."""
+    try:
+        report = json.loads((run / "reports" / "T099.json").read_text(encoding="utf-8"))
+        probes = report["provider_runtime_identity"]["requirement_probes"]
+    except (OSError, ValueError, KeyError, TypeError):
+        return False
+    pinned = [found for name, found in probes.items() if name.startswith("tool:cargo+")] if isinstance(
+        probes, dict) else []
+    return bool(pinned) and all(found is True for found in pinned)
 
 
 def main() -> int:
@@ -89,6 +103,11 @@ def main() -> int:
         if refused:
             raise SystemExit(f"A bound provider refused to run in {', '.join(refused)}; retain a run of "
                              "scripts/check_lab.py whose providers ran")
+        if "proved-heat-record" in required and not pinned_toolchain_probed(run):
+            raise SystemExit("T099 did not find the CI-pinned rustup toolchain in the clean-room run (its "
+                             "tool:cargo+<toolchain> probe), so it could not rebuild the gate's engine as CI's lab "
+                             "gate does; install it (rustup toolchain install <toolchain> --profile minimal, as "
+                             ".github/workflows/lab.yml does) and retain a new run")
         target = ROOT / "lab"
         target.mkdir(exist_ok=True)
         for name in RETAINED:

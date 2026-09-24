@@ -19,10 +19,15 @@ and rustup; the rustup toolchain the workflow installs and the linked
 SHA-256 the workflow pins; clean SCR and SP1 checkouts at the revisions the
 workflow clones and the trees ``scripts/check_proved_heat.py`` pins (use a
 fresh SP1 clone for every run: the SP1 build writes generated files into it);
-PyYAML to read the workflow; and no earlier ``results/proved-heat``. The
-workflow's own resource step then checks memory and disk. A workflow step this
-script does not know, or a condition it does not understand, is refused rather
-than guessed; the build cache is always a miss, so the build step always runs.
+PyYAML to read the workflow; and no earlier ``results/proved-heat``. It also
+refuses while a variable that would change the built bytes is set and the
+workflow does not set it (``RUSTFLAGS``, ``RUSTC_WRAPPER``,
+``RUSTUP_TOOLCHAIN``, ``CARGO_PROFILE_*`` and the like; cargo configuration
+files remain the operator's). The workflow's own resource step then checks
+memory and disk. A workflow step this script does not know, or a condition or
+step setting (env, shell, working directory) it does not replay, is refused
+rather than guessed; the build cache is always a miss, so the build step always
+runs.
 The first failing step ends the run, and nothing is retried or repaired.
 
 Retain a passing run with
@@ -69,6 +74,16 @@ GATE_STEPS = ("Check Linux resource budget", "Rebuild and verify the committed h
               "Build native execution and CPU proving hosts",
               "Check build source bytes and provision clean SP1 reference",
               "Exercise actual proofs through an isolated installed CIW wheel")
+# What the driver replays of the job and of a gate step; anything else is refused.
+JOB_KEYS = {"runs-on", "timeout-minutes", "env", "steps"}
+STEP_KEYS = {"name", "run", "if"}
+# Caller variables that would change what cargo and rustc build without the workflow saying so. The run is refused
+# while one is set that the job's env does not override; CARGO_BUILD_JOBS (recorded in local-run.json) and
+# CARGO_TARGET_DIR (the build steps pass --target-dir) only change how and where. Cargo configuration files are the
+# operator's.
+BUILD_VARIABLES = re.compile(r"RUSTFLAGS|CARGO_ENCODED_RUSTFLAGS|RUSTC|RUSTC_WRAPPER|RUSTC_WORKSPACE_WRAPPER|"
+                             r"RUSTUP_TOOLCHAIN|CARGO_INCREMENTAL|CARGO_BUILD_\w+|CARGO_PROFILE_\w+|CARGO_TARGET_\w+")
+ALLOWED_BUILD_VARIABLES = ("CARGO_BUILD_JOBS", "CARGO_TARGET_DIR")
 
 
 def _name(step: dict) -> str:
@@ -76,11 +91,15 @@ def _name(step: dict) -> str:
 
 
 def plan(workflow: dict) -> tuple[list, list]:
-    """(gate steps to run, provisioning steps not run with the reason); refuses a step or condition it does not know."""
+    """(gate steps to run, provisioning steps not run with the reason); refuses a step, condition or setting it does
+    not replay (a step's env, shell or working directory, a job's defaults, a workflow-wide env)."""
     jobs = workflow.get("jobs") if isinstance(workflow, dict) else None
     if not isinstance(jobs, dict) or len(jobs) != 1:
         raise SystemExit(f"{WORKFLOW} no longer has exactly one job; update {DRIVER}")
     job_name, job = next(iter(jobs.items()))
+    unknown = sorted(set(job) - JOB_KEYS) + sorted(set(workflow) & {"env", "defaults"})
+    if unknown:
+        raise SystemExit(f"{WORKFLOW} sets {unknown}, which {DRIVER} does not replay; update {DRIVER}")
     run, skipped = [], []
     for step in job.get("steps") or []:
         name = _name(step)
@@ -90,6 +109,9 @@ def plan(workflow: dict) -> tuple[list, list]:
         elif name in GATE_STEPS and "run" in step:
             if condition not in (None, CACHE_MISS):
                 raise SystemExit(f"{WORKFLOW} step {name!r} has a condition {DRIVER} does not understand: {condition}")
+            if set(step) - STEP_KEYS:
+                raise SystemExit(f"{WORKFLOW} step {name!r} sets {sorted(set(step) - STEP_KEYS)}, which {DRIVER} "
+                                 f"does not replay; update {DRIVER}")
             run.append(step)
         else:
             raise SystemExit(f"{WORKFLOW} has a step {DRIVER} does not know: {name!r}; update {DRIVER}")
@@ -178,6 +200,14 @@ def prerequisite_problems(args, pins: dict) -> list:
     return problems
 
 
+def build_variable_problems(environ, job_env: dict) -> list:
+    """The caller's build-changing variables (:data:`BUILD_VARIABLES`) the job's env does not override, as sentences."""
+    names = sorted(name for name in environ if BUILD_VARIABLES.fullmatch(name)
+                   and name not in ALLOWED_BUILD_VARIABLES and name not in job_env)
+    return [f"{name} is set; it would change the built engine or prover without the workflow saying so (unset it)"
+            for name in names]
+
+
 def _first_line(text: str | None) -> str | None:
     return text.splitlines()[0].strip() if text else None
 
@@ -259,7 +289,8 @@ def main(argv=None) -> int:
     workflow = yaml.safe_load(text)
     steps, skipped = plan(workflow)
     pins = workflow_pins(workflow)
-    problems = prerequisite_problems(args, pins)
+    job = next(iter(workflow["jobs"].values()))
+    problems = prerequisite_problems(args, pins) + build_variable_problems(os.environ, job.get("env") or {})
     if problems:
         raise SystemExit("Refusing to run the proved-heat gate:\n- " + "\n- ".join(problems))
     if args.work_root:
@@ -275,7 +306,6 @@ def main(argv=None) -> int:
     # A wrapper rather than a link keeps a virtual environment's interpreter inside its environment.
     (shim / "python").write_text(f'#!/bin/sh\nexec "{Path(args.python).absolute()}" "$@"\n', encoding="utf-8")
     (shim / "python").chmod(0o755)
-    job = next(iter(workflow["jobs"].values()))
     environment = {key: value for key, value in os.environ.items() if key not in ("PYTHONPATH", "PYTEST_ADDOPTS")}
     environment.update({key: str(value) for key, value in (job.get("env") or {}).items()})
     if os.environ.get("CARGO_BUILD_JOBS"):
