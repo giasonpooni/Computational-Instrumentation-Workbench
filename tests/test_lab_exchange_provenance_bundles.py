@@ -907,8 +907,15 @@ def test_t099_locked_offline_scr_build(tmp_path):
     assert guest["evidence_status"] == ("provider_backed" if record else "not_established")
     assert artifact(tmp_path, "T099", "sp1-requirements.json")["attempted"] is False
     # The observed toolchain and host probes stay out of the compared prose (they are in provider_runtime_identity).
+    # The prose may quote the toolchains the bound record's own observation names (retained with the record, so the
+    # same everywhere); those are removed first, since this host's toolchain can be one of them.
     toolchain = report["provider_runtime_identity"]["scr"]
     prose = json.dumps({name: report[name] for name in runner.PROSE_FIELDS})
+    if record:
+        run_record = json.loads((Path(record) / "run.json").read_text(encoding="utf-8"))
+        builds = run_record["observations"]["execution_cli_toolchain_experiment"]["builds"]
+        for named in {build["toolchain"] for build in builds} | set(run_record["toolchains"].values()) - {None}:
+            prose = prose.replace(named, "")
     assert toolchain["rustc"] and toolchain["rustc"] not in prose and toolchain["cargo"] not in prose
     assert "probes here" not in prose
 
