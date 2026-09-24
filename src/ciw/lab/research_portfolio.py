@@ -13,7 +13,16 @@ a wrong aggregate: a raw-text recount of the retained report files, a parse
 of the written table against the source findings, or a reference oracle
 written from the specification. Re-reading an artifact just written is never
 used as a check. Drafted papers are drafts: review, submission and acceptance
-are not claims the workbench can make.
+are not claims the workbench can make, and the prose the lab cannot write
+(the argument in the authors' words, the discussion against the literature,
+conclusions) stays marked outstanding.
+
+Pages meant for readers outside the lab (T160-T163) define every label, state
+that ``independently_verified`` is agreement between implementations of
+different origin and not verification by another party, list the boundary of
+``ciw.lab.evidence.BOUNDARY``, and show each finding's basis beside its label.
+No task here reads retained hardware runs: they are aggregated outside the
+queue by ``ciw lab unmeasured``.
 """
 from __future__ import annotations
 
@@ -34,8 +43,9 @@ import zipfile
 
 from .. import __version__
 from .evidence import (AUTHORITY_DOMAINS, COMPARISONS, COMPUTATIONAL_DOMAINS, COMPUTATIONAL_ORDER, DOMAINS,
-                       INDEPENDENT_ORIGINS, LABELS, MAX_THRESHOLD, PHYSICAL_DOMAINS, EvidenceRefusal, finding,
-                       supported_label, holds as compare)
+                       INDEPENDENT_ORIGINS, LABELS, MAX_THRESHOLD, PHYSICAL_DOMAINS, BOUNDARY, EvidenceRefusal,
+                       ORIGINS, describe_basis, finding, finding_origin, supported_label, holds as compare)
+from ..core.identities import content_identity
 from .registry import load_implementations, load_queue, task
 from .report import validate_report
 
@@ -91,6 +101,38 @@ def _raw_findings(text: str) -> list:
     end = re.compile(r'^ \],?$', re.M).search(text, start.end())
     body = text[start.end(): end.start() if end else len(text)]
     return re.split(r'^  \},?$', body, flags=re.M)[:-1]
+
+
+# A finding's basis and its keys (indent 4) in the retained layout; the raw basis components they declare.
+RAW_BASIS = re.compile(r'^   "basis": (\{\}|\{\n.*?\n   \})', re.M | re.S)
+RAW_BASIS_KEY = re.compile(r'^    "([a-z_]+)": (.*)$', re.M)
+RAW_ORIGIN_LINE = re.compile(r'^   "origin": (\[\]|\[\n(?:    "[a-z_]+",?\n)*   \])', re.M)
+RAW_KEY_COMPONENT = {"acquisition": "acquisition", "derivation": "derivation", "independent_check": "independent_check",
+                     "generator": "synthetic_inputs"}
+
+
+def _raw_block_components(block: str) -> list:
+    """Basis components of one raw finding block: its ``origin`` list, or, for a finding retained before basis
+    components were recorded (no ``origin`` key; rule 11 of the specification), the components its raw basis
+    keys declare (a nonempty check list, a generator, an executed provider, a derivation, an acquisition, an
+    independent check)."""
+    stated = RAW_ORIGIN_LINE.search(block)
+    if stated:
+        return sorted(re.findall(r'"([a-z_]+)"', stated.group(1)))
+    basis = RAW_BASIS.search(block)
+    if not basis:
+        return []
+    body, found = basis.group(1), []
+    for key, rest in RAW_BASIS_KEY.findall(body):
+        if key in RAW_KEY_COMPONENT and not rest.startswith("null"):
+            found.append(RAW_KEY_COMPONENT[key])
+        elif key == "checks" and rest == "[":
+            found.append("reference_checks")
+        elif key == "provider" and rest == "{":
+            provider = re.search(r'^    "provider": \{\n(.*?)\n    \}', body, re.M | re.S)
+            if provider and re.search(r'^     "executed": true,?$', provider.group(1), re.M):
+                found.append("provider")
+    return sorted(found)
 
 
 def _raw_numeric(block: str) -> bool:
@@ -364,6 +406,83 @@ def _basis_grammar() -> dict:
     }
 
 
+PROBE_ACQUISITION = {"device": "d", "raw_sha256": "0" * 64, "acquired_at": "t", "calibration": "not_applied"}
+PROBE_CHECK = {"reference_kind": "analytic", "reference": "r", "observed": 0.0, "tolerance": 1.0, "passed": True}
+# Rule 10 of docs/lab/SPECIFICATIONS.md on hand-classified claims: (claim, asserts an authority outcome). The
+# first is the acceptance statement T141 filed in a computational domain (its computational-domain loophole).
+RULE10_PROBES = (
+    ("Coupon lot accepted for production", True),
+    ("Coupon lot rejected for production", True),
+    ("Coupon lot accepted for production; it does not need rework", True),
+    ("The lot that never failed is accepted for production", True),
+    ("The press is safe to operate", True),
+    ("The monitor authorizes actuation of the axis", True),
+    ("The workbench is ready for industrial deployment", True),
+    ("The mesh is certified for production metrology", True),
+    ("There is customer demand for curvature-aware path checking", True),
+    ("The lab API cannot mark a lot accepted for production", False),
+    ("The simulation records production acceptance as not performed", False),
+    ("The monitor does not authorize actuation", False),
+    ("Accepted steps keep the local error below the tolerance", False),
+    ("A safe step size for RK4 on this surface", False),
+)
+# A paraphrase of customer demand that no outcome phrase names: rule 10 says the screen does not catch every
+# paraphrase, and T155 records whether this one passes it.
+RULE10_PARAPHRASE = "Manufacturers need curvature-aware placement checks"
+# The claim states what the probe covers: its hand-classified statements, not every paraphrase (the paraphrase
+# result is recorded among T155's unresolved assumptions).
+RULE10_AUTHORITY_PROBES = sum(asserts for _, asserts in RULE10_PROBES)
+RULE10_CLAIM = (f"The authority-wording screen refuses each of the {RULE10_AUTHORITY_PROBES} hand-classified authority "
+                f"statements of its probe (T141's acceptance statement first) in the {len(set(DOMAINS) - SPEC_AUTHORITY)} "
+                "computational and physical domains, leaves them not_established in the authority domains, and gives "
+                f"the {len(RULE10_PROBES) - RULE10_AUTHORITY_PROBES} declined or ordinary statements their rules 1-5 "
+                "labels (rule 10)")
+
+
+def _probe_basis(domain: str) -> dict:
+    """A basis that would establish the claim if the domain allowed it: checks, plus an acquisition where legal."""
+    if domain in SPEC_PHYSICAL | SPEC_AUTHORITY:
+        return {"acquisition": PROBE_ACQUISITION, "checks": [PROBE_CHECK]}
+    return {"checks": [PROBE_CHECK]}
+
+
+def rule10_probe() -> dict:
+    """Compare ``evidence.finding`` with a hand-written rule 10 oracle on every probe claim in every domain.
+
+    The oracle refuses a claim that asserts an authority outcome in a computational or physical domain and
+    otherwise gives the rules 1-5 label of :func:`_reference_label`.
+    """
+    violations, cases, outcomes = [], 0, Counter()
+    for claim, asserts in RULE10_PROBES:
+        for domain in sorted(DOMAINS):
+            cases += 1
+            basis = _probe_basis(domain)
+            try:
+                label = finding(claim, domain, None, basis)["evidence_status"]
+            except EvidenceRefusal:
+                label = "refused"
+            expected = ("refused" if asserts and domain not in SPEC_AUTHORITY
+                        else _reference_label(basis, domain)[0])
+            outcomes[label] += 1
+            if label != expected:
+                violations.append(f"{domain}: {claim!r} -> {label}, rule 10 gives {expected}")
+    try:
+        finding(RULE10_PARAPHRASE, "computational_pipeline", None, {"checks": [PROBE_CHECK]})
+        paraphrase = "passes the screen"
+    except EvidenceRefusal:
+        paraphrase = "refused"
+    return {"cases": cases, "claims": len(RULE10_PROBES), "violation_count": len(violations),
+            "violations": violations[:50], "outcomes": dict(sorted(outcomes.items())),
+            "paraphrase": {"claim": RULE10_PARAPHRASE, "outcome": paraphrase}}
+
+
+# What the evidence-label section of the specification must state beyond rules 1-5: the authority-wording
+# screen with T141's loophole, basis components, and workspace classification with T100's fabricated bundle.
+RULE_ANCHORS = ("screen_authority_claim", "T141", "basis_origin", "T100")
+RULES_CLAIM = ("The specification states the evidence rules as a numbered list that includes the authority-wording "
+               "screen (T141's loophole), basis components and workspace classification (T100)")
+
+
 def label_invariants() -> dict:
     """Compare the label function with the reference oracle on every basis of a finite grammar in every domain."""
     options = _basis_grammar()
@@ -405,20 +524,23 @@ def specification_documents():
     Units are the sections of docs/lab/SPECIFICATIONS.md (its family index
     aside) and the family pages that index lists as specifications of record.
     A section that names no computational task (the aggregates of this
-    section) is not a unit of computational coverage.
+    section) is not a unit of computational coverage. ``rules`` holds the
+    numbered rules of the evidence-label section, one flattened line each.
     """
     from .runner import repository_path
     page = repository_path(*SPECIFICATIONS.split("/"))
     if page is None or not page.is_file():
         return None
     text = page.read_text(encoding="utf-8")
-    units, missing, pages = {}, [], []
+    units, missing, pages, rules = {}, [], [], []
     for section in re.split(r"^## ", text, flags=re.M)[1:]:
         title, _, body = section.partition("\n")
         if title.strip() == FAMILY_INDEX:
             pages = sorted(set(re.findall(r"\]\(([A-Z_]+\.md)\)", body)))
         elif _task_ids(body):
             units[f"SPECIFICATIONS.md: {title.strip()}"] = _task_ids(body)
+        if title.strip() == "Evidence labels":
+            rules = _spec_rules(body)
     for name in pages:
         path = page.parent / name
         if not path.is_file():
@@ -426,34 +548,66 @@ def specification_documents():
             continue
         family = path.read_text(encoding="utf-8")
         units[name] = _task_ids(family, family.partition("\n")[0])
-    return {"units": units, "missing_pages": missing}
+    return {"units": units, "missing_pages": missing, "rules": rules}
+
+
+def _rule_numbers_problem(rules: list) -> int:
+    """1 when the stated rules are not numbered 1, 2, ... in order, else 0."""
+    numbers = [int(re.match(r"(\d+)\. ", rule).group(1)) for rule in rules]
+    return int(numbers != list(range(1, len(numbers) + 1)))
+
+
+def _counterexample_statements(reports, ids) -> list:
+    """Counterexample statements the retained findings of tasks ``ids`` refute, in report order."""
+    return [{"task_id": r["task_id"], "statement": f["counterexample"]["statement"], "claim": f["claim"],
+             "evidence_status": f["evidence_status"]}
+            for r in reports if r["task_id"] in ids for f in r["findings"] if f.get("counterexample")]
 
 
 @task("T155", changed_files=(MODULE, SPECIFICATIONS),
       regression_tests=(f"{TESTS}::test_label_function_matches_the_reference_oracle_exhaustively",
-                        f"{TESTS}::test_formal_specifications_cover_the_queue"))
+                        f"{TESTS}::test_formal_specifications_cover_the_queue",
+                        f"{TESTS}::test_rule_10_screen_closes_the_computational_domain_loophole",
+                        f"{TESTS}::test_specification_units_list_the_counterexamples_of_their_tasks",
+                        f"{TESTS}::test_next_steps_name_open_work_rather_than_work_done_elsewhere"))
 def formal_specifications(ctx):
     reports = _reports_before(ctx, 155)
     invariants = label_invariants()
+    screen = rule10_probe()
     grammar = " x ".join(str(n) for n in invariants["grammar"].values())
     fields = _fields(
-        "The label function agrees with rules 1-5 of the specification on every basis of a finite grammar, every "
-        "computational queue task is named by a specification document, and every specification document is "
-        "exercised by retained established findings.",
+        "The label function agrees with rules 1-5 of the specification on every basis of a finite grammar, the "
+        "authority-wording screen closes T141's computational-domain loophole as rule 10 states, the specification "
+        "states its evidence rules including that boundary, every computational queue task is named by a "
+        "specification document, and every specification document is exercised by retained established findings.",
         "Label function L(basis, domain) from ciw.lab.evidence against a reference oracle restating rules 1-5 of "
-        "docs/lab/SPECIFICATIONS.md; specification units = its sections plus the family pages it lists as "
-        "specifications of record.",
+        "docs/lab/SPECIFICATIONS.md; evidence.finding against a rule 10 oracle (refuse an asserted authority outcome "
+        "in a computational or physical domain, else the rules 1-5 label) on hand-classified claims; specification "
+        "units = its sections plus the family pages it lists as specifications of record, each with the "
+        "counterexample statements that its named tasks' retained findings refute.",
         [_earlier(155), "docs/lab/SPECIFICATIONS.md and the family pages it lists",
-         "Packaged queue definition (tasks T001-T154)"],
-        "L equals the oracle on every case (refusals included), every oracle rule branch is exercised, every "
-        "computational task is named, and established-finding counts agree with a raw-text recount.",
+         "Packaged queue definition (tasks T001-T154)",
+         f"{len(RULE10_PROBES)} hand-classified authority and ordinary claims, T141's acceptance statement first"],
+        "L equals the oracle on every case (refusals included) and every oracle rule branch is exercised; "
+        "evidence.finding equals the rule 10 oracle on every probe case; the evidence-label section numbers its "
+        "rules from 1 and names the screen, T141, basis components and T100; every computational task is named; "
+        "established-finding counts agree with a raw-text recount.",
         f"Enumerate {grammar} bases x {len(DOMAINS)} domains = {invariants['cases']} cases (failing, reversed, "
         "same-origin, cross-implementation, unknown-family and embedded-ciw independent checks included) and compare "
-        "L with the oracle; map each specification unit to the tasks it names and count established findings.",
+        f"L with the oracle; file each of {len(RULE10_PROBES)} probe claims in each of the {len(DOMAINS)} domains "
+        f"({screen['cases']} cases) with a basis that would establish it where the domain allows; read the "
+        "evidence-label rules; map each specification unit to the tasks it names, count their established findings "
+        "and collect their counterexample statements.",
         ["label function departing from a written rule (precedence, origin rule, physical gate, authority)",
-         "grammar that leaves a rule branch unexercised", "computational task named by no specification",
-         "family page listed but absent", "established-finding traversal disagreeing with the report text"],
-        "Machine-check the label rules (for example in Lean or with a SAT encoding over the basis grammar).",
+         "grammar that leaves a rule branch unexercised",
+         "authority statement filed in a computational or physical domain and labelled by its checks (T141)",
+         "specification that omits the authority boundary or numbers its rules out of order",
+         "computational task named by no specification", "family page listed but absent",
+         "established-finding traversal disagreeing with the report text",
+         "unit counted as covered while its tasks refute a general statement it may restate"],
+        "Prove the label rules off the finite grammar, for example with property-based tests over unbounded bases or "
+        "in Lean (the grammar itself is already enumerated exhaustively here), and have a reviewer confirm that no "
+        "specification unit restates a counterexample statement listed for it in specification-coverage.json.",
         assumptions=[
             "Only the families on SPECIFICATIONS.md are stated in formal notation; the family pages it lists specify "
             "the other families as method descriptions (models, references and decision rules), not in one uniform "
@@ -461,15 +615,33 @@ def formal_specifications(ctx):
             "T155 does not recompute retained values from the specification formulas; each task's own reference "
             "checks compare its results with its model.",
             "The oracle restates rules 1-5 by hand: agreement shows that the implementation and the written rules "
-            "coincide on the grammar, not that the rules are the right ones or that they hold off the grammar."])
+            "coincide on the grammar, not that the rules are the right ones or that they hold off the grammar.",
+            "The rule 10 probe covers hand-classified claims only; rules 6-9, 11 and 12 are enforced by the validator, "
+            "the report builder, the runner and the workspace classifier and tested in tests/test_lab_core.py and "
+            "tests/test_lab_bridge.py, not by T155.",
+            "An established finding exercises a unit; it does not show that the unit is right. Whether a unit "
+            "restates a general statement that a counterexample of its tasks refutes is a review question: the "
+            "statements differ in notation from the units' formulas, so text matching cannot decide it."])
+    if screen["paraphrase"]["outcome"] == "passes the screen":
+        fields["unresolved_assumptions"].append(
+            f"The screen matches phrases, not paraphrases: {RULE10_PARAPHRASE!r} passes it in a computational domain "
+            "(rule10-probe.json), so assigning a free-text claim to a domain remains a review question.")
     ctx.artifact_json("label-invariants.json", invariants)
+    ctx.artifact_json("rule10-probe.json", screen)
     findings = [finding(
         "The evidence-label function agrees with the reference oracle for rules 1-5 on the exhaustive basis grammar",
         "mathematical", invariants["violation_count"],
         {"derivation": "docs/lab/SPECIFICATIONS.md#evidence-labels",
          "checks": [_check("cases where L differs from the rules 1-5 oracle", invariants["violation_count"]),
                     _check("oracle rule branches not exercised by the grammar", len(invariants["unexercised_branches"]))]},
-        unit="cases", uncertainty=_exact("exhaustive enumeration of a finite grammar"), tolerance=ZERO)]
+        unit="cases", uncertainty=_exact("exhaustive enumeration of a finite grammar"), tolerance=ZERO),
+        finding(RULE10_CLAIM, "computational_pipeline",
+                {"cases": screen["cases"], "violations": screen["violation_count"],
+                 "refused": screen["outcomes"].get("refused", 0)},
+                {"derivation": "docs/lab/SPECIFICATIONS.md#evidence-labels (rules 1 and 10)",
+                 "checks": [_check("probe cases where evidence.finding departs from the rule 10 oracle",
+                                   screen["violation_count"])]},
+                unit="cases", uncertainty=_exact("every probe claim in every domain; no sampling"), tolerance=ZERO)]
     documents = specification_documents()
     queue_ids = [t["id"] for t in load_queue()["tasks"] if t["number"] < FIRST_OWN]
     complete = documents is not None and bool(reports)
@@ -477,14 +649,24 @@ def formal_specifications(ctx):
         fields["unresolved_assumptions"].append(
             "docs/lab is not reachable from this installation (set CIW_LAB_REPOSITORY_ROOT to a checkout); "
             "specification coverage was not evaluated.")
-        findings += [finding("Every computational queue task is named by a specification document", "provenance",
+        findings += [finding(RULES_CLAIM, "provenance", None, {}, expected_not_established=True),
+                     finding("Every computational queue task is named by a specification document", "provenance",
                              None, {}, expected_not_established=True),
                      finding("Specification documents are exercised by retained established findings",
                              "computational_pipeline", None, {}, expected_not_established=True)]
         fields["numerical_result"] = (f"{invariants['cases']} label cases, {invariants['violation_count']} "
-                                      "disagreements with the oracle; specification coverage not evaluated.")
+                                      f"disagreements with the oracle; {screen['cases']} rule 10 probe cases, "
+                                      f"{screen['violation_count']} disagreements; specification coverage not evaluated.")
         fields["uncertainty"] = "Exact enumeration."
         return {"state": _state(findings, complete), "fields": fields, "findings": findings}
+    rules = documents["rules"]
+    body = " ".join(rules)
+    anchors = [anchor for anchor in RULE_ANCHORS if not re.search(rf"\b{re.escape(anchor)}\b", body)]
+    findings.append(_count(RULES_CLAIM, "provenance", len(rules),
+                           [_check("evidence rules not numbered 1, 2, ... in order", _rule_numbers_problem(rules)),
+                            _check("rules 1-5 absent from the section", max(0, 5 - len(rules))),
+                            _check("screen, T141, basis-component and T100 anchors the rules do not name",
+                                   len(anchors))], "rules"))
     units = documents["units"]
     named = set().union(*units.values()) if units else set()
     unnamed = [tid for tid in queue_ids if tid not in named]
@@ -497,11 +679,17 @@ def formal_specifications(ctx):
                for tid, text in _raw_reports(ctx, 155)}
     disagreements = sorted(tid for tid in set(established) | set(recount) if established.get(tid) != recount.get(tid))
     coverage = {unit: {tid: established.get(tid) for tid in sorted(ids)} for unit, ids in units.items()}
+    refuted = {unit: _counterexample_statements(reports, ids) for unit, ids in units.items()}
     uncovered = [unit for unit, row in coverage.items() if not any(row.values())]
-    ctx.artifact_json("specification-coverage.json", {"units": coverage, "unnamed_tasks": unnamed,
-                                                      "missing_pages": documents["missing_pages"],
-                                                      "uncovered_units": uncovered,
-                                                      "recount_disagreements": disagreements})
+    ctx.artifact_json("specification-coverage.json", {
+        "units": {unit: {"established_findings": coverage[unit], "counterexample_statements": refuted[unit]}
+                  for unit in coverage},
+        "note": ("counterexample_statements are the general statements that retained findings of a unit's tasks "
+                 "refute; the unit must not restate them without the qualification their witnesses show, and "
+                 "whether it does is a review question"),
+        "unnamed_tasks": unnamed, "missing_pages": documents["missing_pages"], "uncovered_units": uncovered,
+        "recount_disagreements": disagreements})
+    with_counterexamples = [unit for unit, rows in refuted.items() if rows]
     if reports:
         findings.append(_count(
             "Specification documents are exercised by retained established findings", "computational_pipeline",
@@ -513,15 +701,28 @@ def formal_specifications(ctx):
         fields["unresolved_assumptions"].append("Coverage could not be evaluated: no earlier reports were retained.")
         findings.append(finding("Specification documents are exercised by retained established findings",
                                 "computational_pipeline", None, {}, expected_not_established=True))
+    findings.append(finding(
+        "No specification unit restates a general statement that a retained counterexample of its named tasks refutes",
+        "provenance", None,
+        {"notes": "Statements are listed per unit in specification-coverage.json for review; their notation differs "
+                  "from the units' formulas, so no text comparison decides whether a unit restates one."},
+        expected_not_established=True))
     if unnamed:
         fields["unresolved_assumptions"].append("Computational tasks named by no specification: " + ", ".join(unnamed))
     if uncovered:
         fields["unresolved_assumptions"].append("Specification units without established findings: " + "; ".join(uncovered))
+    if anchors:
+        fields["unresolved_assumptions"].append("The evidence-label rules do not name: " + ", ".join(anchors))
+    statements = sum(len(rows) for rows in refuted.values())
     fields["numerical_result"] = (
         f"{invariants['cases']} label cases, {invariants['violation_count']} disagreements with the rules 1-5 oracle, "
-        f"{len(invariants['unexercised_branches'])} unexercised rule branches; {len(units)} specification units name "
+        f"{len(invariants['unexercised_branches'])} unexercised rule branches; {screen['cases']} rule 10 probe cases, "
+        f"{screen['violation_count']} disagreements ({screen['outcomes'].get('refused', 0)} refused); "
+        f"{len(rules)} evidence rules stated; {len(units)} specification units name "
         f"{len(named & set(queue_ids))}/{len(queue_ids)} computational tasks; "
-        f"{len(coverage) - len(uncovered)}/{len(coverage)} units have established findings.")
+        f"{len(coverage) - len(uncovered)}/{len(coverage)} units have established findings; "
+        f"{len(with_counterexamples)} units name tasks that refute {statements} general statements by counterexample, "
+        "listed per unit for review.")
     fields["uncertainty"] = "Exact enumeration and exact counts; coverage depends on which tasks ran in this output directory."
     return {"state": _state(findings, complete), "fields": fields, "findings": findings}
 
@@ -537,8 +738,9 @@ TEXTBOOK = (
     ("Clairaut relation on surfaces of revolution", "do Carmo (1976), section 4-4", r"Clairaut"),
     ("Gauss-Bonnet theorem; cone angles", "do Carmo (1976), section 4-5; Troyanov (1986)",
      r"Gauss[-–]Bonnet|(?i:cone angle|cone point)"),
-    ("Chord-arc expansion c = s - kappa^2 s^3/24", "Taylor expansion of a space curve (do Carmo 1976, ch. 1)",
-     r"(?i:\bchord)"),
+    ("Chord-arc expansion c = s - kappa^2 s^3/24 to leading order (with start-point curvature an s^4 term "
+     "-kappa kappa' s^4/24 follows; 2 sin(kappa s/2)/kappa holds for a plane circle, not a helix)",
+     "Taylor expansion of a space curve (do Carmo 1976, ch. 1)", r"(?i:\bchord)"),
     ("Explicit Runge-Kutta methods (Euler, midpoint, RK4, Dormand-Prince 5(4))",
      "Hairer, Norsett and Wanner (1993), Solving ODEs I", r"\bRK4\b|Runge|Dormand|(?i:explicit euler|\bmidpoint\b)"),
     ("Implicit and A-stable integrators; stiffness", "Hairer and Wanner (1996), Solving ODEs II",
@@ -606,6 +808,12 @@ def _report_text(report) -> str:
     return "\n".join(parts + [f["claim"] for f in report["findings"]])
 
 
+def _textbook_results(report) -> list:
+    """(result, reference) of the textbook ledger entries whose pattern the report's text matches, in ledger order."""
+    text = _report_text(report)
+    return [(result, reference) for result, reference, pattern in TEXTBOOK if re.search(pattern, text)]
+
+
 def _package_file(path: str) -> bool:
     return path.startswith("src/ciw/") and (Path(__file__).resolve().parents[1] / path[len("src/ciw/"):]).is_file()
 
@@ -650,11 +858,9 @@ def textbook_versus_contribution(ctx):
                     finding("Every textbook result in the ledger is named by a retained task", "provenance", None, {},
                             expected_not_established=True), contributions, novelty]
         return {"state": "partial", "fields": fields, "findings": findings}
-    patterns = [(result, reference, re.compile(pattern)) for result, reference, pattern in TEXTBOOK]
     tasks, textbook_use = {}, {result: [] for result, _, _ in TEXTBOOK}
     for report in reports:
-        text = _report_text(report)
-        matched = [result for result, _, pattern in patterns if pattern.search(text)]
+        matched = [result for result, _ in _textbook_results(report)]
         sources = sorted(path for path in report["changed_files"] if _package_file(path))
         tasks[report["task_id"]] = {"textbook": matched, "sources": sources}
         for result in matched:
@@ -703,7 +909,8 @@ def textbook_versus_contribution(ctx):
 
 
 # --------------------------------------------------------------- T157
-@task("T157", changed_files=(MODULE,), regression_tests=(f"{TESTS}::test_counterexample_catalogue",))
+@task("T157", changed_files=(MODULE,), regression_tests=(
+    f"{TESTS}::test_counterexample_catalogue", f"{TESTS}::test_next_steps_name_open_work_rather_than_work_done_elsewhere"))
 def counterexample_catalogue(ctx):
     reports = _reports_before(ctx, 157)
     fields = _fields(
@@ -714,7 +921,9 @@ def counterexample_catalogue(ctx):
         "Collect counterexample findings from the retained reports, recount counterexample keys in the raw report "
         "text, and write JSON and Markdown catalogues.",
         ["counterexample findings dropped by the traversal (raw-text recount)", "report identity mismatch (validate_report)"],
-        "Turn each catalogued counterexample into a named regression fixture (T168).",
+        "Counterexamples are compared with a fresh run by ciw lab verify in CI (scripts/check_lab.py); optional: name "
+        "one pytest witness per counterexample in each section's tests, so a counterexample is also guarded outside "
+        "the clean-room comparison.",
         assumptions=["Whether each catalogued counterexample is genuine is not re-judged here; each rests on its "
                      "source finding's checks.",
                      "Counterexamples recorded by T158 and later tasks run after this catalogue and are not in it."])
@@ -904,12 +1113,19 @@ def reproducible_figures(ctx):
 
 # --------------------------------------------------------------- T159
 UNCERTAINTY_HEADER = "| Task | Claim | Value | Unit | Uncertainty kind | Uncertainty value | Uncertainty basis | Evidence |"
+UNMEASURED_KIND = "none (no basis: nothing measured)"
+BUDGET_CLAIM = re.compile(r"(?i)uncertainty budget")
+RAW_UNCERTAINTY_NULL = re.compile(r'^   "uncertainty": null', re.M)
 
 
-def _uncertainty_parts(declared) -> tuple:
-    """(kind, value, basis) of a declared per-finding uncertainty."""
+def _uncertainty_parts(declared, measured=True) -> tuple:
+    """(kind, value, basis) of a declared per-finding uncertainty.
+
+    A finding whose basis declares no component measured nothing (it records an unestablished claim), so its
+    missing uncertainty is shown as such rather than as an undeclared one.
+    """
     if declared is None:
-        return "none declared", None, ""
+        return ("none declared" if measured else UNMEASURED_KIND), None, ""
     if isinstance(declared, dict):
         return str(declared.get("kind", "(unstated)")), declared.get("value"), _flat(declared.get("basis", ""))
     if isinstance(declared, str):
@@ -922,7 +1138,7 @@ def _uncertainty_table_problems(text: str, rows: list) -> list:
     parsed = _table_rows(text, UNCERTAINTY_HEADER)
     problems = [] if len(parsed) == len(rows) else [f"{len(parsed)} table rows for {len(rows)} findings"]
     for index, (cells, row) in enumerate(zip(parsed, rows)):
-        kind, value, basis = _uncertainty_parts(row["uncertainty"])
+        kind, value, basis = _uncertainty_parts(row["uncertainty"], row.get("measured", True))
         if cells is None or len(cells) != 8:
             problems.append(f"row {index + 1}: malformed")
         elif (cells[0] != row["task_id"] or cells[1] != _flat(row["claim"]) or _headline_problem(cells[2], row["value"])
@@ -932,23 +1148,34 @@ def _uncertainty_table_problems(text: str, rows: list) -> list:
     return problems
 
 
-@task("T159", changed_files=(MODULE,), regression_tests=(f"{TESTS}::test_uncertainty_table_restates_every_numerical_finding",))
+LACKING_CLAIM = "Measured numerical findings that declare no per-finding uncertainty"
+
+
+@task("T159", changed_files=(MODULE,),
+      regression_tests=(f"{TESTS}::test_uncertainty_table_restates_every_numerical_finding",
+                        f"{TESTS}::test_uncertainty_listing_separates_unmeasured_records",
+                        f"{TESTS}::test_uncertainty_listing_names_the_per_quantity_budgets_it_holds",
+                        f"{TESTS}::test_raw_recounts_derive_the_components_of_findings_retained_without_origin"))
 def uncertainty_budgets(ctx):
     reports = _reports_before(ctx, 159)
     fields = _fields(
         "Every numerical finding either declares an uncertainty or is identified as lacking one.",
         "Table rows = every finding whose value contains a number: (task, claim, value, unit, uncertainty kind, "
-        "value and basis, evidence status). A listing of per-finding components, not a combined budget.",
+        "value and basis, evidence status). A listing of per-finding components, not a combined budget. A finding "
+        "whose basis declares no component (evidence.basis_origin is empty) measured nothing: it records an "
+        "unestablished claim, and its value is listed with the kind 'none (no basis: nothing measured)'.",
         [_earlier(159) + " (this section's T155-T158 included)"],
-        "Every numerical finding appears once with its declared uncertainty restated exactly; the numerical and "
-        "undeclared counts agree with a raw-text recount of the report files.",
+        "Every numerical finding appears once with its declared uncertainty restated exactly; the numerical, "
+        "undeclared and unmeasured counts agree with a raw-text recount of the report files.",
         "Collect every finding whose value contains a number, write the table as JSON and Markdown, parse the "
-        "Markdown back against the source findings, and recount numerical and undeclared findings from the raw text.",
+        "Markdown back against the source findings, and recount numerical, undeclared and unmeasured findings from "
+        "the raw text.",
         ["uncertainty or value cells cut inside a number", "pipes in claims breaking table columns",
-         "non-scalar numerical findings left out", "traversal disagreeing with the raw report text"],
-        "Require structured uncertainty components (instrument, geometry, solver) on every numerical finding, so a "
-        "budget can combine components of one quantity.")
+         "non-scalar numerical findings left out", "traversal disagreeing with the raw report text",
+         "a record with no basis counted as a measurement without uncertainty"],
+        "")
     if not reports:
+        fields["recommended_next_task"] = "Run the full queue first, then this listing."
         return _no_prior(fields)
     rows, total = [], 0
     for report in reports:
@@ -957,53 +1184,144 @@ def uncertainty_budgets(ctx):
             if _numbers(record["value"]):
                 rows.append({"task_id": report["task_id"], "claim": record["claim"], "value": record["value"],
                              "unit": record.get("unit"), "uncertainty": record.get("uncertainty"),
-                             "evidence_status": record["evidence_status"]})
-    lacking = [row for row in rows if row["uncertainty"] is None]
+                             "evidence_status": record["evidence_status"],
+                             "measured": bool(finding_origin(record))})
+    lacking = [row for row in rows if row["uncertainty"] is None and row["measured"]]
+    unmeasured = [row for row in rows if row["uncertainty"] is None and not row["measured"]]
+    budgets = sorted({row["task_id"] for row in rows if BUDGET_CLAIM.search(row["claim"])})
     ctx.artifact_json("uncertainty-budget.json", rows)
     lines = ["# Per-finding uncertainty listing", "",
              "Every retained finding whose value contains a number, with its declared uncertainty. Components are "
-             "listed, not combined: the findings of one task measure different quantities in different units.", "",
+             "listed, not combined: the findings of one task measure different quantities in different units. A "
+             f"finding whose basis declares no component measured nothing; its kind reads `{UNMEASURED_KIND}`.", "",
              UNCERTAINTY_HEADER, "| --- | --- | --- | --- | --- | --- | --- | --- |"]
     for row in rows:
-        kind, value, basis = _uncertainty_parts(row["uncertainty"])
+        kind, value, basis = _uncertainty_parts(row["uncertainty"], row["measured"])
         lines.append(_row(row["task_id"], _cell(row["claim"]), _cell(_headline(row["value"])), _cell(row["unit"] or ""),
                           _cell(kind), _cell(_headline(value)), _cell(basis), f"`{row['evidence_status']}`"))
-    kinds = Counter(_uncertainty_parts(row["uncertainty"])[0] for row in rows)
+    kinds = Counter(_uncertainty_parts(row["uncertainty"], row["measured"])[0] for row in rows)
     lines += ["", _row("Uncertainty kind", "Findings"), _row("---", "---")] + [
         _row(_cell(kind), str(count)) for kind, count in sorted(kinds.items())]
     text = "\n".join(lines) + "\n"
     ctx.artifact_text("uncertainty-budget.md", text)
     problems = _uncertainty_table_problems(text, rows)
-    raw_numeric = raw_lacking = 0
+    raw_numeric = raw_lacking = raw_unmeasured = 0
     for _, raw in _raw_reports(ctx, 159):
         for block in _raw_findings(raw):
             if _raw_numeric(block):
                 raw_numeric += 1
-                raw_lacking += re.search(r'^   "uncertainty": null', block, re.M) is not None
+                if RAW_UNCERTAINTY_NULL.search(block):
+                    if not _raw_block_components(block):
+                        raw_unmeasured += 1
+                    else:
+                        raw_lacking += 1
     by_task = Counter(row["task_id"] for row in lacking)
     fields["numerical_result"] = (
-        f"{total} findings, {len(rows)} numerical (value contains a number); {len(rows) - len(lacking)} declare a "
-        f"per-finding uncertainty, {len(lacking)} do not; kinds {dict(sorted(kinds.items()))}.")
+        f"{total} findings, {len(rows)} numerical (value contains a number); {len(rows) - len(lacking) - len(unmeasured)} "
+        f"declare a per-finding uncertainty, {len(lacking)} measured ones do not, and {len(unmeasured)} record an "
+        f"unestablished claim with no basis (nothing measured); kinds {dict(sorted(kinds.items()))}.")
     fields["uncertainty"] = "Exact counts; declared values are restated in full, and undeclared uncertainty is reported, not imputed."
     fields["unresolved_assumptions"] = [
-        "Components are listed per finding and not combined: the findings of one task measure different quantities "
-        "in different units, so a root-sum-square across them has no meaning, and no finding declares separate "
-        "components of one quantity.",
+        "Components are listed per finding and not combined across findings: the findings of one task measure "
+        "different quantities in different units, so a root-sum-square across them has no meaning. "
+        + (f"Budgets of one quantity's components are declared inside the findings of {', '.join(budgets)} (an "
+           "uncertainty budget per quantity) and are listed as their values declare them."
+           if budgets else "No retained finding declares a budget of components of one quantity."),
+        "A numerical finding whose basis declares no component is a record of an unestablished claim, not a "
+        "measurement; it is listed with its value but not counted as a measured finding without uncertainty.",
         "Findings of T160-T168 run after this table; the section's regression test asserts that each numerical one "
         "declares an uncertainty."]
     if lacking:
-        fields["unresolved_assumptions"].insert(0, f"{len(lacking)} numerical findings declare no per-finding "
+        fields["unresolved_assumptions"].insert(0, f"{len(lacking)} measured numerical findings declare no per-finding "
                                                    "uncertainty: " + ", ".join(f"{tid} ({n})" for tid, n in sorted(by_task.items())))
+        fields["recommended_next_task"] = ("Declare a per-finding uncertainty on the measured numerical findings listed "
+                                           "without one: " + ", ".join(f"{tid} ({n})" for tid, n in sorted(by_task.items())) + ".")
+    else:
+        fields["recommended_next_task"] = (
+            "None open in this listing: every measured numerical finding declares an uncertainty. Deferred research "
+            "question: combine per-quantity components into budgets where one predicted quantity has several "
+            "sources, in the form " + (", ".join(budgets) if budgets else "a per-quantity budget") + " uses.")
+    if unmeasured:
+        fields["unresolved_assumptions"].append(
+            f"{len(unmeasured)} numerical findings record an unestablished claim with no basis: "
+            + "; ".join(f"{row['task_id']}: {_words(row['claim'], 80)}" for row in unmeasured))
     findings = [
         _count("Uncertainty table restates every numerical finding with its declared uncertainty",
                "computational_pipeline", len(rows),
                [_check("table rows that do not parse back to their source finding and uncertainty", len(problems)),
                 _check("numerical findings minus a raw-text recount of numerical finding values",
                        len(rows) - raw_numeric)], "findings"),
-        _count("Numerical findings that declare no per-finding uncertainty", "computational_pipeline", len(lacking),
-               [_check("undeclared numerical findings minus a raw-text recount", len(lacking) - raw_lacking)], "findings"),
+        _count(LACKING_CLAIM, "computational_pipeline", len(lacking),
+               [_check("undeclared measured numerical findings minus a raw-text recount", len(lacking) - raw_lacking),
+                _check("numerical records with no basis minus a raw-text recount", len(unmeasured) - raw_unmeasured)],
+               "findings"),
     ]
     return {"state": _state(findings), "fields": fields, "findings": findings}
+
+
+# --------------------------------------------------------------- label qualifications (T160-T163)
+# The labels with the meanings of the label table of docs/LAB.md, and what produces each: (label, meaning,
+# produced by). Outward-facing pages state them, so that a reader never takes a label in its ordinary-language sense.
+LABEL_MEANINGS = (
+    ("analytic", "Derived in closed form from declared assumptions", "A cited derivation only"),
+    ("synthetic", "Computed from declared generated inputs", "A generator without a passing reference check"),
+    ("numerically_verified", "A stated numerical condition passed",
+     "Passing analytic, high-precision, invariant, self-convergence, exact or refusal checks"),
+    ("provider_backed", "Returned by a pinned external runtime", "Executed provider with repository, revision and tree"),
+    ("hardware_measured", "Acquired from an identified physical device",
+     "Acquisition record with raw digest, time and calibration reference, after a hardware probe succeeded in the "
+     "same task"),
+    ("independently_verified", "Agreement between implementations of different origin, not verification by another party",
+     "e.g. ciw against scipy, sympy, mpmath or a pinned provider"),
+    ("not_established", "Not supported by the basis",
+     "Any failed check, any physical claim without acquisition, every claim filed in an authority domain"),
+)
+LABEL_HEADER = "| Label | Meaning | Produced by |"
+BOUNDARY_HEADER = "| A computational experiment may establish | It cannot establish alone |"
+INDEPENDENCE = ("`independently_verified` means independent implementation agreement; independent verification by "
+                "another party is outside what the queue can establish.")
+BASIS_NOTE = ("Each finding's basis is shown beside its label: the basis components it declares and the identity each "
+              "declares (generator and seed, provider repository@revision, acquisition device), as "
+              "`ciw.lab.evidence.describe_basis` renders them. A passing check outranks provenance in the label rules, so "
+              "two findings with one label can rest on different bases; identities are as declared, not authenticated.")
+
+
+def _label_lines() -> list:
+    """The label definitions and the independence qualification, as Markdown."""
+    return ([LABEL_HEADER, "| --- | --- | --- |"]
+            + [_row(f"`{label}`", _cell(meaning), _cell(source)) for label, meaning, source in LABEL_MEANINGS]
+            + ["", INDEPENDENCE, "", BASIS_NOTE, ""])
+
+
+def _boundary_lines() -> list:
+    """The computational boundary of ``ciw.lab.evidence.BOUNDARY``, as a Markdown table."""
+    return [BOUNDARY_HEADER, "| --- | --- |"] + [_row(_cell(may), _cell(cannot)) for may, cannot in BOUNDARY] + [""]
+
+
+def _qualification_problems(text: str) -> list:
+    """Label definitions, the independence qualification or boundary rows missing from, or altered on, a page."""
+    problems = []
+    if _table_rows(text, LABEL_HEADER) != [[f"`{label}`", meaning, source] for label, meaning, source in LABEL_MEANINGS]:
+        problems.append("label table differs from the label definitions")
+    boundary = _table_rows(text, BOUNDARY_HEADER)
+    problems += [f"boundary row missing: {may} / {cannot}" for may, cannot in BOUNDARY if [may, cannot] not in boundary]
+    if len(boundary) != len(BOUNDARY):
+        problems.append(f"{len(boundary)} boundary rows for {len(BOUNDARY)}")
+    if INDEPENDENCE not in text:
+        problems.append("independence qualification absent")
+    return problems
+
+
+def _section(text: str, heading: str) -> str:
+    """The body of the level-2 section ``## heading`` of a Markdown page (empty when absent)."""
+    match = re.search(rf"^## {re.escape(heading)}\n(.*?)(?=^## |\Z)", text, re.M | re.S)
+    return match.group(1) if match else ""
+
+
+def _statements(value) -> list:
+    """An answer that may be a string or a list, as a list of flattened strings."""
+    items = value if isinstance(value, list) else [value]
+    return [_flat(item if isinstance(item, str) else json.dumps(item, ensure_ascii=False)) for item in items if item]
 
 
 # --------------------------------------------------------------- T160-T162
@@ -1015,7 +1333,43 @@ PAPERS = {
     "T162": ("evidence-provenance-note", "A non-upgrading evidence-label discipline for computational experiments",
              ("exchange-provenance", "implementation-targets", "lyapunov")),
 }
-RESULTS_HEADER = "| Task | Finding | Value | Unit | Evidence | Report |"
+RESULTS_HEADER = "| Task | Finding | Value | Unit | Evidence | Basis | Report |"
+SELECTED_HEADER = "| Task | Selected finding | Value | Unit | Evidence | Basis | Report |"
+BOUNDARY_FINDINGS_HEADER = "| Task | Boundary finding | Value | Unit | Evidence | Basis | Report |"
+# Tasks whose findings test the label discipline's boundary: visibly distinct labels and workspace
+# classification (T100), and production acceptance with the computational-domain loophole (T141).
+BOUNDARY_TASKS = ("T100", "T141")
+# Assumptions that qualify the independence of a task's references (not statistical independence of noise).
+INDEPENDENCE_LIMITS = re.compile(
+    r"ciw-authored|ciw-written|written in ciw|same[- ]origin|same-specification"
+    r"|shares? (?:its|the|ciw's) (?:origin|right-hand side)"
+    r"|independen\w* (?:of ciw|covers|in the integrator|implementation|verification|reproduction|solver)"
+    r"|(?:sympy|scipy|mpmath)'s independence|geometry independence|not an? independent|stands in"
+    r"|integrator may be independent|independent \w+ comparison did not run", re.I)
+# At least these are carried for a task with independently_verified rows: every assumption that mentions
+# independence, same origin or ciw-written code, except statements about statistical independence of noise,
+# errors or events ("Noise is independent per vertex", "Drops are independent of the signal value").
+INDEPENDENCE_WORDS = re.compile(r"independen|same[- ]origin|written in ciw|ciw-written|ciw-authored", re.I)
+STATISTICAL_INDEPENDENCE = re.compile(
+    r"\b(?:noise|errors?|residuals?|drops|outliers|latency|state|sources|readings|samples)\b(?:\s+[\w-]+){0,3}\s+"
+    r"(?:is|are)\s+(?:[\w-]+\s+and\s+)?independent\b|\bindependent (?:between|across|per)\b|per-component independent",
+    re.I)
+
+
+def _qualifies_independence(item: str, verified: bool) -> bool:
+    """Whether an assumption limits the independence of a task's references: selected by phrase, and for a task
+    with independently_verified rows every mention of independence or origin that is not statistical."""
+    return bool(INDEPENDENCE_LIMITS.search(item)) or (
+        verified and bool(INDEPENDENCE_WORDS.search(item)) and not STATISTICAL_INDEPENDENCE.search(item))
+OUTSTANDING = ("Missing from this draft, which the lab cannot write: the thesis in the authors' words (the generated "
+               "thesis restates counts and counterexamples of the retained findings only), a related-work discussion "
+               "(the reference list is the T156 textbook ledger's name matches), an interpretation of the "
+               "counterexamples against the literature, conclusions, figure selection and captions, and external "
+               "peer review. The draft stays partial until they exist.")
+UNFINISHED = ("blocked", "deferred", "partial")
+QUALIFIED_CLAIM = ("Draft limitations state what each unfinished task is missing, and its methods carry every assumption "
+                   "that mentions independence, same origin or ciw-written code in a task with independently_verified "
+                   "rows and every other assumption research_portfolio.INDEPENDENCE_LIMITS selects")
 
 
 def _article(phrase: str) -> str:
@@ -1064,111 +1418,320 @@ def _label_discipline() -> tuple:
     body = _specification_section("Evidence labels")
     rules = _spec_rules(body) if body else []
     if rules:
-        lines += ["The label function `ciw.lab.evidence.supported_label` and the report rules, as specified in "
-                  "docs/lab/SPECIFICATIONS.md:", ""] + rules + [""]
+        lines += ["The label function `ciw.lab.evidence.supported_label`, the authority-wording screen, basis "
+                  "components and the report rules, as specified in docs/lab/SPECIFICATIONS.md:", ""] + rules + [""]
     return lines, rules
 
 
-def _draft_problems(text: str, cited: list) -> list:
-    """Results rows of a written draft that do not restate their source finding (task, claim, value, unit, label, report)."""
-    parsed = _table_rows(text, RESULTS_HEADER)
-    problems = [] if len(parsed) == len(cited) else [f"{len(parsed)} results rows for {len(cited)} findings"]
+def _finding_row(report, record) -> str:
+    """One draft table row: task, claim, value headline, unit, label, basis in words and report identity."""
+    return _row(report["task_id"], _cell(record["claim"]), _cell(_headline(record["value"])),
+                _cell(record.get("unit") or ""), f"`{record['evidence_status']}`", _cell(describe_basis(record)),
+                f"`{report['report_id'][:19]}`")
+
+
+def _draft_problems(text: str, cited: list, header: str = RESULTS_HEADER) -> list:
+    """Rows of a written draft table that do not restate their source finding (task, claim, value, unit, label,
+    basis, report)."""
+    parsed = _table_rows(text, header)
+    problems = [] if len(parsed) == len(cited) else [f"{len(parsed)} rows for {len(cited)} findings"]
     for index, (cells, (report, record)) in enumerate(zip(parsed, cited)):
-        if cells is None or len(cells) != 6:
+        if cells is None or len(cells) != 7:
             problems.append(f"row {index + 1}: malformed")
         elif (cells[0] != report["task_id"] or cells[1] != _flat(record["claim"])
               or _headline_problem(cells[2], record["value"]) or cells[3] != _flat(record.get("unit") or "")
-              or cells[4] != f"`{record['evidence_status']}`" or cells[5] != f"`{report['report_id'][:19]}`"):
+              or cells[4] != f"`{record['evidence_status']}`" or cells[5] != _flat(describe_basis(record))
+              or cells[6] != f"`{report['report_id'][:19]}`"):
             problems.append(f"row {index + 1}: {report['task_id']} {record['claim'][:40]}")
     return problems
 
 
+def _selected(report):
+    """A task's selected finding: its first established finding, else its first finding (None without findings)."""
+    established = [f for f in report["findings"] if f["evidence_status"] != "not_established"]
+    return (established or report["findings"] or [None])[0]
+
+
+def _figure(report):
+    """The first retained SVG figure of a report, or None."""
+    return next((a["path"] for a in report["generated_artifacts"] if a["path"].endswith(".svg")), None)
+
+
+def _thesis(reports, cited, counterexamples, open_claims, physical) -> str:
+    """The draft's thesis, stated from counts and counterexamples of the retained findings only."""
+    labels = Counter(f["evidence_status"] for _, f in cited)
+    established = sum(n for label, n in labels.items() if label != "not_established")
+    summary = ", ".join(f"{labels[label]} {label}" for label in LABELS if labels[label] and label != "not_established")
+    examples = "; ".join(f"“{_words(f['counterexample']['statement'], 110)}” ({r['task_id']})"
+                         for r, f in counterexamples[:3])
+    hardware = labels["hardware_measured"]
+    return (f"Across {len(reports)} tasks, {established} of {len(cited)} findings are established"
+            + (f" ({summary})" if summary else "") + f"; {len(counterexamples)} findings refute a general statement by "
+            "counterexample" + (f", for example {examples}" if examples else "") + f"; {len(open_claims)} physical, "
+            f"calibration, sensor or authority claims remain not established, and {physical}. "
+            + ("The results are computational: none of them is a physical measurement." if not hardware else
+               f"{hardware} of the findings are hardware-measured; every other result is computational."))
+
+
+def _next_steps(report) -> list:
+    """A report's stated next steps (an answer the implementation left unstated is not a step)."""
+    from .runner import NOT_STATED
+    return [item for item in _statements(report["recommended_next_task"]) if item != NOT_STATED]
+
+
+def _open_physical(report) -> int:
+    """Not-established physical, calibration or sensor claims of a report."""
+    return sum(f["domain"] in PHYSICAL_DOMAINS and f["evidence_status"] == "not_established" for f in report["findings"])
+
+
+def _draft_next_step(unfinished, open_physical, authority: int) -> str:
+    """The draft's next step, derived from its own limitations: authorship; the unfinished tasks' own next steps
+    (tasks sharing one step named together); the completed tasks whose physical claims stay open, named with a
+    pointer to their own next steps under Outstanding work; and the authority claims no evidence establishes.
+
+    Nothing here says that a step closes a limitation: a task's next step is its own statement, and it may
+    address another question than the open claim.
+    """
+    grouped: dict = {}
+    for report in unfinished:
+        steps = _next_steps(report)
+        if steps:  # steps that read the same once cut are named once, with every task that states them
+            grouped.setdefault(_words(steps[0], 160), []).append(report["task_id"])
+    closing = "; ".join(f"{', '.join(ids)}: {step}" for step, ids in grouped.items())
+    claims = sum(_open_physical(r) for r in open_physical)
+    return ("Write the parts the lab cannot write (the thesis in the authors' words, the related-work discussion, the "
+            "interpretation of the counterexamples and the conclusions) and submit the draft for external review"
+            + (f"; then the unfinished tasks' own next steps ({closing})" if closing else "")
+            + (f"; {claims} physical, calibration or sensor claim{' of completed tasks' if claims == 1 else 's of completed tasks'} "
+               f"({', '.join(r['task_id'] for r in open_physical)}) {'stays' if claims == 1 else 'stay'} not "
+               "established, and each task's own next step is listed under Outstanding work" if open_physical else "")
+            + (f"; {authority} authority-domain claim{' stays' if authority == 1 else 's stay'} not established on "
+               "any evidence" if authority else "") + ".")
+
+
 def _paper(task_id, ctx):
     slug, title, sections = PAPERS[task_id]
-    reports = [r for r in _reports_before(ctx, int(task_id[1:])) if r["section"] in sections]
+    earlier = _reports_before(ctx, int(task_id[1:]))
+    reports = [r for r in earlier if r["section"] in sections]
+    discipline = task_id == "T162"
     fields = _fields(
-        f"{_article(slug.replace('-', ' '))} draft can be assembled entirely from retained findings, with every "
-        "number traceable to a report identity and every limitation drawn from not_established findings.",
-        "Draft = generated Markdown: abstract, methods (task hypotheses and models"
-        + ("; the evidence-label rules of the specification" if task_id == "T162" else "")
-        + "), results (one row per finding), limitations (not_established findings and unfinished tasks).",
-        [f"Retained reports of sections {', '.join(sections)}"]
-        + (["docs/lab/SPECIFICATIONS.md (evidence-label rules)", "ciw.lab.evidence constants"] if task_id == "T162" else []),
-        "Every results row restates its source finding's task, claim, value headline, unit, label and report "
-        "identity, and its value cell states no number that the source finding's value does not hold.",
-        f"Generate the draft from retained reports of sections {', '.join(sections)} and parse its results table back "
-        "against the source findings.",
-        ["claims or units containing '|' breaking table rows", "labels dropped from rows",
-         "values cut inside a number", "rows out of order or missing"],
-        "Human authorship pass, related-work section and external review; physical experiments from the "
-        "manufacturing protocols.",
-        assumptions=["Prose beyond the generated structure, related work and peer review are outstanding."])
+        f"{_article(slug.replace('-', ' '))} draft with a thesis, introduction, methods, results, discussion, "
+        "limitations and outstanding work can be generated from retained findings alone: every number traceable to "
+        "a report identity, every label defined and shown with its basis, and every limitation drawn from "
+        "not_established findings and the unfinished tasks' own statements.",
+        "Draft = generated Markdown: a thesis restating counts and counterexamples of the retained findings; an "
+        "introduction listing the tasks' questions; methods (label definitions, the independence qualification"
+        + ("; the specification's evidence rules and the T100 and T141 boundary findings" if discipline else "")
+        + ", task hypotheses and models, the assumptions that limit independence); results (one selected finding "
+        "and figure per task); a discussion listing each counterexample with its witness; limitations (the "
+        "computational boundary, not_established findings, what each unfinished task is missing); outstanding work; "
+        "references from the T156 textbook ledger; an appendix with every finding, its label and its basis.",
+        [f"Retained reports of sections {', '.join(sections)}", "Textbook ledger of T156 (research_portfolio.TEXTBOOK)",
+         "Label definitions (docs/LAB.md) and ciw.lab.evidence.BOUNDARY"]
+        + (["docs/lab/SPECIFICATIONS.md (evidence-label rules)", "ciw.lab.evidence constants",
+            "Retained reports of T100 and T141 (boundary findings) and T155 (rule checks)"] if discipline else []),
+        "Every appendix, selected-finding" + (" and boundary-finding" if discipline else "") + " row restates its "
+        "source finding's task, claim, value headline, unit, label, basis and report identity, and its value cell "
+        "states no number the source value does not hold; the page states every label definition, the independence "
+        "qualification and every boundary row; every unresolved assumption of an unfinished task and every "
+        "assumption limiting independence appears in full.",
+        f"Generate the draft from retained reports of sections {', '.join(sections)}; parse its finding tables back "
+        "against the source findings and its label and boundary tables against their definitions; look up each "
+        "required assumption in its section.",
+        ["claims or units containing '|' breaking table rows", "labels or bases dropped from rows",
+         "values cut inside a number", "rows out of order or missing",
+         "partial task described by what it did instead of what is missing",
+         "independently_verified shown without its definition or the assumptions that limit it",
+         "boundary rows or label definitions missing",
+         "a next step that says the unfinished tasks' steps close every limitation (completed tasks keep open "
+         "physical claims, and authority claims never close)"],
+        "", assumptions=[OUTSTANDING,
+                         "For a task with independently_verified rows every assumption that mentions independence, "
+                         "same origin or ciw-written code is carried into the Qualifications, statistical independence "
+                         "of noise and events excepted (research_portfolio.STATISTICAL_INDEPENDENCE); for other tasks "
+                         "they are selected by phrase (research_portfolio.INDEPENDENCE_LIMITS), so one worded otherwise "
+                         "is not carried.",
+                         "The selected finding of a task is its first established one, not a judgment of importance."])
     if not reports:
+        fields["recommended_next_task"] = "Run the full queue first, then generate the draft."
         return _no_prior(fields)
+    cited = [(report, record) for report in reports for record in report["findings"]]
+    counterexamples = [(r, f) for r, f in cited if f.get("counterexample")]
+    open_claims = [(r, f) for r, f in cited
+                   if f["domain"] in PHYSICAL_DOMAINS | AUTHORITY_DOMAINS and f["evidence_status"] == "not_established"]
+    unfinished = [r for r in reports if r["state"] in UNFINISHED]
+    open_physical = [r for r in reports if r["state"] not in UNFINISHED and _open_physical(r)]
+    authority = sum(f["domain"] in AUTHORITY_DOMAINS for _, f in open_claims)
     measured = [r for r in reports if r["physical_validation_status"]["status"] != "not_established"]
-    hardware = sum(f["evidence_status"] == "hardware_measured" for r in reports for f in r["findings"])
+    hardware = sum(f["evidence_status"] == "hardware_measured" for _, f in cited)
     physical = ("physical validation is not established for any of them" if not measured else
                 f"physical validation is established for {len(measured)} of them ({', '.join(r['task_id'] for r in measured)})")
+    fields["recommended_next_task"] = _draft_next_step(unfinished, open_physical, authority)
     lines = [f"# {title}", "",
              f"*Generated draft from retained CIW lab reports. Not peer reviewed. Contains {hardware or 'no'} "
              f"hardware-measured finding{'' if hardware == 1 else 's'}.*", "",
-             "## Abstract", "", f"This draft summarizes {len(reports)} queued computational tasks. Every result below "
-             f"carries the evidence label assigned by `ciw.lab.evidence`; {physical}.", "", "## Methods", ""]
-    rules = []
-    if task_id == "T162":
-        discipline, rules = _label_discipline()
-        lines += discipline
+             "## Abstract", "", "*Thesis (generated from the retained findings).* "
+             + _thesis(reports, cited, counterexamples, open_claims, physical), "",
+             "The argument in the authors' words, its discussion against the literature and its conclusions are "
+             "outstanding (see Outstanding work).", "",
+             "## Introduction", "",
+             f"This draft reports {len(reports)} queued computational experiments from the sections "
+             f"{', '.join(sections)}. Each task states a hypothesis and a mathematical prediction, runs a synthetic or "
+             "provider-backed protocol, compares the result with an independent reference where one exists, and "
+             "records every result as a finding whose evidence label is computed from its declared basis. "
+             "The questions:", ""]
+    lines += [f"- {r['task_id']} — {_flat(r['title'])}" for r in reports]
+    lines += ["", "The textbook results these tasks use are listed under References; a related-work discussion is "
+              "outstanding.", "", "## Methods", "", "### Evidence labels", ""] + _label_lines()
+    rules, boundary = [], []
+    if discipline:
+        rule_lines, rules = _label_discipline()
+        lines += rule_lines
+        boundary = [(r, f) for r in earlier if r["task_id"] in BOUNDARY_TASKS for f in r["findings"]]
+        titles = "; ".join(f"{r['task_id']} ({_flat(r['title'])}; {r['state']}, {len(r['findings'])} findings)"
+                           for r in earlier if r["task_id"] in BOUNDARY_TASKS)
+        lines += ["### Boundary findings", "",
+                  f"Retained findings of the tasks that test the discipline's boundary: {titles or 'none retained'}.", ""]
+        if boundary:
+            lines += [BOUNDARY_FINDINGS_HEADER, "| --- | --- | --- | --- | --- | --- | --- |"]
+            lines += [_finding_row(r, f) for r, f in boundary] + [""]
+    lines += ["### Tasks", ""]
     for report in reports:
         model = report["mathematical_model"]
-        lines += [f"### {report['task_id']} — {report['title']}", "", f"*Hypothesis.* {_flat(report['hypothesis'])}", "",
-                  f"*Model.* {_flat(model if isinstance(model, str) else json.dumps(model, ensure_ascii=False))}", ""]
-    lines += ["## Results", "", RESULTS_HEADER, "| --- | --- | --- | --- | --- | --- |"]
-    cited = [(report, record) for report in reports for record in report["findings"]]
-    for report, record in cited:
-        lines.append(_row(report["task_id"], _cell(record["claim"]), _cell(_headline(record["value"])),
-                          _cell(record.get("unit") or ""), f"`{record['evidence_status']}`",
-                          f"`{report['report_id'][:19]}`"))
-    lines += ["", "## Limitations", ""]
-    for report in reports:
-        for record in report["findings"]:
-            if record["evidence_status"] == "not_established":
-                lines.append(f"- {report['task_id']}: {_flat(record['claim'])} — not established.")
-        if report["state"] in ("blocked", "deferred", "partial"):
-            lines.append(f"- {report['task_id']} is {report['state']}: {_words(report['experiment'], 200)}")
+        lines += [f"#### {report['task_id']} — {_flat(report['title'])}", "", f"*Hypothesis.* {_flat(report['hypothesis'])}",
+                  "", f"*Model.* {_flat(model if isinstance(model, str) else json.dumps(model, ensure_ascii=False))}", ""]
+    verified = {r["task_id"] for r, f in cited if f["evidence_status"] == "independently_verified"}
+    qualifications = [(r["task_id"], item) for r in reports for item in _statements(r["unresolved_assumptions"])
+                      if _qualifies_independence(item, r["task_id"] in verified)]
+    lines += ["### Qualifications", "",
+              "Assumptions the tasks state that limit the independence of their references or of their "
+              "`independently_verified` rows (for a task with such rows, every assumption that mentions independence, "
+              "same origin or ciw-written code, statistical independence of noise and events excepted):", ""]
+    for tid in sorted({tid for tid, _ in qualifications}):
+        lines += [f"- {tid}:"] + [f"  - {item}" for other, item in qualifications if other == tid]
+    if not qualifications:
+        lines.append("- None stated by these tasks.")
+    selected = [(r, _selected(r)) for r in reports if _selected(r) is not None]
+    lines += ["", "## Results", "", "### Selected findings", "",
+              "One finding per task: its first established finding, or its first finding when none is established. "
+              "Every finding is in the Appendix.", "", SELECTED_HEADER, "| --- | --- | --- | --- | --- | --- | --- |"]
+    lines += [_finding_row(r, f) for r, f in selected]
+    figures = [(r, _figure(r)) for r in reports if _figure(r)]
+    lines += ["", "### Figures", ""]
+    lines += [f"![{r['task_id']} — {_flat(r['title'])}](../../{path})" for r, path in figures] or [
+        "No retained figures."]
+    lines += ["", "## Discussion", "", "### Counterexamples", "",
+              "Each finding below refutes a general statement; the statement must not be restated without the "
+              "qualification its witness shows.", ""]
+    lines += [f"- {r['task_id']} refutes “{_flat(f['counterexample']['statement'])}”: {_flat(f['claim'])} "
+              f"(`{f['evidence_status']}`; {describe_basis(f)}). Witness: `{_headline(f['counterexample'].get('witness'))}`."
+              for r, f in counterexamples] or ["- No retained finding of these sections records a counterexample."]
+    lines += ["", "Their interpretation against the literature is outstanding.", "",
+              "## Limitations", "", "What a computational experiment may establish, and what it cannot establish alone:", ""]
+    lines += _boundary_lines()
+    lines += ["### Claims not established", ""]
+    lines += [f"- {r['task_id']} [{f['domain']}]: {_flat(f['claim'])} — not established."
+              for r, f in cited if f["evidence_status"] == "not_established"] or ["- None."]
+    lines += ["", "### Unfinished tasks", "", "What each blocked, deferred or partial task is missing, in its own "
+              "words (its unresolved assumptions):", ""]
+    for report in unfinished:
+        missing = _statements(report["unresolved_assumptions"])
+        lines.append(f"- {report['task_id']} is {report['state']}; missing or unresolved:")
+        lines += [f"  - {item}" for item in missing] or ["  - (its report states no unresolved assumption)"]
+    if not unfinished:
+        lines.append("- None.")
+    lines += ["", "## Outstanding work", "", f"- {OUTSTANDING}"]
+    lines += [f"- {r['task_id']}: {item}" for r in unfinished for item in _next_steps(r)[:1]]
+    lines += [f"- {r['task_id']} ({_open_physical(r)} physical claim{'' if _open_physical(r) == 1 else 's'} not "
+              f"established; its own next step): {item}" for r in open_physical for item in _next_steps(r)[:1]]
+    used = {r["task_id"]: _textbook_results(r) for r in reports}
+    references = [(result, reference, [tid for tid, matched in used.items() if (result, reference) in matched])
+                  for result, reference, _ in TEXTBOOK]
+    lines += ["", "## References", "", "Textbook results named in these tasks' reports (T156 ledger):", ""]
+    lines += [f"- {reference}: {result} ({', '.join(tasks)})" for result, reference, tasks in references if tasks] or [
+        "- No ledger textbook result is named by these tasks."]
+    lines += ["", "## Appendix: every finding", "", RESULTS_HEADER, "| --- | --- | --- | --- | --- | --- | --- |"]
+    lines += [_finding_row(r, f) for r, f in cited]
     text = "\n".join(lines) + "\n"
     ctx.artifact_text(f"{slug}-draft.md", text)
     problems = _draft_problems(text, cited)
-    fields["numerical_result"] = f"Draft cites {len(cited)} findings from {len(reports)} reports; {len(problems)} results rows differ from their source."
+    selected_problems = _draft_problems(text, selected, SELECTED_HEADER)
+    boundary_problems = _draft_problems(text, boundary, BOUNDARY_FINDINGS_HEADER) if discipline and boundary else []
+    qualification_problems = _qualification_problems(text)
+    limitations, methods = _section(text, "Limitations"), _section(text, "Methods")
+    required = ([("Limitations", item) for r in unfinished for item in _statements(r["unresolved_assumptions"])]
+                + [("Methods", item) for _, item in qualifications])
+    absent = [item for where, item in required
+              if f"  - {item}" not in (limitations if where == "Limitations" else methods)]
+    fields["numerical_result"] = (
+        f"Draft cites {len(cited)} findings from {len(reports)} reports ({len(selected)} selected, {len(figures)} "
+        f"figures, {len(counterexamples)} counterexamples discussed, {len(unfinished)} unfinished tasks, "
+        f"{len(qualifications)} independence qualifications); {len(problems) + len(selected_problems) + len(boundary_problems)} "
+        f"table rows differ from their source; {len(qualification_problems)} label or boundary statements missing; "
+        f"{len(absent)} required assumptions absent.")
     fields["uncertainty"] = "Numbers carry the uncertainty stated in their source findings."
-    findings = [_count("Draft results table restates every retained finding of its sections with its retained label",
-                       "provenance", len(cited),
-                       [_check("results rows that do not parse back to their source finding", len(problems))], "findings")]
-    if task_id == "T162":
-        # The stated rules are backed by T155, which compares the label function with an oracle of those rules.
-        oracle = next((f for r in _reports_before(ctx, 156) if r["task_id"] == "T155" for f in r["findings"]
-                       if f["claim"].startswith("The evidence-label function agrees with the reference oracle")), None)
-        claim = "Draft methods state the evidence-label rules that T155 found the label function to follow"
-        if rules and oracle is not None and isinstance(oracle["value"], int):
-            findings.append(_count(claim, "provenance", len(rules),
-                                   [_check("T155 cases where the label function departs from the stated rules",
-                                           oracle["value"])], "rules"))
-        else:
-            fields["unresolved_assumptions"].append(
-                "The methods state the validator's constants only, or T155's oracle comparison is not retained here; "
-                "the stated rules are not backed by T155 in this run.")
-            findings.append(finding(claim, "provenance", None, {}, expected_not_established=True))
+    checks = [_check("appendix rows that do not parse back to their source finding", len(problems)),
+              _check("selected-finding rows that do not parse back to their source finding", len(selected_problems))]
+    if discipline and boundary:
+        checks.append(_check("boundary-finding rows that do not parse back to their source finding", len(boundary_problems)))
+    findings = [
+        _count("Draft finding tables restate every retained finding of their sections with its retained label and basis",
+               "provenance", len(cited), checks, "findings"),
+        _count("Draft defines every evidence label, states that independently_verified is implementation agreement "
+               "and not verification by another party, and lists every boundary row", "provenance", len(BOUNDARY),
+               [_check("label definitions, independence qualification or boundary rows missing or altered",
+                       len(qualification_problems))], "boundary rows"),
+        _count(QUALIFIED_CLAIM, "provenance", len(required),
+               [_check("required assumption statements absent from their section", len(absent))], "statements"),
+    ]
+    if discipline:
+        findings.append(_rules_finding(earlier, rules, fields))
+        fields["unresolved_assumptions"].append(
+            "Rules 6-9, 11 and 12 are stated from the specification; they are enforced by the validator, the report "
+            "builder, the runner and the workspace classifier and tested in tests/test_lab_core.py and "
+            "tests/test_lab_bridge.py, not backed by a T155 finding.")
     findings.append(finding("Draft has passed external peer review", "provenance", None, {}, expected_not_established=True))
     return {"state": "partial", "fields": fields, "findings": findings}
 
 
+RULES_BACKED_CLAIM = ("Draft methods state the specification's evidence rules, of which T155 found the label function "
+                      "to follow rules 1-5 and the authority screen to follow rule 10 on its probe claims")
+
+
+def _rules_finding(earlier, rules, fields):
+    """T162's rules are backed by T155's oracle (rules 1-5) and rule 10 probe, when both are retained."""
+    t155 = {f["claim"]: f for r in earlier if r["task_id"] == "T155" for f in r["findings"]}
+    oracle = next((f for claim, f in t155.items()
+                   if claim.startswith("The evidence-label function agrees with the reference oracle")), None)
+    screen = t155.get(RULE10_CLAIM)
+    violations = screen["value"].get("violations") if screen and isinstance(screen["value"], dict) else None
+    if rules and oracle is not None and isinstance(oracle["value"], int) and isinstance(violations, int):
+        return _count(RULES_BACKED_CLAIM, "provenance", len(rules),
+                      [_check("T155 cases where the label function departs from rules 1-5", oracle["value"]),
+                       _check("T155 probe cases where evidence.finding departs from rule 10", violations),
+                       _check("stated rules not numbered 1, 2, ... in order", _rule_numbers_problem(rules))], "rules")
+    fields["unresolved_assumptions"].append(
+        "The methods state the validator's constants only, or T155's oracle comparison and rule 10 probe are not "
+        "retained here; the stated rules are not backed by T155 in this run.")
+    return finding(RULES_BACKED_CLAIM, "provenance", None, {}, expected_not_established=True)
+
+
+PAPER_TESTS = {"T161": (f"{TESTS}::test_drafts_carry_every_qualification_of_independently_verified_rows",),
+               "T162": (f"{TESTS}::test_draft_next_step_names_completed_tasks_with_open_physical_claims",)}
 for _task_id in PAPERS:
     task(_task_id, changed_files=(MODULE,),
-         regression_tests=(f"{TESTS}::test_paper_drafts_trace_to_reports",))(lambda ctx, _t=_task_id: _paper(_t, ctx))
+         regression_tests=(f"{TESTS}::test_paper_drafts_trace_to_reports",
+                           f"{TESTS}::test_paper_drafts_have_a_structure_and_qualify_their_labels")
+         + PAPER_TESTS.get(_task_id, ()))(
+        lambda ctx, _t=_task_id: _paper(_t, ctx))
 
 
 # --------------------------------------------------------------- T163
 DEMONSTRATION = ("T003", "T005", "T010", "T032", "T047", "T062", "T066", "T084", "T121", "T137")
-SHOWN_LABEL = re.compile(r" → `([a-z_]+)`$", re.M)
+SHOWN_LABEL = re.compile(r" → `([a-z_]+)`; basis: [^\n]+$", re.M)
+CUSTOMER_DEMAND = "- Customer demand is not established:"
+PORTFOLIO_QUALIFIED = ("Portfolio page shows each finding's basis beside its label, defines the labels with the "
+                       "independence qualification, lists every boundary row and states customer demand")
 
 
 def _panel_findings(report) -> list:
@@ -1182,21 +1745,46 @@ def _panel_findings(report) -> list:
     return shown
 
 
-@task("T163", changed_files=(MODULE,), regression_tests=(f"{TESTS}::test_portfolio_shows_every_label_in_use",))
+def _panel_line(record) -> str:
+    return (f"- {_flat(record['claim'])}: `{_headline(record['value'])}` → `{record['evidence_status']}`; "
+            f"basis: {_flat(describe_basis(record))}")
+
+
+def _customer_demand_line(reports) -> str:
+    """The portfolio's customer-demand limitation, from the retained findings filed in that domain."""
+    demand = [(r["task_id"], f) for r in reports for f in r["findings"] if f["domain"] == "customer_demand"]
+    if demand:
+        tasks = ", ".join(sorted({tid for tid, _ in demand}))
+        return (f"{CUSTOMER_DEMAND} {len(demand)} retained finding{'' if len(demand) == 1 else 's'} filed in the "
+                f"customer_demand domain ({tasks}), each `not_established`: a plausible use case is not demand.")
+    return (f"{CUSTOMER_DEMAND} no retained finding is filed in the customer_demand domain, and a plausible use case "
+            "is not demand (see the boundary above).")
+
+
+@task("T163", changed_files=(MODULE,),
+      regression_tests=(f"{TESTS}::test_portfolio_shows_every_label_in_use",
+                        f"{TESTS}::test_portfolio_qualifies_labels_and_states_customer_demand"))
 def portfolio_demonstration(ctx):
     reports = _reports_before(ctx, 163)
     fields = _fields(
-        "A short tour of retained experiments can show every evidence label in use and what each result does not prove.",
+        "A short tour of retained experiments can show every evidence label in use, with its basis and its "
+        "definition, and what each result does not prove.",
         "Curated panels plus, for every label in use that they do not show, the first retained task holding it; each "
-        "panel shows its headline findings and every not_established finding.",
-        [_earlier(163)],
-        "Every label used by a retained finding appears on the page, and every not_established finding of a panel "
-        "is shown.",
+        "panel shows its headline findings with their bases and every not_established finding; the page defines the "
+        "labels, qualifies independently_verified, and lists the computational boundary and customer demand as "
+        "limitations.",
+        [_earlier(163), "Label definitions (docs/LAB.md) and ciw.lab.evidence.BOUNDARY"],
+        "Every label used by a retained finding appears on the page with the finding's basis, every not_established "
+        "finding of a panel is shown, and the label definitions, the independence qualification, every boundary row "
+        "and the customer-demand limitation are stated.",
         "Assemble a Markdown portfolio page from the selected reports and their retained figures, then read the "
-        "labels and not_established claims back from the page.",
+        "labels, bases, not_established claims, definitions and boundary rows back from the page.",
         ["label in use missing from the page", "not_established findings hidden by a finding limit",
-         "curated task not retained"],
-        "Present the portfolio page with the physical flat-plate/cylinder experiments once measured.",
+         "curated task not retained", "label shown without its basis",
+         "independently_verified read as verification by another party", "customer demand omitted"],
+        "Add panels for a retained hardware run's findings beside the clean-room ones once one exists; hardware "
+        "runs are aggregated outside the queue by `ciw lab unmeasured`, and this page reads only the clean-room "
+        "reports.",
         assumptions=["The panel selection is curated to demonstrate labels, not to rank results.",
                      "Figures are linked, not checked for legibility by this task."])
     by_id = {r["task_id"]: r for r in reports}
@@ -1212,27 +1800,42 @@ def portfolio_demonstration(ctx):
                 chosen.append(extra)
                 added.append(f"{extra} ({label})")
     lines = ["# Computational experimentalist portfolio", "",
-             "Each panel: the hypothesis, the headline findings with their evidence labels, every finding that is "
-             "not established, the figure, and the physical validation status.", ""]
+             "Each panel: the hypothesis, the headline findings with their evidence labels and bases, every finding "
+             "that is not established, the figure, and the physical validation status.", "",
+             "## How to read the labels", ""] + _label_lines()
     for tid in chosen:
         report = by_id[tid]
         lines += [f"## {tid} — {report['title']}", "", _flat(report["hypothesis"]) if isinstance(report["hypothesis"], str) else "", ""]
-        for record in _panel_findings(report):
-            lines.append(f"- {_flat(record['claim'])}: `{_headline(record['value'])}` → `{record['evidence_status']}`")
+        lines += [_panel_line(record) for record in _panel_findings(report)]
         for artifact in report["generated_artifacts"]:
             if artifact["path"].endswith(".svg"):
                 lines.append(f"\n![{tid}](../../{artifact['path']})")
                 break
         lines.append(f"\n*Physical validation:* `{report['physical_validation_status']['status']}`\n")
+    open_domains = Counter(f["domain"] for r in reports for f in r["findings"]
+                           if f["domain"] in PHYSICAL_DOMAINS | AUTHORITY_DOMAINS and f["evidence_status"] == "not_established")
+    lines += ["## Limitations", "", "What a computational experiment may establish, and what it cannot establish alone:",
+              ""] + _boundary_lines() + [
+        _customer_demand_line(reports),
+        f"- Physical, calibration, sensor and authority claims not established in the retained reports: "
+        + (", ".join(f"{domain} {count}" for domain, count in sorted(open_domains.items())) or "none") + ".",
+        f"- Hardware-measured findings in the retained reports: "
+        f"{sum(f['evidence_status'] == 'hardware_measured' for r in reports for f in r['findings'])}.", ""]
     text = "\n".join(lines) + "\n"
     ctx.artifact_text("PORTFOLIO.md", text)
     shown = set(SHOWN_LABEL.findall(text))
     missing = [label for label in in_use if label not in shown]
     hidden = [f"{tid}: {f['claim']}" for tid in chosen for f in by_id[tid]["findings"]
               if f["evidence_status"] == "not_established" and f"- {_flat(f['claim'])}: " not in text]
+    unqualified = [record["claim"] for tid in chosen for record in _panel_findings(by_id[tid])
+                   if _panel_line(record) not in text]
+    qualification_problems = _qualification_problems(text)
+    demand_absent = int(_customer_demand_line(reports) not in _section(text, "Limitations"))
     fields["numerical_result"] = (f"{len(chosen)} panels ({len([t for t in DEMONSTRATION if t in by_id])} of "
                                   f"{len(DEMONSTRATION)} curated retained, added {', '.join(added) or 'none'}); labels in "
-                                  f"use: {', '.join(in_use)}; labels shown: {', '.join(sorted(shown, key=LABELS.index))}.")
+                                  f"use: {', '.join(in_use)}; labels shown: {', '.join(sorted(shown, key=LABELS.index))}; "
+                                  f"{len(unqualified)} shown findings without their basis; "
+                                  f"{len(qualification_problems)} label or boundary statements missing.")
     fields["uncertainty"] = "Exact reading of the rendered page; see each source report for its uncertainty."
     if missing:
         fields["unresolved_assumptions"].append("Labels in use but not shown: " + ", ".join(missing))
@@ -1240,7 +1843,12 @@ def portfolio_demonstration(ctx):
                        "computational_pipeline", len(chosen),
                        [_check("labels in use absent from the rendered page", len(missing)),
                         _check("not_established findings of the panels absent from the rendered page", len(hidden))],
-                       "panels")]
+                       "panels"),
+                _count(PORTFOLIO_QUALIFIED, "computational_pipeline", len(BOUNDARY),
+                       [_check("shown findings whose line lacks their basis", len(unqualified)),
+                        _check("label definitions, independence qualification or boundary rows missing or altered",
+                               len(qualification_problems)),
+                        _check("customer-demand limitation absent", demand_absent)], "boundary rows")]
     complete = all(tid in by_id for tid in DEMONSTRATION)
     return {"state": _state(findings, complete), "fields": fields, "findings": findings}
 
@@ -1339,9 +1947,13 @@ def clean_room_reproduction(ctx):
 # --------------------------------------------------------------- T165
 RUNTIME_ALIASES = {"curved-surface-geodesic-sensitivity-runtime": "csg", "flat-torus-geodesic-reference": "ftr",
                    "parameterized-lyapunov-stability-runtime": "plsr", "scientific-computation-runtime": "scr",
-                   "rust_probe": "rust"}
+                   "rust_probe": "rust", "rust_port": "rust"}  # Rust builds: one runtime, one identity per binary
 REVISION_KEYS = ("revision", "head", "commit")
 TREE_KEYS = ("source_tree", "tree", "source_digest", "runtime_digest", "engine_sha256", "binary_sha256")
+RELEASE_SCHEMA = "ciw.lab-release-report.v3"
+RELEASE_ENCODING = ("sha256 over the UTF-8 bytes of ciw.core.identities.canonical_json (sorted keys, no whitespace, "
+                    "ASCII escapes, NaN refused; the encoding of report identities) of the list "
+                    "[[task, state, headline label, [[claim, label], ...]], ...] in queue order")
 
 
 def runtime_identities(identity, path=()) -> list:
@@ -1363,20 +1975,60 @@ def runtime_identities(identity, path=()) -> list:
     return found
 
 
-def _release(reports, queue) -> dict:
-    states = Counter(r["state"] for r in reports)
-    labels = Counter(f["evidence_status"] for r in reports for f in r["findings"])
-    inventory: dict = {}
+def runtime_inventory(reports) -> list:
+    """One row per runtime: every identity recorded for it, with the tasks that recorded each.
+
+    A commit determines its tree, so an entry that records a revision without a tree is merged into the entry
+    that records the same runtime and revision with exactly one tree (T097 records heads, T098 heads and trees
+    of the same checkouts). Distinct trees or digests of one runtime (two Rust builds) stay distinct identities.
+    """
+    seen: dict = {}
     for report in reports:
         for entry in runtime_identities(report["provider_runtime_identity"]):
-            key = (entry["runtime"], entry["revision"] or "", entry["tree"] or "")
-            inventory.setdefault(key, set()).add(report["task_id"])
+            seen.setdefault((entry["runtime"], entry["revision"] or "", entry["tree"] or ""), set()).add(report["task_id"])
+    merged: dict = {}
+    for (name, revision, tree), tasks in sorted(seen.items()):
+        trees = [t for (n, r, t) in seen if n == name and r == revision and t] if revision and not tree else []
+        key = (name, revision, trees[0]) if len(trees) == 1 else (name, revision, tree)
+        merged.setdefault(key, set()).update(tasks)
+    rows: dict = {}
+    for (name, revision, tree), tasks in sorted(merged.items()):
+        rows.setdefault(name, []).append({"revision": revision or None, "tree": tree or None, "tasks": sorted(tasks)})
+    return [{"runtime": name, "identities": identities,
+             "tasks": sorted({tid for identity in identities for tid in identity["tasks"]})}
+            for name, identities in sorted(rows.items())]
+
+
+def _inventory_gaps(reports, inventory) -> list:
+    """Recorded runtime identities the inventory does not hold (same runtime and revision, and the same tree or none)."""
+    held = {(row["runtime"], i["revision"] or "", i["tree"] or ""): set(i["tasks"])
+            for row in inventory for i in row["identities"]}
+    gaps = []
+    for report in reports:
+        for entry in runtime_identities(report["provider_runtime_identity"]):
+            name, revision, tree = entry["runtime"], entry["revision"] or "", entry["tree"] or ""
+            if not any(n == name and r == revision and (t == tree or not tree) and report["task_id"] in tasks
+                       for (n, r, t), tasks in held.items()):
+                gaps.append(f"{report['task_id']}: {name}@{revision or '-'}")
+    return gaps
+
+
+def release_record(reports, queue, scope=None) -> dict:
+    """The release record of ``reports`` against ``queue``: coverage, states, labels, basis components, runtimes, digest.
+
+    ``scope`` names the tasks the record covers (T165 passes ``"T001-T164"``, the reports before it); a caller
+    outside the queue may pass all retained reports of a run to describe the whole run.
+    """
+    states = Counter(r["state"] for r in reports)
+    labels = Counter(f["evidence_status"] for r in reports for f in r["findings"])
+    components = Counter(item for r in reports for f in r["findings"] for item in (finding_origin(f) or ["none"]))
     reported = {r["task_id"]: r for r in reports}
     # Reproducible content only: states, headline labels, claims and their labels. Values (compared within
     # tolerance) and artifact bytes (timing figures differ between runs) stay out of the digest.
     content = [[r["task_id"], r["state"], r["evidence_status"]["primary"],
                 [[f["claim"], f["evidence_status"]] for f in r["findings"]]] for r in reports]
-    return {"schema": "ciw.lab-release-report.v2", "ciw_version": __version__,
+    return {"schema": RELEASE_SCHEMA, "ciw_version": __version__,
+            "scope": scope or (f"{reports[0]['task_id']}-{reports[-1]['task_id']}" if reports else "none"),
             "queue": {"tasks": len(queue["tasks"]),
                       "sections": [{"key": s["key"], "name": s["name"],
                                     "tasks": sum(t["section"] == s["section"] for t in queue["tasks"]),
@@ -1385,86 +2037,186 @@ def _release(reports, queue) -> dict:
                       "not_reported": [t["id"] for t in queue["tasks"] if t["id"] not in reported]},
             "reports": len(reports), "states": dict(sorted(states.items())),
             "labels": {label: labels.get(label, 0) for label in LABELS},
-            "runtimes": [{"runtime": name, "revision": revision or None, "tree": tree or None, "tasks": sorted(tasks)}
-                         for (name, revision, tree), tasks in sorted(inventory.items())],
-            "release_digest": "sha256:" + hashlib.sha256(json.dumps(content, separators=(",", ":"), ensure_ascii=False)
-                                                         .encode("utf-8")).hexdigest(),
+            "basis_components": {item: components.get(item, 0) for item in ORIGINS + ("none",)},
+            "runtimes": runtime_inventory(reports),
+            "release_digest": content_identity(content),
             "release_digest_covers": "task states, headline labels, finding claims and finding labels",
+            "release_digest_encoding": RELEASE_ENCODING,
             "physical_validation": "not_established" if all(r["physical_validation_status"]["status"] == "not_established"
                                                            for r in reports) else "mixed"}
 
 
-@task("T165", changed_files=(MODULE,), regression_tests=(f"{TESTS}::test_release_report_inventories_nested_runtimes",))
+def _raw_components(text: str) -> Counter:
+    """Basis components of a report file's findings, counted from the raw text (``none`` for a finding that
+    declares none); a finding without an ``origin`` key is counted from its raw basis keys."""
+    counts = Counter()
+    for block in _raw_findings(text):
+        counts.update(_raw_block_components(block) or ["none"])
+    return counts
+
+
+@task("T165", changed_files=(MODULE,),
+      regression_tests=(f"{TESTS}::test_release_report_inventories_nested_runtimes",
+                        f"{TESTS}::test_release_report_lists_each_runtime_once_and_states_its_scope",
+                        f"{TESTS}::test_raw_recounts_derive_the_components_of_findings_retained_without_origin"))
 def release_report(ctx):
     reports = _reports_before(ctx, 165)
+    scope = f"T001-T{165 - 1:03d}"  # the reports this task reads: every task before it in queue order
     fields = _fields(
-        "A release report can be generated entirely from machine-readable queue metadata and retained reports.",
-        "Totals over states and labels; queue coverage per section; runtime inventory = revision- or tree-bearing "
-        "entries anywhere in each provider/runtime identity; release digest = SHA-256 over (task, state, headline "
-        "label, claims with labels).",
+        f"A release report of the tasks before T165 ({scope}) can be generated entirely from machine-readable queue "
+        "metadata and their retained reports.",
+        f"Scope {scope}: T165 reads only earlier reports, so T165-T168 are not in it; queue-state.json and the "
+        "dashboard cover the whole run. Totals over states, labels and basis components; queue coverage per section; "
+        "runtime inventory = revision- or tree-bearing entries anywhere in each provider/runtime identity, one row per "
+        "runtime with each identity it recorded (a revision recorded without its tree is merged with the entry that "
+        f"records that revision's tree); release digest = {RELEASE_ENCODING}.",
         [_earlier(165), "Packaged queue definition (src/ciw/lab/queue.json)"],
-        "State and label totals agree with a raw-text recount of the report files; every report whose provider probe "
-        "succeeded contributes a runtime identity; the digest depends only on reproducible content.",
-        "Aggregate queue coverage, states, labels, runtimes and report content into JSON and Markdown and recount "
-        "states and labels from the raw report text.",
-        ["runtime identities nested below the top level missed", "totals disagreeing with the report text",
-         "digest over run-specific bytes (timing artifacts, wheel digests)"],
-        "Sign the release digest with a project key once key custody is defined.",
+        "State, label and basis-component totals agree with a raw-text recount of the report files; every report "
+        "whose provider probe succeeded contributes a runtime identity, and every identity recorded is held by the "
+        "inventory; the digest depends only on reproducible content.",
+        f"Aggregate queue coverage, states, labels, basis components, runtimes and report content of {scope} into JSON "
+        "and Markdown and recount states, labels and basis components from the raw report text.",
+        ["runtime identities nested below the top level missed", "one runtime listed once per task that recorded it",
+         "totals disagreeing with the report text", "digest over run-specific bytes (timing artifacts, wheel digests)",
+         "an undeclared digest encoding", "the report read as covering the whole run"],
+        "Sign the release digest with a project key once key custody is defined (a cross-cutting open item of "
+        "T166 and T167, owned by no queue task); a whole-run release record, including T165-T168, is computed outside "
+        "the queue with research_portfolio.release_record over all retained reports.",
         assumptions=["The release digest is unsigned.",
                      "The digest covers task states, headline labels, claims and their labels, not finding values or "
                      "artifact bytes; values are compared within tolerance by ciw lab verify.",
-                     "T165-T168 run after this report and are listed as not reported."])
+                     f"The report covers {scope}: T165-T168 run after it and are listed as not reported, so its totals "
+                     "differ from queue-state.json and the dashboard of the same run."])
     if not reports:
         return _no_prior(fields)
     queue = load_queue()
-    release = _release(reports, queue)
+    release = release_record(reports, queue, scope)
     ctx.artifact_json("release-report.json", release)
     raw = _raw_reports(ctx, 165)
     raw_states = Counter(state for _, text in raw for state in RAW_STATE.findall(text))
     raw_labels = Counter(label for _, text in raw for label in RAW_LABEL.findall(text))
+    raw_components = sum((_raw_components(text) for _, text in raw), Counter())
     state_gap = sum(abs(release["states"].get(s, 0) - raw_states.get(s, 0)) for s in set(release["states"]) | set(raw_states))
     label_gap = sum(abs(release["labels"].get(l, 0) - raw_labels.get(l, 0)) for l in set(release["labels"]) | set(raw_labels))
+    component_gap = sum(abs(release["basis_components"].get(c, 0) - raw_components.get(c, 0))
+                        for c in set(release["basis_components"]) | set(raw_components))
     unidentified = []
     for report in reports:
         identity = report["provider_runtime_identity"] if isinstance(report["provider_runtime_identity"], dict) else {}
         probes = identity.get("requirement_probes") if isinstance(identity.get("requirement_probes"), dict) else {}
         if any(k.startswith("provider:") and v is True for k, v in probes.items()) and not runtime_identities(identity):
             unidentified.append(report["task_id"])
-    lines = ["# Lab release report", "", f"- CIW version: {__version__}",
+    gaps = _inventory_gaps(reports, release["runtimes"])
+    lines = [f"# Lab release report of {scope}", "",
+             f"Scope: the reports of {scope}, retained before this task ran. T165 reads only earlier reports, so "
+             "T165-T168 are not in it; queue-state.json and the dashboard cover the whole run.", "",
+             f"- CIW version: {__version__}",
              f"- Queue: {release['queue']['tasks']} tasks; {len(reports)} reported; not reported: "
              f"{', '.join(release['queue']['not_reported']) or 'none'}",
-             f"- Release digest: `{release['release_digest']}` (unsigned; covers {release['release_digest_covers']})",
+             f"- Release digest: `{release['release_digest']}` (unsigned; covers {release['release_digest_covers']}; "
+             f"{RELEASE_ENCODING})",
              f"- Physical validation: `{release['physical_validation']}`", "",
              _row("Section", "Tasks", "Reported"), _row("---", "---", "---")] + [
              _row(_cell(s["name"]), str(s["tasks"]), str(s["reported"])) for s in release["queue"]["sections"]] + [
              "", _row("State", "Tasks"), _row("---", "---")] + [_row(k, str(v)) for k, v in release["states"].items()] + [
              "", _row("Evidence label", "Findings"), _row("---", "---")] + [
              _row(f"`{k}`", str(v)) for k, v in release["labels"].items()] + [
+             "", "A passing check outranks provenance in the label rules, so the basis components each finding declares "
+             "are counted beside the labels (a finding counts once per component it declares):", "",
+             _row("Basis component", "Findings"), _row("---", "---")] + [
+             _row(f"`{k}`", str(v)) for k, v in release["basis_components"].items()] + [
              "", _row("Runtime", "Revision", "Tree or digest", "Tasks"), _row("---", "---", "---", "---")] + [
-             _row(r["runtime"], f"`{r['revision'] or '-'}`", f"`{r['tree'] or '-'}`", ", ".join(r["tasks"]))
+             _row(r["runtime"], "<br>".join(f"`{i['revision'] or '-'}`" for i in r["identities"]),
+                  "<br>".join(f"`{i['tree'] or '-'}`" for i in r["identities"]),
+                  "<br>".join(", ".join(i["tasks"]) for i in r["identities"]))
              for r in release["runtimes"]]
     ctx.artifact_text("RELEASE.md", "\n".join(lines) + "\n")
-    names = sorted({r["runtime"] for r in release["runtimes"]})
-    fields["numerical_result"] = (f"{len(reports)} of {release['queue']['tasks']} queue tasks reported; states "
-                                  f"{release['states']}; labels {dict((k, v) for k, v in release['labels'].items() if v)}; "
-                                  f"runtimes {', '.join(names) or 'none'}.")
+    names = [r["runtime"] for r in release["runtimes"]]
+    fields["numerical_result"] = (f"Release report of {scope}: {len(reports)} of {release['queue']['tasks']} queue tasks "
+                                  f"reported; states {release['states']}; labels "
+                                  f"{dict((k, v) for k, v in release['labels'].items() if v)}; basis components "
+                                  f"{dict((k, v) for k, v in release['basis_components'].items() if v)}; "
+                                  f"{len(names)} runtimes ({', '.join(names) or 'none'}) with "
+                                  f"{sum(len(r['identities']) for r in release['runtimes'])} identities.")
     fields["uncertainty"] = "Exact counts."
     findings = [
         _count("Release state and label totals match a raw-text recount of the retained report files", "provenance",
                len(reports), [_check("absolute state-count differences from the raw-text recount", state_gap),
-                              _check("absolute label-count differences from the raw-text recount", label_gap)], "reports"),
+                              _check("absolute label-count differences from the raw-text recount", label_gap),
+                              _check("absolute basis-component count differences from the raw-text recount",
+                                     component_gap)], "reports"),
         _count("Every report whose provider probe succeeded contributes a runtime identity to the release inventory",
                "provenance", len(names),
-               [_check("reports with a successful provider probe and no runtime identity", len(unidentified))], "runtimes"),
+               [_check("reports with a successful provider probe and no runtime identity", len(unidentified)),
+                _check("recorded runtime identities the inventory does not hold", len(gaps)),
+                _check("runtimes listed on more than one inventory row", len(names) - len(set(names)))], "runtimes"),
         finding("The release digest is signed by a project key", "provenance", None, {}, expected_not_established=True),
     ]
     return {"state": _state(findings), "fields": fields, "findings": findings}
 
 
+# --------------------------------------------------------------- open items (T166, T167)
+# Cross-cutting open items that no queue task closes: (key, item, what would close it, pattern over a report's
+# own statements: its unresolved assumptions, its next step and its not_established claims).
+OPEN_ITEMS = (
+    ("key-custody", "Key custody and signatures",
+     "a signing key held outside the workspace and signatures over workspace records, receipts, operator captures "
+     "and the release digest (a queue extension; content identities and seals are unkeyed hashes)",
+     re.compile(r"\bkeyed\b|signature|signed (?:capture|by|with)|key custody|trust anchor|sign (?:the|receipts)"
+                r"|host-held key|authenticat", re.I)),
+    ("telemetry-provisioning", "Telemetry provider provisioning",
+     "provider checkouts bound to the telemetry and declared-workload workflows (the pins of "
+     "src/ciw/telemetry-runtimes.json), provisioned for the clean-room run like the other providers",
+     re.compile(r"telemetry (?:workflow|stack|or calibrated)|declared-workload or telemetry|workflows \(telemetry", re.I)),
+    ("cross-platform", "Cross-platform reproduction",
+     "a non-gating clean-room run on Windows and on another BLAS build or architecture, compared with the retained "
+     "reports by ciw lab verify, whose differences answer the platform assumptions",
+     re.compile(r"cross-platform|platform-sensitive|other platforms?|(?-i:\bWindows\b)|second (?:Linux )?host"
+                r"|other BLAS|BLAS builds?|LAPACK/BLAS|one platform", re.I)),
+)
+
+
+def _own_statements(report) -> list:
+    """(kind, text) of a report's own statements about what is open: assumptions, next step, unestablished claims."""
+    return ([("assumption", item) for item in _statements(report["unresolved_assumptions"])]
+            + [("next step", item) for item in _statements(report["recommended_next_task"])]
+            + [("finding", _flat(f["claim"])) for f in report["findings"] if f["evidence_status"] == "not_established"])
+
+
+def open_items(reports) -> list:
+    """Each cross-cutting open item with the statements of the retained reports that raise it."""
+    items = []
+    for key, name, closes, pattern in OPEN_ITEMS:
+        statements = [{"task_id": r["task_id"], "kind": kind, "text": text, "phrase": match.group(0)}
+                      for r in reports for kind, text in _own_statements(r) if (match := pattern.search(text))]
+        items.append({"key": key, "item": name, "closes_it": closes, "owning_task": None,
+                      "tasks": sorted({s["task_id"] for s in statements}), "statements": statements})
+    return items
+
+
+def _open_item_lines(items) -> list:
+    lines = ["## Cross-cutting open items", "",
+             "No queue task closes these; each needs a queue extension. Statements are grouped by phrases in each "
+             "report's own assumptions, next step and unestablished claims (research_portfolio.OPEN_ITEMS).", ""]
+    for item in items:
+        lines += [f"### {item['item']}", "", f"Closes it: {item['closes_it']}.", ""]
+        lines += [f"- {s['task_id']} ({s['kind']}): {s['text']}" for s in item["statements"]] or [
+            "- Raised by no retained report."]
+        lines.append("")
+    return lines
+
+
+def _open_item_problems(ctx, number, items) -> list:
+    """Grouped statements whose matched phrase is absent from their task's raw report file (a second path)."""
+    raw = dict(_raw_reports(ctx, number))
+    return [f"{s['task_id']}: {s['phrase']}" for item in items for s in item["statements"]
+            if s["phrase"] not in raw.get(s["task_id"], "")]
+
+
 # --------------------------------------------------------------- T166
 def _ledger_problems(text: str, rows: list) -> list:
     """Ledger lines that do not restate their assumption and source tasks."""
-    lines = [line for line in text.splitlines() if line.startswith("- ")]
+    lines = [line for line in _section(text, "Ledger").splitlines() if line.startswith("- ")]
     problems = [] if len(lines) == len(rows) else [f"{len(lines)} ledger lines for {len(rows)} assumptions"]
     for index, (line, row) in enumerate(zip(lines, rows)):
         assumption, _, tasks = line[2:].rpartition(" (")
@@ -1473,97 +2225,419 @@ def _ledger_problems(text: str, rows: list) -> list:
     return problems
 
 
-@task("T166", changed_files=(MODULE,), regression_tests=(f"{TESTS}::test_unresolved_assumption_ledger",))
+OPEN_ITEMS_CLAIM = "Cross-cutting open items are listed with every retained statement that raises them"
+
+
+@task("T166", changed_files=(MODULE,),
+      regression_tests=(f"{TESTS}::test_unresolved_assumption_ledger", f"{TESTS}::test_ledgers_list_cross_cutting_open_items"))
 def unresolved_assumptions(ctx):
     reports = _reports_before(ctx, 166)
     fields = _fields(
-        "Every unresolved assumption stated by any task can be listed in one ledger with its source task.",
-        "Ledger = union over reports of unresolved_assumptions, deduplicated by exact wording, with task references.",
+        "Every unresolved assumption stated by any task can be listed in one ledger with its source task, and the "
+        "open items that cut across tasks can be grouped from the tasks' own statements.",
+        "Ledger = union over reports of unresolved_assumptions, deduplicated by exact wording, with task references. "
+        "Open items = key custody and signatures, telemetry provider provisioning and cross-platform reproduction, "
+        "each with the assumptions, next steps and unestablished claims whose wording raises it.",
         [_earlier(166) + " (this section's T155-T165 included)"],
         "Every stated assumption appears once per exact wording with every task stating it; citations agree with a "
-        "raw-text recount of the report files.",
-        "Collect, deduplicate and count assumptions; write JSON and Markdown ledgers; parse the Markdown back and "
-        "recount assumption items from the raw report text.",
+        "raw-text recount of the report files; every statement grouped under an open item holds its matched phrase "
+        "in its task's raw report file.",
+        "Collect, deduplicate and count assumptions; group the open items; write JSON and Markdown ledgers; parse the "
+        "Markdown ledger back and recount assumption items and open-item phrases from the raw report text.",
         ["assumptions dropped by the traversal (raw-text recount)", "ledger lines not restating their assumption",
-         "reports stating no assumption"],
-        "Attach each assumption to the experiment that would resolve it and track closure.")
+         "reports stating no assumption", "cross-cutting open items missing from the ledger"],
+        "Attach each assumption to the experiment that would resolve it and track closure, and open a queue "
+        "extension for each of the three open items this ledger groups, which no queue task closes.")
     if not reports:
         return _no_prior(fields)
+    items = open_items(reports)
     ledger: dict = {}
     for report in reports:
-        items = report["unresolved_assumptions"]
-        for item in (items if isinstance(items, list) else [items]):
-            ledger.setdefault(item if isinstance(item, str) else json.dumps(item, ensure_ascii=False), []).append(report["task_id"])
-    rows = [{"assumption": k, "tasks": v} for k, v in sorted(ledger.items())]
+        for item in _statements(report["unresolved_assumptions"]):
+            ledger.setdefault(item, []).append(report["task_id"])
+    raised = {s["text"]: [] for item in items for s in item["statements"] if s["kind"] == "assumption"}
+    for item in items:
+        for s in item["statements"]:
+            if s["kind"] == "assumption" and item["key"] not in raised[s["text"]]:
+                raised[s["text"]].append(item["key"])
+    rows = [{"assumption": k, "tasks": v, "open_items": raised.get(k, [])} for k, v in sorted(ledger.items())]
     ctx.artifact_json("unresolved-assumptions.json", rows)
-    text = "# Unresolved assumptions\n\n" + "\n".join(f"- {_flat(row['assumption'])} ({', '.join(row['tasks'])})"
-                                                      for row in rows) + "\n"
+    ctx.artifact_json("open-items.json", items)
+    text = ("# Unresolved assumptions\n\n## Ledger\n\n"
+            + "\n".join(f"- {row['assumption']} ({', '.join(row['tasks'])})" for row in rows) + "\n\n"
+            + "\n".join(_open_item_lines(items)) + "\n")
     ctx.artifact_text("UNRESOLVED_ASSUMPTIONS.md", text)
     problems = _ledger_problems(text, rows)
+    item_problems = _open_item_problems(ctx, 166, items)
     citations = sum(len(row["tasks"]) for row in rows)
     raw_citations = sum(_raw_assumption_count(raw) for _, raw in _raw_reports(ctx, 166))
     silent = [r["task_id"] for r in reports if not r["unresolved_assumptions"]]
+    raised_items = [item["item"] for item in items if item["statements"]]
     fields["numerical_result"] = (f"{len(rows)} distinct unresolved assumptions ({citations} statements) from "
-                                  f"{len(reports)} reports; {len(silent)} reports state none.")
+                                  f"{len(reports)} reports; {len(silent)} reports state none; open items: "
+                                  + "; ".join(f"{item['item']} {len(item['statements'])} statements from "
+                                              f"{len(item['tasks'])} tasks" for item in items) + ".")
     fields["uncertainty"] = "Exact counts; completeness depends on what each task states."
     fields["unresolved_assumptions"] = (
         ([f"Reports stating no unresolved assumption: {', '.join(silent)}"] if silent else [])
         + ["T167 and T168 run after this ledger; their assumptions are in their own reports.",
-           "Assumptions are deduplicated by exact wording; one assumption worded differently is listed twice."])
+           "Assumptions are deduplicated by exact wording; one assumption worded differently is listed twice.",
+           "Open items are grouped by phrases (research_portfolio.OPEN_ITEMS); a statement that raises one in other "
+           "words is not grouped, and that no queue task closes them is read from the queue's titles, not checked."])
     findings = [_count("Unresolved-assumption ledger lists every assumption stated by the retained reports",
                        "provenance", len(rows),
                        [_check("ledger lines that do not restate their assumption and tasks", len(problems)),
                         _check("assumption statements minus a raw-text recount of the report files",
-                               citations - raw_citations)], "assumptions")]
+                               citations - raw_citations)], "assumptions"),
+                _count(OPEN_ITEMS_CLAIM, "provenance", len(raised_items),
+                       [_check("grouped statements whose phrase is absent from their task's raw report file",
+                               len(item_problems))], "items")]
     return {"state": _state(findings), "fields": fields, "findings": findings}
 
 
 # --------------------------------------------------------------- T167
-@task("T167", changed_files=(MODULE,), regression_tests=(f"{TESTS}::test_unmeasured_ledger",))
+# Acquisition routes: a hardware probe of the runner (the only way a physical label is established), the words
+# by which a claim names its device, and the go/no-go step on the capture host.
+ACQUISITION_ROUTES = {
+    "nvidia-gpu": (re.compile(r"\bGPU\b|NVML|nvidia|RTX|CUDA", re.I),
+                   "`ciw energy probe --gpu-index 0` must report status ok"),
+    "rapl": (re.compile(r"RAPL|CPU package|package energy", re.I),
+             "an intel-rapl energy_uj counter under /sys/class/powercap must read as a number (the runner's "
+             "hardware:rapl probe); `python -m ciw.lab.energy_gpu_telemetry rapl-capture` then records the capture"),
+}
+# A finding's own statement (claim or basis notes) that the code it needs does not exist, or that it needs a
+# reference instrument no acquisition route provides.
+IMPLEMENTATION_MISSING = re.compile(
+    r"\bno (?:[\w/-]+ ){0,3}(?:implementation|port|kernel path|capture path|reader|execution path)\b|not implemented"
+    r"|implementation missing|does not (?:exist|ingest)|not ingested|(?:cannot|none can) run on any host"
+    r"|was not written|no [\w/-]+ (?:environment|worker)",
+    re.I)
+REFERENCE_MISSING = re.compile(r"no external (?:[\w-]+ ){0,2}(?:meter|reference|instrument)"
+                               r"|independent reference instrument", re.I)
+HARDWARE_CLAIM = re.compile(r"\bGPU\b|NVML|RAPL|CUDA|RTX|FPGA|\bhardware\b"
+                            r"|real (?:sensor|camera|device|machine|scanner|part|instrument)s?\b", re.I)
+# A task's own statement that the code a claim names was not run or written ("Julia, C++ and GPU-host encoders
+# were not run"); it applies to a claim that names one of the statement's subjects.
+UNRUN_CODE = re.compile(r"\b(?:were|was) not (?:run|written)\b|\bnot written\b|\bnever (?:run|written)\b", re.I)
+SUBJECT_NAME = re.compile(r"[A-Z][\w.#+-]*\+*|\b\w+\+\+")
+ORDINARY_CAPITALS = frozenset({"A", "An", "The", "This", "These", "That", "Those", "No", "Its", "Their", "Only",
+                               "Every", "Each", "All", "Some"})
+# A claim about retained synthetic fixtures themselves: their origin is fixed, and no acquisition changes it.
+FIXTURE_CLAIM = re.compile(r"\bfixtures?'?(?=\s|$)", re.I)
+SYNTHETIC_ORIGIN = re.compile(r"synthetic[_ ]fixture|fixtures? (?:are|is) synthetic", re.I)
+# A physical quantity stated as a result: such a claim in a computational domain is misfiled, whereas a
+# computational comparison that names a device (bitwise agreement on the GPU) runs on that device's host.
+PHYSICAL_QUANTITY = re.compile(r"\benerg(?:y|ies)\b|\bpower\b|temperature|\bclock\b|\bduration\b|\bjoules?\b"
+                               r"|\bwatts?\b|utili[sz]ation|\blatency\b|wall[- ]clock|run time", re.I)
+NEEDS = {"implementation": "Needs implementation first",
+         "reference_instrument": "Needs a reference instrument no acquisition route provides",
+         "fixture_origin": "Claims about retained synthetic fixtures (no acquisition changes their origin)",
+         "computational_domain": "Physical quantities filed under a computational domain",
+         "no_probe": "No instrument probe for it in its task"}
+EXECUTION = "execution:"  # prefix of a computational comparison that runs only on a route's host
+
+
+def _need_heading(need: str) -> str:
+    if need.startswith(EXECUTION + "hardware:"):
+        return f"Runs on the {need.split(':')[-1]} host (computational comparison; no acquisition needed)"
+    return NEEDS.get(need, f"Acquisition on {need}")
+
+
+BOUNDARY_DOMAINS = {"Physical truth": "physical", "Calibration validity": "calibration",
+                    "Real sensor performance": "sensor_performance", "Machine safety": "machine_safety",
+                    "Industrial readiness": "industrial_readiness", "Actual customer demand": "customer_demand",
+                    "Safe actuator authority": "actuator_authority"}
+
+
+def _notes(record) -> str:
+    notes = record["basis"].get("notes") if isinstance(record.get("basis"), dict) else None
+    return " ".join(_statements(notes)) if notes else ""
+
+
+def _failed_probes(report) -> list:
+    identity = report["provider_runtime_identity"] if isinstance(report["provider_runtime_identity"], dict) else {}
+    probes = identity.get("requirement_probes") if isinstance(identity.get("requirement_probes"), dict) else {}
+    return sorted(k for k, v in probes.items() if v is False and k.startswith(("hardware:", "tool:")))
+
+
+def _route_tasks(reports) -> dict:
+    """Tasks on each acquisition route: a failed probe of it, or a named capture variable of one of its roles."""
+    from .runner import CAPTURE_INSTRUMENTS, OPERATOR_CAPTURE_VARIABLES
+    routes = {}
+    for probe in ACQUISITION_ROUTES:
+        variables = [OPERATOR_CAPTURE_VARIABLES[role] for role, instrument in sorted(CAPTURE_INSTRUMENTS.items())
+                     if instrument == probe and role in OPERATOR_CAPTURE_VARIABLES]
+        routes[probe] = [r["task_id"] for r in reports
+                         if f"hardware:{probe}" in _failed_probes(r)
+                         or any(v in json.dumps(r, ensure_ascii=False) for v in variables)]
+    return routes
+
+
+def _unrun_subjects(report, claim: str) -> list:
+    """The task's statements that code the claim names was not run or written (its unresolved assumptions)."""
+    found = []
+    for item in _statements(report.get("unresolved_assumptions")):
+        match = UNRUN_CODE.search(item)
+        if not match:
+            continue
+        names = [n for n in SUBJECT_NAME.findall(item[:match.start()]) if n not in ORDINARY_CAPITALS]
+        if any(re.search(rf"(?<![\w-]){re.escape(name)}(?![\w-])", claim) for name in names):
+            found.append(item)
+    return found
+
+
+def classify_unmeasured(report, record, routes) -> str:
+    """What an open finding needs, from the task's and the finding's own statements.
+
+    ``implementation`` when the claim or its basis notes say the code does not exist, or the task says that
+    code the claim names was not run or written; ``reference_instrument`` when they name a missing external
+    reference; ``fixture_origin`` for a claim about retained synthetic fixtures (their origin is fixed);
+    ``computational_domain`` for a physical quantity stated in a computational domain (no acquisition can
+    support it there); ``execution:hardware:<probe>`` for another computational claim in a task on that
+    acquisition route whose notes name the route's requirement or whose claim names its device (a comparison
+    that runs on the route's host and needs no acquisition); ``hardware:<probe>`` for a physical claim when the
+    task is on that acquisition route and the claim or notes name its device; else ``no_probe``.
+    """
+    notes = _notes(record)
+    text = f"{record['claim']} {notes}"
+    if IMPLEMENTATION_MISSING.search(text) or _unrun_subjects(report, record["claim"]):
+        return "implementation"
+    if REFERENCE_MISSING.search(text):
+        return "reference_instrument"
+    if FIXTURE_CLAIM.search(record["claim"]) and SYNTHETIC_ORIGIN.search(text):
+        return "fixture_origin"
+    on_route = [probe for probe in ACQUISITION_ROUTES if report["task_id"] in routes.get(probe, [])]
+    computational = record["domain"] in COMPUTATIONAL_DOMAINS
+    if computational and PHYSICAL_QUANTITY.search(record["claim"]):
+        return "computational_domain"
+    for probe in on_route:
+        if computational and (f"needs hardware:{probe}" in notes or ACQUISITION_ROUTES[probe][0].search(record["claim"])):
+            return f"{EXECUTION}hardware:{probe}"
+        if not computational and ACQUISITION_ROUTES[probe][0].search(text):
+            return f"hardware:{probe}"
+    return "no_probe"
+
+
+def _unmeasured_rows(reports, routes) -> list:
+    """Open physical claims, and open computational claims that name hardware or (in a task whose requirement
+    probe failed) say their code does not exist, each with what it needs."""
+    rows = []
+    for report in reports:
+        failed = _failed_probes(report)
+        for record in report["findings"]:
+            if record["evidence_status"] != "not_established" or record["domain"] in AUTHORITY_DOMAINS:
+                continue
+            physical = record["domain"] in PHYSICAL_DOMAINS
+            missing = failed and IMPLEMENTATION_MISSING.search(f"{record['claim']} {_notes(record)}")
+            if physical or HARDWARE_CLAIM.search(record["claim"]) or missing:
+                rows.append({"task_id": report["task_id"], "domain": record["domain"], "claim": record["claim"],
+                             "needs": classify_unmeasured(report, record, routes), "failed_probes": failed,
+                             "notes": _notes(record), "task_statements": _unrun_subjects(report, record["claim"])})
+    return rows
+
+
+def _next_acquisitions(rows, routes) -> list:
+    """Acquisition routes ranked by the open physical claims they address, then by the computational comparisons
+    that run only on their host (a route with neither is not ready)."""
+    ranked = []
+    for probe, (device, go) in ACQUISITION_ROUTES.items():
+        claims = [row for row in rows if row["needs"] == f"hardware:{probe}"]
+        runs = [row for row in rows if row["needs"] == f"{EXECUTION}hardware:{probe}"]
+        if claims or runs:
+            hosts = sorted(set(re.findall(r"RTX \d{3,4}", " ".join(row["claim"] for row in claims + runs))))
+            ranked.append({"probe": f"hardware:{probe}", "go_no_go": go,
+                           "tasks": sorted({r["task_id"] for r in claims + runs}), "route_tasks": routes[probe],
+                           "claims": len(claims), "claim_tasks": sorted({r["task_id"] for r in claims}),
+                           "comparisons": len(runs), "comparison_tasks": sorted({r["task_id"] for r in runs}),
+                           "hosts": hosts})
+    return sorted(ranked, key=lambda route: (-route["claims"], -route["comparisons"], route["probe"]))
+
+
+def _acquisition_step(route) -> str:
+    host = f"the {route['hosts'][0]} host" if route["hosts"] else "the capture host"
+    counts = [f"{route['claims']} open physical claim{'' if route['claims'] == 1 else 's'} name this route's device"
+              ] if route["claims"] else []
+    if route["comparisons"]:
+        counts.append(f"{route['comparisons']} computational comparison{'' if route['comparisons'] == 1 else 's'} "
+                      f"({', '.join(route['comparison_tasks'])}) run only on this host")
+    return (f"On {host}: {route['go_no_go']}; then run {', '.join(route['tasks'])} there into a fresh output "
+            f"directory following their protocols ({'; '.join(counts)}) and retain the run with "
+            "`ciw lab hardware retain`")
+
+
+# Hand-labelled probe records for the classifier, checked before the ledger is trusted (like T168's tie probe):
+# (task, failed probes, unresolved assumptions, claim, domain, basis notes, expected need; None = not listed).
+UNMEASURED_PROBE = (
+    ("T116", ("hardware:nvidia-gpu",), (), "GPU-domain gross energy per measured batch", "physical",
+     "no NVIDIA GPU or NVML in this environment", "hardware:nvidia-gpu"),
+    ("T116", ("hardware:nvidia-gpu",), (),
+     "The NVML total-energy counter of the RTX 2080 has a characterized accuracy and resolution", "sensor_performance",
+     "NVML declares no accuracy or resolution for this counter and no external power meter was compared",
+     "reference_instrument"),
+    ("T118", ("hardware:nvidia-gpu",), (), "RTX 2080 kernel-only duration of the Gaussian VI kernel", "physical",
+     "log.json brackets launch, synchronization and copy; kernel spans need an Nsight Systems report, which this "
+     "section does not ingest", "implementation"),
+    ("T117", ("hardware:nvidia-gpu", "tool:julia"), (),
+     "The gaussian_vi PTX kernel on the GPU reproduces the NumPy reference bitwise on every replica", "numerical",
+     "no NVIDIA GPU answered the hardware:nvidia-gpu probe in this task; the PTX kernel of the common workload exists "
+     "(ciw.energy_cuda gaussian_vi), so this comparison runs on a host where the probe succeeds (needs "
+     "hardware:nvidia-gpu)", "execution:hardware:nvidia-gpu"),
+    ("T117", ("hardware:nvidia-gpu", "tool:julia"), (),
+     "A Julia implementation of the common workload agrees with the NumPy reference", "numerical",
+     "implementation missing: no Julia port of the common workload exists, so none can run on any host",
+     "implementation"),
+    ("T120", ("hardware:nvidia-gpu",), (), "GPU energy per batch of the float32 kernel is below the float64 kernel's",
+     "numerical", "", "computational_domain"),
+    ("T147", ("hardware:nvidia-gpu",), (), "GPU/CPU agreement establishes industrial readiness", "industrial_readiness",
+     "", None),
+    ("T124", (), (), "The fixtures' counter readings were produced by a physical GPU and NVML counter", "physical",
+     "the fixtures declare origin synthetic_fixture and carry placeholder library and executable digests",
+     "fixture_origin"),
+    ("T124", (), (), "The bound operator log's counter readings come from an NVML device present on this analyzing host",
+     "physical", "no operator NVML log was bound (--capture energy-log=PATH or CIW_LAB_ENERGY_LOG)",
+     "hardware:nvidia-gpu"),
+    ("T119", (), (), "Physical GPU energy per accepted numerical result", "physical",
+     "no operator NVML log was supplied (--capture energy-log=PATH or CIW_LAB_ENERGY_LOG); the repository fixtures "
+     "are synthetic, so no physical energy per accepted result was measured", "hardware:nvidia-gpu"),
+    ("T146", (), ("Julia, C++ and GPU-host encoders were not run",),
+     "Byte-identical canonical JSON holds for Julia, C++ and GPU-host implementations", "computational_pipeline", "",
+     "implementation"),
+    ("T115", (), (), "Gross CPU package energy per geodesic trajectory", "physical",
+     "no rapl-log capture was bound (--capture rapl-log=PATH or CIW_LAB_RAPL_LOG)", "hardware:rapl"),
+    ("T005", (), (), "Nearby real trajectories on a physical curved surface separate according to this Jacobi law",
+     "physical", "", "no_probe"),
+    ("T149", (), (), "The frame format keeps its LSB-first burst order on an FPGA over a physical link",
+     "computational_pipeline", "", "no_probe"),
+)
+
+
+def _unmeasured_probe_errors() -> list:
+    """Probe records whose need the classifier gets wrong (a listed claim with another need, or a listing error)."""
+    reports: dict = {}
+    for task_id, failed, assumptions, claim, domain, notes, _ in UNMEASURED_PROBE:
+        report = reports.setdefault(task_id, {
+            "task_id": task_id, "findings": [], "unresolved_assumptions": list(assumptions),
+            "provider_runtime_identity": {"requirement_probes": {probe: False for probe in failed}}})
+        report["findings"].append(finding(claim, domain, None, {"notes": [notes]} if notes else {},
+                                          expected_not_established=domain in COMPUTATIONAL_DOMAINS))
+    probe_reports = list(reports.values())
+    routes = _route_tasks(probe_reports)
+    needs = {(row["task_id"], row["claim"]): row["needs"] for row in _unmeasured_rows(probe_reports, routes)}
+    return [f"{task_id}: {claim[:60]} -> {needs.get((task_id, claim))}, expected {expected}"
+            for task_id, _, _, claim, _, _, expected in UNMEASURED_PROBE if needs.get((task_id, claim)) != expected]
+
+
+@task("T167", changed_files=(MODULE,),
+      regression_tests=(f"{TESTS}::test_unmeasured_ledger", f"{TESTS}::test_unmeasured_ledger_separates_code_from_hardware",
+                        f"{TESTS}::test_unmeasured_classifier_is_checked_on_probe_records",
+                        f"{TESTS}::test_ledgers_list_cross_cutting_open_items"))
 def unmeasured(ctx):
     reports = _reports_before(ctx, 167)
     fields = _fields(
-        "Everything that remains physically unmeasured or unrun is enumerable from the retained reports.",
+        "Everything that remains physically unmeasured or unrun is enumerable from the retained reports, with what "
+        "each open claim needs: an acquisition on a named route, a run on a named route's host, code that does not "
+        "exist yet, a reference instrument, or an instrument probe.",
         "Unmeasured = physical/authority-domain findings not established; blocked, deferred and partial tasks with "
-        "their unrun parts; not_established findings of tasks whose hardware probe failed.",
-        [_earlier(167)],
+        "what they leave unresolved; open physical claims and open computational claims that name hardware, each "
+        "classified from its own claim and basis notes and its task's statements (implementation missing, including "
+        "code its task says was not run or written; reference instrument missing; a claim about synthetic fixtures, "
+        "whose origin no acquisition changes; a computational comparison that runs only on the host of its task's "
+        "acquisition route; a physical quantity filed under a computational domain; hardware:<probe> when its task "
+        "is on that acquisition route and the claim names the route's device, else no instrument probe), the "
+        "classifier checked on hand-labelled probe records first; acquisition routes ranked by the physical claims "
+        "they address, then by the comparisons that run only on their host; the computational boundary per domain; "
+        "cross-cutting open items.",
+        [_earlier(167), "Acquisition routes: the runner's hardware probes and capture roles "
+                        "(runner.CAPTURE_INSTRUMENTS, runner.OPERATOR_CAPTURE_VARIABLES)", "ciw.lab.evidence.BOUNDARY"],
         "The ledger's counts of not-established physical/authority claims and of unfinished tasks agree with a "
-        "raw-text recount of the report files.",
-        "Collect those findings, task states and hardware probe outcomes into JSON and Markdown and recount them "
-        "from the raw report text.",
+        "raw-text recount of the report files; every open physical claim is classified exactly once, and the count "
+        "classified agrees with a raw-text recount; the classifier gives every hand-labelled probe record its "
+        "label; every open-item statement holds its phrase in its task's raw report file.",
+        "Classify the hand-labelled probe records; collect the findings, task states and probe outcomes; classify "
+        "each open claim; rank the acquisition routes; write JSON and Markdown; recount claims, states and "
+        "open-item phrases from the raw report text.",
         ["claims dropped by the traversal (raw-text recount)", "partial tasks omitted",
-         "hardware claims filed under a computational domain"],
-        "Execute the manufacturing measurement protocols (T126-T128) on hardware and retain raw data.",
-        assumptions=["T168 runs after this ledger.",
-                     "Hardware needs are inferred from failed hardware probes; a claim that needs hardware in a task "
-                     "that probed none is listed only when its domain is physical or authority."])
+         "hardware claims filed under a computational domain",
+         "missing code attributed to missing hardware (a claim listed under a probe its own notes say cannot help)",
+         "a computational comparison that needs only a GPU host filed as a misfiled hardware claim and left out of "
+         "the host's run", "claims about synthetic fixtures counted as acquirable",
+         "authority claims attributed to hardware", "customer demand omitted",
+         "a classifier that loses every acquisition route (hand-labelled probe records)"],
+        "")
     if not reports:
+        fields["recommended_next_task"] = "Run the full queue first, then this ledger."
         return _no_prior(fields)
+    scope = f"T001-T{167 - 1:03d}"
     claims = [{"task_id": r["task_id"], "claim": f["claim"], "domain": f["domain"]}
               for r in reports for f in r["findings"]
               if f["domain"] in PHYSICAL_DOMAINS | AUTHORITY_DOMAINS and f["evidence_status"] == "not_established"]
     unfinished = [{"task_id": r["task_id"], "state": r["state"], "reason": _words(r["experiment"], 300),
-                   "unrun": [_flat(a) for a in (r["unresolved_assumptions"] if isinstance(r["unresolved_assumptions"], list)
-                                                 else [r["unresolved_assumptions"]])]}
-                  for r in reports if r["state"] in ("blocked", "deferred", "partial")]
-    hardware = []
-    for r in reports:
-        identity = r["provider_runtime_identity"] if isinstance(r["provider_runtime_identity"], dict) else {}
-        failed = sorted(k for k, v in (identity.get("requirement_probes") or {}).items()
-                        if k.startswith("hardware:") and v is False)
-        if failed:
-            hardware += [{"task_id": r["task_id"], "probes": failed, "claim": f["claim"], "domain": f["domain"]}
-                         for f in r["findings"] if f["evidence_status"] == "not_established"]
+                   "unrun": _statements(r["unresolved_assumptions"])}
+                  for r in reports if r["state"] in UNFINISHED]
+    probe_errors = _unmeasured_probe_errors()
+    routes = _route_tasks(reports)
+    rows = _unmeasured_rows(reports, routes)
+    ranked = _next_acquisitions(rows, routes)
+    items = open_items(reports)
     measured = [r["task_id"] for r in reports for f in r["findings"] if f["evidence_status"] == "hardware_measured"]
-    document = {"not_established_claims": claims, "unfinished_tasks": unfinished,
-                "hardware_unavailable_findings": hardware, "hardware_measured_findings": measured}
+    boundary = []
+    for may, cannot in BOUNDARY:
+        domain = BOUNDARY_DOMAINS.get(cannot)
+        boundary.append({"may_establish": may, "cannot_establish_alone": cannot, "domain": domain,
+                         "not_established": None if domain is None else sum(c["domain"] == domain for c in claims)})
+    for domain in sorted((PHYSICAL_DOMAINS | AUTHORITY_DOMAINS) - set(BOUNDARY_DOMAINS.values())):
+        boundary.append({"may_establish": None, "cannot_establish_alone": domain.replace("_", " ").capitalize(),
+                         "domain": domain, "not_established": sum(c["domain"] == domain for c in claims)})
+    document = {"scope": scope, "not_established_claims": claims, "unfinished_tasks": unfinished,
+                "open_claims_by_need": rows, "next_acquisitions": ranked, "acquisition_route_tasks": routes,
+                "boundary": boundary, "open_items": items, "hardware_measured_findings": measured,
+                "hardware_runs": "aggregated outside the queue by `ciw lab unmeasured`; never read here"}
     ctx.artifact_json("unmeasured.json", document)
-    lines = ["# What remains unmeasured", "", f"Hardware-measured findings in this run: {len(measured)}.", "",
-             "## Physical and authority claims not established", ""] + [
-        f"- {c['task_id']} [{c['domain']}]: {_flat(c['claim'])}" for c in claims] + [
-        "", "## Findings of tasks whose hardware probe failed", ""] + [
-        f"- {h['task_id']} [{h['domain']}; {', '.join(h['probes'])} unavailable]: {_flat(h['claim'])}" for h in hardware] + [
-        "", "## Blocked, deferred and partial tasks", ""]
+    lines = ["# What remains unmeasured", "",
+             f"Scope: the clean-room reports of {scope} in this output directory. Hardware runs retained under "
+             "lab/hardware/ are aggregated outside the queue by `ciw lab unmeasured --retained lab`; this ledger never "
+             "reads them, so its counts cover this run only.", "",
+             f"Hardware-measured findings in this run: {len(measured)}.", "", "## Next acquisitions", ""]
+    lines += [f"{index}. {route['probe']} — {_acquisition_step(route)}." for index, route in enumerate(ranked, 1)] or [
+        "No acquisition route of the runner addresses an open physical claim or a host-only comparison in these "
+        "reports."]
+    lines += ["", "Open physical claims with no instrument probe for them in their task (below) need a probe of their "
+              "instrument, or a signed-capture trust anchor, before any acquisition can establish them.", "",
+              "## Open claims by what they need", ""]
+    order = ([f"hardware:{probe}" for probe in ACQUISITION_ROUTES]
+             + [f"{EXECUTION}hardware:{probe}" for probe in ACQUISITION_ROUTES] + list(NEEDS))
+    for need in order:
+        group = [row for row in rows if row["needs"] == need]
+        if not group:
+            continue
+        lines += [f"### {_need_heading(need)}", ""]
+        if need.startswith(EXECUTION):
+            lines += ["Computational comparisons whose code exists and that run only where the route's probe "
+                      "succeeds; a run on that host (listed under Next acquisitions) decides them, and they need no "
+                      "acquisition record:", ""]
+        if need == "computational_domain":
+            lines += ["Domain assignment is the author's choice (T141; rule 10 screens authority wording only), so a "
+                      "claim that states a physical quantity can sit in a computational domain, where no acquisition "
+                      "can support it; it needs refiling in a physical domain:", ""]
+        for row in group:
+            extra = f"; failed probes {', '.join(row['failed_probes'])}" if row["failed_probes"] else ""
+            said = row["notes"] or "; ".join(f"its task: {item}" for item in row.get("task_statements", []))
+            note = f" — {said}" if said and need in ("implementation", "reference_instrument", "fixture_origin") else ""
+            lines.append(f"- {row['task_id']} [{row['domain']}{extra}]: {_flat(row['claim'])}{note}")
+        lines.append("")
+    lines += ["## Physical and authority claims not established", ""]
+    lines += [f"- {c['task_id']} [{c['domain']}]: {_flat(c['claim'])}" for c in claims]
+    lines += ["", "## Computational boundary", "",
+              "What a computational experiment may establish, what it cannot establish alone, and the not-established "
+              "claims filed in the domain that records it:", "",
+              _row("May establish", "Cannot establish alone", "Domain", "Not established"), _row("---", "---", "---", "---")]
+    lines += [_row(_cell(b["may_establish"] or "-"), _cell(b["cannot_establish_alone"]), b["domain"] or "(outside the queue)",
+                   "-" if b["not_established"] is None else str(b["not_established"])) for b in boundary]
+    lines += ["", "Customer demand: " + (
+        f"{next(b['not_established'] for b in boundary if b['domain'] == 'customer_demand')} retained claims filed in "
+        "the customer_demand domain, none established; a plausible use case is not demand."), ""]
+    lines += _open_item_lines(items)
+    lines += ["## Blocked, deferred and partial tasks", ""]
     for item in unfinished:
         lines.append(f"- {item['task_id']} ({item['state']}): {item['reason']}")
         lines += [f"  - Unrun or unresolved: {part}" for part in item["unrun"]]
@@ -1571,12 +2645,47 @@ def unmeasured(ctx):
     raw = _raw_reports(ctx, 167)
     raw_claims = sum(domain in PHYSICAL_DOMAINS | AUTHORITY_DOMAINS and label == "not_established"
                      for _, text in raw for domain, label in RAW_DOMAIN_LABEL.findall(text))
-    raw_unfinished = sum(state in ("blocked", "deferred", "partial") for _, text in raw for state in RAW_STATE.findall(text))
+    raw_unfinished = sum(state in UNFINISHED for _, text in raw for state in RAW_STATE.findall(text))
+    raw_physical = sum(domain in PHYSICAL_DOMAINS and label == "not_established"
+                       for _, text in raw for domain, label in RAW_DOMAIN_LABEL.findall(text))
+    classified_physical = sum(row["domain"] in PHYSICAL_DOMAINS for row in rows)
+    item_problems = _open_item_problems(ctx, 167, items)
     states = Counter(item["state"] for item in unfinished)
-    fields["numerical_result"] = (f"{len(claims)} physical/authority claims not established; {len(unfinished)} unfinished "
-                                  f"tasks {dict(sorted(states.items()))}; {len(hardware)} not_established findings in "
-                                  f"tasks whose hardware probe failed; {len(measured)} hardware-measured findings.")
+    needs = Counter(row["needs"] for row in rows)
+    fields["recommended_next_task"] = (
+        (_acquisition_step(ranked[0]) + (f"; next, {ranked[1]['probe']}: {ranked[1]['go_no_go']}" if len(ranked) > 1 else "")
+         + ". Claims needing implementation first, and those with no instrument probe, need code before hardware.")
+        if ranked else
+        "No acquisition route addresses an open physical claim or a host-only comparison here: implement the "
+        "instrument probes, readers and kernels the open claims need (see 'Open claims by what they need') before "
+        "any acquisition.")
+    fields["numerical_result"] = (
+        f"Scope {scope}: {len(claims)} physical/authority claims not established; {len(unfinished)} unfinished tasks "
+        f"{dict(sorted(states.items()))}; open claims by need {dict(sorted(needs.items()))}; ready acquisitions "
+        + (", ".join(f"{route['probe']} ({route['claims']} physical claims: {', '.join(route['claim_tasks']) or '-'}; "
+                     f"{route['comparisons']} host-only comparisons: {', '.join(route['comparison_tasks']) or '-'})"
+                     for route in ranked) or "none")
+        + f"; classifier probe records wrong {len(probe_errors)} of {len(UNMEASURED_PROBE)}; "
+        f"{len(measured)} hardware-measured findings; open items "
+        + ", ".join(f"{item['key']} {len(item['tasks'])} tasks" for item in items) + ".")
     fields["uncertainty"] = "Exact counts."
+    fields["unresolved_assumptions"] = [
+        "T168 runs after this ledger.",
+        "Hardware runs retained under lab/hardware/ are aggregated outside the queue by `ciw lab unmeasured`; this "
+        "ledger reads only the clean-room reports of its output directory, so its hardware-measured count covers "
+        "this run only.",
+        "What an open claim needs is read from its own claim and basis notes, its task's statements that code was "
+        "not run or written, and its task's probes (phrases in research_portfolio.IMPLEMENTATION_MISSING, "
+        "UNRUN_CODE, REFERENCE_MISSING, SYNTHETIC_ORIGIN, PHYSICAL_QUANTITY and ACQUISITION_ROUTES); a claim whose "
+        "statements do not say so is classified by its domain and route alone. The hand-labelled probe records "
+        "(research_portfolio.UNMEASURED_PROBE) test the classifier on the wordings the queue uses, not on every "
+        "wording.",
+        "A route ranks by the open physical claims that name its device in tasks on it, then by the computational "
+        "comparisons that run only on its host; whether a physical claim changes label depends on the capture "
+        "passing the acquisition gate on the capture host, and a comparison's label on its own checks there."]
+    if probe_errors:
+        fields["unresolved_assumptions"].insert(0, "Classifier probe records given another need: "
+                                                + "; ".join(probe_errors))
     findings = [
         _count("Unmeasured ledger lists every not-established physical or authority claim", "provenance", len(claims),
                [_check("listed claims minus a raw-text recount of not-established physical/authority findings",
@@ -1584,6 +2693,15 @@ def unmeasured(ctx):
         _count("Unmeasured ledger lists every blocked, deferred or partial task", "provenance", len(unfinished),
                [_check("listed tasks minus a raw-text recount of blocked, deferred and partial states",
                        len(unfinished) - raw_unfinished)], "tasks"),
+        _count("Unmeasured ledger classifies every open physical claim by what it needs", "provenance",
+               classified_physical,
+               [_check("open physical claims classified minus a raw-text recount of not-established physical findings",
+                       classified_physical - raw_physical),
+                _check("hand-labelled probe records the classifier gives another need (or lists wrongly)",
+                       len(probe_errors))], "claims"),
+        _count(OPEN_ITEMS_CLAIM, "provenance", sum(bool(item["statements"]) for item in items),
+               [_check("grouped statements whose phrase is absent from their task's raw report file",
+                       len(item_problems))], "items"),
         finding("Physical validity of the lab's computational results", "physical", None, {}),
     ]
     return {"state": _state(findings), "fields": fields, "findings": findings}
@@ -1720,7 +2838,13 @@ def _junit_outcomes(report) -> dict:
     return outcomes
 
 
-@task("T168", changed_files=(MODULE,), regression_tests=(f"{TESTS}::test_regression_coverage_is_checked",))
+MARKER_STEP = ("mark each regression test with the task identities it guards (a pytest marker), so the tie between "
+               "tests and tasks is declared rather than inferred from source text")
+
+
+@task("T168", changed_files=(MODULE,),
+      regression_tests=(f"{TESTS}::test_regression_coverage_is_checked",
+                        f"{TESTS}::test_regression_outcomes_add_up_and_name_the_own_node"))
 def permanent_regression_tests(ctx):
     from .runner import repository_path
     reports = _reports_before(ctx, 168)
@@ -1733,14 +2857,15 @@ def permanent_regression_tests(ctx):
         [_earlier(168) + " (this section's T155-T167 included)", "Registered regression node ids of T001-T168",
          "tests/ of the repository (CIW_LAB_REPOSITORY_ROOT in the clean room)"],
         "No completed or partial task lacks a registered test; every registered node resolves; no registered node "
-        "failed in the JUnit record.",
+        "failed in the JUnit record; every task-to-node registration has a recorded outcome except T168's own, "
+        "which its own run's JUnit record cannot hold.",
         "Resolve every registered node id against the test functions under tests/, analyze each node's source for its "
         "task and a label assertion (the analysis is checked on probe cases first), and fold the JUnit outcomes the "
         "reports recorded.",
         ["registered node ids that do not resolve", "tests registered for a task they never run",
-         "tests asserting values only", "registered tests failing or not run"],
-        "Mark each regression test with the task identities it guards (a pytest marker), so the tie between tests "
-        "and tasks is declared rather than inferred from source text.",
+         "tests asserting values only", "registered tests failing or not run",
+         "registrations without a recorded outcome dropped from the totals"],
+        MARKER_STEP[0].upper() + MARKER_STEP[1:] + ".",
         assumptions=["The tie analysis reads source text: a task id computed at run time (for example from a range) "
                      "is not seen, and mentioning a label is taken as asserting it.",
                      "The tolerance-aware comparison with retained reports (ciw lab verify, run by scripts/check_lab.py "
@@ -1803,11 +2928,26 @@ def permanent_regression_tests(ctx):
         fields["unresolved_assumptions"].insert(0, "Tasks without a registered test that names the task and asserts a "
                                                    "label: " + ", ".join(untied))
     not_run = recorded["skipped"] + recorded["not run"]
+    # T168's own nodes run in the pytest session before the queue, but the JUnit record is read per task when its
+    # report is built, and this report is the one being built: its outcome cannot be recorded here.
+    own = sum(outcome == "not recorded" for r in rows if r["task_id"] == "T168" for outcome in r["junit"].values())
+    unrecorded = recorded["not recorded"] - own
+    registrations = sum(len(r["regression_tests"]) for r in rows)
+    distinct = len({n for r in rows for n in r["regression_tests"]})
     fields["numerical_result"] = (
-        f"{len(rows)} tasks, {sum(len(r['regression_tests']) for r in rows)} registered nodes; {len(uncovered)} "
-        f"completed/partial tasks without regression tests; {len(dangling)} dangling node ids; {len(untied)} tasks "
-        f"without a tied test; JUnit: {recorded['passed']} passed, {recorded['failed']} failed, {not_run} skipped or "
-        "not run.")
+        f"{len(rows)} tasks, {registrations} task-to-node registrations ({distinct} distinct node ids); "
+        f"{len(uncovered)} completed/partial tasks without regression tests; {len(dangling)} dangling node ids; "
+        f"{len(untied)} tasks without a tied test; JUnit: {recorded['passed']} passed, {recorded['failed']} failed, "
+        f"{not_run} skipped or not run, {recorded['not recorded']} not recorded ({own} of them T168's own "
+        f"node{'' if own == 1 else 's'}, which its own run's record cannot hold).")
     fields["uncertainty"] = "Exact counts; ties are inferred statically from source text."
-    complete = junit_supplied and not untied and not not_run
+    if unrecorded:
+        fields["unresolved_assumptions"].insert(0, f"{unrecorded} task-to-node registrations of other tasks have no "
+                                                   "outcome recorded in their reports (a node registered after its "
+                                                   "report was written, or a report that records none).")
+    if untied:
+        nodes = [n for r in rows if r["task_id"] in untied for n in r["regression_tests"]]
+        fields["recommended_next_task"] = (f"Assert evidence labels in {', '.join(nodes)} (the registered tests of "
+                                           f"{', '.join(untied)}, which assert values only), then {MARKER_STEP}.")
+    complete = junit_supplied and not untied and not not_run and not unrecorded
     return {"state": _state(findings, complete), "fields": fields, "findings": findings}
