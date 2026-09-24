@@ -35,10 +35,11 @@ provider bound it takes about 16 s (the SCR locked build dominates, and it is
 shared by T097–T099). The tests take about 11 s offline and about 26 s with every
 provider variable set.
 
-`scripts/check_lab.py` provisions only CSG, FTR, SCR and the PLSR/FTR
-interpreter, so the SET, PPDA and SCR-exchange parts of T097 (and their
-provider-gated tests) do not run in the clean-room gate, and the retained T097
-stays `partial`. Offline, `test_t097_keeps_set_results_when_the_engine_is_missing`
+`scripts/check_lab.py` provisions SET, PPDA and a second SCR checkout at the
+exchange workflow's pins (roles `set`, `ppda` and `scr-exchange`, from
+`EXCHANGE_WORKFLOW_PINS`) beside CSG, FTR, SCR and the PLSR/FTR interpreter,
+so the SET and roundtrip parts of T097 and their provider-gated tests run in
+the clean-room gate and the retained run. Offline, `test_t097_keeps_set_results_when_the_engine_is_missing`
 and `test_t097_roundtrip_finding_is_refuted_by_a_contrary_producer_outcome`
 drive both parts with mocked provider outcomes, as expected and contrary, and
 show that a contrary outcome refutes the finding. Bound to SET `542e672`, PPDA
@@ -175,15 +176,7 @@ T099 records these requirements and never attempts the build.
 
 ## Requested core changes
 
-1. `scripts/check_lab.py` should provision SET (`542e672`), PPDA (`a29845e`)
-   and a second SCR checkout at the exchange pin (`5f04097`) as the roles
-   `set`, `ppda` and `scr-exchange` (pins in `EXCHANGE_WORKFLOW_PINS`, mirrored
-   from `.github/workflows/exchange.yml`). `scripts/reproduce_lab.py` already
-   maps those roles to `CIW_LAB_SET_REPO`, `CIW_LAB_PPDA_REPO` and
-   `CIW_LAB_SCR_EXCHANGE_REPO` in `TEST_VARIABLES`. Then the retained T097
-   exercises SET and the roundtrip and completes, and their provider-gated
-   tests run in the gate. This section cannot edit `scripts/`.
-2. In CIW itself, not the lab core:
+1. In CIW itself, not the lab core:
    - `ciw.session.read_json` could refuse overflowing numbers and convert
      `RecursionError` into `ValueError`.
    - `Session.from_workspace` could refuse unknown top-level fields, and should

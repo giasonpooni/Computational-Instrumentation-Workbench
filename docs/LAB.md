@@ -194,8 +194,9 @@ holds no reports.
 
 `scripts/check_lab.py` is the clean-room gate that CI runs and the way to
 reproduce the retained run. It provisions CSG, FTR and SCR checkouts at CIW's
-pins (cloned, or clean checkouts named `csg`, `ftr` and `scr` under
-`--stack-root`) and runs `scripts/reproduce_lab.py` with them bound, plus the
+pins and SET, PPDA and a second SCR checkout at the exchange workflow's pins
+for the T097 roundtrip (cloned, or clean checkouts named `csg`, `ftr`, `scr`,
+`set`, `ppda` and `scr-exchange` under `--stack-root`) and runs `scripts/reproduce_lab.py` with them bound, plus the
 clean-room interpreter, which has the pinned PLSR installed, as `plsr-python`
 and `ftr-python`. Reproducing the retained run needs Python 3.12+ (PLSR and
 FTR run there), Git, and those bound providers; on an older interpreter the
@@ -215,9 +216,10 @@ bindings it is given (`@venv` names the clean-room interpreter) and verifies
 the fresh reports against `lab/`. Each binding also reaches the tests as the
 variable its provider-gated tests read, so those tests run instead of
 skipping. The bindings `check_lab.py` makes set `CIW_LAB_CSG_REPO`,
-`CIW_LAB_FTR_REPO`, `CIW_LAB_SCR_REPO`, `CIW_LAB_FTR_PYTHON` and
-`CIW_LAB_PLSR_PYTHON`; it binds no SET, PPDA or SCR exchange checkout, so
-their tests skip in CI and T097 stays partial. Run without the bindings
+`CIW_LAB_FTR_REPO`, `CIW_LAB_SCR_REPO`, `CIW_LAB_SET_REPO`, `CIW_LAB_PPDA_REPO`,
+`CIW_LAB_SCR_EXCHANGE_REPO`, `CIW_LAB_FTR_PYTHON` and `CIW_LAB_PLSR_PYTHON`;
+the SET, PPDA and exchange SCR checkouts let T097 run the SET contracts
+validator and the PPDA/SCR/SET producer roundtrip. Run without the bindings
 `check_lab.py` makes, its comparison with `lab/` fails on the provider tasks.
 Paths are made absolute without following symlinks, so a virtual
 environment's interpreter stays bound as itself, and `gate.json` records the
@@ -247,7 +249,8 @@ git diff --stat lab
 ```
 
 `refresh_lab.py` refuses a run whose gate record does not show Python 3.12+
-and bindings for CSG, FTR, SCR and the PLSR/FTR interpreter, or whose reports
+and bindings for CSG, FTR, SCR, SET, PPDA, the exchange SCR and the PLSR/FTR
+interpreter, or whose reports
 carry a CSG, FTR or PLSR refusal code (a bound provider that did not run), and
 keeps elapsed times, the JUnit record and the gate record out of `lab/`.
 

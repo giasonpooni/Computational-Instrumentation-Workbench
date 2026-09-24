@@ -1,7 +1,8 @@
 """Run the lab queue from an isolated wheel with pinned providers and verify retained reports.
 
 Provisions the exact CSG, FTR and SCR revisions pinned by ``ciw.geodesic_reference``
-and ``ciw.declared_workload``,
+and ``ciw.declared_workload``, and the SET, PPDA and SCR revisions of
+``.github/workflows/exchange.yml`` for the exchange roundtrip (T097),
 installs the pinned PLSR runtime through the ``plsr`` extra on Python 3.12+,
 where the clean-room interpreter also runs FTR,
 and delegates to ``scripts/reproduce_lab.py``: wheel build, clean virtual
@@ -25,7 +26,8 @@ from provider_checkouts import validate_checkout
 
 ROOT = Path(__file__).resolve().parents[1]
 REPOSITORIES = {"csg": "Curved-Surface-Geodesic-Sensitivity-Runtime", "ftr": "Flat-Torus-Geodesic-Reference",
-                "scr": "Scientific-Computation-Runtime"}
+                "scr": "Scientific-Computation-Runtime", "set": "State-Estimation-Evaluation-Testbed",
+                "ppda": "Provenance-Preserving-Data-Acquisition", "scr-exchange": "Scientific-Computation-Runtime"}
 
 
 def call(command, **kwargs):
@@ -41,6 +43,12 @@ def pins() -> dict:
         for node in tree.body:
             if isinstance(node, ast.Assign) and any(getattr(t, "id", None) == "PINS" for t in node.targets):
                 revisions.update({entry["role"]: entry["revision"] for entry in ast.literal_eval(node.value).values()})
+    # The exchange roundtrip roles (T097) use the pins of .github/workflows/exchange.yml, which the lab section
+    # mirrors in EXCHANGE_WORKFLOW_PINS and its tests keep in step.
+    tree = ast.parse((ROOT / "src" / "ciw" / "lab" / "exchange_provenance_bundles_providers.py").read_text(encoding="utf-8"))
+    for node in tree.body:
+        if isinstance(node, ast.Assign) and any(getattr(t, "id", None) == "EXCHANGE_WORKFLOW_PINS" for t in node.targets):
+            revisions.update(ast.literal_eval(node.value))
     missing = set(REPOSITORIES) - set(revisions)
     if missing:
         raise SystemExit(f"Provider pins not found: {sorted(missing)}")
@@ -51,7 +59,7 @@ def main() -> int:
     parser = argparse.ArgumentParser(description=__doc__)
     parser.add_argument("--output-dir", type=Path, default=ROOT / "results" / "lab-gate")
     parser.add_argument("--stack-root", type=Path, default=os.environ.get("CIW_LAB_STACK_ROOT"),
-                        help="Existing clean checkouts named csg, ftr and scr; cloned when absent")
+                        help="Existing clean checkouts named csg, ftr, scr, set, ppda and scr-exchange; cloned when absent")
     parser.add_argument("--temporary-root", type=Path)
     parser.add_argument("--no-compare", action="store_true")
     args = parser.parse_args()

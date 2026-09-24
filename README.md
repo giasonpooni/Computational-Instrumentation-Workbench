@@ -477,7 +477,8 @@ Godot synchronization and the existing scientific integrations.
 
 The lab gate (`scripts/check_lab.py`, run by `lab.yml` on Python 3.12) builds
 a wheel and installs it in a clean environment with the `dev`, `lab` and `mcp`
-extras. It binds pinned CSG, FTR and SCR checkouts; on Python 3.12 or newer, as
+extras. It binds pinned CSG, FTR and SCR checkouts and the exchange workflow's
+SET, PPDA and SCR checkouts; on Python 3.12 or newer, as
 in CI, it also installs the `plsr` extra and binds that interpreter for PLSR
 and FTR. It runs the lab tests and the whole queue and compares the fresh
 reports with the reviewed run retained in [`lab/`](lab/README.md): every

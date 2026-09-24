@@ -149,8 +149,9 @@ documents their options and remaining public-source assumptions.
 
 The [computational experimentalist queue](LAB.md) has its own tests
 (`tests/test_lab_*.py`) and a clean-room gate, `scripts/check_lab.py`. The gate
-provisions the pinned CSG, FTR and SCR checkouts (cloned, or clean checkouts
-named `csg`, `ftr` and `scr` under `--stack-root`) and runs
+provisions the pinned CSG, FTR and SCR checkouts and the exchange workflow's
+SET, PPDA and SCR checkouts (cloned, or clean checkouts named `csg`, `ftr`,
+`scr`, `set`, `ppda` and `scr-exchange` under `--stack-root`) and runs
 `scripts/reproduce_lab.py` with them: it builds a wheel with pip build
 isolation, installs it into a new virtual environment, runs the lab tests with
 a JUnit record (the provider-gated tests against the bound providers), runs

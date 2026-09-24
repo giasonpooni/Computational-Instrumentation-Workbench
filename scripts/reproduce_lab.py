@@ -5,8 +5,8 @@ the lab extras into a new virtual environment outside the checkout, runs the
 lab tests with a JUnit record, runs every queue task with the given provider
 bindings, and compares the fresh reports with the retained ones in ``lab/``.
 Each binding also reaches the lab tests as the ``CIW_LAB_*`` variable their
-provider-gated tests read. The retained run binds CSG, FTR, SCR and the
-Python 3.12 PLSR/FTR interpreter; ``scripts/check_lab.py`` provisions exactly
+provider-gated tests read. The retained run binds CSG, FTR, SCR, the exchange
+SET, PPDA and SCR checkouts and the Python 3.12 PLSR/FTR interpreter; ``scripts/check_lab.py`` provisions exactly
 that, and a comparison without those bindings fails. Nothing here acquires
 physical measurements; hardware-dependent tasks are reported as blocked.
 """

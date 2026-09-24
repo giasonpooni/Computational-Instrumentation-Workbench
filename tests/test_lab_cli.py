@@ -249,7 +249,8 @@ def test_refresh_retains_only_a_run_that_bound_every_provider(tmp_path, monkeypa
     run.mkdir()
     before = sorted((Path(refresh.ROOT) / "lab").rglob("*"))
 
-    bound = ["csg=/c", "ftr=/f", "scr=/s", "plsr-python=/v/bin/python", "ftr-python=/v/bin/python"]
+    bound = ["csg=/c", "ftr=/f", "scr=/s", "set=/e", "ppda=/p", "scr-exchange=/x", "plsr-python=/v/bin/python",
+             "ftr-python=/v/bin/python"]
 
     def refresh_from(providers, python="3.12.3"):
         (run / "gate.json").write_text(json.dumps({"schema": "ciw.lab-clean-room-gate.v1", "providers": providers,
@@ -260,7 +261,10 @@ def test_refresh_retains_only_a_run_that_bound_every_provider(tmp_path, monkeypa
         return str(refused.value)
 
     # A run without the PLSR and FTR interpreters (Python 3.11) differs from what CI reproduces.
-    assert "bound no plsr-python, ftr-python" in refresh_from(["csg=/c", "ftr=/f", "scr=/s"])
+    assert "bound no plsr-python, ftr-python" in refresh_from(["csg=/c", "ftr=/f", "scr=/s", "set=/e", "ppda=/p",
+                                                               "scr-exchange=/x"])
+    assert "bound no set, ppda, scr-exchange" in refresh_from(["csg=/c", "ftr=/f", "scr=/s",
+                                                                "plsr-python=/v/bin/python", "ftr-python=/v/bin/python"])
     assert "Python 3.11.9" in refresh_from(bound, "3.11.9")
     assert "Python unrecorded" in refresh_from(bound, None)
     # check_lab.py's bindings pass; this run then lacks its reports.

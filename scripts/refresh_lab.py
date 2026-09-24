@@ -2,8 +2,9 @@
 
 Runs ``scripts/check_lab.py --no-compare`` (isolated wheel, pinned providers,
 lab tests, whole queue) under Python 3.12+, or takes such a run with
-``--from-run`` (it must have run under Python 3.12+ with CSG, FTR, SCR and the
-PLSR/FTR interpreter bound, none of them refused, as in the CI comparison),
+``--from-run`` (it must have run under Python 3.12+ with CSG, FTR, SCR, the
+exchange SET, PPDA and SCR checkouts and the PLSR/FTR interpreter bound, none
+of them refused, as in the CI comparison),
 then replaces the retained reports, artifacts, queue state, report book and
 dashboard (rendered inside the clean room by the installed wheel) with the
 fresh ones.
@@ -26,7 +27,7 @@ import tempfile
 ROOT = Path(__file__).resolve().parents[1]
 RETAINED = ("reports", "artifacts", "queue-state.json", "REPORTS.md", "index.html")
 # The bindings scripts/check_lab.py makes on Python 3.12+; CI compares with a run that had all of them.
-REQUIRED_PROVIDERS = ("csg", "ftr", "scr", "plsr-python", "ftr-python")
+REQUIRED_PROVIDERS = ("csg", "ftr", "scr", "set", "ppda", "scr-exchange", "plsr-python", "ftr-python")
 # Refusal codes of those providers (CSG_TREE_MISMATCH, FTR_INTERPRETER_UNBOUND, PLSR_UNAVAILABLE, ...): a
 # report carrying one did not run its bound provider, whatever the binding was named.
 PROVIDER_REFUSAL = re.compile(r"\b(?:CSG|FTR|PLSR)_[A-Z]+(?:_[A-Z]+)*\b")
