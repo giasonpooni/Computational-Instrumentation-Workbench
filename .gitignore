@@ -12,6 +12,7 @@ build/
 dist/
 .godot/
 results/
+.geometry/
 recordings/
 work/
 .ciw/

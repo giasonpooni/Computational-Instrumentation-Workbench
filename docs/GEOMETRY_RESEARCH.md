@@ -150,7 +150,13 @@ python scripts/check_geometry_research.py \
   --stack-root /trusted/geometry --output-dir results/geometry-gate-local
 ```
 
-The [Linux/Windows gate](../.github/workflows/geometry-research.yml) retains all
+The [Linux/Windows gate](../.github/workflows/geometry-research.yml) provisions
+the three providers with pinned `actions/checkout` steps under `.geometry/` and
+passes that directory as `--stack-root`, so the gate script never clones a
+provider anonymously. A provider that is not publicly readable needs the
+`PROVIDER_READ_TOKEN` repository secret, a read-only token covering those
+repositories; without it the workflow falls back to its own token, which reaches
+public providers only. The gate retains all
 three original/replay pairs and the shared workspace. It checks analytic
 anchors, refusal cases, provider drift, retained bindings, live session changes,
 offline restore and read-only inspection. Native repositories separately test

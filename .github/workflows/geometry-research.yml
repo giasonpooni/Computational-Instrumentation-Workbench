@@ -7,6 +7,11 @@ on:
 permissions:
   contents: read
 
+# The three providers are provisioned explicitly at the exact pins declared in
+# src/ciw/geometry_research.py. The gate script therefore never clones a
+# provider anonymously. A private provider needs PROVIDER_READ_TOKEN, a
+# repository secret holding a read-only token for those repositories; without
+# it the workflow's own token is used, which reaches public providers only.
 jobs:
   geometry:
     strategy:
@@ -19,8 +24,35 @@ jobs:
       - uses: actions/setup-python@v5
         with:
           python-version: '3.12'
+      - name: Keep pinned provider bytes exact on every runner
+        run: git config --global core.autocrlf false
+      - name: Provision Covariance Geometry and Geodesic Testbed at its pin
+        uses: actions/checkout@v4
+        with:
+          repository: giasonpooni/Covariance-Geometry-and-Geodesic-Testbed
+          ref: 510ad2bd0fb96faf77824b72e70ae1b4090646a0
+          path: .geometry/cggt
+          persist-credentials: false
+          token: ${{ secrets.PROVIDER_READ_TOKEN || github.token }}
+      - name: Provision Intrinsic Surface Geodesics Testbed at its pin
+        uses: actions/checkout@v4
+        with:
+          repository: giasonpooni/Intrinsic-Surface-Geodesics-Testbed
+          ref: ef4e64f3b73c83f9cb0e748dd029410fa0dbe76d
+          path: .geometry/isgt
+          persist-credentials: false
+          token: ${{ secrets.PROVIDER_READ_TOKEN || github.token }}
+      - name: Provision Translation Surface Dynamics Explorer at its pin
+        uses: actions/checkout@v4
+        with:
+          repository: giasonpooni/Translation-Surface-Dynamics-Explorer
+          ref: 5e72693e7e5722c47883ef1a68b2959afdf2e215
+          path: .geometry/tsde
+          persist-credentials: false
+          token: ${{ secrets.PROVIDER_READ_TOKEN || github.token }}
       - run: python -m pip install 'setuptools>=77' wheel
-      - run: python scripts/check_geometry_research.py --output-dir results/geometry-research
+      - name: Exercise the installed workbench against the provisioned pins
+        run: python scripts/check_geometry_research.py --stack-root .geometry --output-dir results/geometry-research
       - uses: actions/upload-artifact@v4
         if: success()
         with:
