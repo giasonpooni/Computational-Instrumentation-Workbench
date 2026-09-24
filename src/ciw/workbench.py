@@ -15,17 +15,18 @@ from threading import RLock
 
 from .adapters.protocol import AdapterRefusal
 from .adapters.subprocess import _json
-DECLARED_KINDS = frozenset({"schematic-assessment", "numerical-heat", "proved-heat", "schematic-companions", "bim-quantity", "acquired-dataset", "residual-monitor", "measurement-chain", "geometric-circle", "identified-stability", "flat-torus-reference", "curved-path-transfer", "covariance-geometry", "mesh-path", "translation-flow", "variational-free-energy", "energy-accuracy", "instrument-exchange", "thermal-observer", "machine-manifest", "project-graph"})
+DECLARED_KINDS = frozenset({"schematic-assessment", "numerical-heat", "proved-heat", "schematic-companions", "bim-quantity", "acquired-dataset", "residual-monitor", "measurement-chain", "geometric-circle", "identified-stability", "flat-torus-reference", "curved-path-transfer", "covariance-geometry", "mesh-path", "translation-flow", "variational-free-energy", "energy-accuracy", "instrument-exchange", "thermal-observer", "machine-manifest", "project-graph", "uncertainty-validation"})
 # The exchange adapter retains a checker verdict, not a fresh reproduction step,
 # so it is a declared kind without a reproduction occurrence.
 REPRODUCED_KINDS = DECLARED_KINDS - {"proved-heat", "instrument-exchange"}
 # Verification artifacts whose reproduction is a complete fresh step; its
 # occurrence identities are claimed exactly like a retained step's.
 REPRODUCTION_CLAIM_SCHEMAS = frozenset({"ciw.declared-workload-verification.v1", "ciw.thermal-observer-verification.v1",
-                                        "ciw.machine-manifest-verification.v1", "ciw.project-graph-verification.v1"})
+                                        "ciw.machine-manifest-verification.v1", "ciw.project-graph-verification.v1",
+                                        "ciw.uncertainty-validation-verification.v1"})
 UPSTREAM_KINDS = {"identified-design": "calibrated-observable", "schematic-companions": "schematic-assessment",
                   "acquired-calibrated-window": "acquired-dataset", "identified-stability": "identified-design"}
-INSTRUMENT_ROLES = frozenset({"ppda", "tbrt", "mcur", "stfe", "gsie", "cbsr", "fdir", "oit", "sra", "scr", "cse", "rci", "fsrt", "jspt", "gte", "plsr", "ftr", "csg", "cggt", "isgt", "tsde", "energy", "exchange", "thermal", "machine", "project"})
+INSTRUMENT_ROLES = frozenset({"ppda", "tbrt", "mcur", "stfe", "gsie", "cbsr", "fdir", "oit", "sra", "scr", "cse", "rci", "fsrt", "jspt", "gte", "plsr", "ftr", "csg", "cggt", "isgt", "tsde", "energy", "exchange", "thermal", "machine", "project", "consistency"})
 
 SCHEMA = "ciw.retained-workbench.v1"
 SOURCE_SCHEMA = "ciw.workbench-source.v1"
@@ -56,6 +57,7 @@ OPERATIONS = {
     "thermal-observer": "ciw.thermal-observer.v1",
     "machine-manifest": "ciw.encoder-position.v1",
     "project-graph": "ciw.project-graph.v1",
+    "uncertainty-validation": "ciw.uncertainty-validation.v1",
 }
 WORKFLOW_OPERATION_IDS = frozenset(OPERATIONS.values())
 from .candidate_evidence import OPERATIONS as CANDIDATE_OPERATIONS
@@ -67,6 +69,9 @@ _OVERHEAD = 4096
 
 
 def _workflow(kind):
+    if kind == "uncertainty-validation":
+        from .uncertainty_validation import UncertaintyValidationWorkflow
+        return UncertaintyValidationWorkflow()
     if kind == "project-graph":
         from .project_workflow import ProjectGraphWorkflow
         return ProjectGraphWorkflow()
@@ -574,7 +579,8 @@ class Workbench:
         self._lock = RLock()
         self._sources = {}
         self._bundles = {}
-        self._bindings = {"energy-accuracy": {}, "thermal-observer": {}, "machine-manifest": {}, "project-graph": {}}
+        self._bindings = {"energy-accuracy": {}, "thermal-observer": {}, "machine-manifest": {}, "project-graph": {},
+                          "uncertainty-validation": {}}
         self._candidate_adapters = {}
         self._candidates = {}
         self._identities = {operation: ("operation", _digest(operation)) for operation in WORKFLOW_OPERATION_IDS}
@@ -610,7 +616,7 @@ class Workbench:
 
     def describe_operations(self):
         with self._lock:
-            return [{"operation_id": operation, "role": {"identified-design": "decision", "schematic-assessment": "schematic_assessment", "numerical-heat": "numerical_execution", "proved-heat": "proved_numerical_execution", "schematic-companions": "local_model_analysis", "bim-quantity": "construction_quantity", "acquired-dataset": "evidence_acquisition", "residual-monitor": "residual_diagnostics", "measurement-chain": "measurement_chain_testbed", "geometric-circle": "geometric_reconciliation", "identified-stability": "stability_assessment", "flat-torus-reference": "geometric_reference", "curved-path-transfer": "geometric_sensitivity", "covariance-geometry": "covariance_geometry", "mesh-path": "mesh_path_baseline", "translation-flow": "translation_dynamics", "variational-free-energy": "variational_inference", "energy-accuracy": "offline_energy_accuracy_analysis", "instrument-exchange": "typed_exchange_adapter", "thermal-observer": "thermal_observer_reference", "machine-manifest": "machine_manifest_reference", "project-graph": "project_graph_inspection"}.get(kind, "state_estimator"),
+            return [{"operation_id": operation, "role": {"identified-design": "decision", "schematic-assessment": "schematic_assessment", "numerical-heat": "numerical_execution", "proved-heat": "proved_numerical_execution", "schematic-companions": "local_model_analysis", "bim-quantity": "construction_quantity", "acquired-dataset": "evidence_acquisition", "residual-monitor": "residual_diagnostics", "measurement-chain": "measurement_chain_testbed", "geometric-circle": "geometric_reconciliation", "identified-stability": "stability_assessment", "flat-torus-reference": "geometric_reference", "curved-path-transfer": "geometric_sensitivity", "covariance-geometry": "covariance_geometry", "mesh-path": "mesh_path_baseline", "translation-flow": "translation_dynamics", "variational-free-energy": "variational_inference", "energy-accuracy": "offline_energy_accuracy_analysis", "instrument-exchange": "typed_exchange_adapter", "thermal-observer": "thermal_observer_reference", "machine-manifest": "machine_manifest_reference", "project-graph": "project_graph_inspection", "uncertainty-validation": "uncertainty_consistency"}.get(kind, "state_estimator"),
                      "source_kind": kind, "available": kind in self._bindings,
                      "requires_upstream_bundle": kind in UPSTREAM_KINDS,
                      **({"requires_upstream_bundles": "explicit_ordered_source_selection"} if kind == "residual-monitor" else {})}

@@ -13,7 +13,8 @@ def project(record, source, declaration, revision):
                     "numerical-heat": "integer_numerical_field", "proved-heat": "proved_integer_numerical_field", "bim-quantity": "construction_quantity",
                     "acquired-dataset": "acquired_evidence", "thermal-observer": "thermal_observer_reference",
                     "machine-manifest": "machine_manifest_reference",
-                    "project-graph": "project_graph_declaration"}
+                    "project-graph": "project_graph_declaration",
+                    "uncertainty-validation": "uncertainty_consistency"}
     context = {"object_kind": object_kinds[kind],
                "owner": step["runtime_ref"], "configuration": native["configuration"],
                "covariance_status": "not_applicable", "sensor_fusion": "not_performed",
@@ -124,6 +125,36 @@ def project(record, source, declaration, revision):
                              {**provenance, "result_id": step["result_id"], "execution_id": step["execution_id"]},
                              project_revision=data["project_revision"], status=summary["status"],
                              claim_scope=data["claim_scope"]))
+    elif kind == "uncertainty-validation":
+        verdict = data["verdict"]
+        context.update(
+            summary="Finite-sample consistency of declared covariances: " + verdict["status"],
+            verdict=deepcopy(verdict),
+            statistical_scope=data["statistical_scope"],
+            reference_origin=data["reference_origin"],
+            cross_sample_dependence=data["cross_sample_dependence"],
+            confidence=data["confidence"],
+            sample_count=data["sample_count"],
+            nees_status=data["nees"]["status"],
+            nis_status=None if data["nis"] is None else data["nis"]["status"],
+            covariance_status="declared_estimate_covariances_under_test",
+            physical_validation="not_established",
+            reference_uncertainty=data["authority"]["reference_uncertainty"],
+        )
+        step_provenance = {**provenance, "result_id": step["result_id"], "execution_id": step["execution_id"]}
+        coverage = data["coverage"]["components"]
+        panels.append(_panel("coverage", "Interval coverage per component", [item["name"] for item in coverage],
+                             [item["fraction"] for item in coverage], ["1"] * len(coverage), None, step_provenance,
+                             nominal_probability=data["coverage"]["probability"],
+                             intervals=[item["interval"] for item in coverage],
+                             statuses=[item["status"] for item in coverage]))
+        squares = [("nees", data["nees"])] + ([("nis", data["nis"])] if data["nis"] is not None else [])
+        panels.append(_panel("normalized-squares", "Mean normalized squares against their chi-square bands",
+                             [name for name, _ in squares], [item["mean"] for _, item in squares],
+                             ["1"] * len(squares), None, step_provenance,
+                             bands={name: item["mean_band"] for name, item in squares},
+                             degrees_of_freedom={name: item["dof"] for name, item in squares},
+                             statuses={name: item["status"] for name, item in squares}))
     return deepcopy({"schema": SCHEMA, "catalog_revision": revision, "bundle_id": record["bundle_id"],
         "kind": record["kind"], "label": source["label"], "source_id": source["source_id"], "evidence_id": source["evidence_id"],
         "upstream_bundle_id": record["upstream_bundle_id"], "replay_source_bundle_ids": [r["source_bundle_digest"] for r in native.get("replay_receipts", [])],
