@@ -245,6 +245,49 @@ def validate_run(run: dict) -> None:
     _string(transform.get("note"), "render.transform.note")
 
 
+ENERGY_DEFINITION = "0.5*mass*(v^2 + omega_0^2*q^2)"
+
+
+def validate_render_binding(run: dict) -> None:
+    """Bind the display geometry to the retained evidence it claims to draw.
+
+    ``validate_run`` checks the render block's shape; this check, applied where
+    evidence is retained or reopened, requires the trajectory points to be the
+    retained q, energy and v values at ``sample_indices`` and, when the model
+    declares the standard energy definition, every surface vertex to lie on that
+    energy surface, sampled on a row-major regular grid whose triangulation is
+    therefore fully determined. The evidence identity is unchanged by this check.
+    """
+    validate_run(run)
+    render = run["render"]
+    indices = np.asarray(render["sample_indices"], dtype=np.int64)
+    channels = {name: np.asarray(run["channels"][name]["values"], dtype=np.float64) for name in ("q", "energy", "v")}
+    expected = np.column_stack([channels[name][indices] for name in ("q", "energy", "v")])
+    if not np.array_equal(np.asarray(render["trajectory"], dtype=np.float64), expected):
+        raise ValueError("render.trajectory must be the retained q, energy and v values at render.sample_indices")
+    model = run["metadata"]["model"]
+    mass, omega = model.get("mass_kg"), model.get("omega_0_rad_s")
+    if (model.get("energy_definition") == ENERGY_DEFINITION and all(
+            type(value) in (int, float) and math.isfinite(value) and value > 0 for value in (mass, omega))):
+        vertices = np.asarray(render["surface"]["vertices"], dtype=np.float64)
+        declared = 0.5 * mass * (vertices[:, 2] ** 2 + omega ** 2 * vertices[:, 0] ** 2)
+        if not np.allclose(vertices[:, 1], declared, rtol=1e-9, atol=1e-12):
+            raise ValueError("render.surface vertices must lie on the declared energy surface")
+        width = int(round(math.sqrt(len(vertices))))
+        grid = vertices.reshape(width, width, 3) if width * width == len(vertices) else None
+        if (grid is None or width < 2 or not np.array_equal(grid[:, :, 0], np.broadcast_to(grid[0, :, 0], (width, width))) or
+                not np.array_equal(grid[:, :, 2], np.broadcast_to(grid[:, 0, 2][:, None], (width, width))) or
+                np.any(np.diff(grid[0, :, 0]) <= 0) or np.any(np.diff(grid[:, 0, 2]) <= 0)):
+            raise ValueError("render.surface vertices must form a row-major regular q/v grid")
+        expected_indices = []
+        for row in range(width - 1):
+            for column in range(width - 1):
+                a = row * width + column
+                expected_indices.extend([a, a + width, a + 1, a + 1, a + width, a + width + 1])
+        if list(render["surface"]["indices"]) != expected_indices:
+            raise ValueError("render.surface indices must be the regular triangulation of the vertex grid")
+
+
 def _selected(run: dict, channel: str, interval_s: Any) -> tuple[np.ndarray, str, float]:
     validate_run(run)
     if not isinstance(channel, str) or channel not in run["channels"]:

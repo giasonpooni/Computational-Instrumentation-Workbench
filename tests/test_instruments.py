@@ -175,3 +175,35 @@ def test_every_loaded_source_is_validated_before_analysis(run, corruption):
         compute_statistics(corrupted, "q", [0, 1])
     with pytest.raises(ValueError):
         compute_spectrum(corrupted, "q", [0, 1])
+
+
+def test_render_geometry_is_bound_to_the_retained_channels_where_evidence_is_kept(run, tmp_path):
+    from ciw.adapters.oscillator import validate_render_binding
+    from ciw.session import Session
+    validate_render_binding(run)
+    Session(run, tmp_path / "live")
+    drawn_elsewhere = deepcopy(run)
+    drawn_elsewhere["render"]["trajectory"][7][0] += 1e-9
+    with pytest.raises(ValueError, match="render.trajectory"):
+        validate_render_binding(drawn_elsewhere)
+    with pytest.raises(ValueError, match="render.trajectory"):
+        Session(drawn_elsewhere, tmp_path / "tampered")
+    off_surface = deepcopy(run)
+    off_surface["render"]["surface"]["vertices"][12][1] *= 1.001
+    with pytest.raises(ValueError, match="energy surface"):
+        validate_render_binding(off_surface)
+    rewired = deepcopy(run)
+    rewired["render"]["surface"]["indices"][2563] += 1
+    with pytest.raises(ValueError, match="triangulation"):
+        validate_render_binding(rewired)
+    subset = deepcopy(run)
+    subset["render"]["trajectory"] = subset["render"]["trajectory"][::4]
+    subset["render"]["sample_indices"] = subset["render"]["sample_indices"][::4]
+    validate_render_binding(subset)
+    session = Session(run, tmp_path / "saved")
+    workspace = session.save_workspace(tmp_path / "workspace.json")
+    saved = json.loads(workspace.read_text(encoding="utf-8"))
+    saved["run"]["render"]["trajectory"][0] = [0.0, 0.0, 0.0]
+    workspace.write_text(json.dumps(saved), encoding="utf-8")
+    with pytest.raises(ValueError, match="render.trajectory"):
+        Session.from_workspace(workspace, tmp_path / "reopened")

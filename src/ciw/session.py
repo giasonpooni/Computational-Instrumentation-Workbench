@@ -113,6 +113,11 @@ def _digest(value: Any) -> str:
 def _validate_evidence(run: dict) -> None:
     validate_run(run)
     validate_evidence_identity(run)
+    if run["instrument"] == "analytic-damped-oscillator.v1":
+        # Display geometry is outside the evidence identity; bind it to the
+        # retained channels so a reopened workspace cannot draw other values.
+        from .adapters.oscillator import validate_render_binding
+        validate_render_binding(run)
     if run["instrument"] == "org.notationsystems.rci":
         from .investigation import _validate_source
         _validate_source(run)
