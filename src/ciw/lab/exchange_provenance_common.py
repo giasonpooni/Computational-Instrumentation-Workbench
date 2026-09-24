@@ -1,10 +1,14 @@
-"""Offline CIW session fixture and workspace forgery harness for tasks T077-T090.
+"""CIW session fixtures and workspace forgery harness for tasks T077-T090.
 
 Scope: drives the real CIW integrity layer (``ciw.session``, the operation
 runner, ``ciw.workbench``, the energy-accuracy workflow, and the pure exchange
 and candidate-evidence validators) through its request protocol and saved
-workspaces, entirely offline. No provider checkout, GPU, network or hardware
-is used; the energy-accuracy input is the bundled synthetic fixture log.
+workspaces, offline. No GPU, network or hardware is used; the energy-accuracy
+input is the bundled synthetic fixture log. Only T077's telemetry fixture runs
+provider code: the telemetry workflow's pinned PPDA, STFE, GSIE and SET
+checkouts of an operator-bound ``telemetry-stack``, each validated against
+``ciw/telemetry-runtimes.json`` first, on the bundled synthetic telemetry
+source.
 
 A forgery here edits a saved workspace (records, or a retained source log whose
 own log_digest is resealed) and recomputes only unkeyed SHA-256 digests with
@@ -52,13 +56,27 @@ KEY_CUSTODY_QUESTION = (
     "workspace records are authenticated' stays not_established until records are signed (for example Ed25519 over "
     "the canonical record bytes, with an RFC 3161 timestamp for created_at) and T077 and T080-T090 are re-run "
     "against the signed records to check that every surviving forgery is refused.")
-TELEMETRY_STACK_QUESTION = (
-    "Deferred research question (telemetry provider stack): provision the telemetry stack pinned in "
-    "src/ciw/telemetry-runtimes.json (ppda, stfe, gsie, set, cbsr; scripts/check_lab.py provisions only ppda and set "
-    "of these, and scripts/reproduce_lab.py TEST_VARIABLES has no variable for stfe, gsie or cbsr), bind it to a "
-    "telemetry or declared-workload workflow, and observe the ESM candidate, candidate execution and "
-    "ciw.subprocess-runtime.v1 identity rows and telemetry-validated records that are now read from code or "
-    "replaced by a synthetic telemetry-shaped record.")
+ESM_CANDIDATE_QUESTION = (
+    "Deferred research question (ESM candidate binding): bind the ESM runtime pinned in src/ciw/esm-runtime.json "
+    "(giasonpooni/Evidence-and-State-Management at 7c0642ebbcd95c301470e4be556342ab73c819cb, its built "
+    "workbench-candidate artifact and replay helper at their pinned SHA-256, a node binary, and a CIW checkout at "
+    "the replay revision e0af0472d9731eff603c13568325f15d14d2de5b) to the telemetry session that T077 runs on the "
+    "telemetry-stack binding, and observe the ESM candidate_id and candidate execution identities, now read from "
+    "code, and the ESM validator rows on a telemetry-validated bundle instead of the synthetic telemetry-shaped "
+    "record. scripts/check_lab.py provisions none of these (scripts/check_workbench_candidates.py exercises them "
+    "outside the queue), and an ESM action runs ESM's replay helper against that CIW checkout and the provider "
+    "checkouts, for up to 330 s in CIW's candidate adapter.")
+
+# The operator binding T077 reads (``--provider telemetry-stack=<dir>``): one directory holding the checkouts
+# pinned in ciw/telemetry-runtimes.json under their repository names, as scripts/check_telemetry.py and
+# scripts/check_lab.py lay them out.
+TELEMETRY_ROLE = "telemetry-stack"
+TELEMETRY_REPOSITORIES = {"ppda": "Provenance-Preserving-Data-Acquisition",
+                          "stfe": "Streaming-Telemetry-Feature-Extraction",
+                          "gsie": "Geometric-State-Inference-Engine",
+                          "set": "State-Estimation-Evaluation-Testbed",
+                          "cbsr": "Constraint-Based-State-Reconciliation"}
+TELEMETRY_OWNER = "giasonpooni"
 
 
 def energy_dir() -> Path | None:
@@ -270,8 +288,9 @@ def forge_receipt(source: dict, replayed: dict) -> dict:
 def reforge(workspace: dict, *, keep_verification=False) -> None:
     """Recompute every derived energy-bundle digest in catalog order, as a forger would.
 
-    Bundle digests, verifications, receipts and catalog bundle identities are
-    regenerated; renamed bundles are followed into later replay receipts.
+    Bundle digests, verifications, receipts, catalog bundle identities and the
+    catalog's replay-receipt seal are regenerated; renamed bundles are followed
+    into later replay receipts.
     """
     from ..telemetry import _bundle_digest
     renamed, natives = {}, {}
@@ -298,6 +317,7 @@ def reforge(workspace: dict, *, keep_verification=False) -> None:
         renamed[record["bundle_id"]] = native["bundle_digest"]
         record["bundle_id"] = native["bundle_digest"]
         natives[native["bundle_digest"]] = native
+    reseal_catalog(workspace)
 
 
 def reforge_source(workspace: dict, source_id: str, edit: Callable) -> dict:
@@ -334,9 +354,24 @@ def reforge_source(workspace: dict, source_id: str, edit: Callable) -> dict:
 
 
 def reseal_oscillator(*records: dict) -> None:
-    from ..operations.runner import seal
+    """Recompute the unkeyed digests inside each record: its numerical_result_id, where it carries one, then its seal."""
+    from ..operations.runner import numerical_result_id, seal
     for record in records:
+        if "numerical_result_id" in record:
+            record["numerical_result_id"] = numerical_result_id(record.get("operation_id"), record.get("data"))
         seal(record)
+
+
+def reseal_catalog(workspace: dict) -> None:
+    """Recompute the workbench's catalog-level replay-receipt seal over the (possibly forged) bundles.
+
+    The seal is an unkeyed SHA-256 over CIW's public canonical JSON of the
+    (bundle_id, replay_id) pairs, so any holder of the file recomputes it; a
+    forgery that recomputes every downstream digest recomputes this one too.
+    """
+    from ..workbench import receipt_seal
+    catalog = workspace["workbench"]
+    catalog["replay_receipt_seal"] = receipt_seal(catalog["bundles"])
 
 
 def reopen(workspace: dict, root: Path):
@@ -489,13 +524,135 @@ def check_esm(case: dict, edit=None) -> None:
                              case["policy"])
 
 
+def reseal_exchange_identity(artifact: dict, field: str) -> None:
+    """Recompute an exchange content identity (schema, NUL, canonical JSON without ``field``) as any holder can."""
+    payload = json.dumps({key: value for key, value in artifact.items() if key != field}, sort_keys=True,
+                         separators=(",", ":"), ensure_ascii=False, allow_nan=False).encode("utf-8")
+    artifact[field] = "sha256:" + hashlib.sha256(artifact["schema"].encode("utf-8") + b"\x00" + payload).hexdigest()
+
+
 def exchange_artifact(schema: str, body: dict, field: str) -> dict:
     """A synthetic exchange artifact whose content identity is recomputed locally."""
     artifact = {"schema": schema, **deepcopy(body)}
-    payload = json.dumps({key: value for key, value in artifact.items() if key != field}, sort_keys=True,
-                         separators=(",", ":"), ensure_ascii=False, allow_nan=False).encode("utf-8")
-    artifact[field] = "sha256:" + hashlib.sha256(schema.encode("utf-8") + b"\x00" + payload).hexdigest()
+    reseal_exchange_identity(artifact, field)
     return artifact
+
+
+# ------------------------------------------------------------------ telemetry stack (T077)
+# A fixed revision that is not the GSIE pin, so the forged-runtime witness is deterministic.
+FORGED_REVISION = hashlib.sha1(b"ciw-lab forged provider revision").hexdigest()
+
+
+def telemetry_manifest() -> dict:
+    """The telemetry pins CIW declares (package data, as ciw.telemetry reads it)."""
+    from importlib import resources
+    return json.loads(resources.files("ciw").joinpath("telemetry-runtimes.json").read_text(encoding="utf-8"))
+
+
+def telemetry_checkouts(stack) -> dict:
+    """Each checkout of a bound telemetry stack against its ``ciw/telemetry-runtimes.json`` pin, without host paths.
+
+    ``state`` is ``ready`` (clean and at the pin), ``refused`` (at the pin, but its working tree is not the pinned
+    tree: modified, untracked or dirty), ``off_pin`` (another revision) or ``unreadable`` (not a Git repository
+    root); ``reason`` says why for every state but ready. The recomputed tree is the lab's own hash of the working
+    bytes, a second reading of the tree Git reports.
+    """
+    import subprocess
+    from .exchange_provenance_bundles_providers import checkout_identity, ciw_pins, compare_with_pins
+    pins, manifest, states = ciw_pins(), telemetry_manifest(), {}
+    for role, name in TELEMETRY_REPOSITORIES.items():
+        declared, pin = f"ciw/telemetry-runtimes.json[{role}]", manifest[role]["revision"]
+        record = {"repository": f"{TELEMETRY_OWNER}/{name}", "pin": pin}
+        try:
+            identity = checkout_identity(Path(stack) / name)
+        except (ValueError, OSError, subprocess.SubprocessError) as exc:
+            states[role] = dict(record, state="unreadable", reason=f"{name} in the bound telemetry stack is not a "
+                                                                   f"readable Git repository root ({type(exc).__name__})")
+            continue
+        comparison = compare_with_pins(role, identity, pins)
+        record.update(head=identity["head"], tree=identity["tree"], recomputed_tree=identity["recomputed_tree"],
+                      matched=comparison["matched"], clean=comparison["clean"])
+        if declared not in comparison["matched"]:
+            record.update(state="off_pin", reason=f"{name} is at {identity['head']}, not the {declared} pin {pin}")
+        elif not comparison["accepted"]:
+            record.update(state="refused", reason=f"{name} is at the {declared} pin but its working tree is not the "
+                                                  "pinned tree (modified, untracked or dirty files)")
+        else:
+            record.update(state="ready", reason=None)
+        states[role] = record
+    return states
+
+
+def build_telemetry_fixture(root: Path, stack) -> dict:
+    """A real telemetry session in the shared workbench on a bound, validated telemetry stack.
+
+    Binds every stack checkout (Workbench.bind_workflow checks each pin again),
+    retains the bundled synthetic telemetry source, executes ``ciw.telemetry.v1``
+    with the bundled configuration (no reconciliation, so CBSR is bound but does
+    not execute), saves, replays, saves again, classifies the saved workspace with
+    ``ciw.lab.bridge`` and reopens it offline. Then a forger's edit of the first
+    save: the GSIE runtime revision replaced and every unkeyed digest over it
+    recomputed (bundle digest, SET verification identity, catalog identity and
+    replay-receipt seal); it is reopened and, when accepted, replayed with the
+    stack bound. Runtime identities are returned as CIW retains them, host paths
+    included; callers keep those out of reports.
+    """
+    import sys
+    from ..instruments import make_demo_run
+    from ..session import Session
+    from ..telemetry import _bundle_digest, replay_session
+    from .bridge import classify_workspace
+    from .runner import repository_path
+    examples = repository_path("examples", "telemetry")
+    if examples is None:
+        raise FileNotFoundError("No repository examples are reachable for the telemetry source and configuration")
+    source = (examples / "source.json").read_bytes()
+    configuration = json.loads((examples / "configuration.json").read_text(encoding="utf-8"))
+    bindings = {role: Path(stack) / name for role, name in TELEMETRY_REPOSITORIES.items()}
+    session = Session(make_demo_run(), root / "telemetry-a")
+    session.workbench.bind_workflow("telemetry", bindings)
+    added = request(session, "source.add", {"kind": "telemetry", "label": "telemetry example",
+                                            "bytes_b64": b64(source)})
+    executed = request(session, "operation.execute", {"operation_id": "ciw.telemetry.v1", "parameters": {
+        "source_id": added["source_id"], "configuration": configuration}})
+    first = save(session)
+    replayed = request(session, "bundle.replay", {"bundle_id": executed["bundle_id"]})
+    saved = save(session)
+    classification = classify_workspace(saved["path"])
+    reopened = Session.from_workspace(saved["path"], root / "telemetry-b")
+    available = next(entry["available"] for entry in reopened.workbench.describe_operations()
+                     if entry["operation_id"] == "ciw.telemetry.v1")
+    again = save(reopened)
+    forged = deepcopy(first["workspace"])
+    record = forged["workbench"]["bundles"][0]
+    native = record["native"]
+    native["runtimes"]["gsie"]["revision"] = FORGED_REVISION
+    native["bundle_digest"] = record["bundle_id"] = _bundle_digest(native)
+    native["verification"]["subject_ref"] = native["bundle_digest"]
+    reseal_exchange_identity(native["verification"], "verification_id")
+    reseal_catalog(forged)
+    outcome, forged_session = reopen(forged, root)
+    forged_replay = None
+    if forged_session is not None:
+        # The workflow replay Workbench.replay runs, on the reopened retained bundle with the stack bound: it
+        # builds the pinned adapters and compares each with the retained identity before executing anything.
+        retained = forged_session.workbench.get_bundle(record["bundle_id"])
+        try:
+            replay_session(retained, {role: bindings[role] for role in retained["runtimes"]})
+        except ValueError as exc:  # AdapterRefusal is a ValueError too
+            forged_replay = {"outcome": "refused", "error": type(exc).__name__, "message": str(exc)}
+        else:
+            forged_replay = {"outcome": "accepted", "error": None, "message": None}
+    interpreter = Path(sys.executable)
+    return {"bound_roles": sorted(bindings), "configuration_roles": sorted(native["runtimes"]),
+            "original": session.workbench.get_bundle(executed["bundle_id"]),
+            "replay": session.workbench.get_bundle(replayed["bundle"]["bundle_id"]),
+            "receipt": replayed["replay_receipt"], "saved": saved["workspace"], "again": again["workspace"],
+            "telemetry_available_after_reopen": available, "classification": classification["items"],
+            "forged": {"reopen": outcome, "replay": forged_replay},
+            "bound_paths": {role: str(path.resolve()) for role, path in bindings.items()},
+            "interpreter": str(interpreter.absolute()),
+            "interpreter_sha256": hashlib.sha256(interpreter.read_bytes()).hexdigest()}
 
 
 # ------------------------------------------------------------------ source-log edits

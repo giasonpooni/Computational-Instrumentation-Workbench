@@ -172,6 +172,15 @@ stack at startup when new execution or replay is required. Workspace formats 1
 and 2 remain readable; format 3 adds workbench state without discarding the
 existing recording, selection and operation history.
 
+A bundle's digest excludes its replay receipts, so every save also writes
+`replay_receipt_seal` into the catalog: the SHA-256 of CIW's canonical JSON of
+the `(bundle_id, replay_id)` pair of each retained receipt, in catalog order.
+Reopening refuses a catalog whose receipts no longer give its seal (`Retained
+replay receipt seal differs`), so a receipt deleted, added or moved without the
+seal is detected. A catalog without the seal is accepted as one saved before it
+existed. The seal is unkeyed: anyone holding the file can recompute or remove
+it, so it neither authenticates a receipt nor proves that a replay happened.
+
 Call `workspace.save` to checkpoint accepted sources and completed bundles;
 normal server shutdown also saves them. A workflow that refuses before producing
 a bundle returns an error and leaves its source retained, without publishing a

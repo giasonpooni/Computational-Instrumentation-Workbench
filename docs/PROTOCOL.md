@@ -106,6 +106,12 @@ Operation results use `schema: "ciw.operation-result.v1"` and executions use
 `schema: "ciw.execution.v1"`. They retain operation, run, source evidence,
 selection, parameters and runtime bindings, distinct execution/result IDs, and
 content-integrity digests. An execution's `result_id` is null when refused.
+A result also carries `numerical_result_id`, the SHA-256 of CIW's canonical
+JSON of `{operation_id, data}` (the native workflows' scheme): results with
+equal numbers share it whatever their execution, and reopening refuses a
+result whose data no longer give it. Results saved before it existed carry
+none and still open. Like the record seal it is unkeyed, so it detects an
+edit that was not recomputed, not a forger who recomputes it.
 Verification remains `not_verified` with `verification_id: null`; no estimator
 or successful replay can promote that status. Domain output schemas are
 validated without executing their scientific providers during reopening.

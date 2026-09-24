@@ -1,10 +1,16 @@
-"""Exchange/provenance lab tasks T077-T090 against the real, offline CIW integrity layer.
+"""Exchange/provenance lab tasks T077-T090 against the real CIW integrity layer.
 
 One module-scoped lab context builds the oscillator session, energy-accuracy
 bundles, replays and saved workspaces once; every task report is then checked
 for its state, evidence labels, key numbers and exact refusal messages.
+CIW_LAB_TELEMETRY_STACK binds the pinned telemetry stack as ``telemetry-stack``
+(the clean-room gate sets it), so T077 also runs its telemetry session.
 """
 import json
+import os
+from pathlib import Path
+import shutil
+import subprocess
 
 import pytest
 
@@ -24,11 +30,16 @@ STEMS = {"T080": "aliasing-mutations", "T081": "numerical-mutations", "T082": "f
          "T083": "receipt-mutations", **{task_id: spec["stem"] for task_id, spec in ep.MUTATION_TASKS.items()}}
 
 
+def _telemetry_stack():
+    return os.environ.get("CIW_LAB_TELEMETRY_STACK")
+
+
 @pytest.fixture(scope="module")
 def lab(tmp_path_factory):
     if not common.fixture_available():
         pytest.skip("bundled energy-accuracy fixture logs are absent")
-    ctx = runner.Context(tmp_path_factory.mktemp("exchange-lab"))
+    stack = _telemetry_stack()
+    ctx = runner.Context(tmp_path_factory.mktemp("exchange-lab"), {common.TELEMETRY_ROLE: stack} if stack else None)
     queue = {item["id"]: item for item in load_queue()["tasks"]}
     reports = {}
 
@@ -105,23 +116,52 @@ def test_every_section_task_is_registered_with_its_regression_test():
         assert ep.MODULE in implementation.changed_files
 
 
+NUMERICAL_CLAIM = ("Oscillator operation results carry a content-level numerical_result_id that two executions with "
+                   "equal data share and that reopen recomputes from the retained numbers")
+SEAL_CLAIM = ("The catalog's replay_receipt_seal binds each retained replay receipt to its bundle: a receipt deleted "
+              "under a stale seal is refused on reopen, and the unkeyed seal recomputed or removed with it lets the "
+              "deletion reopen")
+FORGED_CLAIM = ("A telemetry bundle whose GSIE runtime revision is forged, with every unkeyed digest over it "
+                "recomputed, reopens, and a replay on the bound stack refuses it")
+PATHS_CLAIM = ("A saved telemetry workspace retains the host paths of the bound provider checkouts and interpreter in "
+               "its runtime identities")
+
+
 @pytest.mark.lab_task("T077")
 def test_identity_matrix(lab):
     report = lab("T077")
-    # Partial: two planned rows (ESM candidate, pinned-provider runtime) cannot run offline.
-    _labels(report, "numerically_verified", {"numerically_verified": 3, "not_established": 2}, state="partial")
+    matrix = {row["identity"]: row for row in json.loads(_artifact(lab, "T077", "identity-matrix.json"))["rows"]}
+    # The pinned-provider runtime row is observed on a real telemetry session exactly when the stack is bound.
+    telemetry = matrix[ep.RUNTIME_ROW]["exercised"]
+    assert telemetry is bool(_telemetry_stack())
+    # Partial: the ESM candidate rows need an ESM binding that the lab gate does not provision.
+    _labels(report, "provider_backed" if telemetry else "numerically_verified",
+            {"numerically_verified": 6 if telemetry else 4, "not_established": 2,
+             **({"provider_backed": 4} if telemetry else {})}, state="partial")
     summary = report["findings"][0]["value"]
-    assert summary["rows"] == 30 and summary["exercised_rows"] == 28
-    assert summary["unexercised_rows"] == ["ESM candidate_id / candidate execution_id",
-                                           "pinned-provider runtime identity (ciw.subprocess-runtime.v1)"]
+    unexercised = ["ESM candidate_id / candidate execution_id"] + ([] if telemetry else [ep.RUNTIME_ROW])
+    assert summary["rows"] == 31 and summary["exercised_rows"] == 31 - len(unexercised)
+    assert summary["unexercised_rows"] == unexercised
     assert report["unresolved_assumptions"][0].startswith("Partial: ESM candidate_id")
-    assert summary["properties"] == summary["properties_held"] == 97 and summary["rederived_properties"] == 11
-    assert summary["reopen_stability_properties"] == 23
+    assert ("no telemetry stack is bound" in report["unresolved_assumptions"][0]) is not telemetry
+    assert summary["properties"] == summary["properties_held"] == (118 if telemetry else 106)
+    assert summary["rederived_properties"] == (16 if telemetry else 14)
+    assert summary["reopen_stability_properties"] == (25 if telemetry else 24)
     assert summary["derivation_classes"]["fresh_event_uuid"] == 5
+    assert summary["derivation_classes"]["unkeyed_seal"] == 2
     found = _findings(report)
-    gap = found["Oscillator operation results carry no replay-stable numerical-result identity"]
-    assert gap["evidence_status"] == "numerically_verified" and gap["value"]["data_equal"] is True
-    assert gap["counterexample"]["statement"].startswith("Every retained CIW operation result")
+    numerical = found[NUMERICAL_CLAIM]
+    assert numerical["evidence_status"] == "numerically_verified" and "counterexample" not in numerical
+    assert numerical["value"] == {"results_with_identity": 2, "legacy_results_with_identity": 0,
+                                  "shared_by_equal_data": True, "stale_identity_on_reopen": ep.NUMERICAL_ID,
+                                  "resealed_statistics_edit_on_reopen": "accepted"}
+    # The identity hashes NumPy reductions, whose last bits move with the BLAS kernel: it is never a compared value.
+    assert "sha256:" not in json.dumps(numerical["value"])
+    seal = found[SEAL_CLAIM]
+    assert seal["evidence_status"] == "numerically_verified"
+    assert seal["value"] == {"receipts_sealed": 1, "deletions_on_reopen": {
+        "receipt.deleted": ep.SEAL_RECEIPTS, "receipt.deleted-resealed": "accepted",
+        "receipt.deleted-seal-removed": "accepted"}}
     excluded = found["The energy replay bundle identity excludes its replay receipt and verification"]
     assert excluded["value"]["digest_unchanged_without_receipt"] is True
     assert excluded["value"]["digest_unchanged_with_replaced_verification"] is True
@@ -129,26 +169,76 @@ def test_identity_matrix(lab):
     assert producers["domain"] == "physical" and producers["evidence_status"] == "not_established"
     assert producers["value"]["fixture_hashes_are_placeholders"] is True
     assert _authentication_is_unestablished(report)
+    assert common.ESM_CANDIDATE_QUESTION in report["unresolved_assumptions"]
     kinds = {check["reference_kind"] for check in report["findings"][0]["basis"]["checks"]}
     assert kinds == {"cross_implementation", "exact_arithmetic"}
-    matrix = {row["identity"]: row for row in json.loads(_artifact(lab, "T077", "identity-matrix.json"))["rows"]}
-    numerical = matrix["energy numerical_result_id"]
-    assert numerical["across_replay"] == "stable for canonically identical logs" and "log_digest" in numerical["binds"]
-    assert numerical["properties"]["metadata_only_resealed_edit_changes_it"] is True
+    numerical_row = matrix["energy numerical_result_id"]
+    assert numerical_row["across_replay"] == "stable for canonically identical logs" and "log_digest" in numerical_row["binds"]
+    assert numerical_row["properties"]["metadata_only_resealed_edit_changes_it"] is True
     assert matrix["energy step execution_id"]["derivation_class"] == "fresh_event_uuid"
     assert matrix["exchange batch_id"]["derivation_class"] == "caller_declared"
     assert matrix["ESM candidate_id / candidate execution_id"]["exercised"] is False
-    assert matrix["pinned-provider runtime identity (ciw.subprocess-runtime.v1)"]["exercised"] is False
+    oscillator = matrix["oscillator numerical_result_id"]
+    assert oscillator["derivation_class"] == "content_hash" and all(oscillator["properties"].values())
+    assert oscillator["observed_refusals"] == {"numerical_result_id_stale": ep.NUMERICAL_ID}
+    receipts = matrix["workbench replay_receipt_seal"]
+    assert receipts["derivation_class"] == "unkeyed_seal" and all(receipts["properties"].values())
+    assert receipts["observed_refusals"] == {"receipt_deleted_under_stale_seal": ep.SEAL_RECEIPTS}
     # Every exercised identity predicted stable across reopen is compared before and after reopen, and holds.
     stable = [row for row in matrix.values() if row["exercised"] and row["across_reopen"].startswith("stable")]
-    assert len(stable) == 22 and all(row["properties"]["stable_across_reopen"] is True for row in stable)
-    assert matrix["oscillator numerical-result identity"]["properties"]["absent_after_reopen"] is True
+    assert len(stable) == (25 if telemetry else 24)
+    assert all(row["properties"]["stable_across_reopen"] is True for row in stable)
     assert all("fixture_hashes_are_placeholders" not in row["properties"] for row in matrix.values())
     assert matrix["energy result_id"]["observed_refusals"]["moved_step_stale_result_id"] == ep.BINDING
     assert matrix["ESM bundleBytesDigest"]["observed_refusals"] == {
         "esm_noncanonical_bytes": ep.ESM_SCOPE, "esm_forged_digest": ep.ESM_SCOPE}
     assert matrix["energy log producer identities"]["observed_refusals"] == {
         "producer_edit_unsealed": "Retained log digest differs", "producer_edit_resealed": "accepted"}
+
+
+@pytest.mark.lab_task("T077")
+def test_identity_matrix_telemetry_runtimes(lab):
+    """On the pinned telemetry stack, T077 observes the ciw.subprocess-runtime.v1 rows of a real session."""
+    stack = _telemetry_stack()
+    if not stack:
+        pytest.skip("set CIW_LAB_TELEMETRY_STACK to the pinned telemetry stack (scripts/check_lab.py binds it)")
+    report = lab("T077")
+    manifest = common.telemetry_manifest()
+    found = _findings(report)
+    for role in ep.EXECUTED_ROLES:
+        record = found[f"The executed {role} runtime of the telemetry session is retained with CIW's "
+                       "ciw/telemetry-runtimes.json pin"]
+        # provider_backed: a pinned runtime's record matching the pin CIW declares, with no check outranking it.
+        assert record["evidence_status"] == "provider_backed" and record["origin"] == ["provider"]
+        assert record["value"]["revision"] == manifest[role]["revision"] == record["basis"]["provider"]["revision"]
+        assert record["value"]["matched"] == [f"ciw/telemetry-runtimes.json[{role}]"]
+        assert record["value"]["tree_pinned"] is False and record["value"]["schema"] == "ciw.subprocess-runtime.v1"
+        assert record["basis"]["provider"]["repository"] == "giasonpooni/" + common.TELEMETRY_REPOSITORIES[role]
+    forged = found[FORGED_CLAIM]
+    assert forged["evidence_status"] == "numerically_verified"
+    assert forged["value"] == {"reopen": "accepted", "replay": ep.RUNTIME_MISMATCH}
+    assert forged["counterexample"]["statement"].startswith("Reopening a workspace checks every retained provider")
+    paths = found[PATHS_CLAIM]
+    assert paths["evidence_status"] == "numerically_verified" and "counterexample" in paths
+    assert paths["value"] == {"telemetry_bundles": 2, "runtime_identities": 8, "naming_the_bound_checkout_path": 8,
+                              "naming_the_interpreter_path": 8, "telemetry_bound_after_reopen": False}
+    row = next(row for row in json.loads(_artifact(lab, "T077", "identity-matrix.json"))["rows"]
+               if row["identity"] == ep.RUNTIME_ROW)
+    assert row["exercised"] and len(row["properties"]) == 12 and all(row["properties"].values())
+    assert row["observed_refusals"] == {"forged_revision_reopen": "accepted",
+                                        "forged_revision_replay": ep.RUNTIME_MISMATCH}
+    identity = report["provider_runtime_identity"]
+    assert {role: entry["state"] for role, entry in identity[common.TELEMETRY_ROLE].items()} == dict.fromkeys(
+        common.TELEMETRY_REPOSITORIES, "ready")
+    assert sorted(identity["executed_runtimes"]) == sorted(ep.EXECUTED_ROLES)
+    retained = json.loads(_artifact(lab, "T077", "telemetry-runtimes.json"))
+    assert retained["executed_roles"] == sorted(ep.EXECUTED_ROLES) and retained["replay_runtimes_equal"] is True
+    assert retained["bound_roles"] == sorted(common.TELEMETRY_REPOSITORIES)
+    # Host paths stay out of the report and its artifacts although the saved workspace retains them.
+    text = json.dumps(report) + "".join(_artifact(lab, "T077", name)
+                                        for name in ("telemetry-runtimes.json", "identity-matrix.json"))
+    assert all(spelling not in text for spelling in {stack, str(Path(stack).resolve())})
+    assert not any(key in json.dumps(retained["runtimes"]) for key in ep.HOST_FIELDS)
 
 
 @pytest.mark.lab_task("T078")
@@ -266,19 +356,24 @@ def test_fresh_occurrences(lab):
 @pytest.mark.lab_task("T083")
 def test_replay_receipt_binding(lab):
     report = lab("T083")
-    _labels(report, "numerically_verified", {"numerically_verified": 5, "not_established": 2})
+    _labels(report, "numerically_verified", {"numerically_verified": 6, "not_established": 2})
     assert report["findings"][0]["value"] == {"binding_properties": 30, "held": 30, "receipts": 3}
+    # The catalog receipt seal refuses a deletion that leaves it stale; recomputed or removed, the deletion reopens.
     assert _kill_messages(report) == {"receipt.numerical-match-false": "Invalid retained energy replay receipt",
                                       "receipt.transplanted": "Invalid retained energy replay receipt",
-                                      "receipt.transplanted-resealed": ep.BINDING}
-    assert _survivors(report) == ["receipt.deleted", "receipt.fabricated", "receipt.transplanted-full"]
+                                      "receipt.transplanted-resealed": ep.BINDING,
+                                      "receipt.deleted": "Retained replay receipt seal differs"}
+    assert _survivors(report) == ["receipt.deleted-resealed", "receipt.deleted-seal-removed", "receipt.fabricated",
+                                  "receipt.transplanted-full"]
     assert "kills show only that these particular edits are detected" in report["uncertainty"].lower()
     independent = _findings(report)["Replay agreement establishes verification by an independent party"]
     assert independent["evidence_status"] == "not_established"
     assert independent["value"]["receipt_independent_flags"] == [False, False, False]
     rows = _retained_rows(lab, "T083")
     none = {"bundle:B0": [], "bundle:B0b": [], "bundle:Bother": [], "bundle:B1": []}
-    assert rows["receipt.deleted"]["post_reopen"] == {"receipt_sources": none}
+    assert "post_reopen" not in rows["receipt.deleted"]
+    assert rows["receipt.deleted-resealed"]["post_reopen"] == {"receipt_sources": none}
+    assert rows["receipt.deleted-seal-removed"]["post_reopen"] == {"receipt_sources": none}
     assert rows["receipt.transplanted-full"]["post_reopen"] == {"receipt_sources": dict(none, **{
         "bundle:B0b": ["bundle:B0"]})}
     assert rows["receipt.fabricated"]["post_reopen"] == {"receipt_sources": dict(none, **{
@@ -296,9 +391,10 @@ def test_receipt_digest_mutations(lab):
         "receipt-source.replay-id": ep.BINDING,
         "receipt-source.subject-rebound": "Replay source must already belong to this workbench",
         "receipt-source.self": "Invalid retained energy replay receipt",
-        "receipt-source.other-source": "Replay source must already belong to this workbench"}
-    assert _survivors(source) == ["receipt-source.sibling-execution"]
-    sibling = _retained_rows(lab, "T084")["receipt-source.sibling-execution"]["post_reopen"]
+        "receipt-source.other-source": "Replay source must already belong to this workbench",
+        "receipt-source.sibling-execution": "Retained replay receipt seal differs"}
+    assert _survivors(source) == ["receipt-source.sibling-execution-resealed"]
+    sibling = _retained_rows(lab, "T084")["receipt-source.sibling-execution-resealed"]["post_reopen"]
     assert sibling["receipt_source"] == sibling["verification_subject"] == "bundle:B0b"
     assert set(_kill_messages(replayed).values()) == {"Invalid retained energy replay receipt"}
     assert _survivors(replayed) == ["receipt-replayed.reidentified-bundle"]
@@ -319,7 +415,7 @@ def test_verification_mutations(lab):
     assert _kill_messages(subject)["exchange.verification-subject"] == "verification_id does not match the artifact content"
     assert _survivors(subject) == ["oscillator-subject.injected"]
     cited = next(record for record in subject["findings"] if record["claim"].startswith("The verification subject moves"))
-    assert cited["value"]["mutant"] == "receipt-source.sibling-execution" and "counterexample" not in cited
+    assert cited["value"]["mutant"] == "receipt-source.sibling-execution-resealed" and "counterexample" not in cited
     assert _kill_messages(method)["receipt-method.resealed"] == ep.BINDING
     assert _survivors(method) == ["oscillator-method.injected"]
     assert _kill_messages(independent)["esm.inspection-independent"] == ep.ESM_SCOPE
@@ -363,10 +459,10 @@ def test_admission_and_runtime_mutations(lab):
     matrix = json.loads(_artifact(lab, "T090", "mutation-matrix.json"))
     assert matrix["harness"] == {"reforge_reproduces_ciw_digests": True, "unchanged_workspace_reopens": True}
     rows = matrix["rows"]
-    assert len(rows) == len(ep.MUTANTS) + 7 == 72
+    assert len(rows) == len(ep.MUTANTS) + 7 == 75
     assert all(row["outcome_matches_prediction"] and row["message_matches_pin"] for row in rows)
     workspace_survivors = [row["name"] for row in rows if not row["killed"] and row["kind"] == "workspace"]
-    assert len(workspace_survivors) == len(set(workspace_survivors)) == 19
+    assert len(workspace_survivors) == len(set(workspace_survivors)) == 20
     assert set(workspace_survivors) == set(ep.STATEMENTS)
     assert [row["name"] for row in rows if not row["killed"] and row["kind"] == "validator"] == [
         "exchange.verification-independent"]
@@ -401,24 +497,24 @@ def _literal(path, name):
 @pytest.mark.lab_task("T077", "T078", "T079", "T080", "T081", "T082", "T083", "T084", "T085", "T086", "T087", "T088",
                       "T089", "T090")
 def test_shared_deferred_questions_are_recorded_where_they_apply(lab):
-    """Key custody and the telemetry stack are recorded as deferred questions in every report that depends on them."""
+    """Key custody and the ESM binding are recorded as deferred questions in every report that depends on them."""
     key_tasks = {"T077", "T078"} | {f"T0{n}" for n in range(80, 91)}
-    telemetry_tasks = {"T077", "T086", "T088", "T089", "T090"}
+    esm_tasks = {"T077", "T086", "T088", "T089"}  # T077's candidate rows and the ESM validator rows
     for task_id in TASKS:
         report = lab(task_id)
         assumptions = report["unresolved_assumptions"]
         assert assumptions.count(common.KEY_CUSTODY_QUESTION) == (task_id in key_tasks), task_id
-        assert assumptions.count(common.TELEMETRY_STACK_QUESTION) == (task_id in telemetry_tasks), task_id
+        assert assumptions.count(common.ESM_CANDIDATE_QUESTION) == (task_id in esm_tasks), task_id
         if any(r["claim"].startswith("Retained workspace records are authenticated") for r in report["findings"]):
             assert task_id in key_tasks
-    for question in (common.KEY_CUSTODY_QUESTION, common.TELEMETRY_STACK_QUESTION):
+    for question in (common.KEY_CUSTODY_QUESTION, common.ESM_CANDIDATE_QUESTION):
         assert question.startswith("Deferred research question (")
 
 
-def test_telemetry_question_matches_the_provisioning_scripts():
-    """The telemetry question's statement about provisioning must match the scripts and pins it names.
+def test_telemetry_binding_and_esm_question_match_the_provisioning_scripts():
+    """The gate provisions the telemetry stack T077 reads, and the ESM question's statement about it holds.
 
-    It reads scripts/, which the clean room does not copy, so it is kept apart from the registered test above,
+    It reads scripts/, which the clean room does not copy, so it is kept apart from the registered tests above,
     which must run where the JUnit record is written.
     """
     from ciw.lab.runner import PACKAGE_ROOT, repository_path
@@ -427,10 +523,47 @@ def test_telemetry_question_matches_the_provisioning_scripts():
         pytest.skip("repository scripts are not available (the clean room copies no scripts/)")
     # The pins are package data, so the installed package is read, not the repository's source tree.
     pins = json.loads((PACKAGE_ROOT / "telemetry-runtimes.json").read_text(encoding="utf-8"))
-    provisioned = set(_literal(root / "scripts" / "check_lab.py", "REPOSITORIES"))
-    variables = set(_literal(root / "scripts" / "reproduce_lab.py", "TEST_VARIABLES"))
-    assert sorted(pins) == ["cbsr", "gsie", "ppda", "set", "stfe"]
-    assert set(pins) & provisioned == {"ppda", "set"} and not {"stfe", "gsie", "cbsr"} & variables
+    assert sorted(pins) == sorted(common.TELEMETRY_REPOSITORIES)
+    check = root / "scripts" / "check_lab.py"
+    # check_lab.py lays the stack out under the names T077 reads, and hands it to the clean room's tests.
+    assert _literal(check, "TELEMETRY_REPOSITORIES") == common.TELEMETRY_REPOSITORIES
+    assert _literal(check, "TELEMETRY_STACK") == common.TELEMETRY_ROLE
+    assert _literal(root / "scripts" / "reproduce_lab.py", "TEST_VARIABLES")[common.TELEMETRY_ROLE] == (
+        "CIW_LAB_TELEMETRY_STACK")
+    assert common.TELEMETRY_ROLE in _literal(root / "scripts" / "refresh_lab.py", "REQUIRED_PROVIDERS")
+    assert common.TELEMETRY_REPOSITORIES == _literal(root / "scripts" / "check_telemetry.py", "REPOSITORIES")
+    # It provisions no ESM runtime, which the ESM question says.
+    esm = json.loads((PACKAGE_ROOT / "esm-runtime.json").read_text(encoding="utf-8"))
+    text = check.read_text(encoding="utf-8")
+    assert esm["repository"].split("/")[1] not in text and "check_workbench_candidates.py" not in text
+    assert esm["revision"] in common.ESM_CANDIDATE_QUESTION
+    assert esm["replay_ciw_revision"] in common.ESM_CANDIDATE_QUESTION
+
+
+def test_telemetry_checkouts_name_each_unusable_checkout(tmp_path):
+    """A bound stack whose checkouts are missing or off their pins is reported by state and reason, without paths."""
+    if shutil.which("git") is None:
+        pytest.skip("git is not available")
+    fake = tmp_path / "stack" / common.TELEMETRY_REPOSITORIES["gsie"]
+    fake.mkdir(parents=True)
+    subprocess.run(["git", "init", "-q", str(fake)], check=True)
+    (fake / "module.py").write_text("VALUE = 1\n")
+    subprocess.run(["git", "-C", str(fake), "add", "module.py"], check=True)
+    subprocess.run(["git", "-C", str(fake), "-c", "user.name=CIW test", "-c", "user.email=ciw@example.invalid",
+                    "commit", "-qm", "not the pin"], check=True)
+    states = common.telemetry_checkouts(tmp_path / "stack")
+    assert states["gsie"]["state"] == "off_pin"
+    assert common.telemetry_manifest()["gsie"]["revision"] in states["gsie"]["reason"]
+    assert {role: states[role]["state"] for role in ("ppda", "stfe", "set", "cbsr")} == dict.fromkeys(
+        ("ppda", "stfe", "set", "cbsr"), "unreadable")
+    assert str(tmp_path) not in json.dumps(states)
+    # T077 then leaves its runtime row unexercised with that reason instead of running a session.
+    ctx = runner.Context(tmp_path / "out", {common.TELEMETRY_ROLE: tmp_path / "stack"})
+    observed = ep._telemetry(ctx)
+    assert observed["bound"] is True and observed["fixture"] is None
+    assert observed["reason"].startswith("the bound telemetry stack is not at its pins: ")
+    unbound = ep._telemetry(runner.Context(tmp_path / "unbound"))
+    assert unbound == {"bound": False, "checkouts": {}, "fixture": None, "reason": ep.TELEMETRY_NOT_BOUND}
 
 
 @pytest.mark.lab_task("T081")

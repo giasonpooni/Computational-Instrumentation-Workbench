@@ -214,6 +214,32 @@ def test_same_measurement_occurrence_cannot_be_rebound_to_a_different_log(retain
     assert len(w.serialize()["bundles"]) == 1
 
 
+def test_catalog_receipt_seal_detects_a_deleted_receipt_but_is_unkeyed(retained, tmp_path):
+    from ciw.workbench import receipt_seal
+    session = Session(make_demo_run(), tmp_path / "session")
+
+    def call(kind, payload):
+        reply = session.handle({"protocol_version": 1, "request_id": kind, "type": kind, "payload": payload})
+        assert reply["type"] == "response", reply
+        return reply["payload"]
+    source = call("source.add", source_payload(retained[0]))
+    original = call("operation.execute", {"operation_id": OPERATION, "parameters": {"source_id": source["source_id"]}})
+    call("bundle.replay", {"bundle_id": original["bundle_id"]})
+    saved = session.workbench.serialize()
+    assert saved["replay_receipt_seal"] == receipt_seal(saved["bundles"])
+    assert Workbench.restore(saved).serialize() == saved
+    # A bundle digest excludes its receipts, so only the catalog seal notices a deleted receipt.
+    deleted = deepcopy(saved)
+    del deleted["bundles"][1]["native"]["replay_receipts"]
+    with pytest.raises(ValueError, match="Retained replay receipt seal differs"):
+        Workbench.restore(deleted)
+    # Unkeyed: recomputing the seal, or removing it as from a catalog saved before it existed, reopens the deletion.
+    deleted["replay_receipt_seal"] = receipt_seal(deleted["bundles"])
+    assert Workbench.restore(deleted).list_bundles()
+    del deleted["replay_receipt_seal"]
+    assert Workbench.restore(deleted).list_bundles()
+
+
 def test_shared_session_live_transport_save_restore_and_reanalysis(retained, tmp_path):
     session = Session(make_demo_run(), tmp_path / "session")
     async def exercise():

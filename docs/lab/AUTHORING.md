@@ -338,12 +338,14 @@ exception by its type, not its message, when it may name a path.
   or aggregated tables rather than full trajectories.
 - Tests: `tests/test_lab_<section>.py`, Python 3.11 and Windows compatible, no
   network, `pytest.importorskip` for optional modules, env-gated skips for
-  providers (`CIW_LAB_<ROLE>_REPO`, `CIW_LAB_<ROLE>_PYTHON`). The clean-room
-  gate sets these only for the roles `scripts/check_lab.py` binds (CSG, FTR,
-  SCR and the PLSR/FTR interpreter), through `TEST_VARIABLES` in
-  `scripts/reproduce_lab.py`; tests of any other role skip in CI. A new role
-  needs its variable in `TEST_VARIABLES` and its provisioning in
-  `scripts/check_lab.py` (`REPOSITORIES` and its pin) before its tests run
+  providers (`CIW_LAB_<ROLE>_REPO`, `CIW_LAB_<ROLE>_PYTHON`; the
+  `telemetry-stack` directory of checkouts is `CIW_LAB_TELEMETRY_STACK`). The
+  clean-room gate sets these only for the roles `scripts/check_lab.py` binds
+  (CSG, FTR, SCR, the exchange SET, PPDA and SCR, the telemetry stack, the
+  retained proved-heat record and the PLSR/FTR interpreter), through
+  `TEST_VARIABLES` in `scripts/reproduce_lab.py`; tests of any other role skip
+  in CI. A new role needs its variable in `TEST_VARIABLES` and its provisioning
+  in `scripts/check_lab.py` (`REPOSITORIES` and its pin) before its tests run
   there. Tests should call the task functions via
   `ciw.lab.runner.run_task` or the underlying computation, and assert the
   labels, not just the numbers.

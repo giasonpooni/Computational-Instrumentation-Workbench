@@ -211,10 +211,7 @@ NEXT_STEPS = {
              "candidate_evidence.validate_response, which single-field mutations cannot reach; and, as CIW changes, "
              "bind observation-batch identities to their content and refuse unknown ESM response fields, then re-run "
              "to check that both counterexamples become refusals."),
-    "T097": ("Deferred research question: provision the telemetry provider stack (ppda, stfe, gsie, set and cbsr at "
-             "the src/ciw/telemetry-runtimes.json pins; scripts/check_lab.py provisions only ppda and set of these, at "
-             "other pins) and drive CIW's telemetry workflow end to end against it, as the exchange roundtrip here "
-             "does for PPDA, SCR and SET; and attest the SCR engine a bound replay uses (CIW records a bound engine as "
+    "T097": ("Deferred research question: attest the SCR engine a bound replay uses (CIW records a bound engine as "
              "operator_asserted_not_attested), for example by requiring a locked build of the bound checkout in the "
              "same run before a replay is accepted."),
     "T098": ("Deferred research question: authenticate what the digests only identify, by verifying signed upstream "
