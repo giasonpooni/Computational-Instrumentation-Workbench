@@ -114,6 +114,8 @@ def _reseal(receipt):
     (lambda r: r.update(extra=True), "Invalid record fields"),
     (lambda r: r["verification"].update(subject_ref="sha256:" + "3" * 64), "verification_id"),
     (lambda r: r.update(verification=[]), "must be a record"),
+    (lambda r: r["verification"].update(schema=7), "must be a record"),
+    (lambda r: r.update(verification={"schema": "x"}), "Malformed replay receipt"),
 ])
 def test_a_provider_shaped_replay_receipt_binds_its_fresh_bundle(mutate, message):
     original = ToyRunner().create_session(source_bytes(), {"toy": "/host/a"})
@@ -137,6 +139,16 @@ def test_a_provider_shaped_replay_receipt_binds_its_fresh_bundle(mutate, message
     doubled["replay_receipts"].append(deepcopy(doubled["replay_receipts"][0]))
     with pytest.raises(ValueError, match="retains one receipt"):
         check_receipt_envelope(doubled, "toy-kind")
+    # A resealed claim of independence or a failed outcome is still refused.
+    for claim in ({"independent": True}, {"outcome": "failed"}):
+        claimed = deepcopy(fresh)
+        proof = claimed["replay_receipts"][0]["verification"]
+        proof.update(claim)
+        proof["verification_id"] = "sha256:" + __import__("hashlib").sha256(
+            proof["schema"].encode() + b"\0" + canonical({k: v for k, v in proof.items() if k != "verification_id"})).hexdigest()
+        _reseal(claimed["replay_receipts"][0])
+        with pytest.raises(ValueError, match="without claiming independence"):
+            check_receipt_envelope(claimed, "toy-kind")
 
 
 def test_replay_refuses_a_different_pin():

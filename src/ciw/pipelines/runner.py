@@ -243,9 +243,19 @@ def verification(bundle: dict, reproduced: dict, profile: RecordProfile = DECLAR
 def check_receipt_envelope(bundle: dict, kind: str) -> None:
     """A replayed bundle retains at most one receipt binding it to the occurrence it reproduced.
 
-    Provider-shaped verification (SET, calibrated windows) is checked only for
-    its content identity and subject; its body is the provider's.
+    Provider-shaped verification (SET, calibrated windows) is checked for its
+    content identity, its subject, a passed outcome and no claim of
+    independence; the rest of its body is the provider's.
     """
+    try:
+        _check_receipt_envelope(bundle, kind)
+    except (KeyError, TypeError, AttributeError, ValueError) as exc:
+        if isinstance(exc, ValueError):
+            raise
+        raise ValueError("Malformed replay receipt") from exc
+
+
+def _check_receipt_envelope(bundle, kind):
     receipts = bundle.get("replay_receipts", [])
     if not isinstance(receipts, list) or len(receipts) > 1:
         raise ValueError("A native replay retains one receipt")
@@ -259,11 +269,13 @@ def check_receipt_envelope(bundle: dict, kind: str) -> None:
                 receipt["replay_id"] != digest({key: value for key, value in receipt.items() if key != "replay_id"})):
             raise ValueError("Replay receipt does not bind the retained fresh bundle")
         proof = receipt["verification"]
-        if not isinstance(proof, dict):
+        if not isinstance(proof, dict) or not isinstance(proof.get("schema"), str):
             raise ValueError("Replay verification must be a record")
         _identity(proof, "verification_id")
         if proof.get("subject_ref") != earlier:
             raise ValueError("Replay verification subject differs from replay source")
+        if proof.get("outcome") != "passed" or proof.get("independent", False) is not False:
+            raise ValueError("Replay verification must pass without claiming independence")
 
 
 def check_receipts(bundle: dict, kind: str, profile: RecordProfile = DECLARED) -> None:
