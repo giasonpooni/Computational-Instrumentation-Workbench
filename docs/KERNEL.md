@@ -166,9 +166,11 @@ declared module and runner class.
 whether it takes fusion context, so the inspection verb has no per-kind branch.
 
 Pipelines whose records carry their own schemas and authority (the provider-free
-thermal and machine-manifest references) set a `RecordProfile` on the runner:
-result schema, verification schema and method, and authority. A step whose
-retained request is narrower than its source overrides `step_request`;
+thermal, machine-manifest and energy-accuracy references) set a `RecordProfile`
+on the runner: result schema, verification schema and method, and authority. A
+step whose retained request differs from its source overrides
+`step_request(source, evidence_id)`; a source that names its experiment or
+configuration differently overrides `experiment_id` or `configuration`.
 `check_data` always receives the whole source.
 
 ### What the workbench reads from descriptors and workflows
