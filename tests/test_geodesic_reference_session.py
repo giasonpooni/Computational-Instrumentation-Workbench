@@ -77,7 +77,7 @@ def test_native_references_share_history_without_becoming_fusion_state(retained)
     session, result = retained
     executions = {e["execution_id"]: e for e in call(session, "execution.list")["executions"]}
     assert len(call(session, "bundle.list")["bundles"]) == 4
-    assert call(session, "fusion.list")["contexts"] == []
+    assert call(session, "experiment.inspect", {"view": "fusion"})["contexts"] == []
     for kind, refs in result["references"].items():
         original = call(session, "bundle.get", {"bundle_id": refs["original"]})
         replay = call(session, "bundle.get", {"bundle_id": refs["replay"]})
@@ -92,7 +92,7 @@ def test_native_references_share_history_without_becoming_fusion_state(retained)
         assert view["kind"] == kind and view["fusion_context"] is None
         assert view["authority"]["read_only"] is True
         assert view["authority"]["state_admission"] == "not_performed"
-        native = call(session, "instrument.inspect", {"bundle_id": refs["original"], "instrument": KINDS[kind]})
+        native = call(session, "experiment.inspect", {"view": "instrument", "bundle_id": refs["original"], "instrument": KINDS[kind]})
         assert native["step"] == step
         assert view["panels"]
     assert session.workbench.pending_operations == 0

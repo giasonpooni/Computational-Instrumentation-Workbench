@@ -41,7 +41,16 @@ def test_native_mutation_spatial_observation_and_restore(tmp_path):
                 for kind in ("source.add", "operation.execute", "selection.update", "session.get", "source.get", "workspace.save"):
                     await spatial.send(request(kind))
                     assert json.loads(await spatial.recv())["payload"]["code"] == "read_only_view"
-                await spatial.send(request("spatial.inspect", {"source_id": hidden["source_id"]}))
+                # Only the geographic view of experiment.inspect crosses the spatial endpoint.
+                for payload in ({}, {"view": "fusion"}, {"view": "instruments"}, {"view": "candidates"},
+                                {"view": "experiment", "bundle_id": "x"}, {"view": "spatial", "bundle_id": "x"},
+                                {"view": "candidate", "candidate_id": "x"}):
+                    await spatial.send(request("experiment.inspect", payload))
+                    assert json.loads(await spatial.recv())["payload"]["code"] == "read_only_view", payload
+                for removed in ("spatial.list", "spatial.inspect"):
+                    await spatial.send(request(removed))
+                    assert json.loads(await spatial.recv())["payload"]["code"] == "read_only_view"
+                await spatial.send(request("experiment.inspect", {"view": "spatial", "source_id": hidden["source_id"]}))
                 assert json.loads(await spatial.recv())["type"] == "error"
                 payload = source_payload("geographic-context", EXAMPLES / "workbench/geographic-context.json")
                 await native.send(request("source.add", payload))
@@ -51,11 +60,11 @@ def test_native_mutation_spatial_observation_and_restore(tmp_path):
                 await native.send(request("selection.update", {"expected_revision": 0, "cursor_s": 0.5}))
                 assert json.loads(await native.recv())["type"] == "response"
                 assert json.loads(await native.recv())["type"] == "selection.changed"
-                await spatial.send(request("spatial.list"))
+                await spatial.send(request("experiment.inspect", {"view": "spatial"}))
                 listing = json.loads(await spatial.recv())
                 assert listing["type"] == "response"  # no leaked selection event
                 assert [s["source_id"] for s in listing["payload"]["sources"]] == [added["source_id"]]
-                await spatial.send(request("spatial.inspect", {"source_id": added["source_id"]}))
+                await spatial.send(request("experiment.inspect", {"view": "spatial", "source_id": added["source_id"]}))
                 packet = json.loads(await spatial.recv())["payload"]
                 assert packet["source"]["bytes_b64"] == payload["bytes_b64"]
                 assert packet["authority"]["read_only"] is True

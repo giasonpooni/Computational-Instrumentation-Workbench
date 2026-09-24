@@ -17,6 +17,15 @@ from .workbench import WORKBENCH_OPERATION_IDS
 LOG = logging.getLogger(__name__)
 
 
+def _spatial_request(request) -> bool:
+    """The spatial endpoint admits only the geographic view of ``experiment.inspect``."""
+    if not isinstance(request, dict) or request.get("type") != "experiment.inspect":
+        return False
+    payload = request.get("payload")
+    return (isinstance(payload, dict) and payload.get("view") == "spatial" and
+            set(payload) <= {"view", "source_id"})
+
+
 def spatial_origins(values):
     """Validate exact host-selected browser origins; never accept wildcards."""
     if isinstance(values, str):
@@ -75,7 +84,7 @@ class WorkbenchServer:
             if spatial:
                 await self._send(websocket, envelope("spatial.ready", {
                     "session_id": self.session.session_id, "read_only": True,
-                    "operations": ["spatial.list", "spatial.inspect"]}))
+                    "operations": [{"type": "experiment.inspect", "view": "spatial"}]}))
             else:
                 await self._send(websocket, envelope("session.snapshot", self.session.snapshot()))
             async for raw in websocket:
@@ -86,8 +95,7 @@ class WorkbenchServer:
                 except (ValueError, RecursionError) as exc:
                     await self._send(websocket, envelope("error", {"code": "invalid_request", "message": str(exc)}))
                     continue
-                if spatial and (not isinstance(request, dict) or not isinstance(request.get("type"), str) or
-                                request.get("type") not in {"spatial.list", "spatial.inspect"}):
+                if spatial and not _spatial_request(request):
                     request_id = request.get("request_id") if isinstance(request, dict) else None
                     if not isinstance(request_id, str) or len(request_id) > 512:
                         request_id = None

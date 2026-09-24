@@ -25,7 +25,7 @@ Send `source.add` with `kind: calibrated-window`, a label and base64 of the exac
 bytes in `examples/calibrated-window/source.json`. Send `operation.execute` with
 `operation_id: ciw.calibrated-window.v1` and `parameters: {source_id: ...}`.
 The window, model and composition declaration are retained in those source
-bytes. `bundle.replay`, `instrument.inspect`, `fusion.list`, `result.get` and
+bytes. `bundle.replay`, the `instrument` view of `experiment.inspect`, the `fusion` view of `experiment.inspect`, `result.get` and
 workspace save/restore use the existing interfaces. When also running the
 process stack, `examples/shared-workbench/run.py --with-calibrated-window`
 executes both in one session. Instrument inspection now also exposes retained

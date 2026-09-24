@@ -32,7 +32,7 @@ Rebind a family when its operator-known policies or withdrawals change.
 | --- | --- | --- |
 | `source.add` | `kind: telemetry`, label, base64 `ciw.telemetry-source.v1` bytes | Exact retained source identity |
 | `operation.execute` | `operation_id: ciw.telemetry.v1`, parameters `{source_id, configuration}` | Verified native telemetry bundle |
-| `instrument.inspect` | `bundle_id`, `instrument: ppda` or `stfe` | Original batch or complete window/quality/feature receipt |
+| `experiment.inspect` | `{view: instrument, bundle_id, instrument: ppda or stfe}` | Original batch or complete window/quality/feature receipt |
 | `bundle.replay` | Selected bundle ID | Fresh executions and replay receipt |
 | ESM inspect/capture operations | Selected telemetry bundle and explicit action/time IDs | Fresh replay/policy decision or UNADMITTED retained evidence |
 
@@ -58,7 +58,7 @@ these analytic values, the full covariance and unchanged raw timestamps.
 
 This is retained acquisition projection, not live sensor polling. Only fully
 declared identity time/frame maps are supported. Calibration references are not
-applied or validated. `fusion.list` marks the context `window_feature_posterior`,
+applied or validated. the `fusion` view of `experiment.inspect` marks the context `window_feature_posterior`,
 observability `unresolved` (`not_evaluated_by_telemetry_profile`), calibration
 validity `not_assessed`, and fault assessment `not_run`. It cannot substitute for
 the calibrated prior required by identified observation design. Unknown

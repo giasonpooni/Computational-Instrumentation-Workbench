@@ -59,13 +59,13 @@ def test_shared_session_exposes_three_native_stages_and_diagnostics(retained):
     session,result = retained
     refs = result["experiments"]["baseline"]
     assert len(call(session,"bundle.list")["bundles"]) == 2
-    assert call(session,"fusion.list")["contexts"] == []
+    assert call(session,"experiment.inspect", {"view": "fusion"})["contexts"] == []
     original = call(session,"bundle.get",{"bundle_id":refs["original"]})
     instruments = [entry for entry in session.workbench.instrument_views() if entry["bundle_id"] == refs["original"]]
     assert {entry["instrument"] for entry in instruments} == {"csg","gsie","plsr"}
     assert len(instruments) == 3
     for stage in original["steps"][0]["result"]["data"]["stages"]:
-        assert call(session,"instrument.inspect",{"bundle_id":refs["original"],"instrument":stage["runtime_ref"]})["step"] == stage
+        assert call(session,"experiment.inspect", {"view": "instrument", "bundle_id":refs["original"],"instrument":stage["runtime_ref"]})["step"] == stage
         assert call(session,"result.get",{"result_id":stage["result_id"]}) == stage["result"]
     view = refs["view"]
     assert view["fusion_context"] is None

@@ -1,4 +1,4 @@
-# CIW kernel (`ciw.kernel.v1`)
+# CIW kernel (`ciw.kernel.v2`)
 
 The kernel is the part of the workbench that stays expensive: identities,
 admission, persistence, reopen/replay, inspection and binding. Scientific work
@@ -40,7 +40,28 @@ specified in [PROTOCOL.md](PROTOCOL.md#transport).
 | --- | --- | --- |
 | Kernel | `session.get`, `run.get`, `source.add`, `source.get`, `source.list`, `operation.list`, `operation.execute`, `execution.list`, `bundle.list`, `bundle.get`, `bundle.replay`, `result.list`, `result.get`, `experiment.inspect`, `selection.update`, `sample.get`, `workspace.save` | Stable. New scientific operations are `operation.execute` payloads; new records are read through these verbs. |
 | Legacy | `analysis.stats`, `analysis.spectrum` | The original oscillator analyses and their flat result format. |
-| Projection | `spatial.list`, `spatial.inspect`, `fusion.list`, `instrument.list`, `instrument.inspect`, `candidate.list`, `candidate.get` | Read-only views that grew around individual kinds. Kept for existing clients, closed to additions, to be subsumed by `experiment.inspect` and the project graph. |
+
+## Inspection views
+
+Every read-only view of retained records is a payload of `experiment.inspect`,
+selected by `view` (default `experiment`):
+
+| View | Payload | Result |
+| --- | --- | --- |
+| `experiment` | `bundle_id` | The kind's experiment projection |
+| `instruments` | none | Retained native instrument steps across bundles |
+| `instrument` | `bundle_id`, `instrument` | One native step, its fusion context and linked results |
+| `fusion` | none | Retained compatible-state contexts and lineage |
+| `spatial` | optional `source_id` | Geographic context sources, or one `ciw.spatial-view.v1` packet |
+| `candidates` | none | Historical candidate-action receipts |
+| `candidate` | `candidate_id` | One receipt with its exact native response |
+
+`ciw.kernel.v2` removed the seven projection verbs that preceded these views
+(`spatial.list`, `spatial.inspect`, `fusion.list`, `instrument.list`,
+`instrument.inspect`, `candidate.list`, `candidate.get`). A client that still
+sends one receives `unknown_command` naming the view to use. The `/spatial`
+endpoint admits only the `spatial` view. The project graph remains the
+`workbench.project` field of `session.get`.
 
 ## Envelopes and admission
 

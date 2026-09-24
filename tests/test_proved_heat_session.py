@@ -47,7 +47,7 @@ def test_proof_operation_requires_explicit_host_binding(tmp_path):
     call(session, "operation.execute", {"operation_id": operation["operation_id"],
          "parameters": {"source_id": source["source_id"]}}, error=True)
     assert call(session, "bundle.list")["bundles"] == []
-    assert call(session, "fusion.list")["contexts"] == []
+    assert call(session, "experiment.inspect", {"view": "fusion"})["contexts"] == []
 
 
 @pytest.mark.parametrize("destination_state", ["new", "already_exists", "appears_during_verification"])
@@ -107,7 +107,7 @@ def test_historical_proof_session_restore_and_replay_bindings(tmp_path, monkeypa
         view = call(restored, "experiment.inspect", {"bundle_id": bundle["bundle_id"]})
         assert view["panels"][1]["values"] == [0, 65, 92, 65, 0]
         assert view["object_context"]["verification_trust_scope"] == TRUST_SCOPE
-    assert call(restored, "fusion.list")["contexts"] == []
+    assert call(restored, "experiment.inspect", {"view": "fusion"})["contexts"] == []
     call(restored, "bundle.replay", {"bundle_id": original["bundle_id"]}, error=True)
 
 
@@ -215,7 +215,7 @@ def test_native_proved_heat_shared_session(native_retained, tmp_path, monkeypatc
     assert view["panels"][1]["values"] == [0, 65, 92, 65, 0]
     assert view["authority"]["cryptographic_verification"] == "not_performed_by_inspection"
     assert "bytes_b64" not in view["object_context"]["proof"]
-    assert call(session, "fusion.list")["contexts"] == []
+    assert call(session, "experiment.inspect", {"view": "fusion"})["contexts"] == []
     saved = session.save_workspace(tmp_path / "proof-workspace.json")
 
     def never(*args, **kwargs):

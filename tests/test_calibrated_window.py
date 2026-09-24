@@ -181,7 +181,7 @@ def test_replay_preserves_numbers_and_creates_fresh_occurrences(retained):
 def test_instruments_fusion_restore_and_candidate_boundary(retained, monkeypatch, tmp_path):
     session, _, original, _, path, _ = retained
     for instrument in ("tbrt", "mcur", "stfe", "gsie"):
-        view = call(session, "instrument.inspect", {"bundle_id": original["bundle_digest"], "instrument": instrument})
+        view = call(session, "experiment.inspect", {"view": "instrument", "bundle_id": original["bundle_digest"], "instrument": instrument})
         assert view["step"] == next(s for s in original["steps"] if s["runtime_ref"] == instrument)
         assert view["fusion_context"]["observability"]["status"] == "unresolved"
         assert view["fusion_context"]["calibration_validity"] == "checked_at_nominal_mapped_event_times"

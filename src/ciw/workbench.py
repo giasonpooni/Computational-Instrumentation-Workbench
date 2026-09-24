@@ -928,6 +928,33 @@ class Workbench:
                 raise ValueError("Select an explicitly declared geographic context")
             return project(source)
 
+    def inspect(self, payload):
+        """``experiment.inspect``: every read-only view of retained records, selected by ``view``."""
+        from .kernel import INSPECTION_VIEWS
+        if not isinstance(payload, dict):
+            raise ValueError("Inspection payload must be an object")
+        view = payload.get("view", "experiment")
+        if view not in INSPECTION_VIEWS:
+            raise ValueError("Choose an inspection view: " + ", ".join(sorted(INSPECTION_VIEWS)))
+        rest = {key: value for key, value in payload.items() if key != "view"}
+        if view == "experiment":
+            return self.inspect_experiment(rest)
+        if view == "instrument":
+            return self.inspect_instrument(rest)
+        if view == "spatial" and rest:
+            return self.inspect_spatial(rest)
+        if view == "candidate":
+            _keys(rest, {"candidate_id"})
+            return self.get_candidate(rest["candidate_id"])
+        _keys(rest, set())
+        if view == "instruments":
+            return {"instruments": self.instrument_views()}
+        if view == "fusion":
+            return {"contexts": self.fusion_contexts()}
+        if view == "spatial":
+            return {"sources": self.spatial_sources()}
+        return {"candidates": self.list_candidates()}
+
     def inspect_experiment(self, payload):
         from .experiment_view import project
         _keys(payload, {"bundle_id"})

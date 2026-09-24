@@ -37,7 +37,7 @@ The live Session now hosts `ciw.telemetry.v1`, `ciw.calibrated-observable.v1` an
 `ciw.curved-path-transfer.v1`, `ciw.thermal-observer.v1` and
 `ciw.encoder-position.v1`, through
 `operation.list/execute`.
-`source.*`, `bundle.*` and `fusion.list` expose retained inputs, native bundles
+`source.*`, `bundle.*` and the `fusion` view of `experiment.inspect` expose retained inputs, native bundles
 and candidate contexts; result and execution lists include those native records
 alongside existing session operations. Workspace format 3 retains this content,
 and reopening validates it without executing or rebinding a provider.
@@ -73,7 +73,7 @@ keep their native owners; the table below distinguishes implemented ICRH profile
 | Retained SRA assessment → SRA/JSPT/PLSR | Shared `ciw.schematic-companions.v1`, native local calls and explicit upstream result edge | ICRH `schematic-companions.v1`; scalar derivative/covariance/Lyapunov and binding checks | Local continuous linear surrogate only; no equilibrium or nonlinear region claim. |
 | IFC + declared scalar observation → CSE | Shared `ciw.bim-quantity.v1`, native conditioning, rollback and replayed ledger | ICRH `bim-quantity.v1`; conditioning oracle, ledger/world commitments and held/refused cases | Quantity-only model; surveyed-frame geometry remains separate. |
 | Retained snapshots → PPDA/SCOUT | Shared `ciw.acquired-dataset.v1`, native incremental acquisition, evidence pool and checkpoints | ICRH `acquired-dataset.v1`; lineage/cursor/pool reconstruction and replay bindings | Calibrated conversion now uses explicit retained selection; hardware polling remains separate. |
-| Declared geographic context → GSV | `spatial.inspect`, exact source bytes through native GSV provider/WorldStore | ICRH geographic declaration checks; actual CIW WebSocket/provider tests | Source-only CRS84 nodes with declared constant states; no inferred geometry or estimator. |
+| Declared geographic context → GSV | the `spatial` view of `experiment.inspect`, exact source bytes through native GSV provider/WorldStore | ICRH geographic declaration checks; actual CIW WebSocket/provider tests | Source-only CRS84 nodes with declared constant states; no inferred geometry or estimator. |
 | Flat lattice and winding → FTR | Shared `ciw.flat-torus-reference.v1`; native trajectory, geometry digest and fresh replay | ICRH `flat-torus-reference.v1`; analytic lattice/closure and retained pair checks | Area-one flat quotient; no embedded torus, physical units or observed uncertainty. |
 | Declared constant curvature → CSG | Shared `ciw.curved-path-transfer.v1`; native Jacobi transfer, separation and declared covariance propagation | ICRH `curved-path-transfer.v1`; constant-curvature oracle, covariance and replay binding checks | Curvature profile only; no embedded path, surveyed geometry or calibrated sensor claim. |
 | Declared integer field → SCR/SP1 | Shared `ciw.proved-heat.v1`; native execution, registered guest proof, full-ELF verification, exact retained proof bytes and fresh replay | Separate verifier invocation through pinned SCR/SP1; installed-wheel real-proof gate with corrupted-proof rejection; no separate ICRH proved-heat profile | Bounded integer arithmetic only. Offline consistency is not fresh cryptographic verification; Julia and F2 topology remain planned. |

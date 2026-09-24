@@ -86,7 +86,7 @@ def retained(tmp_path_factory):
 
     geographic_raw = (ROOT / "examples/workbench/geographic-context.json").read_bytes()
     geographic = call(session, "source.add", {"kind": "geographic-context", "label": "Declared geographic context", "bytes_b64": base64.b64encode(geographic_raw).decode()})
-    spatial = call(session, "spatial.inspect", {"source_id": geographic["source_id"]})
+    spatial = call(session, "experiment.inspect", {"view": "spatial", "source_id": geographic["source_id"]})
     output("geographic-context", "source", geographic_raw)
     output("geographic-context", "spatial-view", spatial)
     workspace = session.save_workspace(directory / "workspace.json")
@@ -142,7 +142,7 @@ def test_restore_retains_modules_without_executing_or_binding_providers(retained
     restored = Session.from_workspace(workspace, tmp_path)
     assert restored.workbench.serialize() == session.workbench.serialize()
     assert {o["operation_id"] for o in restored.workbench.describe_operations() if o["available"]} == {"ciw.energy-accuracy.v1", "ciw.encoder-position.v1", "ciw.thermal-observer.v1"}
-    assert call(restored, "spatial.inspect", {"source_id": geographic["source_id"]}) == spatial
+    assert call(restored, "experiment.inspect", {"view": "spatial", "source_id": geographic["source_id"]}) == spatial
     for original, _ in bundles.values():
         call(restored, "bundle.replay", {"bundle_id": original["bundle_digest"]}, error=True)
     assert restored.workbench.pending_operations == 0

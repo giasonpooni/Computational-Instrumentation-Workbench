@@ -99,10 +99,10 @@ def test_features_and_state_are_native_and_full_temporal_covariance_survives(ret
     assert estimate["result_artifact"]["covariance"]["matrix"][0][0] == pytest.approx(5 / 13)
     for step in bundle["steps"]:
         assert response(session, "result.get", {"result_id": step["result_id"]}) == step["result"]
-        view = response(session, "instrument.inspect", {"bundle_id": bundle["bundle_digest"], "instrument": step["runtime_ref"]})
+        view = response(session, "experiment.inspect", {"view": "instrument", "bundle_id": bundle["bundle_digest"], "instrument": step["runtime_ref"]})
         assert view["step"] == step
         assert view["linked_results"]["ppda"] == batch["batch_id"]
-    context, = response(session, "fusion.list")["contexts"]
+    context, = response(session, "experiment.inspect", {"view": "fusion"})["contexts"]
     assert context["state_kind"] == "window_feature_posterior"
     assert context["observability"] == {"status": "unresolved", "reason": "not_evaluated_by_telemetry_profile"}
     assert context["calibration_validity"] == "not_assessed"
@@ -136,7 +136,7 @@ def test_real_socket_replay_retains_stable_batch_and_all_fresh_executions(retain
     assert len(executions) == 6
     assert len({e["execution_id"] for e in executions}) == 6
     assert len(response(session, "result.list")["results"]) == 5  # One observation batch, two feature/state occurrences.
-    assert len(response(session, "fusion.list")["contexts"]) == 2
+    assert len(response(session, "experiment.inspect", {"view": "fusion"})["contexts"]) == 2
     records = session.workbench.serialize()["bundles"]
     changed = deepcopy(records[-1])
     changed["native"]["configuration"]["gsie"]["observation_model"]["model_id"] = "different-declaration-same-numerics"
@@ -163,7 +163,7 @@ def test_cbsr_consumes_retained_estimate_and_reuses_raw_observations(retained, r
     assert reconciled["request"]["source_result_id"] == estimate["result_id"]
     assert reconciled["result"]["status"] == "accepted"
     assert bundle["steps"][0]["result_id"] == retained["bundle"]["steps"][0]["result_id"]
-    assert response(session, "instrument.inspect", {"bundle_id": summary["bundle_id"], "instrument": "cbsr"})["step"] == reconciled
+    assert response(session, "experiment.inspect", {"view": "instrument", "bundle_id": summary["bundle_id"], "instrument": "cbsr"})["step"] == reconciled
     view = response(session, "experiment.inspect", {"bundle_id": summary["bundle_id"]})
     panels = {p["panel_id"]: p for p in view["panels"]}
     assert panels["measurements"]["covariance"] == [[1, .25], [.25, 1]]
@@ -206,7 +206,7 @@ def test_restore_and_inspection_do_not_execute_and_refuse_config_tamper(retained
     changed = restored.workbench.serialize()
     changed["bundles"][0]["native"]["configuration"]["window"]["end"] = 99
     with pytest.raises(ValueError): Workbench.restore(changed)
-    assert request(restored, "instrument.inspect", {"bundle_id": retained["bundle"]["bundle_digest"], "instrument": "fdir"})["type"] == "error"
+    assert request(restored, "experiment.inspect", {"view": "instrument", "bundle_id": retained["bundle"]["bundle_digest"], "instrument": "fdir"})["type"] == "error"
 
 
 @pytest.fixture(scope="module")
@@ -259,7 +259,7 @@ def test_telemetry_candidate_replays_and_captures_through_same_session(retained,
     assert len(response(session, "execution.list")["executions"]) == 5
     path = session.save_workspace(tmp_path / "saved.json")
     restored = Session.from_workspace(path, tmp_path / "restored")
-    assert response(restored, "candidate.get", {"candidate_id": capture["candidate_id"]}) == capture
+    assert response(restored, "experiment.inspect", {"view": "candidate", "candidate_id": capture["candidate_id"]}) == capture
     assert {o["operation_id"] for o in restored.workbench.describe_operations() if o["available"]} == {"ciw.energy-accuracy.v1", "ciw.encoder-position.v1", "ciw.thermal-observer.v1"}
     # Restore cannot silently treat legacy telemetry as a calibrated process.
     saved = read_json(path)["workbench"]
@@ -295,8 +295,8 @@ def test_provider_families_can_coexist_without_overwriting_esm_bindings(retained
         {"artifactRef": e["artifact_ref"], "digest": e["sha256"]} for e in calibrated["source"]["evidence"]]
     session.workbench.bind_candidate_adapter(configuration)
     assert session.workbench.describe_operations()[-1]["available_bundle_kinds"] == ["calibrated-observable", "telemetry"]
-    assert len(response(session, "fusion.list")["contexts"]) == 2
-    assert {c["state_kind"] for c in response(session, "fusion.list")["contexts"]} == {"posterior", "window_feature_posterior"}
+    assert len(response(session, "experiment.inspect", {"view": "fusion"})["contexts"]) == 2
+    assert {c["state_kind"] for c in response(session, "experiment.inspect", {"view": "fusion"})["contexts"]} == {"posterior", "window_feature_posterior"}
     design_source = response(session, "source.add", {"kind": "identified-design", "label": "Synthetic next observation",
         "bytes_b64": base64.b64encode((ROOT / "examples/identified-design/source.json").read_bytes()).decode()})
     refused = request(session, "operation.execute", {"operation_id": "ciw.identified-design.v1", "parameters": {
@@ -304,5 +304,5 @@ def test_provider_families_can_coexist_without_overwriting_esm_bindings(retained
     assert refused["type"] == "error"  # Ungated window state cannot satisfy the calibrated prior contract.
     restored = Session.from_workspace(session.save_workspace(tmp_path / "both.json"), tmp_path / "both-restored")
     assert len(response(restored, "bundle.list")["bundles"]) == 2
-    assert response(restored, "fusion.list") == response(session, "fusion.list")
+    assert response(restored, "experiment.inspect", {"view": "fusion"}) == response(session, "experiment.inspect", {"view": "fusion"})
     assert {o["operation_id"] for o in restored.workbench.describe_operations() if o["available"]} == {"ciw.energy-accuracy.v1", "ciw.encoder-position.v1", "ciw.thermal-observer.v1"}

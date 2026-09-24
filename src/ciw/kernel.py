@@ -12,7 +12,7 @@ these declarations, and the session refuses verbs that are not declared here.
 """
 from __future__ import annotations
 
-KERNEL_VERSION = "ciw.kernel.v1"
+KERNEL_VERSION = "ciw.kernel.v2"
 
 # Verbs that every client may rely on. New scientific operations are payloads
 # of ``operation.execute``; new records are retrieved through the existing
@@ -31,16 +31,23 @@ KERNEL_VERBS = frozenset({
 # The original oscillator analyses keep their flat result format.
 LEGACY_VERBS = frozenset({"analysis.stats", "analysis.spectrum"})
 
-# Read-only projections that grew around individual kinds. They remain for
-# existing clients, accept no additions, and are to be subsumed by
-# ``experiment.inspect`` and project-graph inspection.
-PROJECTION_VERBS = frozenset({
-    "spatial.list", "spatial.inspect", "fusion.list",
-    "instrument.list", "instrument.inspect",
-    "candidate.list", "candidate.get",
+# Read-only views are payloads of ``experiment.inspect``. The projection verbs
+# that grew around individual kinds were folded into these views in
+# ciw.kernel.v2; the session names the replacement when a client sends one.
+INSPECTION_VIEWS = frozenset({
+    "experiment", "instrument", "instruments", "fusion", "spatial", "candidate", "candidates",
 })
+REMOVED_VERBS = {
+    "spatial.list": {"view": "spatial"},
+    "spatial.inspect": {"view": "spatial", "source_id": "..."},
+    "fusion.list": {"view": "fusion"},
+    "instrument.list": {"view": "instruments"},
+    "instrument.inspect": {"view": "instrument", "bundle_id": "...", "instrument": "..."},
+    "candidate.list": {"view": "candidates"},
+    "candidate.get": {"view": "candidate", "candidate_id": "..."},
+}
 
-VERBS = KERNEL_VERBS | LEGACY_VERBS | PROJECTION_VERBS
+VERBS = KERNEL_VERBS | LEGACY_VERBS
 
 ENVELOPES = frozenset({
     "ciw.execution.v1", "ciw.operation-result.v1",
@@ -74,8 +81,9 @@ DISTINCT_IDENTITIES = ("evidence", "operation", "execution", "result", "verifica
 def describe() -> dict:
     """Machine-readable kernel declaration for clients and documentation."""
     return {"kernel_version": KERNEL_VERSION,
-            "verbs": {"kernel": sorted(KERNEL_VERBS), "legacy": sorted(LEGACY_VERBS),
-                      "projection": sorted(PROJECTION_VERBS)},
+            "verbs": {"kernel": sorted(KERNEL_VERBS), "legacy": sorted(LEGACY_VERBS)},
+            "inspection_views": sorted(INSPECTION_VIEWS),
+            "removed_verbs": {verb: dict(view) for verb, view in sorted(REMOVED_VERBS.items())},
             "envelopes": sorted(ENVELOPES), "workspace_formats": list(WORKSPACE_FORMATS),
             "final_workspace_format": FINAL_WORKSPACE_FORMAT,
             "frozen_kinds": sorted(FROZEN_KINDS), "source_only_kinds": sorted(SOURCE_ONLY_KINDS),

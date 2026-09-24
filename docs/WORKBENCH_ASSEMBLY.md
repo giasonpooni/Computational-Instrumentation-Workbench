@@ -56,7 +56,7 @@ profiles; assembly connects them to the workbench session.
 The live session exposes telemetry, calibrated-process and identified-observation
 workflows through `operation.list` and `operation.execute`, alongside existing
 session operations. Its common source, bundle, result and execution interfaces
-keep the native records available. `fusion.list` projects the retained contexts
+keep the native records available. the `fusion` view of `experiment.inspect` projects the retained contexts
 for inspection; it does not initiate another state update.
 
 Start CIW from an environment with the dependencies described in the
@@ -83,7 +83,7 @@ From another terminal, inspect the common session:
 python -m ciw send operation.list
 python -m ciw send source.list
 python -m ciw send bundle.list
-python -m ciw send fusion.list
+python -m ciw send experiment.inspect --payload '{"view": "fusion"}'
 python -m ciw send result.list
 python -m ciw send execution.list
 ```
@@ -144,7 +144,7 @@ state or run a second independent fusion of the same observations.
 | `source.add`, `source.list`, `source.get` | Retain exact submitted source bytes and inspect them by identity. |
 | `operation.list`, `operation.execute` | Inspect registered workflow availability and invoke an explicitly selected source/context. |
 | `bundle.list`, `bundle.get`, `bundle.replay` | Inspect full native bundles or explicitly rerun a selected bundle with bound providers. |
-| `fusion.list` | Inspect retained compatible-state contexts and their lineage. |
+| `experiment.inspect` `{view: fusion}` | Inspect retained compatible-state contexts and their lineage. |
 | `result.list`, `result.get`, `execution.list` | Inspect common history across native workflow bundles and existing session operations. |
 | `session.get` | Read the snapshot, including its `workbench` state. |
 | `workspace.save` | Persist the assembled workspace in format 3. |

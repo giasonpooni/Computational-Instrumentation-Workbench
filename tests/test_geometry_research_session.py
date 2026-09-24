@@ -73,7 +73,7 @@ def test_geometry_startup_and_unbound_operations(tmp_path):
 def test_three_native_providers_share_catalog_and_remain_outside_fusion(retained):
     session,result = retained
     assert len(call(session,"bundle.list")["bundles"]) == 6
-    assert call(session,"fusion.list")["contexts"] == []
+    assert call(session,"experiment.inspect", {"view": "fusion"})["contexts"] == []
     for kind,refs in result["references"].items():
         original = call(session,"bundle.get",{"bundle_id":refs["original"]})
         replay = call(session,"bundle.get",{"bundle_id":refs["replay"]})
@@ -83,7 +83,7 @@ def test_three_native_providers_share_catalog_and_remain_outside_fusion(retained
         assert refs["view"]["fusion_context"] is None
         assert refs["view"]["authority"]["state_admission"] == "not_performed"
         assert refs["view"]["panels"]
-        assert call(session,"instrument.inspect",{"bundle_id":refs["original"],"instrument":PINS[kind]["role"]})["step"] == old
+        assert call(session,"experiment.inspect", {"view": "instrument", "bundle_id":refs["original"],"instrument":PINS[kind]["role"]})["step"] == old
         assert call(session,"result.get",{"result_id":old["result_id"]}) == old["result"]
     assert session.workbench.pending_operations == 0
 

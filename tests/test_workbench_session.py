@@ -107,7 +107,7 @@ def test_source_bytes_and_device_timestamps_survive_shared_session(tmp_path):
     assert [channel["observation"]["raw_value"] for channel in original["channels"]] == [51000, 45000]
     assert response(session, "source.list")["sources"] == [descriptor]
     assert response(session, "bundle.list")["bundles"] == []
-    assert response(session, "fusion.list")["contexts"] == []
+    assert response(session, "experiment.inspect", {"view": "fusion"})["contexts"] == []
 
 
 @pytest.mark.parametrize("payload", [{}, {"bundle_id": []}, {"bundle_id": "missing"},
@@ -172,7 +172,7 @@ def test_unbound_execution_cannot_promote_retained_source(tmp_path):
     })
     assert reply["type"] == "error", reply
     assert response(session, "bundle.list")["bundles"] == []
-    assert response(session, "fusion.list")["contexts"] == []
+    assert response(session, "experiment.inspect", {"view": "fusion"})["contexts"] == []
     assert response(session, "source.list")["sources"] == [source]
 
 
@@ -256,7 +256,7 @@ def test_unknown_calibration_crosscovariance_cannot_publish_partial_fusion(
     assert reply["payload"]["code"] == "CALIBRATED_MCUR_REFUSED"
     assert response(session, "source.list")["sources"] == [source]
     assert response(session, "bundle.list")["bundles"] == []
-    assert response(session, "fusion.list")["contexts"] == []
+    assert response(session, "experiment.inspect", {"view": "fusion"})["contexts"] == []
     assert response(session, "result.list")["results"] == []
 
 
@@ -282,7 +282,7 @@ def test_one_session_discovers_exact_native_results_and_legacy_analysis(retained
 
 def test_fusion_context_exposes_retained_gsie_authority_and_gate_results(retained_process, tmp_path):
     session = Session.from_workspace(retained_process["path"], tmp_path)
-    context, = response(session, "fusion.list")["contexts"]
+    context, = response(session, "experiment.inspect", {"view": "fusion"})["contexts"]
     bundle = retained_process["bundle"]
     state = native_data(bundle, "gsie")
     assert context["owner"] == "gsie"
@@ -305,7 +305,7 @@ def test_fusion_context_exposes_retained_gsie_authority_and_gate_results(retaine
     assert context["mean"] != native_data(bundle, "cbsr")["reconciled"]["estimate"]
     context["mean"][0] = -999
     context["covariance"][0][0] = -999
-    fresh, = response(session, "fusion.list")["contexts"]
+    fresh, = response(session, "experiment.inspect", {"view": "fusion"})["contexts"]
     assert fresh["mean"] == state["mean"]
     assert fresh["covariance"] == state["covariance"]
 
@@ -400,7 +400,7 @@ def test_explicit_replay_retains_original_and_adds_fresh_occurrences(
     assert response(session, "bundle.get", {"bundle_id": original_id}) == original
     assert len(response(session, "bundle.list")["bundles"]) == 2
     # Replaying the same evidence must never act like a second independent sensor.
-    contexts = response(session, "fusion.list")["contexts"]
+    contexts = response(session, "experiment.inspect", {"view": "fusion"})["contexts"]
     assert len(contexts) == 2
     assert len({context["context_id"] for context in contexts}) == 2
     assert {context["source_id"] for context in contexts} == {summary["source_id"]}
@@ -426,7 +426,7 @@ def test_design_consumes_retained_upstream_bundle_without_an_export_handoff(
     assert bundle["decision"]["state_admission"] == "not_performed"
     assert bundle["decision"]["acquisition"] == "not_performed"
     assert bundle["decision"]["uncertainty_scope"] == "conditional_on_identified_point_model"
-    contexts = response(session, "fusion.list")["contexts"]
+    contexts = response(session, "experiment.inspect", {"view": "fusion"})["contexts"]
     assert len(contexts) == 2
     posterior, = [context for context in contexts if context["state_kind"] == "posterior"]
     prediction, = [context for context in contexts if context["state_kind"] == "conditional_prediction"]
@@ -463,7 +463,7 @@ def test_design_cannot_select_unretained_upstream_or_client_code(tmp_path, param
     })
     assert reply["type"] == "error", reply
     assert response(session, "bundle.list")["bundles"] == []
-    assert response(session, "fusion.list")["contexts"] == []
+    assert response(session, "experiment.inspect", {"view": "fusion"})["contexts"] == []
 
 
 def test_bound_design_rejects_unknown_upstream_before_calling_provider(

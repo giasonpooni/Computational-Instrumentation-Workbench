@@ -89,7 +89,7 @@ unit `1`; there is no physical temperature, spacing, duration or calibrated
 thermal model in this operation. For `[0, 0, 64, 0, 0]`, two steps give
 `[0, 16, 24, 16, 0]`. No covariance is invented.
 
-`fusion.list` excludes both kinds. Their desktop projections carry
+the `fusion` view of `experiment.inspect` excludes both kinds. Their desktop projections carry
 `fusion_context: null` and a typed `object_context`. Schematics have a node/edge
 tree and eligibility context; numerical fields have separate initial/final
 panels with null covariance. Neither enters ESM candidate capture or GSIE through

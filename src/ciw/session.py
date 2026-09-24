@@ -19,7 +19,7 @@ from .operations.runner import execute as execute_operation, check_seal, validat
 from .adapters.protocol import AdapterRefusal
 from .core.identities import validate_evidence_identity
 from .calibration_status import calibration_status
-from .kernel import VERBS as KERNEL_VERBS
+from .kernel import REMOVED_VERBS, VERBS as KERNEL_VERBS
 
 from .instruments import (
     compute_spectrum, compute_statistics, inspect_sample, run_metadata, validate_run,
@@ -280,6 +280,9 @@ class Session:
             kind, payload = request["type"], request["payload"]
             if not isinstance(kind, str) or not isinstance(payload, dict):
                 raise ProtocolError("invalid_request", "type must be a string and payload an object")
+            if kind in REMOVED_VERBS:
+                raise ProtocolError("unknown_command", f"{kind} was folded into experiment.inspect in ciw.kernel.v2; "
+                                    f"send experiment.inspect with {json.dumps(REMOVED_VERBS[kind])}")
             if kind not in KERNEL_VERBS:
                 raise ProtocolError("unknown_command", f"Unknown request type: {kind}; the kernel verb set is frozen")
             result = self._dispatch(kind, payload)
@@ -310,11 +313,6 @@ class Session:
         if kind == "source.list":
             _keys(payload, set())
             return {"sources": self.workbench.list_sources()}
-        if kind == "spatial.list":
-            _keys(payload, set())
-            return {"sources": self.workbench.spatial_sources()}
-        if kind == "spatial.inspect":
-            return self.workbench.inspect_spatial(payload)
         if kind == "source.get":
             _keys(payload, {"source_id"}, {"source_id"})
             return self.workbench.get_source(payload["source_id"])
@@ -326,22 +324,8 @@ class Session:
             return self.workbench.get_bundle(payload["bundle_id"])
         if kind == "bundle.replay":
             return self.workbench.replay(payload)
-        if kind == "fusion.list":
-            _keys(payload, set())
-            return {"contexts": self.workbench.fusion_contexts()}
         if kind == "experiment.inspect":
-            return self.workbench.inspect_experiment(payload)
-        if kind == "instrument.list":
-            _keys(payload, set())
-            return {"instruments": self.workbench.instrument_views()}
-        if kind == "instrument.inspect":
-            return self.workbench.inspect_instrument(payload)
-        if kind == "candidate.list":
-            _keys(payload, set())
-            return {"candidates": self.workbench.list_candidates()}
-        if kind == "candidate.get":
-            _keys(payload, {"candidate_id"}, {"candidate_id"})
-            return self.workbench.get_candidate(payload["candidate_id"])
+            return self.workbench.inspect(payload)
         if kind == "selection.update":
             _keys(payload, {"expected_revision", "channel", "interval_s", "cursor_s"}, {"expected_revision"})
             with self._lock:

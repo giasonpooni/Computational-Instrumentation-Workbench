@@ -10,12 +10,12 @@ calibrated bundle through fresh replay and SET verification.
 
 | Request | Payload | Result |
 | --- | --- | --- |
-| `instrument.list` | `{}` | Native GSIE/CBSR/FDIR occurrences and bundle/result references |
-| `instrument.inspect` | `bundle_id`, `instrument` (`gsie`, `cbsr`, `fdir`) | Exact native step, shared fusion context, linked result identities |
+| `experiment.inspect` | `{view: instruments}` | Native GSIE/CBSR/FDIR occurrences and bundle/result references |
+| `experiment.inspect` | `{view: instrument, bundle_id, instrument}` (`gsie`, `cbsr`, `fdir`) | Exact native step, shared fusion context, linked result identities |
 | `operation.execute` | `operation_id: esm.inspect-candidate.v1`, `parameters: {bundle_id, inspected_at}` | Fresh replay/policy inspection; no evidence-store write |
 | `operation.execute` | `operation_id: esm.capture-candidate.v1`, `parameters: {bundle_id, evidence_id, workflow_id, retained_at}` | Fresh inspection and explicit candidate-evidence retention |
-| `candidate.list` | `{}` | Historical candidate-action receipts |
-| `candidate.get` | `candidate_id` | Exact ESM response bytes, policy snapshot and receipt |
+| `experiment.inspect` | `{view: candidates}` | Historical candidate-action receipts |
+| `experiment.inspect` | `{view: candidate, candidate_id}` | Exact ESM response bytes, policy snapshot and receipt |
 
 Instrument inspection also exposes PPDA and STFE native records in the
 [shared telemetry operation](SHARED_TELEMETRY.md). It is a view, not numerical execution. In identified-design

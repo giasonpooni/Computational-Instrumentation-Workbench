@@ -46,7 +46,7 @@ async def run(url, with_design, with_telemetry=False, with_calibrated_window=Fal
         await call("operation.execute", {"operation_id": "ciw.calibrated-window.v1",
             "parameters": {"source_id": acquired["source_id"]}})
     await call("workspace.save")
-    print(json.dumps(await call("fusion.list"), indent=2, allow_nan=False))
+    print(json.dumps(await call("experiment.inspect", {"view": "fusion"}), indent=2, allow_nan=False))
 
 
 if __name__ == "__main__":

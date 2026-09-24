@@ -45,7 +45,7 @@ async def _operate(call):
     return {"calibrated_bundle_id": calibrated["bundle_id"],
         "identified_bundle_id": identified["bundle_id"], "bundle_ids": bundles,
         "replay_bundle_ids": replays, "views": views,
-        "catalog": await call("bundle.list"), "fusion_contexts": await call("fusion.list"),
+        "catalog": await call("bundle.list"), "fusion_contexts": await call("experiment.inspect", {"view": "fusion"}),
         "workspace": await call("workspace.save")}
 
 

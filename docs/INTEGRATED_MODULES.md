@@ -9,7 +9,7 @@ existing catalog. Provider ownership remains explicit.
 | SRA assessment → SRA/JSPT/PLSR | `ciw.schematic-companions.v1` | Selected scalar quadratic-drag state derivative, Jacobian, local structure, optional first-order input covariance and continuous linear Lyapunov sample |
 | IFC and scalar observation → CSE | `ciw.bim-quantity.v1` | Native quantity conditioning, full prior/posterior covariance, invariants, execution ledger and ledger replay |
 | Incremental snapshots → PPDA/SCOUT | `ciw.acquired-dataset.v1` | Source/adapter registry, native acquisition plan, evidence, durable-pool restoration and checkpoints |
-| Geographic context → GSV | `spatial.list`, `spatial.inspect` | Exact source bytes, CRS84 frame authority, declared constant entity states and native GSV WorldStore |
+| Geographic context → GSV | `experiment.inspect` `{view: spatial}` | Exact source bytes, CRS84 frame authority, declared constant entity states and native GSV WorldStore |
 
 ## Host bindings
 
@@ -73,8 +73,10 @@ http://127.0.0.1:5173/?ciw=ws://127.0.0.1:8765/spatial&source=SOURCE_ID
 ```
 
 `--spatial-view-origin` permits that exact browser origin only on `/spatial`.
-The endpoint sends `spatial.ready`, then accepts only `spatial.list` and
-`spatial.inspect`. It receives catalog invalidations, never the full session or
+The endpoint sends `spatial.ready`, then accepts only `experiment.inspect` with
+`{"view": "spatial"}` (optionally with `source_id`); `spatial.list` and
+`spatial.inspect` were folded into that view in `ciw.kernel.v2`. It receives
+catalog invalidations, never the full session or
 oscillator selection. It is read-only even without an Origin header. Unlisted
 origins and browser requests to the native endpoint are refused.
 

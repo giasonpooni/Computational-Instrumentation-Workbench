@@ -67,8 +67,8 @@ def test_candidate_operations_discoverable_but_unbound(tmp_path):
     operations = response(session, "operation.list")["operations"]
     esm = [item for item in operations if item["operation_id"].startswith("esm.")]
     assert len(esm) == 2 and all(not item["available"] for item in esm)
-    assert response(session, "instrument.list") == {"instruments": []}
-    assert response(session, "candidate.list") == {"candidates": []}
+    assert response(session, "experiment.inspect", {"view": "instruments"}) == {"instruments": []}
+    assert response(session, "experiment.inspect", {"view": "candidates"}) == {"candidates": []}
 
 
 @pytest.mark.parametrize("field", ["artifact", "store_root", "runtime", "review_context", "capture_registration", "operation_id"])
@@ -85,10 +85,10 @@ def test_native_instruments_share_one_explicit_bundle_without_recomputing(fixtur
     def denied(*args, **kwargs):
         raise AssertionError("Inspection must not execute a provider")
     monkeypatch.setattr("ciw.candidate_evidence._bounded_process", denied)
-    listed = response(session, "instrument.list")["instruments"]
+    listed = response(session, "experiment.inspect", {"view": "instruments"})["instruments"]
     assert {item["instrument"] for item in listed} == {"fsrt", "tbrt", "mcur", "oit", "gsie", "cbsr", "fdir"}
     for role in ("fsrt", "tbrt", "mcur", "oit", "gsie", "cbsr", "fdir"):
-        view = response(session, "instrument.inspect", {"bundle_id": bundle["bundle_digest"], "instrument": role})
+        view = response(session, "experiment.inspect", {"view": "instrument", "bundle_id": bundle["bundle_digest"], "instrument": role})
         step, = [s for s in bundle["steps"] if s["runtime_ref"] == role]
         assert view["step"] == step
         assert view["fusion_context"]["covariance"] == bundle["steps"][4]["result"]["data"]["covariance"]
@@ -136,7 +136,7 @@ def test_real_session_capture_binds_exact_evidence_and_no_canonical_state(fixtur
     assert envelope["canonicalAdmission"] == "REFUSED"
     assert envelope["canonicalStateMutated"] is envelope["releaseActivated"] is False
     assert actions["inspection"]["candidate_id"] != actions["capture"]["candidate_id"]
-    assert len(response(fixture["session"], "candidate.list")["candidates"]) == 2
+    assert len(response(fixture["session"], "experiment.inspect", {"view": "candidates"})["candidates"]) == 2
     executions = response(fixture["session"], "execution.list")["executions"]
     esm = [entry for entry in executions if entry["runtime_ref"] == "esm"]
     assert {entry["candidate_id"] for entry in esm} == {entry["candidate_id"] for entry in actions.values()}
@@ -156,7 +156,7 @@ def test_restore_retains_receipts_but_never_executable_bindings_or_current_eligi
         assert forbidden not in text
     restored = Session.from_workspace(path, tmp_path / "restored")
     for record in actions.values():
-        actual = response(restored, "candidate.get", {"candidate_id": record["candidate_id"]})
+        actual = response(restored, "experiment.inspect", {"view": "candidate", "candidate_id": record["candidate_id"]})
         assert actual == record
         assert actual["eligibility"] == "historical_receipt_only"
     assert all(not entry["available"] for entry in response(restored, "operation.list")["operations"] if entry["operation_id"].startswith("esm."))

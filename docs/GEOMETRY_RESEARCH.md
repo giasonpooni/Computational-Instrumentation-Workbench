@@ -43,9 +43,9 @@ ciw send workspace.save
 
 The example executes and replays all three native providers in one live
 session. The shared requests are `source.add`, `operation.execute`, `bundle.get`,
-`bundle.replay`, `result.get`, `instrument.inspect` and `experiment.inspect`.
+`bundle.replay`, `result.get`, the `instrument` view of `experiment.inspect` and `experiment.inspect`.
 Selecting a retained result does not recompute it. All three have
-`fusion_context: null` and are excluded from `fusion.list`.
+`fusion_context: null` and are excluded from the `fusion` view of `experiment.inspect`.
 
 Source envelopes have exactly `schema`, `experiment_id`, `configuration` and
 `request`. Their schemas are `ciw.<source-kind>-source.v1`; the corresponding

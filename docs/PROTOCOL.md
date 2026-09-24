@@ -27,9 +27,10 @@ Broadcast after selection mutation: `{"protocol_version":1,"request_id":null,"ty
 The native endpoint sends a `session.snapshot` event on connection with the same payload as `session.get`. Responses and broadcasts can interleave; correlate by request_id. Clients may reconnect and request a fresh snapshot.
 
 The additive `/spatial` endpoint sends `spatial.ready` with session identity and
-read-only capabilities. It accepts only `spatial.list` (`{}`) and
-`spatial.inspect` (`{source_id}`), returning geographic source descriptors and
-a `ciw.spatial-view.v1` packet respectively. Its only broadcast is
+read-only capabilities. It accepts only `experiment.inspect` with
+`{"view": "spatial"}` or `{"view": "spatial", "source_id": ...}`, returning
+geographic source descriptors and a `ciw.spatial-view.v1` packet respectively;
+every other request or view is refused as `read_only_view`. Its only broadcast is
 `workbench.changed`. Browser origins require exact host configuration via
 `--spatial-view-origin` and are rejected on other paths. No-Origin access to
 `/spatial` remains read-only. See [module contracts](INTEGRATED_MODULES.md).

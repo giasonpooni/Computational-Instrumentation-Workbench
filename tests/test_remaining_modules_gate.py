@@ -113,7 +113,7 @@ def test_one_catalog_resolves_all_retained_occurrences_and_native_views(retained
             occurrence = executions[step["execution_id"]]
             assert occurrence["bundle_id"] == bundle["bundle_digest"]
             assert occurrence["source_id"] == catalog[bundle["bundle_digest"]]["source_id"]
-    contexts = call(session, "fusion.list")["contexts"]
+    contexts = call(session, "experiment.inspect", {"view": "fusion"})["contexts"]
     assert {context["bundle_id"] for context in contexts} == {
         retained["result"]["calibrated_bundle_id"], retained["result"]["identified_bundle_id"]}
     assert session.workbench.pending_operations == 0

@@ -96,10 +96,10 @@ The retained transfer record preserves those limitations alongside complete
 samples, propagated covariance, separation, heading change and determinants.
 
 The common interfaces are `source.add`, `operation.execute`, `bundle.get`,
-`bundle.replay`, `instrument.inspect` (roles `ftr` and `csg`) and
+`bundle.replay`, the `instrument` view of `experiment.inspect` (roles `ftr` and `csg`) and
 `experiment.inspect`. The optional Godot Workbench tab renders the same
 backend-provided panels and native context. Displaying a result does not execute
-a provider or confer verification. These records are excluded from `fusion.list`.
+a provider or confer verification. These records are excluded from the `fusion` view of `experiment.inspect`.
 
 Reopen the saved workspace with `ciw serve --workspace PATH` for provider-free
 inspection. Replay without the relevant host binding returns an explicit

@@ -78,7 +78,7 @@ python examples/proved-heat/run.py --replay
 
 The [source example](../examples/proved-heat/source.json) uses
 `ciw.proved-heat-source.v1`. Existing `source.add`, `operation.execute`,
-`bundle.get`, `bundle.replay`, `experiment.inspect`, and `instrument.inspect`
+`bundle.get`, `bundle.replay`, `experiment.inspect`, and the `instrument` view of `experiment.inspect`
 carry this operation. Its instrument role is `scr`; `fusion_context` is null.
 The view displays initial/final integer fields, proof identity and scope,
 runtime records and stage durations. Proof bytes remain in the bundle, not the
