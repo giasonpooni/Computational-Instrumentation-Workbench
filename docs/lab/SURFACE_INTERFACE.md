@@ -267,7 +267,7 @@ with the exact great circle:
 
 | δ | atlas error (4 switches) | chart A alone |
 | --- | --- | --- |
-| 0 | 4.9e-8 | 7.4e-14 at 400 steps (depends on the step grid, see below) |
+| 0 | 4.9e-8 | 7.4e-14 at 400 steps (depends on the platform's rounding and the step grid, see below) |
 | 1e-1 | 5.7e-8 | 7.2e-6 |
 | 1e-2 … 1e-6 | 4.7e-8 … 4.9e-8 | fails (nonfinite state or math domain error) |
 | 1e-8 | 4.9e-8 | 1.0e-1 |
@@ -286,32 +286,87 @@ integration fails for 1e-6 ≤ δ ≤ 1e-2 at 400 steps. The mechanism is the
 azimuthal rate `φ' = sin δ/sin²θ`, which peaks at 1/sin δ at closest
 approach and is not resolved by the fixed step.
 
-On the exact meridian (δ = 0) chart A alone is accurate at 400 steps (error
-7.4e-14), which is a counterexample to "single-chart integration through a
-pole always fails". That success belongs to the step grid, not to the chart.
-`v_φ` starts at exactly 0 but does not stay there: rounding in `g_12` (1.5e-17
-at the start point) makes the off-diagonal Christoffel symbols nonzero and
-seeds an angular momentum `L = sin²θ v_φ`, and each pole crossing amplifies
-it, the more the closer a step point lands to the pole, where
-`v_φ = L/sin²θ` and the `cot θ` terms act. At 400 steps no step point comes
-closer than 5.3e-3 to either pole; even so `|v_φ|` reaches 2.5e-10 and `|L|`
-7.4e-14. A scan of 101 step counts (350 to 450) separates the runs cleanly by
-that grid distance:
+On the meridian (δ = 0) the chart-A outcome is set by its angular momentum
+`L = sin²θ v_φ`, which is 0 in exact arithmetic and, for any other great
+circle, the sine of its closest approach to the pole. Each pole crossing
+multiplies `L` by a factor that grows as an RK4 stage point (a step point or
+a half step, where the `cot θ` terms are evaluated) lands closer to the pole.
+Unseeded, `L` comes from rounding in `g_12` and in the lift, and that
+depends on the BLAS kernel. Measured with NumPy 2.4.3's OpenBLAS forced to
+three kernels (`OPENBLAS_CORETYPE`), unseeded at 400 steps:
 
-| Steps | closest step point to a pole | chart A alone |
-| --- | --- | --- |
-| 355 | 8.5e-8 | fails (nonfinite state at step 236) |
-| 377 | 2.4e-5 | 1.5e-6 |
-| 399 | 4.4e-5 | 3.1e-7 |
-| 400 | 5.3e-3 | 7.4e-14 |
-| 421 | 6.3e-5 | 2.1e-8 |
-| 443 | 8.0e-5 | 3.5e-8 |
-| the other 96 | ≥ 1e-4 | ≤ 1.2e-10 |
+| OpenBLAS kernel | `g_12` at the start | `v_φ` at the start | largest \|L\| before the first crossing | after both crossings | error |
+| --- | --- | --- | --- | --- | --- |
+| SkylakeX (FMA) | 1.5e-17 | 0 | 7.6e-19 (from the right-hand side) | 7.4e-14 | 7.4e-14 |
+| Haswell (FMA) | 1.4e-17 | 1.1e-18 | 7.8e-19 (from the lift) | 8.0e-14 | 8.1e-14 |
+| Sandybridge (no FMA) | 1.4e-17 | 0 | 5.8e-35 | 5.7e-30 | 2.3e-14 |
 
-The five runs whose grid comes within 1e-4 of a pole fail or err at least
-2.1e-8; all others err at most 1.2e-10. This is a second counterexample: an
-accurate single-chart pole crossing at one step count does not carry over to
-the neighbouring step count.
+So the unseeded scan is decided by the platform: with the SkylakeX kernel of
+the earlier retained run the step counts landing near a pole failed or lost
+accuracy, and with the non-FMA kernel every step count from 350 to 450
+crossed both poles to 5e-14. T036 records this natural seed (`natural` in
+`meridian-steps.json`) as an observation, with the inputs of the kernel
+choice: NumPy's BLAS build, the `OPENBLAS_CORETYPE` override (none when the
+kernel is detected from the CPU) and the CPU features NumPy found
+(`blas_kernel` in the runtime identity and the artifact). It does not read the
+runtime core name, which would load native code outside the package's
+declared hardware probes (T144). Its finding claims only what holds on every
+kernel:
+rounding seeds `|L| ≤ 1e-16` before the first crossing, since
+`g_12 = x_θ·x_φ` sums two products of size up to `R²/2` whose exact sum is 0.
+The finding's regression tolerance is that bound, about 90 times the spread
+measured across the three kernels.
+
+The experiment instead starts from a declared seed: the lifted meridian
+tangent with `v_φ` replaced by `L0/sin²θ0`, `L0 = 1e-12`, compared with the
+exact great circle of that initial state. The natural seed is at most 1e-4 of
+`L0`, so it moves every seeded error by at most that fraction; across the
+three kernels the seeded errors agreed to 8.3e-7 relative and every failure
+was the same.
+
+At 400 steps chart A alone then crosses both poles with error 1.03e-7 (the
+atlas errs 4.9e-8), which is a counterexample to "fixed-step integration in a
+single polar chart across its pole always fails". The two crossings amplify
+`L` about 320-fold each, to 1.03e-7; after them the run follows a great circle
+tilted by that much, which is its error. The error is proportional to the
+seed: a hundredth of the seed gives a hundredth of the error, to 1.2e-4
+(the natural seed's share at that seed).
+
+That success belongs to the step grid and the seed, not to the chart. Near a
+pole the chart is the polar chart of the tangent plane, which is scale
+invariant, so with unit speed the outcome depends only on `d/h` and `L/h`,
+where `d` is the closest stage point's distance to the pole and `h` the step.
+A crossing multiplies `L` by a factor proportional to `(h/d)²` and turns
+nonlinear once `L h²/d³` reaches order 1, so two crossings fail for
+`L0 h⁴/d⁵ ≳ 1`, inside the failure radius `d* = (L0 h⁴)^(1/5)` (the constant
+1 is fitted). At 400 steps `d* = 1.4e-4`, and the closest stage point lies
+2.5e-3 (17.7 `d*`) from a pole. A scan of 101 step counts (350 to 450) at
+`L0 = 1e-12`, with the step counts within `3 d*` rerun at `L0/100`:
+
+| Steps | closest stage point to a pole | `d*` at 1e-12 | chart A alone, `L0 = 1e-12` | `L0 = 1e-14` |
+| --- | --- | --- | --- | --- |
+| 355 | 8.5e-8 | 1.6e-4 | fails (nonfinite state) | fails |
+| 377 | 2.4e-5 | 1.5e-4 | fails | fails |
+| 399 | 4.4e-5 | 1.4e-4 | fails | fails |
+| 400 | 2.5e-3 | 1.4e-4 | 1.03e-7 | 1.03e-9 |
+| 421 | 6.3e-5 | 1.4e-4 | fails | 0.16 (1.15 `d*`) |
+| 443 | 8.0e-5 | 1.3e-4 | fails | 1.9e-2 (1.52 `d*`) |
+| 446 | 2.4e-4 | 1.3e-4 | 5.7e-2 | 7.3e-6 |
+| the other 94 | ≥ 1.98 `d*` | | 6.4e-8 to 1.3e-2 | |
+
+At `L0 = 1e-12` exactly the five runs with a stage point within `d*` fail
+(largest `d/d*` 0.60; the closest run that does not fail lies at 1.81 `d*`).
+At `L0/100` the radius shrinks by `100^(1/5) = 2.5`, and exactly the three
+reruns still within it fail: 421 and 443 move outside and no longer fail.
+The other errors range from 6.4e-8 to 5.7e-2, growing as the stage point
+nears `d*`. This is a second counterexample: an accurate single-chart pole
+crossing at one step count does not carry over to the neighbouring step
+count. Stage distances and `d*` are exact arithmetic on the step grid; the
+counts must match exactly, and the seeded values within a relative tolerance
+(1e-3 for the 400-step finding, whose hundredth-seed rerun spreads by 1.2e-4
+across kernels; 5e-5 for the scan, whose errors spread by 8.3e-7). The
+exponent of `d*` follows from the scaling argument; its constant is fitted
+at these two seeds on one path and is not tested for larger seeds.
 
 On the graph atlas, geodesics start in the polar chart at x = −1.5, offset δ
 from the apex, heading in +x, over length 3 with 200 RK4 steps; the reference
@@ -332,10 +387,13 @@ failure, and it is recorded with its message. Any other exception (a bad step
 count, an unknown method) propagates instead of strengthening the
 counterexample. In the figure `atlas-vs-single-chart.svg`, failed runs sit at
 a fixed ceiling of 1, and the single-chart line never bridges them;
-`meridian-steps.svg` plots the step-count scan (failures at 2).
+`meridian-steps.svg` plots the seeded step-count scan (failures at 2) with
+each grid's closest stage distance and `d*`.
 
-Counterexample witnesses are recorded as counts and log10 values, which the
-findings' regression tolerances (±1 count or decade) bound.
+The near-pole great-circle witnesses are recorded as counts and log10
+values, which that finding's regression tolerance (±1 count or decade)
+bounds; the seeded meridian witnesses are step lists and errors within the
+relative tolerances above.
 
 ## Singularity classification (T037)
 

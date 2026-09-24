@@ -25,6 +25,7 @@ from __future__ import annotations
 
 import hashlib
 import math
+import os
 from pathlib import Path
 
 import numpy as np
@@ -811,11 +812,18 @@ def finite_difference_derivatives(ctx):
 DELTAS = (0.0, 1e-1, 1e-2, 1e-3, 1e-4, 1e-6, 1e-8, 1e-10, 1e-12)
 AZIMUTH = 1.3
 STEPS = 400
-# Exact-meridian scan in chart A alone: step counts, and the distance between
-# a step point and a pole below which a run counts as landing near the pole.
+# Meridian scan in chart A alone. Its angular momentum L = sin^2(theta) v_phi is
+# 0 in exact arithmetic; rounding of g_12 seeds a platform-dependent one (0 to
+# about 1e-18 on the OpenBLAS kernels measured) that each pole crossing
+# amplifies. The scan therefore starts from a declared seed that dominates it,
+# v_phi = MERIDIAN_SEED / sin^2(theta0); NATURAL_SEED_BOUND bounds the rounding
+# seed at 1e-4 of the declared one. Step counts whose closest RK4 stage point
+# lies within RERUN_BAND failure radii of a pole are rerun at MERIDIAN_SEED / SEED_RATIO.
 MERIDIAN_STEPS = tuple(range(350, 451))
-NEAR_POLE = 1e-4
-MERIDIAN_SPLIT = 1e-9  # error level separating near-pole runs from the others
+MERIDIAN_SEED = 1e-12
+NATURAL_SEED_BOUND = 1e-16
+SEED_RATIO = 100
+RERUN_BAND = 3.0
 # Graph atlas of the Gaussian bump (Monge chart plus its polar chart): starts
 # at x = -GRAPH_START, offset delta from the apex, heading in +x; RK4 over
 # GRAPH_LENGTH; the reference is the Monge chart alone at GRAPH_REFINE times the steps.
@@ -890,42 +898,101 @@ def atlas_study(radius=1.0) -> dict:
                                    "best_chart": active[::4]}}
 
 
-def _grid_distance(steps, length, crossings) -> float:
-    """Smallest distance between a step point n length / steps and an arclength where the path crosses a pole."""
-    s = np.arange(steps + 1) * (length / steps)
+def _stage_distance(steps, length, crossings) -> float:
+    """Smallest distance between an RK4 stage abscissa (step point or half step) and a pole-crossing arclength."""
+    s = np.arange(2 * steps + 1) * (length / (2 * steps))
     return float(min(np.min(np.abs(s - crossing)) for crossing in crossings))
 
 
-def meridian_study(radius=1.0, step_counts=MERIDIAN_STEPS) -> dict:
-    """Chart A alone on the exact meridian (delta = 0) for many step counts, and its v_phi drift at STEPS.
+def failure_radius(seed, step, radius=1.0) -> float:
+    """d* = R (R L0 (h/R)^4)^(1/5): the seeded meridian fails when an RK4 stage point lands this close to a pole.
+
+    Near a pole the chart is the polar chart of the tangent plane, which is
+    scale invariant, so on the unit sphere the outcome depends on d/h and
+    L0/h only. A crossing whose closest stage point lies at d multiplies L by
+    a factor proportional to (h/d)^2 and turns nonlinear once L h^2/d^3
+    reaches order 1; two crossings at d therefore fail for L0 h^4/d^5 >~ 1.
+    The exponent follows from this argument, the constant 1 is fitted (T036).
+    """
+    return radius * (radius * seed * (step / radius) ** 4) ** 0.2
+
+
+def blas_kernel() -> dict:
+    """NumPy's BLAS build and the inputs of OpenBLAS's kernel choice: the OPENBLAS_CORETYPE override (None when
+    the kernel is detected from the CPU) and the CPU features NumPy found.
+
+    The runtime core name is not read: the package loads native code only in its declared hardware probes (T144).
+    """
+    info = {"openblas_coretype": os.environ.get("OPENBLAS_CORETYPE")}
+    try:
+        config = np.show_config(mode="dicts")
+    except (TypeError, ValueError, AttributeError):  # older NumPy without mode="dicts"
+        return info
+    blas = config.get("Build Dependencies", {}).get("blas", {})
+    info["blas"] = f"{blas.get('name')} {blas.get('version')}"
+    info["simd_found"] = sorted(config.get("SIMD Extensions", {}).get("found", []))
+    return info
+
+
+def meridian_study(radius=1.0, step_counts=MERIDIAN_STEPS, seed=MERIDIAN_SEED) -> dict:
+    """Chart A alone on the meridian (delta = 0) from a declared angular-momentum seed, for many step counts.
 
     The path crosses the north pole at arclength R and the south pole half a
-    circle later. In exact arithmetic v_phi stays 0 and the cot(theta) terms
-    never act. In floating point, rounding in g_12 (~1e-17) makes the
-    off-diagonal Christoffel symbols nonzero and seeds an angular momentum
-    L = sin^2(theta) v_phi; each pole crossing amplifies it, the more the
-    closer a step point lands to the pole, where v_phi = L / sin^2(theta).
+    circle later. It starts from the lifted meridian tangent with v_phi
+    replaced by seed / sin^2(theta0), so its angular momentum L = sin^2(theta)
+    v_phi is the declared seed, not the rounding of g_12, and the reference is
+    the exact great circle of that initial state. Each crossing amplifies L,
+    the more the closer an RK4 stage point lands to the pole (failure_radius).
+    Step counts within RERUN_BAND failure radii, and STEPS, are rerun at
+    seed / SEED_RATIO. The unseeded run at STEPS records the platform's
+    natural seed: g_12 and v_phi at the start, and L before the first crossing.
     """
     atlas = SphereAtlas(radius)
     chart = atlas.charts["A"]
     length = 2 * math.pi * radius
     start, tangent = pole_passing_great_circle(radius, 0.0, azimuth=AZIMUTH)
     u0 = atlas.to_chart("A", start)
-    v0 = atlas.lift("A", u0, tangent)
+    lifted = atlas.lift("A", u0, tangent)
     crossings = (radius, radius * (1.0 + math.pi))
-    rows = []
-    for steps in step_counts:
-        single, failure = _single(chart, u0, v0, length, steps)
-        rows.append({"steps": int(steps), "grid_distance": _grid_distance(steps, length, crossings),
-                     "error": None if single is None else _path_error(
-                         single["points"], great_circle(start, tangent, radius, single["s"])),
-                     "failure": failure})
-    _, states = integrate_fixed(chart.geodesic_rhs, np.concatenate([u0, v0]), length, STEPS, "rk4")
-    momentum = np.sin(states[:, 0]) ** 2 * states[:, 3]
-    drift = {"steps": STEPS, "grid_distance": _grid_distance(STEPS, length, crossings),
-             "g12_at_start": float(chart.metric(u0)[0, 1]), "v_phi_at_start": float(v0[1]),
-             "max_abs_v_phi": float(np.max(np.abs(states[:, 3]))), "max_abs_momentum": float(np.max(np.abs(momentum)))}
-    return {"step_counts": [int(n) for n in step_counts], "near_pole": NEAR_POLE, "rows": rows, "drift": drift}
+
+    def initial(momentum):
+        return np.array([lifted[0], momentum / math.sin(u0[0]) ** 2])
+
+    def scan(momentum, counts):
+        v0 = initial(momentum)
+        velocity = chart.embedding_jacobian(u0) @ v0
+        speed = float(np.linalg.norm(velocity))
+        rows = []
+        for steps in counts:
+            single, failure = _single(chart, u0, v0, length, steps)
+            rows.append({"steps": int(steps), "stage_distance": _stage_distance(steps, length, crossings),
+                         "failure_radius": failure_radius(momentum, length / steps, radius),
+                         "error": None if single is None else _path_error(
+                             single["points"], great_circle(start, velocity / speed, radius, speed * single["s"])),
+                         "failure": failure})
+        return rows
+
+    def momentum_along(v0):
+        s, states = integrate_fixed(chart.geodesic_rhs, np.concatenate([u0, v0]), length, STEPS, "rk4")
+        return s, states, np.sin(states[:, 0]) ** 2 * states[:, 3]
+
+    rows = scan(seed, step_counts)
+    rerun_counts = sorted({row["steps"] for row in rows if row["stage_distance"] < RERUN_BAND * row["failure_radius"]}
+                          | {STEPS})
+    reruns = scan(seed / SEED_RATIO, rerun_counts)
+    at_steps = next((row for row in rows if row["steps"] == STEPS), None) or scan(seed, [STEPS])[0]
+    _, _, momentum = momentum_along(initial(seed))
+    seeded = dict(at_steps, rerun_error=next(row["error"] for row in reruns if row["steps"] == STEPS),
+                  momentum_after_crossings=float(momentum[-1]), max_abs_momentum=float(np.max(np.abs(momentum))))
+    s, states, momentum = momentum_along(lifted)
+    points = np.array([chart.embedding(y[:2]) for y in states])
+    natural = {"steps": STEPS, "blas_kernel": blas_kernel(), "g12_at_start": float(chart.metric(u0)[0, 1]),
+               "v_phi_at_start": float(lifted[1]),
+               "momentum_before_first_crossing": float(np.max(np.abs(momentum[s < crossings[0]]))),
+               "max_abs_momentum": float(np.max(np.abs(momentum))), "max_abs_v_phi": float(np.max(np.abs(states[:, 3]))),
+               "error": _path_error(points, great_circle(start, tangent, radius, s))}
+    return {"seed": seed, "step_counts": [int(n) for n in step_counts], "failure_radius": "(L0 h^4)^(1/5)",
+            "rows": rows, "rerun_seed": seed / SEED_RATIO, "reruns": reruns, "at_steps": seeded, "natural": natural}
 
 
 def transition_defects(atlas, source, target, points, rng, length=1.0, floor=0.05) -> dict:
@@ -1028,10 +1095,6 @@ def _log10(value) -> float:
     return _sig(math.log10(value), 4)
 
 
-def _log10_or_none(value):
-    return None if value is None else _log10(value)
-
-
 @task("T036", changed_files=(MODULE, CHARTS, GEOMETRY, DOC),
       regression_tests=(f"{TESTS}::test_atlas_transitions_are_exact",
                         f"{TESTS}::test_atlas_geodesic_through_pole_matches_great_circle",
@@ -1056,17 +1119,32 @@ def chart_transitions(ctx):
     degraded = [row for row in study["runs"] if row["delta"] > 0 and (
         row["single_chart_failure"] is not None or row["single_chart_error"] > 10 * row["atlas_error"])]
     failed = [row for row in study["runs"] if row["single_chart_failure"] is not None]
-    # Exact meridian in chart A alone: the step grid decides the outcome.
-    drift = meridian["drift"]
-    single_through = through["single_chart_error"]
-    by_steps = {row["steps"]: row for row in meridian["rows"]}
-    near = [row for row in meridian["rows"] if row["grid_distance"] < NEAR_POLE]
-    far = [row for row in meridian["rows"] if row["grid_distance"] >= NEAR_POLE]
+    # Seeded meridian in chart A alone: the step grid decides the outcome.
+    natural, seeded = meridian["natural"], meridian["at_steps"]
     ceiling = 2.0  # a failed run counts as the largest possible error on the unit sphere, 2R
-    near_min = min(ceiling if row["error"] is None else row["error"] for row in near)
-    far_max = max(ceiling if row["error"] is None else row["error"] for row in far)
+
+    def within(row):
+        return row["stage_distance"] < row["failure_radius"]
+
+    def ratio(row):
+        return row["stage_distance"] / row["failure_radius"]
+
+    near = [row for row in meridian["rows"] if within(row)]
+    others = [row for row in meridian["rows"] if not within(row)]
     meridian_failed = [row["steps"] for row in meridian["rows"] if row["error"] is None]
-    near_steps = [row["steps"] for row in near]
+    near_kept = [row["steps"] for row in near if row["error"] is not None]
+    others_failed = [row["steps"] for row in others if row["error"] is None]
+    other_errors = [row["error"] for row in others if row["error"] is not None] or [ceiling]
+    # Closest approaches of the two outcomes to d*: the largest d/d* of a failed run and the smallest of any other.
+    failed_ratio = max((ratio(row) for row in meridian["rows"] if row["error"] is None), default=0.0)
+    kept_ratio = min((ratio(row) for row in meridian["rows"] if row["error"] is not None), default=0.0)
+    rerun_failed = [row["steps"] for row in meridian["reruns"] if row["error"] is None]
+    rerun_kept = [row["steps"] for row in meridian["reruns"] if within(row) and row["error"] is not None]
+    rerun_others_failed = [row["steps"] for row in meridian["reruns"] if not within(row) and row["error"] is None]
+    # Grids within d* at the declared seed but beyond it at the smaller seed: the failure radius moved with the seed.
+    moved = [row["steps"] for row in meridian["reruns"] if not within(row) and row["steps"] in meridian_failed]
+    linearity = abs(seeded["error"] / (SEED_RATIO * seeded["rerun_error"]) - 1.0)
+    natural_share = NATURAL_SEED_BOUND / MERIDIAN_SEED
     # Graph atlas of the Gaussian bump.
     graph_rows = graph["runs"]
     graph_atlas_error = max(row["atlas_error"] for row in graph_rows)
@@ -1108,12 +1186,13 @@ def chart_transitions(ctx):
          ("best chart of the atlas", profile["s"], profile["best_chart"])],
         title="Chart regularity along the delta = 1e-3 great circle", xlabel="arclength s",
         ylabel="1/cond(g) = det g / R^4 = sin^2 theta", logy=True, markers=False))
+    counts = [row["steps"] for row in meridian["rows"]]
     ctx.artifact_text("meridian-steps.svg", svg.line_plot(
-        [("chart A alone, exact meridian", [row["steps"] for row in meridian["rows"]],
+        [(f"chart A alone, seed {MERIDIAN_SEED:g}", counts,
           [ceiling if row["error"] is None else row["error"] for row in meridian["rows"]]),
-         ("closest step point to a pole", [row["steps"] for row in meridian["rows"]],
-          [row["grid_distance"] for row in meridian["rows"]])],
-        title="Exact meridian in one polar chart: error (failures at 2) and step-grid distance to the poles",
+         ("closest RK4 stage point to a pole", counts, [row["stage_distance"] for row in meridian["rows"]]),
+         ("failure radius d* = (L0 h^4)^(1/5)", counts, [row["failure_radius"] for row in meridian["rows"]])],
+        title="Seeded meridian in one polar chart: error (failures at 2), stage distance to the poles and d*",
         xlabel="RK4 steps over 2 pi", ylabel="length", logy=True))
     fields = {
         "hypothesis": ("An atlas of charts with exact transitions through the embedding integrates geodesics through "
@@ -1127,13 +1206,21 @@ def chart_transitions(ctx):
                                "switch between RK4 steps when the active chart's regularity < 1/4. Sphere: chart A "
                                "X = R(sin t cos p, sin t sin p, cos t), chart B = R_y(pi/2) X_A; regularity sin^2 theta "
                                "= det g / R^4 in each chart and sin^2 theta_A + sin^2 theta_B = 1 + y^2/R^2 >= 1, so the "
-                               "better chart always has regularity >= 1/2. Graph z = f(x, y): Monge chart g = I + grad f "
-                               "grad f^T with regularity 1/(1 + |grad f|^2), and the polar chart (r, t) pulled back "
-                               "through PolarChart, singular at r = 0."),
+                               "better chart always has regularity >= 1/2. Meridian in chart A: angular momentum "
+                               "L = sin^2(theta) v_phi (0 on the meridian, sin(delta) on a unit-speed great circle "
+                               "passing delta from the pole) starts at a declared seed L0; near a pole the chart is the "
+                               "plane's polar chart, so the outcome depends on d/h and L0/h only (d the closest RK4 "
+                               "stage point's distance to the pole); a crossing multiplies L by a factor proportional "
+                               "to (h/d)^2 and turns nonlinear once L h^2/d^3 reaches order 1, so two crossings fail "
+                               "within d* = (L0 h^4)^(1/5). Graph z = f(x, y): "
+                               "Monge chart g = I + grad f grad f^T with regularity 1/(1 + |grad f|^2), and the polar "
+                               "chart (r, t) pulled back through PolarChart, singular at r = 0."),
         "input_data": [f"unit sphere; great circles with closest approach delta in {list(DELTAS)} to the north pole, "
                        f"azimuth {AZIMUTH}, full length 2 pi", f"RK4, {STEPS} steps (convergence: 200/400/800)",
-                       f"exact meridian in chart A alone at {len(MERIDIAN_STEPS)} step counts "
-                       f"({MERIDIAN_STEPS[0]}..{MERIDIAN_STEPS[-1]})",
+                       f"meridian (delta = 0) in chart A alone from the declared angular-momentum seed "
+                       f"L0 = sin^2(theta0) v_phi0 = {MERIDIAN_SEED:g} at {len(MERIDIAN_STEPS)} step counts "
+                       f"({MERIDIAN_STEPS[0]}..{MERIDIAN_STEPS[-1]}); rerun at L0 / {SEED_RATIO} where an RK4 stage "
+                       f"point comes within {RERUN_BAND:g} d* of a pole and at {STEPS} steps; unseeded at {STEPS} steps",
                        f"switch threshold: regularity < {SWITCH_THRESHOLD}",
                        f"{transitions['points']} + {transitions['dense_points']} seeded sphere points for transitions "
                        f"and covering (seed {transitions['seed']})",
@@ -1147,21 +1234,29 @@ def chart_transitions(ctx):
                               "the sphere, the refined Monge-chart run on the bump."),
         "expected_invariant": ("Atlas error independent of delta and fourth order in the step; transitions exact to "
                                "rounding; single-chart error grows or the integration fails for small delta > 0; on "
-                               "the exact meridian the single chart is accurate only when no step point lands near a "
-                               "pole."),
+                               "the seeded meridian the single chart fails exactly when an RK4 stage point lands within "
+                               "d* of a pole, and its error at a fixed grid is proportional to the seed."),
         "experiment": ("Integrate each geodesic with chart switching and in the singular chart alone; verify "
                        "transitions by round trip, speed preservation and difference Jacobians; convergence at "
-                       "delta = 0; scan the step count of the exact meridian in chart A alone and record the drift of "
-                       "v_phi."),
+                       "delta = 0; scan the step count of the seeded meridian in chart A alone, rerun the grids near "
+                       "a pole at a hundredth of the seed, and record the natural seed of the unseeded meridian."),
         "numerical_result": (f"sphere atlas through the pole: error {_fmt(through['atlas_error'])}, "
                              f"{through['switches']} switches ({', '.join(through['switch_path'])}); atlas error spread "
                              f"over delta {_fmt(spread)}x; orders {', '.join(_fmt(o) for o in study['orders'])}; single "
                              f"chart failed for {len(failed)} and degraded (>10x atlas) for {len(degraded)} of "
-                             f"{len(positive)} delta > 0; exact meridian in chart A alone at {STEPS} steps: error "
-                             f"{_fmt(single_through)} with |v_phi| up to {_fmt(drift['max_abs_v_phi'])} from rounding; "
-                             f"over {len(MERIDIAN_STEPS)} step counts the {len(near)} runs with a step point within "
-                             f"1e-4 of a pole fail ({len(meridian_failed)}) or err >= {_fmt(near_min)}, the "
-                             f"others err <= {_fmt(far_max)}; transitions round trip {_fmt(transitions['roundtrip'])}, "
+                             f"{len(positive)} delta > 0; meridian in chart A alone from the seed {MERIDIAN_SEED:g}: "
+                             f"{STEPS}-step error {_fmt(seeded['error'])} ({SEED_RATIO} times the error from a "
+                             f"hundredth of the seed is {_fmt(SEED_RATIO * seeded['rerun_error'])}), the two crossings "
+                             f"amplifying L to {_fmt(seeded['momentum_after_crossings'])}; over {len(MERIDIAN_STEPS)} "
+                             f"step counts the {len(near)} runs with an RK4 stage point within d* of a pole fail "
+                             f"({len(meridian_failed)} failures in all), the others err {_fmt(min(other_errors))} to "
+                             f"{_fmt(max(other_errors))}; at a hundredth of the seed {len(rerun_failed)} of "
+                             f"{len(meridian['reruns'])} reruns fail, all within the smaller d*; unseeded, g_12 = "
+                             f"{_fmt(natural['g12_at_start'])} and v_phi = {_fmt(natural['v_phi_at_start'])} at the "
+                             f"start and |L| <= {_fmt(natural['momentum_before_first_crossing'])} before the first "
+                             f"crossing, amplified to {_fmt(natural['max_abs_momentum'])} with error "
+                             f"{_fmt(natural['error'])} at {STEPS} steps; transitions round trip "
+                             f"{_fmt(transitions['roundtrip'])}, "
                              f"speed {_fmt(transitions['metric_defect'])}, Jacobian "
                              f"{_fmt(transitions['jacobian_defect'])}; covering bound {_fmt(transitions['covering_min'])}. "
                              f"Gaussian-bump atlas: error <= {_fmt(graph_atlas_error)} for every delta (Monge chart "
@@ -1174,15 +1269,24 @@ def chart_transitions(ctx):
                         "fourth-order predictions of the 200- and 800-step runs by "
                         f"{_fmt(100 * relative_richardson)}%. Single-chart errors for small delta come from the "
                         "unresolved azimuthal rate 1/sin(delta) at a fixed step; the failure steps and the errors for "
-                        "delta <= 1e-8 depend on rounding and may differ across platforms. On the exact meridian the "
-                        "single-chart result depends on the step grid: rounding in g_12 seeds an angular momentum "
-                        "sin^2(theta) v_phi that each pole crossing amplifies, so the 400-step success is a property "
-                        "of that grid (closest step point "
-                        f"{_fmt(drift['grid_distance'])} from a pole), not of the chart."),
+                        "delta <= 1e-8 depend on rounding and may differ across platforms. On the meridian the "
+                        "single-chart result depends on the step grid and on the angular momentum L = sin^2(theta) "
+                        "v_phi that each pole crossing amplifies, so the 400-step success is a property of that grid "
+                        f"(closest RK4 stage point {_fmt(seeded['stage_distance'])} from a pole) and of the seed, not "
+                        "of the chart. Unseeded, L comes from the rounding of g_12, which depends on the BLAS kernel "
+                        "(the BLAS build and the inputs of the OpenBLAS kernel choice are recorded in the runtime "
+                        "identity and in meridian-steps.json), so the "
+                        f"meridian runs from a declared seed of {MERIDIAN_SEED:g}: the natural seed is at most "
+                        f"{NATURAL_SEED_BOUND:g}, {natural_share:g} of the declared one, which bounds its share of every "
+                        f"seeded error; the {STEPS}-step error from a hundredth of the seed differs from proportionality "
+                        f"by {_fmt(linearity)}. The failure radius d* has a fitted constant 1; its exponent follows "
+                        "from the scaling argument."),
         "failure_modes_checked": ["geodesic exactly through a pole or the apex", "geodesics 1e-1..1e-12 from a pole",
                                   "chattering between charts (bound 1/2 > threshold 1/4)",
                                   "longitude wrap-around in transition differences",
-                                  "step grids landing near a pole on the exact meridian",
+                                  "RK4 stage points (step points and half steps) landing near a pole on the meridian",
+                                  "rounding-level angular momentum on the unseeded meridian (bounded, and dominated by "
+                                  "the declared seed)",
                                   "nonfinite single-chart states and math domain errors (recorded with their message; "
                                   "any other exception propagates instead of counting as a failure)"],
         "unresolved_assumptions": [
@@ -1191,9 +1295,14 @@ def chart_transitions(ctx):
             "charts such as the hyperbolic plane are not covered.",
             "Switching happens between steps; an adaptive integrator would need event location at the threshold.",
             "The recorded minimum regularity of the active chart restates the switch threshold and the covering "
-            "bound; it is reported, not checked."],
+            "bound; it is reported, not checked.",
+            f"The failure radius d* = (L0 h^4)^(1/5) is checked at the seeds {MERIDIAN_SEED:g} and "
+            f"{MERIDIAN_SEED / SEED_RATIO:g} on one path; the scaling argument gives its exponent, and its constant 1 "
+            "is fitted there and may differ for larger seeds or other paths."],
         "recommended_next_task": NEXT_STEPS["T036"],
-        "provider_runtime_identity": builtin_identity((MODULE, CHARTS, GEOMETRY, DOC, CORE, INTEGRATORS)),
+        # The BLAS kernel sets the unseeded meridian's natural seed; recorded here and in meridian-steps.json only.
+        "provider_runtime_identity": dict(builtin_identity((MODULE, CHARTS, GEOMETRY, DOC, CORE, INTEGRATORS)),
+                                          blas_kernel=natural["blas_kernel"]),
     }
     findings = [
         finding("Atlas integration of the great circle through the north pole matches the exact great circle",
@@ -1263,41 +1372,79 @@ def chart_transitions(ctx):
                                             if runs[0.1]["single_chart_error"] is None
                                             else _log10(runs[0.1]["single_chart_error"]),
                                             "log10_delta_0.1_atlas_error": _log10(runs[0.1]["atlas_error"])}}),
-        finding(f"At {STEPS} RK4 steps chart A alone crosses both poles on the exact meridian to within 1e-10",
-                "numerical",
-                {"log10_error": _log10(single_through), "log10_max_abs_v_phi": _log10(drift["max_abs_v_phi"]),
-                 "log10_max_abs_momentum": _log10(drift["max_abs_momentum"]),
-                 "log10_closest_step_to_pole": _log10(drift["grid_distance"])},
-                {"checks": [_check(f"chart A alone, delta = 0, {STEPS} steps: max |X - X_exact|", single_through, 1e-10,
-                                   comparison="le", kind="analytic")]},
-                unit="log10 of each quantity", uncertainty={"kind": "roundoff", "value": 1e-13,
-                                                  "basis": "the error is rounding level at this step count; v_phi is "
-                                                           "not exactly zero (rounding in g_12 seeds sin^2(theta) "
-                                                           "v_phi), and the result depends on the step grid"},
-                tolerance={"abs": 1.0, "rel": 0.0},
-                counterexample={"statement": "Single-chart integration exactly through a coordinate pole always fails",
-                                "witness": {"steps": STEPS, "log10_error": _log10(single_through)}}),
-        finding(f"On the exact meridian chart A alone fails or loses accuracy whenever a step point lands within "
-                f"1e-4 of a pole ({MERIDIAN_STEPS[0]} to {MERIDIAN_STEPS[-1]} RK4 steps)", "numerical",
-                {"step_counts": len(MERIDIAN_STEPS), "near_pole": len(near), "failed": len(meridian_failed),
-                 "log10_min_near_pole_error": _log10(near_min), "log10_max_other_error": _log10(far_max)},
-                {"checks": [_check("smallest error of the runs with a step point within 1e-4 of a pole "
-                                   "(a failure counts as 2R)", near_min, MERIDIAN_SPLIT, comparison="ge",
+        finding(f"From a declared angular-momentum seed of {MERIDIAN_SEED:g}, chart A alone crosses both poles of the "
+                f"meridian at {STEPS} RK4 steps to within 1e-6, with an error proportional to the seed", "numerical",
+                {"error": _sig(seeded["error"], 6),
+                 f"error_at_hundredth_seed_times_{SEED_RATIO}": _sig(SEED_RATIO * seeded["rerun_error"], 6),
+                 "closest_stage_to_pole": _sig(seeded["stage_distance"], 6)},
+                {"checks": [_check(f"chart A alone, seed {MERIDIAN_SEED:g}, {STEPS} steps: max |X - X_exact| against the "
+                                   "great circle of the seeded initial state", seeded["error"], 1e-6, comparison="le",
                                    kind="analytic"),
-                            _check("largest error of the other runs", far_max, MERIDIAN_SPLIT, comparison="le",
-                                   kind="analytic"),
-                            _check("step counts with a step point within the near-pole distance", len(near), 1,
-                                   comparison="ge", kind="exact_arithmetic")]},
-                unit="log10 length", uncertainty={"kind": "reference_error", "value": 1.0,
-                                                  "basis": "near-pole errors amplify a rounding-level angular momentum, "
-                                                           "so their size may move by about a decade across "
-                                                           "platforms; grid distances are exact arithmetic"},
-                tolerance={"abs": 1.0, "rel": 0.0},
+                            _check(f"|e(L0) / ({SEED_RATIO} e(L0 / {SEED_RATIO})) - 1| at {STEPS} steps (first order "
+                                   "in L0)", linearity, 1e-2, comparison="le", kind="analytic")]},
+                unit="length", uncertainty={"kind": "roundoff", "value": _sig(seeded["error"] * natural_share, 2),
+                                            "basis": f"the natural seed (at most {NATURAL_SEED_BOUND:g}, {natural_share:g} "
+                                                     "of the declared one) enters the error in proportion. Across the "
+                                                     "SkylakeX, Haswell and Sandybridge OpenBLAS kernels the error "
+                                                     "agreed to 2e-7 relative and the rerun at a hundredth of the seed "
+                                                     "to 1.2e-4 (its natural share is 100 times larger), so the "
+                                                     "regression tolerance is 1e-3 relative, 8 times that spread"},
+                tolerance={"abs": 0.0, "rel": 1e-3},
+                counterexample={"statement": "Fixed-step integration in a single polar chart across its pole always fails",
+                                "witness": {"steps": STEPS, "seed": MERIDIAN_SEED, "error": _sig(seeded["error"], 6)}}),
+        finding(f"From a declared seed L0, chart A alone fails on the meridian exactly when an RK4 stage point lands "
+                f"within (L0 h^4)^(1/5) of a pole ({MERIDIAN_STEPS[0]} to {MERIDIAN_STEPS[-1]} RK4 steps at "
+                f"L0 = {MERIDIAN_SEED:g}, and the grids near a pole at L0 = {MERIDIAN_SEED / SEED_RATIO:g})", "numerical",
+                {"step_counts": len(MERIDIAN_STEPS), "within_d_star": len(near), "failed": len(meridian_failed),
+                 "largest_ratio_failed": _sig(failed_ratio, 6), "smallest_ratio_not_failed": _sig(kept_ratio, 6),
+                 "other_error_range": [_sig(min(other_errors), 6), _sig(max(other_errors), 6)],
+                 "reruns": len(meridian["reruns"]), "reruns_failed": len(rerun_failed),
+                 "failed_but_beyond_smaller_d_star": len(moved)},
+                {"checks": [_check(f"runs within d* at L0 = {MERIDIAN_SEED:g} that did not fail", len(near_kept), 0,
+                                   comparison="le", kind="analytic"),
+                            _check(f"runs beyond d* at L0 = {MERIDIAN_SEED:g} that failed", len(others_failed), 0,
+                                   comparison="le", kind="analytic"),
+                            _check(f"reruns within d* at L0 = {MERIDIAN_SEED / SEED_RATIO:g} that did not fail",
+                                   len(rerun_kept), 0, comparison="le", kind="analytic"),
+                            _check(f"reruns beyond d* at L0 = {MERIDIAN_SEED / SEED_RATIO:g} that failed",
+                                   len(rerun_others_failed), 0, comparison="le", kind="analytic"),
+                            _check("step counts with an RK4 stage point within d* of a pole", len(near), 1,
+                                   comparison="ge", kind="exact_arithmetic"),
+                            _check("runs that failed at the declared seed and lie beyond d* at a hundredth of it "
+                                   "(the radius moved with the seed)", len(moved), 1, comparison="ge",
+                                   kind="analytic")]},
+                uncertainty={"kind": "reference_error", "value": 0,
+                             "basis": "counts, stage distances and d* are exact arithmetic on the step grid. The natural "
+                                      f"seed changes each error by at most {natural_share:g} of the seed's effect, far "
+                                      f"from moving a run across d* (closest ratios d/d* {_fmt(failed_ratio)} and "
+                                      f"{_fmt(kept_ratio)}); "
+                                      "across the SkylakeX, Haswell and Sandybridge OpenBLAS kernels the failures were "
+                                      "the same and the other errors agreed to 8.3e-7 relative, so the regression "
+                                      "tolerance is 5e-5 relative, about 60 times that spread and above the rounding "
+                                      "of the reported values to six digits"},
+                tolerance={"abs": 0.0, "rel": 5e-5},
                 counterexample={"statement": ("A single-chart integration that crosses a pole accurately at one step "
                                               "count stays accurate at nearby step counts"),
-                                "witness": {"steps_near_pole": near_steps, "failed_steps": meridian_failed,
-                                            f"log10_error_at_{STEPS - 1}": _log10_or_none(by_steps[STEPS - 1]["error"]),
-                                            f"log10_error_at_{STEPS}": _log10_or_none(by_steps[STEPS]["error"])}}),
+                                "witness": {"failed_steps": meridian_failed,
+                                            "failed_steps_at_hundredth_seed": rerun_failed,
+                                            f"error_at_{STEPS}": _sig(seeded["error"], 6)}}),
+        finding(f"Without a declared seed, rounding seeds at most {NATURAL_SEED_BOUND:g} of angular momentum on the "
+                f"meridian before its first pole crossing ({STEPS} RK4 steps)", "numerical",
+                {"g12_at_start": _sig(natural["g12_at_start"], 3), "v_phi_at_start": _sig(natural["v_phi_at_start"], 3),
+                 "momentum_before_first_crossing": _sig(natural["momentum_before_first_crossing"], 3)},
+                {"checks": [_check("|g_12| at the start (0 in exact arithmetic)", abs(natural["g12_at_start"]),
+                                   NATURAL_SEED_BOUND, comparison="le", kind="analytic"),
+                            _check("max |sin^2(theta) v_phi| over the step points before the first pole crossing (0 "
+                                   "in exact arithmetic on the meridian)", natural["momentum_before_first_crossing"],
+                                   NATURAL_SEED_BOUND, comparison="le", kind="analytic")]},
+                uncertainty={"kind": "roundoff", "value": NATURAL_SEED_BOUND,
+                             "basis": "the values are rounding residues of quantities that vanish exactly (g_12 = "
+                                      "x_theta . x_phi sums two products of size up to R^2/2) and depend on the BLAS "
+                                      "kernel, whose selection the runtime identity records. Across the SkylakeX, "
+                                      "Haswell and Sandybridge kernels they spread by up to 1.1e-18 (v_phi 0 or "
+                                      "1.1e-18 at the start; momentum 5.8e-35 to 7.8e-19); the regression tolerance "
+                                      f"is the claimed bound {NATURAL_SEED_BOUND:g}, about 90 times that spread"},
+                tolerance={"abs": NATURAL_SEED_BOUND, "rel": 0.0}),
         finding("The Monge-plus-polar atlas of a graph surface has exact transitions and covers the plane with "
                 "regularity above the analytic Monge bound", "numerical",
                 {"roundtrip": graph_transitions["roundtrip"], "speed": graph_transitions["metric_defect"],
