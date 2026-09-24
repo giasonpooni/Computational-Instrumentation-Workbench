@@ -11,7 +11,9 @@ import sys
 from unittest.mock import AsyncMock, patch
 
 import pytest
+from websockets.asyncio.client import connect
 from websockets.asyncio.server import serve
+from websockets.exceptions import ConnectionClosedError
 
 from ciw.cli import health_remote, load_server_session, main, parser, request_remote
 from ciw.instruments import make_demo_run
@@ -174,6 +176,45 @@ def test_graceful_event_shutdown_saves_selection_and_exact_result(tmp_path):
         assert workspace["results"] == [result]
         with pytest.raises(OSError):
             await request_remote(url, "session.get", {})
+    asyncio.run(exercise())
+
+
+def test_oversized_frames_close_only_the_offending_client(tmp_path):
+    async def exercise():
+        session = Session(make_demo_run(), tmp_path)
+        stopped = asyncio.Event()
+        port = available_port()
+        url = f"ws://127.0.0.1:{port}"
+        task = asyncio.create_task(run_server(session, port, stop_event=stopped))
+        try:
+            for attempt in range(100):
+                try:
+                    await request_remote(url, "session.get", {})
+                    break
+                except OSError:
+                    await asyncio.sleep(0.02)
+            else:
+                pytest.fail("Server did not start")
+            async with connect(url, max_size=None, proxy=None) as offender, connect(url, proxy=None) as observer:
+                assert json.loads(await offender.recv())["type"] == "session.snapshot"
+                assert json.loads(await observer.recv())["type"] == "session.snapshot"
+                # Above the websockets default but within the served 8 MiB limit:
+                # the frame is read and answered as an invalid request.
+                await offender.send("x" * (1024 * 1024 + 1))
+                reply = json.loads(await asyncio.wait_for(offender.recv(), 5))
+                assert reply["type"] == "error" and reply["payload"]["code"] == "invalid_request"
+                # Above the served limit: only the offending connection is closed as too big.
+                with pytest.raises(ConnectionClosedError) as closed:
+                    await offender.send("x" * (8 * 1024 * 1024 + 1))
+                    await asyncio.wait_for(offender.recv(), 5)
+                assert closed.value.rcvd is not None and closed.value.rcvd.code == 1009
+                await observer.send(json.dumps({"protocol_version": 1, "request_id": "after-oversize",
+                                                "type": "session.get", "payload": {}}))
+                reply = json.loads(await asyncio.wait_for(observer.recv(), 5))
+                assert reply["type"] == "response" and reply["request_id"] == "after-oversize"
+        finally:
+            stopped.set()
+            await asyncio.wait_for(task, 10)
     asyncio.run(exercise())
 
 

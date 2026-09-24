@@ -5,6 +5,7 @@ from __future__ import annotations
 import importlib._bootstrap_external
 import importlib.util
 import json
+import os
 from pathlib import Path
 import subprocess
 
@@ -38,6 +39,11 @@ elif operation == 'mutate':
 elif operation == 'refuse':
     print(json.dumps({'schema':'ciw.adapter-response.v1','status':'refused',
                      'refusal':{'code':'MODEL_DISAGREEMENT','message':'Declared model disagrees'}}))
+elif operation == 'orphan_pipe':
+    import subprocess, tempfile
+    subprocess.Popen([sys.executable, '-c', 'import time; time.sleep(6)'],
+                     cwd=tempfile.gettempdir(), start_new_session=True)
+    print(json.dumps({'schema':'ciw.adapter-response.v1','status':'ok','data':{}}))
 else:
     print(json.dumps({'schema':'ciw.adapter-response.v1','status':'ok',
                      'data':{'inputs':request['inputs'], 'isolated':sys.flags.isolated,
@@ -281,3 +287,44 @@ def test_arguments_do_not_allow_revision_or_command_injection(checkout: tuple[Pa
         PinnedSubprocessAdapter(root, revision, 'example.endpoint', source_root='../')
     with pytest.raises(AdapterRefusal):
         PinnedSubprocessAdapter(root, revision, 'example.missing')
+
+
+@pytest.mark.parametrize('binding', ['missing', 'not_executable'])
+def test_unavailable_interpreter_is_refused_before_the_endpoint_runs(
+    checkout: tuple[Path, str], tmp_path: Path, binding: str,
+) -> None:
+    interpreter = tmp_path / 'interpreter'
+    if binding == 'not_executable':
+        interpreter.write_bytes(b'not a program\n')
+    with pytest.raises(AdapterRefusal) as refusal:
+        bound(checkout, python_executable=interpreter).runtime_identity()
+    assert refusal.value.code == 'RUNTIME_UNAVAILABLE'
+    expected = ('Cannot read the bound Python executable' if binding == 'missing'
+                else 'Cannot start the bound runtime')
+    assert refusal.value.to_dict()['message'] == expected
+
+
+@pytest.mark.skipif(os.name != 'posix', reason='Shell scripts stand in for a broken interpreter on POSIX only')
+@pytest.mark.parametrize('script,message', [
+    ('#!/bin/sh\nexit 7\n', 'Cannot inspect the bound Python runtime'),
+    ('#!/bin/sh\necho "{}"\n', 'The Python runtime identity probe failed'),
+])
+def test_broken_interpreter_probe_is_refused(
+    checkout: tuple[Path, str], tmp_path: Path, script: str, message: str,
+) -> None:
+    interpreter = tmp_path / 'interpreter'
+    interpreter.write_text(script)
+    interpreter.chmod(0o755)
+    with pytest.raises(AdapterRefusal) as refusal:
+        bound(checkout, python_executable=interpreter).runtime_identity()
+    assert refusal.value.code == 'RUNTIME_UNAVAILABLE'
+    assert refusal.value.to_dict()['message'] == message
+
+
+@pytest.mark.skipif(os.name != 'posix', reason='Pipe inheritance by a detached grandchild is asserted on POSIX')
+def test_orphaned_output_pipe_is_refused_as_runtime_io(checkout: tuple[Path, str]) -> None:
+    # The endpoint answers correctly but leaves a detached grandchild holding
+    # its output pipe; the adapter must not accept that answer as a result.
+    with pytest.raises(AdapterRefusal) as refusal:
+        bound(checkout).invoke('orphan_pipe', {})
+    assert refusal.value.code == 'RUNTIME_IO'

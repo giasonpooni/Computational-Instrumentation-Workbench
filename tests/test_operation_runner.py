@@ -51,6 +51,22 @@ def test_unknown_operation_retains_refusal_without_a_result(tmp_path):
     assert Session.from_workspace(path, tmp_path / "restored").executions == session.executions
 
 
+def test_version_one_workspace_cannot_carry_executions(tmp_path):
+    import json
+    session = Session(make_demo_run(), tmp_path / "source")
+    assert request(session, "missing.v1")["payload"]["status"] == "refused"
+    saved = read_json(session.save_workspace(tmp_path / "workspace.json"))
+    assert saved["workspace_version"] == 2 and len(saved["executions"]) == 1
+    saved["workspace_version"] = 1
+    downgraded = tmp_path / "downgraded.json"
+    downgraded.write_text(json.dumps(saved), encoding="utf-8")
+    with patch("ciw.session.write_json") as writer:
+        with pytest.raises(ValueError, match="workspace version 2"):
+            Session.from_workspace(downgraded, tmp_path / "not-created")
+        writer.assert_not_called()
+    assert not (tmp_path / "not-created").exists()
+
+
 def test_provider_cannot_publish_without_an_offline_payload_schema(tmp_path):
     operations = OperationRegistry()
     operations.register(Operation("unvalidated.v1", "backend", lambda run, params: {"value": 1},
