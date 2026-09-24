@@ -24,7 +24,7 @@ from .adapters.protocol import AdapterRefusal
 from .adapters.subprocess import _json
 from .declared_workload import (AUTHORITY, DeclaredWorkflow, MAX_BYTES, RESULT_SCHEMA,
                                SOURCE_LIMIT, _text, _verification)
-from .telemetry import canonical, digest, byte_digest, _bundle_digest, _keys, _now
+from .core.canonical import canonical, digest, byte_digest, bundle_digest, exact_keys, utc_now
 
 KIND = "identified-stability"
 SOURCE_SCHEMA = "ciw.identified-stability-source.v1"
@@ -77,31 +77,31 @@ def _matrix(value, count):
 
 
 def _model(model):
-    _keys(model, {"artifact_schema", "model_id", "model_version", "state", "time", "plant", "certificate",
+    exact_keys(model, {"artifact_schema", "model_id", "model_version", "state", "time", "plant", "certificate",
                   "policy", "estimator", "provenance", "claim_scope", "may_authorize", "artifact_digest"})
     if (model["artifact_schema"] != "model-artifact-v1" or model["claim_scope"] != "computational-integrity-only"
             or model["may_authorize"] is not False or model["artifact_digest"] != _native_digest(model, {"artifact_digest"})):
         raise ValueError("Require a received sealed native computational model artifact")
     for key in ("model_id", "model_version"):
         _text(model[key])
-    _keys(model["state"], {"definition", "coordinates"})
+    exact_keys(model["state"], {"definition", "coordinates"})
     _text(model["state"]["definition"])
     coordinates = model["state"]["coordinates"]
     if not isinstance(coordinates, list) or not 1 <= len(coordinates) <= 8:
         raise ValueError("Stability workload supports one to eight declared coordinates")
     for item in coordinates:
-        _keys(item, {"name", "unit"})
+        exact_keys(item, {"name", "unit"})
         _text(item["name"])
         _text(item["unit"])
     if (len({c["name"] for c in coordinates}) != len(coordinates)
             or len({c["unit"] for c in coordinates}) != 1):
         raise ValueError("Declare unique state names in common units; no implicit coordinate rescaling")
-    _keys(model["time"], {"convention", "sample_period_s"})
+    exact_keys(model["time"], {"convention", "sample_period_s"})
     _number(model["time"]["sample_period_s"])
     if model["time"]["convention"] != "discrete" or model["time"]["sample_period_s"] <= 0:
         raise ValueError("Retained discrete dynamics require an explicit positive sample period")
-    _keys(model["plant"], {"kind", "A"})
-    _keys(model["certificate"], {"kind", "P"})
+    exact_keys(model["plant"], {"kind", "A"})
+    exact_keys(model["certificate"], {"kind", "P"})
     if model["plant"]["kind"] != "linear" or model["certificate"]["kind"] != "quadratic":
         raise ValueError("Require a declared discrete linear plant and fixed quadratic certificate")
     count = len(coordinates)
@@ -119,7 +119,7 @@ def _model(model):
             for j in range(k + 1, count):
                 exact[i][j] -= exact[i][k] * exact[k][j] / pivot
     policy = model["policy"]
-    _keys(policy, {"required_margin", "level", "margin_derivation", "numerical_policy", "runtime_status_schema", "claim_codes_schema"})
+    exact_keys(policy, {"required_margin", "level", "margin_derivation", "numerical_policy", "runtime_status_schema", "claim_codes_schema"})
     _number(policy["required_margin"])
     if policy["required_margin"] < 0:
         raise ValueError("A supplied margin may only tighten the numerical test")
@@ -129,15 +129,15 @@ def _model(model):
             or policy["claim_codes_schema"] != "claim-codes-v1"):
         raise ValueError("Unsupported native numerical policy")
     derivation = policy["margin_derivation"]
-    _keys(derivation, {"method", "description", "evidence_digest", "quantity"})
+    exact_keys(derivation, {"method", "description", "evidence_digest", "quantity"})
     for key in ("method", "description"):
         _text(derivation[key])
     if derivation["quantity"] != "negative-largest-eigenvalue-of-decrease-matrix":
         raise ValueError("Margin must name its native decrease-matrix quantity")
     if derivation["evidence_digest"] is not None and not re.fullmatch(r"[a-f0-9]{64}", derivation["evidence_digest"]):
         raise ValueError("Malformed margin evidence digest")
-    _keys(model["estimator"], {"identity", "version", "configuration_digest", "state_compatibility"})
-    _keys(model["provenance"], {"producer", "producer_version", "model_data_digest", "construction_report_digest"})
+    exact_keys(model["estimator"], {"identity", "version", "configuration_digest", "state_compatibility"})
+    exact_keys(model["provenance"], {"producer", "producer_version", "model_data_digest", "construction_report_digest"})
     for group in (model["estimator"], model["provenance"]):
         for key, value in group.items():
             _text(value)
@@ -150,11 +150,11 @@ def _source(raw):
         if not isinstance(raw, bytes) or len(raw) > SOURCE_LIMIT:
             raise ValueError("Require bounded exact stability source bytes")
         source = _json(raw)
-        _keys(source, {"schema", "experiment_id", "configuration", "selection", "equilibrium", "certificate_unit", "model_artifact"})
+        exact_keys(source, {"schema", "experiment_id", "configuration", "selection", "equilibrium", "certificate_unit", "model_artifact"})
         if source["schema"] != SOURCE_SCHEMA or source["configuration"] != POLICY:
             raise ValueError("Require the explicit bounded stability policy")
         _text(source["experiment_id"])
-        _keys(source["selection"], SELECTION_FIELDS)
+        exact_keys(source["selection"], SELECTION_FIELDS)
         for key, value in source["selection"].items():
             _text(value)
             if key != "state_id" and not re.fullmatch(r"execution-[a-f0-9]{32}" if key.endswith("execution_id") else r"sha256:[a-f0-9]{64}", value):
@@ -162,7 +162,7 @@ def _source(raw):
         _model(source["model_artifact"])
         coordinates = source["model_artifact"]["state"]["coordinates"]
         equilibrium = source["equilibrium"]
-        _keys(equilibrium, {"coordinates", "units", "frame_id", "value"})
+        exact_keys(equilibrium, {"coordinates", "units", "frame_id", "value"})
         _text(equilibrium["frame_id"])
         if (equilibrium["coordinates"] != [c["name"] for c in coordinates] or equilibrium["units"] != [c["unit"] for c in coordinates]
                 or not isinstance(equilibrium["value"], list) or len(equilibrium["value"]) != len(coordinates)
@@ -242,7 +242,7 @@ print(json.dumps(record, allow_nan=False))
 
 
 def _record(source, binding, record):
-    _keys(record, plsr_engine._RECORD_KEYS)
+    exact_keys(record, plsr_engine._RECORD_KEYS)
     model = source["model_artifact"]
     sample = {"sample_schema": "plsr-sample-v1", "x": binding["mean"], "theta": None, "theta_dot": None}
     expected = {"record_schema": "companion-record-v1", "record_kind": "ciw-plsr-evaluation",
@@ -345,16 +345,16 @@ class IdentifiedStabilityWorkflow(DeclaredWorkflow):
                 "result_id": result["result_id"], "numerical_result": numerical, "numerical_result_id": digest(numerical)}
 
     def _validate_step(self, step, source, evidence):
-        _keys(step, {"runtime_ref", "operation_id", "execution_id", "input_refs", "request", "request_sha256", "result", "result_sha256", "result_id", "numerical_result", "numerical_result_id"})
+        exact_keys(step, {"runtime_ref", "operation_id", "execution_id", "input_refs", "request", "request_sha256", "result", "result_sha256", "result_id", "numerical_result", "numerical_result_id"})
         selection = source["selection"]
         refs = [evidence, selection["model_result_id"], selection["state_result_id"]]
         if (step["runtime_ref"] != "plsr" or step["operation_id"] != OPERATION or step["input_refs"] != refs
                 or canonical(step["request"]) != canonical(source) or not re.fullmatch(r"execution-[a-f0-9]{32}", step["execution_id"])):
             raise ValueError("Stability request or occurrence binding mismatch")
         result = step["result"]
-        _keys(result, {"schema", "operation_id", "execution_ref", "input_refs", "data", "authority", "result_id"})
+        exact_keys(result, {"schema", "operation_id", "execution_ref", "input_refs", "data", "authority", "result_id"})
         data = result["data"]
-        _keys(data, {"binding", "model_artifact", "sample", "record", "policy"})
+        exact_keys(data, {"binding", "model_artifact", "sample", "record", "policy"})
         if (data["policy"] != POLICY or canonical(data["model_artifact"]) != canonical(source["model_artifact"])
                 or data["sample"] != {"sample_schema": "plsr-sample-v1", "x": data["binding"]["mean"], "theta": None, "theta_dot": None}):
             raise ValueError("Stability result must retain the exact model, sample and uncertainty scope")
@@ -369,8 +369,8 @@ class IdentifiedStabilityWorkflow(DeclaredWorkflow):
 
     def _validate(self, bundle):
         try:
-            _keys(bundle, {"schema", "session_id", "created_at", "source", "configuration", "runtimes", "steps", "bundle_digest", "verification", "upstream_design", "upstream_binding"}, {"replay_receipts"})
-            if len(canonical(bundle)) > MAX_BYTES or bundle["schema"] != self.schema or bundle["bundle_digest"] != _bundle_digest(bundle) or not re.fullmatch(r"session-[a-f0-9]{32}", bundle["session_id"]):
+            exact_keys(bundle, {"schema", "session_id", "created_at", "source", "configuration", "runtimes", "steps", "bundle_digest", "verification", "upstream_design", "upstream_binding"}, {"replay_receipts"})
+            if len(canonical(bundle)) > MAX_BYTES or bundle["schema"] != self.schema or bundle["bundle_digest"] != bundle_digest(bundle) or not re.fullmatch(r"session-[a-f0-9]{32}", bundle["session_id"]):
                 raise ValueError("Stability bundle content binding mismatch")
             _text(bundle["created_at"])
             evidence, = bundle["source"]["evidence"]
@@ -382,13 +382,13 @@ class IdentifiedStabilityWorkflow(DeclaredWorkflow):
                 raise ValueError("Stability source/configuration binding mismatch")
             binding = validate_upstream(bundle, bundle["upstream_design"])
             runtime = bundle["runtimes"]["plsr"]
-            _keys(runtime, {"schema", "adapter_version", "repository_root", "revision", "source_tree", "module", "source_root", "python_executable", "python_sha256", "python_version", "dependencies", "model_schema_dependency"})
+            exact_keys(runtime, {"schema", "adapter_version", "repository_root", "revision", "source_tree", "module", "source_root", "python_executable", "python_sha256", "python_version", "dependencies", "model_schema_dependency"})
             if (runtime["schema"] != "ciw.subprocess-runtime.v1" or any(runtime[k] != PIN[k] for k in PIN)
                     or runtime["source_tree"] != SOURCE_TREE or not re.fullmatch(r"[a-f0-9]{64}", runtime["python_sha256"])
                     or not isinstance(runtime["dependencies"], dict)):
                 raise ValueError("Unapproved native stability runtime pin")
             for key in ("adapter_version", "repository_root", "python_executable", "python_version"): _text(runtime[key])
-            _keys(runtime["model_schema_dependency"], {"name", "version"})
+            exact_keys(runtime["model_schema_dependency"], {"name", "version"})
             if runtime["model_schema_dependency"]["name"] != "jsonschema": raise ValueError("Missing native schema dependency")
             _text(runtime["model_schema_dependency"]["version"])
             step, = bundle["steps"]
@@ -399,14 +399,14 @@ class IdentifiedStabilityWorkflow(DeclaredWorkflow):
             self._check_verification(bundle, bundle["verification"], source, evidence["artifact_ref"])
             if "replay_receipts" in bundle:
                 receipt, = bundle["replay_receipts"]
-                _keys(receipt, {"schema", "source_bundle_digest", "replayed_bundle_digest", "numerical_match", "verification", "admission", "replay_id"})
+                exact_keys(receipt, {"schema", "source_bundle_digest", "replayed_bundle_digest", "numerical_match", "verification", "admission", "replay_id"})
                 if (receipt["schema"] != "ciw.identified-stability-replay.v1" or receipt["replayed_bundle_digest"] != bundle["bundle_digest"]
                         or receipt["source_bundle_digest"] == bundle["bundle_digest"] or receipt["numerical_match"] is not True
                         or receipt["admission"] != "not_performed" or receipt["replay_id"] != digest({k:v for k,v in receipt.items() if k != "replay_id"})
                         or receipt["verification"]["subject_ref"] != receipt["source_bundle_digest"]):
                     raise ValueError("Stability replay receipt binding mismatch")
                 proof = receipt["verification"]
-                _keys(proof, {"schema", "subject_ref", "outcome", "independent", "method", "runtime_digest", "reproduction", "authority", "verification_id"})
+                exact_keys(proof, {"schema", "subject_ref", "outcome", "independent", "method", "runtime_digest", "reproduction", "authority", "verification_id"})
                 # A receipt names the earlier subject, but its native fresh
                 # reproduction is exactly the retained primary of this replay.
                 expected_proof = _verification(bundle, step)
@@ -423,12 +423,12 @@ class IdentifiedStabilityWorkflow(DeclaredWorkflow):
         binding = _selected(source, upstream)
         evidence = byte_digest(raw)
         step = self._step(source, evidence, bound, binding)
-        bundle = {"schema": self.schema, "session_id": "session-" + uuid.uuid4().hex, "created_at": _now(),
+        bundle = {"schema": self.schema, "session_id": "session-" + uuid.uuid4().hex, "created_at": utc_now(),
                   "source": {"experiment_id": source["experiment_id"], "experiment_digest": digest(source),
                              "evidence": [{"artifact_ref": evidence, "sha256": evidence, "bytes_b64": base64.b64encode(raw).decode()}]},
                   "configuration": deepcopy(POLICY), "runtimes": {"plsr": bound[1]}, "steps": [step],
                   "upstream_design": deepcopy(upstream), "upstream_binding": binding}
-        bundle["bundle_digest"] = _bundle_digest(bundle)
+        bundle["bundle_digest"] = bundle_digest(bundle)
         bundle["verification"] = _verification(bundle, self._step(source, evidence, bound, binding))
         self._validate(bundle)
         return bundle

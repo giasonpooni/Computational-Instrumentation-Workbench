@@ -11,7 +11,7 @@ import pytest
 from ciw.declared_workload import DeclaredWorkflow, _verification
 from ciw.schematic_companions import (SchematicCompanionWorkflow, POLICY, SOURCE_SCHEMA,
                                      _source, native_occurrences, numerical_projection)
-from ciw.telemetry import canonical, digest, _bundle_digest
+from ciw.core.canonical import canonical, digest, bundle_digest
 
 ROOT = Path(__file__).resolve().parents[1]
 
@@ -166,7 +166,7 @@ def reseal(bundle):
         step["result_sha256"] = digest(result)
         step["numerical_result"] = numerical_projection(result["data"])
         step["numerical_result_id"] = digest(step["numerical_result"])
-    bundle["bundle_digest"] = _bundle_digest(bundle)
+    bundle["bundle_digest"] = bundle_digest(bundle)
     bundle["verification"] = _verification(bundle, bundle["verification"]["reproduction"])
 
 

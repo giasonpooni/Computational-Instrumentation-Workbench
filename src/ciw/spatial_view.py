@@ -14,7 +14,7 @@ import math
 import re
 
 from .adapters.subprocess import _json
-from .telemetry import canonical
+from .core.canonical import canonical
 
 MAX_BYTES = 262144
 SOURCE_SCHEMA = "ciw.geographic-context.v1"

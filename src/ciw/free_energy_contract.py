@@ -11,7 +11,7 @@ import numpy as np
 
 from . import free_energy_math as mathematics
 from .free_energy_profile import csg_request, problems
-from .telemetry import canonical
+from .core.canonical import canonical
 
 _I = np.eye(2)
 _ROUND = 512 * np.finfo(float).eps

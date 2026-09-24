@@ -19,7 +19,7 @@ import numpy as np
 from . import thermal_contract as contract
 from . import thermal_reference as reference
 from .exchange import _identity
-from .telemetry import _bundle_digest, _now, byte_digest, canonical, digest, _keys
+from .core.canonical import bundle_digest, utc_now, byte_digest, canonical, digest, exact_keys
 
 KIND = "thermal-observer"
 SCHEMA = "ciw.thermal-observer-session.v1"
@@ -159,7 +159,7 @@ def _step(source, evidence_id, runtime, execution_id=None):
 
 
 def _validate_step(step, source, evidence_id):
-    _keys(step, {"runtime_ref", "operation_id", "execution_id", "input_refs", "request", "request_sha256",
+    exact_keys(step, {"runtime_ref", "operation_id", "execution_id", "input_refs", "request", "request_sha256",
                  "result", "result_sha256", "result_id", "numerical_result", "numerical_result_id"})
     if (step["runtime_ref"] != ROLE or step["operation_id"] != OPERATION or
             not re.fullmatch(r"execution-[a-f0-9]{32}", step["execution_id"]) or
@@ -167,7 +167,7 @@ def _validate_step(step, source, evidence_id):
             or step["request_sha256"] != digest(source["request"])):
         raise ValueError("Thermal step request or occurrence binding differs")
     result = step["result"]
-    _keys(result, {"schema", "operation_id", "execution_ref", "input_refs", "data", "authority", "result_id"})
+    exact_keys(result, {"schema", "operation_id", "execution_ref", "input_refs", "data", "authority", "result_id"})
     if result["schema"] != RESULT_SCHEMA or result["operation_id"] != OPERATION or result["execution_ref"] != step["execution_id"]:
         raise ValueError("Thermal native result envelope differs")
     if result["input_refs"] != [evidence_id] or result["authority"] != AUTHORITY:
@@ -227,7 +227,7 @@ class ThermalWorkflow:
         return _validate_step(step, source, evidence_id)
 
     def _check_verification(self, bundle, verification, source, evidence):
-        _keys(verification, {"schema", "subject_ref", "outcome", "independent", "method", "runtime_digest",
+        exact_keys(verification, {"schema", "subject_ref", "outcome", "independent", "method", "runtime_digest",
                              "reproduction", "authority", "verification_id"})
         _validate_step(verification["reproduction"], source, evidence)
         old, new = bundle["steps"][0], verification["reproduction"]
@@ -238,10 +238,10 @@ class ThermalWorkflow:
 
     def _validate(self, bundle):
         try:
-            _keys(bundle, {"schema", "session_id", "created_at", "source", "configuration", "runtimes",
+            exact_keys(bundle, {"schema", "session_id", "created_at", "source", "configuration", "runtimes",
                            "steps", "bundle_digest", "verification"}, {"replay_receipts"})
             if (len(canonical(bundle)) > MAX_BYTES or bundle["schema"] != SCHEMA or
-                    bundle["bundle_digest"] != _bundle_digest(bundle) or
+                    bundle["bundle_digest"] != bundle_digest(bundle) or
                     not re.fullmatch(r"session-[a-f0-9]{32}", bundle["session_id"])):
                 raise ValueError("Thermal bundle identity or size differs")
             _text(bundle["created_at"])
@@ -255,16 +255,16 @@ class ThermalWorkflow:
                 raise ValueError("Thermal source evidence binding differs")
             if canonical(bundle["configuration"]) != canonical(source["configuration"]):
                 raise ValueError("Thermal authority policy differs")
-            _keys(bundle["runtimes"], {ROLE})
+            exact_keys(bundle["runtimes"], {ROLE})
             runtime = bundle["runtimes"][ROLE]
-            _keys(runtime, {"schema", "role", "profile", "algorithm", "execution_scope", "physical_validation"})
+            exact_keys(runtime, {"schema", "role", "profile", "algorithm", "execution_scope", "physical_validation"})
             if (runtime["schema"] != "ciw.python-reference-runtime.v1" or runtime["role"] != ROLE or
                     runtime["profile"] != "ciw.thermal-observer.python-reference.v1" or
                     runtime["execution_scope"] != "independent_python_reference_only" or
                     runtime["physical_validation"] != "not_established"):
                 raise ValueError("Unapproved thermal reference runtime")
             algorithm = runtime["algorithm"]
-            _keys(algorithm, {"profile", "code_sha256", "source_normalization", "numpy_version"})
+            exact_keys(algorithm, {"profile", "code_sha256", "source_normalization", "numpy_version"})
             if (algorithm["profile"] != "ciw.thermal-observer.python-reference.v1" or
                     algorithm["source_normalization"] != "utf8_lf" or
                     not re.fullmatch(r"[a-f0-9]{64}", algorithm["code_sha256"]) or
@@ -277,7 +277,7 @@ class ThermalWorkflow:
             if not isinstance(receipts, list) or len(receipts) > 1:
                 raise ValueError("At most one thermal replay receipt belongs to an occurrence")
             for receipt in receipts:
-                _keys(receipt, {"schema", "source_bundle_digest", "replayed_bundle_digest", "numerical_match",
+                exact_keys(receipt, {"schema", "source_bundle_digest", "replayed_bundle_digest", "numerical_match",
                                 "verification", "admission", "replay_id"})
                 if (receipt["schema"] != "ciw." + KIND + "-replay.v1" or
                         receipt["replayed_bundle_digest"] != bundle["bundle_digest"] or
@@ -286,7 +286,7 @@ class ThermalWorkflow:
                         receipt["replay_id"] != digest({key: value for key, value in receipt.items() if key != "replay_id"})):
                     raise ValueError("Invalid thermal replay receipt")
                 verification = receipt["verification"]
-                _keys(verification, {"schema", "subject_ref", "outcome", "independent", "method", "runtime_digest",
+                exact_keys(verification, {"schema", "subject_ref", "outcome", "independent", "method", "runtime_digest",
                                      "reproduction", "authority", "verification_id"})
                 if (verification["schema"] != VERIFY_SCHEMA or verification["subject_ref"] != receipt["source_bundle_digest"] or
                         verification["outcome"] != "passed" or verification["independent"] is not False or
@@ -306,7 +306,7 @@ class ThermalWorkflow:
         bundle = {
             "schema": SCHEMA,
             "session_id": "session-" + uuid.uuid4().hex,
-            "created_at": _now(),
+            "created_at": utc_now(),
             "source": {"experiment_id": source["experiment_id"], "experiment_digest": digest(source),
                        "evidence": [{"artifact_ref": evidence, "sha256": evidence,
                                      "bytes_b64": base64.b64encode(raw).decode()}]},
@@ -314,7 +314,7 @@ class ThermalWorkflow:
             "runtimes": {ROLE: deepcopy(runtime)},
             "steps": [step],
         }
-        bundle["bundle_digest"] = _bundle_digest(bundle)
+        bundle["bundle_digest"] = bundle_digest(bundle)
         bundle["verification"] = _verification(bundle, _step(source, evidence, runtime))
         self._validate(bundle)
         return bundle

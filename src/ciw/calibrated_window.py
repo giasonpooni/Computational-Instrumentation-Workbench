@@ -20,7 +20,7 @@ from .adapters.protocol import AdapterRefusal
 from .adapters.subprocess import PinnedSubprocessAdapter, _json
 from .exchange import _identity
 from .calibrated_observable import _exact_timestamp
-from .telemetry import canonical, digest, byte_digest, _bundle_digest, _instant, _now, _keys
+from .core.canonical import canonical, digest, byte_digest, bundle_digest, utc_instant, utc_now, exact_keys
 
 SCHEMA = "ciw.calibrated-window-session.v1"
 SOURCE_SCHEMA = "ciw.calibrated-window-source.v1"
@@ -106,7 +106,7 @@ def _source(raw):
             raise ValueError("Source must be bounded exact bytes")
         source = _json(raw)
         canonical(source)
-        _keys(source, {"schema", "experiment_id", "epoch", "channel_id", "frame", "frame_mapping",
+        exact_keys(source, {"schema", "experiment_id", "epoch", "channel_id", "frame", "frame_mapping",
                        "device_clock", "receipt_clock", "clock_model", "calibration_profile", "samples",
                        "joint_covariance", "configuration"})
         if source["schema"] != SOURCE_SCHEMA:
@@ -118,17 +118,17 @@ def _source(raw):
         if not isinstance(samples, list) or not 1 <= len(samples) <= 16:
             raise ValueError("A calibrated window requires 1 to 16 scalar samples")
         for sample in samples:
-            _keys(sample, {"observation_id", "artifact_id", "sensor_id", "quantity_id", "unit",
+            exact_keys(sample, {"observation_id", "artifact_id", "sensor_id", "quantity_id", "unit",
                            "indicated_value", "raw_value", "device_time", "received_at"})
             for key in ("observation_id", "artifact_id", "sensor_id", "quantity_id", "unit"):
                 _text(sample[key])
             for key in ("indicated_value", "raw_value", "device_time", "received_at"):
                 _number(sample[key])
-            _instant(source["epoch"], sample["received_at"])
+            utc_instant(source["epoch"], sample["received_at"])
         if len({row["observation_id"] for row in samples}) != len(samples):
             raise ValueError("Duplicate sample identity")
         model = source["clock_model"]
-        _keys(model, {"model_id", "source_frame", "reference_frame", "device_origin", "reference_origin",
+        exact_keys(model, {"model_id", "source_frame", "reference_frame", "device_origin", "reference_origin",
                       "skew", "offset", "valid_device_interval", "synchronization_evidence_ids"})
         if model["source_frame"] != source["device_clock"] or model["reference_frame"] != source["receipt_clock"]:
             raise ValueError("Device and receipt clocks must match the declared map")
@@ -139,13 +139,13 @@ def _source(raw):
             _number(model[key])
         for value in model["valid_device_interval"]:
             _number(value)
-        _keys(source["frame_mapping"], {"ref", "kind", "source", "target"})
+        exact_keys(source["frame_mapping"], {"ref", "kind", "source", "target"})
         if (source["frame_mapping"]["kind"] != "identity" or
                 source["frame_mapping"]["source"] != source["frame"]["id"] or
                 source["frame_mapping"]["target"] != source["frame"]["id"]):
             raise ValueError("This window operation requires an explicit identity quantity frame map")
         profile = source["calibration_profile"]
-        _keys(profile, {"profile_id", "artifact_id", "sensor_id", "quantity_id", "input_unit", "output_unit",
+        exact_keys(profile, {"profile_id", "artifact_id", "sensor_id", "quantity_id", "input_unit", "output_unit",
                         "gain", "offset", "coefficient_covariance", "valid_from", "valid_until", "reference_ids", "input_range"})
         for key in ("valid_from", "valid_until"):
             _exact_timestamp(profile[key], "calibration " + key)
@@ -158,7 +158,7 @@ def _source(raw):
             if any(sample[a] != profile[b] for a, b in (("sensor_id", "sensor_id"), ("quantity_id", "quantity_id"), ("unit", "input_unit"))):
                 raise ValueError("Every sample must share the declared affine profile applicability")
         joint = source["joint_covariance"]
-        _keys(joint, {"order", "matrix", "cross_covariance_policy", "evidence_ids"})
+        exact_keys(joint, {"order", "matrix", "cross_covariance_policy", "evidence_ids"})
         _refs(joint["evidence_ids"])
         if joint["order"] != covariance_order(source):
             raise ValueError("Joint covariance order differs from raw times, clock parameters, values and calibration parameters")
@@ -171,11 +171,11 @@ def _source(raw):
         if [row[-2:] for row in joint["matrix"][-2:]] != profile["coefficient_covariance"]:
             raise ValueError("Joint calibration parameter block differs from the retained profile")
         configuration = source["configuration"]
-        _keys(configuration, {"window", "gsie", "composition"})
+        exact_keys(configuration, {"window", "gsie", "composition"})
         if configuration["composition"] != COMPOSITION:
             raise ValueError("Only declared affine calibration before a window mean on the nominal time grid is implemented")
         gsie = configuration["gsie"]
-        _keys(gsie, {"prior", "dynamics", "observation_model", "target_time", "variables", "frame",
+        exact_keys(gsie, {"prior", "dynamics", "observation_model", "target_time", "variables", "frame",
                      "prior_measurement_crosscov_policy", "feature_observation_semantics"})
         if (gsie["prior_measurement_crosscov_policy"] != "declared_zero" or
                 gsie["feature_observation_semantics"] != "window_mean_observes_declared_state_at_window_end" or
@@ -356,7 +356,7 @@ def _numerical(role, result):
 
 def _execute(raw, adapters, template=None):
     source = _source(raw)
-    created_at = template["created_at"] if template else _now()
+    created_at = template["created_at"] if template else utc_now()
     runtimes = {role: adapter.runtime_identity() for role, adapter in adapters.items()}
     steps = []
     for i, (role, operation) in enumerate(OPERATIONS):
@@ -375,14 +375,14 @@ def _execute(raw, adapters, template=None):
               "source": {"experiment_id": source["experiment_id"], "experiment_digest": digest(source),
                          "evidence": [{"artifact_ref": byte_digest(raw), "sha256": byte_digest(raw), "bytes_b64": base64.b64encode(raw).decode()}]},
               "configuration": deepcopy(source["configuration"]), "runtimes": runtimes, "steps": steps}
-    bundle["bundle_digest"] = _bundle_digest(bundle)
+    bundle["bundle_digest"] = bundle_digest(bundle)
     return bundle
 
 
 def _validate(bundle):
     try:
-        _keys(bundle, {"schema", "session_id", "created_at", "source", "configuration", "runtimes", "steps", "bundle_digest"}, {"verification", "replay_receipts"})
-        if len(canonical(bundle)) > MAX_BYTES or bundle["schema"] != SCHEMA or bundle["bundle_digest"] != _bundle_digest(bundle):
+        exact_keys(bundle, {"schema", "session_id", "created_at", "source", "configuration", "runtimes", "steps", "bundle_digest"}, {"verification", "replay_receipts"})
+        if len(canonical(bundle)) > MAX_BYTES or bundle["schema"] != SCHEMA or bundle["bundle_digest"] != bundle_digest(bundle):
             raise ValueError("Calibrated window content binding mismatch")
         evidence, = bundle["source"]["evidence"]
         raw = base64.b64decode(evidence["bytes_b64"], validate=True)
@@ -402,7 +402,7 @@ def _validate(bundle):
                 raise ValueError("Retained runtime differs from approved pin")
         identities = {bundle["session_id"], evidence["artifact_ref"], *(op for _, op in OPERATIONS)}
         for i, step in enumerate(bundle["steps"]):
-            _keys(step, {"runtime_ref", "operation_id", "execution_id", "input_refs", "request", "request_sha256", "result", "result_sha256", "result_id", "numerical_result", "numerical_result_id"})
+            exact_keys(step, {"runtime_ref", "operation_id", "execution_id", "input_refs", "request", "request_sha256", "result", "result_sha256", "result_id", "numerical_result", "numerical_result_id"})
             request, refs = _request(i, source, bundle["steps"][:i], step["execution_id"], bundle["created_at"], bundle["runtimes"], evidence["artifact_ref"])
             if canonical(step["request"]) != canonical(request) or step["input_refs"] != refs:
                 raise ValueError("Request differs from retained clock/calibration/window lineage")
@@ -416,7 +416,7 @@ def _validate(bundle):
             if artifact["result_id"] != step["result_id"] or artifact["execution_ref"] != step["execution_id"] or result["operation_id"] != step["operation_id"]:
                 raise ValueError("Native result/operation/occurrence mismatch")
             if i < 2:
-                _keys(result, {"schema", "operation_id", "execution_ref", "input_refs", "data", "result_id"})
+                exact_keys(result, {"schema", "operation_id", "execution_ref", "input_refs", "data", "result_id"})
                 if result["schema"] != RESULT_SCHEMA or result["input_refs"] != refs or result["result_id"] != digest({k: v for k, v in result.items() if k != "result_id"}):
                     raise ValueError("Clock/calibration native wrapper identity mismatch")
             else:
@@ -435,7 +435,7 @@ def _validate(bundle):
 
 def _verify(bundle, fresh, adapters):
     values = {old["execution_id"]: new["numerical_result"] for old, new in zip(bundle["steps"], fresh["steps"])}
-    receipt = _invoke("set", adapters, {"bundle": bundle, "replay_results": values, "created_at": _now()})
+    receipt = _invoke("set", adapters, {"bundle": bundle, "replay_results": values, "created_at": utc_now()})
     if receipt.get("outcome") != "passed":
         raise ValueError("SET did not verify calibrated window replay")
     return receipt, values

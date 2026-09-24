@@ -15,7 +15,7 @@ from ciw.adapters.protocol import AdapterRefusal
 from ciw.declared_workload import _verification
 from ciw.geometric_circle import POLICY, _source, request, request_bytes, workflow
 from ciw.geometric_circle_view import project
-from ciw.telemetry import _bundle_digest, canonical, digest
+from ciw.core.canonical import bundle_digest, canonical, digest
 
 ROOT = Path(__file__).parents[1]
 EXAMPLES = ROOT / "examples/geometric-circle"
@@ -48,7 +48,7 @@ def _seal(bundle):
         step["result_sha256"] = digest(result)
         step["numerical_result"] = {"operation_id": workflow.operation, "data": deepcopy(result["data"])}
         step["numerical_result_id"] = digest(step["numerical_result"])
-    bundle["bundle_digest"] = _bundle_digest(bundle)
+    bundle["bundle_digest"] = bundle_digest(bundle)
     bundle["verification"] = _verification(bundle, bundle["verification"]["reproduction"])
 
 

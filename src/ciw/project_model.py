@@ -10,7 +10,7 @@ from copy import deepcopy
 import math
 import re
 
-from .telemetry import canonical, digest
+from .core.canonical import canonical, digest
 
 SCHEMA = "ciw.project.v1"
 MAX_BYTES = 16 * 1024 * 1024

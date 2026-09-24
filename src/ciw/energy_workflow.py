@@ -20,7 +20,7 @@ from . import energy_records
 from .adapters.subprocess import _json
 from .declared_workload import DeclaredWorkflow, RESULT_SCHEMA, VERIFY_SCHEMA
 from .exchange import _identity
-from .telemetry import canonical, digest, byte_digest, _bundle_digest, _now, _keys
+from .core.canonical import canonical, digest, byte_digest, bundle_digest, utc_now, exact_keys
 
 KIND = "energy-accuracy"
 OPERATION = "ciw.energy-accuracy.v1"
@@ -49,7 +49,7 @@ def analysis_identity():
 
 
 def _check_runtime(runtime):
-    _keys(runtime, {"schema", "profile", "execution_scope", "code_sha256", "source_normalization", "python_version", "numpy_version"})
+    exact_keys(runtime, {"schema", "profile", "execution_scope", "code_sha256", "source_normalization", "python_version", "numpy_version"})
     fixed = {"schema": "ciw.energy-analysis-runtime.v1", "profile": "ciw.energy-accuracy-analysis.v1",
              "execution_scope": "cpu_offline_retained_log_analysis", "source_normalization": "utf8_lf"}
     if any(runtime[key] != value for key, value in fixed.items()):
@@ -119,7 +119,7 @@ class EnergyAccuracyWorkflow(DeclaredWorkflow):
                 "numerical_result": numerical, "numerical_result_id": digest(numerical)}
 
     def _validate_step(self, step, source, evidence):
-        _keys(step, {"runtime_ref", "operation_id", "execution_id", "input_refs", "request", "request_sha256",
+        exact_keys(step, {"runtime_ref", "operation_id", "execution_id", "input_refs", "request", "request_sha256",
                      "result", "result_sha256", "result_id", "numerical_result", "numerical_result_id"})
         if (step["runtime_ref"] != self.role or step["operation_id"] != OPERATION or
                 type(step["execution_id"]) is not str or not re.fullmatch(r"execution-[a-f0-9]{32}", step["execution_id"])):
@@ -128,7 +128,7 @@ class EnergyAccuracyWorkflow(DeclaredWorkflow):
         _same(step["request"], request)
         _same(step["input_refs"], [evidence])
         result = step["result"]
-        _keys(result, {"schema", "operation_id", "execution_ref", "input_refs", "data", "authority", "result_id"})
+        exact_keys(result, {"schema", "operation_id", "execution_ref", "input_refs", "data", "authority", "result_id"})
         _same(result["data"], energy_records.analyze(source))
         unsigned = {"schema": RESULT_SCHEMA, "operation_id": OPERATION, "execution_ref": step["execution_id"],
                     "input_refs": [evidence], "data": result["data"], "authority": AUTHORITY}
@@ -141,7 +141,7 @@ class EnergyAccuracyWorkflow(DeclaredWorkflow):
                 raise ValueError("Energy analysis commitment differs")
 
     def _check_verification(self, bundle, verification, source, evidence):
-        _keys(verification, {"schema", "subject_ref", "outcome", "independent", "method", "runtime_digest",
+        exact_keys(verification, {"schema", "subject_ref", "outcome", "independent", "method", "runtime_digest",
                              "reproduction", "authority", "verification_id"})
         reproduction = verification["reproduction"]
         self._validate_step(reproduction, source, evidence)
@@ -153,9 +153,9 @@ class EnergyAccuracyWorkflow(DeclaredWorkflow):
 
     def _validate(self, bundle):
         try:
-            _keys(bundle, {"schema", "session_id", "created_at", "source", "configuration", "runtimes", "steps", "bundle_digest", "verification"}, {"replay_receipts"})
+            exact_keys(bundle, {"schema", "session_id", "created_at", "source", "configuration", "runtimes", "steps", "bundle_digest", "verification"}, {"replay_receipts"})
             if (len(canonical(bundle)) > MAX_BYTES or bundle["schema"] != self.schema or
-                    bundle["bundle_digest"] != _bundle_digest(bundle) or
+                    bundle["bundle_digest"] != bundle_digest(bundle) or
                     type(bundle["session_id"]) is not str or not re.fullmatch(r"session-[a-f0-9]{32}", bundle["session_id"])):
                 raise ValueError("Energy analysis bundle identity, schema or size differs")
             if type(bundle["created_at"]) is not str or not 1 <= len(bundle["created_at"]) <= 128:
@@ -166,7 +166,7 @@ class EnergyAccuracyWorkflow(DeclaredWorkflow):
             _same(evidence, {"artifact_ref": byte_digest(raw), "sha256": byte_digest(raw), "bytes_b64": base64.b64encode(raw).decode()})
             _same(bundle["source"], {"experiment_id": source["run_id"], "experiment_digest": digest(source), "evidence": [evidence]})
             _same(bundle["configuration"], POLICY)
-            _keys(bundle["runtimes"], {"energy"})
+            exact_keys(bundle["runtimes"], {"energy"})
             _check_runtime(bundle["runtimes"]["energy"])
             step, = bundle["steps"]
             self._validate_step(step, source, evidence["artifact_ref"])
@@ -175,14 +175,14 @@ class EnergyAccuracyWorkflow(DeclaredWorkflow):
             if type(receipts) is not list or len(receipts) > 1:
                 raise ValueError("At most one replay receipt belongs to an energy analysis")
             for receipt in receipts:
-                _keys(receipt, {"schema", "source_bundle_digest", "replayed_bundle_digest", "numerical_match", "verification", "admission", "replay_id"})
+                exact_keys(receipt, {"schema", "source_bundle_digest", "replayed_bundle_digest", "numerical_match", "verification", "admission", "replay_id"})
                 if (receipt["schema"] != "ciw.energy-accuracy-replay.v1" or receipt["replayed_bundle_digest"] != bundle["bundle_digest"] or
                         receipt["source_bundle_digest"] == bundle["bundle_digest"] or type(receipt["source_bundle_digest"]) is not str or
                         not re.fullmatch(r"sha256:[a-f0-9]{64}", receipt["source_bundle_digest"]) or receipt["numerical_match"] is not True or
                         receipt["admission"] != "not_performed" or receipt["replay_id"] != digest({k:v for k,v in receipt.items() if k != "replay_id"})):
                     raise ValueError("Invalid retained energy replay receipt")
                 verification = receipt["verification"]
-                _keys(verification, {"schema", "subject_ref", "outcome", "independent", "method", "runtime_digest", "reproduction", "authority", "verification_id"})
+                exact_keys(verification, {"schema", "subject_ref", "outcome", "independent", "method", "runtime_digest", "reproduction", "authority", "verification_id"})
                 _same(verification["reproduction"], step)
                 expected = {"schema": VERIFY_SCHEMA, "subject_ref": receipt["source_bundle_digest"], "outcome": "passed",
                             "independent": False, "method": METHOD, "runtime_digest": digest(bundle["runtimes"]),
@@ -196,11 +196,11 @@ class EnergyAccuracyWorkflow(DeclaredWorkflow):
     def _execute(self, raw, bound):
         source = self._source(raw)
         evidence = byte_digest(raw)
-        bundle = {"schema": self.schema, "session_id": "session-" + uuid.uuid4().hex, "created_at": _now(),
+        bundle = {"schema": self.schema, "session_id": "session-" + uuid.uuid4().hex, "created_at": utc_now(),
             "source": {"experiment_id": source["run_id"], "experiment_digest": digest(source),
                        "evidence": [{"artifact_ref": evidence, "sha256": evidence, "bytes_b64": base64.b64encode(raw).decode()}]},
             "configuration": deepcopy(POLICY), "runtimes": {"energy": bound[1]}, "steps": [self._step(source, evidence, bound)]}
-        bundle["bundle_digest"] = _bundle_digest(bundle)
+        bundle["bundle_digest"] = bundle_digest(bundle)
         bundle["verification"] = _verification(bundle, self._step(source, evidence, bound))
         self._validate(bundle)
         return bundle

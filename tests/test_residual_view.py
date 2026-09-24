@@ -8,7 +8,7 @@ from pathlib import Path
 import pytest
 
 from ciw import calibrated_window, residual_monitor, residual_view
-from ciw.telemetry import canonical, byte_digest
+from ciw.core.canonical import canonical, byte_digest
 
 ROOT = Path(__file__).resolve().parents[1]
 

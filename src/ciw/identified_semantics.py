@@ -10,7 +10,7 @@ from hashlib import sha256
 import json
 import math
 
-from .telemetry import canonical
+from .core.canonical import canonical
 
 
 SCOPE = "conditional_on_identified_point_model"

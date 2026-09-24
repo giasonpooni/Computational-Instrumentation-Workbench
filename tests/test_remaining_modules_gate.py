@@ -16,7 +16,7 @@ from ciw.cli import parser, request_remote
 from ciw.instruments import make_demo_run
 from ciw.server import WorkbenchServer
 from ciw.session import Session
-from ciw.telemetry import canonical
+from ciw.core.canonical import canonical
 
 
 ROOT = Path(__file__).resolve().parents[1]

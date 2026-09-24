@@ -113,7 +113,7 @@ def validate_response(response, action, bundle, raw, parameters, policy):
 
 class CandidateAdapter:
     def __init__(self, configuration):
-        from .telemetry import canonical
+        from .core.canonical import canonical
         self._configuration = deepcopy(configuration)
         _keys(configuration, {"node", "node_sha256", "artifact", "runtime", "review_context"},
               {"store_root", "capture_registration"})
@@ -159,7 +159,7 @@ class CandidateAdapter:
             raise AdapterRefusal("ESM_PIN_MISMATCH", "Bound ESM executable or helper changed")
 
     def execute(self, action, parameters, bundle):
-        from .telemetry import canonical
+        from .core.canonical import canonical
         if bundle["schema"] != "ciw." + self.kind + "-session.v1":
             raise ValueError("ESM binding cannot execute a different native workflow")
         self._check()

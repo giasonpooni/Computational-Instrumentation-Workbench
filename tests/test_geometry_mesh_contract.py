@@ -5,7 +5,7 @@ import math
 import pytest
 
 from ciw.geometry_mesh_contract import AUTHORITY, BUDGET, CLAIM, validate_request, validate_result
-from ciw.telemetry import canonical, digest
+from ciw.core.canonical import canonical, digest
 
 
 def request():

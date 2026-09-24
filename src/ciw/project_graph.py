@@ -25,7 +25,7 @@ from copy import deepcopy
 import re
 
 from . import project_model
-from .telemetry import digest
+from .core.canonical import digest
 
 GRAPH_SCHEMA = "ciw.project-graph-view.v1"
 PROJECT_ID = "project:workspace"

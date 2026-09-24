@@ -15,7 +15,7 @@ import pytest
 from ciw import proved_heat as module
 from ciw.declared_workload import HEAT_DESCRIPTOR, _commit
 from ciw.proved_heat import ProvedHeatWorkflow, POLICY, PIN, GUEST_SHA256, _verification
-from ciw.telemetry import canonical, byte_digest, digest, _bundle_digest
+from ciw.core.canonical import canonical, byte_digest, digest, bundle_digest
 
 
 def source():
@@ -80,7 +80,7 @@ def reseal(bundle):
     step["request_sha256"] = digest(step["request"])
     step["numerical_result"] = {"operation_id": module.ProvedHeatWorkflow().operation, "data": deepcopy(result["data"]["native"])}
     step["numerical_result_id"] = digest(step["numerical_result"])
-    bundle["bundle_digest"] = _bundle_digest(bundle)
+    bundle["bundle_digest"] = bundle_digest(bundle)
     bundle["verification"] = _verification(bundle, bundle["verification"]["verification_operation_id"])
     return bundle
 

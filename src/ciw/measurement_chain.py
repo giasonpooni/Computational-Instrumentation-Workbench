@@ -19,7 +19,7 @@ from .covariance_workflow import MAP_FIELDS, execute_covariance
 from .declared_workload import DeclaredWorkflow, RESULT_SCHEMA, AUTHORITY, _text
 from .investigation import _runtime, _make_run, _validate_model_independence, create_investigation
 from .session import Session, read_json, write_json
-from .telemetry import canonical, digest, byte_digest, _bundle_digest, _keys
+from .core.canonical import canonical, digest, byte_digest, bundle_digest, exact_keys
 
 MAX_BYTES = 4 * 1024 * 1024
 SOURCE_SCHEMA = "ciw.measurement-chain-source.v1"
@@ -47,12 +47,12 @@ def _source(raw):
         raise ValueError("Measurement-chain source exceeds the 256 KiB budget")
     source = _json(raw)
     canonical(source)
-    _keys(source, {"schema", "experiment_id", "configuration", "investigation", "covariance_map"})
+    exact_keys(source, {"schema", "experiment_id", "configuration", "investigation", "covariance_map"})
     if source["schema"] != SOURCE_SCHEMA or source["configuration"] != POLICY:
         raise ValueError("Require the explicit measurement-chain scope")
     _text(source["experiment_id"])
     declared = source["investigation"]
-    _keys(declared, {"schema", "sensors", "cross_assembly_independent", "model", "source_description", "model_independence"})
+    exact_keys(declared, {"schema", "sensors", "cross_assembly_independent", "model", "source_description", "model_independence"})
     if declared["schema"] != "ciw.tank-investigation-input.v2" or declared["cross_assembly_independent"] is not True:
         raise ValueError("The v2 investigation requires explicit cross-assembly independence")
     _validate_model_independence(declared["model_independence"])
@@ -61,15 +61,15 @@ def _source(raw):
         raise ValueError("Declare exactly two sensors and their native FSRT model")
     names = []
     for sensor in declared["sensors"]:
-        _keys(sensor, {"name", "request"})
+        exact_keys(sensor, {"name", "request"})
         _text(sensor["name"])
         names.append(sensor["name"])
         request = sensor["request"]
-        _keys(request, {"schema", "operation_id", "inputs"})
+        exact_keys(request, {"schema", "operation_id", "inputs"})
         if request["schema"] != "ciw.adapter-request.v1" or request["operation_id"] != "rci.calibrate.v2":
             raise ValueError("Require the original native RCI v2 calibration request")
         inputs = request["inputs"]
-        _keys(inputs, {"assembly_toml", "calibration", "records", "raw_covariance"})
+        exact_keys(inputs, {"assembly_toml", "calibration", "records", "raw_covariance"})
         if not isinstance(inputs["assembly_toml"], str) or len(inputs["assembly_toml"].encode()) > 65536:
             raise ValueError("Require bounded exact assembly text")
         if not isinstance(inputs["calibration"], dict) or inputs["calibration"].get("schema") != "rci-calibration-binding.v2":
@@ -77,7 +77,7 @@ def _source(raw):
         if not isinstance(inputs["records"], list) or len(inputs["records"]) != 1:
             raise ValueError("The snapshot consumes exactly one record per sensor")
         record = inputs["records"][0]
-        _keys(record, {"raw_record_b64", "observed_at"})
+        exact_keys(record, {"raw_record_b64", "observed_at"})
         _text(record["observed_at"])
         encoded = record["raw_record_b64"]
         if not isinstance(encoded, str) or len(encoded) > 65536:
@@ -88,7 +88,7 @@ def _source(raw):
     if len(set(names)) != 2:
         raise ValueError("Require distinct declared sensor names")
     mapping = source["covariance_map"]
-    _keys(mapping, MAP_FIELDS | {"source_artifact"})
+    exact_keys(mapping, MAP_FIELDS | {"source_artifact"})
     if mapping["source_artifact"] not in {"posterior", "reconciled"}:
         raise ValueError("Select the retained posterior or retained reconciliation covariance explicitly")
     if mapping["map_kind"] not in {"linear", "local_linearization", "weighted_aggregation", "coordinate_change"}:
@@ -116,7 +116,7 @@ def _runtime_records(workspace):
 
 
 def _check_runtime(runtime, role, companions=False):
-    _keys(runtime, {"schema", "adapter_version", "repository_root", "revision", "source_tree", "module", "source_root",
+    exact_keys(runtime, {"schema", "adapter_version", "repository_root", "revision", "source_tree", "module", "source_root",
                     "python_executable", "python_sha256", "python_version", "dependencies"} | ({"companions"} if companions else set()))
     if (runtime["schema"] != "ciw.subprocess-runtime.v1" or any(runtime[k] != value for k, value in PINS[role].items())
             or not re.fullmatch("[a-f0-9]{40}", runtime["source_tree"])
@@ -127,11 +127,11 @@ def _check_runtime(runtime, role, companions=False):
 
 
 def _check_data(source, data):
-    _keys(data, {"schema", "scope", "native_workspace"})
+    exact_keys(data, {"schema", "scope", "native_workspace"})
     if data["schema"] != DATA_SCHEMA or data["scope"] != POLICY:
         raise ValueError("Invalid measurement-chain scope")
     workspace = data["native_workspace"]
-    _keys(workspace, {"workspace_version", "saved_at", "run", "selection", "results", "view_settings", "executions"})
+    exact_keys(workspace, {"workspace_version", "saved_at", "run", "selection", "results", "view_settings", "executions"})
     if type(workspace["workspace_version"]) is not int or workspace["workspace_version"] != 2 or workspace["view_settings"] != {}:
         raise ValueError("Require the unchanged native investigation workspace v2")
     if not isinstance(workspace["run"]["run_id"], str) or not re.fullmatch(r"run-[a-f0-9]{32}", workspace["run"]["run_id"]):
@@ -334,13 +334,13 @@ class MeasurementChainWorkflow(DeclaredWorkflow):
                 "numerical_result": numerical, "numerical_result_id": digest(numerical)}
 
     def _validate_step(self, step, source, evidence_id):
-        _keys(step, {"runtime_ref", "operation_id", "execution_id", "input_refs", "request", "request_sha256", "result", "result_sha256", "result_id", "numerical_result", "numerical_result_id"})
+        exact_keys(step, {"runtime_ref", "operation_id", "execution_id", "input_refs", "request", "request_sha256", "result", "result_sha256", "result_id", "numerical_result", "numerical_result_id"})
         if (step["runtime_ref"] != self.role or step["operation_id"] != self.operation or step["input_refs"] != [evidence_id]
                 or canonical(step["request"]) != canonical(source) or not isinstance(step["execution_id"], str)
                 or not re.fullmatch(r"execution-[a-f0-9]{32}", step["execution_id"])):
             raise ValueError("Measurement-chain request/occurrence binding mismatch")
         result = step["result"]
-        _keys(result, {"schema", "operation_id", "execution_ref", "input_refs", "data", "authority", "result_id"})
+        exact_keys(result, {"schema", "operation_id", "execution_ref", "input_refs", "data", "authority", "result_id"})
         _check_data(source, result["data"])
         if (result != {"schema": RESULT_SCHEMA, "operation_id": self.operation, "execution_ref": step["execution_id"],
                        "input_refs": [evidence_id], "data": result["data"], "authority": AUTHORITY,
@@ -360,9 +360,9 @@ class MeasurementChainWorkflow(DeclaredWorkflow):
 
     def _validate(self, bundle):
         try:
-            _keys(bundle, {"schema", "session_id", "created_at", "source", "configuration", "runtimes", "steps", "bundle_digest", "verification"}, {"replay_receipts"})
+            exact_keys(bundle, {"schema", "session_id", "created_at", "source", "configuration", "runtimes", "steps", "bundle_digest", "verification"}, {"replay_receipts"})
             if (len(canonical(bundle)) > MAX_BYTES or bundle["schema"] != self.schema
-                    or bundle["bundle_digest"] != _bundle_digest(bundle)
+                    or bundle["bundle_digest"] != bundle_digest(bundle)
                     or not re.fullmatch(r"session-[a-f0-9]{32}", bundle["session_id"])):
                 raise ValueError("Measurement-chain bundle identity mismatch")
             _text(bundle["created_at"])

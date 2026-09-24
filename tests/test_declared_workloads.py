@@ -10,7 +10,7 @@ import pytest
 from ciw.declared_workload import DeclaredWorkflow, _verification
 from ciw.instruments import make_demo_run
 from ciw.session import Session
-from ciw.telemetry import canonical, _bundle_digest
+from ciw.core.canonical import canonical, bundle_digest
 from ciw.workbench import Workbench
 
 ROOT = Path(__file__).resolve().parents[1]
@@ -167,7 +167,7 @@ def test_resealed_retained_faults_are_refused(retained, kind, fault):
         data = native["steps"][0]["result"]["data"]
         if kind == "numerical-heat": data["values"][1] += 1
         else: data["schematic"]["edges"].pop()
-    native["bundle_digest"] = _bundle_digest(native)
+    native["bundle_digest"] = bundle_digest(native)
     with pytest.raises(ValueError): DeclaredWorkflow(kind)._validate(native)
 
 
@@ -185,7 +185,7 @@ def test_new_bundle_cannot_reuse_old_execution_or_reproduction(retained, kind):
     duplicate = deepcopy(original)
     native = duplicate["native"]
     native["session_id"] = "session-" + "0" * 32
-    native["bundle_digest"] = _bundle_digest(native)
+    native["bundle_digest"] = bundle_digest(native)
     native["verification"] = _verification(native, native["verification"]["reproduction"])
     duplicate["bundle_id"] = native["bundle_digest"]
     saved["bundles"].append(duplicate)

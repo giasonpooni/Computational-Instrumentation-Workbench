@@ -17,7 +17,7 @@ from ciw.instruments import make_demo_run
 from ciw.proved_heat import ProvedHeatWorkflow, TRUST_SCOPE, _verification
 from ciw.server import WorkbenchServer
 from ciw.session import Session
-from ciw.telemetry import canonical, digest, byte_digest, _bundle_digest
+from ciw.core.canonical import canonical, digest, byte_digest, bundle_digest
 
 ROOT = Path(__file__).resolve().parents[1]
 
@@ -246,7 +246,7 @@ def test_native_tampered_proof_fails_fresh_verification(native_retained):
     step["result"]["result_id"] = digest({k: v for k, v in step["result"].items() if k != "result_id"})
     step["result_id"] = step["result"]["result_id"]
     step["result_sha256"] = digest(step["result"])
-    tampered["bundle_digest"] = _bundle_digest(tampered)
+    tampered["bundle_digest"] = bundle_digest(tampered)
     tampered["verification"] = _verification(tampered, original["verification"]["verification_operation_id"])
     workflow = ProvedHeatWorkflow()
     workflow._validate(tampered)  # Structural consistency deliberately grants no cryptographic authority.

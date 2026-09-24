@@ -13,7 +13,7 @@ import pytest
 from ciw.declared_workload import _verification
 from ciw.geodesic_reference import GeodesicReferenceWorkflow, PINS, _check_data
 from ciw.geodesic_reference_view import project
-from ciw.telemetry import canonical, digest, byte_digest, _bundle_digest
+from ciw.core.canonical import canonical, digest, byte_digest, bundle_digest
 
 ROOT = Path(__file__).resolve().parents[1]
 FILES = {"flat-torus-reference": "flat-torus.json", "curved-path-transfer": "curved-path.json"}
@@ -222,7 +222,7 @@ def _seal(bundle, changed_source=None):
         step["result_sha256"] = digest(result)
         step["numerical_result"] = {"operation_id": step["operation_id"], "data": deepcopy(result["data"])}
         step["numerical_result_id"] = digest(step["numerical_result"])
-    bundle["bundle_digest"] = _bundle_digest(bundle)
+    bundle["bundle_digest"] = bundle_digest(bundle)
     bundle["verification"] = _verification(bundle, bundle["verification"]["reproduction"])
 
 

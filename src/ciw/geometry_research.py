@@ -15,7 +15,7 @@ from .adapters.subprocess import _json
 from .declared_workload import AUTHORITY, RESULT_SCHEMA, _text
 from .geodesic_reference import GeodesicReferenceWorkflow
 from .pipelines import provider_pin
-from .telemetry import canonical, digest, _keys
+from .core.canonical import canonical, digest, exact_keys
 
 SOURCE_LIMIT = 128 * 1024
 KINDS = frozenset({"covariance-geometry", "mesh-path", "translation-flow"})
@@ -60,7 +60,7 @@ def _source(kind, raw):
         if not isinstance(raw, bytes) or not 1 <= len(raw) <= SOURCE_LIMIT:
             raise ValueError("Geometry source requires 1..131072 exact bytes")
         source = _json(raw)
-        _keys(source, {"schema", "experiment_id", "configuration", "request"})
+        exact_keys(source, {"schema", "experiment_id", "configuration", "request"})
         if source["schema"] != "ciw." + kind + "-source.v1":
             raise ValueError("Unsupported geometry source schema")
         _text(source["experiment_id"])
@@ -126,7 +126,7 @@ class GeometryResearchWorkflow(GeodesicReferenceWorkflow):
             raise ValueError("Invalid geometry Python version")
         if tuple(map(int, runtime["python_version"].split(".")[:2])) < (3, 11):
             raise ValueError("Geometry providers require Python 3.11 or newer")
-        _keys(runtime["dependencies"], {"numpy", "scipy"})
+        exact_keys(runtime["dependencies"], {"numpy", "scipy"})
         if runtime["dependencies"]["numpy"] != "2.4.3":
             raise ValueError("Geometry profile requires the workbench NumPy 2.4.3 pin")
         if runtime["dependencies"]["scipy"] is not None:
@@ -152,14 +152,14 @@ class GeometryResearchWorkflow(GeodesicReferenceWorkflow):
             "numerical_result": numerical, "numerical_result_id": digest(numerical)}
 
     def _validate_step(self, step, source, evidence_id):
-        _keys(step, {"runtime_ref", "operation_id", "execution_id", "input_refs", "request", "request_sha256",
+        exact_keys(step, {"runtime_ref", "operation_id", "execution_id", "input_refs", "request", "request_sha256",
             "result", "result_sha256", "result_id", "numerical_result", "numerical_result_id"})
         if (step["runtime_ref"] != self.role or step["operation_id"] != self.operation or step["input_refs"] != [evidence_id] or
                 not isinstance(step["execution_id"], str) or not re.fullmatch(r"execution-[a-f0-9]{32}", step["execution_id"])):
             raise ValueError("Invalid geometry operation, evidence or execution occurrence")
         _same(step["request"], source, "Geometry request differs from retained source")
         result = step["result"]
-        _keys(result, {"schema", "operation_id", "execution_ref", "input_refs", "data", "authority", "result_id"})
+        exact_keys(result, {"schema", "operation_id", "execution_ref", "input_refs", "data", "authority", "result_id"})
         _check_data(self.kind, source, result["data"])
         _same(result["authority"], AUTHORITY, "Geometry calculation cannot confer state or physical authority")
         if (result["schema"] != RESULT_SCHEMA or result["operation_id"] != self.operation or result["execution_ref"] != step["execution_id"] or

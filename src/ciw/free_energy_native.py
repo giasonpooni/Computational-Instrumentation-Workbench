@@ -18,7 +18,7 @@ import numpy as np
 
 from .adapters.protocol import AdapterRefusal
 from .adapters.subprocess import PinnedSubprocessAdapter, _json
-from .telemetry import canonical, digest
+from .core.canonical import canonical, digest
 
 PINS = {
     "csg": {"revision":"bbc535af29c30997e56fd120320c570830676462",

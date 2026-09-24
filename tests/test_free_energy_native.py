@@ -12,7 +12,7 @@ import pytest
 
 from ciw.free_energy_native import (PINS, ROLES, bind, check_runtime, csg_source, invoke,
                                     plsr_model_document, validate_request, validate_response)
-from ciw.telemetry import canonical
+from ciw.core.canonical import canonical
 
 
 def requests():

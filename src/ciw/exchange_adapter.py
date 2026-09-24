@@ -20,7 +20,7 @@ import tempfile
 import uuid
 
 from . import exchange
-from .telemetry import canonical, digest
+from .core.canonical import canonical, digest
 
 SOURCE_SCHEMA = "ciw.instrument-exchange-source.v1"
 SESSION_SCHEMA = "ciw.instrument-exchange-session.v1"

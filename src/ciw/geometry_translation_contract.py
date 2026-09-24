@@ -6,7 +6,7 @@ computed trajectory. Content consistency is not independent authentication.
 from copy import deepcopy
 from fractions import Fraction
 
-from .telemetry import canonical as _canonical_json, digest
+from .core.canonical import canonical as _canonical_json, digest
 
 ARITHMETIC = {
     "kind": "exact_rational", "coordinate_unit": "unit_square_side",

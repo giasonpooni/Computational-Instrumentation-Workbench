@@ -20,7 +20,7 @@ import numpy as np
 from . import machine_manifest as manifest
 from .adapters.subprocess import _json
 from .exchange import _identity
-from .telemetry import _bundle_digest, _now, byte_digest, canonical, digest, _keys
+from .core.canonical import bundle_digest, utc_now, byte_digest, canonical, digest, exact_keys
 
 KIND = "machine-manifest"
 SCHEMA = "ciw.machine-manifest-session.v1"
@@ -97,7 +97,7 @@ def _adapters(repositories, expected=None):
 
 
 def _request(value):
-    _keys(value, {"counts", "covariance"})
+    exact_keys(value, {"counts", "covariance"})
     if type(value["counts"]) is not int or abs(value["counts"]) > 2**53 - 1:
         raise ValueError("Decoded count must be an exactly retained bounded integer")
     if value["covariance"] is not None:
@@ -110,7 +110,7 @@ def validate_source(raw):
     if type(raw) is not bytes or not 1 <= len(raw) <= SOURCE_LIMIT:
         raise ValueError("Machine manifest source requires bounded exact JSON bytes")
     source = _json(raw)
-    _keys(source, {"schema", "experiment_id", "configuration", "evidence_bundle",
+    exact_keys(source, {"schema", "experiment_id", "configuration", "evidence_bundle",
                    "candidate_manifest", "challenge_report", "request"})
     if source["schema"] != SOURCE_SCHEMA or canonical(source["configuration"]) != canonical(CONFIGURATION):
         raise ValueError("Unsupported machine manifest source or authority policy")
@@ -188,7 +188,7 @@ def _step(source, evidence_id, runtime, execution_id=None):
 
 
 def _validate_step(step, source, evidence_id):
-    _keys(step, {"runtime_ref", "operation_id", "execution_id", "input_refs", "request", "request_sha256",
+    exact_keys(step, {"runtime_ref", "operation_id", "execution_id", "input_refs", "request", "request_sha256",
                  "result", "result_sha256", "result_id", "numerical_result", "numerical_result_id"})
     if (step["runtime_ref"] != ROLE or step["operation_id"] != OPERATION or
             not re.fullmatch(r"execution-[a-f0-9]{32}", step["execution_id"]) or
@@ -197,7 +197,7 @@ def _validate_step(step, source, evidence_id):
             step["request_sha256"] != digest(source["request"])):
         raise ValueError("Machine step request or occurrence binding differs")
     result = step["result"]
-    _keys(result, {"schema", "operation_id", "execution_ref", "input_refs", "data", "authority", "result_id"})
+    exact_keys(result, {"schema", "operation_id", "execution_ref", "input_refs", "data", "authority", "result_id"})
     if (result["schema"] != RESULT_SCHEMA or result["operation_id"] != OPERATION or
             result["execution_ref"] != step["execution_id"] or result["input_refs"] != [evidence_id] or
             result["authority"] != AUTHORITY or result["result_id"] != digest({k: v for k, v in result.items() if k != "result_id"})):
@@ -257,7 +257,7 @@ class MachineManifestWorkflow:
         return _validate_step(step, source, evidence_id)
 
     def _check_verification(self, bundle, verification, source, evidence):
-        _keys(verification, {"schema", "subject_ref", "outcome", "independent", "method", "runtime_digest",
+        exact_keys(verification, {"schema", "subject_ref", "outcome", "independent", "method", "runtime_digest",
                              "reproduction", "authority", "verification_id"})
         if (verification["schema"] != VERIFY_SCHEMA or verification["subject_ref"] != bundle["bundle_digest"] or
                 verification["outcome"] != "passed" or verification["independent"] is not False or
@@ -273,10 +273,10 @@ class MachineManifestWorkflow:
 
     def _validate(self, bundle):
         try:
-            _keys(bundle, {"schema", "session_id", "created_at", "source", "configuration", "runtimes",
+            exact_keys(bundle, {"schema", "session_id", "created_at", "source", "configuration", "runtimes",
                            "steps", "bundle_digest", "verification"}, {"replay_receipts"})
             if (len(canonical(bundle)) > MAX_BYTES or bundle["schema"] != SCHEMA or
-                    bundle["bundle_digest"] != _bundle_digest(bundle) or
+                    bundle["bundle_digest"] != bundle_digest(bundle) or
                     not re.fullmatch(r"session-[a-f0-9]{32}", bundle["session_id"])):
                 raise ValueError("Machine bundle identity or size differs")
             _text(bundle["created_at"])
@@ -289,13 +289,13 @@ class MachineManifestWorkflow:
                     "experiment_id": source["experiment_id"], "experiment_digest": digest(source),
                     "evidence": [evidence]} or canonical(bundle["configuration"]) != canonical(CONFIGURATION)):
                 raise ValueError("Machine source or configuration binding differs")
-            _keys(bundle["runtimes"], {ROLE})
+            exact_keys(bundle["runtimes"], {ROLE})
             runtime = bundle["runtimes"][ROLE]
             expected_runtime = runtime_identity()
             if runtime != expected_runtime:
                 # Retained runtime identity remains strict in shape and code
                 # commitment; replay compares the complete current identity.
-                _keys(runtime, set(expected_runtime))
+                exact_keys(runtime, set(expected_runtime))
                 if (runtime["schema"] != expected_runtime["schema"] or runtime["role"] != ROLE or
                         runtime["profile"] != expected_runtime["profile"] or
                         runtime["execution_scope"] != expected_runtime["execution_scope"] or
@@ -304,7 +304,7 @@ class MachineManifestWorkflow:
                         runtime["hardware_actuation"] != expected_runtime["hardware_actuation"]):
                     raise ValueError("Unapproved machine reference runtime")
                 algorithm = runtime["algorithm"]
-                _keys(algorithm, {"profile", "code_sha256", "source_normalization", "numpy_version"})
+                exact_keys(algorithm, {"profile", "code_sha256", "source_normalization", "numpy_version"})
                 if (algorithm["profile"] != expected_runtime["algorithm"]["profile"] or
                         algorithm["source_normalization"] != "utf8_lf" or
                         not re.fullmatch(r"[a-f0-9]{64}", algorithm["code_sha256"]) or
@@ -317,7 +317,7 @@ class MachineManifestWorkflow:
             if not isinstance(receipts, list) or len(receipts) > 1:
                 raise ValueError("At most one machine replay receipt belongs to an occurrence")
             for receipt in receipts:
-                _keys(receipt, {"schema", "source_bundle_digest", "replayed_bundle_digest", "numerical_match",
+                exact_keys(receipt, {"schema", "source_bundle_digest", "replayed_bundle_digest", "numerical_match",
                                 "verification", "admission", "replay_id"})
                 if (receipt["schema"] != "ciw." + KIND + "-replay.v1" or
                         receipt["replayed_bundle_digest"] != bundle["bundle_digest"] or
@@ -326,7 +326,7 @@ class MachineManifestWorkflow:
                         receipt["replay_id"] != digest({k: v for k, v in receipt.items() if k != "replay_id"})):
                     raise ValueError("Invalid machine replay receipt")
                 verification = receipt["verification"]
-                _keys(verification, {"schema", "subject_ref", "outcome", "independent", "method", "runtime_digest",
+                exact_keys(verification, {"schema", "subject_ref", "outcome", "independent", "method", "runtime_digest",
                                      "reproduction", "authority", "verification_id"})
                 if (verification["schema"] != VERIFY_SCHEMA or
                         verification["subject_ref"] != receipt["source_bundle_digest"] or
@@ -347,7 +347,7 @@ class MachineManifestWorkflow:
         bundle = {
             "schema": SCHEMA,
             "session_id": "session-" + uuid.uuid4().hex,
-            "created_at": _now(),
+            "created_at": utc_now(),
             "source": {"experiment_id": source["experiment_id"], "experiment_digest": digest(source),
                        "evidence": [{"artifact_ref": evidence, "sha256": evidence,
                                      "bytes_b64": base64.b64encode(raw).decode()}]},
@@ -355,7 +355,7 @@ class MachineManifestWorkflow:
             "runtimes": {ROLE: deepcopy(runtime)},
             "steps": [step],
         }
-        bundle["bundle_digest"] = _bundle_digest(bundle)
+        bundle["bundle_digest"] = bundle_digest(bundle)
         bundle["verification"] = _verification(bundle, _step(source, evidence, runtime))
         self._validate(bundle)
         return bundle

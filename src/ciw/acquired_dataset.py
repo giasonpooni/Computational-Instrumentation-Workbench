@@ -18,7 +18,7 @@ from .adapters.ppda_acquisition import AcquisitionAdapter, PPDA_REVISION, VENDOR
 from .adapters.protocol import AdapterRefusal
 from .adapters.subprocess import _json
 from .declared_workload import DeclaredWorkflow, RESULT_SCHEMA, AUTHORITY, _text
-from .telemetry import canonical, digest, byte_digest, _bundle_digest, _keys
+from .core.canonical import canonical, digest, byte_digest, bundle_digest, exact_keys
 
 MAX_BYTES = 4 * 1024 * 1024
 ROLES = {"ppda"}
@@ -37,11 +37,11 @@ def _source(raw):
         raise ValueError("Acquisition source exceeds the 256 KiB budget")
     value = _json(raw)
     canonical(value)
-    _keys(value, {"schema", "experiment_id", "source", "plan_id", "snapshots", "configuration"})
+    exact_keys(value, {"schema", "experiment_id", "source", "plan_id", "snapshots", "configuration"})
     if value["schema"] != SOURCE_SCHEMA or value["configuration"] != POLICY:
         raise ValueError("Require the explicit bounded acquisition policy")
     _text(value["experiment_id"])
-    _keys(value["source"], {"source_id", "name", "domain"})
+    exact_keys(value["source"], {"source_id", "name", "domain"})
     for item in value["source"].values():
         _text(item)
     if not isinstance(value["plan_id"], str) or not re.fullmatch(r"[A-Za-z0-9][A-Za-z0-9_-]{0,63}", value["plan_id"]):
@@ -50,7 +50,7 @@ def _source(raw):
         raise ValueError("Require 1..8 explicitly retained snapshots")
     previous, previous_time = [], None
     for snapshot in value["snapshots"]:
-        _keys(snapshot, {"requested_at", "bytes_b64"})
+        exact_keys(snapshot, {"requested_at", "bytes_b64"})
         try:
             at = datetime.fromisoformat(snapshot["requested_at"].replace("Z", "+00:00"))
             if at.utcoffset() is None or previous_time is not None and at <= previous_time:
@@ -147,7 +147,7 @@ def _check_data(source, data):
 This is an integrity check. Only the separately retained native reproduction
 claims that the acquisition code actually reproduced the graph.
 """
-    _keys(data, {"schema", "scope", "source_definition", "plan", "adapter_version", "runs", "evidence", "checkpoint", "restored_pool_fingerprint"})
+    exact_keys(data, {"schema", "scope", "source_definition", "plan", "adapter_version", "runs", "evidence", "checkpoint", "restored_pool_fingerprint"})
     if data["schema"] != DATA_SCHEMA or data["scope"] != POLICY or data["adapter_version"] != ADAPTER_VERSION:
         raise ValueError("Invalid native acquisition scope or binding version")
     definition = dict(source["source"], adapter_id="incremental-dataset", configuration={}, capabilities=["incremental"], required_parameters=["path"], enabled=True)
@@ -235,11 +235,11 @@ class AcquisitionWorkflow(DeclaredWorkflow):
         return {"runtime_ref": self.role, "operation_id": self.operation, "execution_id": occurrence, "input_refs": [evidence_id], "request": source, "request_sha256": digest(source), "result": result, "result_sha256": digest(result), "result_id": result["result_id"], "numerical_result": numerical, "numerical_result_id": digest(numerical)}
 
     def _validate_step(self, step, source, evidence_id):
-        _keys(step, {"runtime_ref", "operation_id", "execution_id", "input_refs", "request", "request_sha256", "result", "result_sha256", "result_id", "numerical_result", "numerical_result_id"})
+        exact_keys(step, {"runtime_ref", "operation_id", "execution_id", "input_refs", "request", "request_sha256", "result", "result_sha256", "result_id", "numerical_result", "numerical_result_id"})
         if step["runtime_ref"] != self.role or step["operation_id"] != self.operation or step["input_refs"] != [evidence_id] or canonical(step["request"]) != canonical(source) or not isinstance(step["execution_id"], str) or not re.fullmatch(r"execution-[a-f0-9]{32}", step["execution_id"]):
             raise ValueError("Acquisition request/execution/evidence mismatch")
         result = step["result"]
-        _keys(result, {"schema", "operation_id", "execution_ref", "input_refs", "data", "authority", "result_id"})
+        exact_keys(result, {"schema", "operation_id", "execution_ref", "input_refs", "data", "authority", "result_id"})
         _check_data(source, result["data"])
         if result != {"schema": RESULT_SCHEMA, "operation_id": self.operation, "execution_ref": step["execution_id"], "input_refs": [evidence_id], "data": result["data"], "authority": AUTHORITY, "result_id": digest({k: v for k, v in result.items() if k != "result_id"})} or result["result_id"] != step["result_id"] or canonical(step["numerical_result"]) != canonical({"operation_id": self.operation, "data": result["data"]}):
             raise ValueError("Acquisition result/authority binding mismatch")
@@ -249,8 +249,8 @@ class AcquisitionWorkflow(DeclaredWorkflow):
 
     def _validate(self, bundle):
         try:
-            _keys(bundle, {"schema", "session_id", "created_at", "source", "configuration", "runtimes", "steps", "bundle_digest", "verification"}, {"replay_receipts"})
-            if len(canonical(bundle)) > MAX_BYTES or bundle["schema"] != self.schema or bundle["bundle_digest"] != _bundle_digest(bundle) or not re.fullmatch(r"session-[a-f0-9]{32}", bundle["session_id"]):
+            exact_keys(bundle, {"schema", "session_id", "created_at", "source", "configuration", "runtimes", "steps", "bundle_digest", "verification"}, {"replay_receipts"})
+            if len(canonical(bundle)) > MAX_BYTES or bundle["schema"] != self.schema or bundle["bundle_digest"] != bundle_digest(bundle) or not re.fullmatch(r"session-[a-f0-9]{32}", bundle["session_id"]):
                 raise ValueError("Acquisition bundle identity mismatch")
             _text(bundle["created_at"])
             evidence, = bundle["source"]["evidence"]
@@ -262,7 +262,7 @@ class AcquisitionWorkflow(DeclaredWorkflow):
                 raise ValueError("Unexpected acquisition runtime")
             runtime = bundle["runtimes"]["ppda"]
             for value, pin, vendor in ((runtime, self.pin, True), (runtime["vendor"], {"revision": VENDOR_REVISION, "module": "evidence.types", "source_root": "."}, False)):
-                _keys(value, {"schema", "adapter_version", "repository_root", "revision", "source_tree", "module", "source_root", "python_executable", "python_sha256", "python_version", "dependencies"} | ({"vendor"} if vendor else set()))
+                exact_keys(value, {"schema", "adapter_version", "repository_root", "revision", "source_tree", "module", "source_root", "python_executable", "python_sha256", "python_version", "dependencies"} | ({"vendor"} if vendor else set()))
                 if value["schema"] != "ciw.subprocess-runtime.v1" or any(value[k] != pin[k] for k in pin) or value["source_tree"] != SOURCE_TREES[pin["revision"]] or not re.fullmatch("[a-f0-9]{64}", value["python_sha256"]) or not isinstance(value["dependencies"], dict):
                     raise ValueError("Unapproved acquisition provider/vendor pin")
                 for field in ("adapter_version", "repository_root", "python_executable", "python_version"):

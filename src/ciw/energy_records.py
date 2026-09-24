@@ -15,7 +15,7 @@ import re
 import numpy as np
 
 from . import free_energy_math as mathematics
-from .telemetry import canonical, digest
+from .core.canonical import canonical, digest
 
 SCHEMA = "ciw.energy-accuracy-log.v1"
 RESULT_ENCODING = "ciw.constant-float64-row.v1"

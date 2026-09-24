@@ -11,7 +11,7 @@ import struct
 import pytest
 
 from ciw.bim_quantity import workflow, _check_data
-from ciw.telemetry import canonical, byte_digest, digest, _bundle_digest
+from ciw.core.canonical import canonical, byte_digest, digest, bundle_digest
 
 ROOT = Path(__file__).resolve().parents[1]
 
@@ -163,7 +163,7 @@ def test_retained_native_content_tampering_is_refused(retained, fault):
 def test_replay_runtime_pin_drift_is_refused(retained):
     bundle = deepcopy(retained[0])
     bundle["runtimes"]["cse"]["revision"] = "0" * 40
-    bundle["bundle_digest"] = _bundle_digest(bundle)
+    bundle["bundle_digest"] = bundle_digest(bundle)
     with pytest.raises(ValueError, match="runtime pin"):
         workflow._validate(bundle)
 
@@ -223,7 +223,7 @@ def test_fully_resealed_held_indefinite_covariance_is_refused(repositories, coor
         step.update(result_id=result["result_id"], result_sha256=digest(result),
                     numerical_result={"operation_id": workflow.operation, "data": data})
         step["numerical_result_id"] = digest(step["numerical_result"])
-    bundle["bundle_digest"] = _bundle_digest(bundle)
+    bundle["bundle_digest"] = bundle_digest(bundle)
     bundle["verification"] = _verification(bundle, bundle["verification"]["reproduction"])
 
     # Prove this fault is fully resealed and would satisfy every previous

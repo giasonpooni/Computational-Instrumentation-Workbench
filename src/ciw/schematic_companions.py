@@ -18,7 +18,7 @@ from .adapters.protocol import AdapterRefusal
 from .adapters.subprocess import PinnedSubprocessAdapter, _json
 from .declared_workload import (AUTHORITY, DeclaredWorkflow, MAX_BYTES, RESULT_SCHEMA,
                                SOURCE_LIMIT, _graph, _text, _verification)
-from .telemetry import canonical, digest, byte_digest, _bundle_digest, _keys, _now
+from .core.canonical import canonical, digest, byte_digest, bundle_digest, exact_keys, utc_now
 
 KIND = "schematic-companions"
 SOURCE_SCHEMA = "ciw.schematic-companions-source.v1"
@@ -55,7 +55,7 @@ def _source(raw):
         raise ValueError("Companion source exceeds byte budget")
     source = _json(raw)
     canonical(source)
-    _keys(source, {"schema", "experiment_id", "configuration", "schematic", "function_id"})
+    exact_keys(source, {"schema", "experiment_id", "configuration", "schematic", "function_id"})
     if source["schema"] != SOURCE_SCHEMA or source["configuration"] != POLICY:
         raise ValueError("Require explicit bounded companion semantics")
     _text(source["experiment_id"])
@@ -192,7 +192,7 @@ def native_occurrences(bundle):
 
 
 def _check_data(source, data):
-    _keys(data, {"schematic", "function_id", "decisions_before", "events", "decisions_after", "scope"})
+    exact_keys(data, {"schematic", "function_id", "decisions_before", "events", "decisions_after", "scope"})
     if data["function_id"] != source["function_id"] or data["scope"] != POLICY:
         raise ValueError("Companion result scope or selection differs")
     nodes, old = _graph(data["schematic"]), _graph(source["schematic"])
@@ -228,7 +228,7 @@ def _check_data(source, data):
     if not isinstance(data["events"], list) or len(data["events"]) != 4:
         raise ValueError("Require the four declared companion outcomes")
     for tool, event in zip(TOOLS, data["events"]):
-        _keys(event, {"tool", "owner", "node_id", "result", "detail"})
+        exact_keys(event, {"tool", "owner", "node_id", "result", "detail"})
         if event["tool"] != tool or event["node_id"] != target or event["owner"] != ("plsr" if tool == TOOLS[3] else "jspt") or event["result"] not in {"SAMPLED", "REFUSED", "NOT_CHECKED", "NOT_ELIGIBLE"} or not isinstance(event["detail"], dict):
             raise ValueError("Invalid native companion outcome")
         if event["result"] != "NOT_ELIGIBLE" and event["detail"].get("pin") != (NATIVE_PLSR if tool == TOOLS[3] else NATIVE_JSPT):
@@ -240,7 +240,7 @@ def _check_data(source, data):
         if not isinstance(data[label], list) or len(data[label]) != len(decision_tools):
             raise ValueError("Invalid native eligibility table")
         for tool, decision in zip(decision_tools, data[label]):
-            _keys(decision, {"tool", "owner", "status", "node_id", "reason"})
+            exact_keys(decision, {"tool", "owner", "status", "node_id", "reason"})
             if (decision["tool"] != tool or decision["owner"] != ("plsr" if tool == TOOLS[3] else "jspt")
                     or decision["node_id"] != target or decision["status"] not in {"ELIGIBLE", "NOT_ELIGIBLE"}):
                 raise ValueError("Eligibility is not execution or observability")
@@ -255,7 +255,7 @@ def _check_data(source, data):
     if jacobian["result"] == "SAMPLED":
         cert = nodes[ids[0]]["attrs"]
         binding = cert["binding"]
-        _keys(binding, {"schema", "operation", "execution_id", "declaration_id", "call_inputs", "kernel", "provenance", "result_id"})
+        exact_keys(binding, {"schema", "operation", "execution_id", "declaration_id", "call_inputs", "kernel", "provenance", "result_id"})
         if not isinstance(binding["execution_id"], str) or not re.fullmatch(r"sra-execution:[0-9a-f]{8}-(?:[0-9a-f]{4}-){3}[0-9a-f]{12}", binding["execution_id"]):
             raise ValueError("Invalid native Jacobian occurrence")
         if binding["execution_id"] in canonical(source["schematic"]).decode():
@@ -384,14 +384,14 @@ class SchematicCompanionWorkflow(DeclaredWorkflow):
                 "result_id": result["result_id"], "numerical_result": numerical, "numerical_result_id": digest(numerical)}
 
     def _validate_step(self, step, source, evidence_id):
-        _keys(step, {"runtime_ref", "operation_id", "execution_id", "input_refs", "request", "request_sha256", "result", "result_sha256", "result_id", "numerical_result", "numerical_result_id"})
+        exact_keys(step, {"runtime_ref", "operation_id", "execution_id", "input_refs", "request", "request_sha256", "result", "result_sha256", "result_id", "numerical_result", "numerical_result_id"})
         refs = step["input_refs"]
         if (step["runtime_ref"] != "sra" or step["operation_id"] != OPERATION or not isinstance(refs, list) or len(refs) != 2
                 or refs[0] != evidence_id or not isinstance(refs[1], str) or not re.fullmatch(r"sha256:[a-f0-9]{64}", refs[1])
                 or canonical(step["request"]) != canonical(source) or not re.fullmatch(r"execution-[a-f0-9]{32}", step["execution_id"])):
             raise ValueError("Companion request or execution binding mismatch")
         result = step["result"]
-        _keys(result, {"schema", "operation_id", "execution_ref", "input_refs", "data", "authority", "result_id"})
+        exact_keys(result, {"schema", "operation_id", "execution_ref", "input_refs", "data", "authority", "result_id"})
         _check_data(source, result["data"])
         if result["schema"] != RESULT_SCHEMA or result["operation_id"] != OPERATION or result["authority"] != AUTHORITY or result["execution_ref"] != step["execution_id"] or result["input_refs"] != refs or result["result_id"] != digest({k: v for k, v in result.items() if k != "result_id"}) or result["result_id"] != step["result_id"] or canonical(step["numerical_result"]) != canonical(numerical_projection(result["data"])):
             raise ValueError("Companion result or numerical identity mismatch")
@@ -408,8 +408,8 @@ class SchematicCompanionWorkflow(DeclaredWorkflow):
 
     def _validate(self, bundle):
         try:
-            _keys(bundle, {"schema", "session_id", "created_at", "source", "configuration", "runtimes", "steps", "bundle_digest", "verification", "upstream_assessment", "upstream_binding"}, {"replay_receipts"})
-            if len(canonical(bundle)) > MAX_BYTES or bundle["schema"] != self.schema or bundle["bundle_digest"] != _bundle_digest(bundle) or not re.fullmatch(r"session-[a-f0-9]{32}", bundle["session_id"]):
+            exact_keys(bundle, {"schema", "session_id", "created_at", "source", "configuration", "runtimes", "steps", "bundle_digest", "verification", "upstream_assessment", "upstream_binding"}, {"replay_receipts"})
+            if len(canonical(bundle)) > MAX_BYTES or bundle["schema"] != self.schema or bundle["bundle_digest"] != bundle_digest(bundle) or not re.fullmatch(r"session-[a-f0-9]{32}", bundle["session_id"]):
                 raise ValueError("Companion bundle binding mismatch")
             _text(bundle["created_at"])
             evidence, = bundle["source"]["evidence"]
@@ -425,7 +425,7 @@ class SchematicCompanionWorkflow(DeclaredWorkflow):
             if set(primary["companions"]) != {"jspt", "plsr"}: raise ValueError("Missing native companion pins")
             for role in ROLES:
                 runtime = primary if role == "sra" else primary["companions"][role]
-                _keys(runtime, {"schema", "adapter_version", "repository_root", "revision", "source_tree", "module", "source_root", "python_executable", "python_sha256", "python_version", "dependencies"} | ({"companions"} if role == "sra" else set()))
+                exact_keys(runtime, {"schema", "adapter_version", "repository_root", "revision", "source_tree", "module", "source_root", "python_executable", "python_sha256", "python_version", "dependencies"} | ({"companions"} if role == "sra" else set()))
                 if runtime["schema"] != "ciw.subprocess-runtime.v1" or any(runtime[k] != PINS[role][k] for k in ("revision", "module", "source_root")) or not re.fullmatch(r"[0-9a-f]{40}", runtime["source_tree"]) or not re.fullmatch(r"[0-9a-f]{64}", runtime["python_sha256"]):
                     raise ValueError("Unapproved companion provider pin")
                 for key in ("adapter_version", "repository_root", "python_executable", "python_version"): _text(runtime[key])
@@ -448,13 +448,13 @@ class SchematicCompanionWorkflow(DeclaredWorkflow):
             raise ValueError("Source schematic must exactly match the selected assessment result")
         evidence = byte_digest(raw)
         step = self._step(source, evidence, bound, selected["result_id"])
-        bundle = {"schema": self.schema, "session_id": "session-" + uuid.uuid4().hex, "created_at": _now(),
+        bundle = {"schema": self.schema, "session_id": "session-" + uuid.uuid4().hex, "created_at": utc_now(),
                   "source": {"experiment_id": source["experiment_id"], "experiment_digest": digest(source),
                              "evidence": [{"artifact_ref": evidence, "sha256": evidence, "bytes_b64": base64.b64encode(raw).decode()}]},
                   "configuration": deepcopy(POLICY), "runtimes": {"sra": bound[1]}, "steps": [step],
                   "upstream_assessment": deepcopy(upstream), "upstream_binding": {"bundle_id": upstream["bundle_digest"], "result_id": selected["result_id"],
                     "numerical_result_id": selected["numerical_result_id"], "graph_digest": digest(selected["result"]["data"]["schematic"])}}
-        bundle["bundle_digest"] = _bundle_digest(bundle)
+        bundle["bundle_digest"] = bundle_digest(bundle)
         bundle["verification"] = _verification(bundle, self._step(source, evidence, bound, selected["result_id"]))
         self._validate(bundle)
         return bundle

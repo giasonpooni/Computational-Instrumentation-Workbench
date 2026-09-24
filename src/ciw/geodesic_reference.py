@@ -18,7 +18,7 @@ from .adapters.subprocess import _json
 from .declared_workload import AUTHORITY, DeclaredWorkflow, RESULT_SCHEMA, VERIFY_SCHEMA, _text, _verification
 from .exchange import _identity
 from .pipelines import provider_pin
-from .telemetry import canonical, digest, _keys
+from .core.canonical import canonical, digest, exact_keys
 
 KINDS = frozenset({"flat-torus-reference", "curved-path-transfer"})
 MAX_SAMPLES = 128
@@ -82,7 +82,7 @@ def _source(kind, raw):
         canonical(source)
         fields = {"tau", "winding", "start", "samples"} if kind == "flat-torus-reference" else {
             "arclength", "gaussian_curvature", "units", "initial_perturbation", "starting_covariance", "relative_tolerance"}
-        _keys(source, {"schema", "experiment_id", "configuration"} | fields)
+        exact_keys(source, {"schema", "experiment_id", "configuration"} | fields)
         if source["schema"] != "ciw." + kind + "-source.v1":
             raise ValueError("Unsupported geodesic reference source")
         _text(source["experiment_id"])
@@ -108,13 +108,13 @@ def _source(kind, raw):
             curvature = _number(source["gaussian_curvature"], "Gaussian curvature", 1)
             if any(abs(curvature) * (b - a) ** 2 > .01000000000001 for a, b in zip(grid, grid[1:])):
                 raise ValueError("Refine the grid: each step times sqrt(abs(curvature)) must be at most 0.1")
-            _keys(source["units"], {"length", "angle"})
+            exact_keys(source["units"], {"length", "angle"})
             if (source["units"]["length"] not in ("m", "mm", "normalized_length") or
                     source["units"]["angle"] != "radian"):
                 raise ValueError("Declare m, mm or normalized_length and radian units")
             _vector(source["initial_perturbation"], 2, "initial perturbation", .1)
             covariance = source["starting_covariance"]
-            _keys(covariance, {"matrix", "basis", "note"})
+            exact_keys(covariance, {"matrix", "basis", "note"})
             if covariance["basis"] != "assumed":
                 raise ValueError("The reference requires explicitly assumed starting covariance")
             _text(covariance["note"])
@@ -170,22 +170,22 @@ print(json.dumps(native(data),sort_keys=True,separators=(',',':'),ensure_ascii=F
 
 
 def _pair(value, name):
-    _keys(value, {"re", "im"})
+    exact_keys(value, {"re", "im"})
     return {key: _number(value[key], name) for key in ("re", "im")}
 
 
 def _check_flat(source, data):
-    _keys(data, {"schema", "reference", "trajectory"})
+    exact_keys(data, {"schema", "reference", "trajectory"})
     if data["schema"] != "ciw.flat-torus-reference-native.v1":
         raise ValueError("Unsupported native flat reference")
     reference, trajectory = data["reference"], data["trajectory"]
-    _keys(reference, {"schema", "claim_scope", "source_repository", "consumer_repository", "geometry", "geometry_digest", "handoff", "limitations"})
+    exact_keys(reference, {"schema", "claim_scope", "source_repository", "consumer_repository", "geometry", "geometry_digest", "handoff", "limitations"})
     if (reference["schema"] != "flat-geodesic-reference-v1" or reference["claim_scope"] != "exact-flat-geodesic-reference" or
             reference["source_repository"] != "giasonpooni/Flat-Torus-Geodesic-Reference" or
             reference["consumer_repository"] != "giasonpooni/Curved-Surface-Geodesic-Sensitivity-Runtime"):
         raise ValueError("Flat reference owner or claim scope mismatch")
     geometry = reference["geometry"]
-    _keys(geometry, {"tau", "omega1", "omega2", "area", "winding", "start", "cover_vector", "length", "unit_tangent", "closed", "gaussian_curvature", "arclength_interval"})
+    exact_keys(geometry, {"tau", "omega1", "omega2", "area", "winding", "start", "cover_vector", "length", "unit_tangent", "closed", "gaussian_curvature", "arclength_interval"})
     for field in ("tau", "omega1", "omega2", "start", "cover_vector", "unit_tangent"):
         _pair(geometry[field], field)
     _same(geometry["tau"], dict(zip(("re", "im"), map(float, source["tau"]))), "Flat shape differs from source")
@@ -214,7 +214,7 @@ def _check_flat(source, data):
     _same(reference["limitations"], ["Zero local curvature does not encode quotient edge identifications.",
         "This reference does not propagate Jacobi fields or manufacturing tolerances.",
         "The exact closed-loop claim applies to the declared integer winding."], "Native flat limitations changed")
-    _keys(trajectory, {"lattice", "winding", "start", "length", "times", "parallelogram_points", "cover_points", "crossings", "closed", "notes"})
+    exact_keys(trajectory, {"lattice", "winding", "start", "length", "times", "parallelogram_points", "cover_points", "crossings", "closed", "notes"})
     _same(trajectory["lattice"], {"shape": dict(zip(("x", "y"), map(float, source["tau"]))),
         "omega1": geometry["omega1"], "omega2": geometry["omega2"]}, "Trajectory lattice differs from reference")
     _same(trajectory["winding"], dict(zip(("m", "n"), source["winding"])), "Trajectory winding differs from reference")
@@ -238,7 +238,7 @@ def _check_flat(source, data):
         raise ValueError("Invalid native quotient crossing count")
     previous = 0.0
     for crossing in crossings:
-        _keys(crossing, {"parameter", "edge", "incoming", "outgoing", "lattice_step"})
+        exact_keys(crossing, {"parameter", "edge", "incoming", "outgoing", "lattice_step"})
         value = _number(crossing["parameter"], "crossing parameter")
         if not previous < value <= 1:
             raise ValueError("Crossings must follow the native parameter order")
@@ -252,11 +252,11 @@ def _check_flat(source, data):
 
 
 def _check_curved(source, data):
-    _keys(data, {"schema", "record", "propagated_covariance", "separation", "heading_change", "determinant"})
+    exact_keys(data, {"schema", "record", "propagated_covariance", "separation", "heading_change", "determinant"})
     if data["schema"] != "ciw.curved-path-transfer-native.v1":
         raise ValueError("Unsupported native path transfer")
     record = data["record"]
-    _keys(record, {"schema", "contract", "frame", "units", "source_digest", "resolution", "validity", "observation_mode", "domain",
+    exact_keys(record, {"schema", "contract", "frame", "units", "source_digest", "resolution", "validity", "observation_mode", "domain",
         "samples", "grid", "covariance", "provenance", "calibration", "path_type", "path_type_basis", "chart", "geometry",
         "arclength", "gaussian_curvature", "a", "a_rate", "b", "b_rate"})
     if (record["schema"] != "path-transfer-record-v2" or record["contract"] != "path-sensitivity-boundary-v1" or
@@ -287,8 +287,8 @@ def _check_curved(source, data):
     if record["path_type_basis"] != "declared: K(s) is given as the curvature along a geodesic, which is what makes j'' + K j = 0 the right equation":
         raise ValueError("Native geodesic assumption changed")
     grid, resolution = record["grid"], record["resolution"]
-    _keys(grid, {"start", "end", "samples", "min_step", "max_step", "uniform"})
-    _keys(resolution, {"method", "samples", "max_step", "uniform", "convergence"})
+    exact_keys(grid, {"start", "end", "samples", "min_step", "max_step", "uniform"})
+    exact_keys(resolution, {"method", "samples", "max_step", "uniform", "convergence"})
     for item in (grid, resolution):
         if type(item["samples"]) is not int or item["samples"] != count or type(item["uniform"]) is not bool:
             raise ValueError("Native grid metadata types or sample count differ")
@@ -298,7 +298,7 @@ def _check_curved(source, data):
             _number(resolution["max_step"], "resolution step") != max(deltas) or resolution["method"] != "rk4"):
         raise ValueError("Native solver resolution differs from its retained grid")
     validity = record["validity"]
-    _keys(validity, {"basis", "established", "observation_mode", "relative_tolerance", "tolerance_basis", "max_lateral", "max_heading",
+    exact_keys(validity, {"basis", "established", "observation_mode", "relative_tolerance", "tolerance_basis", "max_lateral", "max_heading",
         "directions", "probe_magnitudes", "pointwise_error", "route_error", "probe_limited", "probe_limited_directions", "fits", "reference",
         "reference_method", "reference_samples", "reference_digest", "convergence", "note"})
     if (validity["established"] is not True or validity["max_lateral"] is not None or validity["directions"] != ["heading"] or
@@ -307,7 +307,7 @@ def _check_curved(source, data):
             _number(validity["max_heading"], "heading validity bound") <= 0):
         raise ValueError("Native validity cannot expand beyond its declared heading-only scope")
     for convergence in (resolution["convergence"], validity["convergence"]):
-        _keys(convergence, {"basis", "order", "refinement", "position", "transfer", "curvature", "focus", "covariance", "note", "established", "worst"})
+        exact_keys(convergence, {"basis", "order", "refinement", "position", "transfer", "curvature", "focus", "covariance", "note", "established", "worst"})
         if (convergence["established"] is not False or not isinstance(convergence["basis"], str) or
                 not convergence["basis"].startswith("not-established:") or
                 any(convergence[k] is not None for k in ("order", "refinement", "position", "transfer", "curvature", "focus", "covariance", "worst"))):
@@ -361,7 +361,7 @@ class GeodesicReferenceWorkflow(DeclaredWorkflow):
         minimum = (3, 12) if self.role == "ftr" else (3, 11)
         if tuple(map(int, version.split(".")[:2])) < minimum:
             raise ValueError("Native reference provider requires Python " + ".".join(map(str, minimum)) + " or newer")
-        _keys(runtime["dependencies"], {"numpy", "scipy"})
+        exact_keys(runtime["dependencies"], {"numpy", "scipy"})
         for name, value in runtime["dependencies"].items():
             if value is not None:
                 _text(value)
@@ -376,7 +376,7 @@ class GeodesicReferenceWorkflow(DeclaredWorkflow):
             if not isinstance(receipts, list) or len(receipts) > 1:
                 raise ValueError("A geodesic occurrence retains at most one replay receipt")
             for receipt in receipts:
-                _keys(receipt, {"schema", "source_bundle_digest", "replayed_bundle_digest", "numerical_match",
+                exact_keys(receipt, {"schema", "source_bundle_digest", "replayed_bundle_digest", "numerical_match",
                                 "verification", "admission", "replay_id"})
                 source_id = receipt["source_bundle_digest"]
                 if (receipt["schema"] != "ciw." + self.kind + "-replay.v1" or
@@ -385,7 +385,7 @@ class GeodesicReferenceWorkflow(DeclaredWorkflow):
                         receipt["numerical_match"] is not True or receipt["admission"] != "not_performed"):
                     raise ValueError("Invalid geodesic replay receipt binding or authority")
                 verification = receipt["verification"]
-                _keys(verification, {"schema", "subject_ref", "outcome", "independent", "method", "runtime_digest",
+                exact_keys(verification, {"schema", "subject_ref", "outcome", "independent", "method", "runtime_digest",
                                      "reproduction", "authority", "verification_id"})
                 if (verification["schema"] != VERIFY_SCHEMA or verification["subject_ref"] != source_id or
                         verification["outcome"] != "passed" or verification["independent"] is not False or
@@ -425,14 +425,14 @@ class GeodesicReferenceWorkflow(DeclaredWorkflow):
             "numerical_result": numerical, "numerical_result_id": digest(numerical)}
 
     def _validate_step(self, step, source, evidence_id):
-        _keys(step, {"runtime_ref", "operation_id", "execution_id", "input_refs", "request", "request_sha256",
+        exact_keys(step, {"runtime_ref", "operation_id", "execution_id", "input_refs", "request", "request_sha256",
             "result", "result_sha256", "result_id", "numerical_result", "numerical_result_id"})
         if (step["runtime_ref"] != self.role or step["operation_id"] != self.operation or step["input_refs"] != [evidence_id] or
                 not isinstance(step["execution_id"], str) or not re.fullmatch(r"execution-[a-f0-9]{32}", step["execution_id"])):
             raise ValueError("Invalid geodesic operation, evidence or execution identity")
         _same(step["request"], source, "Geodesic request differs from retained source")
         result = step["result"]
-        _keys(result, {"schema", "operation_id", "execution_ref", "input_refs", "data", "authority", "result_id"})
+        exact_keys(result, {"schema", "operation_id", "execution_ref", "input_refs", "data", "authority", "result_id"})
         _check_data(self.kind, source, result["data"])
         _same(result["authority"], AUTHORITY, "Geodesic reference cannot confer authority")
         if (result["schema"] != RESULT_SCHEMA or result["operation_id"] != self.operation or result["execution_ref"] != step["execution_id"] or
@@ -445,7 +445,7 @@ class GeodesicReferenceWorkflow(DeclaredWorkflow):
                 raise ValueError("Geodesic step content binding mismatch")
 
     def _check_verification(self, bundle, verification, source, evidence):
-        _keys(verification, {"schema", "subject_ref", "outcome", "independent", "method", "runtime_digest", "reproduction", "authority", "verification_id"})
+        exact_keys(verification, {"schema", "subject_ref", "outcome", "independent", "method", "runtime_digest", "reproduction", "authority", "verification_id"})
         self._validate_step(verification["reproduction"], source, evidence)
         old, new = bundle["steps"][0], verification["reproduction"]
         if old["execution_id"] == new["execution_id"] or old["result_id"] == new["result_id"]:

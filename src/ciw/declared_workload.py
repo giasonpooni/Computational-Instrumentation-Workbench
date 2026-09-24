@@ -18,7 +18,7 @@ import uuid
 from .adapters.protocol import AdapterRefusal
 from .adapters.subprocess import PinnedSubprocessAdapter, _json
 from .exchange import _identity, _read
-from .telemetry import canonical, digest, byte_digest, _bundle_digest, _now, _keys
+from .core.canonical import canonical, digest, byte_digest, bundle_digest, utc_now, exact_keys
 
 MAX_BYTES = 4 * 1024 * 1024
 SOURCE_LIMIT = 262144
@@ -58,7 +58,7 @@ def _text(value):
 
 
 def _graph(graph):
-    _keys(graph, {"schema", "meta", "nodes", "edges"})
+    exact_keys(graph, {"schema", "meta", "nodes", "edges"})
     if graph["schema"] != GRAPH_SCHEMA or not isinstance(graph["meta"], dict) or graph["meta"].get("schema") != GRAPH_SCHEMA:
         raise ValueError("Require explicit matching graph and metadata schemas")
     if not isinstance(graph["nodes"], list) or not 1 <= len(graph["nodes"]) <= 256:
@@ -67,7 +67,7 @@ def _graph(graph):
         raise ValueError("Schematic edge budget is 1024")
     nodes = {}
     for node in graph["nodes"]:
-        _keys(node, {"id", "kind", "attrs"})
+        exact_keys(node, {"id", "kind", "attrs"})
         _text(node["id"])
         if (node["id"] in nodes or node["kind"] not in
                 ("variable", "function", "measurement", "prior", "constraint", "certificate", "observer", "evidence") or
@@ -79,7 +79,7 @@ def _graph(graph):
             raise ValueError("Unknown certificate owner")
         nodes[node["id"]] = node
     for edge in graph["edges"]:
-        _keys(edge, {"kind", "src", "dst", "attrs"})
+        exact_keys(edge, {"kind", "src", "dst", "attrs"})
         if (not isinstance(edge["kind"], str) or edge["kind"] not in _EDGES or not isinstance(edge["attrs"], dict) or
                 not isinstance(edge["src"], str) or not isinstance(edge["dst"], str) or
                 edge["src"] not in nodes or edge["dst"] not in nodes or
@@ -93,7 +93,7 @@ def _source(kind, raw):
         raise ValueError("Declared workload source exceeds byte budget")
     source = _json(raw)
     canonical(source)
-    _keys(source, {"schema", "experiment_id", "configuration"} |
+    exact_keys(source, {"schema", "experiment_id", "configuration"} |
           ({"schematic", "queries"} if kind == "schematic-assessment" else {"initial_values", "steps"}))
     if source["schema"] != "ciw." + kind + "-source.v1":
         raise ValueError("Unsupported declared workload source")
@@ -154,7 +154,7 @@ def _commit(tag, fields):
 
 def _check_data(kind, source, data):
     if kind == "schematic-assessment":
-        _keys(data, {"schematic", "decisions", "neighborhoods", "next_step"})
+        exact_keys(data, {"schematic", "decisions", "neighborhoods", "next_step"})
         nodes = _graph(data["schematic"])
         original = source["schematic"]
         if canonical(data["schematic"]["edges"]) != canonical(original["edges"]) or canonical(data["schematic"]["meta"]) != canonical(original["meta"]) or list(nodes) != [n["id"] for n in original["nodes"]]:
@@ -171,7 +171,7 @@ def _check_data(kind, source, data):
         if not isinstance(data["decisions"], list) or len(data["decisions"]) > 4096:
             raise ValueError("Invalid native eligibility decisions")
         for decision in data["decisions"]:
-            _keys(decision, {"tool", "owner", "status", "node_id", "reason"})
+            exact_keys(decision, {"tool", "owner", "status", "node_id", "reason"})
             for value in decision.values():
                 _text(value)
             if decision["node_id"] not in nodes or decision["status"] not in ("ELIGIBLE", "NOT_ELIGIBLE"):
@@ -186,7 +186,7 @@ def _check_data(kind, source, data):
             raise ValueError("Retrieval differs from declared two-hop topology")
         _text(data["next_step"])
     else:
-        _keys(data, {"specification", "specification_identity", "program_identity", "input_identity", "engine_occurrence",
+        exact_keys(data, {"specification", "specification_identity", "program_identity", "input_identity", "engine_occurrence",
                      "status", "exit_code", "output", "output_identity", "computation_identity", "detail", "values"})
         inputs = struct.pack("<II", source["steps"], len(source["initial_values"])) + b"".join(struct.pack("<q", v) for v in source["initial_values"])
         spec = {"program": HEAT_DESCRIPTOR.hex(), "configuration": "", "input_payload": inputs.hex()}
@@ -281,13 +281,13 @@ class DeclaredWorkflow:
                 "numerical_result": numerical, "numerical_result_id": digest(numerical)}
 
     def _validate_step(self, step, source, evidence_id):
-        _keys(step, {"runtime_ref", "operation_id", "execution_id", "input_refs", "request", "request_sha256", "result", "result_sha256", "result_id", "numerical_result", "numerical_result_id"})
+        exact_keys(step, {"runtime_ref", "operation_id", "execution_id", "input_refs", "request", "request_sha256", "result", "result_sha256", "result_id", "numerical_result", "numerical_result_id"})
         if step["runtime_ref"] != self.role or step["operation_id"] != self.operation or step["input_refs"] != [evidence_id] or canonical(step["request"]) != canonical(source):
             raise ValueError("Native request/operation/evidence binding mismatch")
         if not isinstance(step["execution_id"], str) or not re.fullmatch(r"execution-[a-f0-9]{32}", step["execution_id"]):
             raise ValueError("Invalid native execution occurrence")
         result = step["result"]
-        _keys(result, {"schema", "operation_id", "execution_ref", "input_refs", "data", "authority", "result_id"})
+        exact_keys(result, {"schema", "operation_id", "execution_ref", "input_refs", "data", "authority", "result_id"})
         _check_data(self.kind, source, result["data"])
         if (result["schema"] != RESULT_SCHEMA or result["authority"] != AUTHORITY or result["operation_id"] != self.operation or
                 result["execution_ref"] != step["execution_id"] or result["input_refs"] != [evidence_id] or
@@ -299,7 +299,7 @@ class DeclaredWorkflow:
                 raise ValueError("Workload step content mismatch")
 
     def _check_verification(self, bundle, verification, source, evidence):
-        _keys(verification, {"schema", "subject_ref", "outcome", "independent", "method", "runtime_digest", "reproduction", "authority", "verification_id"})
+        exact_keys(verification, {"schema", "subject_ref", "outcome", "independent", "method", "runtime_digest", "reproduction", "authority", "verification_id"})
         self._validate_step(verification["reproduction"], source, evidence)
         old, new = bundle["steps"][0], verification["reproduction"]
         if old["execution_id"] == new["execution_id"] or old["result_id"] == new["result_id"] or verification != _verification(bundle, new):
@@ -308,8 +308,8 @@ class DeclaredWorkflow:
 
     def _validate(self, bundle):
         try:
-            _keys(bundle, {"schema", "session_id", "created_at", "source", "configuration", "runtimes", "steps", "bundle_digest", "verification"}, {"replay_receipts"})
-            if len(canonical(bundle)) > MAX_BYTES or bundle["schema"] != self.schema or bundle["bundle_digest"] != _bundle_digest(bundle):
+            exact_keys(bundle, {"schema", "session_id", "created_at", "source", "configuration", "runtimes", "steps", "bundle_digest", "verification"}, {"replay_receipts"})
+            if len(canonical(bundle)) > MAX_BYTES or bundle["schema"] != self.schema or bundle["bundle_digest"] != bundle_digest(bundle):
                 raise ValueError("Native workload bundle binding mismatch")
             if not re.fullmatch(r"session-[a-f0-9]{32}", bundle["session_id"]):
                 raise ValueError("Invalid workload session occurrence")
@@ -322,7 +322,7 @@ class DeclaredWorkflow:
             if set(bundle["runtimes"]) != {self.role}:
                 raise ValueError("Unexpected workload runtime")
             runtime = bundle["runtimes"][self.role]
-            _keys(runtime, {"schema", "adapter_version", "repository_root", "revision", "source_tree", "module", "source_root", "python_executable", "python_sha256", "python_version", "dependencies"} | ({"engine"} if self.role == "scr" else set()))
+            exact_keys(runtime, {"schema", "adapter_version", "repository_root", "revision", "source_tree", "module", "source_root", "python_executable", "python_sha256", "python_version", "dependencies"} | ({"engine"} if self.role == "scr" else set()))
             if runtime["schema"] != "ciw.subprocess-runtime.v1" or any(runtime[k] != self.pin[k] for k in ("revision", "module", "source_root")) or not re.fullmatch("[a-f0-9]{40}", runtime["source_tree"]) or not re.fullmatch("[a-f0-9]{64}", runtime["python_sha256"]):
                 raise ValueError("Unapproved native runtime pin")
             for k in ("adapter_version", "repository_root", "python_executable", "python_version"):
@@ -331,7 +331,7 @@ class DeclaredWorkflow:
                 raise ValueError("Invalid dependency identities")
             if self.role == "scr":
                 engine = runtime["engine"]
-                _keys(engine, {"sha256", "byte_count", "source_binding"})
+                exact_keys(engine, {"sha256", "byte_count", "source_binding"})
                 if not re.fullmatch("sha256:[a-f0-9]{64}", engine["sha256"]) or type(engine["byte_count"]) is not int or not 1 <= engine["byte_count"] <= 32 * 1024 * 1024 or engine["source_binding"] != "operator_asserted_not_attested":
                     raise ValueError("Invalid host-bound executable identity")
             step, = bundle["steps"]
@@ -345,11 +345,11 @@ class DeclaredWorkflow:
         source = self._source(raw)
         evidence = byte_digest(raw)
         step = self._step(source, evidence, bound)
-        bundle = {"schema": self.schema, "session_id": "session-" + uuid.uuid4().hex, "created_at": _now(),
+        bundle = {"schema": self.schema, "session_id": "session-" + uuid.uuid4().hex, "created_at": utc_now(),
                   "source": {"experiment_id": source["experiment_id"], "experiment_digest": digest(source),
                              "evidence": [{"artifact_ref": evidence, "sha256": evidence, "bytes_b64": base64.b64encode(raw).decode()}]},
                   "configuration": deepcopy(source["configuration"]), "runtimes": {self.role: bound[1]}, "steps": [step]}
-        bundle["bundle_digest"] = _bundle_digest(bundle)
+        bundle["bundle_digest"] = bundle_digest(bundle)
         bundle["verification"] = _verification(bundle, self._step(source, evidence, bound))
         self._validate(bundle)
         return bundle

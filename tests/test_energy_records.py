@@ -7,7 +7,7 @@ import pytest
 
 from ciw import energy_records as records
 from ciw import free_energy_math as mathematics
-from ciw.telemetry import digest
+from ciw.core.canonical import digest
 
 
 def make_log():

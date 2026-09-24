@@ -7,7 +7,6 @@ from __future__ import annotations
 
 import base64
 from copy import deepcopy
-from datetime import datetime, timedelta, timezone
 from hashlib import sha256
 from importlib import resources
 import json
@@ -19,6 +18,7 @@ import uuid
 from .adapters.protocol import AdapterRefusal
 from .adapters.subprocess import PinnedSubprocessAdapter, _json
 from .exchange import _read, _identity, RESULT_SCHEMA
+from .core.canonical import bundle_digest, byte_digest, canonical, digest, exact_keys, utc_instant, utc_now
 from .session import write_json
 
 SCHEMA = "ciw.telemetry-session.v1"
@@ -53,49 +53,6 @@ class _PPDAProjection(PinnedSubprocessAdapter):
         identity.update(execution_scope="standalone_checked_source_only",
                         source_sha256=self.approved_source_sha256)
         return identity
-
-
-def canonical(value):
-    pending = [(value, 0)]
-    while pending:
-        node, depth = pending.pop()
-        if depth > 64:
-            raise ValueError("Telemetry JSON exceeds the nesting budget")
-        if isinstance(node, dict):
-            if any(not isinstance(key, str) for key in node):
-                raise ValueError("Telemetry JSON keys must be strings")
-            pending.extend((child, depth + 1) for child in node.values())
-        elif isinstance(node, (list, tuple)):
-            pending.extend((child, depth + 1) for child in node)
-    return json.dumps(value, sort_keys=True, separators=(",", ":"),
-                      ensure_ascii=False, allow_nan=False).encode("utf-8")
-
-
-def digest(value):
-    return "sha256:" + sha256(canonical(value)).hexdigest()
-
-
-def byte_digest(raw):
-    return "sha256:" + sha256(raw).hexdigest()
-
-
-def _now():
-    return datetime.now(timezone.utc).isoformat().replace("+00:00", "Z")
-
-
-def _instant(epoch, seconds):
-    if type(seconds) not in (int, float) or not math.isfinite(seconds):
-        raise ValueError("Mapped time must be a finite real number")
-    instant = datetime.fromisoformat(epoch.replace("Z", "+00:00"))
-    mapped = instant + timedelta(seconds=seconds)
-    if (mapped - instant).total_seconds() != seconds:
-        raise ValueError("Mapped time cannot be represented at microsecond precision")
-    return mapped.isoformat().replace("+00:00", "Z")
-
-
-def _keys(value, required, optional=()):
-    if not isinstance(value, dict) or not set(required) <= value.keys() <= set(required) | set(optional):
-        raise ValueError("Invalid telemetry fields; require " + ", ".join(sorted(required)))
 
 
 def _runtime(role, repositories, expected=None):
@@ -205,7 +162,7 @@ def _source_inner(raw):
         raise ValueError("Telemetry source must be bounded bytes")
     source = _json(raw)
     canonical(source)
-    _keys(source, {"schema", "samples", "channel_id", "frame", "clock_basis", "epoch",
+    exact_keys(source, {"schema", "samples", "channel_id", "frame", "clock_basis", "epoch",
                    "clock_mapping_ref", "frame_mapping_ref", "crosscov_policy", "covariance_status",
                    "covariance", "calibration_refs", "admission_ref", "mappings"})
     if source["schema"] != "ciw.telemetry-source.v1":
@@ -213,12 +170,12 @@ def _source_inner(raw):
     if not isinstance(source["samples"], list) or not 1 <= len(source["samples"]) <= 32:
         raise ValueError("Telemetry requires 1 to 32 retained scalar samples")
     for sample in source["samples"]:
-        _keys(sample, {"name", "value", "unit", "event_time", "received_at"})
+        exact_keys(sample, {"name", "value", "unit", "event_time", "received_at"})
         for field in ("value", "event_time", "received_at"):
             if type(sample[field]) not in (int, float) or not math.isfinite(sample[field]):
                 raise ValueError("Raw sample values and times must be finite real numbers")
         for field in ("event_time", "received_at"):
-            _instant(source["epoch"], sample[field])
+            utc_instant(source["epoch"], sample[field])
     # This operation has no general clock/frame transformation authority. A
     # named explicit identity map is the only implemented mapping, and its
     # complete declaration is retained. Other maps require a future operation.
@@ -244,8 +201,8 @@ def _ppda_request(source, evidence_ref):
     samples = source["samples"]
     return {
         "batch_id": "batch:" + evidence_ref.split(":", 1)[-1],
-        "observed_at": _instant(source["epoch"], max(row["event_time"] for row in samples)),
-        "received_at": _instant(source["epoch"], max(row["received_at"] for row in samples)),
+        "observed_at": utc_instant(source["epoch"], max(row["event_time"] for row in samples)),
+        "received_at": utc_instant(source["epoch"], max(row["received_at"] for row in samples)),
         "clock_basis": source["clock_basis"],
         "components": [{key: row[key] for key in ("name", "value", "unit")} for row in samples],
         "covariance_status": source["covariance_status"], "covariance": source["covariance"],
@@ -288,8 +245,8 @@ def _feature_batch(feature, source, configuration):
     # receipt. The observation model declares how a window mean measures state.
     return {"schema": "notation.instrument.observation-batch.v1",
         "batch_id": "feature-observation:" + artifact["result_id"].split(":", 1)[-1],
-        "observed_at": _instant(source["epoch"], configuration["gsie"]["target_time"]),
-        "received_at": _instant(source["epoch"], configuration["window"]["received_by"]),
+        "observed_at": utc_instant(source["epoch"], configuration["gsie"]["target_time"]),
+        "received_at": utc_instant(source["epoch"], configuration["window"]["received_by"]),
         "clock_basis": source["clock_basis"], "components": deepcopy(artifact["components"]),
         "covariance": deepcopy(artifact["covariance"]), "source_artifact_refs": [artifact["result_id"]],
         "admission_ref": "ciw:feature-transport-only", "admission_status": "reference_only",
@@ -324,15 +281,10 @@ def _step(role, operation_id, request, inputs, adapters, execution_id):
         "numerical_result": numerical, "numerical_result_id": digest(numerical)}
 
 
-def _bundle_digest(bundle):
-    return digest({key: value for key, value in bundle.items()
-                   if key not in {"bundle_digest", "verification", "replay_receipts"}})
-
-
 def _execute(raw, configuration, adapters, occurrence_template=None):
     source = _source(raw)
-    _keys(configuration, {"window", "gsie"}, {"cbsr"})
-    _keys(configuration["gsie"], {"prior", "dynamics", "observation_model", "target_time", "variables", "frame",
+    exact_keys(configuration, {"window", "gsie"}, {"cbsr"})
+    exact_keys(configuration["gsie"], {"prior", "dynamics", "observation_model", "target_time", "variables", "frame",
                                   "prior_measurement_crosscov_policy", "feature_observation_semantics"})
     if configuration["gsie"]["prior_measurement_crosscov_policy"] != "declared_zero":
         raise ValueError("This update requires explicitly declared prior-feature independence")
@@ -340,7 +292,7 @@ def _execute(raw, configuration, adapters, occurrence_template=None):
         raise ValueError("An explicit window-feature-to-state observation interpretation is required")
     if configuration["gsie"]["target_time"] != configuration["window"]["end"]:
         raise ValueError("The scalar feature observation is declared at the window end")
-    created_at = occurrence_template["created_at"] if occurrence_template else _now()
+    created_at = occurrence_template["created_at"] if occurrence_template else utc_now()
     runtimes = {role: adapter.runtime_identity() for role, adapter in adapters.items()}
     evidence_ref = byte_digest(raw)
     identities = iter(step["execution_id"] for step in occurrence_template["steps"]) if occurrence_template else None
@@ -374,7 +326,7 @@ def _execute(raw, configuration, adapters, occurrence_template=None):
             "evidence": [{"artifact_ref": evidence_ref, "sha256": evidence_ref,
                 "bytes_b64": base64.b64encode(raw).decode("ascii")}]},
         "configuration": deepcopy(configuration), "runtimes": runtimes, "steps": steps}
-    bundle["bundle_digest"] = _bundle_digest(bundle)
+    bundle["bundle_digest"] = bundle_digest(bundle)
     return bundle
 
 
@@ -396,9 +348,9 @@ def _validate_retained(bundle):
 def _validate_retained_inner(bundle):
     if len(canonical(bundle)) > MAX_BYTES:
         raise ValueError("Telemetry session exceeds byte budget")
-    _keys(bundle, {"schema", "session_id", "created_at", "source", "configuration", "runtimes", "steps", "bundle_digest"},
+    exact_keys(bundle, {"schema", "session_id", "created_at", "source", "configuration", "runtimes", "steps", "bundle_digest"},
           {"verification", "replay_receipts"})
-    if bundle["schema"] != SCHEMA or bundle["bundle_digest"] != _bundle_digest(bundle):
+    if bundle["schema"] != SCHEMA or bundle["bundle_digest"] != bundle_digest(bundle):
         raise ValueError("Telemetry session content binding mismatch")
     if "verification" in bundle:
         verification = bundle["verification"]
@@ -502,7 +454,7 @@ def create_session(source_bytes, configuration, repositories):
     replay_results = {old["execution_id"]: new["numerical_result"]
                       for old, new in zip(bundle["steps"], recomputed["steps"])}
     bundle["verification"] = _invoke("set", adapters, {"bundle": bundle,
-        "replay_results": replay_results, "created_at": _now()})
+        "replay_results": replay_results, "created_at": utc_now()})
     if bundle["verification"].get("outcome") != "passed":
         raise ValueError("SET did not verify the replayed telemetry session")
     return bundle
@@ -518,7 +470,7 @@ def replay_session(bundle, repositories):
     replay_results = {old["execution_id"]: new["numerical_result"]
                       for old, new in zip(bundle["steps"], fresh["steps"])}
     verification = _invoke("set", adapters, {"bundle": bundle,
-        "replay_results": replay_results, "created_at": _now()})
+        "replay_results": replay_results, "created_at": utc_now()})
     matched = all(digest(replay_results[step["execution_id"]]) == step["numerical_result_id"] for step in bundle["steps"])
     receipt = {"schema": "ciw.telemetry-replay.v1", "source_bundle_digest": bundle["bundle_digest"],
         "replayed_bundle_digest": fresh["bundle_digest"], "numerical_match": matched,
@@ -528,7 +480,7 @@ def replay_session(bundle, repositories):
         raise ValueError("Telemetry numerical replay or SET verification mismatch")
     fresh["verification"] = _invoke("set", adapters, {"bundle": fresh,
         "replay_results": {new["execution_id"]: old["numerical_result"]
-                           for old, new in zip(bundle["steps"], fresh["steps"])}, "created_at": _now()})
+                           for old, new in zip(bundle["steps"], fresh["steps"])}, "created_at": utc_now()})
     fresh["replay_receipts"] = [receipt]
     return {"session": fresh, "replay_receipt": receipt, "replay_results": replay_results}
 

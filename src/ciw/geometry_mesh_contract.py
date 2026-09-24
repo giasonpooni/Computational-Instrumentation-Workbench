@@ -8,7 +8,7 @@ from copy import deepcopy
 from fractions import Fraction
 import math
 
-from .telemetry import canonical, digest
+from .core.canonical import canonical, digest
 
 BUDGET = {"discretization": "not_estimated", "scan_noise": "not_established", "calibration": "not_established"}
 AUTHORITY = {"physical_accuracy": "not_established", "calibration": "not_performed",

@@ -14,7 +14,7 @@ from ciw.energy_workflow import EnergyAccuracyWorkflow, OPERATION, KIND
 from ciw.instruments import make_demo_run
 from ciw.server import WorkbenchServer
 from ciw.session import Session
-from ciw.telemetry import canonical, digest, byte_digest, _bundle_digest
+from ciw.core.canonical import canonical, digest, byte_digest, bundle_digest
 from ciw.workbench import Workbench
 from test_energy_records import make_log, reseal
 
@@ -41,7 +41,7 @@ def reseal_bundle(bundle):
         step["request_sha256"] = digest(step["request"])
         step["numerical_result"] = {"operation_id": step["operation_id"], "data": deepcopy(result["data"])}
         step["numerical_result_id"] = digest(step["numerical_result"])
-    bundle["bundle_digest"] = _bundle_digest(bundle)
+    bundle["bundle_digest"] = bundle_digest(bundle)
     verification = bundle["verification"]
     verification["subject_ref"] = bundle["bundle_digest"]
     verification["runtime_digest"] = digest(bundle["runtimes"])

@@ -11,7 +11,7 @@ import pytest
 from ciw import free_energy_math as mathematics, free_energy_native as native
 from ciw.free_energy_profile import problems
 from ciw.free_energy_workflow import FreeEnergyWorkflow, native_occurrences
-from ciw.telemetry import canonical
+from ciw.core.canonical import canonical
 
 ROOT = Path(__file__).resolve().parents[1]
 CASES = ("baseline", "correlated-noise", "ignored-correlation", "sensor-bias", "wrong-curvature", "unstable-step")

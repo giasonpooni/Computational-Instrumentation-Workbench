@@ -5,7 +5,7 @@ import math
 import numpy as np
 
 from .adapters.subprocess import _json
-from .telemetry import canonical, _keys
+from .core.canonical import canonical, exact_keys
 
 KIND = "variational-free-energy"
 SOURCE_SCHEMA = "ciw.variational-free-energy-source.v1"
@@ -55,14 +55,14 @@ def validate_source(raw):
         if type(raw) is not bytes or not 1 <= len(raw) <= SOURCE_LIMIT:
             raise ValueError("Free-energy source requires bounded exact JSON bytes")
         source = _json(raw)
-        _keys(source, {"schema", "experiment_id", "configuration", "geometry", "coordinates", "sensors",
+        exact_keys(source, {"schema", "experiment_id", "configuration", "geometry", "coordinates", "sensors",
                        "assumed_model", "generator", "samples", "representative_index", "solver"})
         if source["schema"] != SOURCE_SCHEMA or canonical(source["configuration"]) != canonical(POLICY):
             raise ValueError("Unsupported free-energy source or authority policy")
         if type(source["experiment_id"]) is not str or not 1 <= len(source["experiment_id"]) <= 128:
             raise ValueError("Require a bounded experiment identity")
         geo = source["geometry"]
-        _keys(geo, {"arclength", "gaussian_curvature", "length_unit", "relative_tolerance"})
+        exact_keys(geo, {"arclength", "gaussian_curvature", "length_unit", "relative_tolerance"})
         grid = geo["arclength"]
         if type(grid) is not list or not 2 <= len(grid) <= 81:
             raise ValueError("Require 2..81 arclength samples")
@@ -73,7 +73,7 @@ def validate_source(raw):
         if geo["length_unit"] != "m" or not 0 < number(geo["relative_tolerance"]) <= .01:
             raise ValueError("Declare metre arclength and a bounded linearization tolerance")
         coordinates = source["coordinates"]
-        _keys(coordinates, {"names", "units", "scales", "frame"})
+        exact_keys(coordinates, {"names", "units", "scales", "frame"})
         if coordinates["names"] != STATE_NAMES or coordinates["units"] != STATE_UNITS or coordinates["frame"] != "transverse-to-gamma, parallel-transported":
             raise ValueError("Declare the initial lateral/heading coordinate basis")
         if any(not 1e-4 <= x <= 1 for x in vector(coordinates["scales"])):
@@ -82,7 +82,7 @@ def validate_source(raw):
         if type(sensors) is not list or len(sensors) != 2:
             raise ValueError("Require two declared scalar measurement sources")
         for index, sensor in enumerate(sensors):
-            _keys(sensor, {"id", "component", "unit", "scale", "training_index", "heldout_index"})
+            exact_keys(sensor, {"id", "component", "unit", "scale", "training_index", "heldout_index"})
             if type(sensor["id"]) is not str or not 1 <= len(sensor["id"]) <= 64:
                 raise ValueError("Require a bounded sensor name")
             if sensor["component"] != ["lateral", "heading"][index] or sensor["unit"] != STATE_UNITS[index]:
@@ -95,14 +95,14 @@ def validate_source(raw):
         if sensors[0]["id"] == sensors[1]["id"]:
             raise ValueError("Measurement source identities must differ")
         model = source["assumed_model"]
-        _keys(model, {"prior_mean", "prior_covariance", "training_noise_covariance", "heldout_noise_covariance",
+        exact_keys(model, {"prior_mean", "prior_covariance", "training_noise_covariance", "heldout_noise_covariance",
                       "training_bias", "heldout_bias"})
         for key in ("prior_mean", "training_bias", "heldout_bias"):
             vector(model[key], 1)
         for key in ("prior_covariance", "training_noise_covariance", "heldout_noise_covariance"):
             matrix(model[key], positive=True)
         gen = source["generator"]
-        _keys(gen, {"kind", "seed", "numpy_version", "latent_distribution", "gaussian_curvature",
+        exact_keys(gen, {"kind", "seed", "numpy_version", "latent_distribution", "gaussian_curvature",
                     "training_noise_covariance", "heldout_noise_covariance", "training_bias", "heldout_bias"})
         if (gen["kind"] != "numpy_pcg64_retained_draws" or gen["numpy_version"] != "2.4.3" or
                 gen["latent_distribution"] != "assumed_model_prior" or type(gen["seed"]) is not int or not 0 <= gen["seed"] < 2**32):
@@ -116,7 +116,7 @@ def validate_source(raw):
         if type(samples) is not list or not 1 <= len(samples) <= 128:
             raise ValueError("Retain 1..128 actual synthetic realizations")
         for sample in samples:
-            _keys(sample, {"truth", "training_noise", "heldout_noise", "training", "heldout"})
+            exact_keys(sample, {"truth", "training_noise", "heldout_noise", "training", "heldout"})
             for value in sample.values():
                 vector(value, 10)
         # Bind the retained observations to the declared synthetic construction.
@@ -131,7 +131,7 @@ def validate_source(raw):
         if type(source["representative_index"]) is not int or not 0 <= source["representative_index"] < len(samples):
             raise ValueError("Representative sample is outside the retained ensemble")
         solver = source["solver"]
-        _keys(solver, {"initial_mean", "initial_covariance", "alpha", "beta", "max_iterations", "gradient_tolerance", "precision_tolerance"})
+        exact_keys(solver, {"initial_mean", "initial_covariance", "alpha", "beta", "max_iterations", "gradient_tolerance", "precision_tolerance"})
         vector(solver["initial_mean"], 100)
         matrix(solver["initial_covariance"], positive=True)
         if not 0 < number(solver["alpha"]) <= 10 or not 0 < number(solver["beta"]) < 1:

@@ -7,7 +7,7 @@ import subprocess
 import pytest
 
 from ciw.geometry_covariance_contract import validate_request, validate_result
-from ciw.telemetry import digest
+from ciw.core.canonical import digest
 
 
 def result():

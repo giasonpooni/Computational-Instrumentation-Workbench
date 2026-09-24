@@ -8,7 +8,7 @@ from pathlib import Path
 import pytest
 
 from ciw.spatial_view import _source, project, AUTHORITY
-from ciw.telemetry import canonical
+from ciw.core.canonical import canonical
 
 EXAMPLE = Path(__file__).parents[1] / "examples/workbench/geographic-context.json"
 

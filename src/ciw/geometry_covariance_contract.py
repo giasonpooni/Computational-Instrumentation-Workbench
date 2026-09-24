@@ -10,7 +10,7 @@ from __future__ import annotations
 from copy import deepcopy
 import math
 
-from .telemetry import canonical, digest
+from .core.canonical import canonical, digest
 
 REQUEST_SCHEMA = "covariance-geometry-request-v1"
 RESULT_SCHEMA = "covariance-geometry-result-v1"

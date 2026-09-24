@@ -137,7 +137,7 @@ def _surface(kind):
 
 
 def _canonical(value):
-    from .telemetry import canonical
+    from .core.canonical import canonical
     return canonical(value)
 
 

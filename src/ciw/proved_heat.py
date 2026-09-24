@@ -22,7 +22,7 @@ from .declared_workload import (
     AUTHORITY, DeclaredWorkflow, HEAT_POLICY, RESULT_SCHEMA, _check_data, _commit, _text,
 )
 from .exchange import _identity, _read
-from .telemetry import canonical, digest, byte_digest, _bundle_digest, _now, _keys
+from .core.canonical import canonical, digest, byte_digest, bundle_digest, utc_now, exact_keys
 
 MAX_BYTES = 24 * 1024 * 1024
 PROOF_LIMIT = 8 * 1024 * 1024
@@ -52,7 +52,7 @@ def _source(raw):
     if not isinstance(raw, bytes) or not 1 <= len(raw) <= SOURCE_LIMIT:
         raise ValueError("Proved heat source requires 1..32768 exact bytes")
     value = _json(raw)
-    _keys(value, {"schema", "experiment_id", "configuration", "initial_values", "steps"})
+    exact_keys(value, {"schema", "experiment_id", "configuration", "initial_values", "steps"})
     if value["schema"] != "ciw.proved-heat-source.v1":
         raise ValueError("Unsupported proved heat source")
     _text(value["experiment_id"])
@@ -141,7 +141,7 @@ print(json.dumps(result, sort_keys=True, separators=(',', ':'), ensure_ascii=Fal
 
 
 def _proof_bytes(proof):
-    _keys(proof, {"bytes_b64", "sha256", "byte_count", "identity", "backend_name", "backend_version", "guest_sha256"})
+    exact_keys(proof, {"bytes_b64", "sha256", "byte_count", "identity", "backend_name", "backend_version", "guest_sha256"})
     encoded = proof["bytes_b64"]
     if not isinstance(encoded, str) or len(encoded) > 4 * ((PROOF_LIMIT + 2) // 3):
         raise ValueError("Retained proof exceeds its byte budget")
@@ -172,7 +172,7 @@ def _seconds(value):
 
 
 def _memory(value):
-    _keys(value, {"status", "unit", "bytes", "scope"})
+    exact_keys(value, {"status", "unit", "bytes", "scope"})
     if value["unit"] != "byte" or value["scope"] != MEMORY_SCOPE:
         raise ValueError("Memory must retain the largest waited-child peak RSS scope and byte units")
     if value["status"] == "not_measured":
@@ -187,11 +187,11 @@ def _memory(value):
 
 
 def _data(source, value):
-    _keys(value, {"native", "proof", "verifier", "timings"})
+    exact_keys(value, {"native", "proof", "verifier", "timings"})
     _check_data("numerical-heat", source, value["native"])
     _proof_bytes(value["proof"])
     _verifier(value["verifier"], value["native"], value["proof"])
-    _keys(value["timings"], {"native_seconds", "prove_and_verify_seconds", "reverify_seconds", "memory"})
+    exact_keys(value["timings"], {"native_seconds", "prove_and_verify_seconds", "reverify_seconds", "memory"})
     for key in ("native_seconds", "prove_and_verify_seconds", "reverify_seconds"):
         _seconds(value["timings"][key])
     _memory(value["timings"]["memory"])
@@ -249,7 +249,7 @@ class ProvedHeatWorkflow(DeclaredWorkflow):
 
     @staticmethod
     def _check_runtime(runtime):
-        _keys(runtime, {"schema", "adapter_version", "repository_root", "revision", "source_tree", "module", "source_root",
+        exact_keys(runtime, {"schema", "adapter_version", "repository_root", "revision", "source_tree", "module", "source_root",
             "python_executable", "python_sha256", "python_version", "dependencies", "engine", "prover", "guest"})
         if (runtime["schema"] != "ciw.subprocess-runtime.v1" or runtime["adapter_version"] != "ciw-pinned-subprocess-v1" or
                 any(runtime[k] != v for k, v in PIN.items()) or
@@ -259,13 +259,13 @@ class ProvedHeatWorkflow(DeclaredWorkflow):
             _text(runtime[key])
         if not re.fullmatch(r"\d+\.\d+\.\d+", runtime["python_version"]) or tuple(map(int, runtime["python_version"].split(".")[:2])) < (3, 10):
             raise ValueError("SCR requires Python 3.10 or newer")
-        _keys(runtime["dependencies"], {"numpy", "scipy"})
+        exact_keys(runtime["dependencies"], {"numpy", "scipy"})
         for value in runtime["dependencies"].values():
             if value is not None:
                 _text(value)
         for role, limit in BINARY_LIMITS.items():
             binary = runtime[role]
-            _keys(binary, {"sha256", "byte_count", "source_binding"})
+            exact_keys(binary, {"sha256", "byte_count", "source_binding"})
             if (not isinstance(binary["sha256"], str) or not re.fullmatch(_DIGEST, binary["sha256"]) or
                     type(binary["byte_count"]) is not int or not 1 <= binary["byte_count"] <= limit or
                     binary["source_binding"] != ("registered_guest_sha256" if role == "guest" else "operator_asserted_not_attested")):
@@ -319,14 +319,14 @@ class ProvedHeatWorkflow(DeclaredWorkflow):
             "numerical_result": numerical, "numerical_result_id": digest(numerical)}
 
     def _validate_step(self, step, source, evidence):
-        _keys(step, {"runtime_ref", "operation_id", "execution_id", "input_refs", "request", "request_sha256",
+        exact_keys(step, {"runtime_ref", "operation_id", "execution_id", "input_refs", "request", "request_sha256",
             "result", "result_sha256", "result_id", "numerical_result", "numerical_result_id"})
         if (step["runtime_ref"] != "scr" or step["operation_id"] != self.operation or step["input_refs"] != [evidence] or
                 not isinstance(step["execution_id"], str) or not re.fullmatch(r"execution-[a-f0-9]{32}", step["execution_id"])):
             raise ValueError("Invalid proved heat execution or source binding")
         _same(step["request"], source, "Proof request differs from retained source")
         result = step["result"]
-        _keys(result, {"schema", "operation_id", "execution_ref", "input_refs", "data", "authority", "result_id"})
+        exact_keys(result, {"schema", "operation_id", "execution_ref", "input_refs", "data", "authority", "result_id"})
         _data(source, result["data"])
         _same(result["authority"], AUTHORITY, "A proof cannot confer physical or admission authority")
         if (result["schema"] != RESULT_SCHEMA or result["operation_id"] != self.operation or
@@ -341,11 +341,11 @@ class ProvedHeatWorkflow(DeclaredWorkflow):
     def _execute(self, raw, bound):
         source, evidence = self._source(raw), byte_digest(raw)
         step = self._step(source, evidence, bound)
-        bundle = {"schema": self.schema, "session_id": "session-" + uuid.uuid4().hex, "created_at": _now(),
+        bundle = {"schema": self.schema, "session_id": "session-" + uuid.uuid4().hex, "created_at": utc_now(),
             "source": {"experiment_id": source["experiment_id"], "experiment_digest": digest(source),
                 "evidence": [{"artifact_ref": evidence, "sha256": evidence, "bytes_b64": base64.b64encode(raw).decode()}]},
             "configuration": deepcopy(source["configuration"]), "runtimes": {"scr": bound[1]}, "steps": [step]}
-        bundle["bundle_digest"] = _bundle_digest(bundle)
+        bundle["bundle_digest"] = bundle_digest(bundle)
         bundle["verification"] = _verification(bundle, "verification-" + uuid.uuid4().hex)
         self._validate(bundle)
         return bundle
@@ -353,8 +353,8 @@ class ProvedHeatWorkflow(DeclaredWorkflow):
     def _validate(self, bundle):
         """Validate stored bindings only; never execute or assert fresh proof trust."""
         try:
-            _keys(bundle, {"schema", "session_id", "created_at", "source", "configuration", "runtimes", "steps", "bundle_digest", "verification"}, {"replay_receipts"})
-            if len(canonical(bundle)) > MAX_BYTES or bundle["schema"] != self.schema or bundle["bundle_digest"] != _bundle_digest(bundle):
+            exact_keys(bundle, {"schema", "session_id", "created_at", "source", "configuration", "runtimes", "steps", "bundle_digest", "verification"}, {"replay_receipts"})
+            if len(canonical(bundle)) > MAX_BYTES or bundle["schema"] != self.schema or bundle["bundle_digest"] != bundle_digest(bundle):
                 raise ValueError("Proved heat bundle exceeds budget or content binding differs")
             if not isinstance(bundle["session_id"], str) or not re.fullmatch(r"session-[a-f0-9]{32}", bundle["session_id"]):
                 raise ValueError("Invalid proved heat session occurrence")
@@ -365,7 +365,7 @@ class ProvedHeatWorkflow(DeclaredWorkflow):
             _same(evidence, {"artifact_ref": byte_digest(raw), "sha256": byte_digest(raw), "bytes_b64": base64.b64encode(raw).decode()}, "Exact source binding mismatch")
             _same(bundle["source"], {"experiment_id": source["experiment_id"], "experiment_digest": digest(source), "evidence": [evidence]}, "Source identity mismatch")
             _same(bundle["configuration"], source["configuration"], "Source policy mismatch")
-            _keys(bundle["runtimes"], {"scr"})
+            exact_keys(bundle["runtimes"], {"scr"})
             self._check_runtime(bundle["runtimes"]["scr"])
             step, = bundle["steps"]
             self._validate_step(step, source, evidence["artifact_ref"])
@@ -393,7 +393,7 @@ class ProvedHeatWorkflow(DeclaredWorkflow):
         bound = self._adapters(repositories)
         data = bundle["steps"][0]["result"]["data"]
         answer = self._invoke(source, bound, retained=data)
-        _keys(answer, {"verifier", "seconds", "memory"})
+        exact_keys(answer, {"verifier", "seconds", "memory"})
         _verifier(answer["verifier"], data["native"], data["proof"])
         _seconds(answer["seconds"])
         _memory(answer["memory"])
@@ -420,7 +420,7 @@ class ProvedHeatWorkflow(DeclaredWorkflow):
             "trust_scope": TRUST_SCOPE, "authority": deepcopy(AUTHORITY)})
 
     def _check_receipt(self, fresh, receipt):
-        _keys(receipt, {"schema", "source_bundle_digest", "replayed_bundle_digest", "numerical_match", "verification", "admission", "replay_id"})
+        exact_keys(receipt, {"schema", "source_bundle_digest", "replayed_bundle_digest", "numerical_match", "verification", "admission", "replay_id"})
         source_id = receipt["source_bundle_digest"]
         if (receipt["schema"] != "ciw.proved-heat-replay.v1" or not isinstance(source_id, str) or not re.fullmatch(_DIGEST, source_id) or
                 source_id == fresh["bundle_digest"] or receipt["replayed_bundle_digest"] != fresh["bundle_digest"] or
@@ -428,7 +428,7 @@ class ProvedHeatWorkflow(DeclaredWorkflow):
                 receipt["replay_id"] != digest({k:v for k,v in receipt.items() if k != "replay_id"})):
             raise ValueError("Invalid proved heat replay receipt")
         verification = receipt["verification"]
-        _keys(verification, {"schema", "subject_ref", "outcome", "independent", "method", "runtime_digest", "fresh_runtime_digest",
+        exact_keys(verification, {"schema", "subject_ref", "outcome", "independent", "method", "runtime_digest", "fresh_runtime_digest",
             "original_execution_id", "fresh_execution_id", "fresh_result_id", "numerical_result_id", "proof_identity",
             "fresh_verification_id", "trust_scope", "authority", "verification_id"})
         old_id, runtime = verification["original_execution_id"], verification["runtime_digest"]

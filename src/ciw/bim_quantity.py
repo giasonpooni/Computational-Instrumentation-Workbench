@@ -19,7 +19,7 @@ from .adapters.protocol import AdapterRefusal
 from .adapters.subprocess import _json
 from .core.covariance import _validate_matrix
 from .declared_workload import DeclaredWorkflow, AUTHORITY, RESULT_SCHEMA, _text
-from .telemetry import canonical, digest, byte_digest, _keys
+from .core.canonical import canonical, digest, byte_digest, exact_keys
 
 PIN = {"role": "cse", "revision": "4b74abda40bba3277de69bf61e9e09283ae2d5b3",
        "source_root": ".", "module": "gat.session"}
@@ -47,14 +47,14 @@ def _number(value, *, positive=False):
 
 
 def _target(value):
-    _keys(value, {"ifc_class", "global_id", "quantity"})
+    exact_keys(value, {"ifc_class", "global_id", "quantity"})
     for field in value.values():
         _text(field)
 
 
 def _observation(source):
     observation = _json(_bytes(source["observation_bytes_b64"], 4096))
-    _keys(observation, {"schema", "value", "variance", "unit", "frame", "ifc_sha256",
+    exact_keys(observation, {"schema", "value", "variance", "unit", "frame", "ifc_sha256",
                         "ifc_class", "global_id", "quantity", "cross_covariance_policy"})
     if observation["schema"] != "ciw.bim-scalar-observation.v1":
         raise ValueError("Require a typed scalar observation")
@@ -76,7 +76,7 @@ def _source(raw):
         raise ValueError("BIM source exceeds byte budget")
     source = _json(raw)
     canonical(source)
-    _keys(source, {"schema", "experiment_id", "configuration", "ifc_bytes_b64",
+    exact_keys(source, {"schema", "experiment_id", "configuration", "ifc_bytes_b64",
                    "observation_bytes_b64", "target", "model_frame"})
     if source["schema"] != "ciw.bim-quantity-source.v1" or source["configuration"] != POLICY:
         raise ValueError("Require bounded BIM quantity source and explicit policy")
@@ -166,7 +166,7 @@ print(json.dumps(data, sort_keys=True, separators=(',', ':'), ensure_ascii=False
 
 
 def _state(value):
-    _keys(value, {"world_digest", "belief_digest", "quantities", "mean", "covariance"})
+    exact_keys(value, {"world_digest", "belief_digest", "quantities", "mean", "covariance"})
     for key in ("world_digest", "belief_digest"):
         if not isinstance(value[key], str) or not re.fullmatch(r"[a-f0-9]{64}", value[key]):
             raise ValueError("Invalid native world/belief identity")
@@ -175,7 +175,7 @@ def _state(value):
         raise ValueError("BIM quantity state exceeds budget")
     identities = set()
     for quantity in quantities:
-        _keys(quantity, {"ifc_class", "global_id", "quantity", "unit", "role"})
+        exact_keys(quantity, {"ifc_class", "global_id", "quantity", "unit", "role"})
         _target({k: quantity[k] for k in ("ifc_class", "global_id", "quantity")})
         _text(quantity["unit"])
         if quantity["role"] not in ("raw", "derived"):
@@ -209,11 +209,11 @@ def _state(value):
 
 
 def _report(report):
-    _keys(report, {"passed", "results"})
+    exact_keys(report, {"passed", "results"})
     if type(report["passed"]) is not bool or not isinstance(report["results"], list) or not 1 <= len(report["results"]) <= 512:
         raise ValueError("Invalid native invariant report")
     for row in report["results"]:
-        _keys(row, {"invariant_id", "status", "subject", "residual", "detail"})
+        exact_keys(row, {"invariant_id", "status", "subject", "residual", "detail"})
         if row["status"] not in ("PASS", "WARN", "FAIL"):
             raise ValueError("Unknown native invariant status")
         for key in ("invariant_id", "subject"):
@@ -237,7 +237,7 @@ def _state_digests(state, module_digest):
 
 
 def _check_data(source, data):
-    _keys(data, {"status", "reason", "ifc_sha256", "observation_sha256", "target", "model_frame",
+    exact_keys(data, {"status", "reason", "ifc_sha256", "observation_sha256", "target", "model_frame",
                  "geometry_authority", "unit_context", "prior", "posterior", "ledger", "ledger_replay", "invariants", "native_error"})
     if (data["status"] not in ("accepted", "held", "refused") or data["reason"] not in REASONS or
             data["target"] != source["target"] or data["model_frame"] != source["model_frame"] or
@@ -258,7 +258,7 @@ def _check_data(source, data):
     if data["prior"]["quantities"] != data["posterior"]["quantities"]:
         raise ValueError("Native conditioning changed quantity identity")
     unit_context = data["unit_context"]
-    _keys(unit_context, {"scale_to_metres", "kind", "name", "prefix", "source_step_id", "assumed"})
+    exact_keys(unit_context, {"scale_to_metres", "kind", "name", "prefix", "source_step_id", "assumed"})
     _number(unit_context["scale_to_metres"], positive=True)
     if type(unit_context["assumed"]) is not bool:
         raise ValueError("Invalid source unit authority")
@@ -284,7 +284,7 @@ def _check_data(source, data):
     if data["reason"] != expected_reason:
         raise ValueError("Native BIM outcome reason mismatch")
     ledger = data["ledger"]
-    _keys(ledger, {"format", "schema_version", "runtime_contract", "events", "integrity"})
+    exact_keys(ledger, {"format", "schema_version", "runtime_contract", "events", "integrity"})
     if ledger["format"] != "gat-execution-ledger" or ledger["schema_version"] != 1 or ledger["runtime_contract"] != "gat-world-v1":
         raise ValueError("Require native CSE execution ledger")
     events = ledger["events"]
@@ -293,7 +293,7 @@ def _check_data(source, data):
         raise ValueError("Unexpected native ledger topology")
     previous = "0" * 64
     for seq, event in enumerate(events):
-        _keys(event, {"seq", "kind", "operation", "provenance", "prior_world_digest", "result_world_digest",
+        exact_keys(event, {"seq", "kind", "operation", "provenance", "prior_world_digest", "result_world_digest",
                       "verification", "verification_digest", "error_type", "error_message", "error_digest", "previous_hash", "event_hash"})
         if event["seq"] != seq or event["previous_hash"] != previous:
             raise ValueError("Broken native ledger chain")
@@ -306,7 +306,7 @@ def _check_data(source, data):
     if ledger["integrity"] != {"algorithm": "sha256", "head": previous} or events[0]["result_world_digest"] != prior["world_digest"] or events[-1]["result_world_digest"] != data["posterior"]["world_digest"]:
         raise ValueError("Native ledger world binding mismatch")
     genesis = events[0]
-    _keys(genesis["operation"], {"belief_digest", "module_digest", "configuration_digest", "runtime_contract"})
+    exact_keys(genesis["operation"], {"belief_digest", "module_digest", "configuration_digest", "runtime_contract"})
     if (genesis["kind"] != "genesis" or genesis["prior_world_digest"] != prior["world_digest"] or
             genesis["operation"]["belief_digest"] != prior["belief_digest"] or
             genesis["operation"]["runtime_contract"] != "gat-world-v1" or genesis["provenance"] != {} or
@@ -320,7 +320,7 @@ def _check_data(source, data):
     if data["status"] != "accepted" and canonical(data["prior"]) != canonical(data["posterior"]):
         raise ValueError("Held/refused conditioning must preserve the exact prior state")
     replay = data["ledger_replay"]
-    _keys(replay, {"world_digest", "accepted", "rejected", "non_state", "events_replayed", "head"})
+    exact_keys(replay, {"world_digest", "accepted", "rejected", "non_state", "events_replayed", "head"})
     expected = {"world_digest": data["posterior"]["world_digest"], "accepted": int(data["status"] == "accepted"),
                 "rejected": int(data["status"] == "refused"), "non_state": 0,
                 "events_replayed": count - 1, "head": previous}
@@ -387,13 +387,13 @@ class BimQuantityWorkflow(DeclaredWorkflow):
                 "numerical_result": numerical, "numerical_result_id": digest(numerical)}
 
     def _validate_step(self, step, source, evidence_id):
-        _keys(step, {"runtime_ref", "operation_id", "execution_id", "input_refs", "request", "request_sha256", "result", "result_sha256", "result_id", "numerical_result", "numerical_result_id"})
+        exact_keys(step, {"runtime_ref", "operation_id", "execution_id", "input_refs", "request", "request_sha256", "result", "result_sha256", "result_id", "numerical_result", "numerical_result_id"})
         if step["runtime_ref"] != self.role or step["operation_id"] != self.operation or step["input_refs"] != [evidence_id] or canonical(step["request"]) != canonical(source):
             raise ValueError("BIM request/operation/evidence binding mismatch")
         if not isinstance(step["execution_id"], str) or not re.fullmatch(r"execution-[a-f0-9]{32}", step["execution_id"]):
             raise ValueError("Invalid native execution occurrence")
         result = step["result"]
-        _keys(result, {"schema", "operation_id", "execution_ref", "input_refs", "data", "authority", "result_id"})
+        exact_keys(result, {"schema", "operation_id", "execution_ref", "input_refs", "data", "authority", "result_id"})
         _check_data(source, result["data"])
         if (result["schema"] != RESULT_SCHEMA or result["authority"] != AUTHORITY or result["operation_id"] != self.operation or
                 result["execution_ref"] != step["execution_id"] or result["input_refs"] != [evidence_id] or

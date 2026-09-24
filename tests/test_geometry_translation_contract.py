@@ -8,7 +8,7 @@ from copy import deepcopy
 import pytest
 
 from ciw.geometry_translation_contract import validate_request, validate_result
-from ciw.telemetry import digest
+from ciw.core.canonical import digest
 
 # Captured from work/tsde-implementation/src/translation_surface_dynamics/flow.py.
 # No provider import, subprocess, or numerical execution occurs in these tests.

@@ -22,7 +22,7 @@ from .adapters.protocol import AdapterRefusal
 from .adapters.subprocess import PinnedSubprocessAdapter, _json
 from .exchange import _identity, _read
 from .session import write_json
-from .telemetry import canonical, digest, byte_digest, _bundle_digest, _now
+from .core.canonical import canonical, digest, byte_digest, bundle_digest, utc_now
 
 SCHEMA = "ciw.identified-design-session.v1"
 SOURCE_SCHEMA = "ciw.identified-design-input.v1"
@@ -379,7 +379,7 @@ def _result(role, operation, execution, refs, data, source, created):
 def _execute(raw, upstream, upstream_replay, adapters, template=None):
     source = _source(raw, upstream)
     evidence = byte_digest(raw)
-    created = template["created_at"] if template else _now()
+    created = template["created_at"] if template else utc_now()
     steps = []
     for index,(role,operation) in enumerate(OPERATIONS):
         execution = template["steps"][index]["execution_id"] if template else "execution-"+uuid.uuid4().hex
@@ -398,7 +398,7 @@ def _execute(raw, upstream, upstream_replay, adapters, template=None):
         "decision":{"selected_candidate_id":_data(steps[3])["selected_candidate_id"],
                     "token_admitted":_data(steps[4])["admitted"],"authority":"advisory_only",
                     "uncertainty_scope":SCOPE,"acquisition":"not_performed","state_admission":"not_performed"}}
-    bundle["bundle_digest"] = _bundle_digest(bundle)
+    bundle["bundle_digest"] = bundle_digest(bundle)
     return bundle
 
 
@@ -444,7 +444,7 @@ def _validate(bundle):
                     "runtimes","steps","decision","bundle_digest"}
         if not required <= set(bundle) <= required | {"verification","replay_receipts"}:
             raise ValueError("Unexpected identified-design session fields")
-        if len(canonical(bundle)) > MAX_BYTES or bundle["schema"] != SCHEMA or bundle["bundle_digest"] != _bundle_digest(bundle):
+        if len(canonical(bundle)) > MAX_BYTES or bundle["schema"] != SCHEMA or bundle["bundle_digest"] != bundle_digest(bundle):
             raise ValueError("Identified-design session content binding mismatch")
         evidence, = bundle["source"]["evidence"]
         raw = base64.b64decode(evidence["bytes_b64"],validate=True)
@@ -539,7 +539,7 @@ def _compare(original,reproduced):
 
 def _verify(bundle,adapters):
     artifact = {"schema":"notation.instrument.verification-artifact.v1","subject_ref":bundle["bundle_digest"],
-        "verifier_ref":"ciw:identified-design-pinned-replay.v1","created_at":_now(),"outcome":"passed",
+        "verifier_ref":"ciw:identified-design-pinned-replay.v1","created_at":utc_now(),"outcome":"passed",
         "independent":False,"external_verifier_ref":None,
         "checks":[{"name":"exact_pinned_recomputation","outcome":"passed","basis":"all five retained operation outputs matched fresh pinned execution"},
                   {"name":"upstream_calibrated_replay","outcome":"passed","basis":"upstream original replayed before use"}],

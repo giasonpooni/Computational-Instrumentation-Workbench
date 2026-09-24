@@ -23,7 +23,7 @@ from ciw.adapters import subprocess as adapter_subprocess
 from ciw.instruments import make_demo_run
 from ciw.server import WorkbenchServer
 from ciw.session import Session
-from ciw.telemetry import canonical, digest
+from ciw.core.canonical import canonical, digest
 from test_energy_records import make_log
 
 ROOT = Path(__file__).resolve().parents[1]

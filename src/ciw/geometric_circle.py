@@ -17,7 +17,7 @@ from .adapters.subprocess import _json
 from .declared_workload import AUTHORITY, DeclaredWorkflow, RESULT_SCHEMA, _text
 from .core.records import number
 from .geodesic import GTE_OPERATION, _make_run, _observations, _parse
-from .telemetry import canonical, digest, _keys
+from .core.canonical import canonical, digest, exact_keys
 
 KIND = "geometric-circle"
 SOURCE_SCHEMA = "ciw.geometric-circle-source.v1"
@@ -55,7 +55,7 @@ def _source(raw):
         raise ValueError("Geometric source exceeds byte budget")
     source = _json(raw)
     canonical(source)
-    _keys(source, {"schema", "experiment_id", "configuration", "request_bytes_b64"})
+    exact_keys(source, {"schema", "experiment_id", "configuration", "request_bytes_b64"})
     if source["schema"] != SOURCE_SCHEMA or canonical(source["configuration"]) != canonical(POLICY):
         raise ValueError("Require bounded geometric-circle source and explicit policy")
     _text(source["experiment_id"])
@@ -71,7 +71,7 @@ def _check_data(source, data):
     run = _make_run(request_bytes(source))
     declared = request(source)
     obs, con, policy = declared["observations"], declared["constraint"], declared["policy"]
-    _keys(obs, {"source_id", "observation_ids", "time_origin", "time_s", "points_m",
+    exact_keys(obs, {"source_id", "observation_ids", "time_origin", "time_s", "points_m",
                 "coordinate_frame", "quantity_order", "unit", "covariance"})
     count = len(obs["time_s"])
     _text(obs["source_id"])
@@ -87,7 +87,7 @@ def _check_data(source, data):
     if len(set(ids)) != count:
         raise ValueError("Duplicate GTE observation identity")
     covariance = obs["covariance"]
-    _keys(covariance, {"matrix", "ordering", "unit", "meaning", "source"})
+    exact_keys(covariance, {"matrix", "ordering", "unit", "meaning", "source"})
     if (covariance["ordering"] != "sample-major:x,y" or covariance["unit"] != "m^2" or
             covariance["meaning"] != "joint_observation_covariance"):
         raise ValueError("GTE input covariance semantics differ")
@@ -100,7 +100,7 @@ def _check_data(source, data):
     from .calibrated_window import _covariance as exact_covariance
     exact_covariance(covariance["matrix"], 2 * count)
     _covariance(covariance["matrix"], 2 * count, "declared input covariance")
-    _keys(con, {"constraint_id", "version", "kind", "metric", "coordinate_frame", "center_m",
+    exact_keys(con, {"constraint_id", "version", "kind", "metric", "coordinate_frame", "center_m",
                 "radius_m", "valid_time_s", "geometry_uncertainty"})
     _text(con["constraint_id"])
     _text(con["version"])
@@ -112,7 +112,7 @@ def _check_data(source, data):
             not start < end or not all(start <= timestamp < end for timestamp in obs["time_s"]) or
             any(point == con["center_m"] for point in obs["points_m"])):
         raise ValueError("Native GTE result requires applicable fixed-exact geometry")
-    _keys(policy, {"max_correction_m", "max_linearization_ratio"})
+    exact_keys(policy, {"max_correction_m", "max_linearization_ratio"})
     if number(policy["max_correction_m"], "correction limit") < 0 or number(policy["max_linearization_ratio"], "linearization limit") <= 0:
         raise ValueError("Invalid GTE candidate policy")
     validate_payload(GTE_OPERATION, data, run, {},
@@ -151,7 +151,7 @@ class GeometricCircleWorkflow(DeclaredWorkflow):
                 "numerical_result": numerical, "numerical_result_id": digest(numerical)}
 
     def _validate_step(self, step, source, evidence_id):
-        _keys(step, {"runtime_ref", "operation_id", "execution_id", "input_refs", "request", "request_sha256",
+        exact_keys(step, {"runtime_ref", "operation_id", "execution_id", "input_refs", "request", "request_sha256",
                      "result", "result_sha256", "result_id", "numerical_result", "numerical_result_id"})
         if (step["runtime_ref"] != self.role or step["operation_id"] != self.operation or
                 step["input_refs"] != [evidence_id] or canonical(step["request"]) != canonical(source)):
@@ -159,7 +159,7 @@ class GeometricCircleWorkflow(DeclaredWorkflow):
         if not isinstance(step["execution_id"], str) or not re.fullmatch(r"execution-[a-f0-9]{32}", step["execution_id"]):
             raise ValueError("Invalid GTE execution occurrence")
         result = step["result"]
-        _keys(result, {"schema", "operation_id", "execution_ref", "input_refs", "data", "authority", "result_id"})
+        exact_keys(result, {"schema", "operation_id", "execution_ref", "input_refs", "data", "authority", "result_id"})
         _check_data(source, result["data"])
         if (result["schema"] != RESULT_SCHEMA or canonical(result["authority"]) != canonical(AUTHORITY) or
                 result["operation_id"] != self.operation or result["execution_ref"] != step["execution_id"] or

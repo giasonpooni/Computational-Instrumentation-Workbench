@@ -10,9 +10,8 @@ import sys
 
 import pytest
 
-from ciw.telemetry import (_source, _instant, _bundle_digest, _cbsr_layout, _numerical, _PPDAProjection,
-                           _BOOTSTRAP, canonical, digest, create_session,
-                           inspect_session, replay_session, read_session, save_session)
+from ciw.core.canonical import utc_instant, bundle_digest, canonical, digest
+from ciw.telemetry import _source, _cbsr_layout, _numerical, _PPDAProjection, _BOOTSTRAP, create_session, inspect_session, replay_session, read_session, save_session
 from ciw.adapters.protocol import AdapterRefusal
 from ciw.adapters.subprocess import _json
 
@@ -62,8 +61,8 @@ def test_mapping_must_be_explicit_identity():
 
 def test_time_rounding_is_refused():
     with pytest.raises(ValueError, match="microsecond"):
-        _instant("2026-09-20T00:00:00Z", 1e-7)
-    assert _instant("2026-09-20T00:00:00Z", .1).endswith("00.100000Z")
+        utc_instant("2026-09-20T00:00:00Z", 1e-7)
+    assert utc_instant("2026-09-20T00:00:00Z", .1).endswith("00.100000Z")
 
 
 def test_json_literal_underflow_is_not_false_zero():
@@ -150,7 +149,7 @@ def test_tampering_rejected_even_if_outer_bundle_rehashed(bundle, mutate):
     changed = deepcopy(bundle)
     changed.pop("verification", None)
     mutate(changed)
-    changed["bundle_digest"] = _bundle_digest(changed)
+    changed["bundle_digest"] = bundle_digest(changed)
     with pytest.raises(ValueError):
         inspect_session(changed)
 
@@ -184,7 +183,7 @@ def test_runtime_pin_cannot_be_changed_by_bundle(bundle, repositories):
     changed = deepcopy(bundle)
     changed.pop("verification", None)
     changed["runtimes"]["gsie"]["revision"] = "0" * 40
-    changed["bundle_digest"] = _bundle_digest(changed)
+    changed["bundle_digest"] = bundle_digest(changed)
     with pytest.raises(ValueError, match="identity mismatch"):
         replay_session(changed, repositories)
 
@@ -201,7 +200,7 @@ def test_rehashed_non_numeric_result_tamper_refused_by_exact_reexecution(bundle,
         {key: value for key, value in artifact.items() if key != "result_id"})).hexdigest()
     step["result_id"] = artifact["result_id"]
     step["result_sha256"] = digest(step["result"])
-    changed["bundle_digest"] = _bundle_digest(changed)
+    changed["bundle_digest"] = bundle_digest(changed)
     with pytest.raises(ValueError, match="exact pinned recomputation"):
         replay_session(changed, repositories)
 

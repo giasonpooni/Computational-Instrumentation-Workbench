@@ -21,7 +21,7 @@ import numpy as np
 from . import energy_records, free_energy_math
 from .energy_cuda import CudaGaussianWorker
 from .energy_nvml import NVMLEnergyCounter
-from .telemetry import canonical, digest
+from .core.canonical import canonical, digest
 
 SPEC_SCHEMA = "ciw.energy-problem.v1"
 

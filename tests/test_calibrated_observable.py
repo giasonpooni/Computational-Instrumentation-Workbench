@@ -13,7 +13,7 @@ from ciw.calibrated_observable import (
     OPERATIONS, ROLES, _numerical, _source, canonical, create_session, digest,
     inspect_session, read_session, replay_session, save_session,
 )
-from ciw.telemetry import _bundle_digest
+from ciw.core.canonical import bundle_digest
 
 ROOT = Path(__file__).resolve().parents[1]
 SOURCE = (ROOT / "examples/calibrated-observable/source.json").read_bytes()
@@ -206,7 +206,7 @@ def test_content_tampering_rejected_after_outer_rehash(bundle, mutate):
     changed = deepcopy(bundle)
     changed.pop("verification", None)
     mutate(changed)
-    changed["bundle_digest"] = _bundle_digest(changed)
+    changed["bundle_digest"] = bundle_digest(changed)
     with pytest.raises(ValueError):
         inspect_session(changed)
 
@@ -220,7 +220,7 @@ def test_equal_python_numbers_cannot_substitute_retained_json(bundle, target, re
                    else changed["steps"][3]["request"]["inputs"]["declaration"])
     assert type(declaration["transition"][0][0]) is float
     declaration["transition"][0][0] = replacement
-    changed["bundle_digest"] = _bundle_digest(changed)
+    changed["bundle_digest"] = bundle_digest(changed)
     with pytest.raises(ValueError, match="Configuration differs|Request differs"):
         inspect_session(changed)
 
@@ -232,7 +232,7 @@ def test_rehashed_numerical_projection_must_preserve_json_number_type(bundle):
     assert type(step["numerical_result"]["data"]["rank"]) is int
     step["numerical_result"]["data"]["rank"] = float(step["numerical_result"]["data"]["rank"])
     step["numerical_result_id"] = digest(step["numerical_result"])
-    changed["bundle_digest"] = _bundle_digest(changed)
+    changed["bundle_digest"] = bundle_digest(changed)
     with pytest.raises(ValueError, match="numerical projection"):
         inspect_session(changed)
 
@@ -248,7 +248,7 @@ def test_replay_rejects_a_self_consistently_rehashed_numerical_forgery(bundle, r
     step["result_sha256"] = digest(result)
     step["numerical_result"] = _numerical("fdir", result)
     step["numerical_result_id"] = digest(step["numerical_result"])
-    changed["bundle_digest"] = _bundle_digest(changed)
+    changed["bundle_digest"] = bundle_digest(changed)
     assert inspect_session(changed)["status"] == "content_consistent"
     with pytest.raises(ValueError, match="pinned recomputation"):
         replay_session(changed, repositories)

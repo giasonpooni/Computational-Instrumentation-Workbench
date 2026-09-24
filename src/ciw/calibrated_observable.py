@@ -18,7 +18,7 @@ from .adapters.protocol import AdapterRefusal
 from .adapters.subprocess import PinnedSubprocessAdapter, _json
 from .exchange import _read, _identity
 from .session import write_json
-from .telemetry import canonical, digest, byte_digest, _now, _bundle_digest
+from .core.canonical import canonical, digest, byte_digest, utc_now, bundle_digest
 
 SCHEMA = "ciw.calibrated-observable-session.v1"
 RESULT_SCHEMA = "ciw.calibrated-operation-result.v1"
@@ -357,19 +357,19 @@ def _execute(raw, adapters, template=None):
             "result": result, "result_sha256": digest(result), "result_id": result["result_id"],
             "numerical_result": numerical, "numerical_result_id": digest(numerical)})
     bundle = {"schema": SCHEMA, "session_id": "session-" + uuid.uuid4().hex,
-        "created_at": template["created_at"] if template else _now(),
+        "created_at": template["created_at"] if template else utc_now(),
         "source": {"experiment_id": experiment["experiment_id"], "experiment_digest": digest(experiment),
             "evidence": [{"artifact_ref": evidence_ref, "sha256": evidence_ref,
                           "bytes_b64": base64.b64encode(raw).decode("ascii")}]},
         "configuration": deepcopy(experiment["configuration"]),
         "runtimes": {role: adapter.runtime_identity() for role, adapter in adapters.items()}, "steps": steps}
-    bundle["bundle_digest"] = _bundle_digest(bundle)
+    bundle["bundle_digest"] = bundle_digest(bundle)
     return bundle
 
 
 def _validate(bundle):
     try:
-        if len(canonical(bundle)) > MAX_BYTES or bundle["schema"] != SCHEMA or bundle["bundle_digest"] != _bundle_digest(bundle):
+        if len(canonical(bundle)) > MAX_BYTES or bundle["schema"] != SCHEMA or bundle["bundle_digest"] != bundle_digest(bundle):
             raise ValueError("Calibrated session content binding mismatch")
         evidence, = bundle["source"]["evidence"]
         raw = base64.b64decode(evidence["bytes_b64"], validate=True)
@@ -449,7 +449,7 @@ def _compare(original, reproduced):
 
 def _verify(bundle, reproduced, adapters):
     results = {old["execution_id"]: new["numerical_result"] for old,new in zip(bundle["steps"], reproduced["steps"])}
-    verification = _invoke("set", adapters, {"bundle": bundle, "replay_results": results, "created_at": _now()})
+    verification = _invoke("set", adapters, {"bundle": bundle, "replay_results": results, "created_at": utc_now()})
     if verification.get("outcome") != "passed":
         raise ValueError("SET did not verify calibrated-observable numerical replay")
     return verification, results

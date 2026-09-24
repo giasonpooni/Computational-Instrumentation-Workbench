@@ -16,7 +16,7 @@ from . import acquired_dataset as acquisition
 from . import calibrated_window as window
 from .adapters.subprocess import _json
 from .exchange import _identity
-from .telemetry import canonical, digest, byte_digest, _bundle_digest, _keys
+from .core.canonical import canonical, digest, byte_digest, bundle_digest, exact_keys
 
 MAX_BYTES = 4 * 1024 * 1024
 SOURCE_LIMIT = 262144
@@ -53,23 +53,23 @@ def _source(raw):
         raise ValueError("Acquired window mapping source exceeds 256 KiB")
     value = _json(raw)
     canonical(value)
-    _keys(value, {"schema", "experiment_id", "selections", "declaration", "configuration"})
+    exact_keys(value, {"schema", "experiment_id", "selections", "declaration", "configuration"})
     if value["schema"] != SOURCE_SCHEMA or value["configuration"] != POLICY:
         raise ValueError("Require the explicit retained-record mapping policy")
     window._text(value["experiment_id"])
-    _keys(value["declaration"], DECLARATION_FIELDS)
+    exact_keys(value["declaration"], DECLARATION_FIELDS)
     if value["declaration"]["experiment_id"] != value["experiment_id"]:
         raise ValueError("Mapping and window experiment identities differ")
-    _keys(value["declaration"]["clock_model"], {"model_id", "source_frame", "reference_frame", "device_origin", "reference_origin",
+    exact_keys(value["declaration"]["clock_model"], {"model_id", "source_frame", "reference_frame", "device_origin", "reference_origin",
           "skew", "offset", "valid_device_interval", "synchronization_evidence_ids"})
-    _keys(value["declaration"]["calibration_profile"], {"profile_id", "artifact_id", "sensor_id", "quantity_id", "input_unit", "output_unit",
+    exact_keys(value["declaration"]["calibration_profile"], {"profile_id", "artifact_id", "sensor_id", "quantity_id", "input_unit", "output_unit",
           "gain", "offset", "coefficient_covariance", "valid_from", "valid_until", "reference_ids", "input_range"})
-    _keys(value["declaration"]["joint_covariance"], {"order", "matrix", "cross_covariance_policy", "evidence_ids"})
+    exact_keys(value["declaration"]["joint_covariance"], {"order", "matrix", "cross_covariance_policy", "evidence_ids"})
     selections = value["selections"]
     if not isinstance(selections, list) or not 1 <= len(selections) <= 16:
         raise ValueError("Select 1..16 explicit scalar observations")
     for selection in selections:
-        _keys(selection, {"observation_id", "record_id", "document_id", "snapshot_index", "row_index"})
+        exact_keys(selection, {"observation_id", "record_id", "document_id", "snapshot_index", "row_index"})
         for key in ("observation_id", "record_id", "document_id"):
             if not isinstance(selection[key], str) or not re.fullmatch(r"[a-f0-9]{64}", selection[key]):
                 raise ValueError("Selections require native PPDA content identities")
@@ -106,8 +106,8 @@ def _derive(source, upstream):
                 canonical(observation["content"]) != canonical(row) or
                 document["retrieved_at"] != snapshot["requested_at"]):
             raise ValueError("Selected observation/record/document/first-snapshot lineage differs")
-        _keys(row, ROW_FIELDS)
-        _keys(row["sample"], SAMPLE_FIELDS)
+        exact_keys(row, ROW_FIELDS)
+        exact_keys(row["sample"], SAMPLE_FIELDS)
         if row["schema"] != ROW_SCHEMA or row["window_id"] != source["experiment_id"]:
             raise ValueError("Selected record is not the declared typed window sample")
         expected = {"channel_id": declaration["channel_id"], "epoch": declaration["epoch"],
@@ -187,11 +187,11 @@ def _check_child_receipt(child, receipt=None):
 
 def _validate(bundle):
     try:
-        _keys(bundle, {"schema", "session_id", "created_at", "source", "configuration", "runtimes", "steps",
+        exact_keys(bundle, {"schema", "session_id", "created_at", "source", "configuration", "runtimes", "steps",
                        "upstream_acquisition", "acquisition_binding", "child_window", "bundle_digest", "verification"},
               {"replay_receipts"})
         if (len(canonical(bundle)) > MAX_BYTES or bundle["schema"] != SCHEMA or
-                bundle["bundle_digest"] != _bundle_digest(bundle) or
+                bundle["bundle_digest"] != bundle_digest(bundle) or
                 not isinstance(bundle["session_id"], str) or not re.fullmatch(r"session-[a-f0-9]{32}", bundle["session_id"])):
             raise ValueError("Acquired window bundle identity mismatch")
         evidence, = bundle["source"]["evidence"]
@@ -242,7 +242,7 @@ def _wrap(raw, upstream, child):
               "configuration": deepcopy(POLICY), "runtimes": deepcopy(child["runtimes"]),
               "steps": deepcopy(child["steps"]), "upstream_acquisition": deepcopy(upstream),
               "acquisition_binding": binding, "child_window": deepcopy(child)}
-    bundle["bundle_digest"] = _bundle_digest(bundle)
+    bundle["bundle_digest"] = bundle_digest(bundle)
     bundle["verification"] = _verification(bundle)
     _validate(bundle)
     return bundle

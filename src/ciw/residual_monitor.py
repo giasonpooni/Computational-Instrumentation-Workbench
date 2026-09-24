@@ -18,7 +18,7 @@ from .adapters.protocol import AdapterRefusal
 from .adapters.subprocess import PinnedSubprocessAdapter, _json
 from .declared_workload import (AUTHORITY, DeclaredWorkflow, RESULT_SCHEMA,
                                SOURCE_LIMIT, _text, _verification)
-from .telemetry import canonical, digest, byte_digest, _bundle_digest, _keys, _now, _instant
+from .core.canonical import canonical, digest, byte_digest, bundle_digest, exact_keys, utc_now, utc_instant
 
 KIND = "residual-monitor"
 SOURCE_SCHEMA = "ciw.residual-monitor-source.v1"
@@ -67,7 +67,7 @@ def _source(raw):
         raise ValueError("Residual monitor source exceeds byte budget")
     source = _json(raw)
     canonical(source)
-    _keys(source, {"schema", "experiment_id", "window_bundle_ids", "configuration"})
+    exact_keys(source, {"schema", "experiment_id", "window_bundle_ids", "configuration"})
     if source["schema"] != SOURCE_SCHEMA:
         raise ValueError("Unsupported residual monitor source")
     _text(source["experiment_id"])
@@ -77,7 +77,7 @@ def _source(raw):
             or len(set(ids)) != len(ids)):
         raise ValueError("Select 1..16 distinct retained window bundle identities in declared order")
     config = source["configuration"]
-    _keys(config, set(DEFAULT_CONFIGURATION))
+    exact_keys(config, set(DEFAULT_CONFIGURATION))
     if any(config[k] != v for k, v in POLICY.items()):
         raise ValueError("Residual monitoring requires explicit unknown temporal dependence and limited authority")
     _finite(config["detection_threshold"], strict=True)
@@ -85,13 +85,13 @@ def _source(raw):
     if canonical(config["fault_signatures"]) != canonical(DEFAULT_CONFIGURATION["fault_signatures"]):
         raise ValueError("Retain competing scalar sensor, process and calibration bias signatures")
     cusum = config["cusum"]
-    _keys(cusum, {"drift", "threshold", "direction", "reset_on_alarm"})
+    exact_keys(cusum, {"drift", "threshold", "direction", "reset_on_alarm"})
     _finite(cusum["drift"])
     _finite(cusum["threshold"], strict=True)
     if cusum["direction"] not in {"positive", "negative", "two_sided"} or type(cusum["reset_on_alarm"]) is not bool:
         raise ValueError("Declare the CUSUM direction and reset policy")
     observability = config["observability"]
-    _keys(observability, set(DEFAULT_CONFIGURATION["observability"]))
+    exact_keys(observability, set(DEFAULT_CONFIGURATION["observability"]))
     if any(type(observability[k]) is bool or observability[k] != v for k, v in DEFAULT_CONFIGURATION["observability"].items() if k != "condition_limit"):
         raise ValueError("The scalar stationary model has a fixed one-step observability policy")
     if observability["condition_limit"] is not None:
@@ -175,7 +175,7 @@ def _request(source, upstreams):
                    "source_observation_ids": observation_ids,
                    "source_artifact_ids": [sample["artifact_id"] for sample in samples],
                    "epoch": declaration["epoch"], "target_time": target,
-                   "target_at": _instant(declaration["epoch"], target),
+                   "target_at": utc_instant(declaration["epoch"], target),
                    "device_times": [sample["device_time"] for sample in samples],
                    "mapped_event_times": [sample["event_time"] for sample in child["steps"][0]["result"]["data"]["samples"]],
                    "window_interval": [window["start"], window["end"]]}
@@ -400,9 +400,9 @@ class ResidualMonitorWorkflow(DeclaredWorkflow):
                 "result_id": result["result_id"], "numerical_result": numerical, "numerical_result_id": digest(numerical)}
 
     def _validate_step(self, step, source, evidence):
-        _keys(step, {"runtime_ref", "operation_id", "execution_id", "input_refs", "request", "request_sha256", "result", "result_sha256", "result_id", "numerical_result", "numerical_result_id"})
+        exact_keys(step, {"runtime_ref", "operation_id", "execution_id", "input_refs", "request", "request_sha256", "result", "result_sha256", "result_id", "numerical_result", "numerical_result_id"})
         request = step["request"]
-        _keys(request, {"source", "windows", "scope", "overlaps"})
+        exact_keys(request, {"source", "windows", "scope", "overlaps"})
         if canonical(request["source"]) != canonical(source):
             raise ValueError("Monitor step source mismatch")
         refs = [evidence, *[window["source_ids"][0] for window in request["windows"]]]
@@ -410,7 +410,7 @@ class ResidualMonitorWorkflow(DeclaredWorkflow):
                 or not isinstance(step["execution_id"], str) or not re.fullmatch(r"execution-[a-f0-9]{32}", step["execution_id"])):
             raise ValueError("Residual execution and upstream result binding mismatch")
         result = step["result"]
-        _keys(result, {"schema", "operation_id", "execution_ref", "input_refs", "data", "authority", "result_id"})
+        exact_keys(result, {"schema", "operation_id", "execution_ref", "input_refs", "data", "authority", "result_id"})
         _check_data(request, result["data"])
         if (result != {"schema": RESULT_SCHEMA, "operation_id": OPERATION, "execution_ref": step["execution_id"],
                 "input_refs": refs, "data": result["data"], "authority": AUTHORITY,
@@ -428,8 +428,8 @@ class ResidualMonitorWorkflow(DeclaredWorkflow):
 
     def _validate(self, bundle):
         try:
-            _keys(bundle, {"schema", "session_id", "created_at", "source", "configuration", "runtimes", "steps", "bundle_digest", "verification", "upstream_windows"}, {"replay_receipts"})
-            if len(canonical(bundle)) > MAX_BYTES or bundle["schema"] != SCHEMA or bundle["bundle_digest"] != _bundle_digest(bundle) or not re.fullmatch(r"session-[a-f0-9]{32}", bundle["session_id"]):
+            exact_keys(bundle, {"schema", "session_id", "created_at", "source", "configuration", "runtimes", "steps", "bundle_digest", "verification", "upstream_windows"}, {"replay_receipts"})
+            if len(canonical(bundle)) > MAX_BYTES or bundle["schema"] != SCHEMA or bundle["bundle_digest"] != bundle_digest(bundle) or not re.fullmatch(r"session-[a-f0-9]{32}", bundle["session_id"]):
                 raise ValueError("Residual monitor bundle identity mismatch")
             _text(bundle["created_at"])
             evidence, = bundle["source"]["evidence"]
@@ -445,7 +445,7 @@ class ResidualMonitorWorkflow(DeclaredWorkflow):
             if set(runtime["companions"]) != {"oit"}:
                 raise ValueError("Unexpected monitor companion")
             for role, value in (("fdir", runtime), ("oit", runtime["companions"]["oit"])):
-                _keys(value, {"schema", "adapter_version", "repository_root", "revision", "source_tree", "module", "source_root", "python_executable", "python_sha256", "python_version", "dependencies"} | ({"companions"} if role == "fdir" else set()))
+                exact_keys(value, {"schema", "adapter_version", "repository_root", "revision", "source_tree", "module", "source_root", "python_executable", "python_sha256", "python_version", "dependencies"} | ({"companions"} if role == "fdir" else set()))
                 if (value["schema"] != "ciw.subprocess-runtime.v1" or any(value[k] != v for k, v in PINS[role].items())
                         or value["source_tree"] != SOURCE_TREES[role]
                         or not re.fullmatch(r"[a-f0-9]{64}", value["python_sha256"]) or not isinstance(value["dependencies"], dict)):
@@ -462,13 +462,13 @@ class ResidualMonitorWorkflow(DeclaredWorkflow):
     def _execute_selected(self, raw, upstreams, bound):
         source, evidence = _source(raw), byte_digest(raw)
         request = _request(source, upstreams)
-        bundle = {"schema": SCHEMA, "session_id": "session-" + uuid.uuid4().hex, "created_at": _now(),
+        bundle = {"schema": SCHEMA, "session_id": "session-" + uuid.uuid4().hex, "created_at": utc_now(),
                   "source": {"experiment_id": source["experiment_id"], "experiment_digest": digest(source),
                       "evidence": [{"artifact_ref": evidence, "sha256": evidence, "bytes_b64": base64.b64encode(raw).decode()}]},
                   "configuration": deepcopy(source["configuration"]), "runtimes": {"fdir": bound[1]},
                   "upstream_windows": {key: deepcopy(upstreams[key]) for key in source["window_bundle_ids"]},
                   "steps": [self._step(request, evidence, bound)]}
-        bundle["bundle_digest"] = _bundle_digest(bundle)
+        bundle["bundle_digest"] = bundle_digest(bundle)
         bundle["verification"] = _verification(bundle, self._step(request, evidence, bound))
         self._validate(bundle)
         return bundle

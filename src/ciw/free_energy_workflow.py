@@ -15,7 +15,7 @@ from . import free_energy_native as native
 from .free_energy_profile import KIND, SOURCE_SCHEMA, POLICY, validate_source, csg_request, problems
 from .declared_workload import AUTHORITY, DeclaredWorkflow, RESULT_SCHEMA, MAX_BYTES, _verification
 from .exchange import _identity
-from .telemetry import canonical, digest, byte_digest, _bundle_digest, _keys
+from .core.canonical import canonical, digest, byte_digest, bundle_digest, exact_keys
 
 DATA_SCHEMA = "ciw.variational-free-energy-result.v1"
 OPERATION = "ciw.variational-free-energy.v1"
@@ -100,14 +100,14 @@ def _compute(source, evidence, adapters):
 
 
 def _validate_step_envelope(step, role, operation, request, inputs, *, numerical=None):
-    _keys(step, {"runtime_ref", "operation_id", "execution_id", "input_refs", "request", "request_sha256",
+    exact_keys(step, {"runtime_ref", "operation_id", "execution_id", "input_refs", "request", "request_sha256",
                 "result", "result_sha256", "result_id", "numerical_result", "numerical_result_id"})
     if step["runtime_ref"] != role or step["operation_id"] != operation or not re.fullmatch(r"execution-[a-f0-9]{32}", step["execution_id"]):
         raise ValueError("Free-energy stage occurrence or operation differs")
     _same(step["request"], request)
     _same(step["input_refs"], inputs)
     result = step["result"]
-    _keys(result, {"schema", "operation_id", "execution_ref", "input_refs", "data", "authority", "result_id"})
+    exact_keys(result, {"schema", "operation_id", "execution_ref", "input_refs", "data", "authority", "result_id"})
     _same(result, {"schema":RESULT_SCHEMA, "operation_id":operation, "execution_ref":step["execution_id"],
         "input_refs":inputs, "data":result["data"], "authority":AUTHORITY,
         "result_id":digest({k:v for k,v in result.items() if k != "result_id"})})
@@ -206,8 +206,8 @@ class FreeEnergyWorkflow(DeclaredWorkflow):
 
     def _validate(self, bundle):
         try:
-            _keys(bundle, {"schema", "session_id", "created_at", "source", "configuration", "runtimes", "steps", "bundle_digest", "verification"}, {"replay_receipts"})
-            if len(canonical(bundle)) > MAX_BYTES or bundle["schema"] != self.schema or bundle["bundle_digest"] != _bundle_digest(bundle) or not re.fullmatch(r"session-[a-f0-9]{32}",bundle["session_id"]):
+            exact_keys(bundle, {"schema", "session_id", "created_at", "source", "configuration", "runtimes", "steps", "bundle_digest", "verification"}, {"replay_receipts"})
+            if len(canonical(bundle)) > MAX_BYTES or bundle["schema"] != self.schema or bundle["bundle_digest"] != bundle_digest(bundle) or not re.fullmatch(r"session-[a-f0-9]{32}",bundle["session_id"]):
                 raise ValueError("Free-energy bundle identity or size differs")
             if type(bundle["created_at"]) is not str or not bundle["created_at"]:
                 raise ValueError("Missing execution time metadata")
@@ -217,14 +217,14 @@ class FreeEnergyWorkflow(DeclaredWorkflow):
             _same(evidence,{"artifact_ref":byte_digest(raw),"sha256":byte_digest(raw),"bytes_b64":base64.b64encode(raw).decode()})
             _same(bundle["source"],{"experiment_id":source["experiment_id"],"experiment_digest":digest(source),"evidence":[evidence]})
             _same(bundle["configuration"],POLICY)
-            _keys(bundle["runtimes"],{"csg"})
+            exact_keys(bundle["runtimes"],{"csg"})
             primary = bundle["runtimes"]["csg"]
             native.check_runtime("csg",{k:v for k,v in primary.items() if k not in {"companions","workbench_algorithm"}})
-            _keys(primary["companions"],{"gsie","plsr"})
+            exact_keys(primary["companions"],{"gsie","plsr"})
             for role,runtime in primary["companions"].items():
                 native.check_runtime(role,runtime)
             algorithm = primary["workbench_algorithm"]
-            _keys(algorithm,{"profile","code_sha256","source_normalization","numpy_version"})
+            exact_keys(algorithm,{"profile","code_sha256","source_normalization","numpy_version"})
             if algorithm["profile"] != CODE_PROFILE or not re.fullmatch(r"[a-f0-9]{64}",algorithm["code_sha256"]) or algorithm["source_normalization"] != "utf8_lf" or algorithm["numpy_version"] != "2.4.3":
                 raise ValueError("Unsupported workbench numerical algorithm identity")
             step, = bundle["steps"]
@@ -234,14 +234,14 @@ class FreeEnergyWorkflow(DeclaredWorkflow):
             if type(receipts) is not list or len(receipts) > 1:
                 raise ValueError("At most one replay receipt belongs to an occurrence")
             for receipt in receipts:
-                _keys(receipt,{"schema","source_bundle_digest","replayed_bundle_digest","numerical_match","verification","admission","replay_id"})
+                exact_keys(receipt,{"schema","source_bundle_digest","replayed_bundle_digest","numerical_match","verification","admission","replay_id"})
                 if (receipt["schema"] != "ciw."+KIND+"-replay.v1" or receipt["replayed_bundle_digest"] != bundle["bundle_digest"] or
                         receipt["source_bundle_digest"] == bundle["bundle_digest"] or not re.fullmatch(r"sha256:[a-f0-9]{64}",receipt["source_bundle_digest"]) or
                         receipt["numerical_match"] is not True or receipt["admission"] != "not_performed" or
                         receipt["replay_id"] != digest({k:v for k,v in receipt.items() if k != "replay_id"})):
                     raise ValueError("Invalid free-energy replay receipt")
                 verification = receipt["verification"]
-                _keys(verification,{"schema","subject_ref","outcome","independent","method","runtime_digest","reproduction","authority","verification_id"})
+                exact_keys(verification,{"schema","subject_ref","outcome","independent","method","runtime_digest","reproduction","authority","verification_id"})
                 _same(verification["reproduction"],step)
                 _same(verification["authority"],AUTHORITY)
                 if (verification["schema"] != "ciw.declared-workload-verification.v1" or verification["subject_ref"] != receipt["source_bundle_digest"] or

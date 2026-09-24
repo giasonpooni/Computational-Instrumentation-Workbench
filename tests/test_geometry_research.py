@@ -12,7 +12,7 @@ import pytest
 
 from ciw.adapters.protocol import AdapterRefusal
 from ciw.geometry_research import GeometryResearchWorkflow, KINDS, PINS, _check_data
-from ciw.telemetry import canonical, digest
+from ciw.core.canonical import canonical, digest
 
 ROOT = Path(__file__).resolve().parents[1]
 

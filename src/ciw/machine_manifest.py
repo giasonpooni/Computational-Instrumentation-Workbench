@@ -13,7 +13,7 @@ import re
 
 import numpy as np
 
-from .telemetry import canonical, digest
+from .core.canonical import canonical, digest
 
 EVIDENCE_SCHEMA = "ciw.machine-evidence.v1"
 CANDIDATE_SCHEMA = "ciw.machine-candidate.v1"
