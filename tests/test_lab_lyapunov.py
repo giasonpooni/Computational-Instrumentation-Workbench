@@ -270,6 +270,41 @@ def test_checks_are_unconditional_and_observed_values_are_computed():
     assert problems == []
 
 
+def test_boundary_family_is_exact_and_kernel_free(monkeypatch, tmp_path):
+    """T107's near-boundary family never reaches BLAS or LAPACK, so every kernel declares the same matrices.
+
+    Its windows keep 3/16 res from PLSR's code thresholds and its straddle pairs cross -res exactly; the CIW
+    transcription of the decision order gives every window case the code its exact window predicts.
+    """
+    def refuse(*args, **kwargs):
+        raise AssertionError("BLAS or LAPACK reached the T107 family")
+
+    for name in ("eigvalsh", "eigh", "eigvals", "eig", "solve", "inv", "qr", "norm", "cholesky"):
+        monkeypatch.setattr(np.linalg, name, refuse)
+    monkeypatch.setattr(R, "decrease_matrix", refuse)
+    family = L.boundary_family()
+    monkeypatch.undo()
+    window = [m for m in family if m["kind"] == "window"]
+    straddle = [m for m in family if m["kind"] == "straddle"]
+    assert len(window) == 90 and len(straddle) == 12
+    assert all(L.window_distance(kappa) >= L.T107_DISTANCE for kappa in L.T107_KAPPAS)
+    assert all(m["in_window"] for m in window)
+    for m in window:
+        exact = R.exact_form(m["A"], m["P"])
+        quotient = R.exact_quadratic(m["x"], exact) / sum(Fraction(v) ** 2 for v in m["x"])
+        assert abs(quotient - Fraction(m["resolution"])) >= L.T107_DISTANCE * Fraction(m["resolution"])
+        codes = [R.documented_code(m["A"], m["P"], m["x"], required_margin=r)["code"]
+                 for r in (0.0, 3.0 * m["resolution"])]
+        assert tuple(codes) == m["predicted"], m["kappa"]
+    assert [m["exact_bin"] for m in straddle] == ["[-2, -1) res", "[-1, 0) res"] * 6
+    assert {m["exact_class"] for m in straddle} == {"negative_definite"}
+    # Without the provider T107 keeps the exact family finding.
+    report = _run("T107", tmp_path)
+    offline = _finding(report, "The near-boundary family populates every exact resolution bin")
+    assert offline["evidence_status"] == "numerically_verified" and offline["value"]["outside_window"] == 0
+    assert offline["regression_tolerance"] == {"abs": 0.0, "rel": 0.0}
+
+
 def test_numpy_misreads_exact_jordan_block():
     cases = [c for c in L.adversarial_cases() if c["group"] == "Jordan"]
     largest = max(cases, key=lambda c: c["A"].shape[0])
@@ -623,19 +658,30 @@ def test_t106_status_coverage(reports):
 def test_t107_inconclusive_band(reports):
     report = reports["T107"]
     _completed(report, "provider_backed")
-    for prefix in ("No near-boundary case receives", "Beyond two resolutions", "With a declared margin of three"):
+    for prefix in ("No near-boundary case receives", "Every window case receives", "Beyond two resolutions",
+                   "With a declared margin of three", "Straddle cases within rounding"):
         assert _label(report, prefix) == "independently_verified"
     assert _finding(report, "No near-boundary case receives")["value"]["violations"] == 0
+    assert _finding(report, "Every window case receives")["value"] == {"window_cases": 90, "mismatches": 0}
     assert _finding(report, "Beyond two resolutions")["value"]["unresolved"] == 0
     assert _finding(report, "With a declared margin of three")["value"]["certified"] == 0
     band = _finding(report, "At required_margin 0 near-boundary spectra")
     assert band["evidence_status"] == "numerically_verified" and band["counterexample"]
-    assert band["value"]["certified"] >= 1 and band["value"]["unsound"] == 0
+    assert band["value"]["certified_window_cases"] >= 1 and band["value"]["unsound"] == 0
     assert "candidate hypothesis" in band["counterexample"]["statement"]
-    assert band["counterexample"]["witness"]["exact_bin"] == "[-2, -1) res"
+    witness = band["counterexample"]["witness"]
+    assert witness["exact_bin"] == "[-2, -1) res" and -2.0 <= witness["exact_window_over_res"][0]
+    assert witness["exact_window_over_res"][1] < -1.0 and witness["margin_ratio"] > 1.0
+    # Which straddle cases resolve is a rounding outcome: only the admissible codes are compared.
+    assert _finding(report, "Straddle cases within rounding")["value"] == {"cases": 12, "exactly_beyond": 6,
+                                                                          "other_codes": 0}
     assert _finding(report, "MARGIN_LOW appears exactly")["value"]["margin_low_observed"] is True
     assert _label(report, "Share of exactly") == "provider_backed"
     assert set(_finding(report, "Share of exactly")["value"]) == {"inconclusive_share"}
+    # Every compared value is exact; only the witness's margin ratio carries rounding (abs 0.03 res, no count change).
+    for record in report["findings"]:
+        expected = {"abs": 0.03, "rel": 0.0} if record is band else {"abs": 0.0, "rel": 0.0}
+        assert record["regression_tolerance"] == expected, record["claim"]
 
 
 @needs_provider
@@ -677,6 +723,12 @@ def test_t109_adversarial_eigenvalues(reports):
     refused = _finding(report, "solve_lyapunov refuses an exactly Hurwitz plant")
     assert refused["evidence_status"] == "numerically_verified"
     assert "Jordan n=4, lambda=2^-6" in refused["value"]["plants"] and refused["counterexample"]
+    # The witness names the refusing gate, not its kernel-dependent residual, and its condition number is compared
+    # within n^2 u cond(P) (n = 4).
+    witness = refused["counterexample"]["witness"]
+    assert witness["solver_gate"] in L.SOLVER_GATES and "solver_error" not in witness
+    assert refused["regression_tolerance"]["rel"] == pytest.approx(16 * R.U * witness["certificate_condition"],
+                                                                   rel=1e-12)
     assert _label(report, "numpy.linalg.eigvals misplaces") == "numerically_verified"
 
 

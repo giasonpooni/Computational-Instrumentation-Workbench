@@ -63,10 +63,18 @@ Outcomes that depend on the LAPACK/BLAS build are retained as artifacts, never
 as checked finding values, compared finding values or wording: the codes of
 subnormal plants (the witness below included), code flips outside LAPACK's
 scaling window, which rounding-admitted indefinite P `quadratic()` accepts and
-the codes they receive, and the sign of NumPy's abscissa for defective
-matrices. Findings carry only what does not depend on the build (exact
-classes, IEEE-deterministic scalar arithmetic, soundness counts, codes far
-from every threshold), and every check is built before its outcome is known:
+the codes they receive, the sign of NumPy's abscissa for defective matrices,
+which T107 straddle cases resolve, and which gate refuses an exactly defective
+T109 plant with the residual it quotes. Findings carry only what does not
+depend on the build (exact classes, IEEE-deterministic scalar arithmetic,
+soundness counts, codes far from every threshold). Where a claim rests on the
+exact position of the declared inputs near a threshold (T107), the inputs are
+built without BLAS or LAPACK, so every kernel declares the same matrices; the
+few compared numbers that carry rounding (T107's witness margin ratio, T109's
+witness condition number) have tolerances derived from the realized error or
+`u cond(P)` and checked against the spread between the SkylakeX, Haswell and
+Sandybridge OpenBLAS kernels (`OPENBLAS_CORETYPE`). Every check is built
+before its outcome is known:
 `test_checks_are_unconditional_and_observed_values_are_computed` refuses a
 check created under a condition on an observed result or with a literal
 observed value.
@@ -75,7 +83,7 @@ observed value.
 
 | Reference | Module | Used for |
 | --- | --- | --- |
-| Exact dyadic rationals (`fractions.Fraction`, integer Bareiss elimination) | `lyapunov_reference` | class of the declared decrease form (negative definite, negative semidefinite, has a positive eigenvalue); exact position of its largest eigenvalue relative to multiples of the resolution; exact positive definiteness of P; exact V against a level |
+| Exact dyadic rationals (`fractions.Fraction`, integer Bareiss elimination) | `lyapunov_reference` | class of the declared decrease form (negative definite, negative semidefinite, has a positive eigenvalue); exact position of its largest eigenvalue relative to multiples of the resolution; exact positive definiteness of P; exact V against a level; construction of T107's near-boundary matrices from integer draws without BLAS or LAPACK |
 | CIW re-derivation of the documented formulas | `lyapunov_reference` | decrease matrix, `decrease_resolution`, the runtime-status-v1 decision order |
 | NumPy `eigvals` | numpy | Hurwitz/Schur classification (T110, T111); the PLSR operations exercised here (`verdict`, `solve_lyapunov`, `quadratic`, `check_vertices`, `decrease_resolution`) call only `eigvalsh`; its diagnostic `spectral_abscissa`/`spectral_radius` use `eigvals`, but no task calls them |
 | SciPy `solve_continuous_lyapunov` / `solve_discrete_lyapunov`, `expm` | scipy (optional) | Lyapunov solutions and matrix exponentials; mpmath's `expm` or a well-conditioned NumPy eigendecomposition stand in for `expm` when SciPy is absent, and the CIW Kronecker solve for the Lyapunov solvers (then not an independent reference) |
@@ -228,17 +236,46 @@ five host-owned codes in `require_status` and in `Verdict`, and its published
 constants match the documented values.
 
 **T107 — inconclusive band.** 102 near-boundary cases with exact bins of
-`max eig(M)`: no certifying code on a form that is not exactly negative
-definite; beyond two resolutions the sign is always resolved; with a declared
-margin of three resolutions no band case is `CERTIFIED_WITH_MARGIN`
-(`MARGIN_LOW` or `NUMERICAL_INCONCLUSIVE` instead). Counterexample to a
-stronger candidate hypothesis formulated for this experiment (it is not quoted
-from the runtime's documentation) that near-boundary spectra yield
-`NUMERICAL_INCONCLUSIVE` or `MARGIN_LOW` rather than `CERTIFIED_WITH_MARGIN`:
-at `required_margin = 0`, 18 of the 66 cases within two resolutions of zero
-were certified (all 16 in `[-2, -1)` resolutions and 2 in `[-1, 0)`), every
-one of them exactly negative definite, so the certifications are sound.
-Of the 32 exactly negative definite band cases, 14 were left inconclusive.
+`max eig(M)`, the same matrices on every BLAS kernel: each `A = P⁻¹(N/2 + K)`
+is solved in exact rational arithmetic from integer draws (an exactly
+orthogonal Cayley factor in `N`, a skew part `K` of size 100, `P = I` or a
+rational SPD `P` rounded entrywise) and rounded once, so no BLAS or LAPACK
+call reaches the declared inputs, and the resolution used for the bins reads
+`max|M|` from the correctly rounded exact form. An earlier family built its
+matrices with `qr`, `solve` and matrix products and tuned twelve razor-edge
+cases on the computed eigenvalue, so its inputs, exact bins and codes changed
+with the OpenBLAS kernel (on a non-FMA kernel no case within one resolution
+was certified, on the FMA kernels two were). The 90 window cases have their
+exact `max eig(M)` within `res/16` of a target `κ res`
+(`κ ∈ {±8, ±3.5, ±2.5, ±1.75, ±1.25, ±0.75, ±0.25, 0}`), checked exactly,
+so every window keeps at least `3/16 res` from the thresholds where PLSR's
+code changes (`-3 res` under the declared margin, `-res`, `+res`); states are
+redrawn until the exact `xᵀMx/|x|²` keeps the same distance from `res`. PLSR's
+computed `max eig(M)` erred by at most 0.0096 res on the SkylakeX and Haswell
+kernels and 0.0116 res on Sandybridge (checked against `3/16`), so every
+window case received the code its exact window predicts (checked
+independently): certified below `-res`, `MARGIN_LOW` between `-3 res` and
+`-res` under the declared margin, inconclusive within one resolution, not
+definite beyond `+res`. No certifying code on a form that is not exactly
+negative definite; beyond two resolutions the sign is always resolved; with a
+declared margin of three resolutions no band case is `CERTIFIED_WITH_MARGIN`.
+Counterexample to a stronger candidate hypothesis formulated for this
+experiment (it is not quoted from the runtime's documentation) that
+near-boundary spectra yield `NUMERICAL_INCONCLUSIVE` or `MARGIN_LOW` rather
+than `CERTIFIED_WITH_MARGIN`: at `required_margin = 0` all 12 window cases in
+`[-2, -1)` resolutions were certified, every band certificate exactly sound;
+of the 26 exactly negative definite window band cases 14 were left
+inconclusive. The 12 straddle cases are six pairs of adjacent float targets
+between which the exact `max eig(M)` crosses `-res` (within 0.0082 res of
+it); there the exact side does not decide the code, which is
+`CERTIFIED_WITH_MARGIN` or `NUMERICAL_INCONCLUSIVE` (checked): 4 of the 6
+exactly beyond `-res` were certified and none of the 6 inside, identically on
+the three kernels, but which ones resolve is a rounding outcome and is
+retained per case in `inconclusive-band.json` and the numerical result, not
+compared. The witness's computed margin ratio is the one compared value that
+carries rounding: band-certified margin ratios differed by at most 0.0018
+between the kernels, and its tolerance is `abs 0.03` resolutions (twice the
+largest realized error, rounded up), which admits no change of the counts.
 
 **T108 — required-margin monotonicity.** 280 verdicts on sorted margin grids:
 no failing verdict regained, `meets_required_margin` never regained,
@@ -265,7 +302,14 @@ nonnegative for 5 of the 7 on the reference platform, a build-dependent count
 retained in `adversarial.json`. Counterexample: the solver's refusals are
 conservative, not only avoidance of invalid certificates: for `n = 4`,
 `λ = 2^-6` it refuses at the residual gate, yet SciPy's P (condition 5e11) is
-exactly valid and PLSR's own verdict certifies it.
+exactly valid and PLSR's own verdict certifies it. The witness records the
+gate, not the refusal message: the residual it quotes (5.9e-4 or 6.3e-4) and,
+for other Jordan plants, which gate refuses (definiteness or singularity) are
+rounding outcomes that differ between OpenBLAS kernels and stay in
+`adversarial.json`. The certificate's condition number differed by 4.2e-5
+relative between the SkylakeX, Haswell and Sandybridge kernels, the size
+`u cond(P) = 5.5e-5` of a backward-stable solve's effect on the smallest
+eigenvalue of P, and is compared within `n² u cond(P) = 8.8e-4`.
 
 **T110 — continuous versus discrete time.** For 40 matrices with every
 eigenvalue in one stability quadrant, PLSR certifies each with its own

@@ -4,12 +4,13 @@ Everything here is CIW code and never imports the PLSR runtime: float64
 re-derivations of the documented PLSR decrease form, resolution bound and
 decision order; exact dyadic-rational classification of the declared binary64
 inputs; optional SciPy Lyapunov solvers imported lazily; and seeded input
-generators. Exact arithmetic decides what the declared numbers imply
-mathematically. It says nothing about a physical plant. The float64
-re-derivations transcribe the runtime's documented procedure, so agreement with
-them is a same-specification check (recorded as an ordinary check, never as an
-independent one): it shows that the runtime implements its own documentation,
-not that the documentation is sufficient.
+generators, some built in exact rational arithmetic without BLAS or LAPACK so
+that every kernel declares the same inputs. Exact arithmetic decides what the
+declared numbers imply mathematically. It says nothing about a physical plant.
+The float64 re-derivations transcribe the runtime's documented procedure, so
+agreement with them is a same-specification check (recorded as an ordinary
+check, never as an independent one): it shows that the runtime implements its
+own documentation, not that the documentation is sufficient.
 """
 from __future__ import annotations
 
@@ -329,6 +330,18 @@ def resolution_bin(M, res: float) -> str:
     return "at or above 2 res"
 
 
+def lambda_bracket(M, res: float, low=-16, high=16, steps=24) -> tuple:
+    """Exact bracket [lo, hi) of max eig(M) / res by bisection (width (high - low) 2^-steps; M in rationals)."""
+    low, high, res = Fraction(low), Fraction(high), Fraction(res)
+    for _ in range(steps):
+        middle = (low + high) / 2
+        if lambda_max_below(M, middle * res):
+            high = middle
+        else:
+            low = middle
+    return low, high
+
+
 # Lyapunov solvers independent of PLSR ---------------------------------------
 
 def kron_lyapunov(A, Q, time="continuous"):
@@ -458,3 +471,91 @@ def razor_edge_discrete(rng, n, side=-1.0, iterations=48):
             low = middle
     value, A = ratio(high)
     return A, P, value
+
+
+# Platform-independent generators: integer draws and exact rational arithmetic, rounded once to binary64, so
+# the declared inputs never pass through BLAS or LAPACK and every kernel declares the same matrices.
+
+def solve_fractions(M, B) -> list:
+    """Exact M^-1 B for rational matrices by Gauss-Jordan elimination (M nonsingular)."""
+    n = len(M)
+    rows = [list(row) + list(rhs) for row, rhs in zip(M, B)]
+    for column in range(n):
+        pivot = next(r for r in range(column, n) if rows[r][column] != 0)
+        rows[column], rows[pivot] = rows[pivot], rows[column]
+        rows[column] = [value / rows[column][column] for value in rows[column]]
+        for r in range(n):
+            if r != column and rows[r][column] != 0:
+                factor = rows[r][column]
+                rows[r] = [a - factor * b for a, b in zip(rows[r], rows[column])]
+    return [row[n:] for row in rows]
+
+
+def _product(a, b) -> list:
+    return [[sum(a[i][k] * b[k][j] for k in range(len(b))) for j in range(len(b[0]))] for i in range(len(a))]
+
+
+def _transpose(a) -> list:
+    return [list(row) for row in zip(*a)]
+
+
+def rounded(M):
+    """Each rational entry correctly rounded to binary64."""
+    return np.array([[float(v) for v in row] for row in M])
+
+
+def cayley_orthogonal(rng, n) -> list:
+    """Exactly orthogonal rational Q = (I - S)(I + S)^-1 for a seeded skew S with entries in sixteenths."""
+    S = [[Fraction(0)] * n for _ in range(n)]
+    for i, j in combinations(range(n), 2):
+        S[i][j] = Fraction(int(rng.integers(-16, 17)), 16)
+        S[j][i] = -S[i][j]
+    minus = [[Fraction(i == j) - S[i][j] for j in range(n)] for i in range(n)]
+    plus = [[Fraction(i == j) + S[i][j] for j in range(n)] for i in range(n)]
+    return _transpose(solve_fractions(_transpose(plus), _transpose(minus)))
+
+
+def rounded_resolution(A, P, time="continuous") -> float:
+    """The documented resolution with max|M| read from the correctly rounded exact form instead of a BLAS product.
+
+    It is the same number on every kernel; the runtime's own resolution reads max|M| from its formed matrix and
+    can differ from it only in the last bits of that one term.
+    """
+    return resolution(A, P, time, form=rounded(exact_form(A, P, time)))
+
+
+def exact_threshold_builder(rng, n, spd=False, skew=100.0):
+    """A platform-independent (P, A(top)) with A^T P + P A = N(top) before one final rounding of A.
+
+    N(top) = Q diag(top, rest) Q^T with an exactly orthogonal rational Q, rest in [-2, -1/2] in 64ths, the skew
+    part K = skew (G - G^T) / 2 with G in 64ths, and P = I or Q2 diag(1 .. 10) Q2^T rounded entrywise (SPD).
+    A(top) = P^-1 (N/2 + K) is solved in rationals and rounded once, so max eig of the exact form of the declared
+    A is top up to that rounding (a few hundredths of a resolution); callers locate it exactly.
+    """
+    Q = cayley_orthogonal(rng, n)
+    rest = [-(Fraction(1, 2) + Fraction(int(rng.integers(0, 97)), 64)) for _ in range(n - 1)]
+    G = [[Fraction(int(rng.integers(-64, 65)), 64) for _ in range(n)] for _ in range(n)]
+    K = [[Fraction(skew) * (G[i][j] - G[j][i]) / 2 for j in range(n)] for i in range(n)]
+    if spd:
+        Q2 = cayley_orthogonal(rng, n)
+        D = [[Fraction(1) + Fraction(9 * i, n - 1) if i == j else Fraction(0) for j in range(n)] for i in range(n)]
+        P = rounded(_product(_product(Q2, D), _transpose(Q2)))
+    else:
+        P = np.eye(n)
+    exact_P = fractions(P)
+
+    def build(top):
+        D = [[(Fraction(top) if i == 0 else rest[i - 1]) if i == j else Fraction(0) for j in range(n)]
+             for i in range(n)]
+        N = _product(_product(Q, D), _transpose(Q))
+        return rounded(solve_fractions(exact_P, [[N[i][j] / 2 + K[i][j] for j in range(n)] for i in range(n)]))
+
+    return P, build
+
+
+def dyadic_state(rng, n) -> np.ndarray:
+    """A nonzero seeded state with entries in 32nds of [-2, 2]."""
+    while True:
+        x = rng.integers(-64, 65, size=n)
+        if np.any(x != 0):
+            return x.astype(float) / 32.0

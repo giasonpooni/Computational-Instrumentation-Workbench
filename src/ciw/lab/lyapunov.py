@@ -2180,70 +2180,164 @@ def status_transitions(ctx):
 
 # T107 ------------------------------------------------------------------------
 
-T107_KAPPAS = (-8.0, -3.0, -2.2, -1.8, -1.2, -0.8, -0.4, 0.0, 0.4, 0.8, 1.2, 1.8, 2.2, 3.0, 8.0)
+# Targets kappa = max eig(M) / res of the window cases. Each exact window kappa +- 1/16 keeps at least 3/16 of a
+# resolution from every threshold at which PLSR's code changes (-3 res under the declared margin, -res, +res), so
+# the code of a window case follows from its exact position whenever the computed max eig(M) and x^T M x err by
+# less than that distance, whatever the BLAS kernel.
+T107_KAPPAS = (-8.0, -3.5, -2.5, -1.75, -1.25, -0.75, -0.25, 0.0, 0.25, 0.75, 1.25, 1.75, 2.5, 3.5, 8.0)
+T107_WINDOW = Fraction(1, 16)
+T107_DISTANCE = Fraction(3, 16)
+CODE_THRESHOLDS = (-3, -1, 1)
 BAND = ("[-2, -1) res", "[-1, 0) res", "[0, 1) res", "[1, 2) res")
 
 
+def window_distance(kappa) -> Fraction:
+    """Distance in resolutions from the exact window kappa +- 1/16 to the nearest code threshold."""
+    return min(abs(Fraction(kappa) - t) for t in CODE_THRESHOLDS) - T107_WINDOW
+
+
+def window_codes(kappa, scalar_above):
+    """The codes at required_margin 0 and 3 res implied by a window case's exact position.
+
+    ``scalar_above``: the exact x^T M x exceeds res |x|^2 (PLSR's scalar gate, decided before the eigenvalue).
+    """
+    if kappa < -1:
+        return "CERTIFIED_WITH_MARGIN", "CERTIFIED_WITH_MARGIN" if kappa < -3 else "MARGIN_LOW"
+    if kappa < 1:
+        return "NUMERICAL_INCONCLUSIVE", "NUMERICAL_INCONCLUSIVE"
+    code = "NOT_CERTIFIED" if scalar_above else "DECREASE_NOT_DEFINITE"
+    return code, code
+
+
+def _boundary_member(kind, n, kappa, A, P, rng):
+    """Exact bin, class, bracket and window of one near-boundary case.
+
+    Its state x is redrawn until the exact Rayleigh quotient x^T M x / |x|^2 keeps the declared distance from
+    res, the threshold of PLSR's scalar gate.
+    """
+    exact = R.exact_form(A, P)
+    res = R.rounded_resolution(A, P)
+    while True:
+        x = R.dyadic_state(rng, n)
+        quotient = R.exact_quadratic(x, exact) / sum(Fraction(v) ** 2 for v in x)
+        if abs(quotient - Fraction(res)) >= T107_DISTANCE * Fraction(res):
+            break
+    member = {"kind": kind, "n": n, "kappa": kappa, "A": A, "P": P, "x": x, "resolution": res,
+              "exact_class": R.exact_class(exact), "exact_bin": R.resolution_bin(exact, res),
+              "bracket": R.lambda_bracket(exact, res), "scalar_above": quotient > Fraction(res)}
+    if kind == "window":
+        member["in_window"] = (not R.lambda_max_below(exact, (Fraction(kappa) - T107_WINDOW) * Fraction(res))
+                               and R.lambda_max_below(exact, (Fraction(kappa) + T107_WINDOW) * Fraction(res)))
+        member["predicted"] = window_codes(kappa, member["scalar_above"])
+    return member
+
+
+def _straddle(P, build):
+    """The A of two adjacent float targets between which the exact max eig(M) crosses -res (exact bisection)."""
+    def beyond(top):
+        A = build(top)
+        return R.lambda_max_below(R.exact_form(A, P), -Fraction(R.rounded_resolution(A, P)))
+
+    res = R.rounded_resolution(build(0.0), P)
+    low, high = -1.5 * res, -0.5 * res
+    assert beyond(low) and not beyond(high)
+    while (middle := 0.5 * (low + high)) not in (low, high):
+        if beyond(middle):
+            low = middle
+        else:
+            high = middle
+    return build(low), build(high)
+
+
 def boundary_family():
-    """Near-boundary continuous cases with exact bins of max eig(M) relative to the resolution."""
-    rng = R.generator(107)
+    """Near-boundary continuous cases with exact bins of max eig(M), the same on every BLAS kernel.
+
+    Window cases (seed 107) have their exact max eig(M) within 1/16 res of kappa res; straddle cases (seed 1071)
+    are pairs whose exact max eig(M) lies on either side of -res, within rounding of it. Every matrix is built
+    from integer draws in exact rational arithmetic and rounded once (lyapunov_reference.exact_threshold_builder).
+    """
     family = []
+    rng = R.generator(107)
     for n in (2, 3, 4):
         for spd in (False, True):
             for kappa in T107_KAPPAS:
-                P = R.random_spd(rng, n, 10.0) if spd else None
-                A, P = R.near_threshold(rng, n, kappa, P)
-                family.append({"n": n, "kappa": kappa, "A": A, "P": P, "x": rng.normal(size=n)})
-    family += razor_family(1071, 12)
-    for member in family:
-        exact = R.exact_form(member["A"], member["P"])
-        member["resolution"] = R.resolution(member["A"], member["P"])
-        member["exact_class"] = R.exact_class(exact)
-        member["exact_bin"] = R.resolution_bin(exact, member["resolution"])
+                P, build = R.exact_threshold_builder(rng, n, spd)
+                A = build(kappa * R.rounded_resolution(build(0.0), P))
+                family.append(_boundary_member("window", n, kappa, A, P, rng))
+    rng = R.generator(1071)
+    for n in (2, 3, 4):
+        for spd in (False, True):
+            P, build = R.exact_threshold_builder(rng, n, spd)
+            family += [_boundary_member("straddle", n, -1.0, A, P, rng) for A in _straddle(P, build)]
     return family
 
 
 @task("T107", changed_files=PROVIDER_FILES,
-      regression_tests=(_node("test_t107_inconclusive_band"), PARTIAL_TEST, NEXT_STEP_TEST))
+      regression_tests=(_node("test_t107_inconclusive_band"), _node("test_boundary_family_is_exact_and_kernel_free"),
+                        UNCONDITIONAL_TEST, PARTIAL_TEST, NEXT_STEP_TEST))
 def inconclusive_band(ctx):
     fields = _fields(
         "PLSR never gives a certifying code to a near-boundary decrease form that is not exactly negative "
-        "definite; beyond two resolutions from zero it always resolves the sign; under a declared margin of three "
-        "resolutions no case within two resolutions is CERTIFIED_WITH_MARGIN. A stronger candidate statement "
-        "formulated for this experiment (it is not quoted from the runtime's documentation) -- that near-boundary "
-        "spectra yield NUMERICAL_INCONCLUSIVE or MARGIN_LOW rather than CERTIFIED_WITH_MARGIN -- is tested at "
-        "required_margin 0 as a candidate counterexample.",
+        "definite; on forms whose exact max eig(M) keeps 3/16 of a resolution from its code thresholds it gives the "
+        "code that exact position predicts, so beyond two resolutions from zero it always resolves the sign and "
+        "under a declared margin of three resolutions no case within two resolutions is CERTIFIED_WITH_MARGIN; "
+        "within rounding of -res the code is CERTIFIED_WITH_MARGIN or NUMERICAL_INCONCLUSIVE on either exact side. "
+        "A stronger candidate statement formulated for this experiment (it is not quoted from the runtime's "
+        "documentation) -- that near-boundary spectra yield NUMERICAL_INCONCLUSIVE or MARGIN_LOW rather than "
+        "CERTIFIED_WITH_MARGIN -- is tested at required_margin 0 as a candidate counterexample.",
         "If the resolution bounds the float64 error e of max eig(M) (|e| <= res), then exact lambda < -2 res gives "
         "margin > res (certified), exact lambda >= 2 res gives max eig > res (not definite), and exact lambda >= 0 "
         "can never give margin > res. With required margin 3 res, certification needs margin > 3 res, impossible "
-        "for exact lambda >= -2 res.",
-        ["90 continuous cases (PCG64 seed 107): n in {2, 3, 4}, P = I or SPD, kappa in "
-         f"{list(T107_KAPPAS)} (target max eig = kappa * resolution)",
-         "12 razor-edge cases (seed 1071) with computed |max eig| / resolution just above 1",
+        "for exact lambda >= -2 res. When the realized |e| and the error of the computed x^T M x stay below the "
+        "distance between a case's exact window and the thresholds -3 res, -res and +res, the code is a function "
+        "of the exact window alone, and so the same on every BLAS kernel.",
+        ["90 window cases (PCG64 seed 107): n in {2, 3, 4}, P = I or a rational SPD P with eigenvalues 1 to 10 "
+         f"rounded entrywise, target kappa in {list(T107_KAPPAS)} (target max eig = kappa * resolution); "
+         "A = P^-1 (N/2 + K) with skew part 100, solved in exact rational arithmetic from integer draws and rounded "
+         "once, so every BLAS kernel declares the same A; exact max eig(M) within res/16 of the target",
+         "12 straddle cases (seed 1071): for each n and kind of P, the A of two adjacent float targets between "
+         "which the exact max eig(M) crosses -res (bisection on exact Sylvester tests)",
+         "States x in 32nds of [-2, 2], redrawn until the exact x^T M x / |x|^2 keeps 3/16 res from res",
          "Each case evaluated with required_margin 0 and 3 * resolution"],
         "PLSR code and margin; exact bin of max eig(M) from Sylvester tests on M - t I at t = -2, -1, 0, 1, 2 "
-        "resolutions in exact dyadic arithmetic.",
-        "No certifying code unless the exact form is negative definite; certified beyond -2 res; resolved beyond "
-        "+2 res; with the declared margin no CERTIFIED_WITH_MARGIN within the band. Without a declared margin, "
-        "exactly negative definite band cases may be certified (soundly) or left inconclusive.",
-        "Generate cases, bin their exact spectra, evaluate with PLSR at both margins and tabulate codes per bin.",
+        "resolutions and an exact bisection bracket of max eig(M) / res, in exact dyadic arithmetic; res is the "
+        "documented resolution with max|M| read from the correctly rounded exact form.",
+        "No certifying code unless the exact form is negative definite; every window case gets the code its exact "
+        "window predicts (certified below -res, MARGIN_LOW between -3 res and -res under the declared margin, "
+        "inconclusive within one resolution, not definite or not certified beyond +res); straddle cases get "
+        "CERTIFIED_WITH_MARGIN or NUMERICAL_INCONCLUSIVE. Without a declared margin, exactly negative definite band "
+        "cases may be certified (soundly) or left inconclusive.",
+        "Generate the cases in exact arithmetic, bin and bracket their exact spectra, evaluate with PLSR at both "
+        "margins, compare every window code with its prediction, measure the realized eigenvalue error and tabulate "
+        "codes per bin.",
         NEXT_STEPS["T107"],
-        ["certifying code on a form that is not exactly negative definite", "unresolved sign beyond two "
+        ["certifying code on a form that is not exactly negative definite", "window code differing from its exact "
+         "window", "realized eigenvalue error reaching the declared distance", "unresolved sign beyond two "
          "resolutions", "CERTIFIED_WITH_MARGIN inside the band under a declared margin",
-         "MARGIN_LOW inconsistent with the declared margin",
+         "MARGIN_LOW inconsistent with the declared margin", "straddle code other than CERTIFIED_WITH_MARGIN or "
+         "NUMERICAL_INCONCLUSIVE",
          "CERTIFIED_WITH_MARGIN inside the band at required_margin 0 (searched as counterexample)"],
-        ["Exact bins describe the declared binary64 matrices; the targets kappa are only approximately realised "
-         "because A is rounded.", "The band refusal rate depends on the generator and is not a property of "
-         "plants in general."])
+        ["Exact bins and windows describe the declared binary64 matrices; the targets kappa are realised within "
+         "res/16 (checked exactly), not exactly.", "Which straddle cases are certified is decided by the last-bit "
+         "rounding of the computed eigenvalue and may differ between BLAS kernels and LAPACK builds; it is retained "
+         "per case in inconclusive-band.json and stated in the numerical result, not compared.",
+         "The band refusal rate depends on the generator and is not a property of plants in general."])
     family = ctx.memo("lyapunov:boundary-family", boundary_family)
+    window = [i for i, member in enumerate(family) if member["kind"] == "window"]
+    straddle = [i for i, member in enumerate(family) if member["kind"] == "straddle"]
     bins = _counts(member["exact_bin"] for member in family)
-    offline = [finding("The near-boundary family populates every exact resolution bin of max eig(M)",
-                       "numerical", {"cases": len(family), "bins": bins},
+    outside = sum(not family[i]["in_window"] for i in window)
+    offline = [finding("The near-boundary family populates every exact resolution bin of max eig(M), each window "
+                       "case within res/16 of its target", "numerical",
+                       {"cases": len(family), "bins": bins, "outside_window": outside},
                        {"generator": {"name": "boundary_family", "seed": 107},
                         "checks": [_check("exact bins without a case (six bins from below -2 res to above 2 res)",
-                                          6 - len(bins), 0.0)]},
-                       tolerance={"abs": 2.0, "rel": 0.0},
-                       uncertainty=_platform(2.0, "bins of razor-edge cases may shift between BLAS builds"))]
+                                          6 - len(bins), 0.0),
+                                   _check("window cases whose exact max eig(M) lies outside (kappa +- 1/16) res",
+                                          outside, 0.0)]},
+                       tolerance=EXACT_TOL,
+                       uncertainty=_roundoff(0.0, "exact rational bins and windows of matrices built without BLAS: "
+                                                  "the same on every kernel"))]
     cases = []
     for i, member in enumerate(family):
         cases.append(_verdict_case(f"b{i}:0", member["A"], member["P"], member["x"]))
@@ -2252,31 +2346,39 @@ def inconclusive_band(ctx):
     try:
         bridge = _bridge(ctx, cases)
     except _Unavailable as exc:
-        fields["numerical_result"] = f"Provider-free exact bins: {bins}."
-        fields["uncertainty"] = "Exact bins are exact; targets are approximate."
+        fields["numerical_result"] = f"Provider-free exact bins: {bins}; window cases outside their window: {outside}."
+        fields["uncertainty"] = "Exact bins and windows are exact and identical on every BLAS kernel."
         return _finish(fields, offline, PROVIDER_FILES, blocked=str(exc))
     identity, results = bridge["identity"], bridge["results"]
     base = provider_basis(identity)
-    table = {}
+    table, window_table = {}, {}
     unsound = unresolved = certified_in_band_declared = margin_low_mismatch = margin_low_seen = 0
     band_nd, band_nd_inconclusive, band_nd_certified = 0, 0, 0
-    points = []
+    mismatches, errors, rows, points = 0, [], [], []
     for i, member in enumerate(family):
         zero, declared = results[f"b{i}:0"], results[f"b{i}:3"]
         code0, code3 = _code(zero), _code(declared)
         table.setdefault(member["exact_bin"], {}).setdefault(code0, 0)
         table[member["exact_bin"]][code0] += 1
         unsound += (code0 in R.CERTIFYING or code3 in R.CERTIFYING) and member["exact_class"] != "negative_definite"
-        if member["exact_bin"] == "below -2 res":
-            unresolved += code0 != "CERTIFIED_WITH_MARGIN"
-        if member["exact_bin"] == "at or above 2 res":
-            unresolved += code0 not in ("DECREASE_NOT_DEFINITE", "NOT_CERTIFIED")
-        if member["exact_bin"] in BAND:
-            certified_in_band_declared += code3 == "CERTIFIED_WITH_MARGIN"
-            if member["exact_class"] == "negative_definite":
+        # Realized error of the computed max eig(M) = -margin against the exact bracket, in resolutions.
+        computed = -zero["margin"] / member["resolution"]
+        low, high = member["bracket"]
+        errors.append(max(computed - float(high), float(low) - computed, 0.0))
+        if member["kind"] == "window":
+            window_table.setdefault(member["exact_bin"], {}).setdefault(code0, 0)
+            window_table[member["exact_bin"]][code0] += 1
+            mismatches += (code0, code3) != member["predicted"]
+            if member["exact_bin"] == "below -2 res":
+                unresolved += code0 != "CERTIFIED_WITH_MARGIN"
+            if member["exact_bin"] == "at or above 2 res":
+                unresolved += code0 not in ("DECREASE_NOT_DEFINITE", "NOT_CERTIFIED")
+            if member["exact_bin"] in BAND and member["exact_class"] == "negative_definite":
                 band_nd += 1
                 band_nd_inconclusive += code0 == "NUMERICAL_INCONCLUSIVE"
                 band_nd_certified += code0 == "CERTIFIED_WITH_MARGIN"
+        if member["exact_bin"] in BAND:
+            certified_in_band_declared += code3 == "CERTIFIED_WITH_MARGIN"
         margin, res, required = declared["margin"], declared["resolution"], declared["required_margin"]
         if margin > res:
             expected = "MARGIN_LOW" if margin <= required else "CERTIFIED_WITH_MARGIN"
@@ -2284,12 +2386,34 @@ def inconclusive_band(ctx):
                 margin_low_mismatch += code3 != expected
                 margin_low_seen += code3 == "MARGIN_LOW"
         points.append((member["kappa"], zero["margin_ratio"], code0))
+        rows.append({"case": i, "kind": member["kind"], "n": member["n"], "kappa": member["kappa"],
+                     "exact_bin": member["exact_bin"], "exact_class": member["exact_class"],
+                     "exact_bracket_over_res": [float(low), float(high)], "code_at_required_margin_0": code0,
+                     "code_at_required_margin_3_res": code3, "margin_ratio": zero["margin_ratio"],
+                     "realized_error_over_res": errors[-1]})
     refusal_rate = band_nd_inconclusive / band_nd if band_nd else 0.0
-    band_certified = [i for i, member in enumerate(family) if member["exact_bin"] in BAND
-                      and _code(results[f"b{i}:0"]) == "CERTIFIED_WITH_MARGIN"]
+    band = [i for i, member in enumerate(family) if member["exact_bin"] in BAND]
+    band_certified = [i for i in band if _code(results[f"b{i}:0"]) == "CERTIFIED_WITH_MARGIN"]
     band_certified_unsound = sum(family[i]["exact_class"] != "negative_definite" for i in band_certified)
-    within_one = [i for i in band_certified if family[i]["exact_bin"] == "[-1, 0) res"]
-    ctx.artifact_json("inconclusive-band.json", R.jsonable({"codes_by_exact_bin": table, "points": points}))
+    window_certified = [i for i in band_certified if family[i]["kind"] == "window"]
+    straddle_codes = {i: _code(results[f"b{i}:0"]) for i in straddle}
+    straddle_other = sum(code not in ("CERTIFIED_WITH_MARGIN", "NUMERICAL_INCONCLUSIVE")
+                         for code in straddle_codes.values())
+    beyond = [i for i in straddle if family[i]["exact_bin"] == "[-2, -1) res"]
+    inside = [i for i in straddle if family[i]["exact_bin"] == "[-1, 0) res"]
+    # Each pair is (exactly beyond -res, at or above it); a pair on one side would not straddle the threshold.
+    not_straddling = sum(family[a]["exact_bin"] != "[-2, -1) res" or family[b]["exact_bin"] != "[-1, 0) res"
+                         for a, b in zip(straddle[0::2], straddle[1::2]))
+    beyond_certified = sum(straddle_codes[i] == "CERTIFIED_WITH_MARGIN" for i in beyond)
+    inside_certified = sum(straddle_codes[i] == "CERTIFIED_WITH_MARGIN" for i in inside)
+    # Distance of each straddle case's exact bracket from -res, in resolutions.
+    straddle_distance = max(max(abs(float(family[i]["bracket"][0]) + 1.0), abs(float(family[i]["bracket"][1]) + 1.0))
+                            for i in straddle)
+    window_error = max(errors[i] for i in window)
+    straddle_error = max(errors[i] for i in straddle)
+    ctx.artifact_json("inconclusive-band.json", R.jsonable({"codes_by_exact_bin": table,
+                                                            "window_codes_by_exact_bin": window_table,
+                                                            "cases": rows, "points": points}))
     by_code = {}
     for kappa, ratio, code in sorted(points):
         by_code.setdefault(code, ([], []))
@@ -2301,52 +2425,88 @@ def inconclusive_band(ctx):
         ylabel="max eig(M) / resolution", markers=True))
     exact_checker = _independent(_check("exact bins and classes of the declared forms", unsound, 0.0), identity)
     band_extra = {}
-    if band_certified:
-        # The witness comes from [-2, -1) resolutions, whose certifications are robust to last-bit rounding;
-        # which [-1, 0) cases resolve depends on the build.
-        robust = [i for i in band_certified if family[i]["exact_bin"] == "[-2, -1) res"]
-        chosen = (robust or band_certified)[0]
+    if window_certified:
+        # The witness is a window case: exactly two resolutions or less from zero, and certified on every kernel.
+        chosen = window_certified[0]
         member = family[chosen]
         band_extra["counterexample"] = {
             "statement": "Near-boundary spectra yield NUMERICAL_INCONCLUSIVE or MARGIN_LOW rather than "
                          "CERTIFIED_WITH_MARGIN (candidate hypothesis formulated for T107, not a quoted "
                          "specification)",
             "witness": {"case": chosen, "n": member["n"], "exact_bin": member["exact_bin"],
-                        "exact_class": member["exact_class"], "code_at_required_margin_0": "CERTIFIED_WITH_MARGIN",
+                        "exact_class": member["exact_class"],
+                        "exact_window_over_res": [float(member["kappa"] - T107_WINDOW),
+                                                  float(member["kappa"] + T107_WINDOW)],
+                        "code_at_required_margin_0": "CERTIFIED_WITH_MARGIN",
                         "margin_ratio": results[f"b{chosen}:0"]["margin_ratio"], "A_hex": R.hexed(member["A"]),
                         "P_hex": R.hexed(member["P"]), "x": member["x"].tolist()}}
+    exact_counts = _roundoff(0.0, "exact counts: each counted outcome is decided at a threshold at least 3/16 res "
+                                  "from the case's exact max eig(M), beyond the realized eigenvalue error, so they do "
+                                  "not move between BLAS kernels")
     findings = [
         finding("No near-boundary case receives a certifying code unless its exact decrease form is negative "
                 "definite", "numerical", {"cases": len(family), "violations": unsound},
                 {"provider": base, "independent_check": exact_checker}, tolerance=EXACT_TOL,
                 uncertainty=EXACT),
+        finding("Every window case receives the code its exact window predicts, PLSR's computed max eig(M) erring "
+                "by less than the 3/16 res that separates each window from the code thresholds", "numerical",
+                {"window_cases": len(window), "mismatches": mismatches},
+                {"provider": base,
+                 "independent_check": _independent(
+                     _check("window cases whose codes at required_margin 0 and 3 res differ from those implied by "
+                            "the exact window and the exact sign of x^T M x - res |x|^2", mismatches, 0.0), identity),
+                 "checks": [_check("largest |computed - exact| max eig(M) over all cases, in resolutions (exact "
+                                   "bracket of width 2e-6 res)", max(errors), float(T107_DISTANCE), "le")]},
+                tolerance=EXACT_TOL,
+                uncertainty=_roundoff(max(errors), "largest realized error of PLSR's computed max eig(M) against "
+                                                   "the exact value, in resolutions; it differs between BLAS "
+                                                   "kernels at its own size and is not a compared value")),
         finding("Beyond two resolutions from zero PLSR always resolves the sign", "numerical",
                 {"resolved_cases": bins.get("below -2 res", 0) + bins.get("at or above 2 res", 0),
                  "unresolved": unresolved},
                 {"provider": base, "independent_check": _independent(
                     _check("cases beyond two resolutions not resolved to the exact sign", unresolved, 0.0), identity)},
-                tolerance={"abs": 2.0, "rel": 0.0},
-                uncertainty=_platform(2.0, "counts near two resolutions may shift between BLAS builds")),
+                tolerance=EXACT_TOL, uncertainty=exact_counts),
         finding("With a declared margin of three resolutions no case within two resolutions of zero is "
                 "CERTIFIED_WITH_MARGIN", "numerical",
-                {"band_cases": sum(bins.get(b, 0) for b in BAND), "certified": certified_in_band_declared},
+                {"band_cases": len(band), "certified": certified_in_band_declared},
                 {"provider": base, "independent_check": _independent(
                     _check("CERTIFIED_WITH_MARGIN in the exact band under required_margin = 3 res",
                            certified_in_band_declared, 0.0), identity)},
-                tolerance={"abs": 2.0, "rel": 0.0},
-                uncertainty=_platform(2.0, "counts near the band edge may shift between BLAS builds")),
+                tolerance=EXACT_TOL, uncertainty=exact_counts),
         finding("At required_margin 0 near-boundary spectra within two resolutions of zero receive "
                 "CERTIFIED_WITH_MARGIN, and every such certificate is exactly sound", "numerical",
-                {"band_cases": sum(bins.get(b, 0) for b in BAND), "certified": len(band_certified),
-                 "certified_within_one_resolution": len(within_one), "unsound": band_certified_unsound},
+                {"band_cases": len(band), "certified_window_cases": len(window_certified),
+                 "unsound": band_certified_unsound},
                 {"provider": base, "checks": [
-                    _check("band cases certified at required_margin 0", len(band_certified), 1.0, "ge",
+                    _check("window band cases certified at required_margin 0", len(window_certified), 1.0, "ge",
                            kind="invariant"),
-                    _check("band certificates whose exact decrease form is not negative definite",
-                           band_certified_unsound, 0.0)]},
-                tolerance={"abs": 4.0, "rel": 0.0},
-                uncertainty=_platform(4.0, "which band cases resolve depends on last-bit rounding; the [-2, -1) "
-                                           "res certifications are robust"), **band_extra),
+                    _check("band certificates (window and straddle) whose exact decrease form is not negative "
+                           "definite", band_certified_unsound, 0.0)]},
+                tolerance={"abs": 0.03, "rel": 0.0},
+                uncertainty=_roundoff(window_error, (
+                    f"the counts are exact; the witness's computed margin ratio carries the realized eigenvalue error "
+                    f"of its BLAS kernel (at most {window_error:.2g} res here; 0.0096 to 0.0116 res on the SkylakeX, "
+                    "Haswell and Sandybridge OpenBLAS kernels, whose band-certified margin ratios differed by at most "
+                    "0.0018), so two kernels differ by at most twice the largest realized error; the regression "
+                    "tolerance abs 0.03 res covers that and admits no change of a count")),
+                **band_extra),
+        finding("Straddle cases within rounding of -res receive CERTIFIED_WITH_MARGIN or NUMERICAL_INCONCLUSIVE on "
+                "either exact side of the threshold", "numerical",
+                {"cases": len(straddle), "exactly_beyond": len(beyond), "other_codes": straddle_other},
+                {"provider": base,
+                 "independent_check": _independent(
+                     _check("straddle codes other than CERTIFIED_WITH_MARGIN or NUMERICAL_INCONCLUSIVE (the codes "
+                            "an exact max eig(M) in (-2 res, 0) admits)", straddle_other, 0.0), identity),
+                 "checks": [_check("straddle pairs whose exact max eig(M) does not cross -res", not_straddling,
+                                   0.0)]},
+                tolerance=EXACT_TOL,
+                uncertainty=_platform(straddle_distance, "largest exact distance of a straddle case from -res, in "
+                                                         "resolutions; which of them are certified is decided by "
+                                                         "the rounding of the computed eigenvalue (realized error up "
+                                                         f"to {straddle_error:.2g} res here), may differ between "
+                                                         "BLAS kernels and LAPACK builds, and is retained per case "
+                                                         "in inconclusive-band.json, not compared")),
         finding("MARGIN_LOW appears exactly when the resolvable margin does not exceed the declared margin",
                 "numerical", {"margin_low_observed": margin_low_seen > 0, "mismatches": margin_low_mismatch},
                 {"provider": base, "checks": [_check("codes differing from the declared-margin rule",
@@ -2354,29 +2514,40 @@ def inconclusive_band(ctx):
                                               _check("MARGIN_LOW verdicts observed", margin_low_seen, 1.0, "ge",
                                                      kind="invariant")]},
                 tolerance=EXACT_TOL, uncertainty=EXACT),
-        finding("Share of exactly negative definite band cases answered NUMERICAL_INCONCLUSIVE without a declared "
-                "margin", "numerical", {"inconclusive_share": refusal_rate},
-                {"provider": base}, tolerance={"abs": 0.2, "rel": 0.0},
-                uncertainty=_platform(0.2, "the share of resolved band cases depends on last-bit rounding")),
+        finding("Share of exactly negative definite band window cases answered NUMERICAL_INCONCLUSIVE without a "
+                "declared margin", "numerical", {"inconclusive_share": refusal_rate},
+                {"provider": base}, tolerance=EXACT_TOL,
+                uncertainty=_roundoff(0.0, "a ratio of exact counts decided by the exact windows")),
     ] + offline
     fields["numerical_result"] = (
-        f"{len(family)} cases; codes by exact bin at required_margin 0: {table}. Unsound certifications: {unsound}. "
-        f"Unresolved beyond two resolutions: {unresolved}. Certified within the band under the declared margin: "
-        f"{certified_in_band_declared}. At required_margin 0, {len(band_certified)} of "
-        f"{sum(bins.get(b, 0) for b in BAND)} band cases were CERTIFIED_WITH_MARGIN ({len(within_one)} within one "
-        f"resolution), {band_certified_unsound} of them unsound. Exactly negative definite band cases: {band_nd}, of "
-        f"which {band_nd_inconclusive} inconclusive ({refusal_rate:.0%}) and {band_nd_certified} certified. "
-        f"MARGIN_LOW rule mismatches: {margin_low_mismatch}. Conclusion: "
-        + ("every certificate is exactly sound and the sign is resolved beyond two resolutions"
-           if unsound == 0 and unresolved == 0 else "the soundness or resolution property failed")
+        f"{len(family)} cases ({len(window)} window, {len(straddle)} straddle); window codes by exact bin at "
+        f"required_margin 0: {window_table}. Window codes differing from their exact window: {mismatches}; largest "
+        f"realized eigenvalue error {window_error:.3g} res on window cases and {straddle_error:.3g} res on straddle "
+        f"cases (declared distance 0.1875 res). Unsound certifications: {unsound}. Unresolved beyond two "
+        f"resolutions: {unresolved}. Certified within the band under the declared margin: "
+        f"{certified_in_band_declared}. At required_margin 0, {len(window_certified)} of "
+        f"{sum(family[i]['kind'] == 'window' for i in band)} window band cases were CERTIFIED_WITH_MARGIN, "
+        f"{band_certified_unsound} band certificates unsound. Exactly negative definite window band cases: "
+        f"{band_nd}, of which {band_nd_inconclusive} inconclusive ({refusal_rate:.0%}) and {band_nd_certified} "
+        f"certified. Straddle cases within {straddle_distance:.2g} res of -res: {beyond_certified} of {len(beyond)} "
+        f"exactly beyond -res and {inside_certified} of {len(inside)} exactly inside were certified, the rest "
+        f"inconclusive ({straddle_other} other codes; which ones resolve is decided by rounding). MARGIN_LOW rule "
+        f"mismatches: {margin_low_mismatch}. Conclusion: "
+        + ("every certificate is exactly sound, every window case gets the code its exact position predicts and the "
+           "sign is resolved beyond two resolutions" if unsound == 0 and unresolved == 0 and mismatches == 0
+           else "the soundness, window or resolution property failed")
         + ("; the declared margin of three resolutions keeps the band out of CERTIFIED_WITH_MARGIN"
            if certified_in_band_declared == 0 else "; the declared margin did not keep the band out of "
                                                    "CERTIFIED_WITH_MARGIN")
         + ("; without a declared margin the band is not uniformly inconclusive, which refutes the stronger candidate "
-           "statement (the certifications are sound)." if band_certified else
-           "; without a declared margin no band case was certified."))
-    fields["uncertainty"] = ("Exact bins are exact; which band cases resolve depends on last-bit rounding and "
-                             "may differ between BLAS builds (share tolerance 0.2, count tolerance 4).")
+           "statement (the certifications are sound)." if window_certified else
+           "; without a declared margin no window band case was certified."))
+    fields["uncertainty"] = ("Exact bins and windows are exact and identical on every BLAS kernel. Window codes "
+                             "follow from them because the realized eigenvalue error stays below the declared "
+                             "distance of 3/16 res; margin ratios carry that error and are retained in the "
+                             "artifact. Which straddle cases resolve depends on last-bit rounding and may differ "
+                             "between BLAS kernels; it is reported in the numerical result and the artifact, not "
+                             "compared.")
     return _finish(fields, findings, PROVIDER_FILES, identity)
 
 
@@ -2687,7 +2858,10 @@ def adversarial_eigenvalues(ctx):
             if (row.get("code_independent") in R.CERTIFYING
                     and _valid_certificate(case["A"], independent[i]["P"])):
                 eig = np.linalg.eigvalsh(independent[i]["P"])
-                refused_with_certificate.append({"name": case["name"], "solver_error": row["solve_error"],
+                # The gate, not the message: the residual it quotes is rounding noise of an ill-conditioned solve
+                # and differs between BLAS kernels (the full message stays in the artifact row).
+                gate = next((g for g in SOLVER_GATES if row["solve_error"].startswith(g)), None)
+                refused_with_certificate.append({"name": case["name"], "solver_gate": gate,
                                                  "certificate": independent[i]["implementation"],
                                                  "certificate_condition": float(eig[-1] / eig[0]),
                                                  "verdict_with_certificate": row["code_independent"]})
@@ -2726,11 +2900,25 @@ def adversarial_eigenvalues(ctx):
     beyond_bound = sum(m > 10.0 for _, _, m in agreement)
     jordan_rows = [r for r in rows if r["group"] == "Jordan"]
     jordan_solved = sum(r["solve"] == "P returned" for r in jordan_rows)
-    witness_extra = {}
+    witness_extra, witness_tolerance = {}, EXACT_TOL
+    witness_uncertainty = _roundoff(0.0, "no refused plant had a valid certificate: the count is exact")
     if refused_with_certificate:
+        witness = refused_with_certificate[0]
         witness_extra["counterexample"] = {
             "statement": "PLSR's solve_lyapunov refuses only plants for which no valid quadratic certificate is "
-                         "available in float64", "witness": refused_with_certificate[0]}
+                         "available in float64", "witness": witness}
+        # The witness's certificate condition is the one rounding-level number compared: a backward-stable solve
+        # moves P by about u ||P||, so its smallest eigenvalue and cond(P) move by about u cond(P) relative.
+        size = next(c["A"].shape[0] for c in cases if c["name"] == witness["name"])
+        first_order = R.U * witness["certificate_condition"]
+        witness_tolerance = {"abs": 0.0, "rel": size * size * first_order}
+        witness_uncertainty = _roundoff(first_order, (
+            f"relative change of the witness's certificate condition cond(P) = "
+            f"{witness['certificate_condition']:.3g} under a solve perturbation of size u ||P|| (Weyl: u cond(P)); "
+            "three OpenBLAS kernels (SkylakeX, Haswell, Sandybridge) gave conditions within 4.2e-5 of each other. "
+            f"The regression tolerance n^2 u cond(P) = {size * size * first_order:.2g} is n^2 times that size and "
+            "about twenty times the measured spread; the count and the plants are exact, and exact validity of the "
+            "independent P is decided in rational arithmetic"))
     findings = [
         finding("Every certifying PLSR verdict on the adversarial plants uses an exactly valid certificate",
                 "numerical",
@@ -2783,9 +2971,7 @@ def adversarial_eigenvalues(ctx):
                 {"provider": base, "checks": [
                     _check("refused plants whose independent P is exactly valid and certified by PLSR's verdict",
                            len(refused_with_certificate), 1.0, "ge")]},
-                tolerance=EXACT_TOL,
-                uncertainty=_platform(0.0, "depends on the independent solver's P for a cond ~5e11 plant; exact "
-                                           "validity of that P is decided in rational arithmetic"), **witness_extra),
+                tolerance=witness_tolerance, uncertainty=witness_uncertainty, **witness_extra),
     ] + offline
     fields["numerical_result"] = (
         f"{certified} certifying verdicts, {violations} without an exactly valid certificate. Solver agreement on "
@@ -2807,7 +2993,11 @@ def adversarial_eigenvalues(ctx):
     fields["uncertainty"] = ("Exact checks are exact. Solver agreement scales with cond(P) (retained per case). "
                              "numpy eigenvalues of defective matrices vary at the eps^(1/n) level between builds, "
                              "so the count of wrong signs may change and is retained in the artifact only; the "
-                             "misplacement beyond 1e3 eps does not.")
+                             "misplacement beyond 1e3 eps does not. Which documented gate refuses an exactly "
+                             "defective plant, and the residual a refusal quotes, are rounding outcomes that differ "
+                             "between BLAS kernels; they are retained per plant in the artifact, and the "
+                             "counterexample records the gate. Its certificate condition is compared within "
+                             "n^2 u cond(P).")
     return _finish(fields, findings, PROVIDER_FILES, identity)
 
 
