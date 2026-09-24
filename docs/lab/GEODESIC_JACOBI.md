@@ -13,6 +13,13 @@ python -m ciw lab run T001 T002 T003 T004 T005 T006 T007 T008 T009 --output-dir 
 python -m ciw lab report T007 --retained out
 ```
 
+The section run takes about 32 s and its tests about 39 s on one core, the
+tests measured with the CSG provider bound through `CIW_LAB_CSG_REPO` as the
+clean-room gate runs them (about the same without it). The tests' module
+context binds the provider when that variable is set, so T005 and T008 run
+once for every test that reads them, and the refusal tests reuse the module
+run's memoized integrations and run only their own provider step.
+
 **Scope and non-claims.** Every surface, path, length and curvature here is a
 declared mathematical object in normalized units. The tasks establish agreement
 between implementations, convergence rates and invariants of *computations*.
@@ -129,15 +136,22 @@ table and the ciw-only checks.
   finite differences of Euler steps carried at about (degree + 1) times the
   working precision, so its cost is set by the degree: T002 uses degree 30
   (`ODEFUN_DEGREE`) instead of mpmath's default 3 + 1.5 · 34 = 54, which takes
-  about 12 s instead of about 17 s on one core with mpmath's pure-Python
-  backend (faster with gmpy2), so T002 takes about 14 s and the section run
-  T001–T009 about 37 s. The precision (34 digits, the reference's own) and
+  about 9 s instead of about 12 s on one core with mpmath's pure-Python
+  backend (faster with gmpy2), so T002 takes about 13 s and the section run
+  T001–T009 about 32 s. The precision (34 digits, the reference's own) and
   the horizons (the full declared path lengths, so both references are
   compared at the same end states) are kept; only the degree trades run time.
   When the degree was chosen, degrees 30 and 54 gave identical 34-digit end
-  states on all three paths and a 40-digit run moved them by at most 2.3e-35;
-  the retained run does not repeat those runs (a test repeats the degree
-  comparison on a short sphere arc). odefun reports no error estimate.
+  states on all three paths, and a 44-digit run moves them by at most 2.3e-35
+  (see *Rounding* below); the retained run does not repeat those runs (a test
+  repeats the degree comparison on a short sphere arc). odefun reports no
+  error estimate.
+* **Rounding probe** (same three paths): the 20 macro-steps of the reference
+  are rerun at 34 + 10 digits (`mp_guarded_state`, `MP_GUARD`), with the same
+  equations, start and extrapolation and therefore the same truncation error.
+  Its distance from the 34-digit end state measures that state's rounding, and
+  its distance from the odefun end state is the reference's truncation error
+  without that rounding. It adds about 0.1–0.2 s per path.
 * Compared against it: ciw `richardson_rk4` (200/400 steps) and scipy
   `solve_ivp(DOP853, rtol=1e-13, atol=1e-15)` on the ciw right-hand side.
 
@@ -156,7 +170,17 @@ producer `ciw.lab.geodesic_jacobi_common.gbs_integrate` (revision `ciw
 over the reference's own 10 vs 20 macro-step estimate, which must be at most 1,
 so an estimate that understates the reference error fails; the finding's
 further checks bound the gap by 1e-18 and the odefun end state's first
-integrals (drift of g(u′, u′) from its start value, |det Φ − 1|) by 1e-30.
+integrals (drift of g(u′, u′) from its start value, |det Φ − 1|) by 1e-30, and
+test the order the claim states ("overstates the gap by the factor its
+order-16 extrapolation predicts"). With e₁₀ = 2ᵖ e₂₀ for an order-p method the
+estimate is about (2ᵖ − 1) e₂₀ and the gap about e₂₀, so log₂(estimate / gap + 1)
+observes p; with the gap of the 44-digit rerun it must lie within 1 of the
+nominal 16 (`GBS_ORDER`: eight modified-midpoint stages, full extrapolation in
+h²). A check of the gap against the estimate alone cannot see the order: one
+stage short (sequence 2…14, order 14) the reference still agrees with odefun
+far inside its estimate, but its observed orders are 13.7–14.2 (11.7–12.2 two
+stages short), so the order check refutes the finding (a test runs the order-14
+variant on the saddle).
 The two integrations share the equations, the start and mpmath's arithmetic;
 their integrators differ in origin. Both the equations (sympy) and a second
 integrator (mpmath) behind the reference are therefore independent of ciw, and
@@ -183,26 +207,42 @@ and gap (4 ε times the end-state scale, 1.6e-15 to 2.1e-15); the saddle gap of
 `mpmath.odefun` (43, 44 and 66 Taylor steps) differs from the
 Gragg–Bulirsch–Stoer references by 1.8e-29 (saddle), 6.8e-28 (torus) and
 8.1e-27 (bump): 1.26e-5 to 1.57e-5 of their 10 vs 20 macro-step estimates, all
-three `independently_verified`. That ratio is about 2⁻¹⁶ = 1.5e-5, the error
-ratio of an order-16 extrapolation (eight midpoint stages, full extrapolation
-in h²) over a halved macro-step: consistent with the retained estimate measuring
-the error of the 10-step result, and with the retained 20-step state being about
-10⁵ times more accurate than the estimate states. The odefun first integrals
-stay at 34-digit rounding (speed drift at most 4.8e-35, det Φ − 1 = 0 to 34
-digits). Each of these findings carries the 34-digit rounding of the gap
-(1e-34 times the end-state scale) as its uncertainty; the gap itself is the
-difference of the two integrators' errors, which neither reports separately,
-and its values are bit-identical on the three kernels (regression tolerance
-relative 1e-3, room for last-digit changes of the 34-digit arithmetic only).
-`agreement.svg` plots
-the macro-step estimate and the odefun gap per path (`odefun.json`), and
-nothing in binary64: the ciw RK4 and scipy gaps near 1e-14 are rounding noise
-that moves with the OpenBLAS kernel (a figure of them differed between the
-SkylakeX, Haswell and Sandybridge kernels), so they stay in `references.json`
-and in the findings, whose regression tolerances absorb that spread. The
-34-digit quantities start from the same binary64 states (identical on the three
-kernels) and use only mpmath arithmetic, so the figure regenerates byte for
-byte.
+three `independently_verified`. The observed orders are 16.26, 15.96 and 16.28:
+the retained estimate measures the error of the 10-step result, and the
+retained 20-step state is 6.4e4 to 7.9e4 times more accurate than the estimate
+states. The odefun first integrals stay at 34-digit rounding (speed drift at
+most 4.8e-35, det Φ − 1 = 0 to 34 digits).
+
+*Rounding.* The 34-digit end states carry measured rounding of 1.2e-32
+(saddle), 8.6e-33 (torus) and 2.1e-33 (bump), 9 to 66 times the 1e-34 times
+the end-state scale that one rounding of each component would leave: the
+Gragg–Bulirsch–Stoer arithmetic runs at the working precision and the h²
+extrapolation amplifies its rounding, whereas odefun's Euler steps carry about
+(degree + 1) times the precision (a 44-digit odefun run moved its end states by
+8.5e-36 to 2.3e-35, 100 to 1400 times less; it takes about 25 s, so the
+retained run does not repeat it). Each odefun finding carries the measured
+rounding as its `roundoff` uncertainty; the gap itself is the difference of the
+two integrators' errors, which neither reports separately. On the saddle the
+rounding is 6.6e-4 of the gap, and it is what moves when the last bits of the
+binary64 start move: nudging one start component (u, v, u′ or v′) by 1 to 3
+ulps (ten nudges) moved the saddle's 34-digit gap and gap over the estimate by
+1.4e-4 to 1.2e-3 relative, the estimate by at most 1e-8, and the gap of the
+44-digit rerun and the observed order by at most 1e-6. The three OpenBLAS
+kernels leave every value bit-identical (the same binary64 starts, mpmath
+arithmetic only). The regression tolerance, relative 1e-2 (8 times the largest
+measured change), covers a platform whose libm rounds the starts
+(`math.cos`, `math.sin`, `math.exp`) differently in the last bits; whether
+Windows does has not been measured here.
+
+`agreement.svg` plots the macro-step estimate and the gap of the 44-digit rerun
+to odefun per path (`odefun.json`), both rounded to two significant digits, and
+nothing that carries rounding noise. The ciw RK4 and scipy gaps near 1e-14 move
+with the OpenBLAS kernel (a figure of them differed between the SkylakeX,
+Haswell and Sandybridge kernels), and the 34-digit gap moves with the last bits
+of the start (a figure of it changed under all ten nudges above); they stay in
+`references.json`, `odefun.json` and the findings, whose regression tolerances
+absorb that spread. Rebuilt with the saddle values those ten nudges produced,
+the plotted figure was byte-identical every time.
 Fallbacks: without sympy/mpmath the variable references come from scipy DOP853
 applied to the ciw right-hand side — an independent integrator, but the
 equations are not independently checked (recorded as an unresolved
@@ -500,8 +540,9 @@ differences (ε = 1e-3) confirm the endpoint sensitivities to 1.9e-6.
 * The 34-digit reference is an extrapolated integration whose error estimate is
   empirical (macro-step halving), not a proof; its equations come from sympy,
   and its ciw-authored integrator agrees with `mpmath.odefun` well inside that
-  estimate. Neither integrator gives a proved bound: two integrators of
-  different origin agree, and both use mpmath's arithmetic.
+  estimate, at the observed order of its extrapolation. Neither integrator
+  gives a proved bound: two integrators of different origin agree, and both
+  use mpmath's arithmetic.
 * Orders are least-squares fits over four halvings; fixed-step tolerances
   were set to cover the observed pre-asymptotic spread and are declared in each
   check. The adaptive thresholds (4.5, 0.9) come from the two competing
@@ -509,7 +550,8 @@ differences (ε = 1e-3) confirm the endpoint sensitivities to 1.9e-6.
 * Every numerical finding carries an uncertainty object (`kind`, `value`,
   `basis`): reference error of the closed-form reference, binary64 rounding of
   the 34-digit reference's end state and gap (which dominates its self-estimate),
-  34-digit rounding of the gap between the reference and `mpmath.odefun`,
+  the measured 34-digit rounding of the reference end state (against a 44-digit
+  rerun) for its gap to `mpmath.odefun`,
   RK4 truncation estimated by step halving, the spread of pairwise log-log slopes
   around a fitted order, or binary64 rounding.
 * The RK4 O(h⁶) per-step determinant defect assumes smooth K along the stage

@@ -583,18 +583,32 @@ def _scipy(ctx, key):
 
 
 # The same claim is retained with or without sympy and mpmath; without them it is recorded as not established.
-# Its values are mpmath results from binary64 starts that no BLAS kernel changes (bit-identical on SkylakeX, Haswell
-# and Sandybridge); the relative tolerance leaves room only for last-digit changes of the 34-digit arithmetic, which
-# reach about 1e-5 of the smallest gap (the saddle's).
-TOL_ODEFUN = {"abs": 0.0, "rel": 1e-3}
+# The three OpenBLAS kernels leave its values bit-identical (the same binary64 starts, mpmath arithmetic only). The
+# tolerance covers a start whose last bits another platform's libm rounds differently (math.cos, math.sin and math.exp
+# build the start states): nudging one component of the saddle start by 1 to 3 ulps (ten nudges) moved the 34-digit
+# gap and the gap over the estimate by up to 1.2e-3 relative, because the 34-digit end state carries rounding of up to
+# 1.2e-32 (measured in every run, "gbs_rounding") on a gap of 1.8e-29; the estimate, the gap of the 44-digit rerun and
+# the observed order moved by at most 1e-6 relative. The relative 1e-2 is about 8 times the largest measured change.
+TOL_ODEFUN = {"abs": 0.0, "rel": 1e-2}
 ODEFUN_CLAIM = ("The 34-digit Gragg-Bulirsch-Stoer reference on the {key} path agrees with mpmath.odefun (Taylor "
-                "series) on the same sympy-derived equations within its error estimate")
+                "series) on the same sympy-derived equations within its error estimate, which overstates the gap by "
+                "the factor its order-{order} extrapolation predicts")
+
+
+def odefun_claim(key: str) -> str:
+    return ODEFUN_CLAIM.format(key=key, order=gj.GBS_ORDER)
 
 
 def _odefun(ctx, key):
     surface_key = gj.path(key).surface
     return ctx.memo(("gj-odefun", key, gj.MP_DPS, gj.ODEFUN_DEGREE),
                     lambda: gj.odefun_reference(key, _derived(ctx, surface_key)))
+
+
+def _guarded(ctx, key):
+    surface_key = gj.path(key).surface
+    return ctx.memo(("gj-guarded", key, gj.MP_DPS, gj.MP_GUARD),
+                    lambda: gj.mp_guarded_state(key, _derived(ctx, surface_key)))
 
 
 def _gbs_producer() -> dict:
@@ -605,33 +619,72 @@ def _gbs_producer() -> dict:
             "source_sha256": source_digest(COMMON)}
 
 
+def odefun_row(ref: dict, taylor: dict, guarded) -> dict:
+    """One path's 34-digit Gragg-Bulirsch-Stoer reference (``mp_reference``) against mpmath.odefun.
+
+    ``gbs_rounding`` is the measured rounding of the 34-digit end state: its
+    distance from ``guarded``, the same macro-steps rerun at ``MP_DPS +
+    MP_GUARD`` digits. ``guarded_gbs_minus_odefun`` compares that rerun with
+    odefun, so it keeps the reference's truncation error without its rounding.
+    With e10 = 2^p e20 (order p) the 10 vs 20 macro-step estimate is about
+    (2^p - 1) e20, so ``observed_order`` = log2(estimate / guarded gap + 1).
+    """
+    guarded_dps = gj.MP_DPS + gj.MP_GUARD
+    gap = gj.mp_difference(ref["mpf_state"], taylor["mpf_state"])
+    clean = gj.mp_difference(guarded, taylor["mpf_state"], guarded_dps)
+    estimate = ref["error_estimate"]
+    return {"gbs_minus_odefun": gap, "gbs_error_estimate": estimate, "gap_over_estimate": gap / estimate,
+            "gbs_rounding": gj.mp_difference(ref["mpf_state"], guarded, guarded_dps),
+            "guarded_gbs_minus_odefun": clean, "observed_order": math.log2(estimate / clean + 1),
+            "odefun_digits": taylor["digits"], "gbs_digits": ref["digits"],
+            "odefun_speed_squared_drift": taylor["speed_squared_drift"],
+            "odefun_determinant_minus_one": taylor["determinant_minus_one"],
+            "odefun_taylor_steps": taylor["taylor_steps"], "odefun_evaluations": taylor["evaluations"]}
+
+
 def odefun_comparison(ctx) -> dict:
     """Each 34-digit Gragg-Bulirsch-Stoer reference against mpmath.odefun on the same equations (memoized)."""
-    def compute():
-        rows = {}
-        for key in gj.VARIABLE_KEYS:
-            ref, taylor = reference(ctx, key), _odefun(ctx, key)
-            gap = gj.mp_difference(ref["mpf_state"], taylor["mpf_state"])
-            scale = max(1.0, float(np.max(np.abs(ref["state"]))))
-            rows[key] = {"gbs_minus_odefun": gap, "gbs_error_estimate": ref["error_estimate"],
-                         "gap_over_estimate": gap / ref["error_estimate"], "state_scale": scale,
-                         "odefun_digits": taylor["digits"], "gbs_digits": ref["digits"],
-                         "odefun_speed_squared_drift": taylor["speed_squared_drift"],
-                         "odefun_determinant_minus_one": taylor["determinant_minus_one"],
-                         "odefun_taylor_steps": taylor["taylor_steps"], "odefun_evaluations": taylor["evaluations"]}
-        return rows
-    return ctx.memo(("gj-odefun-comparison", gj.MP_DPS, gj.ODEFUN_DEGREE), compute)
+    return ctx.memo(("gj-odefun-comparison", gj.MP_DPS, gj.MP_GUARD, gj.ODEFUN_DEGREE),
+                    lambda: {key: odefun_row(reference(ctx, key), _odefun(ctx, key), _guarded(ctx, key))
+                             for key in gj.VARIABLE_KEYS})
+
+
+def agreement_figure(rows: dict) -> str:
+    """The estimate and the odefun gap of the 44-digit rerun per path, at two significant digits.
+
+    Only quantities free of rounding noise are plotted: the 34-digit gap moves
+    by up to 1.2e-3 relative when the last bits of the binary64 start change
+    (its own rounding), while the estimate and the rerun's gap move by at most
+    1e-6, which two significant digits keep off the plotted coordinates. The
+    binary64 gaps of ciw RK4 and scipy (about 1e-14) move with the BLAS
+    kernel, so they stay in the findings and ``references.json``.
+    """
+    index = range(1, len(gj.VARIABLE_KEYS) + 1)  # figure_path_index of odefun.json
+
+    def shown(name):
+        return [float(f"{rows[k][name]:.1e}") for k in gj.VARIABLE_KEYS]
+
+    return svg.line_plot(
+        [("GBS 10 vs 20", index, shown("gbs_error_estimate")),
+         (f"odefun gap, {gj.MP_DPS + gj.MP_GUARD} dig.", index, shown("guarded_gbs_minus_odefun"))],
+        title="GBS estimate and odefun gap, 2 significant digits (odefun.json)",
+        xlabel="variable-curvature path (figure_path_index)", ylabel="max state difference", logy=True)
 
 
 def _odefun_finding(key: str, row: dict | None) -> dict:
-    claim = ODEFUN_CLAIM.format(key=key)
+    claim = odefun_claim(key)
     if row is None:
         return finding(claim, "numerical", None, {"notes": "sympy and mpmath are not both installed: neither the "
                                                   "34-digit reference nor mpmath.odefun ran"},
                        expected_not_established=True)
     drift = max(abs(row["odefun_speed_squared_drift"]), abs(row["odefun_determinant_minus_one"]))
+    stages = len(gj.GBS_SEQUENCE)
     checks = [gj.check("high_precision", f"largest end-state difference between the Gragg-Bulirsch-Stoer reference "
                        f"and mpmath.odefun on {key} (absolute)", row["gbs_minus_odefun"], 1e-18, "le"),
+              gj.check("analytic", f"observed order log2(estimate / gap + 1) on {key} minus the nominal order "
+                       f"{gj.GBS_ORDER} of {stages} modified-midpoint stages extrapolated in h^2 (the gap of the same "
+                       f"20 macro-steps at {gj.MP_DPS + gj.MP_GUARD} digits to mpmath.odefun; an order-"
+                       f"{gj.GBS_ORDER - 2} extrapolation gives about -2)", row["observed_order"] - gj.GBS_ORDER, 1.0),
               gj.check("invariant", f"first integrals of the mpmath.odefun end state on {key}: larger of the "
                        "g(u', u') drift from its start value and |det Phi - 1|", drift, 1e-30, "le")]
     basis = {"checks": checks, "independent_check": dict(
@@ -642,14 +695,16 @@ def _odefun_finding(key: str, row: dict | None) -> dict:
                  "differ in origin, mpmath supplies the arithmetic of both", row["gap_over_estimate"], 1.0, "le"),
         producer=_gbs_producer(), checker={"implementation": "mpmath.odefun",
                                            "revision": gj.optional_version("mpmath")})}
-    scale = row["state_scale"]
     return finding(
-        claim, "numerical", {name: row[name] for name in ("gbs_minus_odefun", "gbs_error_estimate",
-                                                          "gap_over_estimate")}, basis,
-        uncertainty=_unc("roundoff", 10.0 ** -gj.MP_DPS * scale, f"{gj.MP_DPS}-digit arithmetic: both end states and "
-                         f"their difference carry rounding of about 1e-{gj.MP_DPS} times the end-state scale "
-                         f"{_fmt(scale)}; the gap is the difference of the two integrators' own errors, which neither "
-                         "reports separately (odefun gives no error estimate)"),
+        claim, "numerical", {name: row[name] for name in ("gbs_minus_odefun", "guarded_gbs_minus_odefun",
+                                                          "gbs_error_estimate", "gap_over_estimate",
+                                                          "observed_order")}, basis,
+        uncertainty=_unc("roundoff", row["gbs_rounding"], f"measured rounding of the {gj.MP_DPS}-digit reference end "
+                         f"state: its largest distance from the same 20 macro-steps rerun at "
+                         f"{gj.MP_DPS + gj.MP_GUARD} digits ({_fmt(row['gbs_rounding'], 2)}, "
+                         f"{_fmt(row['gbs_rounding'] / row['gbs_minus_odefun'], 2)} of the gap). The gap is the "
+                         "difference of the two integrators' own errors, which neither reports separately (odefun "
+                         "gives no error estimate; its own rounding is not rerun here)"),
         tolerance=TOL_ODEFUN)
 
 
@@ -677,6 +732,7 @@ def _clairaut_mp(ref, surf):
 @task("T002", changed_files=CHANGED,
       regression_tests=(_test("test_t002_references_agree"),
                         _test("test_t002_reference_integrator_agrees_with_mpmath_odefun"),
+                        _test("test_odefun_order_check_refutes_a_lower_order_extrapolation"),
                         _test("test_odefun_reference_follows_the_closed_form_on_the_sphere"),
                         _test("test_t002_without_optional_modules"))
       + SECTION_TESTS)
@@ -723,21 +779,13 @@ def high_precision_references(ctx):
         "mp_macro_steps": list(gj.MP_MACRO_STEPS), "paths": {k: gj.path(k).as_dict() for k in gj.STANDARD},
         "rows": rows, "clairaut": clairaut, "clairaut_initial": c0}))
     if taylor is not None:
-        order = list(taylor)
         ctx.artifact_json("odefun.json", _plain({
             "method": "mpmath.odefun (Taylor series) on the sympy-derived geodesic + Jacobi equations",
-            "dps": gj.MP_DPS, "degree": gj.ODEFUN_DEGREE, "mpmath": gj.optional_version("mpmath"),
+            "dps": gj.MP_DPS, "guarded_dps": gj.MP_DPS + gj.MP_GUARD, "degree": gj.ODEFUN_DEGREE,
+            "gbs_sequence": list(gj.GBS_SEQUENCE), "gbs_order": gj.GBS_ORDER, "mpmath": gj.optional_version("mpmath"),
             "state_order": ["u", "v", "u'", "v'", "j_lat", "j_lat'", "j_head", "j_head'"],
-            "figure_path_index": {str(i + 1): k for i, k in enumerate(order)}, "rows": taylor}))
-        # Only 34-digit quantities are plotted: they come from the same binary64 starts and mpmath arithmetic on every
-        # platform. The binary64 gaps of ciw RK4 and scipy (about 1e-14) are rounding noise that moves with the BLAS
-        # kernel, so they stay in references.json and the findings, whose tolerances absorb it.
-        index = range(1, len(order) + 1)
-        ctx.artifact_text("agreement.svg", svg.line_plot(
-            [("GBS 10 vs 20", index, [taylor[k]["gbs_error_estimate"] for k in order]),
-             ("mpmath.odefun gap", index, [taylor[k]["gbs_minus_odefun"] for k in order])],
-            title="34-digit references: GBS estimate and odefun gap (odefun.json)",
-            xlabel="variable-curvature path (figure_path_index)", ylabel="max state difference", logy=True))
+            "figure_path_index": {str(i + 1): k for i, k in enumerate(gj.VARIABLE_KEYS)}, "rows": taylor}))
+        ctx.artifact_text("agreement.svg", agreement_figure(taylor))
     ctx.artifact_text("clairaut.svg", svg.line_plot(
         [(n, s, np.maximum(d, 1e-17)) for n, s, d in curves], title="Torus Clairaut drift |C(s) - C(0)|",
         xlabel="arclength s", ylabel="|rho^2 phi' - C0|", logy=True, markers=False))
@@ -842,18 +890,24 @@ def high_precision_references(ctx):
                          "Gragg-Bulirsch-Stoer references by "
                          + ", ".join(f"{k} {_fmt(taylor[k]['gbs_minus_odefun'], 2)}" for k in gj.VARIABLE_KEYS)
                          + f", {_fmt(min(ratios), 2)} to {_fmt(max(ratios), 2)} of their 10 vs 20 macro-step "
-                         "estimates (about 2^-16, the error ratio of an order-16 extrapolation over a halved "
-                         "macro-step: consistent with the estimates measuring the error of the 10-step result, not of "
-                         "the retained 20-step one).")
+                         "estimates; the observed orders log2(estimate / gap + 1), with the gap of the same "
+                         f"macro-steps at {gj.MP_DPS + gj.MP_GUARD} digits, are "
+                         + ", ".join(f"{k} {_fmt(taylor[k]['observed_order'], 4)}" for k in gj.VARIABLE_KEYS)
+                         + f" against the nominal {gj.GBS_ORDER} of {len(gj.GBS_SEQUENCE)} modified-midpoint stages, "
+                         "so each estimate measures the error of the 10-step result, about 2^p - 1 times that of the "
+                         "retained 20-step one.")
         taylor_uncertainty = (f"; mpmath.odefun, which gives no estimate of its own, differs from them by at most "
                               f"{_fmt(max(taylor[k]['gbs_minus_odefun'] for k in gj.VARIABLE_KEYS), 2)}, inside "
-                              "every estimate")
+                              f"every estimate, and the {gj.MP_DPS}-digit end states carry measured rounding of at "
+                              f"most {_fmt(max(taylor[k]['gbs_rounding'] for k in gj.VARIABLE_KEYS), 2)} (the same "
+                              f"macro-steps at {gj.MP_DPS + gj.MP_GUARD} digits), the uncertainty of each odefun gap")
     return _outcome(
         state, findings,
         hypothesis=("Every declared standard path has a reference end state accurate far beyond the integrators under "
                     "test: closed forms on constant-curvature charts and a 34-digit extrapolated integration on the "
                     "saddle, torus and gaussian bump, whose ciw-authored integrator agrees with mpmath's own "
-                    "Taylor-series integrator within its error estimate."),
+                    "Taylor-series integrator within its error estimate, and below it by the factor 2^p - 1 of its "
+                    f"order p = {gj.GBS_ORDER} extrapolation."),
         mathematical_model=("Great circle X(s) = cos(s/R) X0 + R sin(s/R) T0; helix and polar lines through the flat "
                             "development; hyperbolic semicircles; transfer matrices cn_K, sn_K; otherwise the "
                             "sympy-derived geodesic + Jacobi system integrated by Gragg-Bulirsch-Stoer in mpmath, "
@@ -866,13 +920,16 @@ def high_precision_references(ctx):
                            "the largest difference of the eight state components."),
         expected_invariant=("ciw Richardson RK4 (200/400 steps) and scipy DOP853 (rtol 1e-13) agree with each "
                             "reference to about 1e-12; the mpmath reference changes by less than 1e-18 between 10 "
-                            "and 20 macro-steps, and mpmath.odefun agrees with it within that difference; "
+                            "and 20 macro-steps, and mpmath.odefun agrees with it within that difference, about "
+                            f"2^{gj.GBS_ORDER} - 1 times below it (observed order within 1 of {gj.GBS_ORDER}); "
                             "Clairaut's integral is conserved on the torus."),
         experiment=("Build each reference, integrate the ciw joint geodesic + Jacobi system with Richardson RK4 and "
                     "with scipy DOP853, and compare end states; integrate the sympy-derived system over the full "
                     f"path lengths again with mpmath.odefun at {gj.MP_DPS} digits (Taylor degree "
                     f"{gj.ODEFUN_DEGREE} instead of mpmath's default {3 + 3 * gj.MP_DPS // 2}, for run time) and "
-                    "compare it with the Gragg-Bulirsch-Stoer references; check the torus Clairaut integral."),
+                    "compare it with the Gragg-Bulirsch-Stoer references, whose 20 macro-steps are rerun at "
+                    f"{gj.MP_DPS + gj.MP_GUARD} digits to measure their rounding; check the torus Clairaut "
+                    "integral."),
         numerical_result=(f"Largest ciw-vs-reference gap {_fmt(worst)}; variable-curvature references "
                           + ", ".join(f"{k} {rows[k]['reference_kind']}"
                                       + ("" if rows[k]["reference_error_estimate"] is None else
@@ -892,6 +949,10 @@ def high_precision_references(ctx):
                                "extrapolation self-consistency (macro-step halving)",
                                "ciw-authored reference integrator against mpmath.odefun on the same equations "
                                "(an error estimate that understates the reference error fails)",
+                               "an extrapolation below its nominal order (observed order log2(estimate / gap + 1) "
+                               f"within 1 of {gj.GBS_ORDER}; an order-{gj.GBS_ORDER - 2} extrapolation fails)",
+                               f"{gj.MP_DPS}-digit rounding of the reference end state (measured against a "
+                               f"{gj.MP_DPS + gj.MP_GUARD}-digit rerun, not assumed)",
                                "first integrals g(u', u') and det Phi of the mpmath.odefun end state",
                                "missing or wrong Richardson extrapolation (gap must be far below the RK4 estimate)",
                                "Clairaut invariant on the torus"],

@@ -169,9 +169,10 @@ drift is a measured quantity (T004). References: exact geodesics on the plane,
 sphere (great circles), cylinder (helices) and hyperbolic plane (semicircles);
 elsewhere a 34-digit integration of independently (sympy) derived equations,
 whose extrapolation integrator must agree with mpmath's Taylor-series solver
-`mpmath.odefun` within its own macro-step error estimate (T002). Integrator
-orders 1, 2, 4 and the adaptive Dormand–Prince 5(4) behavior are tested in
-T003.
+`mpmath.odefun` within its own macro-step error estimate and at its nominal
+order 16, observed as log₂(estimate / gap + 1) (T002; the reference's rounding
+is measured against a 44-digit rerun, not assumed). Integrator orders 1, 2, 4
+and the adaptive Dormand–Prince 5(4) behavior are tested in T003.
 
 The hyperbolic closed form for `g = I/(k² y²)` with chart heading `α` is
 `x = x₀ + y₀ cos α sinh(ks)/D`, `y = y₀/D`, `D = cosh(ks) − sin α sinh(ks)`,
