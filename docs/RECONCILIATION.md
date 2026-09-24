@@ -133,8 +133,9 @@ process and across a signalled restart of the native service:
 Partial: the `runtime_mismatch` refusal of a saved revision outside the
 current-or-historical allowlist, `RUNTIME_UNAVAILABLE` and `RUNTIME_IO` are
 asserted by `tests/test_runtime_refusal_branches.py` (the `RUNTIME_IO` case
-on POSIX only). Refusal of a version-1 workspace carrying executions is
-untested. Replay compares a recomputed data digest under the same pins; the
+on POSIX only). `tests/test_workspace_versions.py` asserts refusal of a
+version-1 workspace carrying executions, of workbench records below version 3,
+and of unknown versions, each before anything is written. Replay compares a recomputed data digest under the same pins; the
 terminal maps a provider refusal to exit `2` with its code
 (`tests/test_cli_arguments.py`), but a real `replay_mismatch` from the
 investigation and covariance verbs is not reproduced by any test. Container restart and resume are exercised only by
