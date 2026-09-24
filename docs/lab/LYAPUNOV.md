@@ -64,16 +64,19 @@ as checked finding values, compared finding values or wording: the codes of
 subnormal plants (the witness below included), code flips outside LAPACK's
 scaling window, which rounding-admitted indefinite P `quadratic()` accepts and
 the codes they receive, the sign of NumPy's abscissa for defective matrices,
-which T107 straddle cases resolve, and which gate refuses an exactly defective
-T109 plant with the residual it quotes. Findings carry only what does not
-depend on the build (exact classes, IEEE-deterministic scalar arithmetic,
-soundness counts, codes far from every threshold). Where a claim rests on the
-exact position of the declared inputs near a threshold (T107), the inputs are
-built without BLAS or LAPACK, so every kernel declares the same matrices; the
-few compared numbers that carry rounding (T107's witness margin ratio, T109's
-witness condition number) have tolerances derived from the realized error or
-`u cond(P)` and checked against the spread between the SkylakeX, Haswell and
-Sandybridge OpenBLAS kernels (`OPENBLAS_CORETYPE`). Every check is built
+which T107 straddle cases resolve, which route fires at T111's coincident
+crossing, and which gate refuses an exactly defective T109 plant with the
+residual it quotes. Findings carry only what does not depend on the build
+(exact classes, IEEE-deterministic scalar arithmetic, soundness counts, codes
+far from every threshold, rounding bounds). Where a claim rests on the exact
+position of the declared inputs near a threshold (T107, and T111 through
+T107's forms), the inputs are built without BLAS or LAPACK, so every kernel
+declares the same matrices; the few compared numbers that carry rounding
+(T107's witness margin ratio, T109's witness condition number) have tolerances
+set from the realized error (T107) or from the measured spread with the
+first-order heuristic `n² u cond(P)` (T109), checked against the spread between
+the SkylakeX, Haswell, Sandybridge, Nehalem and Prescott OpenBLAS kernels
+(`OPENBLAS_CORETYPE`). Every check is built
 before its outcome is known:
 `test_checks_are_unconditional_and_observed_values_are_computed` refuses a
 check created under a condition on an observed result or with a literal
@@ -235,7 +238,7 @@ depends on rounding and is retained in the artifact. The runtime refuses all
 five host-owned codes in `require_status` and in `Verdict`, and its published
 constants match the documented values.
 
-**T107 — inconclusive band.** 102 near-boundary cases with exact bins of
+**T107 — inconclusive band.** 114 near-boundary cases with exact bins of
 `max eig(M)`, the same matrices on every BLAS kernel: each `A = P⁻¹(N/2 + K)`
 is solved in exact rational arithmetic from integer draws (an exactly
 orthogonal Cayley factor in `N`, a skew part `K` of size 100, `P = I` or a
@@ -250,9 +253,10 @@ exact `max eig(M)` within `res/16` of a target `κ res`
 (`κ ∈ {±8, ±3.5, ±2.5, ±1.75, ±1.25, ±0.75, ±0.25, 0}`), checked exactly,
 so every window keeps at least `3/16 res` from the thresholds where PLSR's
 code changes (`-3 res` under the declared margin, `-res`, `+res`); states are
-redrawn until the exact `xᵀMx/|x|²` keeps the same distance from `res`. PLSR's
-computed `max eig(M)` erred by at most 0.0096 res on the SkylakeX and Haswell
-kernels and 0.0116 res on Sandybridge (checked against `3/16`), so every
+redrawn until the exact `xᵀMx/|x|²` keeps the same distance from `res`. On
+window cases PLSR's computed `max eig(M)` erred by at most 0.0096 res on the
+SkylakeX and Haswell kernels and 0.0116 res on Sandybridge, Nehalem and
+Prescott (0.0146 res over all cases; checked against `3/16`), so every
 window case received the code its exact window predicts (checked
 independently): certified below `-res`, `MARGIN_LOW` between `-3 res` and
 `-res` under the declared margin, inconclusive within one resolution, not
@@ -265,17 +269,27 @@ near-boundary spectra yield `NUMERICAL_INCONCLUSIVE` or `MARGIN_LOW` rather
 than `CERTIFIED_WITH_MARGIN`: at `required_margin = 0` all 12 window cases in
 `[-2, -1)` resolutions were certified, every band certificate exactly sound;
 of the 26 exactly negative definite window band cases 14 were left
-inconclusive. The 12 straddle cases are six pairs of adjacent float targets
-between which the exact `max eig(M)` crosses `-res` (within 0.0082 res of
-it); there the exact side does not decide the code, which is
-`CERTIFIED_WITH_MARGIN` or `NUMERICAL_INCONCLUSIVE` (checked): 4 of the 6
-exactly beyond `-res` were certified and none of the 6 inside, identically on
-the three kernels, but which ones resolve is a rounding outcome and is
-retained per case in `inconclusive-band.json` and the numerical result, not
-compared. The witness's computed margin ratio is the one compared value that
-carries rounding: band-certified margin ratios differed by at most 0.0018
-between the kernels, and its tolerance is `abs 0.03` resolutions (twice the
-largest realized error, rounded up), which admits no change of the counts.
+inconclusive. The 24 straddle cases are pairs of adjacent float targets
+between which the exact `max eig(M)` crosses a threshold: six pairs at `-res`
+(within 0.0082 res of it, seed 1071) and six at `+res` (within 0.0062 res,
+seed 1072). There the exact side does not decide the code, only which codes
+are admissible (checked). At `-res` it is `CERTIFIED_WITH_MARGIN` or
+`NUMERICAL_INCONCLUSIVE`: 4 of the 6 exactly beyond `-res` were certified and
+none of the 6 inside, on all five kernels. At `+res` it is
+`DECREASE_NOT_DEFINITE`, `NOT_CERTIFIED` or `NUMERICAL_INCONCLUSIVE` (the
+states keep the scalar gate `3/16 res` below its threshold, so `NOT_CERTIFIED`
+did not occur): all 6 exactly beyond `+res` were `DECREASE_NOT_DEFINITE`, and
+of the 6 inside, whose exact `max eig(M)` is positive too, 1 on SkylakeX and
+Haswell and 2 on Sandybridge, Nehalem and Prescott. Which straddle cases
+resolve is a rounding outcome, retained per case in `inconclusive-band.json`
+and the numerical result, not compared. The `+res` pairs also give T111 its
+coincident crossing and, with the `-res` pairs, cover the rounding at the
+eigenvalue thresholds that T106's paths step across. The witness's computed
+margin ratio is the one compared value that carries rounding: across the five
+kernels the margin ratios of band certificates differed by at most 0.0018 on
+window cases and 0.0025 with the straddle certificates (the witness's not at
+all), and its tolerance is `abs 0.03` resolutions (twice the largest window
+error, rounded up), which admits no change of the counts.
 
 **T108 — required-margin monotonicity.** 280 verdicts on sorted margin grids:
 no failing verdict regained, `meets_required_margin` never regained,
@@ -303,13 +317,16 @@ retained in `adversarial.json`. Counterexample: the solver's refusals are
 conservative, not only avoidance of invalid certificates: for `n = 4`,
 `λ = 2^-6` it refuses at the residual gate, yet SciPy's P (condition 5e11) is
 exactly valid and PLSR's own verdict certifies it. The witness records the
-gate, not the refusal message: the residual it quotes (5.9e-4 or 6.3e-4) and,
-for other Jordan plants, which gate refuses (definiteness or singularity) are
-rounding outcomes that differ between OpenBLAS kernels and stay in
-`adversarial.json`. The certificate's condition number differed by 4.2e-5
-relative between the SkylakeX, Haswell and Sandybridge kernels, the size
-`u cond(P) = 5.5e-5` of a backward-stable solve's effect on the smallest
-eigenvalue of P, and is compared within `n² u cond(P) = 8.8e-4`.
+gate, not the refusal message: the residual it quotes (for example 5.9e-4 to
+7.9e-4 on five OpenBLAS kernels) and, for other Jordan plants, which gate
+refuses (definiteness or singularity) are rounding outcomes that differ
+between kernels and stay in `adversarial.json`. The certificate's condition
+number differed by at most 1.2e-4 relative between the SkylakeX, Haswell,
+Sandybridge, Nehalem and Prescott kernels. The first-order heuristic
+`u cond(P) = 5.5e-5` assumes a solve that moves P by about `u‖P‖`, which the
+Lyapunov operator of this plant (condition about 3e13) does not guarantee, and
+the measured spread is about twice it; the condition number is compared within
+`n² u cond(P) = 8.8e-4`, 7 times the measured spread.
 
 **T110 — continuous versus discrete time.** For 40 matrices with every
 eigenvalue in one stability quadrant, PLSR certifies each with its own
@@ -329,17 +346,28 @@ exactly for the 30 that NumPy's eigenvalues call stable and raises
 its own P and no unstable plant with `P = I`. PLSR's own scalar gate
 (`NOT_CERTIFIED` when `xᵀMx > res·|x|²`) is compared per sample with the exact
 `xᵀMx` and with PLSR's eigenvalue route (`max eig(M) > res`) at 808 samples:
-every route plant with `P = I` at eight states, and each of T107's 102
-near-threshold forms at the computed top eigenvector of its decrease matrix
-(where the gate meets the resolution) and three more states. Every
-`NOT_CERTIFIED` has an exactly positive `xᵀMx` (independent check) and
-`max eig(M) > res`; the eigenvalue route never meets an exactly negative
-definite form; no certificate is issued where the exact `xᵀMx` is positive. On
-the route family the scalar decision equals the exact sign of `xᵀMx` and the
-eigenvalue route equals the exact class at every sample; near the threshold
-they agree at 96 % and 84 % of the samples (the gate is conservative there),
-and the scalar gate agrees with the eigenvalue route at 57 % and 74 % (a
-sample sees what the matrix sees only along its positive cone). Counterexample:
+every route plant with `P = I` at eight states, and each of T107's 90 window
+and 12 `-res` straddle forms at the computed top eigenvector of its decrease
+matrix and three more states. Every `NOT_CERTIFIED` has an exactly positive
+`xᵀMx` (independent check) and `max eig(M) > res`; the eigenvalue route never
+meets an exactly negative definite form; no certificate is issued where the
+exact `xᵀMx` is positive. On the route family the scalar decision equals the
+exact sign of `xᵀMx` and the eigenvalue route equals the exact class at every
+sample; near the threshold they agree at 96 % and 84 % of the samples (the
+gate is conservative there), and the scalar gate agrees with the eigenvalue
+route at 57 % and 78 % (a sample sees what the matrix sees only along its
+positive cone). Every one of these decisions lies at least 0.23 res from its
+threshold, so the counts and shares are the same on every kernel and are
+compared exactly. Where the gate meets the resolution together with the
+eigenvalue route, at the top eigenvector of T107's 12 forms straddling `+res`
+(the coincident crossing), both decisions are rounding outcomes of the formed
+M: both fired at 7 samples and neither at 5 on SkylakeX and Haswell, 8 and 4
+on Sandybridge, Nehalem and Prescott, never one alone. The claim compared
+there holds on every kernel: PLSR's `xᵀMx/|x|²` exceeded its `max eig(M)` by
+at most 0.07 of the rounding bound `(γ₂ₙ n + n³u) max|M|` (dot-product error
+plus the documented eigensolver term), so a `NOT_CERTIFIED` there implies
+`max eig(M)` above `res` less that bound; each `NOT_CERTIFIED` has an exactly
+positive `xᵀMx` and none is certified. Counterexample:
 for the decrease form
 `diag(-1, 1e-6)` all 64 sampled states show a negative scalar decrease (exactly),
 yet the form is indefinite; PLSR reports `DECREASE_NOT_DEFINITE` at every
