@@ -111,3 +111,60 @@ def test_graph_is_a_valid_append_only_project_and_scales_to_workspace_bounds():
     project, occurrences = project_graph.build({"sources": sources, "bundles": bundles}, OPERATIONS, {})
     assert project_model.validate(json.loads(json.dumps(project))) == project
     assert len(occurrences["bundle_nodes"]) == 128
+
+
+def _result(node_id, kind, status="current_for_declared_inputs"):
+    return {"node_id": node_id, "kind": "workflow_result", "source_kind": kind, "status": status}
+
+
+def _edge(origin, target):
+    return {"relation": "computation", "from": origin, "to": target}
+
+
+CATALOG = {"loop": {"title": "Loop", "question": "Does the retained loop close?",
+                    "default_pipeline": ["ciw.a.v1", "ciw.b.v1"],
+                    "pipelines": ["ciw.a.v1", "ciw.b.v1", "ciw.c.v1", "ciw.d.v1", "ciw.e.v1"]}}
+OPS = {"a": "ciw.a.v1", "b": "ciw.b.v1", "c": "ciw.c.v1", "d": "ciw.d.v1", "e": "ciw.e.v1", "x": "ciw.x.v1"}
+
+
+def test_an_investigation_without_retained_results_is_not_started():
+    (progress,) = project_graph.investigations([_result("result:x", "x")], [], OPS, CATALOG)
+    assert progress["state"] == "not_started" and progress["chains"] == []
+    assert progress["missing_default_stages"] == ["ciw.a.v1", "ciw.b.v1"]
+
+
+def test_connected_current_results_answer_the_default_pipeline_and_form_chains():
+    nodes = [_result("result:a", "a"), _result("result:b", "b"), _result("result:c", "c"),
+             _result("result:d", "d"), _result("result:e", "e"), {"node_id": "computation:a", "kind": "computation"}]
+    edges = [_edge("computation:a", "result:a"), _edge("result:a", "result:b"),
+             _edge("result:c", "result:d"), _edge("result:d", "result:e")]
+    (progress,) = project_graph.investigations(nodes, edges, OPS, CATALOG)
+    assert progress["state"] == "default_pipeline_current" and progress["missing_default_stages"] == []
+    assert [chain["nodes"] for chain in progress["chains"]] == [["result:a", "result:b"],
+                                                               ["result:c", "result:d", "result:e"]]
+    assert all(chain["status"] == "current_for_declared_inputs" for chain in progress["chains"])
+    assert progress["chains"][1]["pipelines"] == ["ciw.c.v1", "ciw.d.v1", "ciw.e.v1"]
+
+
+def test_a_stale_upstream_makes_its_chain_and_its_default_stage_need_reevaluation():
+    nodes = [_result("result:a", "a"), _result("result:b", "b", "needs_reevaluation")]
+    (progress,) = project_graph.investigations(nodes, [_edge("result:a", "result:b")], OPS, CATALOG)
+    assert progress["state"] == "incomplete" and progress["missing_default_stages"] == ["ciw.b.v1"]
+    (chain,) = progress["chains"]
+    assert chain["status"] == "needs_reevaluation"
+    stages = {stage["pipeline_id"]: stage for stage in progress["stages"]}
+    assert stages["ciw.b.v1"]["results"] == ["result:b"] and stages["ciw.b.v1"]["current"] == []
+
+
+def test_the_graph_view_reports_a_retained_member_result_under_its_investigation(tmp_path):
+    from test_machine_workflow import _session_with_source as machine_session
+    session, source = machine_session(tmp_path)
+    _call(session, "operation.execute", {"operation_id": "ciw.encoder-position.v1",
+                                         "parameters": {"source_id": source["source_id"]}})
+    view = _call(session, "session.get", {})["workbench"]["project"]
+    progress = {item["investigation_id"]: item for item in view["investigations"]}
+    cycle = progress["manufacturing-cycle"]
+    stage = next(item for item in cycle["stages"] if item["pipeline_id"] == "ciw.encoder-position.v1")
+    assert len(stage["current"]) == 1 and cycle["state"] == "incomplete" and cycle["chains"] == []
+    assert "ciw.acquired-dataset.v1" in cycle["missing_default_stages"]
+    assert progress["geometry-bim"]["state"] == "not_started"

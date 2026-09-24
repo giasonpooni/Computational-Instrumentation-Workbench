@@ -112,6 +112,19 @@ the node's revision; changed numbers, a corrected upstream result or a pin
 change mark dependents `needs_reevaluation`. The graph view has no execution,
 physical-validation or state-admission authority.
 
+The view's `investigations` list reads the same graph against the
+[investigation catalog](../src/ciw/pipelines/investigations.json). It reports:
+
+- for each member pipeline, its result nodes and which of them are current;
+- the default-pipeline stages that still lack a current result;
+- the lineage chains that connect results of the investigation's pipelines,
+  for example calibrated observable → identified design → identified stability.
+  A chain is current only while every node in it is.
+
+An investigation is `not_started`, `incomplete`, or `default_pipeline_current`.
+Like the rest of the view, this is computed from retained records and never
+executes anything.
+
 ## Source kinds
 
 The 25 kinds registered when the kernel was frozen are listed in
