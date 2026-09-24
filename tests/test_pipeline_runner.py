@@ -198,3 +198,30 @@ def test_generic_runner_classes_supply_hooks_only():
         _check_runner("toy", "generic_runner", object())
     with pytest.raises(ValueError, match="declare it generic_runner"):
         _check_runner("toy", "hand_written", ToyRunner())
+
+
+def test_stage_chain_seals_cumulative_order_and_check_chain_refuses_every_rebinding():
+    from ciw.pipelines.runner import StageChain, check_chain
+    operations = {"first": "ciw.first.v1", "second": "ciw.second.v1", "third": "ciw.third.v1"}
+    chain = StageChain("sha256:" + "e" * 64)
+    for role, operation in operations.items():
+        chain.seal(role, operation, {"role": role}, {"value": role})
+    stages = chain.stages
+    assert stages[2]["input_refs"] == ["sha256:" + "e" * 64, stages[0]["result_id"], stages[1]["result_id"]]
+    check_chain(deepcopy(stages), operations, "sha256:" + "e" * 64, seen={"execution-" + "0" * 32}, label="Probe")
+
+    def reseal(stage):
+        result = stage["result"]
+        result["result_id"] = digest({k: v for k, v in result.items() if k != "result_id"})
+        stage["result_id"], stage["result_sha256"] = result["result_id"], digest(result)
+
+    swapped = deepcopy(stages)
+    swapped[0], swapped[1] = swapped[1], swapped[0]
+    reused = deepcopy(stages)
+    lineage = deepcopy(stages)
+    lineage[2]["input_refs"] = lineage[2]["result"]["input_refs"] = lineage[2]["input_refs"][:2]
+    reseal(lineage[2])
+    for broken, seen in ((swapped, set()), (stages[:2], set()), (lineage, set()),
+                         (reused, {stages[1]["execution_id"]})):
+        with pytest.raises(ValueError):
+            check_chain(deepcopy(broken), operations, "sha256:" + "e" * 64, seen=set(seen), label="Probe")

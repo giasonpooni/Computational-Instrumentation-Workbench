@@ -22,6 +22,12 @@ the replay receipt. A pipeline supplies named domain hooks and nothing else:
 ``bind_extra(repositories, adapter, runtime)``
     Host bindings beyond the provider checkout, such as an executable.
 
+A pipeline that composes several providers inside one step seals each
+companion call with ``StageChain`` and re-checks the sequence with
+``check_chain``; it overrides ``_step``/``_validate_step`` and, when its
+runtimes are not one subprocess checkout, ``_check_runtimes``. The bundle,
+verification and receipt records stay the runner's.
+
 A class that overrides only these hooks is a ``generic_runner`` pipeline;
 ``pipelines.check`` enforces that. Records are the ones the hand-written
 workflows produced, so retained workspaces reopen and replay unchanged.
@@ -90,21 +96,29 @@ def host_projection(runtime):
     return value
 
 
-def seal_step(role: str, operation: str, source: dict, input_refs: list, data) -> dict:
-    """One execution occurrence and its sealed result over the provider's native data."""
+def seal_step(role: str, operation: str, source: dict, input_refs: list, data, numerical=None) -> dict:
+    """One execution occurrence and its sealed result over the provider's native data.
+
+    ``numerical`` replaces the default ``{operation_id, data}`` projection that
+    replay compares, for a step whose data embeds sealed companion stages.
+    """
     occurrence = "execution-" + uuid.uuid4().hex
     result = {"schema": RESULT_SCHEMA, "operation_id": operation, "execution_ref": occurrence,
               "input_refs": list(input_refs), "data": deepcopy(data), "authority": deepcopy(AUTHORITY)}
     result["result_id"] = digest(result)
-    numerical = {"operation_id": operation, "data": deepcopy(data)}
+    numerical = {"operation_id": operation, "data": deepcopy(data)} if numerical is None else deepcopy(numerical)
     return {"runtime_ref": role, "operation_id": operation, "execution_id": occurrence,
             "input_refs": list(input_refs), "request": deepcopy(source), "request_sha256": digest(source),
             "result": result, "result_sha256": digest(result), "result_id": result["result_id"],
             "numerical_result": numerical, "numerical_result_id": digest(numerical)}
 
 
-def check_step(step, *, role: str, operation: str, source: dict, input_refs: list, check_data, label: str) -> None:
-    """Refuse a step unless every identity in it binds this source, operation and native data."""
+def check_step(step, *, role: str, operation: str, source: dict, input_refs: list, check_data, label: str,
+               numerical=None) -> None:
+    """Refuse a step unless every identity in it binds this source, operation and native data.
+
+    ``check_data`` may be ``None`` when the caller checks the data itself.
+    """
     exact_keys(step, STEP_FIELDS)
     if (step["runtime_ref"] != role or step["operation_id"] != operation or step["input_refs"] != input_refs or
             not isinstance(step["execution_id"], str) or not _EXECUTION.fullmatch(step["execution_id"])):
@@ -112,19 +126,56 @@ def check_step(step, *, role: str, operation: str, source: dict, input_refs: lis
     same(step["request"], source, f"{label} request differs from the retained source")
     result = step["result"]
     exact_keys(result, RESULT_FIELDS)
-    check_data(source, result["data"])
+    if check_data is not None:
+        check_data(source, result["data"])
     same(result["authority"], AUTHORITY, f"{label} result cannot confer state or physical authority")
     if (result["schema"] != RESULT_SCHEMA or result["operation_id"] != operation or
             result["execution_ref"] != step["execution_id"] or result["input_refs"] != input_refs or
             result["result_id"] != step["result_id"] or
             result["result_id"] != digest({key: value for key, value in result.items() if key != "result_id"})):
         raise ValueError(f"{label} result binding mismatch")
-    same(step["numerical_result"], {"operation_id": operation, "data": result["data"]},
+    same(step["numerical_result"], {"operation_id": operation, "data": result["data"]} if numerical is None else numerical,
          f"{label} numerical projection mismatch")
     for key, content in (("request_sha256", source), ("result_sha256", result),
                          ("numerical_result_id", step["numerical_result"])):
         if step[key] != digest(content):
             raise ValueError(f"{label} step content binding mismatch")
+
+
+class StageChain:
+    """Companion provider calls inside one step, sealed in order.
+
+    Each stage is its own execution occurrence and result. Its ``input_refs``
+    record cumulative order, not data lineage: the evidence and then every
+    earlier stage's result identity.
+    """
+
+    def __init__(self, evidence_id: str):
+        self.evidence_id, self.stages = evidence_id, []
+
+    def seal(self, role: str, operation: str, request, data) -> dict:
+        stage = seal_step(role, operation, request, chain_refs(self.evidence_id, self.stages), data)
+        self.stages.append(stage)
+        return stage
+
+
+def chain_refs(evidence_id: str, stages: list) -> list:
+    return [evidence_id] + [stage["result_id"] for stage in stages]
+
+
+def check_chain(stages, operations: dict, evidence_id: str, *, seen: set, label: str) -> None:
+    """Refuse a stage sequence unless it is exactly ``operations`` in order, chained and freshly occurring.
+
+    ``seen`` holds the enclosing step's occurrence and receives every stage's.
+    """
+    if type(stages) is not list or len(stages) != len(operations):
+        raise ValueError(f"Require all {len(operations)} {label} stages")
+    for index, ((role, operation), stage) in enumerate(zip(operations.items(), stages)):
+        check_step(stage, role=role, operation=operation, source=stage["request"],
+                   input_refs=chain_refs(evidence_id, stages[:index]), check_data=None, label=f"{label} {role} stage")
+        if stage["execution_id"] in seen:
+            raise ValueError(f"{label} stages require distinct execution occurrences")
+        seen.add(stage["execution_id"])
 
 
 def verification(bundle: dict, reproduced: dict) -> dict:
@@ -295,15 +346,7 @@ class PipelineRunner:
                                          "evidence": [evidence]} or
                     canonical(bundle["configuration"]) != canonical(source["configuration"])):
                 raise ValueError(f"{self.LABEL} source/configuration binding mismatch")
-            if set(bundle["runtimes"]) != {self.role}:
-                raise ValueError(f"Unexpected {self.LABEL} runtime")
-            runtime = bundle["runtimes"][self.role]
-            exact_keys(runtime, RUNTIME_FIELDS | self.RUNTIME_EXTRA)
-            if not re.fullmatch("[a-f0-9]{64}", runtime["python_sha256"]) or not isinstance(runtime["dependencies"], dict):
-                raise ValueError(f"Unapproved {self.LABEL} runtime identity")
-            for key in ("adapter_version", "repository_root", "python_executable", "python_version"):
-                text(runtime[key])
-            self._check_pin(runtime)
+            self._check_runtimes(bundle["runtimes"])
             step, = bundle["steps"]
             self._validate_step(step, source, evidence["artifact_ref"])
             self._check_verification(bundle, bundle["verification"], source, evidence["artifact_ref"])
@@ -311,6 +354,17 @@ class PipelineRunner:
             return raw
         except _MALFORMED as exc:
             raise ValueError(f"Malformed {self.LABEL} session") from exc
+
+    def _check_runtimes(self, runtimes):
+        if set(runtimes) != {self.role}:
+            raise ValueError(f"Unexpected {self.LABEL} runtime")
+        runtime = runtimes[self.role]
+        exact_keys(runtime, RUNTIME_FIELDS | self.RUNTIME_EXTRA)
+        if not re.fullmatch("[a-f0-9]{64}", runtime["python_sha256"]) or not isinstance(runtime["dependencies"], dict):
+            raise ValueError(f"Unapproved {self.LABEL} runtime identity")
+        for key in ("adapter_version", "repository_root", "python_executable", "python_version"):
+            text(runtime[key])
+        self._check_pin(runtime)
 
     def _execute(self, raw, bound):
         source = self._source(raw)

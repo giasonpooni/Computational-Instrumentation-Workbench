@@ -151,12 +151,13 @@
       ]
     },
     {
-      "rule": "input_refs record cumulative order, not data lineage. Each stage cites the evidence plus every earlier stage result_id (`ciw.free_energy_workflow:_compute`), so plsr cites gsie's result although it consumes only fit and reference. `ciw.free_energy_workflow:FreeEnergyWorkflow._validate_step` enforces this exact list through `ciw.free_energy_workflow:_validate_step_envelope`.",
+      "rule": "input_refs record cumulative order, not data lineage. Each stage cites the evidence plus every earlier stage result_id (`ciw.free_energy_workflow:_compute`), so plsr cites gsie's result although it consumes only fit and reference. `ciw.free_energy_workflow:FreeEnergyWorkflow._validate_step` enforces this exact list through `ciw.pipelines.runner:check_chain`; `ciw.pipelines.runner:StageChain` seals it.",
       "evidence": "added by adversarial verification; citations in the rule",
       "code": [
         "ciw.free_energy_workflow:_compute",
         "ciw.free_energy_workflow:FreeEnergyWorkflow._validate_step",
-        "ciw.free_energy_workflow:_validate_step_envelope"
+        "ciw.pipelines.runner:check_chain",
+        "ciw.pipelines.runner:StageChain"
       ]
     },
     {

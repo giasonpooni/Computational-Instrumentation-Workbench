@@ -146,7 +146,14 @@ record that carries an identity (step, result, bundle, same-runtime
 reproduction, replay receipt) and every pin check; the pipeline supplies named
 hooks only: `parse_source`, `invoke`, `check_data`, `check_runtime`,
 `make_adapter` and `bind_extra`. A descriptor whose runner is `generic_runner`
-is refused by `pipelines.check()` if its class overrides anything else. Canonical
+is refused by `pipelines.check()` if its class overrides anything else.
+
+A pipeline that composes several providers inside one step (variational free
+energy: CSG, then GSIE and PLSR) uses the same runner. It seals each companion
+call with `StageChain`, re-checks the sequence with `check_chain` (exact roles
+and operations in order, cumulative `input_refs`, distinct occurrences) and
+overrides `_step`, `_validate_step` and `_check_runtimes`. The bundle,
+verification and replay receipt remain the runner's records. Canonical
 record content and its identities live in
 [`ciw.core.canonical`](../src/ciw/core/canonical.py).
 
