@@ -8,7 +8,9 @@ Interpreter dispatch counts (calls issued by ``ciw`` code) are measured with a
 profile hook and wall-clock timings are retained only as artifacts.
 
 Reductions: sequential, fixed-tree pairwise, Kahan, Neumaier and a correctly
-rounded exact accumulation, with Higham-style error bounds. The comparison
+rounded exact accumulation, with rigorous error bounds (Higham; Ogita, Rump
+and Oishi) except Kahan's, whose second-order constant is a declared policy
+allowance. The comparison
 harness compares a candidate output against a reference under a bitwise,
 analytic-bound or absolute/relative policy. No GPU is used here; float32 and
 reordered float64 CPU reductions stand in for a device to show the harness
@@ -349,20 +351,45 @@ def gamma(k: int, u: float = U64) -> float:
     return k * u / (1 - k * u)
 
 
+# Declared second-order allowance for Kahan summation. Higham (2002, eq. 4.8) gives 2u + O(n u^2) with no
+# explicit constant; this constant is a policy choice, not a proven bound.
+KAHAN_SECOND_ORDER = 4
+
+
 def error_bound(algorithm: str, n: int, abs_sum: float, exact: float, u: float = U64) -> float:
-    """Worst-case absolute error bound (Higham 2002, ch. 4); second-order terms taken as 4 n u^2."""
-    second = 4 * n * u * u * abs_sum
+    """Absolute error bound of each reduction for n terms with S = sum|x| and exact sum s.
+
+    Rigorous: sequential gamma_{n-1} S and pairwise gamma_{ceil(log2 n)} S
+    (Higham 2002, ch. 4); Neumaier u|s| + gamma_{n-1}^2 S, because its
+    compensation terms are exactly those of Sum2 (Ogita, Rump and Oishi 2005,
+    Prop. 4.5); exact accumulation u|s| plus half the smallest subnormal.
+    Kahan: first-order 2u S plus the declared allowance KAHAN_SECOND_ORDER n u^2 S.
+    """
     if algorithm == "sequential":
         return gamma(max(n - 1, 0), u) * abs_sum
     if algorithm == "pairwise":
         return gamma(math.ceil(math.log2(n)) if n > 1 else 0, u) * abs_sum
     if algorithm == "kahan":
-        return 2 * u * abs_sum + second
+        return 2 * u * abs_sum + KAHAN_SECOND_ORDER * n * u * u * abs_sum
     if algorithm == "neumaier":
-        return 2 * u * abs(exact) + second
+        return u * abs(exact) + gamma(max(n - 1, 0), u) ** 2 * abs_sum
     if algorithm == "exact":
         return u * abs(exact) + 2.0 ** -1075
     raise ValueError(f"Unsupported reduction algorithm: {algorithm}")
+
+
+def superseded_neumaier_bound(n: int, abs_sum: float, exact: float, u: float = U64) -> float:
+    """The earlier stated bound 2u|s| + 4 n u^2 S, kept to record where it fails."""
+    return 2 * u * abs(exact) + 4 * n * u * u * abs_sum
+
+
+def absorbed_tiny_terms(count: int = 1000) -> list:
+    """1, then ``count`` terms just above 0.7u (each absorbed by 1 when added), then -1.
+
+    The exact sum is count * 0.7u(1 + 2^-20); the compensation accumulates them
+    sequentially, so the second-order error grows like n^2 u^2 S.
+    """
+    return [1.0] + [0.7 * U64 * (1 + 2.0 ** -20)] * count + [-1.0]
 
 
 def reduction_datasets(seed: int = 148, n: int = 1024) -> dict:
@@ -372,7 +399,8 @@ def reduction_datasets(seed: int = 148, n: int = 1024) -> dict:
     big = 10.0 ** rng.uniform(0.0, 16.0, n // 2)
     cancelling = np.concatenate([big, -big]) + rng.uniform(-1.0, 1.0, n)
     return {"uniform": [float(x) for x in uniform], "positive-wide-range": [float(x) for x in spread],
-            "cancelling": [float(x) for x in cancelling], "kahan-counterexample": [1.0, 1e100, 1.0, -1e100]}
+            "cancelling": [float(x) for x in cancelling], "kahan-counterexample": [1.0, 1e100, 1.0, -1e100],
+            "absorbed-tiny-terms": absorbed_tiny_terms()}
 
 
 def permutation_study(datasets: dict, permutations: int = 24, seed: int = 1480) -> dict:
@@ -506,3 +534,38 @@ def batched_dot_study(seed: int = 147, rows: int = 128, n: int = 1024, width: in
     bounds = {name: gamma(k, u) * abs_dot for name, (k, u) in depths.items()}
     return {"rows": rows, "n": n, "width": width, "exact": exact, "abs_dot": abs_dot, "outputs": outputs,
             "bounds": bounds, "depths": {k: v[0] for k, v in depths.items()}, "A": A, "x": x}
+
+
+def dropped_product_power(reference, candidate, products, tolerance) -> dict:
+    """Outcome of every single dropped partial product under a bound policy.
+
+    Fault (i, j) replaces candidate[i] by candidate[i] - products[i, j]; it is
+    detected iff |faulty - reference| exceeds tolerance[i]. By the triangle
+    inequality a fault with |p| > tolerance + |candidate - reference| (plus a
+    rounding margin) must be detected; smaller faults may escape, including
+    faults slightly larger than the bound alone when the candidate's own
+    deviation points the other way (counted in undetected_above_bound).
+    """
+    reference, candidate = np.asarray(reference, float), np.asarray(candidate, float)
+    products, tolerance = np.asarray(products, float), np.asarray(tolerance, float)
+    faulty = candidate[:, None] - products
+    detected = np.abs(faulty - reference[:, None]) > tolerance[:, None]
+    magnitude = np.abs(products)
+    margin = 8 * U64 * (np.abs(candidate) + np.abs(reference))[:, None] + 8 * U64 * magnitude
+    guaranteed = magnitude > (tolerance + np.abs(candidate - reference))[:, None] + margin
+    above = magnitude > tolerance[:, None]
+
+    def witness(cells):
+        if not len(cells):
+            return None
+        i, j = max(cells.tolist(), key=lambda ij: (magnitude[ij[0], ij[1]], -ij[0], -ij[1]))
+        return {"row": int(i), "column": int(j), "magnitude": float(magnitude[i, j]),
+                "row_tolerance": float(tolerance[i]), "ratio": float(magnitude[i, j] / tolerance[i])}
+
+    return {"faults": int(products.size), "undetected": int(np.sum(~detected)),
+            "guarantee_violations": int(np.sum(guaranteed & ~detected)),
+            "undetected_above_bound": int(np.sum(above & ~detected)),
+            "max_undetected_ratio": float(np.max((magnitude / tolerance[:, None])[~detected], initial=0.0)),
+            "largest_undetected": witness(np.argwhere(~detected)),
+            "above_bound_witness": witness(np.argwhere(above & ~detected)),
+            "max_tolerance": float(np.max(tolerance)), "min_tolerance": float(np.min(tolerance))}

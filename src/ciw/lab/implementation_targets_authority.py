@@ -113,16 +113,24 @@ class ControlProposal:
             raise ProposalRefusal("nonfinite_proposal", "A control proposal value must be a finite float")
 
     def record(self) -> dict:
+        # Frozen dataclasses can be altered with object.__setattr__; re-check before anything is derived.
+        _require_proposal(self)
         body = {"schema": PROPOSAL_SCHEMA, "channel": self.channel, "value": self.value, "unit": self.unit,
                 "produced_by": self.produced_by, "inputs_sha256": self.inputs_sha256, "rationale": self.rationale,
                 "status": self.status}
         return dict(body, proposal_sha256=canonical_sha256(body))
 
 
+def _require_proposal(proposal) -> None:
+    if proposal.status != "proposal":
+        raise AuthorityRefusal("proposal_status_tampered", "A control output whose status was altered is refused")
+
+
 def to_command(proposal, authorization=None, *, now: str):
     """Refused unless separately authorized; the lab build cannot complete the conversion."""
     if not isinstance(proposal, ControlProposal):
         raise AuthorityRefusal("not_a_proposal", "Only control proposals can be considered for conversion")
+    _require_proposal(proposal)
     if authorization is None:
         raise AuthorityRefusal("proposal_not_authorized", "Control outputs are proposals until separately authorized")
     verify_authorization(authorization, channel=proposal.channel, now=now)

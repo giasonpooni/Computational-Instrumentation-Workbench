@@ -2,13 +2,15 @@
 
 Scope: which ciw.lab kernels merit a Rust port (exact operation counts and
 interpreter dispatch counts; timings retained only as artifacts), which
-industrial interfaces need C/C++ behind pinned subprocess boundaries, an
-import-graph check that evidence code stays in Python, the Julia pin plan,
-one canonical JSON encoding verified against CIW's Python encoders and a Rust
-implementation compiled at run time, a CPU/GPU comparison harness exercised
-CPU-against-CPU, deterministic reduction policies, a telemetry-only FPGA frame
-format with identity, compatibility and rollback records, a seeded link
-simulation, and the refusal boundary for actuator writes and control outputs.
+industrial interfaces need C/C++ behind pinned subprocess boundaries, a
+source scan that evidence code stays in Python, the Julia pin plan, one
+canonical JSON encoding with a reference encoder independent of ``json``,
+checked against CIW's Python encoders and a Rust implementation compiled at
+run time, a CPU/GPU comparison harness exercised CPU-against-CPU,
+deterministic reduction policies with rigorous error bounds, a telemetry-only
+FPGA frame format with identity, compatibility and rollback records, a seeded
+link simulation, and the refusal boundary for actuator writes and control
+outputs.
 
 Non-claims: no GPU, FPGA, Julia runtime or industrial library runs here; all
 bitstreams and link statistics are synthetic; Rust agreement is same-origin
@@ -47,6 +49,15 @@ TESTS = "tests/test_lab_implementation_targets.py"
 # Fixed evaluation instant for authorization checks; findings never read the wall clock.
 NOW = "2026-09-23T00:00:00Z"
 EXACT = {"abs": 0, "rel": 0}
+# Per-finding uncertainty statements (AUTHORING rule 5).
+EXACT_U = {"kind": "roundoff", "value": 0.0,
+           "basis": "exact integer, byte, digest or refusal-code comparison; no rounding enters the value"}
+DESIGN_U = {"kind": "reference_error", "value": 0.0,
+            "basis": "declared design record; the value is a list of names or rules, not a measurement"}
+
+
+def _roundoff(value, basis):
+    return {"kind": "roundoff", "value": float(value), "basis": basis}
 
 
 def _check(reference, observed, tolerance=0.0, comparison="abs_le", kind="exact_arithmetic"):
@@ -57,12 +68,18 @@ def _check(reference, observed, tolerance=0.0, comparison="abs_le", kind="exact_
 
 
 def _refusal(reference, expected, action):
-    """Run ``action`` and record which refusal code it raised (None when it did not refuse)."""
+    """Run ``action`` and record the refusal code it raised ('none' when it did not refuse).
+
+    An unexpected exception type is recorded as observed, so a crash is a
+    failed check (a refuted finding), never a blocked task.
+    """
     try:
         action()
-        observed = None
+        observed = "none"
     except (ValueError, PermissionError) as exc:
-        observed = getattr(exc, "code", type(exc).__name__)
+        observed = str(getattr(exc, "code", type(exc).__name__))
+    except Exception as exc:  # recorded, not raised: the check fails and the report keeps every other finding
+        observed = f"unexpected {type(exc).__name__}"
     return {"reference_kind": "refusal", "reference": reference, "expected_refusal": expected,
             "observed_refusal": observed, "passed": observed == expected}
 
@@ -75,6 +92,20 @@ def _fields(hypothesis, model, inputs, observation, invariant, experiment, next_
     return fields
 
 
+def _state(findings, planned_complete: bool = True) -> str:
+    """'completed' only when the planned parts ran and no computational finding is refuted.
+
+    A refuted finding in a 'completed' report is refused by the report
+    contract, which would turn the whole task blocked and drop every other
+    finding; 'partial' keeps the refutation visible next to them.
+    """
+    from .evidence import COMPUTATIONAL_DOMAINS
+
+    refuted = any(f["domain"] in COMPUTATIONAL_DOMAINS and f["evidence_status"] == "not_established"
+                  and not f.get("expected_not_established") for f in findings)
+    return "completed" if planned_complete and not refuted else "partial"
+
+
 def _noop():
     return None
 
@@ -84,13 +115,40 @@ def _source_digest(relative):
     return source_digest(relative)
 
 
+def _rust_status(build, run):
+    """('ran', result) when the probe ran; ('absent', reason) when rustc is unusable here; ('failed', reason).
+
+    A missing or unusable toolchain is an honest non-claim; a probe that fails
+    to build or run with a usable rustc is a refutation.
+    """
+    if build["available"]:
+        try:
+            return "ran", run()
+        except Exception as exc:  # the probe itself is broken: a refutation, not a missing tool
+            return "failed", f"Rust probe failed to run: {type(exc).__name__}"
+    if build.get("usable"):
+        return "failed", build["reason"]
+    return "absent", build["reason"]
+
+
+def _rust_not_run(claim, domain, status, reason):
+    """Finding for a Rust claim the probe could not support: expected when rustc is absent, refuted when broken."""
+    if status == "absent":
+        return finding(claim, domain, None, {"notes": reason}, expected_not_established=True)
+    return finding(claim, domain, {"failure": reason},
+                   {"checks": [_check("Rust probe built and ran with a usable rustc (1 = failed)", 1.0)]},
+                   uncertainty=EXACT_U, tolerance=EXACT)
+
+
 # =================================================================== T142
 REFERENCE_STEPS = 2000
 REFERENCE_UPDATES = 2000
+# Doubles read plus written per call of each port unit (state, stage vectors and matrices), for arithmetic intensity.
+DOUBLES_MOVED = {"jacobi_transfer": 16, "geodesic_rhs": 8, "kalman_update": 54, "rk4_step": 72}
 
 
 def kernel_profile() -> dict:
-    """Exact operation counts, dispatch counts and core agreement of the four kernel families."""
+    """Exact operation counts, dispatch counts and agreement of the kernel restatements with their references."""
     torus = Torus(2.0, 1.0)
     f = jacobi.rhs(torus)
     rng = np.random.Generator(np.random.PCG64(142))
@@ -116,6 +174,8 @@ def kernel_profile() -> dict:
                integrators.step_rk4(f, y8, 0.01))
         record("jacobi_transfer", kernels.count_ops(kernels.transfer, kernels.torus_jacobi_rhs, scal(y8), 1.0, 10),
                integrators.integrate_fixed(f, y8, 1.0, 10)[1][-1])
+        # The Kalman update has no single-update core kernel (the core filters are vectorized across runs in
+        # another section); the NumPy Joseph-form reference written in the kernels module stands in.
         x, P, z, H, R = kernels.kalman_case(seed=142 + trial)
         x_ref, P_ref = kernels.kalman_update(x, P, z, H, R)
         (x_s, P_s), tally = kernels.count_ops(kernels.kalman_update_scalar, scal(x), [scal(r) for r in P], scal(z),
@@ -156,33 +216,39 @@ def kernel_ranking(profile: dict) -> list:
 
     Reference experiment: a Jacobi transfer of 2000 RK4 steps (8000 right-hand
     sides) and 2000 Kalman updates. Porting a unit alone removes its own
-    dispatches but keeps any callbacks into Python.
+    dispatches but keeps any callbacks into Python. Ties would be broken by
+    arithmetic intensity (flops per byte moved, higher first), then by
+    determinism need.
     """
     d, c = profile["dispatches"], profile["counts"]
     transfer_total = REFERENCE_STEPS * d["jacobi_transfer_per_step"] + d["jacobi_transfer_fixed"]
     rows = [
-        {"kernel": "jacobi_transfer (fused geodesic + Jacobi RK4 loop)", "calls_per_experiment": 1,
-         "flops_per_call": REFERENCE_STEPS * c["rk4_step"]["flops"] + 1, "dispatches_per_call": transfer_total,
-         "removable_dispatches": transfer_total - 1, "determinism_need": "high",
+        {"kernel": "jacobi_transfer (fused geodesic + Jacobi RK4 loop)", "unit": "jacobi_transfer",
+         "calls_per_experiment": 1, "flops_per_call": REFERENCE_STEPS * c["rk4_step"]["flops"] + 1,
+         "dispatches_per_call": transfer_total, "removable_dispatches": transfer_total - 1, "determinism_need": "high",
          "determinism_note": "retained trajectories; bitwise replay needs a fixed order over thousands of dependent steps"},
-        {"kernel": "geodesic_rhs (generic embedded Christoffel contraction)", "calls_per_experiment": 4 * REFERENCE_STEPS,
-         "flops_per_call": c["geodesic_rhs"]["flops"], "dispatches_per_call": d["geodesic_rhs"],
-         "removable_dispatches": 4 * REFERENCE_STEPS * (d["geodesic_rhs"] - 1), "determinism_need": "high",
-         "determinism_note": "einsum/inverse order must be fixed for bitwise replay"},
-        {"kernel": "kalman_update (Joseph form, n=4, m=2)", "calls_per_experiment": REFERENCE_UPDATES,
-         "flops_per_call": c["kalman_update"]["flops"], "dispatches_per_call": d["kalman_update"],
-         "removable_dispatches": REFERENCE_UPDATES * (d["kalman_update"] - 1), "determinism_need": "medium",
+        {"kernel": "geodesic_rhs (generic embedded Christoffel contraction)", "unit": "geodesic_rhs",
+         "calls_per_experiment": 4 * REFERENCE_STEPS, "flops_per_call": c["geodesic_rhs"]["flops"],
+         "dispatches_per_call": d["geodesic_rhs"], "removable_dispatches": 4 * REFERENCE_STEPS * (d["geodesic_rhs"] - 1),
+         "determinism_need": "high", "determinism_note": "einsum/inverse order must be fixed for bitwise replay"},
+        {"kernel": "kalman_update (CIW Joseph-form reference, n=4, m=2; not a core kernel)", "unit": "kalman_update",
+         "calls_per_experiment": REFERENCE_UPDATES, "flops_per_call": c["kalman_update"]["flops"],
+         "dispatches_per_call": d["kalman_update"], "removable_dispatches": REFERENCE_UPDATES * (d["kalman_update"] - 1),
+         "determinism_need": "medium",
          "determinism_note": "covariance symmetry and positive definiteness; small fixed-size reductions"},
-        {"kernel": "rk4_step alone (right-hand side stays in Python)", "calls_per_experiment": REFERENCE_STEPS,
-         "flops_per_call": kernels.rk4_combination_ops(8), "dispatches_per_call": d["rk4_step"],
+        {"kernel": "rk4_step alone (right-hand side stays in Python)", "unit": "rk4_step",
+         "calls_per_experiment": REFERENCE_STEPS, "flops_per_call": kernels.rk4_combination_ops(8),
+         "dispatches_per_call": d["rk4_step"],
          "removable_dispatches": REFERENCE_STEPS * max(0, d["rk4_step"] - 1 - 4 * d["jacobi_rhs"]),
          "determinism_need": "high", "determinism_note": "stage combination order; negligible alone",
          "dispatch_note": "dispatches per call include the four right-hand-side callbacks, which a lone port keeps"},
     ]
     for row in rows:
-        row["flops_per_dispatch"] = row["flops_per_call"] / max(row["dispatches_per_call"], 1)
+        row["bytes_per_call"] = 8 * DOUBLES_MOVED[row["unit"]]
+        row["arithmetic_intensity"] = row["flops_per_call"] / row["bytes_per_call"]
     order = {"high": 0, "medium": 1, "low": 2}
-    rows.sort(key=lambda row: (-row["removable_dispatches"], order[row["determinism_need"]]))
+    rows.sort(key=lambda row: (-row["removable_dispatches"], -row["arithmetic_intensity"],
+                               order[row["determinism_need"]]))
     for rank, row in enumerate(rows, 1):
         row["rank"] = rank
     return rows
@@ -223,6 +289,9 @@ def rust_sphere_agreement(steps: int = 600, length: float = 3.0) -> dict:
             "steps": steps, "length": length, "python_seconds": python_seconds, "rust_seconds": rust_ns * 1e-9}
 
 
+RUST_SPHERE_CLAIM = "Rust fused RK4 loop reproduces ciw.lab.jacobi.transfer on the unit sphere"
+
+
 @task("T142", changed_files=(MODULE, KERNELS, SERIAL, DOC),
       regression_tests=(f"{TESTS}::test_t142_kernel_counts_and_ranking", f"{TESTS}::test_rust_fused_sphere_loop"))
 def rust_kernels(ctx):
@@ -230,10 +299,10 @@ def rust_kernels(ctx):
     ranking = kernel_ranking(profile)
     timings = _kernel_timings(profile)
     build = serial.rust_build()
-    rust = rust_sphere_agreement() if build["available"] else None
+    status, rust = _rust_status(build, rust_sphere_agreement)
     ctx.artifact_json("kernel-profile.json", {k: v for k, v in profile.items()})
     ctx.artifact_json("kernel-ranking.json", ranking)
-    ctx.artifact_json("kernel-timings.json", {"timings": timings, "rust_fused_sphere": rust,
+    ctx.artifact_json("kernel-timings.json", {"timings": timings, "rust_fused_sphere": rust if status == "ran" else None,
                                               "rust_build": {k: v for k, v in build.items() if k != "binary"}})
     ctx.artifact_text("kernel-timings.svg", svg.line_plot(
         [(name, [profile["counts"][name]["flops"]], [timings["seconds_per_call"][name] * 1e6])
@@ -245,37 +314,49 @@ def rust_kernels(ctx):
         "Exact floating-point operation counts of the scalar kernel restatements", "numerical",
         profile["counts"],
         {"generator": {"name": "PCG64 torus states and Kalman case", "seed": 142},
-         "checks": [_check("scalar restatements against core NumPy kernels (max abs difference)", max_diff, 1e-12,
-                           kind="cross_implementation"),
+         "checks": [_check("scalar restatements against the core NumPy kernels (geodesic RHS, Jacobi RHS, RK4 step, "
+                           "transfer) and the CIW NumPy Joseph-form Kalman reference (max abs difference)", max_diff,
+                           1e-12, kind="cross_implementation"),
                     _check("RK4 step count minus 4*RHS - (13n+3), n=8", profile["counts"]["rk4_step"]["flops"]
                            - profile["rk4_formula"]),
                     _check("10-step transfer count minus 10*step - 1", profile["counts"]["jacobi_transfer"]["flops"]
                            - profile["transfer_formula"]),
                     _check("count differences between two random states (branch-free kernels)", profile["count_drift"])]},
-        unit="operations per call", tolerance=EXACT)
+        unit="operations per call", uncertainty=EXACT_U, tolerance=EXACT)
     dispatch_finding = finding(
         "Interpreter calls issued by ciw code per kernel call", "computational_pipeline", profile["dispatches"],
         {"checks": [_check("transfer dispatches are linear in steps: D(30)-D(20) - (D(20)-D(10))",
                            profile["dispatch_linearity"])]},
-        unit="calls", tolerance={"abs": 0, "rel": 0.25})
+        unit="calls", uncertainty={"kind": "reference_error", "value": 0.25,
+                                   "basis": "exact for one Python/NumPy version; relative drift allowed across versions"},
+        tolerance={"abs": 0, "rel": 0.25})
+    first, second = ranking[0]["removable_dispatches"], ranking[1]["removable_dispatches"]
+    margin = (first - second) / first
     ranking_finding = finding(
         "Ranked Rust port recommendation", "computational_pipeline", [row["kernel"] for row in ranking],
         {"derivation": "docs/lab/IMPLEMENTATION_TARGETS.md#kernel-ranking: rank by Python dispatches removed per "
-                       "reference experiment (2000 RK4 steps, 2000 Kalman updates), tie-break by determinism need"},
+                       "reference experiment (2000 RK4 steps, 2000 Kalman updates); ties broken by arithmetic "
+                       "intensity, then determinism need",
+         "checks": [_check("rank-1 minus rank-2 removable dispatches, relative to rank 1 (order is not a tie)",
+                           margin, 0.05, "ge"),
+                    _check("ties in removable dispatches (tie-breakers unused)",
+                           len(ranking) - len({row["removable_dispatches"] for row in ranking}))]},
+        uncertainty=_roundoff(0.0, f"order decided by exact dispatch counts; rank-1 margin {margin:.3f} exceeds the "
+                                   "0.05 floor"),
         tolerance=EXACT)
-    if rust is not None:
+    if status == "ran":
         rust_finding = finding(
-            "Rust fused RK4 loop reproduces ciw.lab.jacobi.transfer on the unit sphere", "numerical",
-            rust["max_abs_difference"],
+            RUST_SPHERE_CLAIM, "numerical", rust["max_abs_difference"],
             {"generator": {"name": "sphere geodesic u0=(1.1, 0.2), heading 0.3, L=3, 600 RK4 steps"},
              "checks": [_check("Rust against ciw.lab.jacobi.transfer final state", rust["max_abs_difference"], 1e-11,
                                kind="cross_implementation"),
                         _check("Rust Jacobi columns against cos(s), sin(s)", rust["rust_jacobi_error"], 1e-8,
                                kind="analytic")]},
+            uncertainty=_roundoff(rust["max_abs_difference"], "largest componentwise difference after 600 steps; "
+                                                               "different rounding of the same RK4 recurrence"),
             tolerance={"abs": 1e-11, "rel": 0})
     else:
-        rust_finding = finding("Rust fused RK4 loop reproduces ciw.lab.jacobi.transfer on the unit sphere", "numerical",
-                               None, {}, expected_not_established=True)
+        rust_finding = _rust_not_run(RUST_SPHERE_CLAIM, "numerical", status, rust)
     readiness = finding("Rust ports of the ranked kernels are ready for industrial deployment", "industrial_readiness",
                         None, {})
     top = ranking[0]
@@ -283,13 +364,17 @@ def rust_kernels(ctx):
         "Python dispatch overhead, not arithmetic, dominates the geodesic/Jacobi kernels, so the fused transfer loop is "
         "the best Rust target; the Kalman update and a standalone RK4 step are poor targets.",
         "Scalar restatements on a counting number type give exact flop counts; RK4 on an n-vector adds 13n+3 flops to "
-        "four right-hand sides; interpreter dispatches are calls issued from ciw frames (profile hook).",
-        ["Torus R=2, r=1 (generic embedded path); two PCG64(142) states", "Joseph-form Kalman update n=4, m=2",
+        "four right-hand sides; interpreter dispatches are calls issued from ciw frames (profile hook); arithmetic "
+        "intensity = flops per byte of state, stage vectors and matrices read or written per call.",
+        ["Torus R=2, r=1 (generic embedded path); two PCG64(142) states",
+         "Joseph-form Kalman update n=4, m=2 written in this section as a reference (the core Kalman filters in other "
+         "sections are vectorized across runs and were not profiled)",
          "Unit sphere transfer u0=(1.1, 0.2), heading 0.3, L=3, 600 steps for the Rust probe"],
         "Deterministic counts of arithmetic operations and interpreter calls; wall-clock timings are observed only for "
         "the artifact.",
         "Counts are state-independent and exact; RK4 and transfer counts decompose as predicted; dispatches grow "
-        "linearly with steps; a Rust port of the fused loop matches the core trajectory to rounding level.",
+        "linearly with steps; the rank-1 unit leads by a clear margin; a Rust port of the fused loop matches the core "
+        "trajectory to rounding level.",
         "Count operations of scalar restatements, compare them with the core kernels, profile dispatches, rank port "
         "units by removable dispatches, compile the Rust probe and compare its fused sphere loop.",
         "T147 (compare a ported kernel against the CPU reference under the tolerance policy), then T148 for its reductions",
@@ -298,9 +383,10 @@ def rust_kernels(ctx):
                           f"Kalman update {profile['counts']['kalman_update']['flops']}; dispatches per call "
                           f"{profile['dispatches']['geodesic_rhs']}, {profile['dispatches']['jacobi_rhs']}, "
                           f"{profile['dispatches']['rk4_step']}, {profile['dispatches']['kalman_update']}. Rank 1: "
-                          f"{top['kernel']} ({top['removable_dispatches']} removable dispatches per reference experiment)."
+                          f"{top['kernel']} ({top['removable_dispatches']} removable dispatches per reference experiment, "
+                          f"margin {margin:.3f} over rank 2)."
                           + (f" Rust fused sphere loop differs from the core by {rust['max_abs_difference']:.2e}."
-                             if rust else " Rust probe unavailable.")),
+                             if status == "ran" else f" Rust probe not run: {rust}.")),
         uncertainty=("Counts are exact for the scalar restatements, which use common subexpressions the NumPy core "
                      "does not (the core repeats trigonometry and forms the full metric), so they count the port "
                      "specification rather than the core's executed operations. Dispatch counts depend on the Python "
@@ -308,17 +394,18 @@ def rust_kernels(ctx):
                      "and are not counted. Timings are machine-specific and appear only in artifacts."),
         failure_modes_checked=["scalar restatement diverging from the core kernel", "branch-dependent counts",
                                "RK4 decomposition formula error (13n+3)", "nonlinear dispatch growth",
-                               "Rust port disagreeing with the core or the exact Jacobi field",
-                               "rustc unavailable (finding recorded as not established)"],
+                               "ranking decided by a near tie", "Rust port disagreeing with the core or the exact "
+                               "Jacobi field", "rustc absent (not established) versus probe broken (refuted)"],
         unresolved_assumptions=["Removable dispatches are a proxy for Python overhead; real speedups need a timed "
                                 "port on the target machine", "The reference experiment sizes (2000 steps, 2000 "
                                 "updates) are declared, not measured workloads",
+                                "The Kalman row profiles a CIW reference restatement, not a core kernel",
                                 "Only the sphere fused loop was ported, with closed-form sphere Christoffel symbols; "
                                 "the generic embedded path is not, so the retained Python/Rust timing ratio overstates "
                                 "what a generic port would gain"],
         provider_runtime_identity=_runtime_identity((MODULE, KERNELS, SERIAL), build))
-    return {"state": "completed" if rust is not None else "partial", "fields": fields,
-            "findings": [counts_finding, dispatch_finding, ranking_finding, rust_finding, readiness]}
+    findings = [counts_finding, dispatch_finding, ranking_finding, rust_finding, readiness]
+    return {"state": _state(findings, status == "ran"), "fields": fields, "findings": findings}
 
 
 def _runtime_identity(changed, build=None):
@@ -340,62 +427,87 @@ def cpp_interfaces(ctx):
     ctx.artifact_json("interface-inventory.json", {"interfaces": list(entries), "boundaries": sorted(arch.BOUNDARIES),
                                                    "python_bindings_present_here": availability})
     base = dict(entries[0])
-    mutations = (("boundary", "in_process_binding", "in_process_binding"),
-                 ("direction", "read_write", "write_capable_direction"),
-                 ("write_path", "enabled", "write_path_enabled"),
-                 ("identity", [], "incomplete_entry"))
-    checks = [_refusal(f"inventory entry with {key}={value!r}", code,
-                       lambda key=key, value=value: arch.validate_inventory([dict(base, **{key: value})]))
-              for key, value, code in mutations]
+    fieldbus = next(dict(entry) for entry in entries if "fieldbus_role" in entry)
+    mutations = ((base, "boundary", "in_process_binding", "in_process_binding"),
+                 (base, "direction", "read_write", "write_capable_direction"),
+                 (base, "write_path", "enabled", "write_path_enabled"),
+                 (base, "identity", [], "incomplete_entry"),
+                 (base, "identity", ["latest"], "unpinned_identity"),
+                 (base, "identity", ["library version", "nightly build"], "unpinned_identity"),
+                 (base, "identity", ["SDK version >=1.0"], "unpinned_identity"),
+                 (base, "identity", ["2024.x"], "unpinned_identity"),
+                 (base, "identity", ["HEAD"], "unpinned_identity"),
+                 (fieldbus, "fieldbus_role", "master", "write_capable_direction"))
+    checks = [_refusal(f"inventory entry '{entry['name']}' with {key}={value!r}", code,
+                       lambda entry=entry, key=key, value=value: arch.validate_inventory([dict(entry, **{key: value})]))
+              for entry, key, value, code in mutations]
     findings = [
         finding("Industrial interfaces that need C/C++ libraries behind a pinned subprocess boundary",
                 "computational_pipeline", [entry["name"] for entry in entries],
-                {"derivation": "docs/lab/IMPLEMENTATION_TARGETS.md#industrial-interfaces"}, tolerance=EXACT),
-        finding("Inventory validator refuses in-process bindings, write-capable directions and unpinned entries",
-                "computational_pipeline", sum(check["passed"] for check in checks), {"checks": checks},
-                unit="refused mutations", tolerance=EXACT),
+                {"derivation": "docs/lab/IMPLEMENTATION_TARGETS.md#industrial-interfaces"}, uncertainty=DESIGN_U,
+                tolerance=EXACT),
+        finding("Inventory validator refuses in-process bindings, write-capable directions or bus roles and unpinned "
+                "entries", "computational_pipeline", sum(check["passed"] for check in checks), {"checks": checks},
+                unit="refused mutations", uncertainty=EXACT_U, tolerance=EXACT),
         finding("The listed interfaces are qualified for plant integration", "industrial_readiness", None, {}),
         finding("Vendor camera SDK acquisition meets its timing on real cameras", "sensor_performance", None, {}),
     ]
     fields = _fields(
-        "OPC UA, EtherCAT, vendor camera SDKs, PCL/Open3D and OpenCASCADE need C/C++ libraries, and each can sit "
-        "behind a pinned subprocess boundary that exchanges retained bytes, leaving evidence code in Python.",
-        "Design inventory: interface -> (native libraries, reason, boundary, direction, write path, identity pins); "
-        "validation rules: boundary = pinned_subprocess, direction in {read_only, geometry_exchange}, write path absent "
-        "or disabled.",
+        "OPC UA, EtherCAT monitoring, vendor camera SDKs, PCL/Open3D and OpenCASCADE need C/C++ libraries, and each "
+        "can sit behind a pinned subprocess boundary that exchanges retained bytes, leaving evidence code in Python.",
+        "Design inventory: interface -> (native libraries, reason, boundary, direction, write path, fieldbus role, "
+        "identity pins); validation rules: boundary = pinned_subprocess, direction in {read_only, geometry_exchange}, "
+        "write path absent or disabled, fieldbus role passive_tap (a master originates output process data), identity "
+        "pins concrete: refused are blank pins, the whole-pin labels current, main, master, trunk, head, dev, develop and x, "
+        "the words latest, nightly, snapshot, stable, any, unknown, tbd, n/a and na anywhere, HEAD anywhere, the "
+        "characters * ? < > = ~ ^ and N.x wildcards.",
         ["Declared inventory in ciw.lab.implementation_targets_architecture.INTERFACES",
          "Python binding availability probe (artifact only)"],
         "No library was linked or executed; availability is probed with importlib only.",
         "Every entry validates; every mutated entry is refused with its specific code.",
-        "Validate the inventory and four mutated entries; probe Python bindings for the artifact.",
-        "T144 (verify the Python orchestration boundary in the package import graph)",
-        numerical_result=f"{len(entries)} interfaces inventoried; {findings[1]['value']}/4 mutations refused.",
+        f"Validate the inventory and {len(checks)} mutated entries; probe Python bindings for the artifact.",
+        "T144 (verify the Python orchestration boundary in the package source)",
+        numerical_result=f"{len(entries)} interfaces inventoried; {findings[1]['value']}/{len(checks)} mutations refused.",
         uncertainty="Analytic design record; library capabilities are stated from vendor documentation, not tested.",
         failure_modes_checked=["in-process binding", "write-capable direction", "enabled write path",
-                               "entry without identity pins"],
+                               "entry without identity pins",
+                               "floating identity pins ('latest', 'nightly build', '>=1.0', '2024.x', 'HEAD')",
+                               "EtherCAT master in place of a passive tap"],
         unresolved_assumptions=["Vendor SDK licensing and platform support were not checked",
-                                "EtherCAT monitoring without a write path may still need a master that owns the bus; "
-                                "a passive tap is assumed", "No provider executable exists yet for any entry"])
-    return {"state": "completed", "fields": fields, "findings": findings}
+                                "A passive TAP is assumed to be electrically unable to inject frames; that is a "
+                                "hardware property not verified here", "No provider executable exists yet for any entry"])
+    return {"state": _state(findings), "fields": fields, "findings": findings}
 
 
 # =================================================================== T144
-@task("T144", changed_files=(MODULE, ARCH, DOC), regression_tests=(f"{TESTS}::test_t144_architecture_scan",))
+STRUCTURAL_RULES = ("evidence_closure_not_stdlib", "evidence_native_loading", "evidence_spawns_process",
+                    "native_loading_outside_allowlist", "shell_invocation", "compiled_extension_in_package")
+
+
+@task("T144", changed_files=(MODULE, ARCH, SERIAL, DOC), regression_tests=(f"{TESTS}::test_t144_architecture_scan",))
 def python_orchestration(ctx):
-    scan = arch.scan_package()
+    scan = ctx.memo("t144-scan", arch.scan_package)
     modules = scan["modules"]
     found = arch.violations(scan)
+    structural = [v for v in found if v[0] in STRUCTURAL_RULES]
+    heuristic = [v for v in found if v[0] == "spawn_without_runtime_identity"]
     evidence = arch.closure(modules, arch.EVIDENCE_MODULES)
     evidence_violations = [v for v in found if v[0].startswith("evidence_")]
     spawners = sorted(name for name, info in modules.items() if info["spawn_lines"])
+    path_resolved = arch.path_resolved_spawners(scan)
+    own = "ciw.lab.implementation_targets_serial"
     mention_only = sorted(name for name, info in modules.items() if info["mentions_subprocess"] and not info["spawn_lines"])
     witness = next((name for name in mention_only if not name.startswith("ciw.lab")), None)
     ctx.artifact_json("import-graph.json", {name: info["imports"] for name, info in modules.items()})
     ctx.artifact_json("architecture-scan.json", {
-        "evidence_closure": evidence, "violations": found, "spawning_modules": {n: modules[n]["spawn_lines"] for n in spawners},
+        "package_sha256": scan["package_sha256"], "files": scan["files"], "modules_scanned": len(modules),
+        "evidence_closure": evidence, "violations": found,
+        "spawning_modules": {n: modules[n]["spawn_lines"] for n in spawners},
+        "path_resolved_spawners": {n: {"which_lines": modules[n]["which_lines"], "spawn_lines": modules[n]["spawn_lines"]}
+                                   for n in path_resolved},
         "native_loading": {n: i["native"] for n, i in modules.items() if i["native"]},
         "mention_subprocess_without_spawn": mention_only, "unparsed_modules": scan["unparsed"],
-        "compiled_extensions": scan["compiled_extensions"], "modules_scanned": len(modules)})
+        "compiled_extensions": scan["compiled_extensions"]})
     evidence_source = (arch.PACKAGE_ROOT / "lab" / "evidence.py").read_text(encoding="utf-8")
     report_source = (arch.PACKAGE_ROOT / "lab" / "report.py").read_text(encoding="utf-8")
     forged = (("ciw.lab.evidence", evidence_source + "\nimport ctypes\n", "evidence_native_loading"),
@@ -404,26 +516,51 @@ def python_orchestration(ctx):
                "evidence_spawns_process"),
               ("ciw.lab.forged_provider", "import subprocess\nsubprocess.run('solver --fast', shell=True)\n",
                "shell_invocation"),
+              ("ciw.lab.forged_provider", "import asyncio\nasyncio.create_subprocess_shell('solver --fast')\n",
+               "shell_invocation"),
               ("ciw.lab.forged_provider", "import subprocess\nsubprocess.run(['solver'])\n",
+               "spawn_without_runtime_identity"),
+              ("ciw.lab.forged_provider", "import subprocess\n# records the solver digest\nsubprocess.run(['solver'])\n",
+               "spawn_without_runtime_identity"),
+              ("ciw.lab.forged_provider", "from os import posix_spawn\nposix_spawn('/opt/solver', ['solver'], {})\n",
                "spawn_without_runtime_identity"))
     mutation_checks = []
     for name, text, rule in forged:
         rules = {v[0] for v in arch.violations(arch.mutated_scan(scan, name, text)) if v[1] == name}
-        observed = rule if rule in rules else (",".join(sorted(rules)) or None)
+        observed = rule if rule in rules else (",".join(sorted(rules)) or "none")
         mutation_checks.append({"reference_kind": "refusal", "reference": f"forged {name} ({rule})",
                                 "expected_refusal": rule, "observed_refusal": observed, "passed": rule in rules})
+    pin_claim = "Numerical providers are invoked only through pinned executables"
     findings = [
         finding("Evidence and identity closure is standard-library Python with no native loading or process spawns",
                 "computational_pipeline", evidence,
-                {"checks": [_check("evidence-closure rule violations", len(evidence_violations))]}, tolerance=EXACT),
-        finding("Package-wide boundary rules hold (no shell spawns, identity-recording spawners, native loading only in "
-                "declared hardware probes, no compiled extensions)", "computational_pipeline", len(found),
-                {"checks": [_check("architecture rule violations across the scanned package", len(found)),
+                {"checks": [_check("evidence-closure rule violations", len(evidence_violations))]},
+                uncertainty=EXACT_U, tolerance=EXACT),
+        finding("Package-wide structural rules hold (no shell spawns, native loading only in declared hardware probes, "
+                "no compiled extensions)", "computational_pipeline", len(structural),
+                {"checks": [_check("structural rule violations across the scanned package", len(structural)),
                             _check("modules that failed to parse", len(scan["unparsed"]))]},
-                unit="violations", tolerance=EXACT),
+                unit="violations", uncertainty=EXACT_U, tolerance=EXACT),
+        finding("Every process-spawning module names an identity in its code (heuristic, not a pin)",
+                "computational_pipeline", len(heuristic),
+                {"checks": [_check("spawning modules without revision, source_tree, runtime_identity, sha256 or digest "
+                                   "in identifiers or non-docstring strings", len(heuristic))]},
+                unit="violations", uncertainty=EXACT_U, tolerance=EXACT),
         finding("Scanner flags forged modules that cross the boundary", "computational_pipeline",
                 sum(c["passed"] for c in mutation_checks), {"checks": mutation_checks}, unit="detected mutations",
-                tolerance=EXACT),
+                uncertainty=EXACT_U, tolerance=EXACT),
+        finding("Some process spawns run a PATH-resolved executable without comparing it to a pinned identity",
+                "computational_pipeline", {"witness": own},
+                {"checks": [_check("modules that resolve an executable with shutil.which and spawn it",
+                                   len(path_resolved), 1, "ge"),
+                            _check(f"{own} is among them", float(own in path_resolved), 1, "ge")]},
+                counterexample={"statement": pin_claim,
+                                "witness": {"module": own, "executable": "rustc from shutil.which('rustc')",
+                                            "recorded": "rustc -vV release and commit (provenance, compared with nothing)"}},
+                uncertainty=EXACT_U, tolerance=EXACT),
+        finding(pin_claim, "computational_pipeline", None,
+                {"notes": "A source scan cannot show that a spawned binary equals an expected identity; see the "
+                          "PATH-resolved counterexample"}, expected_not_established=True),
         finding("Text search for 'subprocess' finds modules that spawn no process", "computational_pipeline",
                 {"witness": witness},
                 {"checks": [_check("modules outside ciw.lab mentioning subprocess without a spawn call",
@@ -431,33 +568,46 @@ def python_orchestration(ctx):
                 counterexample={"statement": "A text search for 'subprocess' identifies the process-spawning modules",
                                 "witness": {"module": witness, "reason": "mentions ciw.adapters.subprocess or quotes "
                                             "subprocess in text but has no spawn call"}},
-                tolerance=EXACT),
+                uncertainty=EXACT_U, tolerance=EXACT),
         finding("Keeping native code behind subprocess boundaries makes machine interfaces safe", "machine_safety",
                 None, {}),
     ]
     fields = _fields(
         "The evidence and identity layer (ciw.lab.evidence, ciw.lab.report, ciw.core.identities and their ciw "
-        "imports) is pure standard-library Python; numerical providers are reached through argument-vector process "
-        "spawns from modules that record runtime identities; native loading is confined to declared hardware probes.",
-        "Directed import graph over parsed modules; transitive closure from the evidence roots; rule set R = "
-        "{closure stdlib-only, no native/spawn in closure, native loading within allowlist, no shell=True, spawners "
-        "reference a runtime identity, no compiled extensions}.",
-        [f"{len(modules)} parsed modules of the installed ciw package (source text only, not imported)"],
+        "imports) is pure standard-library Python; process spawns use argument vectors without a shell; native "
+        "loading is confined to declared hardware probes. Whether spawned providers are pinned is not decidable "
+        "from source and is tested only by a heuristic plus counterexample search.",
+        "Directed import graph over parsed modules; transitive closure from the evidence roots; structural rules "
+        "{closure stdlib-only, no native/spawn in closure, native loading within allowlist, no shell (shell=True, "
+        "os.system/popen, asyncio.create_subprocess_shell), no compiled extensions}; heuristic rule: a spawning "
+        "module names an identity token in identifiers or non-docstring strings.",
+        [f"{len(modules)} parsed modules of the installed ciw package (source text only, not imported); package "
+         "digest in the provider/runtime identity"],
         "Static source analysis with ast; nothing from the scanned modules is imported or executed.",
-        "Zero violations on the real package; every forged mutation violates its intended rule.",
-        "Scan the package, compute the evidence closure, evaluate the rules, then replay five forged mutations.",
-        "T146 (fix one canonical serialization for identities crossing the language boundary)",
-        numerical_result=(f"Evidence closure {evidence}; {len(found)} violations over {len(modules)} modules; "
-                          f"{len(spawners)} spawning modules; {findings[2]['value']}/5 forged mutations detected."),
+        "Zero structural and heuristic violations on the real package; every forged mutation violates its intended "
+        "rule; PATH-resolved spawners exist, so pinning is not established.",
+        f"Scan the package, compute the evidence closure, evaluate the rules, replay {len(forged)} forged mutations "
+        "and list spawners that resolve executables on PATH.",
+        "T146 (fix one canonical serialization for identities crossing the language boundary); pin the Rust probe "
+        "and other PATH-resolved tools against expected identities",
+        numerical_result=(f"Evidence closure {evidence}; {len(structural)} structural and {len(heuristic)} heuristic "
+                          f"violations over {len(modules)} modules; {len(spawners)} spawning modules, "
+                          f"{len(path_resolved)} of them PATH-resolved; {findings[3]['value']}/{len(forged)} forged "
+                          "mutations detected."),
         uncertainty=("Static scan: dynamic imports, exec, importlib and spawns through third-party libraries are not "
-                     "seen; the identity-token rule is a heuristic that a module mentions revision, source_tree, "
-                     "runtime_identity, sha256 or digest, not proof that the spawned binary is pinned."),
+                     "seen; the identity-token rule shows that a name appears in code, not that the spawned binary "
+                     "is pinned."),
         failure_modes_checked=["third-party import in evidence closure", "native loading", "process spawn in evidence",
-                               "shell=True", "spawn without identity", "compiled extension", "unparseable module"],
-        unresolved_assumptions=["Modules added concurrently by other sections are scanned as found at run time",
+                               "shell=True", "asyncio shell spawn", "os.posix_spawn imported by name",
+                               "spawn without identity", "identity token only in a comment", "PATH-resolved "
+                               "executables", "compiled extension", "unparseable module"],
+        unresolved_assumptions=["Modules added concurrently by other sections are scanned as found at run time "
+                                "(identified by the package digest)",
                                 "Hardware energy probes (ciw.energy_cuda, ciw.energy_nvml) load drivers in-process by "
-                                "declared exception"])
-    return {"state": "completed", "fields": fields, "findings": findings}
+                                "declared exception"],
+        provider_runtime_identity=dict(_runtime_identity((MODULE, ARCH)), scanned_package_sha256=scan["package_sha256"],
+                                       scanned_files=scan["files"]))
+    return {"state": _state(findings), "fields": fields, "findings": findings}
 
 
 # =================================================================== T145
@@ -522,7 +672,8 @@ def julia_role(ctx):
     findings = [finding("Julia environment pinned and exercised through the CIW to SCR boundary",
                         "computational_pipeline", None, {}, expected_not_established=True),
                 finding("Julia provider pin procedure", "provenance", JULIA_PLAN["identity_fields"],
-                        {"derivation": "docs/JULIA_SP1.md#worker-lifecycle-and-environment"}, tolerance=EXACT)]
+                        {"derivation": "docs/JULIA_SP1.md#worker-lifecycle-and-environment"}, uncertainty=DESIGN_U,
+                        tolerance=EXACT)]
     symbolic = None
     if ctx.available("module:sympy"):
         symbolic = sympy_torus_check()
@@ -536,6 +687,8 @@ def julia_role(ctx):
                                        producer={"implementation": "ciw.lab.surfaces.Torus",
                                                  "revision": _source_digest("src/ciw/lab/surfaces.py")},
                                        checker={"implementation": "sympy", "revision": sympy.__version__})},
+            uncertainty=_roundoff(symbolic["max_abs_difference"], "largest difference between float evaluations of "
+                                                                   "the symbolic expressions and the core"),
             tolerance={"abs": 1e-12, "rel": 0}))
     fields = _fields(
         "Julia can carry symbolic, optimization and exploratory work behind the pinned CIW to SCR boundary; until a "
@@ -564,20 +717,31 @@ def serialization_study() -> dict:
 
     accepted = serial.vectors()
     invalid = serial.invalid_vectors()
-    table, mismatches = [], {"ciw.telemetry.canonical": [], "ciw.core.identities.canonical_json": []}
-    ascii_differs, reencode_failures = [], 0
+    corpus = serial.float_corpus()
+    floats = corpus["vector"] + corpus["random"] + corpus["ties"]
+    table = []
+    telemetry_mismatch, ascii_mismatch, differs_from_spec, encoder_differs = [], [], [], []
+    reencode_failures = 0
     for name, value in accepted:
         utf8, ascii_bytes = serial.canonical_bytes(value), serial.canonical_bytes(value, ascii_only=True)
+        telemetry, identities = telemetry_canonical(value), canonical_json(value).encode("utf-8")
         if serial.canonical_bytes(json.loads(utf8)) != utf8:
             reencode_failures += 1
-        if telemetry_canonical(value) != utf8:
-            mismatches["ciw.telemetry.canonical"].append(name)
-        if canonical_json(value).encode("utf-8") != ascii_bytes:
-            mismatches["ciw.core.identities.canonical_json"].append(name)
-        if utf8 != ascii_bytes:
-            ascii_differs.append(name)
+        if telemetry != utf8:
+            telemetry_mismatch.append(name)
+        if identities != ascii_bytes:
+            ascii_mismatch.append(name)
+        if identities != utf8:
+            differs_from_spec.append(name)
+        if identities != telemetry:
+            encoder_differs.append(name)
         table.append({"name": name, "canonical": utf8.decode("utf-8"), "utf8_hex": utf8.hex(),
-                      "sha256": hashlib.sha256(utf8).hexdigest(), "ascii_sha256": hashlib.sha256(ascii_bytes).hexdigest()})
+                      "sha256": hashlib.sha256(utf8).hexdigest(), "ascii_sha256": hashlib.sha256(ascii_bytes).hexdigest(),
+                      "telemetry_sha256": hashlib.sha256(telemetry).hexdigest(),
+                      "identities_sha256": hashlib.sha256(identities).hexdigest()})
+    float_telemetry = sum(telemetry_canonical(x) != serial.canonical_bytes(x) for x in floats)
+    float_identities = sum(canonical_json(x).encode("utf-8") != serial.canonical_bytes(x, ascii_only=True)
+                           for x in floats)
     refusals = []
     for name, value, expected in invalid:
         row = {"name": name, "expected": expected}
@@ -590,77 +754,126 @@ def serialization_study() -> dict:
             except (ValueError, TypeError, RecursionError) as exc:
                 row[label] = getattr(exc, "code", "refused")
         refusals.append(row)
+    examples = sum(serial.canonical_bytes(value) != expected for value, expected in serial.SPEC_EXAMPLES)
     collision = {"int_key": canonical_json({1: "x"}), "str_key": canonical_json({"1": "x"})}
-    floats = [x for _, value in accepted for x in serial.floats_in(value)] + serial._random_floats(2000, 1460)
-    digit_mismatch = sum(serial.decimal_form(repr(x)) != serial.decimal_form(serial.numpy_shortest(x)) for x in floats)
-    roundtrip_failures = sum(float(repr(x)) != x or math.copysign(1, float(repr(x))) != math.copysign(1, x)
-                             for x in floats)
-    jcs_numbers = sorted({repr(x): serial.ecmascript_number(x) for x in floats
-                          if repr(x) != serial.ecmascript_number(x)}.items())
+    reference = [serial.reference_form(x) for x in floats]
+    cpython_mismatch = sum(serial.decimal_form(repr(x)) != form for x, form in zip(floats, reference))
+    numpy_mismatch = sum(serial.decimal_form(serial.numpy_shortest(x)) != form for x, form in zip(floats, reference))
+    roundtrip_failures = sum(float(serial.format_float(x)) != x
+                             or math.copysign(1, float(serial.format_float(x))) != math.copysign(1, x) for x in floats)
+    jcs_numbers = sorted({serial.format_float(x): serial.ecmascript_number(x) for x in corpus["vector"]
+                          if serial.format_float(x) != serial.ecmascript_number(x)}.items())
     keys = list(dict(accepted)["key-order-code-points"])
     jcs_order, ciw_order = sorted(keys, key=lambda k: k.encode("utf-16-be")), sorted(keys)
     set_digest = serial.canonical_sha256([[row["name"], row["sha256"]] for row in table])
-    return {"table": table, "refusals": refusals, "mismatches": mismatches, "ascii_differs": ascii_differs,
-            "reencode_failures": reencode_failures, "collision": collision, "floats_checked": len(floats),
-            "digit_mismatch": digit_mismatch, "roundtrip_failures": roundtrip_failures, "jcs_numbers": jcs_numbers,
+    return {"table": table, "refusals": refusals, "telemetry_mismatch": telemetry_mismatch,
+            "ascii_mismatch": ascii_mismatch, "differs_from_spec": differs_from_spec, "encoder_differs": encoder_differs,
+            "float_telemetry_mismatch": float_telemetry, "float_identities_mismatch": float_identities,
+            "reencode_failures": reencode_failures, "spec_example_mismatches": examples, "collision": collision,
+            "floats": floats, "corpus_sizes": {k: len(v) for k, v in corpus.items()}, "ties": corpus["ties"],
+            "cpython_mismatch": cpython_mismatch, "numpy_mismatch": numpy_mismatch,
+            "roundtrip_failures": roundtrip_failures, "jcs_numbers": jcs_numbers,
             "jcs_key_order": jcs_order, "ciw_key_order": ciw_order, "set_digest": set_digest}
 
 
+TIE_WITNESS = 1e15 + 0.25
+
+
 def rust_serialization(study) -> dict:
+    """Rust probe on every vector and on every float of the corpus, plus Rust's own shortest formatting on ties."""
     accepted, invalid = serial.vectors(), serial.invalid_vectors()
-    results = serial.rust_canonical([v for _, v in accepted] + [v for _, v, _ in invalid])
-    byte_mismatch = [name for (name, value), got in zip(accepted, results)
+    results = serial.rust_canonical([v for _, v in accepted] + [v for _, v, _ in invalid] + study["floats"])
+    vector_results = results[:len(accepted)]
+    refusal_results = results[len(accepted):len(accepted) + len(invalid)]
+    float_results = results[len(accepted) + len(invalid):]
+    byte_mismatch = [name for (name, value), got in zip(accepted, vector_results)
                      if got != (serial.canonical_bytes(value), serial.canonical_bytes(value, ascii_only=True))]
-    refusal_mismatch = [name for (name, _, expected), got in zip(invalid, results[len(accepted):]) if got != expected]
-    return {"vectors": len(accepted) + len(invalid), "byte_mismatches": byte_mismatch,
+    float_mismatch = [x for x, got in zip(study["floats"], float_results)
+                      if got != (serial.canonical_bytes(x), serial.canonical_bytes(x, ascii_only=True))]
+    refusal_mismatch = [name for (name, _, expected), got in zip(invalid, refusal_results) if got != expected]
+    ties = study["ties"]
+    own = serial.rust_shortest(ties + [TIE_WITNESS])
+    shortest_differs = sum(serial.decimal_form(text) != serial.reference_form(x) for text, x in zip(own, ties))
+    return {"vectors": len(accepted) + len(invalid), "floats": len(study["floats"]), "decimal_ties": len(ties),
+            "byte_mismatches": byte_mismatch, "float_mismatches": [repr(x) for x in float_mismatch],
             "refusal_mismatches": refusal_mismatch,
-            "rust_refusals": {name: got for (name, _, _), got in zip(invalid, results[len(accepted):])}}
+            "rust_refusals": {name: got for (name, _, _), got in zip(invalid, refusal_results)},
+            "shortest_differs_on_ties": shortest_differs, "witness_rust_shortest": own[-1]}
+
+
+RUST_CANONICAL_CLAIM = "Rust canonical JSON is byte-identical to the specification and refuses the same inputs"
+RUST_TIES_CLAIM = "Rust's own shortest float formatting breaks exact decimal ties away from the specification"
 
 
 @task("T146", changed_files=(MODULE, SERIAL, DOC),
-      regression_tests=(f"{TESTS}::test_t146_python_canonicalizers_and_vectors", f"{TESTS}::test_t146_rust_byte_identity"))
+      regression_tests=(f"{TESTS}::test_t146_python_canonicalizers_and_vectors", f"{TESTS}::test_t146_rust_byte_identity",
+                        f"{TESTS}::test_t146_reference_float_rule"))
 def canonical_serialization(ctx):
     study = serialization_study()
     build = serial.rust_build()
-    rust = rust_serialization(study) if build["available"] else None
-    ctx.artifact_json("canonical-json-spec.json", serial.SPEC)
+    status, rust = _rust_status(build, lambda: rust_serialization(study))
+    ctx.artifact_json("canonical-json-spec.json", dict(serial.SPEC, examples=[
+        {"value_repr": repr(value), "bytes_hex": expected.hex()} for value, expected in serial.SPEC_EXAMPLES]))
     ctx.artifact_json("test-vectors.json", {"spec": serial.SPEC_ID, "vector_set_sha256": study["set_digest"],
                                             "vectors": study["table"], "invalid": study["refusals"]})
     ctx.artifact_text("ciw_targets.rs", serial.RUST_SOURCE)
-    ctx.artifact_json("cross-language.json", {"rust": rust, "rust_build": {k: v for k, v in build.items() if k != "binary"},
+    ctx.artifact_json("float-corpus.json", {"sizes": study["corpus_sizes"],
+                                            "decimal_ties": [[repr(x), serial.format_float(x)] for x in study["ties"]]})
+    ctx.artifact_json("cross-language.json", {"rust": rust if status == "ran" else None, "rust_status": status,
+                                              "rust_build": {k: v for k, v in build.items() if k != "binary"},
                                               "jcs_number_differences": study["jcs_numbers"],
-                                              "jcs_key_order": study["jcs_key_order"], "ciw_key_order": study["ciw_key_order"],
-                                              "float_digit_values": study["floats_checked"]})
-    spec_checks = [_check("re-encoding a decoded vector changes its bytes", study["reencode_failures"])]
+                                              "jcs_key_order": study["jcs_key_order"], "ciw_key_order": study["ciw_key_order"]})
+    n_vectors, n_floats = len(study["table"]), len(study["floats"])
+    spec_checks = [_check("hand-written specification examples the reference encoder does not reproduce",
+                          study["spec_example_mismatches"], kind="analytic"),
+                   _check("re-encoding a decoded vector changes its bytes", study["reencode_failures"])]
     spec_checks += [{"reference_kind": "refusal", "reference": f"specification on {row['name']}",
                      "expected_refusal": row["expected"], "observed_refusal": row["specification"],
                      "passed": row["specification"] == row["expected"]} for row in study["refusals"]]
     lax = {label: [row["name"] for row in study["refusals"] if row[label] == "accepted"]
            for label in ("ciw.core.identities.canonical_json", "ciw.telemetry.canonical")}
-    ascii_rows = {row["name"]: row for row in study["table"]}
-    witness = ascii_rows["unicode-bmp"]
+    rows = {row["name"]: row for row in study["table"]}
+    witness_name = next((n for n in study["encoder_differs"] if n == "unicode-bmp"), None) or \
+        (study["encoder_differs"][0] if study["encoder_differs"] else "unicode-bmp")
+    witness = rows[witness_name]
+    by_construction = ("CIW encoders call json.dumps; the reference encoder escapes from its own table and formats "
+                       "floats by an exact digit search, so agreement is not true by construction")
     findings = [
         finding("Canonical JSON v1 test vectors (bytes and sha256)", "provenance",
-                {"spec": serial.SPEC_ID, "vectors": len(study["table"]), "invalid_vectors": len(study["refusals"]),
+                {"spec": serial.SPEC_ID, "vectors": n_vectors, "invalid_vectors": len(study["refusals"]),
                  "vector_set_sha256": study["set_digest"]},
-                {"checks": spec_checks}, tolerance=EXACT),
-        finding("Existing Python canonicalizers reproduce the specification bytes on every accepted vector",
-                "computational_pipeline", {k: len(v) for k, v in study["mismatches"].items()},
-                {"checks": [_check("ciw.telemetry.canonical mismatches against the UTF-8 form",
-                                   len(study["mismatches"]["ciw.telemetry.canonical"])),
-                            _check("ciw.core.identities.canonical_json mismatches against the ASCII form",
-                                   len(study["mismatches"]["ciw.core.identities.canonical_json"]))]},
-                unit="mismatching vectors", tolerance=EXACT),
+                {"checks": spec_checks}, uncertainty=EXACT_U, tolerance=EXACT),
+        finding("ciw.telemetry.canonical reproduces the specification bytes on every accepted vector and tested float",
+                "computational_pipeline",
+                {"vectors": n_vectors, "vector_mismatches": len(study["telemetry_mismatch"]), "floats": n_floats,
+                 "float_mismatches": study["float_telemetry_mismatch"]},
+                {"checks": [_check(f"ciw.telemetry.canonical against the reference encoder, vectors ({by_construction})",
+                                   len(study["telemetry_mismatch"]), kind="cross_implementation"),
+                            _check("ciw.telemetry.canonical against the reference encoder, single floats",
+                                   study["float_telemetry_mismatch"], kind="cross_implementation")]},
+                unit="mismatches", uncertainty=EXACT_U, tolerance=EXACT),
+        finding("ciw.core.identities.canonical_json reproduces the ASCII-escaped variant, not the specification bytes",
+                "computational_pipeline",
+                {"ascii_variant_mismatches": len(study["ascii_mismatch"]),
+                 "float_ascii_variant_mismatches": study["float_identities_mismatch"],
+                 "differs_from_specification": study["differs_from_spec"]},
+                {"checks": [_check("ciw.core.identities.canonical_json against the reference ASCII variant, vectors",
+                                   len(study["ascii_mismatch"]), kind="cross_implementation"),
+                            _check("ciw.core.identities.canonical_json against the reference ASCII variant, floats",
+                                   study["float_identities_mismatch"], kind="cross_implementation"),
+                            _check("vectors whose ciw.core.identities bytes differ from the specification bytes",
+                                   len(study["differs_from_spec"]), 1, "ge")]},
+                uncertainty=EXACT_U, tolerance=EXACT),
         finding("ciw.core.identities.canonical_json and ciw.telemetry.canonical produce different bytes for non-ASCII text",
-                "computational_pipeline", {"differing_vectors": study["ascii_differs"]},
-                {"checks": [_check("vectors whose ensure_ascii forms differ", len(study["ascii_differs"]), 1, "ge"),
+                "computational_pipeline", {"differing_vectors": study["encoder_differs"]},
+                {"checks": [_check("vectors on which the two CIW encoders differ", len(study["encoder_differs"]), 1, "ge"),
                             _check("differing vectors that are printable ASCII only",
-                                   sum(all(0x20 <= ord(ch) <= 0x7e for ch in ascii_rows[n]["canonical"])
-                                       for n in study["ascii_differs"]))]},
+                                   sum(all(0x20 <= ord(ch) <= 0x7e for ch in rows[n]["canonical"])
+                                       for n in study["encoder_differs"]))]},
                 counterexample={"statement": "CIW already has one canonical JSON byte encoding",
-                                "witness": {"vector": "unicode-bmp", "telemetry_sha256": witness["sha256"],
-                                            "identities_sha256": witness["ascii_sha256"]}},
-                tolerance=EXACT),
+                                "witness": {"vector": witness_name, "telemetry_sha256": witness["telemetry_sha256"],
+                                            "identities_sha256": witness["identities_sha256"]}},
+                uncertainty=EXACT_U, tolerance=EXACT),
         finding("ciw.core.identities.canonical_json gives {1: 'x'} and {'1': 'x'} the same content identity",
                 "computational_pipeline", hashlib.sha256(study["collision"]["int_key"].encode()).hexdigest(),
                 {"checks": [_check("int-key and str-key canonical texts are equal",
@@ -669,23 +882,30 @@ def canonical_serialization(ctx):
                                      lambda: serial.canonical_bytes({1: "x"}))]},
                 counterexample={"statement": "Distinct Python values have distinct CIW content identities",
                                 "witness": {"values": ["{1: 'x'}", "{'1': 'x'}"], "canonical": study["collision"]["str_key"]}},
-                tolerance=EXACT),
+                uncertainty=EXACT_U, tolerance=EXACT),
         finding("Python canonicalizers accept values the specification refuses", "computational_pipeline", lax,
                 {"checks": [_check("refused-by-spec vectors accepted by a CIW encoder",
                                    sum(len(v) for v in lax.values()), 1, "ge")]},
                 counterexample={"statement": "Existing CIW canonicalizers enforce the cross-language specification",
                                 "witness": {"vector": "integer-2^53", "accepted_by": sorted(
                                     k for k, v in lax.items() if "integer-2^53" in v)}},
-                tolerance=EXACT),
-        finding("CPython shortest float digits agree with NumPy Dragon4 on vector and random binary64 values",
-                "numerical", {"values": study["floats_checked"], "mismatches": study["digit_mismatch"]},
-                {"checks": [_check("repr round-trip failures (value or sign)", study["roundtrip_failures"])],
-                 "independent_check": dict(_check("digit/exponent mismatches", study["digit_mismatch"]),
-                                           producer={"implementation": "cpython.float_repr",
-                                                     "revision": sys.version.split()[0]},
+                uncertainty=EXACT_U, tolerance=EXACT),
+        finding("The exact shortest-digit rule agrees with CPython repr and NumPy Dragon4 on vector, random and "
+                "decimal-tie binary64 values", "numerical",
+                {"values": n_floats, "decimal_ties": len(study["ties"]), "cpython_mismatches": study["cpython_mismatch"],
+                 "numpy_mismatches": study["numpy_mismatch"]},
+                {"checks": [_check("round-trip failures of the specification text (value or sign)",
+                                   study["roundtrip_failures"]),
+                            _check("CPython repr digit/exponent mismatches against the exact rule",
+                                   study["cpython_mismatch"]),
+                            _check("constructed decimal ties in the corpus", len(study["ties"]), 1, "ge")],
+                 "independent_check": dict(_check("NumPy digit/exponent mismatches against the exact rule",
+                                                  study["numpy_mismatch"]),
+                                           producer={"implementation": "ciw.lab.implementation_targets_serial."
+                                                                       "shortest_digits"},
                                            checker={"implementation": "numpy.format_float_scientific(unique=True)",
                                                     "revision": np.__version__})},
-                tolerance=EXACT),
+                uncertainty=EXACT_U, tolerance=EXACT),
         finding("CIW canonical JSON differs from RFC 8785 (JCS) numbers and key order", "computational_pipeline",
                 {"number_differences": len(study["jcs_numbers"]),
                  "key_order_differs": study["jcs_key_order"] != study["ciw_key_order"]},
@@ -695,58 +915,84 @@ def canonical_serialization(ctx):
                                    float(study["jcs_key_order"] != study["ciw_key_order"]), 1, "ge")]},
                 counterexample={"statement": "CIW canonical JSON bytes equal RFC 8785 JCS bytes",
                                 "witness": {"1.0": ["1.0", "1"], "1e+16": ["1e+16", "10000000000000000"],
-                                            "keys": ["Ａ", "\U0001f600"]}},
-                tolerance=EXACT),
+                                            "keys": ["\uff21", "\U0001f600"]}},
+                uncertainty=EXACT_U, tolerance=EXACT),
     ]
-    if rust is not None:
+    if status == "ran":
         findings.append(finding(
-            "Rust canonical JSON is byte-identical to the specification and refuses the same inputs", "computational_pipeline",
-            {"vectors": rust["vectors"], "byte_mismatches": len(rust["byte_mismatches"]),
+            RUST_CANONICAL_CLAIM, "computational_pipeline",
+            {"vectors": rust["vectors"], "floats": rust["floats"], "decimal_ties": rust["decimal_ties"],
+             "byte_mismatches": len(rust["byte_mismatches"]), "float_mismatches": len(rust["float_mismatches"]),
              "refusal_mismatches": len(rust["refusal_mismatches"])},
-            {"checks": [_check("Rust byte mismatches (UTF-8 and ASCII forms)", len(rust["byte_mismatches"]),
+            {"checks": [_check("Rust byte mismatches on vectors (UTF-8 and ASCII forms)", len(rust["byte_mismatches"]),
                                kind="cross_implementation"),
+                        _check("Rust byte mismatches on single floats, including decimal ties",
+                               len(rust["float_mismatches"]), kind="cross_implementation"),
                         _check("Rust refusal-code mismatches", len(rust["refusal_mismatches"]),
                                kind="cross_implementation")]},
-            tolerance=EXACT))
+            uncertainty=EXACT_U, tolerance=EXACT))
+        findings.append(finding(
+            RUST_TIES_CLAIM, "computational_pipeline",
+            {"decimal_ties": rust["decimal_ties"], "rust_shortest_differs": rust["shortest_differs_on_ties"]},
+            {"checks": [_check("decimal ties on which Rust's format!(\"{:e}\") digits differ from the specification",
+                               rust["shortest_differs_on_ties"], 1, "ge")]},
+            counterexample={"statement": "Rust's shortest float formatting yields the CPython repr digits",
+                            "witness": {"value": "1e15 + 0.25", "specification": serial.format_float(TIE_WITNESS),
+                                        "rust_shortest": rust["witness_rust_shortest"]}},
+            uncertainty=EXACT_U, tolerance=EXACT))
     else:
-        findings.append(finding("Rust canonical JSON is byte-identical to the specification and refuses the same inputs",
-                                "computational_pipeline", None, {}, expected_not_established=True))
+        findings.append(_rust_not_run(RUST_CANONICAL_CLAIM, "computational_pipeline", status, rust))
+        findings.append(_rust_not_run(RUST_TIES_CLAIM, "computational_pipeline", status, rust))
     findings.append(finding("Byte-identical canonical JSON holds for Julia, C++ and GPU-host implementations",
                             "computational_pipeline", None, {}, expected_not_established=True))
     fields = _fields(
-        "One canonical JSON encoding (sorted keys, no whitespace, UTF-8, shortest round-trip binary64 in CPython repr "
-        "form, safe integers, refusals) is reproducible byte for byte by a separately written implementation in "
-        "another language (Rust).",
-        "Encoding E: JSON values -> bytes per ciw.canonical-json.v1; identity = sha256(E(v)). Floats: shortest digits d "
-        "with decimal point position p, fixed form iff -4 < p <= 16.",
-        [f"{len(study['table'])} accepted and {len(study['refusals'])} refused vectors (binary64 limits, subnormals, -0.0, "
-         "Unicode, controls, nested keys, depth 64/65)", f"{study['floats_checked']} binary64 values for digit checks"],
-        "Bytes and sha256 digests of each encoder's output; refusal codes.",
-        "Spec, ciw.telemetry.canonical and the Rust probe agree on UTF-8 bytes; ciw.core.identities agrees with the "
-        "ASCII variant; refused inputs are refused by the spec and Rust.",
-        "Encode every vector with the spec reference, both CIW encoders and the Rust probe compiled at run time; "
-        "compare float digits with NumPy Dragon4; contrast with JCS formatting.",
+        "One canonical JSON encoding (sorted keys, no whitespace, UTF-8, shortest round-trip binary64 with decimal ties "
+        "to even in CPython repr layout, safe integers, refusals) is reproducible byte for byte by a separately "
+        "written implementation in another language (Rust), and CIW's existing Python encoders can be measured "
+        "against it.",
+        "Encoding E: JSON values -> bytes per ciw.canonical-json.v1; identity = sha256(E(v)). Floats: the fewest "
+        "digits k for which a k-digit decimal round-trips (monotone in k, found by bisection with exact integers); "
+        "the nearer of the two k-digit neighbours, even digit on a tie; fixed form iff -4 < decpt <= 16.",
+        [f"{n_vectors} accepted and {len(study['refusals'])} refused vectors (binary64 limits, subnormals, -0.0, "
+         "Unicode, controls, nested keys, depth 64/65, decimal ties)",
+         f"{n_floats} binary64 values: every vector float, 2000 random bit patterns (PCG64(1460)) and "
+         f"{len(study['ties'])} constructed decimal ties (PCG64(1461))", "5 hand-written specification examples"],
+        "Bytes and sha256 digests of each encoder's output; refusal codes; digit strings.",
+        "The reference encoder reproduces the hand-written examples; ciw.telemetry.canonical and the Rust probe "
+        "agree with it on UTF-8 bytes; ciw.core.identities agrees with the ASCII variant only; refused inputs are "
+        "refused by the reference and Rust; CPython and NumPy digits equal the exact rule.",
+        "Encode every vector and float with the reference encoder, both CIW encoders and the Rust probe compiled at "
+        "run time; compare digits with CPython repr and NumPy Dragon4; run Rust's own {:e} on decimal ties; contrast "
+        "with JCS formatting.",
         "T150 (bind FPGA identity records to this encoding), then migrate ciw.core.identities with a versioned hash "
         "change",
-        numerical_result=(f"{len(study['table'])} vectors, set digest {study['set_digest'][:16]}...; telemetry/identities "
-                          f"mismatches {len(study['mismatches']['ciw.telemetry.canonical'])}/"
-                          f"{len(study['mismatches']['ciw.core.identities.canonical_json'])}; ensure_ascii differs on "
-                          f"{len(study['ascii_differs'])} vectors; Rust "
-                          + (f"byte mismatches {len(rust['byte_mismatches'])}, refusal mismatches "
-                             f"{len(rust['refusal_mismatches'])}" if rust else "unavailable")
-                          + f"; float digit mismatches {study['digit_mismatch']}/{study['floats_checked']}."),
-        uncertainty=("Exact byte comparison. The Rust probe and the spec reference were both written for CIW, so their "
-                     "agreement is same-origin; float digit agreement between CPython and NumPy is independent but "
-                     "covers only the tested values."),
+        numerical_result=(f"{n_vectors} vectors, set digest {study['set_digest'][:16]}...; telemetry mismatches "
+                          f"{len(study['telemetry_mismatch'])} (vectors) and {study['float_telemetry_mismatch']} "
+                          f"(floats); identities differs from the specification on {len(study['differs_from_spec'])} "
+                          f"vectors and from the ASCII variant on {len(study['ascii_mismatch'])}; the two CIW encoders "
+                          f"differ on {len(study['encoder_differs'])} vectors; Rust "
+                          + (f"byte mismatches {len(rust['byte_mismatches'])} (vectors) and "
+                             f"{len(rust['float_mismatches'])}/{rust['floats']} (floats), refusal mismatches "
+                             f"{len(rust['refusal_mismatches'])}, own {{:e}} differs on "
+                             f"{rust['shortest_differs_on_ties']}/{rust['decimal_ties']} ties"
+                             if status == "ran" else f"not run ({rust})")
+                          + f"; CPython/NumPy digit mismatches {study['cpython_mismatch']}/{study['numpy_mismatch']} "
+                            f"of {n_floats}."),
+        uncertainty=("Exact byte comparison. The reference encoder, the Rust probe and the CIW encoders are all "
+                     "CIW-authored, so their agreement is same-origin; digit agreement with NumPy is independent but "
+                     "covers only the tested values (random bit patterns contain almost no decimal ties, hence the "
+                     "constructed ones)."),
         failure_modes_checked=["NaN/Infinity", "unsafe integers", "non-string keys (identity collision)",
                                "lone surrogates", "nesting depth", "ensure_ascii divergence", "U+007F and U+2028",
                                "Unicode normalization", "-0.0", "subnormals and binary64 limits",
-                               "exponent-switch boundaries", "JCS divergence"],
+                               "exponent-switch boundaries", "decimal ties (Rust {:e} rounds them up)",
+                               "reference encoder true by construction", "JCS divergence",
+                               "rustc absent (not established) versus probe broken (refuted)"],
         unresolved_assumptions=["ciw.core.identities.canonical_json remains the ASCII variant because changing it "
                                 "would change every retained identity", "Julia, C++ and GPU-host encoders were not run",
                                 "JCS formatting was implemented here from ECMA-262, not from an external JCS library"],
         provider_runtime_identity=_runtime_identity((MODULE, SERIAL), build))
-    return {"state": "completed" if rust is not None else "partial", "fields": fields, "findings": findings}
+    return {"state": _state(findings, status == "ran"), "fields": fields, "findings": findings}
 
 
 # =================================================================== T147
@@ -755,8 +1001,9 @@ def cpu_gpu_comparison(ctx):
     study = ctx.memo("t147-dots", kernels.batched_dot_study)
     out, bounds, exact = study["outputs"], study["bounds"], study["exact"]
     reference = out["f64-sequential"]
-    f64_policy = {"mode": "bound", "tolerance": bounds["f64-sequential"] + bounds["f64-blocked"]}
-    f32_policy = {"mode": "bound", "tolerance": bounds["f64-sequential"] + bounds["f32-blocked"]}
+    f64_tolerance = bounds["f64-sequential"] + bounds["f64-blocked"]
+    f32_tolerance = bounds["f64-sequential"] + bounds["f32-blocked"]
+    f64_policy, f32_policy = {"mode": "bound", "tolerance": f64_tolerance}, {"mode": "bound", "tolerance": f32_tolerance}
     bitwise = kernels.compare_outputs(reference, out["f64-blocked"], {"mode": "bitwise"})
     reorder = kernels.compare_outputs(reference, out["f64-blocked"], f64_policy)
     pairwise = kernels.compare_outputs(reference, out["f64-pairwise"],
@@ -764,19 +1011,20 @@ def cpu_gpu_comparison(ctx):
     f32_under_f64 = kernels.compare_outputs(reference, out["f32-blocked"], f64_policy)
     f32_under_f32 = kernels.compare_outputs(reference, out["f32-blocked"], f32_policy)
     against_exact = {name: float(np.max(np.abs(value - exact) / bounds[name])) for name, value in out.items()}
-    faulty = out["f64-blocked"].copy()
-    row, column = 17, 5
-    faulty[row] -= study["A"][row, column] * study["x"][column]  # a dropped partial product (lost update)
-    fault_f64 = kernels.compare_outputs(reference, faulty, f64_policy)
-    fault_f32 = kernels.compare_outputs(reference, faulty, f32_policy)
+    # Fault model: one partial product a_ij x_j dropped from a candidate row, at every (row, column).
+    products64 = study["A"] * study["x"]
+    products32 = (study["A"].astype(np.float32) * study["x"].astype(np.float32)).astype(np.float64)
+    power64 = kernels.dropped_product_power(reference, out["f64-blocked"], products64, f64_tolerance)
+    power32 = kernels.dropped_product_power(reference, out["f32-blocked"], products32, f32_tolerance)
     gpu = ctx.available("hardware:nvidia-gpu")
     ulp = kernels.ulp_distance(reference, out["f64-blocked"])
     summary = {name: {k: v for k, v in result.items() if k != "ratios"} for name, result in (
         ("bitwise f64 sequential vs blocked", bitwise), ("bound f64 sequential vs blocked", reorder),
         ("bound f64 sequential vs pairwise", pairwise), ("f32 blocked under f64 policy", f32_under_f64),
-        ("f32 blocked under f32 policy", f32_under_f32), ("dropped product under f64 policy", fault_f64),
-        ("dropped product under f32 policy", fault_f32))}
+        ("f32 blocked under f32 policy", f32_under_f32))}
     ctx.artifact_json("comparison-summary.json", {"comparisons": summary, "against_exact_max_ratio": against_exact,
+                                                  "dropped_product_power": {"float64 policy": power64,
+                                                                            "float32 policy": power32},
                                                   "depths": study["depths"], "max_ulp_f64_reorder": float(np.max(ulp)),
                                                   "gpu_present": gpu, "rows": study["rows"], "n": study["n"],
                                                   "lane_width": study["width"]})
@@ -788,6 +1036,13 @@ def cpu_gpu_comparison(ctx):
     ctx.artifact_text("difference-over-bound.svg", svg.line_plot(
         series, title="CPU-vs-CPU differences relative to the tolerance policy", xlabel="row (sorted)",
         ylabel="|difference| / policy bound", logy=True, markers=False))
+    missed, above32 = power32["largest_undetected"], power32["above_bound_witness"]
+    # Triangle inequality: an undetected fault satisfies |p| <= tol_i + |candidate_i - reference_i| + rounding
+    # (the kernel's margin 8u(|c_i| + |r_i| + |p|)), so its ratio to the row bound is at most 1 + that excess / tol_i.
+    f32_excess = (np.abs(out["f32-blocked"] - reference) + 8 * kernels.U64 * (
+        np.abs(out["f32-blocked"]) + np.abs(reference) + np.max(np.abs(products32), axis=1))) / f32_tolerance
+    f32_ratio_bound = 1.0 + float(np.max(f32_excess))
+    power_keys = ("faults", "undetected", "guarantee_violations", "undetected_above_bound")
     findings = [
         finding("CPU and GPU outputs agree under the tolerance policy on GPU hardware", "numerical", None, {},
                 expected_not_established=True),
@@ -796,13 +1051,17 @@ def cpu_gpu_comparison(ctx):
                 {"generator": {"name": "PCG64 128x1024 uniform batched dot products", "seed": 147},
                  "checks": [_check("rows differing bitwise (sequential vs 32-lane blocked)", bitwise["bitwise_differences"],
                                    1, "ge")]},
-                unit="rows of 128", tolerance=EXACT),
+                unit="rows of 128", uncertainty=EXACT_U, tolerance=EXACT),
         finding("Float64 reduction-order differences lie within the analytic error-bound policy", "numerical",
                 max(reorder["max_ratio"], pairwise["max_ratio"]),
                 {"checks": [_check("max |difference|/bound, sequential vs blocked and pairwise",
                                    max(reorder["max_ratio"], pairwise["max_ratio"]), 1.0, "le", kind="analytic"),
                             _check("max |output - exact|/bound over all orders", max(against_exact.values()), 1.0, "le",
                                    kind="analytic")]},
+                unit="fraction of the policy bound",
+                uncertainty={"kind": "truncation_bound", "value": 1.0,
+                             "basis": "worst-case bound gamma_k sum|a_j x_j| per output; the ratio is at most 1 by "
+                                      "construction of the bound"},
                 tolerance={"abs": 1e-9, "rel": 1e-6}),
         finding("Float32 results violate the float64 policy and satisfy the float32 policy", "numerical",
                 {"violations_under_f64_policy": f32_under_f64["violations"], "max_ratio_under_f32_policy":
@@ -810,39 +1069,73 @@ def cpu_gpu_comparison(ctx):
                 {"checks": [_check("rows violating the float64 policy", f32_under_f64["violations"], 1, "ge"),
                             _check("max |difference|/bound under the float32 policy", f32_under_f32["max_ratio"], 1.0,
                                    "le", kind="analytic")]},
+                uncertainty={"kind": "truncation_bound", "value": 1.0,
+                             "basis": "float32 bound with inputs rounded to float32 (depth + 2 roundings)"},
                 tolerance={"abs": 1e-9, "rel": 1e-6}),
-        finding("A dropped partial product is detected under both policies", "numerical",
-                {"f64_policy_violations": fault_f64["violations"], "f32_policy_violations": fault_f32["violations"]},
-                {"checks": [_check("violations under the float64 policy", fault_f64["violations"], 1, "ge"),
-                            _check("violations under the float32 policy", fault_f32["violations"], 1, "ge")]},
-                tolerance=EXACT),
+        finding("Dropped partial products larger than the policy bound plus the candidate's deviation from the "
+                "reference are detected under both policies", "numerical",
+                {"float64": {k: power64[k] for k in power_keys}, "float32": {k: power32[k] for k in power_keys}},
+                {"checks": [_check("float64 policy: faults above bound + |candidate - reference| left undetected",
+                                   power64["guarantee_violations"], kind="analytic"),
+                            _check("float32 policy: faults above bound + |candidate - reference| left undetected",
+                                   power32["guarantee_violations"], kind="analytic"),
+                            _check("float64 policy: undetected single dropped products (all 131072)",
+                                   power64["undetected"])]},
+                unit="faults", uncertainty=EXACT_U, tolerance=EXACT),
+        finding("The float32 policy misses dropped partial products up to about its bound", "numerical",
+                {"undetected": power32["undetected"], "faults": power32["faults"],
+                 "undetected_above_bound": power32["undetected_above_bound"],
+                 "max_undetected_ratio": power32["max_undetected_ratio"], "largest_undetected": missed,
+                 "above_bound_witness": above32},
+                {"checks": [_check("float32 policy: undetected single dropped products", power32["undetected"], 1, "ge"),
+                            _check("float32 policy: max undetected |p| / row bound <= 1 + max (|candidate - "
+                                   "reference| + rounding) / row bound", power32["max_undetected_ratio"],
+                                   f32_ratio_bound, "le", kind="analytic")]},
+                counterexample={"statement": "The float32 tolerance policy detects every dropped partial product larger "
+                                             "than its row bound",
+                                "witness": {"largest_undetected": missed, "above_bound": above32}},
+                uncertainty=EXACT_U, tolerance={"abs": 0, "rel": 1e-9}),
         finding("GPU/CPU agreement establishes industrial readiness", "industrial_readiness", None, {}),
     ]
     fields = _fields(
         "A comparison harness with an analytic tolerance policy separates legitimate reduction-order and precision "
-        "differences from faults; exercised CPU-against-CPU because no GPU is present.",
+        "differences from faults larger than the policy bound plus the candidate's own deviation; faults up to about "
+        "the bound can escape. Exercised CPU-against-CPU because no GPU is present.",
         "For a sum of terms each passing through k roundings, |computed - exact| <= gamma_k * sum|a_j x_j| with "
         "gamma_k = k u/(1 - k u), u = 2^-53 (float64) or 2^-24 (float32, inputs rounded). The policy tolerance for two "
-        "outputs is the sum of their bounds; bitwise mode compares bit patterns.",
+        "outputs is the sum of their bounds; bitwise mode compares bit patterns. A dropped term p is detected when "
+        "|p| > tolerance + |candidate - reference| (triangle inequality); smaller faults may escape.",
         ["128x1024 uniform[-1,1) matrix and vector, PCG64(147)", "orders: sequential, pairwise tree, 32-lane blocked "
-         "(sequential lanes then tree); precisions float64 and float32", "exact dot products by TwoProduct + math.fsum"],
+         "(sequential lanes then tree); precisions float64 and float32", "exact dot products by TwoProduct + math.fsum",
+         "all 131072 single dropped products per policy"],
         "Elementwise absolute differences, bitwise equality and ratios to the policy bound.",
         "Bitwise policy flags reordering; bound policy accepts it; float32 fails the float64 policy and passes its "
-        "own; a dropped product fails every policy.",
-        "Compute the dot products in four orders/precisions, compare with the harness under each policy, inject a "
-        "dropped-product fault.",
+        "own; faults larger than the policy bound plus the candidate's own deviation are detected; faults up to "
+        "about the bound can escape.",
+        "Compute the dot products in four orders/precisions, compare with the harness under each policy, and drop "
+        "each partial product in turn from the float64 and float32 candidates.",
         "Run T147 on a CUDA host (hardware:nvidia-gpu) with the same data and policy",
         numerical_result=(f"{bitwise['bitwise_differences']}/128 rows differ bitwise between float64 orders; max "
                           f"difference/bound {max(reorder['max_ratio'], pairwise['max_ratio']):.3g}; float32 violates "
                           f"the float64 policy on {f32_under_f64['violations']} rows and stays at "
-                          f"{f32_under_f32['max_ratio']:.3g} of its own bound; dropped product flagged on "
-                          f"{fault_f64['violations']} row(s). GPU present: {gpu} (no GPU kernel was run)."),
-        uncertainty="Bounds are worst-case (not probabilistic), so typical ratios are far below one; the harness has "
-                    "not seen GPU fused multiply-add or atomics ordering.",
-        failure_modes_checked=["reduction reordering", "precision reduction (float32)", "dropped partial product",
-                               "shape mismatch and nonfinite outputs (refused by the harness)"],
+                          f"{f32_under_f32['max_ratio']:.3g} of its own bound; single dropped products undetected: "
+                          f"{power64['undetected']}/{power64['faults']} (float64 policy), {power32['undetected']}/"
+                          f"{power32['faults']} (float32 policy, largest missed |a_j x_j| "
+                          f"{missed['magnitude'] if missed else 0:.3g} against row tolerance "
+                          f"{missed['row_tolerance'] if missed else 0:.3g}; undetected above the row bound: "
+                          f"{power64['undetected_above_bound']} (float64), {power32['undetected_above_bound']} "
+                          f"(float32{', ratio %.6g' % above32['ratio'] if above32 else ''})). "
+                          f"GPU present: {gpu} (no GPU kernel was run)."),
+        uncertainty="Bounds are worst-case (not probabilistic), so typical ratios are far below one; a worst-case "
+                    "policy can miss faults up to about its bound (the bound plus the candidate's own deviation); "
+                    "the harness has not seen GPU fused multiply-add or atomics ordering.",
+        failure_modes_checked=["reduction reordering", "precision reduction (float32)",
+                               "every single dropped partial product", "shape mismatch and nonfinite outputs "
+                               "(refused by the harness)"],
         unresolved_assumptions=["GPU reductions may use FMA and tree shapes not modelled by the 32-lane order",
-                                "No GPU hardware or driver was exercised"])
+                                "Only single dropped products were injected; other fault classes (duplicated terms, "
+                                "wrong operands) have their own detection limits", "No GPU hardware or driver was "
+                                "exercised"])
     return {"state": "partial", "fields": fields, "findings": findings}
 
 
@@ -852,8 +1145,9 @@ REDUCTION_POLICY = {
     "identity_bearing_sums": "exact: integer accumulation at scale 2^1074 with one final rounding (bitwise "
                              "order-independent; cross-checked with math.fsum)",
     "fixed_layout_arrays": "pairwise: fixed binary tree split at n//2 over the stored order (bitwise reproducible "
-                           "only for the same order and length)",
-    "streaming_accumulators": "neumaier: compensated, error <= 2u|S| + O(n u^2) sum|x|",
+                           "only for the same order and length); error <= gamma_{ceil(log2 n)} sum|x|",
+    "streaming_accumulators": "neumaier: compensated, error <= u|S| + gamma_{n-1}^2 sum|x| = u|S| + O(n^2 u^2) sum|x| "
+                              "(Ogita, Rump and Oishi 2005, Prop. 4.5); not order-invariant",
     "forbidden_for_identity": ["sequential float accumulation in unspecified order", "BLAS/numpy.sum (order is "
                                "implementation-defined)", "Kahan without the Neumaier branch (fails on large "
                                "cancelling terms)"],
@@ -873,11 +1167,23 @@ def _reduction_scaling() -> dict:
     return {"sizes": sizes, "abs_errors": out}
 
 
+def _superseded_bound_witness(xs) -> dict:
+    """Neumaier's error on the stored order against the earlier bound 2u|S| + 4 n u^2 sum|x|."""
+    exact = kernels.exact_fraction(xs)
+    abs_sum = float(kernels.exact_fraction([abs(x) for x in xs]))
+    error = abs(Fraction(kernels.sum_neumaier(xs)) - exact)
+    old = kernels.superseded_neumaier_bound(len(xs), abs_sum, float(exact))
+    new = kernels.error_bound("neumaier", len(xs), abs_sum, float(exact))
+    return {"n": len(xs), "error": float(error), "superseded_bound": old, "bound": new,
+            "ratio_to_superseded": float(error / Fraction(old)), "ratio_to_bound": float(error / Fraction(new))}
+
+
 @task("T148", changed_files=(MODULE, KERNELS, DOC), regression_tests=(f"{TESTS}::test_t148_reduction_policies",))
 def reduction_policies(ctx):
     datasets = kernels.reduction_datasets()
     study = kernels.permutation_study(datasets)
     scaling = _reduction_scaling()
+    old_bound = _superseded_bound_witness(datasets["absorbed-tiny-terms"])
     fsum_mismatch = sum(a != b for data in study.values()
                         for a, b in zip(data["algorithms"]["exact"]["results"], data["algorithms"]["fsum"]["results"]))
     exact_distinct = max(data["algorithms"]["exact"]["distinct_results"] for data in study.values())
@@ -890,7 +1196,7 @@ def reduction_policies(ctx):
                  for alg in kernels.REDUCTIONS} for d in study}
     ctx.artifact_json("permutation-study.json", {"datasets": {d: {"n": s["n"], "exact": s["exact"], "abs_sum": s["abs_sum"],
                                                                   "orders": s["orders"]} for d, s in study.items()},
-                                                 "algorithms": table})
+                                                 "algorithms": table, "superseded_neumaier_bound": old_bound})
     ctx.artifact_json("reduction-policy.json", REDUCTION_POLICY)
     ctx.artifact_text("error-scaling.svg", svg.line_plot(
         [(name, scaling["sizes"], errors) for name, errors in scaling["abs_errors"].items() if any(errors)]
@@ -898,6 +1204,7 @@ def reduction_policies(ctx):
         title="Absolute summation error, uniform[-1,1)", xlabel="n", ylabel="|computed - exact|", logx=True, logy=True))
     distinct_table = {d: {alg: study[d]["algorithms"][alg]["distinct_results"] for alg in kernels.REDUCTIONS}
                       for d in study}
+    rigorous = sorted(alg for alg in worst if alg != "kahan")
     findings = [
         finding("Correctly rounded exact accumulation is permutation-invariant", "numerical", exact_distinct,
                 {"generator": {"name": "PCG64 datasets and 24 permutations", "seed": 148},
@@ -907,14 +1214,14 @@ def reduction_policies(ctx):
                                            producer={"implementation": "ciw.lab.implementation_targets_kernels.sum_exact"},
                                            checker={"implementation": "cpython.math.fsum",
                                                     "revision": sys.version.split()[0]})},
-                unit="distinct results", tolerance=EXACT),
+                unit="distinct results", uncertainty=EXACT_U, tolerance=EXACT),
         finding("Fixed-order pairwise summation is reproducible for one order but not permutation-invariant", "numerical",
                 pairwise_distinct,
                 {"checks": [_check("replay of the same order differs", 0.0 if replay else 1.0),
                             _check("distinct pairwise results across permutations (uniform)", pairwise_distinct, 2, "ge")]},
                 counterexample={"statement": "Pairwise summation is order-independent",
                                 "witness": {"dataset": "uniform n=1024 PCG64(148)", "distinct_results": pairwise_distinct}},
-                unit="distinct results", tolerance=EXACT),
+                unit="distinct results", uncertainty=EXACT_U, tolerance=EXACT),
         finding("Kahan summation loses the sum [1, 1e100, 1, -1e100] that Neumaier summation keeps", "numerical",
                 {"kahan": kahan_case["kahan"]["first_order_result"], "neumaier": kahan_case["neumaier"]["first_order_result"],
                  "exact": study["kahan-counterexample"]["exact"]},
@@ -922,43 +1229,83 @@ def reduction_policies(ctx):
                             _check("Neumaier error", kahan_case["neumaier"]["first_order_result"] - 2.0)]},
                 counterexample={"statement": "Kahan compensated summation is accurate whenever Neumaier's is",
                                 "witness": {"input": [1.0, 1e100, 1.0, -1e100], "kahan": 0.0, "neumaier": 2.0}},
-                tolerance=EXACT),
-        finding("Observed errors of every algorithm lie within their analytic bounds", "numerical", worst,
-                {"checks": [_check(f"{alg}: max |error|/bound over datasets and permutations", ratio, 1.0, "le",
-                                   kind="analytic") for alg, ratio in sorted(worst.items())]},
+                uncertainty=EXACT_U, tolerance=EXACT),
+        finding("Observed errors of the sequential, pairwise, Neumaier and exact sums lie within their rigorous bounds",
+                "numerical", {alg: worst[alg] for alg in rigorous},
+                {"checks": [_check(f"{alg}: max |error|/bound over datasets and permutations", worst[alg], 1.0, "le",
+                                   kind="analytic") for alg in rigorous]},
+                unit="fraction of the bound",
+                uncertainty={"kind": "truncation_bound", "value": 1.0,
+                             "basis": "rigorous worst-case bounds (Higham 2002 ch. 4; Ogita, Rump and Oishi 2005); "
+                                      "errors are exact rationals"},
                 tolerance={"abs": 1e-12, "rel": 1e-6}),
+        finding("Observed Kahan errors lie within 2u sum|x| plus the declared second-order allowance", "numerical",
+                worst["kahan"],
+                {"checks": [_check(f"kahan: max |error| / (2u + {kernels.KAHAN_SECOND_ORDER} n u^2) sum|x|",
+                                   worst["kahan"], 1.0, "le")]},
+                unit="fraction of the allowance",
+                uncertainty={"kind": "truncation_bound", "value": 1.0,
+                             "basis": "first-order bound 2u sum|x| (Higham eq. 4.8) plus a declared, unproven "
+                                      "second-order constant"},
+                tolerance={"abs": 1e-12, "rel": 1e-6}),
+        finding("The bound 2u|S| + 4n u^2 sum|x| does not bound Neumaier summation", "numerical",
+                {"n": old_bound["n"], "ratio_to_superseded_bound": old_bound["ratio_to_superseded"],
+                 "ratio_to_rigorous_bound": old_bound["ratio_to_bound"]},
+                {"checks": [_check("Neumaier error / (2u|S| + 4n u^2 sum|x|) on absorbed tiny terms",
+                                   old_bound["ratio_to_superseded"], 1.0, "ge"),
+                            _check("Neumaier error / (u|S| + gamma_{n-1}^2 sum|x|) on the same input",
+                                   old_bound["ratio_to_bound"], 1.0, "le", kind="analytic")]},
+                counterexample={"statement": "Neumaier summation error is at most 2u|S| + 4n u^2 sum|x|",
+                                "witness": {"input": "[1] + 1000 x [0.7u(1 + 2^-20)] + [-1]", "n": old_bound["n"],
+                                            "ratio": old_bound["ratio_to_superseded"]}},
+                unit="error over bound",
+                uncertainty=_roundoff(0.0, "exact rational error; ratios rounded once to binary64"),
+                tolerance={"abs": 1e-9, "rel": 1e-6}),
         finding("Distinct results under permutation for each algorithm and dataset", "numerical", distinct_table,
-                {"generator": {"name": "PCG64 permutations", "seed": 1480, "orders": 25}}, tolerance=EXACT),
+                {"generator": {"name": "PCG64 permutations", "seed": 1480, "orders": 25},
+                 "checks": [_check("exact accumulation: distinct results minus one, worst dataset",
+                                   max(t["exact"] for t in distinct_table.values()) - 1),
+                            _check("sequential summation: distinct results on the cancelling dataset",
+                                   distinct_table["cancelling"]["sequential"], 2, "ge")]},
+                unit="distinct results", uncertainty=EXACT_U, tolerance=EXACT),
         finding("Deterministic reduction policy record", "provenance", REDUCTION_POLICY,
-                {"derivation": "docs/lab/IMPLEMENTATION_TARGETS.md#reduction-policies (Higham 2002, ch. 4)"},
-                tolerance=EXACT),
+                {"derivation": "docs/lab/IMPLEMENTATION_TARGETS.md#reduction-policies (Higham 2002, ch. 4; Ogita, "
+                               "Rump and Oishi 2005)"}, uncertainty=DESIGN_U, tolerance=EXACT),
     ]
     fields = _fields(
         "Only a correctly rounded (exact-accumulation) sum is bitwise independent of summation order; fixed-tree "
         "pairwise sums are reproducible only for a fixed order; compensated sums are accurate but not order-invariant, "
         "and plain Kahan fails on large cancelling terms.",
-        "Bounds (u = 2^-53): sequential gamma_{n-1} sum|x|; pairwise gamma_{ceil(log2 n)} sum|x|; Kahan 2u sum|x| + "
-        "O(n u^2) sum|x|; Neumaier 2u|S| + O(n u^2) sum|x| (second-order terms taken as 4 n u^2 sum|x|); exact "
-        "rounding u|S|. Exact sums by integer accumulation at scale 2^1074.",
+        "Rigorous bounds (u = 2^-53, S = sum|x|, s = exact sum): sequential gamma_{n-1} S; pairwise "
+        "gamma_{ceil(log2 n)} S; Neumaier u|s| + gamma_{n-1}^2 S (its compensation terms are those of Sum2); exact "
+        "rounding u|s|. Kahan: 2u S + O(n u^2) S, checked with a declared allowance 4 n u^2 S. Exact sums by integer "
+        "accumulation at scale 2^1074.",
         ["uniform[-1,1) n=1024", "positive values 10^U(-8,8) n=1024", "cancelling +/-10^U(0,16) pairs plus noise n=1024",
-         "[1, 1e100, 1, -1e100]", "24 PCG64(1480) permutations of each"],
+         "[1, 1e100, 1, -1e100]", "absorbed tiny terms [1] + 1000 x [0.7u(1 + 2^-20)] + [-1]",
+         "24 PCG64(1480) permutations of each"],
         "Exact rational errors of each floating-point result; count of distinct bit patterns across orders.",
-        "Exact accumulation: one result per dataset and equal to math.fsum; every error within its bound.",
-        "Sum each permutation with five algorithms; compare with exact rationals and math.fsum; retain the policy.",
+        "Exact accumulation: one result per dataset and equal to math.fsum; every error within its bound; the "
+        "earlier O(n u^2) Neumaier bound fails where the second-order term grows like n^2.",
+        "Sum each permutation with five algorithms; compare with exact rationals and math.fsum; test the earlier "
+        "Neumaier bound on absorbed tiny terms; retain the policy.",
         "T147 (use the policy to set GPU comparison tolerances), then T155 (formal specification of the policy)",
         numerical_result=(f"Distinct results across 25 orders: exact {exact_distinct}, pairwise (uniform) "
                           f"{pairwise_distinct}; exact vs math.fsum mismatches {fsum_mismatch}; Kahan on "
                           f"[1, 1e100, 1, -1e100] = {kahan_case['kahan']['first_order_result']}, Neumaier = "
                           f"{kahan_case['neumaier']['first_order_result']}; worst error/bound "
-                          + ", ".join(f"{k} {v:.3g}" for k, v in sorted(worst.items())) + "."),
+                          + ", ".join(f"{k} {v:.3g}" for k, v in sorted(worst.items()))
+                          + f"; Neumaier error is {old_bound['ratio_to_superseded']:.3g} times the earlier bound "
+                            f"2u|S| + 4n u^2 S at n = {old_bound['n']} and {old_bound['ratio_to_bound']:.3g} of the "
+                            "rigorous one."),
         uncertainty="Exact arithmetic; permutation counts are samples (25 orders), so invariance of non-exact "
                     "algorithms is only refuted, never proven, and the exact algorithm's invariance is a theorem "
-                    "sampled here.",
+                    "sampled here. The Kahan allowance constant is declared, not proven.",
         failure_modes_checked=["order dependence", "catastrophic cancellation", "Kahan large-term failure",
-                               "bound violation", "exact/fsum disagreement"],
-        unresolved_assumptions=["The second-order constant in the compensated bounds is conservative, not tight",
+                               "second-order growth of compensated error (absorbed tiny terms)", "bound violation",
+                               "exact/fsum disagreement"],
+        unresolved_assumptions=["The Kahan second-order constant (4) is a policy allowance without proof",
                                 "Parallel (multi-thread) reductions are not exercised"])
-    return {"state": "completed", "fields": fields, "findings": findings}
+    return {"state": _state(findings), "fields": fields, "findings": findings}
 
 
 # =================================================================== T149
@@ -980,12 +1327,6 @@ def fpga_telemetry(ctx):
     frame = fpga.encode_frame(123456, 987654321, 7, [1, -2, 3, 2 ** 31 - 1])
     bits = len(frame) * 8
 
-    def corrupted(positions):
-        data = bytearray(frame)
-        for p in positions:
-            data[p // 8] ^= 1 << (p % 8)
-        return bytes(data)
-
     def detected(data):
         try:
             fpga.decode_frame(data)
@@ -993,16 +1334,21 @@ def fpga_telemetry(ctx):
         except fpga.TelemetryRefusal:
             return True
 
-    single = sum(detected(corrupted([p])) for p in range(bits))
-    burst_total = burst_detected = 0
-    for length in range(2, 33):
-        for start in range(0, bits - length + 1):
-            interior = [start + i for i in range(1, length - 1) if rng.random() < 0.5]
-            burst_total += 1
-            burst_detected += detected(corrupted([start, *interior, start + length - 1]))
+    single = sum(detected(fpga._flip(frame, [p])) for p in range(bits))
     random_total = 5000
-    random_detected = sum(detected(corrupted(list(rng.choice(bits, int(rng.integers(2, 12)), replace=False))))
+    random_detected = sum(detected(fpga._flip(frame, list(rng.choice(bits, int(rng.integers(2, 12)), replace=False))))
                           for _ in range(random_total))
+    # Exact burst analysis: every 32-bit window of single-bit syndromes must be linearly independent.
+    bursts = fpga.burst_rank_deficient_windows(frame)
+    big_endian = frame[:-4] + fpga.crc32(frame[:-4]).to_bytes(4, "big")
+    bursts_be = fpga.burst_rank_deficient_windows(big_endian, trailer_byteorder="big")
+    # Witness taken inside the payload, so every header check passes and only the CRC could have refused it.
+    bursts_msb = fpga.burst_rank_deficient_windows(frame, msb_first=True, witness_from=8 * fpga.HEADER.size)
+    be_escapes = bursts_be["witness"] is not None and fpga.frame_check(
+        fpga._flip(big_endian, bursts_be["witness"]), "big") == 0
+    msb_escapes = bursts_msb["witness"] is not None and detected(
+        fpga._flip(frame, bursts_msb["witness"], msb_first=True)) is False
+    body = fpga.HEADER.pack(fpga.MAGIC, fpga.FRAME_VERSION, fpga.TELEMETRY, 0, 1, 0, 7, 2, 8)
     refusals = [
         _refusal("decode a forged command frame (type 0x80)", "command_path_refused",
                  lambda: fpga.decode_frame(fpga.forge_frame(0x80, 0))),
@@ -1021,20 +1367,31 @@ def fpga_telemetry(ctx):
                  lambda: fpga.validate_interface(dict(fpga.INTERFACE, fields=fpga.INTERFACE["fields"] + [
                      {"name": "write_enable", "direction": "device_to_host"}]))),
         _refusal("truncated frame", "truncated_frame", lambda: fpga.decode_frame(frame[:20])),
+        _refusal("valid CRC, payload_bytes not 4 x channel count", "length_mismatch",
+                 lambda: fpga.decode_frame(fpga.forge_frame(fpga.TELEMETRY, 0, payload_bytes=12))),
+        _refusal("valid CRC, header without payload (trailing bytes missing)", "length_mismatch",
+                 lambda: fpga.decode_frame(body + fpga.TRAILER.pack(fpga.crc32(body)))),
+        _refusal("valid CRC, magic 'XXXX'", "bad_magic",
+                 lambda: fpga.decode_frame(fpga.forge_frame(fpga.TELEMETRY, 0, magic=b"XXXX"))),
+        _refusal("valid CRC, frame version 2", "unsupported_version",
+                 lambda: fpga.decode_frame(fpga.forge_frame(fpga.TELEMETRY, 0, version=2))),
     ]
     sending = sorted(name for name in dir(fpga.TelemetryReceiver) if not name.startswith("_")
                      and (fpga._FORBIDDEN_NAME.search(name) or name.startswith(("send", "transmit"))))
     ctx.artifact_json("telemetry-interface.json", fpga.INTERFACE)
     ctx.artifact_json("frame-example.json", {"hex": frame.hex(), "decoded": fpga.decode_frame(frame),
-                                             "header_bytes": fpga.HEADER.size, "crc_bytes": fpga.TRAILER.size})
-    ctx.artifact_json("error-detection.json", {"frame_bits": bits, "single_bit": [single, bits],
-                                               "bursts_2_to_32": [burst_detected, burst_total],
-                                               "random_2_to_11_bit": [random_detected, random_total]})
+                                             "header_bytes": fpga.HEADER.size, "crc_bytes": fpga.TRAILER.size,
+                                             "crc_byte_order": "little"})
+    ctx.artifact_json("error-detection.json", {
+        "frame_bits": bits, "single_bit": [single, bits], "random_2_to_11_bit": [random_detected, random_total],
+        "burst_windows_32": {"little_endian_lsb_first": bursts, "big_endian_trailer_lsb_first": bursts_be,
+                             "little_endian_msb_first_numbering": bursts_msb}})
     findings = [
         finding("Telemetry frames round-trip every header field and channel bit-exactly", "computational_pipeline",
                 roundtrip_failures,
                 {"generator": {"name": "PCG64 random frames", "seed": 149, "frames": 400},
-                 "checks": [_check("round-trip failures", roundtrip_failures)]}, unit="failures", tolerance=EXACT),
+                 "checks": [_check("round-trip failures", roundtrip_failures)]}, unit="failures",
+                uncertainty=EXACT_U, tolerance=EXACT),
         finding("CIW table-driven CRC-32 agrees with zlib and the catalogue check value", "numerical",
                 {"messages": len(messages), "mismatches": crc_mismatch, "check_value": f"{fpga.crc32(b'123456789'):#010x}"},
                 {"checks": [_check("CRC-32(b'123456789') - 0xCBF43926", fpga.crc32(b"123456789") - 0xCBF43926,
@@ -1042,52 +1399,87 @@ def fpga_telemetry(ctx):
                  "independent_check": dict(_check("mismatches against zlib.crc32 on random messages", crc_mismatch),
                                            producer={"implementation": "ciw.lab.implementation_targets_fpga.crc32"},
                                            checker={"implementation": "zlib.crc32", "revision": zlib.ZLIB_RUNTIME_VERSION})},
-                tolerance=EXACT),
-        finding("Every single-bit error and every sampled 2-32 bit burst in a frame is refused by the decoder", "numerical",
-                {"single_bit": [single, bits], "bursts": [burst_detected, burst_total],
-                 "random_multi_bit": [random_detected, random_total]},
-                {"checks": [_check("undetected single-bit errors", bits - single, kind="analytic"),
-                            _check("undetected bursts of length <= 32", burst_total - burst_detected, kind="analytic"),
+                uncertainty=EXACT_U, tolerance=EXACT),
+        finding("Every burst of at most 32 bits and every single-bit error in a frame is refused by the decoder",
+                "numerical",
+                {"single_bit": [single, bits], "burst_windows": bursts["windows"],
+                 "rank_deficient_windows": len(bursts["deficient"]), "random_multi_bit": [random_detected, random_total]},
+                {"checks": [_check("undetected single-bit errors", bits - single),
+                            _check("32-bit windows (LSB-first bit order) whose syndromes are linearly dependent",
+                                   len(bursts["deficient"]), kind="analytic"),
                             _check("undetected random 2-11 bit errors", random_total - random_detected)]},
-                tolerance=EXACT),
-        finding("Decoder, encoder and interface validator refuse every command or write path", "computational_pipeline",
-                sum(c["passed"] for c in refusals), {"checks": refusals}, unit="refusals", tolerance=EXACT),
+                uncertainty=EXACT_U, tolerance=EXACT),
+        finding("A big-endian CRC trailer lets a 32-bit burst across the payload/CRC boundary escape", "numerical",
+                {"rank_deficient_windows": len(bursts_be["deficient"]), "first_window": (bursts_be["deficient"] or [None])[0],
+                 "witness_bits": bursts_be["witness"]},
+                {"checks": [_check("rank-deficient 32-bit windows with the trailer stored big-endian",
+                                   len(bursts_be["deficient"]), 1, "ge"),
+                            _check("witness error pattern leaves the big-endian CRC check at zero", float(be_escapes),
+                                   1, "ge")]},
+                counterexample={"statement": "Appending CRC-32 in either byte order keeps the 32-bit burst guarantee",
+                                "witness": {"frame": "encode_frame(123456, 987654321, 7, [1, -2, 3, 2**31 - 1])",
+                                            "trailer": "big-endian", "flipped_bits": bursts_be["witness"]}},
+                uncertainty=EXACT_U, tolerance=EXACT),
+        finding("The burst guarantee holds only in the LSB-first bit order of the reflected CRC", "numerical",
+                {"rank_deficient_windows_msb_first": len(bursts_msb["deficient"]), "witness_bits": bursts_msb["witness"]},
+                {"checks": [_check("rank-deficient 32-bit windows when bits are numbered MSB-first within bytes",
+                                   len(bursts_msb["deficient"]), 1, "ge"),
+                            _check("decoder accepts the MSB-first witness burst inside the payload",
+                                   float(msb_escapes), 1, "ge")]},
+                counterexample={"statement": "CRC-32 detects every 32-bit burst whatever order the link sends bits in",
+                                "witness": {"numbering": "bit p = bit 7 - p % 8 of byte p // 8",
+                                            "flipped_bits": bursts_msb["witness"]}},
+                uncertainty=EXACT_U, tolerance=EXACT),
+        finding("Decoder, encoder and interface validator refuse every command, write or malformed path",
+                "computational_pipeline", sum(c["passed"] for c in refusals), {"checks": refusals}, unit="refusals",
+                uncertainty=EXACT_U, tolerance=EXACT),
         finding("Host receiver exposes no sending or writing method", "computational_pipeline", sending,
                 {"checks": [_check("public receiver attributes naming a send/write/command path", len(sending))]},
-                tolerance=EXACT),
+                uncertainty=EXACT_U, tolerance=EXACT),
         finding("The frame format works on real FPGA links", "physical", None, {}),
         finding("A telemetry-only interface guarantees the FPGA cannot actuate the machine", "machine_safety", None, {}),
     ]
     fields = _fields(
         "A read-only frame (header, sequence, timestamp, clock id, raw payload, CRC-32) with a single telemetry frame "
         "type and no host-to-device field lets the host refuse every corrupted frame and every command or write path "
-        "before any payload is used.",
-        "Frame = 28-byte big-endian header | 4*c bytes int32 payload | CRC-32/IEEE. CRC-32 detects all single-bit "
-        "errors and all bursts of length <= 32 (degree-32 generator with nonzero constant term); other patterns "
-        "escape with probability about 2^-32.",
+        "before any payload is used, provided the CRC is appended in the order that keeps the frame one codeword.",
+        "Frame = 28-byte big-endian header | 4*c bytes int32 payload | CRC-32/IEEE (reflected) appended little-endian. "
+        "Bit p is bit p % 8 of byte p // 8 (LSB first, the reflected CRC's polynomial order). An error pattern e "
+        "escapes iff its syndrome sum is zero; if the 32 single-bit syndromes of every 32-bit window are linearly "
+        "independent over GF(2), no burst of length <= 32 escapes. Other patterns escape with probability about 2^-32.",
         ["400 PCG64(149) random frames", "500 random messages for CRC comparison", "one 48-byte frame for exhaustive "
-         "single-bit, burst and 5000 random corruptions"],
-        "Decoder outcomes (accepted record or refusal code); no device was attached.",
-        "Round trip exact; CRC matches zlib and 0xCBF43926; all single-bit errors and all sampled bursts of 2-32 bits "
-        "refused; command and write paths refused; the receiver has no sending method.",
-        "Encode/decode random frames, compare CRC implementations, corrupt a frame exhaustively and at random, forge "
-        "command frames and specs.",
+         "single-bit, exact 32-bit-window rank analysis and 5000 random corruptions", "13 forged frames and specs"],
+        "Decoder outcomes (accepted record or refusal code) and GF(2) ranks of syndrome windows; no device was attached.",
+        "Round trip exact; CRC matches zlib and 0xCBF43926; all single-bit errors refused; every 32-bit window has "
+        "full rank with the little-endian trailer (not with a big-endian trailer, nor in MSB-first numbering); "
+        "command, write and malformed frames refused; the receiver has no sending method.",
+        "Encode/decode random frames, compare CRC implementations, flip every bit, compute window ranks for three "
+        "layouts and extract escaping bursts, corrupt at random, forge command frames, headers and specs.",
         "T152 (drive the decoder with a lossy, jittered stream)",
         numerical_result=(f"Round-trip failures {roundtrip_failures}/400; CRC mismatches {crc_mismatch}/500; single-bit "
-                          f"{single}/{bits}, bursts {burst_detected}/{burst_total}, random {random_detected}/"
-                          f"{random_total} refused; {sum(c['passed'] for c in refusals)}/{len(refusals)} command/write "
+                          f"{single}/{bits} refused; rank-deficient 32-bit windows {len(bursts['deficient'])}/"
+                          f"{bursts['windows']} (little-endian trailer), {len(bursts_be['deficient'])} (big-endian), "
+                          f"{len(bursts_msb['deficient'])} (MSB-first numbering); random {random_detected}/{random_total} "
+                          f"refused; {sum(c['passed'] for c in refusals)}/{len(refusals)} command/write/malformed "
                           "refusals."),
-        uncertainty="Exhaustive for single-bit errors on one frame; bursts use one random interior per (length, start); "
-                    "random corruptions escape CRC-32 with probability 2^-32 each.",
+        uncertainty="Exact: exhaustive for single-bit errors and exact (rank) for bursts on one frame layout; random "
+                    "corruptions escape CRC-32 with probability 2^-32 each.",
         failure_modes_checked=["command frame types", "write-request flag", "reserved flags", "unknown types",
-                               "host-to-device spec fields", "truncation", "bit errors and bursts", "length mismatch"],
+                               "host-to-device spec fields", "truncation", "length mismatch", "bad magic",
+                               "unsupported version", "bit errors", "bursts across the payload/CRC boundary",
+                               "trailer byte order", "bit numbering on the link"],
         unresolved_assumptions=["No FPGA, HDL implementation or physical link exists; the device side is simulated",
-                                "A unidirectional physical transport (TX-only UART, multicast UDP) is assumed but not "
-                                "demonstrated", "CRC protects against noise, not against a malicious sender"])
-    return {"state": "completed", "fields": fields, "findings": findings}
+                                "The link is assumed to send bits LSB first (as UART and Ethernet do); an MSB-first "
+                                "link loses the burst guarantee", "A unidirectional physical transport (TX-only UART, "
+                                "multicast UDP) is assumed but not demonstrated",
+                                "CRC protects against noise, not against a malicious sender"])
+    return {"state": _state(findings), "fields": fields, "findings": findings}
 
 
 # =================================================================== T150
+PLACEHOLDER_INSTALLATION = hashlib.sha256(b"placeholder toolchain installation manifest (not executed)").hexdigest()
+
+
 def _synthetic_build(version: str, seed: int) -> dict:
     constraints = {"pins.xdc": f"# placeholder constraints {version}\nset_property PACKAGE_PIN A1 [get_ports clk]\n".encode(),
                    "timing.xdc": f"create_clock -period 10.000 [get_ports clk] ;# {version}\n".encode()}
@@ -1095,10 +1487,14 @@ def _synthetic_build(version: str, seed: int) -> dict:
                "rtl/crc32.v": b"// placeholder CRC-32 source\nmodule crc32(); endmodule\n"}
     bitstream = fpga.synthetic_bitstream(seed)
     record = fpga.bitstream_identity(bitstream, toolchain={"name": "placeholder-toolchain (not executed)",
-                                                           "version": "0.0.1"},
+                                                           "version": "0.0.1",
+                                                           "installation_sha256": PLACEHOLDER_INSTALLATION},
                                      part="placeholder-part", constraints=constraints, source_files=sources,
                                      synthesis_options={"seed": seed, "version": version}, synthetic=True)
     return {"bitstream": bitstream, "constraints": constraints, "sources": sources, "record": record}
+
+
+FLOATING_VERSIONS = ("latest", ">=2024.1", "2024.1.x", "1.0-latest", "2023.2_nightly", "2024.1-rc")
 
 
 @task("T150", changed_files=(MODULE, FPGA, SERIAL, DOC), regression_tests=(f"{TESTS}::test_t150_bitstream_identity",))
@@ -1114,12 +1510,16 @@ def bitstream_identity(ctx):
         body["record_sha256"] = hashlib.sha256(serial.canonical_bytes(body)).hexdigest()
         return body
 
+    def toolchain(**changes):
+        return dict(record["toolchain"], **changes)
+
     flipped = bytearray(bitstream)
     flipped[len(flipped) // 2] ^= 0x01
     changed_constraints = dict(build["constraints"], **{"timing.xdc": b"create_clock -period 8.000 [get_ports clk]\n"})
     added_constraints = dict(build["constraints"], **{"extra.xdc": b"# added\n"})
     changed_sources = dict(build["sources"], **{"rtl/crc32.v": b"// edited\n"})
     missing = {k: v for k, v in record.items() if k != "toolchain"}
+    no_installation = {k: v for k, v in record["toolchain"].items() if k != "installation_sha256"}
     mutations = [
         _refusal("one flipped bitstream bit", "bitstream_digest_mismatch",
                  lambda: fpga.validate_identity(record, bitstream=bytes(flipped))),
@@ -1131,57 +1531,92 @@ def bitstream_identity(ctx):
                  lambda: fpga.validate_identity(record, constraints=added_constraints)),
         _refusal("edited source file", "source_tree_mismatch",
                  lambda: fpga.validate_identity(record, source_files=changed_sources)),
-        _refusal("floating toolchain version 'latest'", "floating_toolchain_version",
-                 lambda: fpga.validate_identity(edited(toolchain={"name": "placeholder-toolchain", "version": "latest"}))),
-        _refusal("toolchain version range '>=2024.1'", "floating_toolchain_version",
-                 lambda: fpga.validate_identity(edited(toolchain={"name": "placeholder-toolchain", "version": ">=2024.1"}))),
+        *[_refusal(f"floating toolchain version {version!r}", "floating_toolchain_version",
+                   lambda version=version: fpga.validate_identity(edited(toolchain=toolchain(version=version))))
+          for version in FLOATING_VERSIONS],
+        _refusal("toolchain version with a trailing newline '2024.1\\n'", "floating_toolchain_version",
+                 lambda: fpga.validate_identity(edited(toolchain=toolchain(version="2024.1\n")))),
+        _refusal("toolchain version as the number 2024.1, not a string", "floating_toolchain_version",
+                 lambda: fpga.validate_identity(edited(toolchain=toolchain(version=2024.1)))),
+        _refusal("toolchain without an installation digest", "unpinned_toolchain_installation",
+                 lambda: fpga.validate_identity(edited(toolchain=no_installation))),
+        _refusal("installation digest with a trailing newline", "unpinned_toolchain_installation",
+                 lambda: fpga.validate_identity(edited(toolchain=toolchain(
+                     installation_sha256=PLACEHOLDER_INSTALLATION + "\n")))),
         _refusal("part changed without recomputing the record digest", "record_digest_mismatch",
                  lambda: fpga.validate_identity(dict(record, part="other-part"))),
         _refusal("record without toolchain", "missing_field", lambda: fpga.validate_identity(missing)),
         _refusal("uppercase digest", "bad_digest_format",
                  lambda: fpga.validate_identity(dict(record, bitstream_sha256=record["bitstream_sha256"].upper()))),
+        _refusal("source-tree digest 'TBD'", "bad_digest_format",
+                 lambda: fpga.validate_identity(edited(source_tree={"kind": "manifest-sha256", "value": "TBD"}))),
+        _refusal("source-tree digest with a trailing newline", "bad_digest_format",
+                 lambda: fpga.validate_identity(edited(source_tree={"kind": "manifest-sha256",
+                                                                    "value": record["source_tree"]["value"] + "\n"}))),
+        _refusal("source tree given as a bare string, with source files supplied", "missing_field",
+                 lambda: fpga.validate_identity(edited(source_tree="unknown"), source_files=build["sources"])),
+        _refusal("synthetic flag 'no' instead of a boolean", "bad_field_type",
+                 lambda: fpga.validate_identity(edited(synthetic="no"))),
+        _refusal("negative bitstream size", "bad_field_type",
+                 lambda: fpga.validate_identity(edited(bitstream_bytes=-1))),
+        _refusal("pinned pre-release version '2024.1-rc2' (positive control)", "none",
+                 lambda: fpga.validate_identity(edited(toolchain=toolchain(version="2024.1-rc2")))),
     ]
     ctx.artifact_json("bitstream-identity.json", record)
     ctx.artifact_json("identity-schema.json", {"schema": fpga.IDENTITY_SCHEMA, "fields": list(fpga.IDENTITY_FIELDS)
                                                + ["record_sha256"], "toolchain_version_pattern": fpga._PINNED_VERSION.pattern,
+                                               "toolchain_fields": ["name", "version", "installation_sha256"],
                                                "canonical_encoding": serial.SPEC_ID})
+    refused = sum(c["passed"] for c in mutations if c["expected_refusal"] != "none")
+    controls = sum(c["passed"] for c in mutations if c["expected_refusal"] == "none")
     findings = [
         finding("Bitstream identity record binds bitstream, toolchain, constraints and source tree", "provenance",
-                {"record_sha256": record["record_sha256"], "refused_mutations": sum(c["passed"] for c in mutations)},
+                {"record_sha256": record["record_sha256"], "refused_mutations": refused,
+                 "accepted_positive_controls": controls},
                 {"generator": {"name": "seeded synthetic placeholder bitstream", "seed": 150},
                  "checks": mutations + [_check("record digest differs on regeneration",
                                                0.0 if repeat == record else 1.0)]},
-                tolerance=EXACT),
+                uncertainty=EXACT_U, tolerance=EXACT),
         finding("A real bitstream with this identity exists and is loaded on hardware", "physical", None, {}),
         finding("The bitstream is approved for production deployment", "production_acceptance", None, {}),
     ]
     decision = _refusal("deployment decision for a synthetic record", "synthetic_bitstream",
                         lambda: fpga.deployment_decision(record))
     findings.insert(1, finding("Deployment of a synthetic placeholder bitstream is refused", "computational_pipeline",
-                               decision["observed_refusal"], {"checks": [decision]}, tolerance=EXACT))
+                               decision["observed_refusal"], {"checks": [decision]}, uncertainty=EXACT_U,
+                               tolerance=EXACT))
     fields = _fields(
-        "An identity record over canonical JSON can bind a bitstream's sha256 to its exact toolchain version, "
-        "constraint files and source tree, so that a change to any of them is detected when the changed artifact is "
-        "checked against the record.",
+        "An identity record over canonical JSON can bind a bitstream's sha256 to its exact toolchain version and "
+        "installation digest, constraint files and source tree, so that a change to any of them is detected when the "
+        "changed artifact is checked against the record.",
         "record_sha256 = sha256(E(record without record_sha256)), E = ciw.canonical-json.v1; constraints_sha256 = "
         "sha256(E({file: sha256})); source tree = sha256(E({path: sha256})); toolchain version must match "
-        f"{fpga._PINNED_VERSION.pattern}.",
+        f"{fpga._PINNED_VERSION.pattern} and the toolchain carries installation_sha256; every digest field is 64 "
+        "lowercase hex digits, sizes are nonnegative integers and the synthetic flag is a boolean.",
         ["Seeded synthetic placeholder bitstream (prefix CIW-SYNTHETIC-BITSTREAM-NOT-A-CONFIGURATION)",
-         "placeholder constraint and source files"],
+         "placeholder constraint and source files", "placeholder toolchain installation digest"],
         "Validator outcomes over the record and supplied artifacts; no FPGA toolchain ran.",
-        "The unmodified record validates and regenerates identically; each of ten mutations is refused with its code; "
-        "deployment is refused.",
-        "Build the record, regenerate it, apply ten mutations, request a deployment decision.",
+        f"The unmodified record validates and regenerates identically; each of {len(mutations) - 1} mutations is "
+        "refused with its code and the pinned pre-release control is accepted; deployment is refused.",
+        f"Build the record, regenerate it, apply {len(mutations) - 1} mutations and one positive control, request a "
+        "deployment decision.",
         "T151 (compatibility and rollback records referencing these identities)",
-        numerical_result=f"record_sha256 {record['record_sha256'][:16]}...; {sum(c['passed'] for c in mutations)}/10 "
-                         "mutations refused; deployment refused (synthetic_bitstream).",
+        numerical_result=f"record_sha256 {record['record_sha256'][:16]}...; {refused}/{len(mutations) - 1} mutations "
+                         f"refused with their codes; {controls}/1 pinned pre-release accepted; deployment refused "
+                         "(synthetic_bitstream).",
         uncertainty="Exact digests; the placeholder bitstream has no hardware meaning.",
         failure_modes_checked=["bitstream bit flip", "truncation", "constraint edit/addition", "source edit",
-                               "floating toolchain version", "unrecomputed digest", "missing field", "digest format"],
+                               "floating toolchain versions (latest, ranges, .x, nightly, unnumbered rc, trailing newline)",
+                               "non-string toolchain version", "toolchain without installation digest",
+                               "unrecomputed digest", "missing field",
+                               "digest format (uppercase, TBD, trailing newline)", "malformed source tree",
+                               "non-boolean synthetic flag",
+                               "negative size"],
         unresolved_assumptions=["No real bitstream, toolchain log or device part exists here",
                                 "Toolchain determinism (same inputs -> same bitstream) is not established",
-                                "Detection of unseen changes relies on sha256 collision resistance"])
-    return {"state": "completed", "fields": fields, "findings": findings}
+                                "How installation_sha256 is computed for a vendor toolchain (which files) is not "
+                                "specified here", "Detection of unseen changes relies on sha256 collision resistance"])
+    return {"state": _state(findings), "fields": fields, "findings": findings}
 
 
 # =================================================================== T151
@@ -1213,10 +1648,13 @@ def fpga_rollback(ctx):
         return lambda: fpga.validate_rollback(record, matrix, registry)
 
     witness = unsafe_previous[0] if unsafe_previous else None
+    # Without an enumerated witness the refusal is still exercised on a fixed incompatible state; the
+    # counterexample finding's own check then fails instead of the task crashing.
+    probe = witness or {"host": "1.0", "board": "revC", "from": "2.1.0", "to": "1.2.0"}
     refusals = [
-        _refusal("rollback to the previous version in an enumerated incompatible state", "incompatible_target",
-                 lambda: fpga.rollback_record(matrix, registry, current=witness["from"], target=witness["to"],
-                                              host=witness["host"], board=witness["board"], reason="test")),
+        _refusal("rollback to an older version in an incompatible state", "incompatible_target",
+                 lambda: fpga.rollback_record(matrix, registry, current=probe["from"], target=probe["to"],
+                                              host=probe["host"], board=probe["board"], reason="test")),
         _refusal("rollback to an unregistered bitstream", "unregistered_target",
                  attempt(to_bitstream="1.9.9", to_identity_sha256="0" * 64)),
         _refusal("rollback citing a different identity digest", "unregistered_target",
@@ -1240,17 +1678,17 @@ def fpga_rollback(ctx):
         finding("Compatibility rules and the set construction agree on every combination", "computational_pipeline",
                 {"combinations": len(combos), "compatible": len(rule), "disagreements": disagreements},
                 {"checks": [_check("rule/set disagreements over bitstream x host x board", disagreements,
-                                   kind="cross_implementation")]}, tolerance=EXACT),
+                                   kind="cross_implementation")]}, uncertainty=EXACT_U, tolerance=EXACT),
         finding("Rollback validation refuses incompatible, unregistered, no-op, forward and unexplained rollbacks",
                 "computational_pipeline", sum(c["passed"] for c in refusals), {"checks": refusals},
-                unit="refusals", tolerance=EXACT),
+                unit="refusals", uncertainty=EXACT_U, tolerance=EXACT),
         finding("Rolling back to the previous bitstream version can be incompatible", "computational_pipeline",
                 {"cases": len(unsafe_previous), "witness": witness},
                 {"checks": [_check("(host, board) states where the previous version is incompatible", len(unsafe_previous),
                                    1, "ge")]},
                 counterexample={"statement": "Rolling back to the immediately previous bitstream is always compatible",
                                 "witness": witness},
-                tolerance=EXACT),
+                uncertainty=EXACT_U, tolerance=EXACT),
         finding("The rollback procedure is safe to execute on a production machine", "machine_safety", None, {}),
         finding("Rollback records are accepted for production change control", "production_acceptance", None, {}),
     ]
@@ -1276,20 +1714,39 @@ def fpga_rollback(ctx):
                                "stale matrix", "execution without authority"],
         unresolved_assumptions=["The matrix is illustrative; real compatibility needs hardware qualification",
                                 "Board revision detection and host decoder version reporting are assumed trustworthy"])
-    return {"state": "completed", "fields": fields, "findings": findings}
+    return {"state": _state(findings), "fields": fields, "findings": findings}
 
 
 # =================================================================== T152
 STALE_AFTER_NS = 4_000_000
+CALIBRATION_DELIVERIES = 200
+MODEL_RUN = {"seed": 1520, "frames": 200_000}
 
 
-@task("T152", changed_files=(MODULE, FPGA, DOC), regression_tests=(f"{TESTS}::test_t152_loss_latency_staleness",))
-def link_simulation(ctx):
+def _flagged(receiver, deliveries) -> list:
+    """Per delivery, whether the receiver reported it stale (its stale list, matched by sequence and arrival)."""
+    from collections import Counter
+
+    reported = Counter(receiver.stale)
+    out = []
+    for item in deliveries:
+        key = (item["sequence"], item["received_ns"])
+        out.append(reported[key] > 0)
+        reported[key] -= 1
+    return out
+
+
+def _run_receiver(offset_ns, deliveries):
+    receiver = fpga.TelemetryReceiver(offset_ns, STALE_AFTER_NS)
+    for item in deliveries:
+        receiver.accept(item["frame"], item["received_ns"])
+    return receiver
+
+
+def link_study() -> dict:
     sim = fpga.simulate_link()
     deliveries, lost, model = sim["deliveries"], sim["lost"], sim["model"]
-    exact = fpga.TelemetryReceiver(sim["clock_offset_ns"], STALE_AFTER_NS)
-    for received, sequence, latency, frame in deliveries:
-        exact.accept(frame, received)
+    exact = _run_receiver(sim["clock_offset_ns"], deliveries)
     first, last = exact.first, exact.highest
     span = (last - first) % fpga.SEQUENCE_MODULUS + 1
 
@@ -1297,105 +1754,186 @@ def link_simulation(ctx):
         return (seq - first) % fpga.SEQUENCE_MODULUS < span
 
     true_lost = {s for s in lost if inside(s)}
-    true_stale = {(seq, rcv) for rcv, seq, lat, _ in deliveries if lat > STALE_AFTER_NS}
-    detected_stale = set(exact.stale)
-    # Offset estimated from the minimum delay over the first 200 deliveries (assumes zero minimum latency).
-    estimate = min(rcv - fpga.decode_frame(fr)["timestamp_ns"] for rcv, _, _, fr in deliveries[:200])
+    latency = np.array([d["latency_ns"] for d in deliveries], dtype=float)
+    excess = np.array([d["excess_ns"] for d in deliveries], dtype=float)
+    truth = latency > STALE_AFTER_NS
+    flag = np.array(_flagged(exact, deliveries))
+    # Integer latencies: L <= a  <=>  base + G < a + 1, so each event probability is a CDF difference at a + 1.
+    thr = STALE_AFTER_NS + 1
+    p_false = fpga.latency_cdf(thr, model) - fpga.latency_cdf(thr - excess, model)
+    declared = {"stale": int(truth.sum()), "flagged": int(flag.sum()), "missed": int((truth & ~flag).sum()),
+                "false_alarms": int((~truth & flag).sum()), "expected_false_alarms": float(p_false.sum()),
+                "sigma": float(math.sqrt(np.sum(p_false * (1 - p_false))))}
+    # Offset estimated from the minimum of (arrival - timestamp) over a calibration window; evaluated after it.
+    window = deliveries[:CALIBRATION_DELIVERIES]
+    estimate = min(d["received_ns"] - fpga.decode_frame(d["frame"])["timestamp_ns"] for d in window)
     bias = estimate - sim["clock_offset_ns"]
-    estimated = fpga.TelemetryReceiver(estimate, STALE_AFTER_NS)
-    for received, sequence, latency, frame in deliveries:
-        estimated.accept(frame, received)
-    missed = true_stale - set(estimated.stale)
-    predicted_missed = {(seq, rcv) for rcv, seq, lat, _ in deliveries if STALE_AFTER_NS < lat <= STALE_AFTER_NS + bias}
-    false_alarms = set(estimated.stale) - true_stale
-    naive = fpga.naive_gap_count([seq for _, seq, _, _ in deliveries])
+    estimated = _run_receiver(estimate, deliveries)
+    flag_est = np.array(_flagged(estimated, deliveries))[CALIBRATION_DELIVERIES:]
+    truth_eval, excess_eval = truth[CALIBRATION_DELIVERIES:], excess[CALIBRATION_DELIVERIES:]
+    p_miss = np.clip(fpga.latency_cdf(thr + bias - excess_eval, model) - fpga.latency_cdf(thr, model), 0.0, 1.0)
+    biased = {"bias_ns": int(bias), "max_excess_ns": int(excess.max()), "evaluated": int(len(flag_est)),
+              "stale": int(truth_eval.sum()), "missed": int((truth_eval & ~flag_est).sum()),
+              "expected_missed": float(p_miss.sum()), "sigma": float(math.sqrt(np.sum(p_miss * (1 - p_miss)))),
+              "false_alarms": int((~truth_eval & flag_est).sum())}
+    arrival = [d["sequence"] for d in deliveries]
+    in_order = sorted(set(arrival), key=lambda s: (s - first) % fpga.SEQUENCE_MODULUS)
+    wrap_gap = [s for s in sorted(true_lost, key=lambda s: (s - first) % fpga.SEQUENCE_MODULUS)
+                if s >= fpga.SEQUENCE_MODULUS - 3 or s < 3]
     duplicates_sent = len(deliveries) - (sim["frames"] - len(lost))
-    p_bad = model["p_good_to_bad"] / (model["p_good_to_bad"] + model["p_bad_to_good"])
-    p_loss = (1 - p_bad) * model["loss_good"] + p_bad * model["loss_bad"]
-    lam = 1 - model["p_good_to_bad"] - model["p_bad_to_good"]
-    loss_rate = len(exact.pending) / span
-    sigma = math.sqrt(p_loss * (1 - p_loss) / span * (1 + lam) / (1 - lam))
+    long_run = fpga.link_draws(MODEL_RUN["seed"], MODEL_RUN["frames"], model)
+    moments = fpga.gilbert_elliott_moments(model)
+    loss_rate = float(long_run["drop"].mean())
+    loss_sigma = math.sqrt(moments["per_frame_variance"] / MODEL_RUN["frames"])
+    latencies = long_run["latency"][:, 0].astype(float)
+    # Mean of floor(base + G): E[base + G] - 1/2 to within the (negligible) nonuniformity of the fraction.
+    mean_latency = model["base_latency_ns"] + model["jitter_shape"] * model["jitter_scale_ns"] - 0.5
+    latency_sigma = math.sqrt(model["jitter_shape"]) * model["jitter_scale_ns"] / math.sqrt(len(latencies))
+    return {"sim": sim, "exact": exact, "span": span, "true_lost": true_lost, "declared": declared, "biased": biased,
+            "naive_arrival": fpga.naive_gap_count(arrival), "naive_in_order": fpga.naive_gap_count(in_order),
+            "wrap_gap": wrap_gap, "duplicates_sent": duplicates_sent,
+            "model_run": {"frames": MODEL_RUN["frames"], "seed": MODEL_RUN["seed"], "loss_rate": loss_rate,
+                          "stationary_loss": moments["stationary_loss"], "loss_sigma": loss_sigma,
+                          "loss_z": (loss_rate - moments["stationary_loss"]) / loss_sigma,
+                          "mean_latency_ns": float(latencies.mean()), "expected_latency_ns": mean_latency,
+                          "latency_z": (float(latencies.mean()) - mean_latency) / latency_sigma}}
+
+
+@task("T152", changed_files=(MODULE, FPGA, DOC), regression_tests=(f"{TESTS}::test_t152_loss_latency_staleness",))
+def link_simulation(ctx):
+    study = link_study()
+    sim, exact, true_lost = study["sim"], study["exact"], study["true_lost"]
+    declared, biased, run = study["declared"], study["biased"], study["model_run"]
+    model = sim["model"]
     ages = np.array(exact.ages, dtype=float)
-    mean_latency = model["base_latency_ns"] + model["jitter_shape"] * model["jitter_scale_ns"]
-    latency_sigma = math.sqrt(model["jitter_shape"]) * model["jitter_scale_ns"] / math.sqrt(len(ages))
-    wrap_lost = [s for s in sorted(true_lost) if s >= fpga.SEQUENCE_MODULUS - 3 or s < 3]
-    summary = {"frames": sim["frames"], "deliveries": len(deliveries), "lost_total": len(lost),
+    summary = {"frames": sim["frames"], "deliveries": len(sim["deliveries"]), "lost_total": len(sim["lost"]),
                "lost_between_first_and_last": len(true_lost), "detected_lost": len(exact.pending),
-               "reordered": exact.reordered, "duplicates_detected": exact.duplicates, "duplicates_sent": duplicates_sent,
-               "stale_true": len(true_stale), "stale_detected_exact_offset": len(detected_stale),
-               "offset_bias_ns": bias, "stale_missed_with_estimate": len(missed),
-               "predicted_missed": len(predicted_missed), "false_alarms_with_estimate": len(false_alarms),
-               "naive_gap_count": naive, "loss_rate": loss_rate, "stationary_loss": p_loss,
-               "mean_age_ns": float(ages.mean()), "wrap_losses": wrap_lost, "refused_frames": exact.refused}
+               "reordered": exact.reordered, "duplicates_detected": exact.duplicates,
+               "duplicates_sent": study["duplicates_sent"], "refused_frames": exact.refused,
+               "declared_offset": declared, "estimated_offset": biased,
+               "naive_arrival_order": study["naive_arrival"], "naive_in_order": study["naive_in_order"],
+               "wrap_gap": study["wrap_gap"], "model_run": run}
     ctx.artifact_json("link-simulation.json", {"model": model, "summary": summary, "stale_after_ns": STALE_AFTER_NS,
-                                               "start_sequence": sim["start_sequence"], "period_ns": sim["period_ns"]})
+                                               "start_sequence": sim["start_sequence"]})
     order = np.argsort(ages)
     ctx.artifact_text("age-distribution.svg", svg.line_plot(
-        [("frame age (exact offset)", [float(v) / 1e6 for v in ages[order]],
+        [("frame age (declared offset)", [float(v) / 1e6 for v in ages[order]],
           [float(i + 1) / len(ages) for i in range(len(ages))]),
          ("stale threshold", [STALE_AFTER_NS / 1e6] * 2, [0.0, 1.0])],
         title="Empirical CDF of frame age", xlabel="age (ms)", ylabel="fraction of deliveries", markers=False))
+    moments_tolerance = {"abs": 1e-6, "rel": 1e-9}
+    false_z = (declared["false_alarms"] - declared["expected_false_alarms"]) / declared["sigma"]
+    miss_z = (biased["missed"] - biased["expected_missed"]) / biased["sigma"]
+    power = 4 * run["loss_sigma"]
     findings = [
         finding("Sequence-number gap detection recovers every lost frame across the 32-bit wrap", "computational_pipeline",
                 {"lost": len(true_lost), "detected": len(exact.pending), "reordered": exact.reordered,
                  "duplicates": exact.duplicates},
-                {"generator": {"name": "Gilbert-Elliott loss, gamma jitter, duplicates", "seed": 152},
+                {"generator": {"name": "Gilbert-Elliott loss, gamma latency, duplicates, quantized timestamps, drift",
+                               "seed": 152},
                  "checks": [_check("|detected set symmetric difference true lost set|", len(exact.pending ^ true_lost)),
-                            _check("duplicates detected minus duplicates sent", exact.duplicates - duplicates_sent),
+                            _check("duplicates detected minus duplicates sent", exact.duplicates - study["duplicates_sent"]),
                             _check("forced loss at sequence 2^32-1 detected",
-                                   0.0 if (2 ** 32 - 1) in exact.pending else 1.0)]},
-                tolerance=EXACT),
-        finding("Staleness detection with the declared clock offset matches ground truth exactly",
-                "computational_pipeline", {"stale": len(true_stale), "detected": len(detected_stale)},
-                {"checks": [_check("|detected symmetric difference true stale|", len(detected_stale ^ true_stale))]},
-                tolerance=EXACT),
-        finding("An offset estimated from minimum delay misses exactly the stale frames within its bias",
-                "numerical", {"bias_ns": bias, "missed": len(missed), "false_alarms": len(false_alarms)},
-                {"checks": [_check("|missed symmetric difference predicted (threshold, threshold + bias]|",
-                                   len(missed ^ predicted_missed), kind="analytic"),
-                            _check("false alarms with a nonnegative bias", len(false_alarms), kind="analytic")]},
-                tolerance=EXACT),
-        finding("Loss rate and mean latency are consistent with the simulated model", "numerical",
-                {"loss_rate": loss_rate, "mean_age_ns": float(ages.mean())},
-                {"checks": [_check("|loss rate - stationary loss| / (4 sigma, burst-inflated)",
-                                   abs(loss_rate - p_loss) / (4 * sigma), 1.0, "le"),
-                            _check("|mean age - (base + shape*scale)| / (4 sigma)",
-                                   abs(float(ages.mean()) - mean_latency) / (4 * latency_sigma), 1.0, "le")]},
-                tolerance={"abs": 1e-9, "rel": 1e-9}),
-        finding("A detector without modular sequence arithmetic miscounts losses", "computational_pipeline",
-                {"naive_count": naive, "true_lost": len(true_lost)},
-                {"checks": [_check("|naive count - true lost|", abs(naive - len(true_lost)), 1, "ge")]},
+                                   0.0 if (2 ** 32 - 1) in exact.pending else 1.0),
+                            _check("frames refused by the decoder", sum(exact.refused.values()))]},
+                uncertainty=EXACT_U, tolerance=EXACT),
+        finding("With the declared clock offset no stale frame is missed and false alarms match the timestamp "
+                "quantization and drift prediction", "numerical",
+                {k: declared[k] for k in ("stale", "flagged", "missed", "false_alarms", "expected_false_alarms")},
+                {"checks": [_check("missed stale frames (age = latency + excess, excess >= 0)", declared["missed"],
+                                   kind="analytic"),
+                            _check("(false alarms - expected) / (4 sigma), expected = sum of P(limit - excess < L <= "
+                                   "limit)", false_z / 4, 1.0, kind="analytic")]},
+                uncertainty={"kind": "monte_carlo_95ci", "value": 2 * declared["sigma"],
+                             "basis": "false-alarm count is a sum of independent Bernoulli trials given each frame's "
+                                      "quantization and drift excess"},
+                tolerance=moments_tolerance),
+        finding("An offset estimated from minimum delay misses stale frames at the rate its bias predicts", "numerical",
+                {k: biased[k] for k in ("bias_ns", "evaluated", "stale", "missed", "expected_missed", "false_alarms")},
+                {"checks": [_check("bias minus the largest excess (no false alarm possible when positive)",
+                                   biased["bias_ns"] - biased["max_excess_ns"], 0.0, "signed_ge", kind="analytic"),
+                            _check("false alarms after the calibration window", biased["false_alarms"]),
+                            _check("(missed - expected) / (4 sigma), expected = sum of P(limit < L <= limit + bias - "
+                                   "excess)", miss_z / 4, 1.0, kind="analytic")]},
+                uncertainty={"kind": "monte_carlo_95ci", "value": 2 * biased["sigma"],
+                             "basis": "missed-frame count is a sum of independent Bernoulli trials given the bias"},
+                tolerance=moments_tolerance),
+        finding("Loss rate and mean latency of a long run match the declared link model", "numerical",
+                {"frames": run["frames"], "loss_rate": run["loss_rate"], "stationary_loss": run["stationary_loss"],
+                 "mean_latency_ns": run["mean_latency_ns"]},
+                {"generator": {"name": "link_draws", "seed": run["seed"], "frames": run["frames"]},
+                 "checks": [_check("(loss rate - stationary loss) / (4 sigma), exact Gilbert-Elliott variance",
+                                   run["loss_z"] / 4, 1.0, kind="analytic"),
+                            _check("(mean latency - (base + shape*scale - 1/2)) / (4 sigma)", run["latency_z"] / 4, 1.0,
+                                   kind="analytic")]},
+                uncertainty={"kind": "monte_carlo_95ci", "value": 2 * run["loss_sigma"],
+                             "basis": "loss rate over 200000 frames; sigma^2 = [p(1-p) + 2(l_b-l_g)^2 pi_g pi_b "
+                                      "lambda/(1-lambda)]/N"},
+                tolerance=moments_tolerance),
+        finding("Differencing sequence numbers in arrival order miscounts losses under reordering",
+                "computational_pipeline",
+                {"arrival_order": study["naive_arrival"], "in_order": study["naive_in_order"], "true": len(true_lost)},
+                {"checks": [_check("|arrival-order count - true lost|", abs(study["naive_arrival"] - len(true_lost)), 1,
+                                   "ge"),
+                            _check("reordered deliveries in the stream", exact.reordered, 1, "ge")]},
                 counterexample={"statement": "Summing seq - previous - 1 in arrival order counts lost frames",
-                                "witness": {"naive": naive, "true": len(true_lost), "wrap_losses": wrap_lost,
-                                            "reordered": exact.reordered}},
-                tolerance=EXACT),
+                                "witness": {"arrival_order": study["naive_arrival"], "in_order": study["naive_in_order"],
+                                            "true": len(true_lost)}},
+                uncertainty=EXACT_U, tolerance=EXACT),
+        finding("Non-modular differencing misses the loss at the 32-bit wrap", "computational_pipeline",
+                {"in_order": study["naive_in_order"], "true": len(true_lost), "wrap_gap": study["wrap_gap"]},
+                {"checks": [_check("true lost minus the in-order non-modular count", len(true_lost)
+                                   - study["naive_in_order"], 1, "ge"),
+                            _check("losses at the wrap (2^32 - 3 .. 2)", len(study["wrap_gap"]), 1, "ge")]},
+                counterexample={"statement": "Sequence differences without modular arithmetic count every loss in a "
+                                             "sequence-ordered stream",
+                                "witness": {"in_order": study["naive_in_order"], "true": len(true_lost),
+                                            "missed_at_wrap": study["wrap_gap"]}},
+                uncertainty=EXACT_U, tolerance=EXACT),
         finding("Simulated loss, latency and staleness represent the real FPGA telemetry link", "physical", None, {}),
     ]
     fields = _fields(
-        "Sequence numbers with modulo-2^32 serial arithmetic detect every loss, duplicate and reordering, and "
-        "timestamps with a known clock offset detect every stale frame; an offset estimated from minimum delay "
-        "misses exactly the stale frames within its bias.",
-        "Gilbert-Elliott loss (p_gb=0.005, p_bg=0.2, loss 0.01/0.5), latency = 2 ms + Gamma(2, 0.5 ms), duplicates "
-        "p=0.002, period 1 ms, start sequence 2^32-1500, forced loss at 2^32-1. Stationary loss = pi_g l_g + pi_b l_b; "
-        "stale iff age = t_rx - (t_dev + offset) > 4 ms.",
-        ["4000 frames encoded with the T149 codec", "PCG64(152)"],
-        "Receiver outputs (pending gaps, reorders, duplicates, stale flags) compared with the simulation ground truth.",
-        "Detected losses = true losses between the first and last received sequence; stale detection exact with the "
-        "true offset; misses with an estimated offset = frames with latency in (4 ms, 4 ms + bias].",
-        "Simulate the link, run two receivers (exact and estimated offset) and a naive detector.",
+        "Sequence numbers with modulo-2^32 serial arithmetic detect every loss, duplicate and reordering; timestamps "
+        "with a declared clock offset never miss a stale frame, and their false alarms, like the misses of an offset "
+        "estimated from minimum delay, occur at the rates the quantization, drift and bias predict.",
+        "Gilbert-Elliott loss (p_gb=0.005, p_bg=0.2, loss 0.01/0.5), latency L = 2 ms + Gamma(2, 0.5 ms), duplicates "
+        "p=0.002, period 1 ms, sampling phase U(0, 0.25 ms), timestamps quantized to 50 us, device/host drift 20 ppm, "
+        "start sequence 2^32-1500, forced loss at 2^32-1. Truly stale iff L > 4 ms; receiver age = L + excess, excess "
+        "= quantization + drift >= 0. P(L <= x) = 1 - exp(-g/s)(1 + g/s), g = x - 2 ms, s = 0.5 ms. Loss-count "
+        "variance per frame p(1-p) + 2(l_b-l_g)^2 pi_g pi_b lambda/(1-lambda).",
+        ["4000 frames encoded with the T149 codec, PCG64(152) link draws and PCG64(153) payloads",
+         "200000-frame loss/latency run, PCG64(1520)"],
+        "Receiver outputs (pending gaps, reorders, duplicates, stale flags) compared with the simulation ground truth "
+        "and with expected counts computed from the closed-form latency distribution.",
+        "Detected losses = true losses between the first and last received sequence; zero missed stale frames with the "
+        "declared offset; false alarms and estimated-offset misses within 4 sigma of their expectations; long-run loss "
+        "rate and mean latency within 4 sigma of the model.",
+        "Simulate the link, run receivers with the declared and an estimated offset, compare with ground truth and "
+        "predicted rates, run naive detectors, and check a long run against the model moments.",
         "T153 (keep any response to telemetry gaps from reaching actuators)",
         numerical_result=(f"{len(true_lost)} losses detected exactly ({exact.reordered} reordered, {exact.duplicates} "
-                          f"duplicates); stale {len(detected_stale)}/{len(true_stale)}; offset bias "
-                          f"{bias / 1e6:.3f} ms misses {len(missed)} stale frames (predicted {len(predicted_missed)}); "
-                          f"naive detector counts {naive}; loss rate {loss_rate:.4f} vs stationary {p_loss:.4f}."),
-        uncertainty="Deterministic given the seed; the loss-rate check uses an approximate burst-inflated binomial "
-                    "standard error.",
-        failure_modes_checked=["32-bit sequence wrap", "reordering", "duplicates", "burst loss", "clock offset "
-                               "estimation bias", "naive gap arithmetic"],
+                          f"duplicates); declared offset: {declared['missed']} of {declared['stale']} stale frames "
+                          f"missed, {declared['false_alarms']} false alarms (expected "
+                          f"{declared['expected_false_alarms']:.1f} +/- {declared['sigma']:.1f}); estimated offset "
+                          f"(bias {biased['bias_ns'] / 1e6:.3f} ms) misses {biased['missed']} of {biased['stale']} "
+                          f"(expected {biased['expected_missed']:.1f} +/- {biased['sigma']:.1f}); naive counts "
+                          f"{study['naive_arrival']} (arrival order) and {study['naive_in_order']} (in order) against "
+                          f"{len(true_lost)}; long-run loss rate {run['loss_rate']:.5f} vs {run['stationary_loss']:.5f} "
+                          f"(z = {run['loss_z']:.2f}), latency z = {run['latency_z']:.2f}."),
+        uncertainty=(f"Counts are exact given the seed; rate checks use exact variances and a 4-sigma threshold. At "
+                     f"200000 frames the loss check detects a stationary-loss error above about {power:.4f} (4 sigma) "
+                     "with probability at least one half; a loss_bad change from 0.5 to 0.1 (a shift of 0.0098) would "
+                     "be detected almost surely, but at the 4000 frames of the detection stream it would not (2.4 "
+                     "sigma)."),
+        failure_modes_checked=["32-bit sequence wrap", "reordering", "duplicates", "burst loss", "timestamp "
+                               "quantization", "clock drift", "clock offset estimation bias", "naive gap arithmetic "
+                               "in arrival order", "non-modular differencing at the wrap", "simulator/model mismatch"],
         unresolved_assumptions=["Gaps of 2^31 or more are unsupported by serial arithmetic",
                                 "Losses before the first and after the last received frame are undetectable",
-                                "Device and host clocks are assumed not to drift during the stream"])
-    return {"state": "completed", "fields": fields, "findings": findings}
+                                "Drift is constant and positive (device clock slow against the host); a negative "
+                                "drift would turn false alarms into misses",
+                                "Latency is independent of the loss state"])
+    return {"state": _state(findings), "fields": fields, "findings": findings}
 
 
 # =================================================================== T153
@@ -1462,10 +2000,10 @@ def actuator_writes(ctx):
                  "checks": [_check("accepted writes", accepted),
                             _refusal("default write", "writes_disabled_by_default",
                                      lambda: policy.check_write("spindle_speed", 0.0, now=NOW))]},
-                tolerance=EXACT),
+                uncertainty=EXACT_U, tolerance=EXACT),
         finding("Enabling writes is refused on every route, including a well-formed external record",
                 "computational_pipeline", sum(c["passed"] for c in routes), {"checks": routes}, unit="refused routes",
-                tolerance=EXACT),
+                uncertainty=EXACT_U, tolerance=EXACT),
         finding("A frozen in-process policy object can be mutated", "computational_pipeline",
                 {"flag_mutated": mutated, "writes_still_refused": after_flag["passed"] and after_record["passed"]},
                 {"checks": [_check("object.__setattr__ changed enabled to True", float(mutated), 1, "ge"),
@@ -1474,7 +2012,7 @@ def actuator_writes(ctx):
                                 "witness": {"mutation": "object.__setattr__(policy, 'enabled', True)",
                                             "outcome": "flag changed; the gate still refused because it re-verifies the "
                                                        "authorization on every write"}},
-                tolerance=EXACT),
+                uncertainty=EXACT_U, tolerance=EXACT),
         finding("The lab holds actuator write authority", "actuator_authority", None, {}),
         finding("Disabled-by-default software writes make the machine safe", "machine_safety", None, {}),
     ]
@@ -1498,7 +2036,7 @@ def actuator_writes(ctx):
                                "authorizations", "lab issuing authority", "frozen-object mutation"],
         unresolved_assumptions=["Real enforcement belongs in hardware interlocks and a separate controller process",
                                 "Authorization record format and signature scheme are placeholders"])
-    return {"state": "completed", "fields": fields, "findings": findings}
+    return {"state": _state(findings), "fields": fields, "findings": findings}
 
 
 # =================================================================== T154
@@ -1553,6 +2091,19 @@ def control_proposals(ctx):
         _refusal("proposal with a nonfinite value", "nonfinite_proposal",
                  lambda: replace(proposal, value=float("nan"))),
     ]
+    # In-process immutability is not a boundary: force the status and check that nothing downstream accepts it.
+    tampered = authority.ControlProposal(**{k: record[k] for k in ("channel", "value", "unit", "produced_by",
+                                                                   "inputs_sha256", "rationale")})
+    object.__setattr__(tampered, "status", "command")
+    forced = tampered.status == "command"
+    tamper_checks = [
+        _refusal("record() of a proposal whose status was forced to 'command'", "proposal_status_tampered",
+                 tampered.record),
+        _refusal("convert a status-forced proposal without authorization", "proposal_status_tampered",
+                 lambda: authority.to_command(tampered, now=NOW)),
+        _refusal("convert a status-forced proposal with an external authorization", "proposal_status_tampered",
+                 lambda: authority.to_command(tampered, external, now=NOW)),
+    ]
     ctx.artifact_json("proposal-record.json", record)
     ctx.artifact_json("proposal-study.json", {k: v for k, v in study.items() if k != "sphere_record"})
     rows = study["torus"]
@@ -1563,9 +2114,18 @@ def control_proposals(ctx):
         logx=True, logy=True))
     sphere_error = abs(study["sphere_proposal"] - study["sphere_analytic"]) / abs(study["sphere_analytic"])
     findings = [
-        finding("Every control output carries status proposal and cannot be converted to a command here",
+        finding("Control outputs are constructed with status proposal and cannot be converted to a command here",
                 "computational_pipeline", {"status": proposal.status, "refusals": sum(c["passed"] for c in refusals)},
-                {"checks": refusals}, tolerance=EXACT),
+                {"checks": refusals}, uncertainty=EXACT_U, tolerance=EXACT),
+        finding("A frozen control proposal's status can be forced in memory, and the forced object is refused",
+                "computational_pipeline", {"status_forced": forced, "refusals": sum(c["passed"] for c in tamper_checks)},
+                {"checks": [_check("object.__setattr__ changed status to 'command'", float(forced), 1, "ge"),
+                            *tamper_checks]},
+                counterexample={"statement": "A frozen dataclass status field keeps every control output a proposal",
+                                "witness": {"mutation": "object.__setattr__(proposal, 'status', 'command')",
+                                            "outcome": "status changed; record() and to_command re-check it and refuse "
+                                                       "(proposal_status_tampered)"}},
+                uncertainty=EXACT_U, tolerance=EXACT),
         finding("Jacobi heading proposal cancels a lateral offset to second order", "numerical",
                 {"corrected_order": study["corrected_order"], "uncorrected_order": study["uncorrected_order"]},
                 {"generator": {"name": "torus R=2 r=1, u0=(0.4, 0.3), heading 0.5, L=2, d in {0.02, 0.01, 0.005}"},
@@ -1575,14 +2135,20 @@ def control_proposals(ctx):
                                    kind="self_convergence"),
                             _check("sphere proposal relative error against -cot(L) d", sphere_error, 1e-8,
                                    kind="analytic")]},
+                unit="observed order",
+                uncertainty={"kind": "reference_error",
+                             "value": max(abs(study["corrected_order"] - 2.0), abs(study["uncorrected_order"] - 1.0)),
+                             "basis": "departure of the least-squares orders (three offsets) from their asymptotic "
+                                      "values, a pre-asymptotic spread; RK4 error at 200 steps is far below the "
+                                      "residuals"},
                 tolerance={"abs": 1e-3, "rel": 0}),
         finding("Heading proposals are authorized for execution as actuator commands", "actuator_authority", None, {}),
         finding("Applying the proposed heading corrections on a machine is safe", "machine_safety", None, {}),
     ]
     fields = _fields(
-        "Control outputs can be computed and retained as immutable proposals, with content identities, while every "
-        "conversion to a command is refused without separate authorization; the geometric proposal itself is sound "
-        "to the order the Jacobi model predicts.",
+        "Control outputs can be computed and retained as proposals (frozen objects whose status is re-checked on "
+        "every use), with content identities, while every conversion to a command is refused without separate "
+        "authorization; the geometric proposal itself is sound to the order the Jacobi model predicts.",
         "Normal Jacobi field j(L) = j_lat(L) d + j_head(L) h; proposal h = -j_lat(L) d / j_head(L), undefined at a "
         "conjugate point (j_head(L) = 0). On the unit sphere h = -cot(L) d. With h applied, the residual separation "
         "is O(d^2).",
@@ -1590,16 +2156,18 @@ def control_proposals(ctx):
          "L=2, 200 RK4 steps, d in {0.02, 0.01, 0.005}"],
         "Nonlinear geodesic integration of the offset start with and without the proposal; separation g(du, N) at L.",
         "Proposal matches -cot(L) d on the sphere; corrected residual order 2, uncorrected order 1; all conversions "
-        "refused.",
+        "refused, including of an object whose status was forced in memory.",
         "Compute proposals, verify them by integration, then attempt construction as a command and conversion under "
         "each authorization route.",
         "T141 (keep production acceptance outside the system) and a hardware-in-the-loop authority design review",
         numerical_result=(f"Sphere proposal relative error {sphere_error:.2e}; residual orders corrected "
                           f"{study['corrected_order']:.3f}, uncorrected {study['uncorrected_order']:.3f}; "
-                          f"{sum(c['passed'] for c in refusals)}/{len(refusals)} refusals."),
+                          f"{sum(c['passed'] for c in refusals)}/{len(refusals)} refusals; a status forced in memory "
+                          f"is refused by {sum(c['passed'] for c in tamper_checks)}/{len(tamper_checks)} paths."),
         uncertainty="Orders from three offsets (least squares); RK4 error at 200 steps is far below the residuals.",
-        failure_modes_checked=["conjugate point", "status forgery", "missing, self-issued and unanchored "
-                               "authorization", "dict posing as proposal", "nonfinite value"],
+        failure_modes_checked=["conjugate point", "status forgery at construction", "status forced in memory "
+                               "(object.__setattr__)", "missing, self-issued and unanchored authorization",
+                               "dict posing as proposal", "nonfinite value"],
         unresolved_assumptions=["The proposal is a kinematic heading correction on an ideal surface, not a validated "
                                 "controller", "Actuator dynamics, limits and latency are not modelled"])
-    return {"state": "completed", "fields": fields, "findings": findings}
+    return {"state": _state(findings), "fields": fields, "findings": findings}

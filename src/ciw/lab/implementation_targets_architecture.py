@@ -9,14 +9,19 @@ listed library is installed, linked or exercised here.
 The scan parses every module of the installed ``ciw`` package with ``ast``
 (nothing is imported or executed) and checks architectural rules: the
 evidence and identity closure is standard-library Python, in-process native
-loading is confined to declared hardware probes, process spawns use argument
-vectors (no shell) from modules that record a runtime identity, and no
-compiled extension ships inside the package. A rule scan is structural
-evidence about source text, not proof of runtime behaviour.
+loading is confined to declared hardware probes, process spawns (subprocess,
+os, asyncio) use argument vectors and no shell, and no compiled extension
+ships inside the package. Whether a spawning module names an identity in its
+code is recorded as a heuristic only; whether the spawned executable is pinned
+(compared with an expected identity before it runs) is not something a source
+scan can establish, and PATH-resolved spawns are listed as counterexamples. A
+rule scan is structural evidence about source text, not proof of runtime
+behaviour.
 """
 from __future__ import annotations
 
 import ast
+import hashlib
 from pathlib import Path
 import re
 import sys
@@ -32,13 +37,16 @@ INTERFACES = (
      "boundary": "pinned_subprocess", "direction": "read_only", "write_path": "absent",
      "exchange": "framed JSON/CBOR records over stdio with node ids, source timestamps and status codes retained raw",
      "identity": ["executable sha256", "library version and build flags", "server certificate fingerprint"]},
-    {"name": "EtherCAT master (process data monitoring)", "category": "fieldbus",
-     "libraries": ["SOEM (C)", "IgH EtherCAT Master (C, kernel module)", "Beckhoff TwinCAT ADS (C++)"],
-     "why_native": "Cyclic process-data exchange needs raw sockets or kernel drivers with microsecond-scale deadlines "
-                   "that an interpreter cannot meet",
-     "boundary": "pinned_subprocess", "direction": "read_only", "write_path": "disabled",
-     "exchange": "retained cyclic PDO snapshots with working counters and distributed-clock timestamps",
-     "identity": ["master executable sha256", "ESI/ENI configuration digest", "kernel module version"]},
+    # A master (SOEM, IgH, TwinCAT) originates every bus frame, including output process data, so it can never
+    # be read-only; monitoring uses a passive TAP whose capture host cannot inject frames.
+    {"name": "EtherCAT passive monitoring (network TAP capture)", "category": "fieldbus",
+     "libraries": ["libpcap / Npcap (C)", "Wireshark EtherCAT dissectors (C)", "TAP or probe device driver (vendor C)"],
+     "why_native": "Line-rate capture with hardware timestamps needs kernel capture drivers and C dissectors; a Python "
+                   "loop cannot keep up with cyclic frames at microsecond spacing",
+     "boundary": "pinned_subprocess", "direction": "read_only", "write_path": "absent", "fieldbus_role": "passive_tap",
+     "exchange": "pcapng captures with sha256; decoded PDO snapshots with working counters and TAP timestamps retained",
+     "identity": ["TAP device model and firmware version", "capture library version", "ENI/ESI decoding configuration "
+                  "digest"]},
     {"name": "Vendor camera SDKs (GenICam GenTL)", "category": "vision acquisition",
      "libraries": ["Basler pylon (C++)", "Teledyne FLIR Spinnaker (C++)", "Allied Vision Vimba X (C/C++)",
                    "GenICam reference implementation (C++)"],
@@ -63,6 +71,20 @@ INTERFACES = (
 BOUNDARIES = frozenset({"pinned_subprocess"})
 DIRECTIONS = frozenset({"read_only", "geometry_exchange"})
 WRITE_PATHS = frozenset({"absent", "disabled"})
+FIELDBUS_ROLES = frozenset({"passive_tap"})
+# Identity pins must name something concrete; moving labels, ranges and wildcards pin nothing. Pins are
+# descriptions ("library version and build flags"), so words that are also ordinary prose ("main board", "/dev/",
+# "current sensor") are refused only as the whole pin; unambiguous moving labels are refused anywhere.
+FLOATING_WHOLE_PINS = ("current", "main", "master", "trunk", "head", "dev", "develop", "x")
+FLOATING_LABELS = ("latest", "nightly", "snapshot", "stable", "any", "unknown", "tbd", "n/a", "na")
+_FLOATING_PIN = re.compile(
+    r"^\s*\Z"                                                              # empty or blank
+    r"|^\s*(" + "|".join(FLOATING_WHOLE_PINS) + r")\s*\Z"                  # whole-pin branch or ref names
+    r"|(?<![a-z0-9])(" + "|".join(FLOATING_LABELS) + r")(?![a-z0-9])"      # moving labels (also 2023.2_nightly)
+    r"|(?-i:(?<![A-Za-z0-9])HEAD(?![A-Za-z0-9]))"                          # git HEAD anywhere
+    r"|[*?<>=~^]"                                                          # wildcards and version ranges
+    r"|[0-9]\.x(?![a-z0-9])",                                              # 1.x, 2024.x, 2024.1.x
+    re.IGNORECASE)
 
 
 class ArchitectureRefusal(ValueError):
@@ -72,7 +94,7 @@ class ArchitectureRefusal(ValueError):
 
 
 def validate_inventory(entries) -> list:
-    """Refuse in-process bindings, write-capable directions and entries without an identity pin."""
+    """Refuse in-process bindings, write-capable directions or bus roles and missing or floating identity pins."""
     for entry in entries:
         for key in ("name", "category", "libraries", "why_native", "boundary", "direction", "write_path",
                     "exchange", "identity"):
@@ -85,6 +107,13 @@ def validate_inventory(entries) -> list:
             raise ArchitectureRefusal("write_capable_direction", f"{entry['name']}: direction must be read-only")
         if entry["write_path"] not in WRITE_PATHS:
             raise ArchitectureRefusal("write_path_enabled", f"{entry['name']}: write paths stay absent or disabled")
+        if "fieldbus_role" in entry and entry["fieldbus_role"] not in FIELDBUS_ROLES:
+            raise ArchitectureRefusal("write_capable_direction", f"{entry['name']}: a fieldbus master originates output "
+                                      "process data; only a passive tap is read-only")
+        pins = entry["identity"]
+        if not isinstance(pins, list) or any(not isinstance(pin, str) or _FLOATING_PIN.search(pin) for pin in pins):
+            raise ArchitectureRefusal("unpinned_identity", f"{entry['name']}: identity pins must be concrete, not "
+                                      "empty, wildcard or moving labels")
     return list(entries)
 
 
@@ -93,7 +122,10 @@ EVIDENCE_MODULES = ("ciw.lab.evidence", "ciw.lab.report", "ciw.core.identities")
 NATIVE_ALLOWLIST = frozenset({"ciw.energy_cuda", "ciw.energy_nvml"})  # declared hardware energy probes
 NATIVE_MODULES = frozenset({"ctypes", "cffi", "cppyy", "ctypes.util", "_ctypes"})
 SPAWN_FUNCTIONS = frozenset({"run", "Popen", "call", "check_call", "check_output", "getoutput", "getstatusoutput"})
+ASYNC_SPAWN = frozenset({"create_subprocess_exec", "create_subprocess_shell"})
 OS_SPAWN = re.compile(r"^(system|popen|exec\w*|spawn\w*|posix_spawn\w*)$")
+# Calls that always go through a shell, whatever their arguments.
+SHELL_CALLS = frozenset({"system", "popen", "create_subprocess_shell", "getoutput", "getstatusoutput"})
 IDENTITY_TOKENS = ("revision", "source_tree", "runtime_identity", "sha256", "digest")
 
 
@@ -114,57 +146,104 @@ def _resolve(current: str, is_package: bool, node: ast.ImportFrom) -> str:
 
 
 def scan_source(name: str, text: str, is_package: bool = False) -> dict:
-    """Imports, native loading, process spawns and shell use of one module's source text."""
+    """Imports, native loading, process spawns, shell use and PATH lookups of one module's source text.
+
+    Identity tokens count only in code (identifiers and non-docstring string
+    constants); comments and docstrings do not.
+    """
     tree = ast.parse(text)
-    imports, subprocess_aliases, spawn_names, os_aliases = set(), set(), set(), set()
-    for node in ast.walk(tree):
+    imports, aliases = set(), {"subprocess": set(), "os": set(), "asyncio": set(), "shutil": set()}
+    spawn_names, shell_names, which_names = set(), set(), set()
+    calls, words, docstrings = [], [], set()
+    for node in ast.walk(tree):  # breadth first: a docstring's owner is visited before the docstring
+        if isinstance(node, (ast.Module, ast.ClassDef, ast.FunctionDef, ast.AsyncFunctionDef)):
+            first = node.body[0] if node.body else None
+            if isinstance(first, ast.Expr) and isinstance(first.value, ast.Constant):
+                docstrings.add(id(first.value))
+            if not isinstance(node, ast.Module):
+                words.append(node.name)
         if isinstance(node, ast.Import):
             for alias in node.names:
                 imports.add(alias.name)
-                if alias.name == "subprocess":
-                    subprocess_aliases.add(alias.asname or "subprocess")
-                if alias.name == "os":
-                    os_aliases.add(alias.asname or "os")
+                if alias.name in aliases:
+                    aliases[alias.name].add(alias.asname or alias.name)
         elif isinstance(node, ast.ImportFrom):
             target = _resolve(name, is_package, node)
             imports.add(target)
             for alias in node.names:
                 if target.startswith("ciw") and alias.name != "*":
                     imports.add(f"{target}.{alias.name}")
-                if node.level == 0 and target == "subprocess" and alias.name in SPAWN_FUNCTIONS:
-                    spawn_names.add(alias.asname or alias.name)
-    spawns, shell = [], []
-    for node in ast.walk(tree):
-        if not isinstance(node, ast.Call):
-            continue
+                local = alias.asname or alias.name
+                if node.level == 0 and ((target == "subprocess" and alias.name in SPAWN_FUNCTIONS)
+                                        or (target == "os" and OS_SPAWN.match(alias.name))
+                                        or (target == "asyncio" and alias.name in ASYNC_SPAWN)):
+                    spawn_names.add(local)
+                    if alias.name in SHELL_CALLS:
+                        shell_names.add(local)
+                if node.level == 0 and target == "shutil" and alias.name == "which":
+                    which_names.add(local)
+        elif isinstance(node, ast.Call):
+            calls.append(node)
+        elif isinstance(node, ast.Name):
+            words.append(node.id)
+        elif isinstance(node, ast.Attribute):
+            words.append(node.attr)
+        elif isinstance(node, ast.arg):
+            words.append(node.arg)
+        elif isinstance(node, ast.keyword) and node.arg:
+            words.append(node.arg)
+        elif isinstance(node, ast.Constant) and isinstance(node.value, str) and id(node) not in docstrings:
+            words.append(node.value)
+    spawns, shell, which = [], set(), []
+    for node in calls:
         func = node.func
-        is_spawn = (isinstance(func, ast.Attribute) and isinstance(func.value, ast.Name)
-                    and ((func.value.id in subprocess_aliases and func.attr in SPAWN_FUNCTIONS)
-                         or (func.value.id in os_aliases and OS_SPAWN.match(func.attr)))) \
-            or (isinstance(func, ast.Name) and func.id in spawn_names)
-        if is_spawn:
+        called = None
+        if isinstance(func, ast.Attribute) and isinstance(func.value, ast.Name):
+            owner = func.value.id
+            if ((owner in aliases["subprocess"] and func.attr in SPAWN_FUNCTIONS)
+                    or (owner in aliases["os"] and OS_SPAWN.match(func.attr))
+                    or (owner in aliases["asyncio"] and func.attr in ASYNC_SPAWN)):
+                called = func.attr
+            if owner in aliases["shutil"] and func.attr == "which":
+                which.append(node.lineno)
+        elif isinstance(func, ast.Name):
+            if func.id in spawn_names:
+                called = func.id
+            if func.id in which_names:
+                which.append(node.lineno)
+        if called is not None:
             spawns.append(node.lineno)
+            if called in SHELL_CALLS or (isinstance(func, ast.Name) and func.id in shell_names):
+                shell.add(node.lineno)
         for keyword in node.keywords:
             if keyword.arg == "shell" and not (isinstance(keyword.value, ast.Constant) and keyword.value.value is False):
-                shell.append(node.lineno)
+                shell.add(node.lineno)
     native = sorted(imp for imp in imports if imp.split(".")[0] in {m.split(".")[0] for m in NATIVE_MODULES})
-    return {"imports": sorted(imports), "native": native, "spawn_lines": sorted(spawns), "shell_lines": sorted(shell),
-            "identity_tokens": sorted(token for token in IDENTITY_TOKENS if token in text),
+    code = "\n".join(words)
+    return {"imports": sorted(imports), "native": native, "spawn_lines": sorted(spawns),
+            "shell_lines": sorted(shell), "which_lines": sorted(which),
+            "identity_tokens": sorted(token for token in IDENTITY_TOKENS if token in code),
             "mentions_subprocess": "subprocess" in text}
 
 
 def scan_package(root: Path = PACKAGE_ROOT) -> dict:
-    modules, unparsed = {}, []
+    """Scan every module; ``package_sha256`` identifies the scanned source tree (line endings normalized)."""
+    from .implementation_targets_serial import canonical_sha256
+
+    modules, unparsed, digests = {}, [], {}
     for path in sorted(root.rglob("*.py")):
         if "__pycache__" in path.parts:
             continue
         name = module_name(path, root)
+        data = path.read_bytes()
+        digests[name] = hashlib.sha256(data.replace(b"\r\n", b"\n")).hexdigest()
         try:
-            modules[name] = scan_source(name, path.read_text(encoding="utf-8"), path.name == "__init__.py")
+            modules[name] = scan_source(name, data.decode("utf-8"), path.name == "__init__.py")
         except (SyntaxError, UnicodeDecodeError, ValueError):
             unparsed.append(name)
     compiled = sorted(str(p.relative_to(root)) for p in root.rglob("*") if p.suffix.lower() in (".so", ".pyd", ".dll"))
-    return {"modules": modules, "unparsed": unparsed, "compiled_extensions": compiled}
+    return {"modules": modules, "unparsed": unparsed, "compiled_extensions": compiled,
+            "package_sha256": canonical_sha256(digests), "files": len(digests)}
 
 
 def closure(modules: dict, roots) -> list:
@@ -213,8 +292,18 @@ def violations(scan: dict) -> list:
     return sorted(out)
 
 
+def path_resolved_spawners(scan: dict) -> list:
+    """Modules that look an executable up on PATH (shutil.which) and spawn processes.
+
+    Such a spawn runs whatever executable is first on PATH; recording its
+    version afterwards is provenance, not a pin, because nothing compares it
+    with an expected identity before it runs.
+    """
+    return sorted(name for name, info in scan["modules"].items() if info["which_lines"] and info["spawn_lines"])
+
+
 def mutated_scan(scan: dict, name: str, text: str) -> dict:
     """The package scan with one module's source replaced (negative tests)."""
     modules = dict(scan["modules"])
     modules[name] = scan_source(name, text, is_package=False)
-    return {"modules": modules, "unparsed": scan["unparsed"], "compiled_extensions": scan["compiled_extensions"]}
+    return dict(scan, modules=modules)

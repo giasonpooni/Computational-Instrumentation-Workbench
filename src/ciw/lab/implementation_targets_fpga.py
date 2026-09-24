@@ -5,9 +5,10 @@ no host-to-device field, and a decoder that refuses command, write and
 unknown frame types before any payload is used. Bitstream identity records
 bind a bitstream digest to its toolchain, constraints and source tree; the
 bitstreams used here are seeded synthetic placeholders, never real
-configurations. The link simulation is seeded and synthetic: it says how the
-receiver's gap and staleness detectors behave on a declared loss/latency
-model, not how any real FPGA link behaves.
+configurations. The link simulation is seeded and synthetic (Gilbert-Elliott loss, gamma
+latency, duplicates, quantized device timestamps and clock drift): it says
+how the receiver's gap and staleness detectors behave on a declared model,
+not how any real FPGA link behaves.
 """
 from __future__ import annotations
 
@@ -49,7 +50,10 @@ MAGIC = b"CIWT"
 FRAME_VERSION = 1
 TELEMETRY = 0x01
 HEADER = struct.Struct(">4sBBHIQIHH")  # magic, version, type, flags, sequence, timestamp_ns, clock_id, channels, payload bytes
-TRAILER = struct.Struct(">I")
+# The reflected CRC-32 register is appended least significant byte first, so the frame read LSB-first per byte
+# is one codeword in polynomial order and every burst of at most 32 bits is detected. A big-endian trailer
+# breaks that order at the payload/CRC boundary (see burst_rank_deficient_windows).
+TRAILER = struct.Struct("<I")
 FLAG_OVERFLOW = 0x0001
 FLAG_CLOCK_UNLOCKED = 0x0002
 FLAG_WRITE_REQUEST = 0x8000  # never defined for use; its presence is a refused command path
@@ -61,7 +65,8 @@ SEQUENCE_MODULUS = 2 ** 32
 INTERFACE = {
     "schema": "ciw.fpga-telemetry-interface.v1",
     "direction": "device_to_host",
-    "byte_order": "big-endian",
+    "byte_order": "header and payload big-endian; CRC-32 little-endian (least significant byte first)",
+    "bit_order": "bit p of the frame is bit p % 8 (least significant first) of byte p // 8",
     "frame_types": {"0x01": "telemetry"},
     "host_to_device": [],
     "fields": [
@@ -79,8 +84,8 @@ INTERFACE = {
         {"name": "payload_bytes", "offset": 26, "bytes": 2, "type": "u16 = 4 * channel_count", "direction": "device_to_host"},
         {"name": "payload", "offset": 28, "bytes": "4 * channel_count", "type": "i32 raw counts, calibration not applied",
          "direction": "device_to_host"},
-        {"name": "crc32", "offset": "28 + payload_bytes", "bytes": 4, "type": "CRC-32/IEEE over all preceding bytes",
-         "direction": "device_to_host"},
+        {"name": "crc32", "offset": "28 + payload_bytes", "bytes": 4,
+         "type": "CRC-32/IEEE (reflected) over all preceding bytes, little-endian", "direction": "device_to_host"},
     ],
 }
 _FORBIDDEN_NAME = re.compile(r"(^|_)(command|cmd|write|actuator|actuate|setpoint|register|load|reset|control)(_|$)",
@@ -111,10 +116,14 @@ def validate_interface(spec: dict) -> dict:
     return spec
 
 
-def _pack(frame_type: int, flags: int, sequence: int, timestamp_ns: int, clock_id: int, channels) -> bytes:
+def _pack(frame_type: int, flags: int, sequence: int, timestamp_ns: int, clock_id: int, channels, *,
+          magic: bytes = MAGIC, version: int = FRAME_VERSION, channel_count: int | None = None,
+          payload_bytes: int | None = None) -> bytes:
     channels = [int(c) for c in channels]
-    body = HEADER.pack(MAGIC, FRAME_VERSION, frame_type, flags, sequence, timestamp_ns, clock_id, len(channels),
-                       4 * len(channels)) + struct.pack(f">{len(channels)}i", *channels)
+    count = len(channels) if channel_count is None else channel_count
+    size = 4 * len(channels) if payload_bytes is None else payload_bytes
+    body = HEADER.pack(magic, version, frame_type, flags, sequence, timestamp_ns, clock_id, count,
+                       size) + struct.pack(f">{len(channels)}i", *channels)
     return body + TRAILER.pack(crc32(body))
 
 
@@ -132,9 +141,12 @@ def encode_frame(sequence: int, timestamp_ns: int, clock_id: int, channels, flag
 
 
 def forge_frame(frame_type: int, flags: int, sequence: int = 1, timestamp_ns: int = 0, clock_id: int = 7,
-                channels=(1, 2)) -> bytes:
-    """Negative-test generator: a well-formed frame with an arbitrary type and flags and a valid CRC."""
-    return _pack(frame_type, flags, sequence, timestamp_ns, clock_id, channels)
+                channels=(1, 2), **header) -> bytes:
+    """Negative-test generator: a frame with arbitrary type, flags or header fields and a valid CRC.
+
+    ``header`` may override ``magic``, ``version``, ``channel_count`` and ``payload_bytes``.
+    """
+    return _pack(frame_type, flags, sequence, timestamp_ns, clock_id, channels, **header)
 
 
 def decode_frame(data: bytes) -> dict:
@@ -161,6 +173,57 @@ def decode_frame(data: bytes) -> dict:
     channels = list(struct.unpack(f">{count}i", data[HEADER.size:HEADER.size + size]))
     return {"sequence": sequence, "timestamp_ns": timestamp_ns, "clock_id": clock_id, "flags": flags,
             "channels": channels}
+
+
+def frame_check(data: bytes, trailer_byteorder: str = "little") -> int:
+    """CRC residual of a frame: zero when its trailer matches its bytes (affine in the frame bits)."""
+    return crc32(data[:-4]) ^ int.from_bytes(data[-4:], trailer_byteorder)
+
+
+def _flip(data: bytes, positions, msb_first: bool = False) -> bytes:
+    out = bytearray(data)
+    for p in positions:
+        out[p // 8] ^= 1 << (7 - p % 8 if msb_first else p % 8)
+    return bytes(out)
+
+
+def _dependency(vectors) -> int | None:
+    """Bit mask of a nonempty subset of GF(2) vectors summing to zero, or None if they are independent."""
+    basis = {}  # leading bit -> (vector, combination mask)
+    for index, vector in enumerate(vectors):
+        mask = 1 << index
+        while vector:
+            lead = vector.bit_length() - 1
+            if lead not in basis:
+                basis[lead] = (vector, mask)
+                break
+            vector ^= basis[lead][0]
+            mask ^= basis[lead][1]
+        else:
+            return mask
+    return None
+
+
+def burst_rank_deficient_windows(frame: bytes, width: int = 32, trailer_byteorder: str = "little",
+                                 msb_first: bool = False, witness_from: int = 0) -> dict:
+    """Exact burst analysis: windows of ``width`` consecutive bits whose single-bit syndromes are dependent.
+
+    An error pattern confined to a window escapes the CRC iff its syndromes
+    sum to zero. If every window of 32 bits has independent syndromes, no
+    burst of length <= 32 escapes. Returns the deficient window starts and,
+    for the first one starting at or after ``witness_from``, an undetected
+    error pattern (bit positions).
+    """
+    bits = len(frame) * 8
+    syndromes = [frame_check(_flip(frame, [p], msb_first), trailer_byteorder) for p in range(bits)]
+    deficient, witness = [], None
+    for start in range(bits - width + 1):
+        mask = _dependency(syndromes[start:start + width])
+        if mask is not None:
+            deficient.append(start)
+            if witness is None and start >= witness_from:
+                witness = [start + i for i in range(width) if mask >> i & 1]
+    return {"bits": bits, "windows": bits - width + 1, "deficient": deficient, "witness": witness}
 
 
 class TelemetryReceiver:
@@ -215,7 +278,7 @@ class TelemetryReceiver:
 
 
 def naive_gap_count(sequences) -> int:
-    """Unsafe detector: sums positive (seq - previous - 1) in arrival order, without modular arithmetic."""
+    """Unsafe detector: sums positive (seq - previous - 1) in the given order, without modular arithmetic."""
     lost, previous = 0, None
     for sequence in sequences:
         if previous is not None and sequence - previous - 1 > 0:
@@ -224,42 +287,93 @@ def naive_gap_count(sequences) -> int:
     return lost
 
 
-def simulate_link(seed: int = 152, frames: int = 4000, period_ns: int = 1_000_000,
-                  start_sequence: int = 2 ** 32 - 1500, clock_offset_ns: int = 3_700_000,
-                  base_latency_ns: int = 2_000_000, jitter_shape: float = 2.0, jitter_scale_ns: float = 500_000.0,
-                  p_good_to_bad: float = 0.005, p_bad_to_good: float = 0.2, loss_good: float = 0.01,
-                  loss_bad: float = 0.5, duplicate_probability: float = 0.002, channels: int = 4,
-                  forced_losses=(2 ** 32 - 1,)) -> dict:
-    """Seeded Gilbert-Elliott loss, gamma jitter and duplicates on a stream of encoded frames."""
+LINK_MODEL = {
+    "period_ns": 1_000_000, "clock_offset_ns": 3_700_000, "base_latency_ns": 2_000_000, "jitter_shape": 2.0,
+    "jitter_scale_ns": 500_000.0, "p_good_to_bad": 0.005, "p_bad_to_good": 0.2, "loss_good": 0.01, "loss_bad": 0.5,
+    "duplicate_probability": 0.002, "sample_jitter_ns": 250_000, "tick_ns": 50_000, "drift_ppm": 20.0,
+}
+
+
+def link_draws(seed: int, frames: int, model: dict = LINK_MODEL) -> dict:
+    """Per-frame Gilbert-Elliott state, loss, duplicate, latency and sampling-phase draws.
+
+    Everything is drawn in bulk; only the two-state chain is iterated. The
+    chain starts in the good state and switches after each draw of u_state.
+    """
     rng = np.random.Generator(np.random.PCG64(seed))
-    bad, lost, deliveries = False, set(), []
-    payload = rng.integers(-2 ** 20, 2 ** 20, size=(frames, channels))
+    u_state, u_drop, u_duplicate = rng.random(frames), rng.random(frames), rng.random(frames)
+    latency = np.floor(model["base_latency_ns"] + rng.gamma(model["jitter_shape"], model["jitter_scale_ns"],
+                                                            size=(frames, 2))).astype(np.int64)
+    phase = np.floor(rng.random(frames) * model["sample_jitter_ns"]).astype(np.int64)
+    bad, state = [], False
+    for u in u_state.tolist():
+        state = (u >= model["p_bad_to_good"]) if state else (u < model["p_good_to_bad"])
+        bad.append(state)
+    bad = np.array(bad, dtype=bool)
+    drop = u_drop < np.where(bad, model["loss_bad"], model["loss_good"])
+    return {"bad": bad, "drop": drop, "duplicate": u_duplicate < model["duplicate_probability"],
+            "latency": latency, "phase": phase}
+
+
+def gilbert_elliott_moments(model: dict) -> dict:
+    """Stationary loss probability and the exact asymptotic variance of the loss count per frame.
+
+    X_k ~ Bernoulli(l_{S_k}) given the chain state; Cov(X_0, X_h) = (l_b - l_g)^2 pi_g pi_b lambda^h with
+    lambda = 1 - p_gb - p_bg, so N Var(mean) -> p(1 - p) + 2 (l_b - l_g)^2 pi_g pi_b lambda / (1 - lambda).
+    """
+    p_gb, p_bg = model["p_good_to_bad"], model["p_bad_to_good"]
+    pi_b = p_gb / (p_gb + p_bg)
+    pi_g = 1 - pi_b
+    p = pi_g * model["loss_good"] + pi_b * model["loss_bad"]
+    lam = 1 - p_gb - p_bg
+    variance = p * (1 - p) + 2 * (model["loss_bad"] - model["loss_good"]) ** 2 * pi_g * pi_b * lam / (1 - lam)
+    return {"stationary_loss": p, "per_frame_variance": variance, "pi_bad": pi_b, "lambda": lam}
+
+
+def latency_cdf(x_ns, model: dict = LINK_MODEL):
+    """P(latency <= x) for latency = base + Gamma(2, scale): 1 - exp(-g/s)(1 + g/s), g = x - base >= 0."""
+    if model["jitter_shape"] != 2.0:
+        raise ValueError("The closed-form latency distribution assumes gamma shape 2")
+    g = np.maximum(np.asarray(x_ns, dtype=float) - model["base_latency_ns"], 0.0) / model["jitter_scale_ns"]
+    return 1.0 - np.exp(-g) * (1.0 + g)
+
+
+def simulate_link(seed: int = 152, frames: int = 4000, start_sequence: int = 2 ** 32 - 1500,
+                  model: dict = LINK_MODEL, channels: int = 4, forced_losses=(2 ** 32 - 1,)) -> dict:
+    """Seeded stream of encoded frames with loss, duplicates, latency, quantized timestamps and clock drift.
+
+    Device sample time t_k = k period + phase_k; timestamp = floor(t_k / tick) tick; host receive time =
+    t_k (1 + drift) + offset + latency. The receiver's age with the declared offset is latency + excess,
+    excess = (t_k - timestamp) + drift t_k >= 0; a frame is truly stale iff its latency exceeds the limit.
+    """
+    draws = link_draws(seed, frames, model)
+    payload = np.random.Generator(np.random.PCG64(seed + 1)).integers(-2 ** 20, 2 ** 20, size=(frames, channels))
+    lost, deliveries = set(), []
     for k in range(frames):
-        bad = (rng.random() >= p_bad_to_good) if bad else (rng.random() < p_good_to_bad)
         sequence = (start_sequence + k) % SEQUENCE_MODULUS
-        timestamp = k * period_ns
-        drop = rng.random() < (loss_bad if bad else loss_good)
-        copies = 1 + int(rng.random() < duplicate_probability)
-        latencies = [int(base_latency_ns + rng.gamma(jitter_shape, jitter_scale_ns)) for _ in range(copies)]
-        if drop or sequence in forced_losses:
+        if bool(draws["drop"][k]) or sequence in forced_losses:
             lost.add(sequence)
             continue
-        frame = encode_frame(sequence, timestamp, 7, payload[k])
-        for latency in latencies:
-            deliveries.append((timestamp + clock_offset_ns + latency, sequence, latency, frame))
-    deliveries.sort(key=lambda item: (item[0], item[1]))
+        true_ns = k * model["period_ns"] + int(draws["phase"][k])
+        stamp = true_ns // model["tick_ns"] * model["tick_ns"]
+        drift = round(true_ns * model["drift_ppm"] * 1e-6)
+        frame = encode_frame(sequence, stamp, 7, payload[k])
+        for copy in range(1 + int(draws["duplicate"][k])):
+            latency = int(draws["latency"][k, copy])
+            deliveries.append({"received_ns": true_ns + drift + model["clock_offset_ns"] + latency,
+                               "sequence": sequence, "latency_ns": latency, "excess_ns": true_ns - stamp + drift,
+                               "frame": frame})
+    deliveries.sort(key=lambda item: (item["received_ns"], item["sequence"]))
     return {"deliveries": deliveries, "lost": lost, "frames": frames, "start_sequence": start_sequence,
-            "clock_offset_ns": clock_offset_ns, "period_ns": period_ns,
-            "model": {"p_good_to_bad": p_good_to_bad, "p_bad_to_good": p_bad_to_good, "loss_good": loss_good,
-                      "loss_bad": loss_bad, "base_latency_ns": base_latency_ns, "jitter_shape": jitter_shape,
-                      "jitter_scale_ns": jitter_scale_ns, "duplicate_probability": duplicate_probability,
-                      "forced_losses": list(forced_losses)}}
+            "clock_offset_ns": model["clock_offset_ns"], "model": dict(model, forced_losses=list(forced_losses))}
 
 
 # ------------------------------------------------------ bitstream identity
 IDENTITY_SCHEMA = "ciw.fpga-bitstream-identity.v1"
-_HEX64 = re.compile(r"^[0-9a-f]{64}$")
-_PINNED_VERSION = re.compile(r"^\d+(\.\d+){1,3}([._-][A-Za-z0-9]+)?$")
+# Patterns end in \Z (not $, which also matches before a final newline) and are applied with fullmatch.
+_HEX64 = re.compile(r"[0-9a-f]{64}\Z")
+# Exact release numbers, optionally with a numbered pre-release; wildcards, ranges and moving labels are refused.
+_PINNED_VERSION = re.compile(r"[0-9]+(\.[0-9]+){1,3}([-_.](rc|beta|alpha)[0-9]+)?\Z")
 IDENTITY_FIELDS = ("schema", "bitstream_sha256", "bitstream_bytes", "toolchain", "part", "constraints",
                    "constraints_sha256", "source_tree", "synthesis_options", "synthetic")
 
@@ -295,24 +409,53 @@ def bitstream_identity(bitstream: bytes, *, toolchain: dict, part: str, constrai
 
 def validate_identity(record: dict, *, bitstream: bytes | None = None, constraints: dict | None = None,
                       source_files: dict | None = None) -> dict:
-    """Refuse incomplete, floating, unbound or tampered identity records."""
+    """Refuse incomplete, malformed, floating, unbound or tampered identity records."""
+    if not isinstance(record, dict):
+        raise IdentityRefusal("missing_field", "Bitstream identity must be an object")
     missing = [name for name in IDENTITY_FIELDS + ("record_sha256",) if name not in record]
     if missing:
         raise IdentityRefusal("missing_field", f"Bitstream identity is missing fields: {missing}")
     if record["schema"] != IDENTITY_SCHEMA:
         raise IdentityRefusal("wrong_schema", f"Expected {IDENTITY_SCHEMA}")
     for name in ("bitstream_sha256", "constraints_sha256", "record_sha256"):
-        if not isinstance(record[name], str) or not _HEX64.match(record[name]):
+        if not isinstance(record[name], str) or not _HEX64.fullmatch(record[name]):
             raise IdentityRefusal("bad_digest_format", f"{name} must be 64 lowercase hex digits")
+    tree = record["source_tree"]
+    if not isinstance(tree, dict) or tree.get("kind") != "manifest-sha256" or set(tree) != {"kind", "value"}:
+        raise IdentityRefusal("missing_field", "source_tree must be {kind: manifest-sha256, value: <sha256>}")
+    constraint_files = record["constraints"]
+    if not isinstance(constraint_files, dict) or not constraint_files:
+        raise IdentityRefusal("missing_field", "constraints must map each constraint file to its sha256")
+    for digest in [tree["value"], *constraint_files.values()]:
+        if not isinstance(digest, str) or not _HEX64.fullmatch(digest):
+            raise IdentityRefusal("bad_digest_format", "Source-tree and constraint digests must be 64 lowercase hex digits")
+    if type(record["bitstream_bytes"]) is not int or record["bitstream_bytes"] < 0:
+        raise IdentityRefusal("bad_field_type", "bitstream_bytes must be a nonnegative integer")
+    if type(record["synthetic"]) is not bool:
+        raise IdentityRefusal("bad_field_type", "synthetic must be a boolean")
+    if not isinstance(record["part"], str) or not record["part"].strip():
+        raise IdentityRefusal("missing_field", "Device part is required")
+    if not isinstance(record["synthesis_options"], dict):
+        raise IdentityRefusal("bad_field_type", "synthesis_options must be an object")
     toolchain = record["toolchain"]
-    if not isinstance(toolchain, dict) or not toolchain.get("name"):
+    if not isinstance(toolchain, dict) or not isinstance(toolchain.get("name"), str) or not toolchain["name"].strip():
         raise IdentityRefusal("missing_field", "Toolchain name is required")
-    if not _PINNED_VERSION.match(str(toolchain.get("version", ""))):
-        raise IdentityRefusal("floating_toolchain_version", "Toolchain version must be an exact pinned version")
-    body = {key: value for key, value in record.items() if key != "record_sha256"}
-    if hashlib.sha256(canonical_bytes(body)).hexdigest() != record["record_sha256"]:
+    version = toolchain.get("version")
+    if not isinstance(version, str) or not _PINNED_VERSION.fullmatch(version):
+        raise IdentityRefusal("floating_toolchain_version", "Toolchain version must be an exact pinned version string")
+    # A version string names a release; the installation digest pins the executables actually used.
+    installation = toolchain.get("installation_sha256")
+    if not isinstance(installation, str) or not _HEX64.fullmatch(installation):
+        raise IdentityRefusal("unpinned_toolchain_installation",
+                              "Toolchain needs installation_sha256 over its executables and libraries")
+    try:
+        body = {key: value for key, value in record.items() if key != "record_sha256"}
+        digest = hashlib.sha256(canonical_bytes(body)).hexdigest()
+    except ValueError as exc:
+        raise IdentityRefusal("bad_field_type", f"Identity record has no canonical encoding: {exc}") from None
+    if digest != record["record_sha256"]:
         raise IdentityRefusal("record_digest_mismatch", "Identity record content does not match record_sha256")
-    if canonical_sha256(record["constraints"]) != record["constraints_sha256"]:
+    if canonical_sha256(constraint_files) != record["constraints_sha256"]:
         raise IdentityRefusal("constraints_digest_mismatch", "Constraint manifest does not match constraints_sha256")
     if bitstream is not None:
         if len(bitstream) != record["bitstream_bytes"]:
@@ -321,7 +464,7 @@ def validate_identity(record: dict, *, bitstream: bytes | None = None, constrain
             raise IdentityRefusal("bitstream_digest_mismatch", "Bitstream bytes differ from their identity record")
     if constraints is not None and _files_digest(constraints)["sha256"] != record["constraints_sha256"]:
         raise IdentityRefusal("constraints_digest_mismatch", "Constraint files differ from their identity record")
-    if source_files is not None and _files_digest(source_files)["sha256"] != record["source_tree"]["value"]:
+    if source_files is not None and _files_digest(source_files)["sha256"] != tree["value"]:
         raise IdentityRefusal("source_tree_mismatch", "Source files differ from the recorded source tree")
     return record
 
