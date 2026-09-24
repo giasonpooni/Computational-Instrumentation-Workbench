@@ -123,39 +123,94 @@ def documented_level_exceeded(scaled_value: float, exponent: int, level: float) 
     return scaled_value > level / squared
 
 
-def documented_code(A, P, x, time="continuous", level=None, required_margin=0.0, in_box=True) -> dict:
-    """Re-derive the runtime-status-v1 decision order in CIW from A, P and x.
+# The conditions of the documented decision order, in order. The first true
+# one of the first five decides the code; then ``certified`` (MARGIN_LOW when
+# ``margin_low`` holds as well: a certified margin at or below the declared
+# one), then ``not_definite``; otherwise NUMERICAL_INCONCLUSIVE.
+GATES = ("box", "overflow", "not_positive", "level", "scalar_positive", "certified", "margin_low", "not_definite")
+LATER_GATES = GATES[2:]
+_GATE_CODES = (("box", "OUTSIDE_PARAMETER_BOX"), ("overflow", "NUMERICAL_OVERFLOW"),
+               ("not_positive", "CERTIFICATE_NOT_POSITIVE"), ("level", "OUTSIDE_LEVEL_SET"),
+               ("scalar_positive", "NOT_CERTIFIED"))
 
-    Order: outside box; overflow; certificate not positive; level; resolvable
-    positive scalar decrease; margin beyond resolution (MARGIN_LOW against the
-    declared margin); resolvably indefinite form; otherwise inconclusive.
-    """
-    if not in_box:
-        return {"code": "OUTSIDE_PARAMETER_BOX"}
-    A, P, x = np.asarray(A, dtype=float), np.asarray(P, dtype=float), np.asarray(x, dtype=float)
+
+def gate_code(gates) -> str:
+    """The code the documented order assigns to a vector of gate conditions."""
+    for gate, code in _GATE_CODES:
+        if gates[gate]:
+            return code
+    if gates["certified"]:
+        return "MARGIN_LOW" if gates["margin_low"] else "CERTIFIED_WITH_MARGIN"
+    return "DECREASE_NOT_DEFINITE" if gates["not_definite"] else "NUMERICAL_INCONCLUSIVE"
+
+
+def _documented_quantities(A, P, x, time):
+    """The documented float64 quantities at one sample, or None where the arithmetic leaves binary64."""
     form = decrease_matrix(A, P, time)
     exponent = state_scale_exponent(x)
     unit = x / float(np.ldexp(1.0, exponent))
     with np.errstate(over="ignore", invalid="ignore"):
         scaled = np.array([unit @ P @ unit, unit @ form @ unit, unit @ unit])
     if not (np.all(np.isfinite(form)) and np.all(np.isfinite(scaled))):
-        return {"code": "NUMERICAL_OVERFLOW"}
-    res = resolution(A, P, time, form=form)
-    min_p = float(np.min(np.linalg.eigvalsh(P)))
+        return None
     max_decrease = float(np.max(np.linalg.eigvalsh(form)))
-    margin = -max_decrease
-    facts = {"resolution": res, "margin": margin, "scaled_decrease": float(scaled[1])}
-    if min_p <= 0.0 or scaled[0] < 0.0:
-        return dict(facts, code="CERTIFICATE_NOT_POSITIVE")
-    if level is not None and documented_level_exceeded(float(scaled[0]), exponent, float(level)):
-        return dict(facts, code="OUTSIDE_LEVEL_SET")
-    if scaled[1] > res * float(scaled[2]):
-        return dict(facts, code="NOT_CERTIFIED")
-    if margin > max(res, 0.0):
-        return dict(facts, code="MARGIN_LOW" if margin <= required_margin else "CERTIFIED_WITH_MARGIN")
-    if max_decrease > res:
-        return dict(facts, code="DECREASE_NOT_DEFINITE")
-    return dict(facts, code="NUMERICAL_INCONCLUSIVE")
+    return {"exponent": exponent, "scaled_value": float(scaled[0]), "scaled_decrease": float(scaled[1]),
+            "unit_norm2": float(scaled[2]), "resolution": resolution(A, P, time, form=form),
+            "min_P": float(np.min(np.linalg.eigvalsh(P))), "max_decrease": max_decrease, "margin": -max_decrease}
+
+
+def documented_gates(A, P, x, time="continuous", level=None, required_margin=0.0, in_box=True,
+                     rescale=True) -> dict:
+    """Every condition of the documented decision order, evaluated whether or not an earlier one decides.
+
+    Returns the gate booleans, the code they give (``gate_code``) and the documented quantities. Where the
+    arithmetic overflows in continuous time and ``rescale`` is set, the later conditions are read at
+    ``2^-s A`` (and ``2^-s required_margin``) for the smallest ``s`` that fits: each of them is homogeneous
+    in that power-of-two scale, so these are the values the order would read at the declared A if the
+    arithmetic could hold them. Otherwise they are None. The level gate does not involve A.
+    """
+    A, P, x = np.asarray(A, dtype=float), np.asarray(P, dtype=float), np.asarray(x, dtype=float)
+    gates = dict.fromkeys(GATES, False)
+    gates["box"] = not in_box
+    facts, shift = _documented_quantities(A, P, x, time), 0
+    if facts is None:
+        gates["overflow"] = True
+        if rescale and time == "continuous":
+            for shift in range(1, 2200):
+                facts = _documented_quantities(np.ldexp(A, -shift), P, x, time)
+                if facts is not None:
+                    break
+    if facts is None:
+        gates.update(dict.fromkeys(LATER_GATES))
+        return {"gates": gates, "code": gate_code(gates), "shift": None, "facts": None}
+    res, margin = facts["resolution"], facts["margin"]
+    gates.update(
+        not_positive=facts["min_P"] <= 0.0 or facts["scaled_value"] < 0.0,
+        level=level is not None and documented_level_exceeded(facts["scaled_value"], facts["exponent"],
+                                                               float(level)),
+        scalar_positive=facts["scaled_decrease"] > res * facts["unit_norm2"],
+        certified=margin > max(res, 0.0),
+        not_definite=facts["max_decrease"] > res)
+    # MARGIN_LOW refines a certified margin, so its condition is read only on that branch.
+    gates["margin_low"] = gates["certified"] and margin <= float(np.ldexp(float(required_margin), -shift))
+    return {"gates": gates, "code": gate_code(gates), "shift": shift, "facts": facts}
+
+
+def documented_code(A, P, x, time="continuous", level=None, required_margin=0.0, in_box=True) -> dict:
+    """Re-derive the runtime-status-v1 decision order in CIW from A, P and x.
+
+    Order: outside box; overflow; certificate not positive; level; resolvably
+    positive scalar decrease; margin beyond resolution (MARGIN_LOW against the
+    declared margin); resolvably indefinite form; otherwise inconclusive.
+    """
+    if not in_box:
+        return {"code": "OUTSIDE_PARAMETER_BOX"}
+    result = documented_gates(A, P, x, time, level, required_margin, rescale=False)
+    if result["gates"]["overflow"]:
+        return {"code": "NUMERICAL_OVERFLOW"}
+    facts = result["facts"]
+    return {"resolution": facts["resolution"], "margin": facts["margin"],
+            "scaled_decrease": facts["scaled_decrease"], "code": result["code"]}
 
 
 # Exact dyadic-rational arithmetic on the declared binary64 inputs ------------
@@ -176,6 +231,17 @@ def exact_form(A, P, time="continuous") -> list:
         return [[ap[i][j] + ap[j][i] for j in range(n)] for i in range(n)]
     pa = [[sum(p[i][k] * a[k][j] for k in range(n)) for j in range(n)] for i in range(n)]
     return [[sum(a[k][i] * pa[k][j] for k in range(n)) - p[i][j] for j in range(n)] for i in range(n)]
+
+
+def representable(q) -> bool:
+    """q is zero or rounds (to nearest) to a finite nonzero binary64 number."""
+    if q == 0:
+        return True
+    try:
+        value = float(Fraction(q))  # correctly rounded; OverflowError when it rounds beyond the largest double
+    except OverflowError:
+        return False
+    return value != 0.0 and math.isfinite(value)
 
 
 def exact_quadratic(x, M) -> Fraction:

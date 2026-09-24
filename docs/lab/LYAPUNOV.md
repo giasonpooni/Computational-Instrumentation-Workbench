@@ -40,23 +40,36 @@ Python and NumPy versions under `provider_runtime_identity.provider`, and every
 provider-derived finding cites them in `basis.provider`. Source hashes detect
 installation drift; they do not authenticate an untrusted interpreter.
 
-Without a usable provider the provider-dependent tasks (T101–T111, T113) are
-reported `partial`: only their provider-free findings (exact references,
-re-derivations, host-side adapter checks) are retained, and the refusal reason
+Without a usable provider the provider-dependent tasks (T101–T111, T113,
+T114) are reported `partial`: only their provider-free findings (exact
+references, re-derivations, host-side adapter checks, T114's specification and
+its monitor scan in the CIW transcription) are retained, and the refusal reason
 is the first unresolved assumption. The tasks therefore register no hard
 requirement (`requires=()`): a `provider:plsr-python` requirement would make
 them `blocked`, and a blocked report may carry only `not_established`
-findings, so the provider-free evidence would be lost. T112 and T114 do not
-need the provider. Tests of the provider-free parts always run; provider tests
-are skipped unless `CIW_LAB_PLSR_PYTHON` names an interpreter or the test
+findings, so the provider-free evidence would be lost. T112 does not need the
+provider. Tests of the provider-free parts always run; provider tests are
+skipped unless `CIW_LAB_PLSR_PYTHON` names an interpreter or the test
 interpreter itself hosts the runtime, and a `CIW_LAB_PLSR_PYTHON` that names a
 missing interpreter fails them instead of skipping them.
 
-The whole section runs in about 6 s and its tests in about 8 s on one core.
+The whole section runs in about 7 s and its tests in about 10 s on one core.
 SciPy and mpmath are optional: without them T109 and T111 compare PLSR with
-the CIW Kronecker solve, T112 with a NumPy eigendecomposition (its augmented
-matrix is diagonalisable), and T114's exponential, whose augmented matrix is
-defective, only with its closed form.
+the CIW Kronecker solve (recorded as an ordinary check, see below), T112 with a
+NumPy eigendecomposition (its augmented matrix is diagonalisable), and T114's
+exponential, whose augmented matrix is defective, only with its closed form.
+
+Outcomes that depend on the LAPACK/BLAS build are retained as artifacts, never
+as checked finding values, compared finding values or wording: the codes of
+subnormal plants (the witness below included), code flips outside LAPACK's
+scaling window, which rounding-admitted indefinite P `quadratic()` accepts and
+the codes they receive, and the sign of NumPy's abscissa for defective
+matrices. Findings carry only what does not depend on the build (exact
+classes, IEEE-deterministic scalar arithmetic, soundness counts, codes far
+from every threshold), and every check is built before its outcome is known:
+`test_checks_are_unconditional_and_observed_values_are_computed` refuses a
+check created under a condition on an observed result or with a literal
+observed value.
 
 ## References and how independence is claimed
 
@@ -65,13 +78,18 @@ defective, only with its closed form.
 | Exact dyadic rationals (`fractions.Fraction`, integer Bareiss elimination) | `lyapunov_reference` | class of the declared decrease form (negative definite, negative semidefinite, has a positive eigenvalue); exact position of its largest eigenvalue relative to multiples of the resolution; exact positive definiteness of P; exact V against a level |
 | CIW re-derivation of the documented formulas | `lyapunov_reference` | decrease matrix, `decrease_resolution`, the runtime-status-v1 decision order |
 | NumPy `eigvals` | numpy | Hurwitz/Schur classification (T110, T111); the PLSR operations exercised here (`verdict`, `solve_lyapunov`, `quadratic`, `check_vertices`, `decrease_resolution`) call only `eigvalsh`; its diagnostic `spectral_abscissa`/`spectral_radius` use `eigvals`, but no task calls them |
-| SciPy `solve_continuous_lyapunov` / `solve_discrete_lyapunov`, `expm` | scipy (optional) | Lyapunov solutions and matrix exponentials; the CIW Kronecker solve, mpmath's `expm` or a well-conditioned NumPy eigendecomposition stand in when SciPy is absent |
+| SciPy `solve_continuous_lyapunov` / `solve_discrete_lyapunov`, `expm` | scipy (optional) | Lyapunov solutions and matrix exponentials; mpmath's `expm` or a well-conditioned NumPy eigendecomposition stand in for `expm` when SciPy is absent, and the CIW Kronecker solve for the Lyapunov solvers (then not an independent reference) |
 | Closed forms | `lyapunov_research` | ZOH exponentials of the T112 oscillator and the T114 servo axis |
 
 Only references that compute by a separate method are recorded as an
 `independent_check` against PLSR: exact rational arithmetic, NumPy
-eigenvalues, SciPy (or the CIW Kronecker solve) for Lyapunov solutions and
-independent matrix exponentials. The CIW re-derivation of the documented
+eigenvalues, SciPy's Bartels–Stewart solvers for Lyapunov solutions and
+independent matrix exponentials. The CIW Kronecker fallback solves the same
+Kronecker system with `numpy.linalg.solve` as PLSR's `solve_lyapunov`, so a
+shared algorithm could hide a common-mode error; without SciPy, agreement with
+it is an ordinary check (`numerically_verified`). Solver agreement is judged
+against the forward-error bound `10 n² u cond(P)` of a backward-stable solve
+(reference kind `analytic`), not recorded as exact arithmetic. The CIW re-derivation of the documented
 formulas and decision order (`decrease_resolution`, the level gate,
 `documented_code`) is transcribed from the runtime's own documentation and
 source, so agreement with it is recorded as an ordinary check
@@ -94,35 +112,49 @@ the re-derived bound in all 288 evaluated cases (a same-specification check),
 and in all 112 normal-range cases the code is `CERTIFIED_WITH_MARGIN` exactly
 when `ε > ε*` (compared with the analytic threshold itself, and separately
 with PLSR's own unit-scale code). Below the normal range the bound underflows.
-Counterexample: `A = [[-2, 5], [0, -3]]·2^-1074`, `P = I` has the exact
+Counterexample to "the resolution bounds the rounding error of the decrease
+form at every scale": `A = [[-2, 5], [0, -3]]·2^-1074`, `P = I` has the exact
 decrease form `[[-4, 5], [5, -6]]·2^-1074` (determinant −1 in units of
-2^-2148, indefinite), but its binary64 evaluation rounds the off-diagonal to 4
-(negative definite), the resolution is 0 and on this platform PLSR returns
-`CERTIFIED_WITH_MARGIN`. The exact class and the zero resolution are checked;
-PLSR's code is recorded, and the counterexample is attached only when the
-certificate is observed, because it depends on LAPACK's subnormal handling.
-`NUMERICAL_OVERFLOW` first appears where the CIW-recomputed form overflows
-(k = 512 for all four seeds), and never earlier.
+2^-2148, indefinite), but PLSR's own formed matrix, returned by the runtime, is
+`[[-4, 4], [4, -6]]·2^-1074` (the symmetrising halving rounds 2.5 to 2; negative
+definite) while its resolution is 0, below the formation error of one
+2^-1074 unit. Both facts are IEEE-deterministic wherever subnormals are kept,
+so the counterexample is always attached and checked. What the eigensolver
+then makes of the subnormal form, and hence PLSR's code (`CERTIFIED_WITH_MARGIN`
+on the reference platform), depends on the LAPACK build and is retained in
+`resolution-floor.json` only. `NUMERICAL_OVERFLOW` first appears where the
+CIW-recomputed form overflows (k = 512 for all four seeds), and never earlier.
 
 **T102 — power-of-two homogeneous scaling.** Scaling `(A, P, x)` by
 `(2^a, 2^b, 2^c)` multiplies M and the resolution by `2^(a+b)` exactly, and x
 is rescaled internally. In 550 scalings inside LAPACK's unscaled window
 (`max|M|` in `[2^-485, 2^485]`, where `dsyevd` does not rescale) no code and no
 margin ratio changed, bitwise. Outside the window `dsyevd` rescales by a
-non-power-of-two factor: all margin ratios changed and 35 of 250 codes on
-razor-edge cases flipped (between certified or not-definite and inconclusive;
-none against the exact class). Only the soundness count is a checked value;
-the flips are recorded as a counterexample when observed, since their number
-depends on the LAPACK/BLAS build. In discrete time (P, x) scaling changed no
-code in 36 evaluations, including six razor-edge cases about one resolution
-from the threshold. The subnormal witness flips from `DECREASE_NOT_DEFINITE`
-to `CERTIFIED_WITH_MARGIN` on this platform.
+non-power-of-two factor: on the reference platform all margin ratios changed
+and 35 of 250 codes on razor-edge cases flipped (between certified or
+not-definite and inconclusive; none against the exact class). Only the
+soundness count is a checked finding value; the flips, whose number depends on
+the LAPACK/BLAS build, are retained in `scaling-invariance.json`. In discrete
+time (P, x) scaling changed no code in 36 evaluations, including six razor-edge
+cases about one resolution from the threshold. Scaled by 2^-1074 the witness's
+resolution underflows to 0 (checked) while its unit-scale code is
+`DECREASE_NOT_DEFINITE`; the scaled code (`CERTIFIED_WITH_MARGIN` on the
+reference platform) is retained in the artifact.
 
 **T103 — overflow and underflow.** States from `2^-1074` to `1.797e308`
 leave the code unchanged; non-finite states are input errors. Components more
 than about 2^1075 below the largest one vanish in the scaled state (for
 `(1.797e308, 2^-1074)` the second component becomes 0), which a code decided
-relative to `|x|²` does not see; this is not probed further. The level gate
+relative to `|x|²` does not see; this is not probed further. The reported
+unscaled `V = s² · scaled_value` and `xᵀMx` are compared with the exact
+rationals at those ten states and at 27 single-component states `m·2^e` around
+the edges where `s²` underflows or overflows: in all 20 states whose exact `V`
+or `xᵀMx` is not representable `value_out_of_range` is set, and unflagged
+values are within one rounding of the exact ones. The flag is conservative,
+not exact: for `x = (1.5·2^-538, 0)` and `(1.9·2^-538, 0)` the exact `V` and
+`xᵀMx` round to nonzero subnormals, but `s² = 2^-1076` underflows first, so
+PLSR reports `V = 0` with the flag set (a counterexample to "the flag is set
+exactly when the value is not representable"). The level gate
 forms `s²` for the power-of-two state scale `s`: when `s²` underflows it
 answers "not exceeded" and when it overflows it answers "exceeded", whatever
 `P` is. In a 68-case exact scan (`P = 2^p I`, `x = 2^e e₁`, level
@@ -130,41 +162,67 @@ answers "not exceeded" and when it overflows it answers "exceeded", whatever
 and reported 9 spurious ones against the exact exponent comparison, in the
 same cases as the CIW transcription of the documented rule. `θ = 1e308` with
 `A₁ = 2I` makes `A(θ)` infinite and raises `ValueError: A must be finite`
-instead of returning a status. The subnormal witness is a false certificate
-on this platform.
+instead of returning a status. The subnormal witness's resolution is again 0
+below its formation error (checked as in T101); its code is retained in
+`near-limits.json`.
 
 **T104 — semidefinite and skew-symmetric edges.** Skew A with `P = I` gives
 an exactly zero form and always `NUMERICAL_INCONCLUSIVE`; skew A with SPD P is
 never certified; Jordan blocks with `P = I` switch exactly at `λ = 1/2`
 (inconclusive at the singular point); the solver refuses `Q = diag(1, 0)` and
 the constructor refuses a singular P. All 28 codes are consistent with the
-exact class. Counterexample: `quadratic()` accepts some binary64 P whose exact
-determinant is negative (its eigenvalue-sign test sees a rounded positive
-eigenvalue; 8 found in 8207 seeded draws); the verdict then returns
-`CERTIFICATE_NOT_POSITIVE` along the weak direction or
-`NUMERICAL_INCONCLUSIVE`, never a certificate. Which candidates are accepted
-depends on `eigvalsh` rounding, so the counterexample is attached when
-observed and only the certification count (0) is checked.
+exact class. `quadratic()`'s eigenvalue-sign test is not an exact
+definiteness test: on the reference platform it accepted all 8 exactly
+indefinite candidates found in 8207 seeded draws, whose verdicts were
+`CERTIFICATE_NOT_POSITIVE` along the weak direction or `NUMERICAL_INCONCLUSIVE`,
+never a certificate. Which candidates are accepted depends on `eigvalsh`
+rounding, so they and their codes are retained in `edge-cases.json`, and only
+the certification count (0) is a checked finding value.
 
 **T105 — parameter boxes across unit scales.** A mass-spring-damper
 (`m = 2 kg`, `c = 3 N s/m`, stiffness in `[8, 12] N/m`, exact common
 `P = [[6, 0.75], [0.75, 1]]`) in five unit systems: interior and bound samples
-get identical codes and `check_vertices` passes everywhere. Counterexamples:
+get identical codes and `check_vertices` passes everywhere; the bounds keep
+their SI box decision under both conversion formulas (`k·c` and `k/(1/c)`),
+and their binary64 neighbours under multiplication. Counterexamples:
 (1) converting bound and sample by the same multiplication can collapse a
 just-outside sample onto the bound, which is then admitted; (2) the
 mathematically equal conversions `k·0.001` and `k/1000` differ in binary64, so
-a sample on the bound can be refused; (3) margin ratios are not invariant under
+a sample on the bound can be refused; (2a) on the declared box itself,
+`nextafter(8, 0)` converted as `k/(1/c)` lands on the bound `8·c` in
+micrometre units and is admitted; (3) margin ratios are not invariant under
 non-uniform unit changes (spread 7.6e6 across the five systems), so a
 lightly damped plant is certified in SI units and inconclusive in metre and
 millisecond units although its exact decrease form is negative definite in all.
 
-**T106 — every runtime status.** Seven one-parameter paths far from every
-rounding threshold reach the eight codes that do not depend on rounding, and
-all 37 steps equal the CIW transcription of the documented order (a
-same-specification check). `CERTIFICATE_NOT_POSITIVE` is reachable only
-through rounding (a P accepted by `quadratic()` evaluating `V < 0`); the eight
-exactly indefinite P witnesses reached it 6 times here and were never
-certified, and only the non-certification is checked. The runtime refuses all
+**T106 — every runtime status transition.** The conditions of the documented
+order form a gate vector (box, overflow, not_positive, level,
+scalar_positive, certified, margin_low, not_definite) with three implications
+(`scalar_positive ⇒ not_definite ∧ ¬certified` by the Rayleigh quotient,
+`certified ⇒ ¬not_definite`, `margin_low ⇒ certified`). A one-parameter path
+crosses one threshold at a time: one gate changes, or two whose thresholds
+coincide (scalar_positive with not_definite when x is a top eigenvector of M;
+certified with margin_low). Enumerating the consistent gate vectors
+(`transition_graph`) gives 24 directly connected pairs among the eight
+rounding-free codes, 4 excluded pairs (`CERTIFIED_WITH_MARGIN`/`MARGIN_LOW`
+with `NOT_CERTIFIED` or `DECREASE_NOT_DEFINITE`: every path between them passes
+through `DECREASE_NOT_DEFINITE` or `NUMERICAL_INCONCLUSIVE`), and 8 pairs with
+`CERTIFICATE_NOT_POSITIVE`, which a declared certificate reaches only through
+rounding. Seven sweeps and seventeen short paths across one crossing (box edge
+θ = 1 → nextafter under six in-box codes, a power-of-two matrix scale across
+the overflow edge under five codes, level 4 → 3.99 under four codes, a
+vanishing margin under a declared margin, a top eigenvalue crossing zero)
+realise all 24 allowed transitions in PLSR; every one of the 73 steps equals
+the CIW transcription, and each of the 28 code changes happens between steps
+whose transcribed gate vectors differ by exactly an allowed crossing
+(`transition-coverage.json`, matrix in `transition-coverage.md`). No
+rounding-free route into `CERTIFICATE_NOT_POSITIVE` exists: both certificate
+kinds refuse `min eig P ≤ 0` when built, and an affine certificate whose
+`P(θ) = diag(1, 0)` at the in-box θ = −1 raises `ValueError` instead of
+returning the code (a counterexample to RUNTIME-STATUS-v1's description of
+`CERTIFICATE_NOT_POSITIVE`). The eight exactly indefinite P witnesses are
+never certified (checked); whether they reach `CERTIFICATE_NOT_POSITIVE`
+depends on rounding and is retained in the artifact. The runtime refuses all
 five host-owned codes in `require_status` and in `Verdict`, and its published
 constants match the documented values.
 
@@ -172,8 +230,9 @@ constants match the documented values.
 `max eig(M)`: no certifying code on a form that is not exactly negative
 definite; beyond two resolutions the sign is always resolved; with a declared
 margin of three resolutions no band case is `CERTIFIED_WITH_MARGIN`
-(`MARGIN_LOW` or `NUMERICAL_INCONCLUSIVE` instead). Counterexample to the
-specification's stronger statement that near-boundary spectra yield
+(`MARGIN_LOW` or `NUMERICAL_INCONCLUSIVE` instead). Counterexample to a
+stronger candidate hypothesis formulated for this experiment (it is not quoted
+from the runtime's documentation) that near-boundary spectra yield
 `NUMERICAL_INCONCLUSIVE` or `MARGIN_LOW` rather than `CERTIFIED_WITH_MARGIN`:
 at `required_margin = 0`, 18 of the 66 cases within two resolutions of zero
 were certified (all 16 in `[-2, -1)` resolutions and 2 in `[-1, 0)`), every
@@ -184,8 +243,10 @@ Of the 32 exactly negative definite band cases, 14 were left inconclusive.
 no failing verdict regained, `meets_required_margin` never regained,
 non-certifying codes and `inequality_certified` independent of the margin, and
 the switch to `MARGIN_LOW` exactly at `required_margin = margin`. Negative and
-non-finite margins are refused. The proof is the decision-order argument; the
-search only fails to find a counterexample.
+non-finite margins are refused. The CIW transcription is checked on the same
+grids for its codes only (its margin fields would be the defining formulas read
+back). The proof is the decision-order argument; the search only fails to find
+a counterexample.
 
 **T109 — adversarial eigenvalues.** Non-normal `[[-1, K], [0, -2]]` up to
 `K = 1e8`, exactly defective `A = T J T⁻¹` (integer unimodular T, exact spectrum
@@ -197,8 +258,10 @@ certified transients satisfy `‖exp(At)‖ ≤ sqrt(cond P)` (ratio at most
 0.618); with `P = I` the non-normal plants are certified exactly when
 `K < 2√2` (K = 2.82 certified, 2.83 not). On the seven exactly Hurwitz Jordan
 plants `solve_lyapunov` returned P once (exactly valid) and refused six, each
-at a documented gate. Counterexamples: NumPy's floating-point spectral
-abscissa is nonnegative for 5 of the 7; and the solver's refusals are
+at a documented gate. NumPy misplaces every exact defective eigenvalue by far
+more than 1e3 ε·max|A| (checked); its floating-point spectral abscissa is
+nonnegative for 5 of the 7 on the reference platform, a build-dependent count
+retained in `adversarial.json`. Counterexample: the solver's refusals are
 conservative, not only avoidance of invalid certificates: for `n = 4`,
 `λ = 2^-6` it refuses at the residual gate, yet SciPy's P (condition 5e11) is
 exactly valid and PLSR's own verdict certifies it.
@@ -214,11 +277,25 @@ discrete plant refuses a `theta_dot`.
 
 **T111 — scalar and matrix routes.** PLSR Lyapunov solutions agree with
 SciPy's `solve_continuous_lyapunov` to 1.7e-14 and with
-`solve_discrete_lyapunov` to 4.5e-16 (checked per convention). On the 50
-margin-separated plants `solve_lyapunov` returns P exactly for the 30 that
-NumPy's eigenvalues call stable and raises `ValueError` for the other 20; the
-verdict certifies every stable plant with its own P and no unstable plant with
-`P = I`. Counterexample: for the decrease form
+`solve_discrete_lyapunov` to 4.5e-16 relative, within `10 n² u cond(P)` in each
+convention. On the 50 margin-separated plants `solve_lyapunov` returns P
+exactly for the 30 that NumPy's eigenvalues call stable and raises
+`ValueError` for the other 20; the verdict certifies every stable plant with
+its own P and no unstable plant with `P = I`. PLSR's own scalar gate
+(`NOT_CERTIFIED` when `xᵀMx > res·|x|²`) is compared per sample with the exact
+`xᵀMx` and with PLSR's eigenvalue route (`max eig(M) > res`) at 808 samples:
+every route plant with `P = I` at eight states, and each of T107's 102
+near-threshold forms at the computed top eigenvector of its decrease matrix
+(where the gate meets the resolution) and three more states. Every
+`NOT_CERTIFIED` has an exactly positive `xᵀMx` (independent check) and
+`max eig(M) > res`; the eigenvalue route never meets an exactly negative
+definite form; no certificate is issued where the exact `xᵀMx` is positive. On
+the route family the scalar decision equals the exact sign of `xᵀMx` and the
+eigenvalue route equals the exact class at every sample; near the threshold
+they agree at 96 % and 84 % of the samples (the gate is conservative there),
+and the scalar gate agrees with the eigenvalue route at 57 % and 74 % (a
+sample sees what the matrix sees only along its positive cone). Counterexample:
+for the decrease form
 `diag(-1, 1e-6)` all 64 sampled states show a negative scalar decrease (exactly),
 yet the form is indefinite; PLSR reports `DECREASE_NOT_DEFINITE` at every
 sample. For `n = 1` the verdict follows the sign of `a`.
@@ -247,8 +324,9 @@ Because the point estimate θ̂ alone could be accepted near a box bound while
 the true parameter lies outside, the adapter forwards θ̂ and both ends of
 `θ̂ ± 3 se`, and the host accepts a window only when the kernel certifies all
 three. Sensor id, units, calibration reference and timing stay in the
-envelope; a structural search of the serialised kernel payloads finds none of
-them (a planted leak is detected). Forwarded samples get the codes the
+envelope; a structural search of the serialised samples the adapter emits for
+the kernel finds none of them, and the same search flags a sensor id planted
+in that output. Forwarded samples get the codes the
 documented order predicts: both nominal windows are accepted, the near-bound
 window (θ = 0.48) is rejected because its upper interval end is
 `OUTSIDE_PARAMETER_BOX`, and θ̂ = 0.90 is outside the box. The kernel refuses
@@ -266,9 +344,15 @@ For a fixed declared model the sign of the decrease form does not depend on
 the state, so without a level set the monitor returns `CERTIFIED_WITH_MARGIN`
 for every state and carries no information about the axis. The specification
 therefore declares a level `c` with `{V ≤ c}` inside the operating envelope and
-aborts on `OUTSIDE_LEVEL_SET`; a 200-state scan (by the documented decision
-order) shows the code follows the exact `V(x) > c` decision and that every
-abort code is producible. Codes the configuration cannot produce (for example
+aborts on `OUTSIDE_LEVEL_SET`. The containment is checked without reusing the
+float inverse that chose `c`: exactly (`max x_i²` over the ellipsoid is
+`c (P⁻¹)_ii = c P_jj / det P` in rationals) and on 3600 points of the boundary
+`x = sqrt(c) L⁻ᵀu` (`P = L Lᵀ`). The pinned runtime evaluates the monitor
+configuration at 200 seeded states: without a level every state is
+`CERTIFIED_WITH_MARGIN`, with it the code follows the exact `V(x) > c`
+decision (independent check), and every abort code is produced; the CIW
+transcription of the documented order gives the same codes and is the
+provider-free fallback (then the task is `partial`). Codes the configuration cannot produce (for example
 `NOT_CERTIFIED`, `DECREASE_NOT_DEFINITE`, `OUTSIDE_PARAMETER_BOX`) are listed
 as such and treated as a runtime fault, not as abort triggers.
 
@@ -288,6 +372,12 @@ as such and treated as a runtime fault, not as abort triggers.
 6. Report the residual gate of `solve_lyapunov` separately from
    definiteness, and document that a refusal does not mean that no valid
    quadratic certificate exists (T109).
+7. Return `CERTIFICATE_NOT_POSITIVE` rather than raising `ValueError` when an
+   affine `P(θ)` loses definiteness at an in-box θ, as RUNTIME-STATUS-v1
+   describes the code (T106).
+8. Report `V` and `xᵀMx` from the exact `(mantissa, exponent)` pair, which the
+   sample already carries, so that a representable subnormal value is not
+   reported as 0 when `s²` underflows (T103).
 
 ## Open research questions
 

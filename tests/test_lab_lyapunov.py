@@ -7,6 +7,7 @@ it installed: set CIW_LAB_PLSR_PYTHON, or run the tests under such an
 interpreter; otherwise they are skipped. A CIW_LAB_PLSR_PYTHON that names a
 missing interpreter fails the provider tests instead of skipping them.
 """
+import ast
 from fractions import Fraction
 import importlib.util
 import json
@@ -27,7 +28,7 @@ from ciw.lab.registry import load_implementations, load_queue
 from ciw.lab.report import validate_report
 from ciw.lab.runner import Context, run_queue, run_task
 
-PROVIDER_TASKS = [f"T1{n:02d}" for n in range(1, 12)] + ["T113"]
+PROVIDER_TASKS = [f"T1{n:02d}" for n in range(1, 12)] + ["T113", "T114"]
 
 
 def _plsr_python():
@@ -192,11 +193,80 @@ def test_documented_decision_order():
 def test_documented_rule_is_monotone():
     for member in L.near_threshold_family(108, 12):
         info = R.documented_code(member["A"], member["P"], member["x"])
-        steps = [dict(code=R.documented_code(member["A"], member["P"], member["x"], required_margin=r)["code"],
-                      meets_required_margin=info["margin"] > max(r, info["resolution"]),
-                      inequality_certified=info["margin"] > info["resolution"])
+        steps = [dict(code=R.documented_code(member["A"], member["P"], member["x"], required_margin=r)["code"])
                  for r in L.margin_grid(info["margin"], info["resolution"])]
-        assert sum(L.monotonicity_violations(steps).values()) == 0
+        violations = L.monotonicity_violations(steps)
+        assert set(violations) == {"passing_regained", "noncertifying_code_changed"}  # codes only
+        assert sum(violations.values()) == 0
+    # The detector itself fails on a sequence that regains a passing code.
+    regained = [{"code": "MARGIN_LOW"}, {"code": "CERTIFIED_WITH_MARGIN"}]
+    assert L.monotonicity_violations(regained)["passing_regained"] == 1
+
+
+def test_transition_graph():
+    graph = L.transition_graph()
+    statuses = {key: entry["status"] for key, entry in graph.items()}
+    assert sorted(statuses.values()).count("allowed") == 24
+    assert sorted(statuses.values()).count("rounding only") == 8
+    assert sorted(k for k, v in statuses.items() if v == "excluded") == sorted([
+        "CERTIFIED_WITH_MARGIN <-> NOT_CERTIFIED", "CERTIFIED_WITH_MARGIN <-> DECREASE_NOT_DEFINITE",
+        "MARGIN_LOW <-> NOT_CERTIFIED", "MARGIN_LOW <-> DECREASE_NOT_DEFINITE"])
+    assert graph["NOT_CERTIFIED <-> NUMERICAL_INCONCLUSIVE"]["crossings"] == [["scalar_positive", "not_definite"]]
+    # Every allowed pair occurs directly between consecutive steps of the transcribed paths, at its crossing.
+    paths = L.status_paths()
+    _, predictions, gates = L._path_cases(paths, [])
+    rows = L.path_transitions(paths, predictions, gates, graph)
+    coverage = L.transition_coverage(graph, rows)
+    assert all(coverage[k]["exercised_on"] for k, v in statuses.items() if v == "allowed")
+    assert all(row["direct"] for row in rows)
+    # A step across two thresholds at once (CERTIFIED_WITH_MARGIN straight to NOT_CERTIFIED) is not direct.
+    skip = {"skip": [dict(A=-np.eye(2), P=np.eye(2), x=np.array([1.0, 0.0])),
+                     dict(A=np.eye(2), P=np.eye(2), x=np.array([1.0, 0.0]))]}
+    _, codes, skip_gates = L._path_cases(skip, [])
+    assert [r["direct"] for r in L.path_transitions(skip, codes, skip_gates, graph)] == [False]
+    for steps in paths.values():
+        for step in steps:
+            evaluated = L.step_gates(step)
+            A, P, x, in_box, options = L._step_inputs(step)
+            assert evaluated["code"] == R.documented_code(A, P, x, in_box=in_box, **options)["code"]
+    assert "x" in L.coverage_markdown(coverage) and "!" not in L.coverage_markdown(coverage).split("\n\n")[1]
+
+
+def test_representability_reference():
+    assert R.representable(Fraction(0)) and R.representable(Fraction(1, 3))
+    assert R.representable(Fraction(R.TINY)) and not R.representable(Fraction(R.TINY) / 3)
+    assert not R.representable(Fraction(2) ** 1024) and R.representable(Fraction(L.DBL_MAX))
+    # 0.5625 * 2^-1074 rounds to 2^-1074: representable, although PLSR's two-step product reports 0.
+    assert R.representable(Fraction(9, 16) * Fraction(R.TINY))
+
+
+def test_checks_are_unconditional_and_observed_values_are_computed():
+    """No check is added only after its outcome was observed, and none records a literal observed value.
+
+    A check built inside an ``if`` on an observed outcome cannot fail, and a literal observed value is a number
+    chosen after the fact. The only conditional checks allowed depend on which optional reference module is
+    installed (``if independent is not None``), not on a result.
+    """
+    tree = ast.parse(Path(L.__file__).read_text(encoding="utf-8"))
+    parents = {}
+    for node in ast.walk(tree):
+        for child in ast.iter_child_nodes(node):
+            parents[child] = node
+    allowed_conditions = {"independent is not None"}
+    problems = []
+    for node in ast.walk(tree):
+        if not (isinstance(node, ast.Call) and isinstance(node.func, ast.Name) and node.func.id in ("_check",
+                                                                                                  "_refusal")):
+            continue
+        observed = node.args[1] if node.func.id == "_check" and len(node.args) > 1 else None
+        if isinstance(observed, ast.Constant):
+            problems.append(f"line {node.lineno}: literal observed value {observed.value!r}")
+        ancestor = parents.get(node)
+        while ancestor is not None and not isinstance(ancestor, (ast.FunctionDef, ast.Lambda)):
+            if isinstance(ancestor, (ast.If, ast.IfExp)) and ast.unparse(ancestor.test) not in allowed_conditions:
+                problems.append(f"line {node.lineno}: check built under 'if {ast.unparse(ancestor.test)}'")
+            ancestor = parents.get(ancestor)
+    assert problems == []
 
 
 def test_numpy_misreads_exact_jordan_block():
@@ -280,6 +350,11 @@ def test_adapter_keeps_metadata_outside():
     assert "key calibration_ref" in X.metadata_leaks({"calibration_ref": 1.0}, envelope)
 
 
+def _solver_label():
+    """Agreement with SciPy's Lyapunov solvers is independent; the CIW Kronecker fallback is not."""
+    return "independently_verified" if importlib.util.find_spec("scipy") is not None else "numerically_verified"
+
+
 def _exponential_label():
     optional = any(importlib.util.find_spec(name) is not None for name in ("scipy", "mpmath"))
     return "independently_verified" if optional else "numerically_verified"
@@ -287,18 +362,24 @@ def _exponential_label():
 
 def test_t114_servo_pilot_spec(tmp_path):
     report = _run("T114", tmp_path)
-    assert report["state"] == "completed" and report["evidence_status"]["primary"] == "numerically_verified"
+    # Without the provider the monitor scan runs only in the CIW transcription: partial, not completed.
+    assert report["state"] == "partial" and report["evidence_status"]["primary"] == "numerically_verified"
     _regression_ready(report)
     grid = _finding(report, "The unit-balanced nominal P")
     assert grid["evidence_status"] == "numerically_verified" and grid["value"]["not_negative_definite"] == 0
     assert _finding(report, "With Q = I the nominal-model P")["counterexample"]
     assert _label(report, "The ZOH exponential") == _exponential_label()
-    monitor = _finding(report, "Without a level set the monitor's code")
+    monitor = _finding(report, "By the CIW transcription of the documented decision order, the monitor's code")
     assert monitor["evidence_status"] == "numerically_verified"
     assert monitor["value"]["codes_without_level"] == ["CERTIFIED_WITH_MARGIN"]
     assert monitor["value"]["codes_with_level"] == ["CERTIFIED_WITH_MARGIN", "OUTSIDE_LEVEL_SET"]
     assert monitor["value"]["level_mismatches"] == 0
-    assert _label(report, "Every runtime code named as an abort trigger") == "numerically_verified"
+    assert _label(report, "By the CIW transcription of the documented decision order, every runtime code") \
+        == "numerically_verified"
+    envelope = _finding(report, "The declared level set {V <= c} lies inside the operating envelope")
+    assert envelope["evidence_status"] == "numerically_verified"
+    assert 0.99 < envelope["value"]["sampled_boundary_extent_ratio"] <= 1.0
+    assert 0.99 < envelope["value"]["exact_largest_squared_extent_ratio"] <= 1.0
     for domain in ("machine_safety", "actuator_authority", "production_acceptance", "industrial_readiness",
                    "physical", "calibration"):
         assert [f["evidence_status"] for f in report["findings"] if f["domain"] == domain] == ["not_established"]
@@ -309,6 +390,18 @@ def test_t114_servo_pilot_spec(tmp_path):
     assert "OUTSIDE_LEVEL_SET" in criteria and "OUTSIDE_PARAMETER_BOX" not in criteria
     assert "NOT_CERTIFIED or DECREASE_NOT_DEFINITE" not in criteria
     assert spec["lyapunov_check_scope"]["runtime_codes"]["abort_on"] == ["OUTSIDE_LEVEL_SET"]
+    assert spec["lyapunov_check_scope"]["runtime_codes"]["scan_evaluated_by"].startswith("CIW transcription")
+
+
+def test_level_set_extent_is_checked_independently():
+    _, models = X.servo_models()
+    P, _ = X.servo_certificate(models)
+    level = X.servo_level(P)
+    assert X.level_set_extent(P, level) <= 1
+    assert X.level_set_boundary_extent(P, level) <= 1.0
+    # A level four times larger doubles the ellipsoid: both checks must then fail.
+    assert X.level_set_extent(P, 4.0 * level) > 1
+    assert X.level_set_boundary_extent(P, 4.0 * level) > 1.0
 
 
 def test_research_tasks_without_optional_modules(tmp_path, monkeypatch):
@@ -321,7 +414,7 @@ def test_research_tasks_without_optional_modules(tmp_path, monkeypatch):
     augmented[:2, :2], augmented[:2, 2:] = models[0]["A"], models[0]["B"]
     assert X.independent_expm(augmented * X.SERVO["Ts_s"]) is None  # defective: no eigendecomposition
     servo = _run("T114", tmp_path / "servo")
-    assert servo["state"] == "completed"
+    assert servo["state"] == "partial"  # the provider is not bound here
     exponential = _finding(servo, "The ZOH exponential")
     assert exponential["evidence_status"] == "numerically_verified"
     assert exponential["value"]["max_abs_difference_independent"] is None
@@ -360,11 +453,15 @@ def test_t101_resolution_floor(reports):
     assert inside["value"]["analytic_mismatches"] == inside["value"]["unit_scale_mismatches"] == 0
     assert inside["value"]["max_normalised_resolution_deviation"] == 0.0
     assert _label(report, "NUMERICAL_OVERFLOW first appears") == "numerically_verified"
-    witness = _finding(report, "A subnormal plant whose declared decrease form")
+    witness = _finding(report, "PLSR's resolution of a subnormal plant is zero")
     assert witness["evidence_status"] == "numerically_verified"
     assert witness["value"]["exact_det_units2"] == -1.0 and witness["value"]["resolution"] == 0.0
-    if witness["value"]["certified"]:
-        assert witness["counterexample"]["statement"].startswith("The float64 resolution floor")
+    assert witness["value"]["plsr_form_units"] == [[-4.0, 4.0], [4.0, -6.0]]
+    assert witness["value"]["formation_error_units"] == 1.0
+    assert witness["counterexample"]["statement"].startswith("The float64 resolution floor")
+    # The witness's code depends on LAPACK's subnormal handling: retained in the artifact, never in a finding.
+    assert all("code" not in f["value"] for f in report["findings"] if isinstance(f["value"], dict)
+               and "formation_error_units" in f["value"])
 
 
 @needs_provider
@@ -380,8 +477,9 @@ def test_t102_power_of_two_scaling(reports):
     assert outside["value"]["unsound"] == 0 and outside["evidence_status"] == "numerically_verified"
     assert _label(report, "No unscaled PLSR verdict certifies") == "independently_verified"
     witness = _finding(report, "Scaling the witness by 2^-1074")
-    assert witness["value"]["unit_code"] == "DECREASE_NOT_DEFINITE"
-    assert bool(witness.get("counterexample")) == (witness["value"]["scaled_code"] != "DECREASE_NOT_DEFINITE")
+    assert witness["value"] == {"unit_code": "DECREASE_NOT_DEFINITE", "scaled_resolution": 0.0}
+    assert "counterexample" not in witness and "counterexample" not in outside
+    assert set(outside["value"]) == {"evaluations", "unsound"}
 
 
 @needs_provider
@@ -400,7 +498,13 @@ def test_t103_overflow_underflow(reports):
     theta = _finding(report, "A finite in-box theta")
     assert theta["value"]["theta:+1e308,c=2"] == "raises ValueError"
     assert theta["value"]["theta:+1e308,c=1"] == "NUMERICAL_OVERFLOW"
-    assert _label(report, "A subnormal plant whose declared decrease form") == "numerically_verified"
+    assert _label(report, "PLSR's resolution of a subnormal plant is zero") == "numerically_verified"
+    reported = _finding(report, "PLSR's reported V and x^T M x equal the exact values")
+    assert reported["evidence_status"] == "independently_verified"
+    assert reported["value"]["missed_flags"] == 0 and reported["value"]["states"] == 37
+    conservative = _finding(report, "PLSR sets value_out_of_range and reports V = 0")
+    assert conservative["evidence_status"] == "numerically_verified"
+    assert conservative["value"]["representable_but_flagged"] == 2 and conservative["counterexample"]
 
 
 @needs_provider
@@ -429,6 +533,10 @@ def test_t105_unit_scales(reports):
     formula = _finding(report, "A parameter exactly on the SI bound")
     assert formula["value"] == {"SI": "CERTIFIED_WITH_MARGIN", "x1e-3": "OUTSIDE_PARAMETER_BOX"}
     assert _label(report, "The declared box bounds 8 and 12 N/m") == "numerically_verified"
+    neighbour = _finding(report, "A binary64 neighbour just outside the declared stiffness box")
+    assert neighbour["evidence_status"] == "numerically_verified" and neighbour["counterexample"]
+    assert neighbour["value"]["neighbours_admitted_by_second_formula"] == {
+        "um, ms, N/um|k just below 8": "CERTIFIED_WITH_MARGIN"}
     light = _finding(report, "The light-damping plant's verdict")
     assert light["value"]["m, s, N/m"] == "CERTIFIED_WITH_MARGIN"
     assert light["value"]["m, ms, N/m"] == "NUMERICAL_INCONCLUSIVE"
@@ -445,7 +553,16 @@ def test_t106_status_coverage(reports):
     assert sorted(coverage["value"]["codes"]) == sorted(L.ROUNDING_FREE_CODES)
     assert _label(report, "Codes along each one-parameter path") == "numerically_verified"
     witnesses = _finding(report, "The exactly indefinite P witnesses")
-    assert witnesses["value"]["certifying"] == 0 and witnesses["evidence_status"] == "numerically_verified"
+    assert witnesses["value"] == {"witnesses": 8, "certifying": 0}
+    assert witnesses["evidence_status"] == "numerically_verified"
+    transitions = _finding(report, "Every transition the decision order allows")
+    assert transitions["evidence_status"] == "numerically_verified"
+    assert transitions["value"]["allowed"] == transitions["value"]["exercised"] == 24
+    assert transitions["value"]["undeclared"] == 0
+    singular = _finding(report, "An affine certificate that is singular at an in-box theta")
+    assert singular["value"] == {"theta = -1": "raises ValueError", "theta = -0.5": "CERTIFIED_WITH_MARGIN"}
+    assert singular["evidence_status"] == "numerically_verified" and singular["counterexample"]
+    assert any("CERTIFICATE_NOT_POSITIVE are not exercised" in text for text in report["unresolved_assumptions"])
     host = _finding(report, "The runtime refuses to emit")["value"]
     assert all(v == {"Verdict": "raises ValueError", "require_status": "raises ValueError"} for v in host.values())
     constants = _finding(report, "Pinned runtime constants")
@@ -466,7 +583,8 @@ def test_t107_inconclusive_band(reports):
     band = _finding(report, "At required_margin 0 near-boundary spectra")
     assert band["evidence_status"] == "numerically_verified" and band["counterexample"]
     assert band["value"]["certified"] >= 1 and band["value"]["unsound"] == 0
-    assert "T107 specification" in band["counterexample"]["statement"]
+    assert "candidate hypothesis" in band["counterexample"]["statement"]
+    assert band["counterexample"]["witness"]["exact_bin"] == "[-2, -1) res"
     assert _finding(report, "MARGIN_LOW appears exactly")["value"]["margin_low_observed"] is True
     assert _label(report, "Share of exactly") == "provider_backed"
     assert set(_finding(report, "Share of exactly")["value"]) == {"inconclusive_share"}
@@ -492,10 +610,15 @@ def test_t109_adversarial_eigenvalues(reports):
     sound = _finding(report, "Every certifying PLSR verdict")
     assert sound["value"]["violations"] == 0 and sound["evidence_status"] == "independently_verified"
     agreement = _finding(report, "PLSR Lyapunov solutions agree")
-    assert agreement["evidence_status"] == "independently_verified"
+    assert agreement["evidence_status"] == _solver_label()
     assert "within 10 n^2 u cond(P)" in agreement["claim"]  # the claim states the bound the check applies
-    assert agreement["value"]["max_normalised_difference"] <= 10.0
-    assert agreement["value"]["max_relative_difference"] < 1e-12
+    assert agreement["value"]["beyond_bound"] == 0 and agreement["value"]["cases"] >= 1
+    assert agreement["regression_tolerance"] == {"abs": 0.0, "rel": 0.0}
+    check = agreement["basis"].get("independent_check") or agreement["basis"]["checks"][0]
+    assert check["reference_kind"] == "analytic" and check["observed"] <= 10.0
+    numpy_misplaced = _finding(report, "numpy.linalg.eigvals misplaces")
+    assert set(numpy_misplaced["value"]) == {"cases", "misplaced_beyond_1e3_eps"}
+    assert "counterexample" not in numpy_misplaced
     assert _finding(report, "Certified non-normal plants")["value"]["max_ratio"] <= 1.0
     threshold = _finding(report, "With P = I the non-normal plants")
     assert threshold["value"]["mismatches"] == 0
@@ -532,10 +655,19 @@ def test_t111_routes(reports):
     _completed(report, "numerically_verified")
     for time in ("continuous", "discrete"):
         agreement = _finding(report, f"PLSR {time}-time Lyapunov solutions agree")
-        assert agreement["evidence_status"] == "independently_verified"
+        assert agreement["evidence_status"] == _solver_label()
         assert agreement["value"]["max_relative_difference"] < 1e-9
-        checker = agreement["basis"]["independent_check"]["checker"]["implementation"]
-        assert checker.startswith((f"scipy.linalg.solve_{time}_lyapunov", "ciw.lab.lyapunov_reference"))
+        if "independent_check" in agreement["basis"]:
+            checker = agreement["basis"]["independent_check"]["checker"]["implementation"]
+            assert checker.startswith(f"scipy.linalg.solve_{time}_lyapunov")
+            assert agreement["basis"]["independent_check"]["reference_kind"] == "analytic"
+    gate = _finding(report, "PLSR's scalar NOT_CERTIFIED gate fires only where")
+    assert gate["evidence_status"] == "independently_verified"
+    assert set(gate["value"]["violations"].values()) == {0}
+    assert gate["value"]["samples"] == {"route family": 400, "near threshold": 408}
+    assert gate["value"]["not_certified_share"]["route family"] > 0.0
+    assert gate["value"]["not_certified_share"]["near threshold"] > 0.0
+    assert gate["value"]["agreement"]["route family"]["scalar_vs_exact_sample_sign"] == 1.0
     solver = _finding(report, "PLSR's solve_lyapunov returns a P exactly")
     assert solver["value"]["mismatches"] == 0 and solver["evidence_status"] == "independently_verified"
     assert solver["value"]["refused"] == len(solver["basis"]["checks"]) == 20
@@ -547,6 +679,21 @@ def test_t111_routes(reports):
     assert thin["value"]["exactly_indefinite"] is True and thin["evidence_status"] == "numerically_verified"
     assert len(thin["basis"]["checks"]) == 4  # indefiniteness, scalar decrease, PLSR code, no certificate
     assert _label(report, "For n = 1 the PLSR verdict") == "numerically_verified"
+
+
+@needs_provider
+def test_t114_level_set_and_monitor(reports):
+    report = reports["T114"]
+    _completed(report, "numerically_verified")
+    monitor = _finding(report, "PLSR's monitor code on the declared configuration")
+    assert monitor["evidence_status"] == "independently_verified"
+    assert monitor["value"]["codes_without_level"] == ["CERTIFIED_WITH_MARGIN"]
+    assert monitor["value"]["codes_with_level"] == ["CERTIFIED_WITH_MARGIN", "OUTSIDE_LEVEL_SET"]
+    assert monitor["value"]["level_mismatches"] == 0
+    assert _label(report, "PLSR produces every runtime code named as an abort trigger") == "numerically_verified"
+    assert _label(report, "By the CIW transcription of the documented decision order, the monitor's code") \
+        == "numerically_verified"
+    assert _label(report, "The declared level set {V <= c} lies inside") == "numerically_verified"
 
 
 @needs_provider
@@ -564,6 +711,6 @@ def test_t113_residual_adapter(reports):
                                              "estimate outside box theta 0.9": False}
     assert accepted["evidence_status"] == "numerically_verified"
     assert set(_finding(report, "The kernel refuses every host-owned code")["value"].values()) == {"raises ValueError"}
-    assert _finding(report, "Kernel payloads built by the adapter carry only")["value"]["metadata_leaks"] == []
+    assert _finding(report, "Samples the adapter emits for the kernel carry only")["value"]["metadata_leaks"] == []
     assert _label(report, "The synthetic residual statistics") == "not_established"
     assert _label(report, "The EKF standard error of theta covers") == "not_established"

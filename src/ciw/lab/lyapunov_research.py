@@ -492,26 +492,67 @@ def servo_level(P):
     return (1.0 - 1e-6) * float(min(bounds[i] ** 2 / inverse[i, i] for i in range(2)))
 
 
-def monitor_scan(A_cl, P, level, count=200, seed=1141):
-    """Online monitor codes at seeded states with V(x) = r^2 c, r = 10^U(-8, 8), by the documented decision order.
+def level_set_extent(P, level):
+    """Largest |x_i| / e_i over the ellipsoid {x^T P x <= c}, in exact rationals, for the 2x2 servo P.
 
-    Each state is evaluated without and with the declared level; the exact V(x) > c decision uses dyadic
-    rationals. Returns the rows and the sets of codes each configuration produced.
+    max x_i^2 over the ellipsoid is c (P^-1)_ii (Lagrange), and (P^-1)_ii = P_jj / det P for a 2x2 P, so the
+    comparison with the envelope bound e_i is exact; it does not reuse the float inverse that chose c.
+    Returns the largest squared ratio c (P^-1)_ii / e_i^2 as a Fraction.
     """
+    from fractions import Fraction
+
+    p = R.fractions(np.asarray(P, dtype=float))
+    determinant = p[0][0] * p[1][1] - p[0][1] * p[1][0]
+    bounds = (Fraction(SERVO_ENVELOPE["angle_error_rad"]), Fraction(SERVO_ENVELOPE["velocity_rad_s"]))
+    c = Fraction(level)
+    return max(c * p[1 - i][1 - i] / determinant / (bounds[i] * bounds[i]) for i in range(2))
+
+
+def level_set_boundary_extent(P, level, count=3600):
+    """Largest |x_i| / e_i over sampled points of the boundary {x^T P x = c} (no closed form involved).
+
+    With P = L L^T the boundary is x = sqrt(c) L^-T u for unit u; ``count`` equally spaced u sample it evenly
+    along the ellipse however elongated it is, so the sampled maximum is within a factor cos(pi / count) of the
+    true one.
+    """
+    L = np.linalg.cholesky(np.asarray(P, dtype=float))
+    bounds = np.array([SERVO_ENVELOPE["angle_error_rad"], SERVO_ENVELOPE["velocity_rad_s"]])
+    largest = 0.0
+    for k in range(count):
+        angle = 2.0 * math.pi * k / count
+        point = math.sqrt(level) * np.linalg.solve(L.T, np.array([math.cos(angle), math.sin(angle)]))
+        largest = max(largest, float(np.max(np.abs(point) / bounds)))
+    return largest
+
+
+def monitor_states(P, level, count=200, seed=1141):
+    """Seeded states with V(x) = r^2 c, r = 10^U(-8, 8), and the exact V(x) > c decision in dyadic rationals."""
     from fractions import Fraction
 
     rng = R.generator(seed)
     P = np.asarray(P, dtype=float)
     exact_P, exact_level = R.fractions(P), Fraction(level)
-    rows = []
+    states = []
     for _ in range(count):
         angle, radius = float(rng.uniform(0.0, 2.0 * math.pi)), float(10.0 ** rng.uniform(-8.0, 8.0))
         direction = np.array([math.cos(angle), math.sin(angle)])
         x = radius * direction * math.sqrt(level / float(direction @ P @ direction))
-        rows.append({"x": x.tolist(), "radius": radius,
-                     "exact_exceeds_level": R.exact_quadratic(x, exact_P) > exact_level,
-                     "code_without_level": R.documented_code(A_cl, P, x, "discrete")["code"],
-                     "code_with_level": R.documented_code(A_cl, P, x, "discrete", level=level)["code"]})
+        states.append({"x": x.tolist(), "radius": radius,
+                       "exact_exceeds_level": R.exact_quadratic(x, exact_P) > exact_level})
+    return states
+
+
+def monitor_scan(A_cl, P, level, count=200, seed=1141):
+    """Monitor codes at the seeded states by the CIW transcription of the documented decision order.
+
+    Each state is evaluated without and with the declared level. The pinned runtime evaluates the same states
+    when it is bound (T114); this transcription is the provider-free fallback and a same-specification check.
+    """
+    rows = []
+    for state in monitor_states(P, level, count, seed):
+        x = np.array(state["x"])
+        rows.append(dict(state, code_without_level=R.documented_code(A_cl, P, x, "discrete")["code"],
+                         code_with_level=R.documented_code(A_cl, P, x, "discrete", level=level)["code"]))
     return rows
 
 
@@ -551,6 +592,7 @@ def servo_spec(K, P, grid_classes, monitor):
                                         "c = (1 - 1e-6) min_i e_i^2 / (P^-1)_ii; the set is invariant for each "
                                         "grid model because V decreases there"},
             "runtime_codes": {"expected": list(SERVO_EXPECTED_CODES), "abort_on": list(SERVO_ABORT_CODES),
+                              "scan_evaluated_by": monitor["source"],
                               "produced_by_scan_with_level": monitor["codes_with_level"],
                               "produced_by_scan_without_level": monitor["codes_without_level"],
                               "cannot_occur_for_this_configuration": [
