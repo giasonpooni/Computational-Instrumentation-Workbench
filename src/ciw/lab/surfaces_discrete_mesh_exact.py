@@ -11,7 +11,8 @@ manner of Chen and Han (1990) as improved by Xin and Wang (2009, "ICH"):
   vertex distances settle in increasing order as in Dijkstra's algorithm;
 - pseudo-sources at saddle vertices (angle sum above 2 pi) and at reflex
   boundary vertices (angle sum above pi), the only places where a shortest
-  path may bend;
+  path may bend, and at vertices within ``ANGLE_TOLERANCE`` of flat, whose
+  rounded angle sums cannot tell a flat vertex from a slight saddle;
 - pruning against the best distance known at vertices: the part of a window
   on an edge whose path is longer than the path through an endpoint of that
   edge is cut off, and a window is dropped when a vertex of one of its two
@@ -21,8 +22,9 @@ manner of Chen and Han (1990) as improved by Xin and Wang (2009, "ICH"):
 
 Sources and targets at arbitrary surface points are inserted as vertices by a
 planar 1-to-3 face split, or a 1-to-2 split of the two faces at a point on an
-edge (``insert_points``). The new faces lie in the old face planes, so the
-polyhedral metric, and every distance, is unchanged.
+edge (``insert_points``), after moving the point onto that face or edge. The
+new faces lie in the old face planes, so the polyhedral metric, and every
+distance, is unchanged.
 
 Non-claims: exactness holds in exact arithmetic; computed distances carry the
 rounding of the unfoldings. The loop is plain Python, for meshes of a few
@@ -39,7 +41,9 @@ import numpy as np
 
 from . import surfaces_discrete_mesh_geometry as G
 
-# Angle sums within this of 2 pi (pi at a boundary vertex) are flat: rays pass such a vertex on both sides.
+# Vertices whose angle sum exceeds 2 pi (pi at a boundary vertex) by more than -ANGLE_TOLERANCE are pseudo-sources.
+# The margin leans towards more of them: a slight saddle taken for flat would leave the wedge behind it, as wide
+# as its excess, to no window, while a flat vertex taken for a pseudo-source only adds windows.
 ANGLE_TOLERANCE = 1e-9
 # Relative edge-parameter slack: a ray this close to an apex passes through it.
 PARAMETER_TOLERANCE = 1e-12
@@ -83,9 +87,9 @@ class ExactGeodesic:
         self.scale = float(np.mean(length))
         angles = mesh.corner_angles()
         total = np.bincount(faces.ravel(), weights=angles.ravel(), minlength=self.n)
-        boundary = mesh.boundary_vertices
-        self.pseudo = ((~boundary & (total > 2 * math.pi + ANGLE_TOLERANCE))
-                       | (boundary & (total > math.pi + ANGLE_TOLERANCE))).tolist()
+        # Angle sum minus that of a flat vertex: positive at saddles and reflex boundary corners.
+        self.excess = total - np.where(mesh.boundary_vertices, math.pi, 2 * math.pi)
+        self.pseudo = (self.excess > -ANGLE_TOLERANCE).tolist()
         # Opposite half-edges of every corner: the edges a pseudo-source at that vertex sees first.
         corners = np.argsort(faces.ravel(), kind="stable")
         counts = np.bincount(faces.ravel(), minlength=self.n)
@@ -198,10 +202,13 @@ def insert_points(mesh: G.TriMesh, points) -> tuple:
 
     A point inside a face splits it 1-to-3 about the point; a point within
     ``ON_EDGE`` (barycentric) of an edge splits both faces at that edge
-    1-to-2; a point at a vertex is that vertex. New faces lie in the plane of
-    the face they replace and keep its orientation, so the polyhedral metric
-    is unchanged. The face of a later point is looked up again in the refined
-    mesh. A point on no face is refused with ``point_outside_face``.
+    1-to-2; a point at a vertex is that vertex. The point is first projected
+    onto the face plane and, within ``ON_EDGE`` of an edge, moved onto that
+    edge from the opposite corner (by about ``ON_EDGE`` times an edge length
+    at most), so the new faces lie in the plane of the face they replace,
+    keep its orientation, and leave the polyhedral metric unchanged. The face
+    of a later point is looked up again in the refined mesh. A point on no
+    face is refused with ``point_outside_face``.
     """
     vertices, faces = mesh.vertices.copy(), mesh.faces.copy()
     ids = []
@@ -215,6 +222,8 @@ def insert_points(mesh: G.TriMesh, points) -> tuple:
         if len(small) >= 2:
             ids.append(int(faces[face, 3 - small.sum()]))
             continue
+        bary[small] = 0.0
+        point = current.point(face, bary / bary.sum())  # on the face plane, and on the edge when near one
         new = len(vertices)
         vertices = np.concatenate([vertices, point[None]])
         if len(small) == 0:

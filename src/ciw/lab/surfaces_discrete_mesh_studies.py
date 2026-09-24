@@ -322,7 +322,8 @@ def dijkstra_independent(level=3):
 
 # ---------------------------------------------------------------- exact polyhedral distances
 # Meshes of the exact-distance study, three sources each (vertex 0 of an icosphere has valence 5). The
-# torus has 120 saddle vertices (angle sum above 2 pi), where shortest paths may bend.
+# torus has 120 saddle vertices (angle sum above 2 pi), where shortest paths may bend; its 48 flat vertices are
+# pseudo-sources too (surfaces_discrete_mesh_exact.ANGLE_TOLERANCE).
 EXACT_LEVELS = (1, 2, 3, 4)
 EXACT_TORUS = (24, 12)
 FLIPOUT_MESHES = ("icosphere-2", "icosphere-3", "torus-24x12")
@@ -370,6 +371,7 @@ def exact_distance_study(levels=EXACT_LEVELS, torus=EXACT_TORUS, flipout=FLIPOUT
         d = np.array([distances for distances, _ in solved])
         a, b = mesh.edges[:, 0], mesh.edges[:, 1]
         row = {"mesh": mesh.name, "vertices": len(mesh.vertices), "h": mesh.mean_edge(), "sources": list(sources),
+               "saddle_vertices": int(np.sum(solver.excess > E.ANGLE_TOLERANCE)),
                "pseudo_source_vertices": int(sum(solver.pseudo)), "distances": d,
                "windows": [counters["windows"] for _, counters in solved],
                "symmetry_max_abs": float(max(abs(d[i, sources[j]] - d[j, sources[i]])

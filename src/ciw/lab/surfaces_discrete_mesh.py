@@ -320,12 +320,15 @@ def _exact_findings(exact, external, comparison, traced, analytic, insertion):
         "with pygeodesic's exact MMP implementation when installed) on icosphere levels 1-4 and a torus with saddle "
         "vertices", "numerical",
         {"meshes": [r["mesh"] for r in rows], "vertices": [r["vertices"] for r in rows],
+         "saddle_vertices": [r["saddle_vertices"] for r in rows],
          "pseudo_source_vertices": [r["pseudo_source_vertices"] for r in rows], "max_abs_difference": reference_value},
         reference_basis, unit="normalized length", uncertainty=roundoff, tolerance=TIGHT))
 
     paired = [r for r in rows if "pairs" in r]
     pairs = sum(r["pairs"] for r in paired)
     edge_min = min(r["edge_graph_min_excess"] for r in paired)
+    # The edge-graph paths FlipOut starts from stand in for its geodesics without potpourri3d (same origin); the
+    # value keeps one shape in both environments, and the per-mesh FlipOut table is in exact-distances.json.
     path_basis = {"generator": generator(f"{STUD}.exact_meshes", meshes=[r["mesh"] for r in paired]),
                   "checks": [check("smallest edge-graph path length minus exact distance over the vertex pairs, plus a "
                                    "1e-12 rounding allowance", edge_min + ROUNDING, 0.0, "signed_ge",
@@ -340,10 +343,9 @@ def _exact_findings(exact, external, comparison, traced, analytic, insertion):
             producer=producer,
             checker={"implementation": "potpourri3d.EdgeFlipGeodesicSolver", "revision": external["potpourri3d"]})
     findings.append(finding(
-        "Edge-graph paths and FlipOut edge-flip geodesics (potpourri3d, when installed) between vertex pairs are never "
-        "shorter than the exact distance", "numerical",
-        {"pairs": pairs, "meshes": [r["mesh"] for r in paired], "edge_graph_min_excess": edge_min,
-         "flipout": external.get("flipout")},
+        "FlipOut edge-flip geodesics between vertex pairs (potpourri3d; without it, the edge-graph paths FlipOut "
+        "starts from) are never shorter than the exact distance", "numerical",
+        {"pairs": pairs, "meshes": [r["mesh"] for r in paired], "min_excess": smallest},
         path_basis, unit="normalized length", uncertainty=roundoff, tolerance=TIGHT))
 
     edges = comparison["edge_graph"]
@@ -434,9 +436,12 @@ def _exact_findings(exact, external, comparison, traced, analytic, insertion):
     f"{TESTS}::test_exact_distances_match_closed_forms",
     f"{TESTS}::test_point_insertion_leaves_distances_unchanged",
     f"{TESTS}::test_exact_distances_agree_with_pygeodesic",
+    f"{TESTS}::test_nearly_flat_saddles_leave_no_shadow",
+    f"{TESTS}::test_exact_distances_on_a_perturbed_cube_agree_with_pygeodesic",
     f"{TESTS}::test_flipout_geodesics_are_never_shorter",
     f"{TESTS}::test_paths_and_approximations_never_beat_the_exact_distance",
     f"{TESTS}::test_exact_checks_fall_back_without_external_packages",
+    f"{TESTS}::test_ciw_producers_of_t038_independent_checks_carry_a_revision",
     f"{TESTS}::test_solver_task_report"))
 def mesh_geodesic_solver(ctx):
     traces = _memo(ctx, "sphere-traces", S.sphere_trace_study)
@@ -572,10 +577,11 @@ def mesh_geodesic_solver(ctx):
               f"prism cylinders and cube corners (sqrt 5 = {analytic['cube']['corner_distances'][-1]:.6f} where the "
               f"edge graph gives {analytic['cube']['edge_graph_far_corner']:.6f}); inserting points as vertices "
               f"changes distances by at most {insertion['max_abs_change']:.1e}; distances from three sources on "
-              f"icosphere levels 1-4 and a torus with {sum(r['pseudo_source_vertices'] for r in rows)} saddle vertices "
+              f"icosphere levels 1-4 and a torus with {sum(r['saddle_vertices'] for r in rows)} saddle vertices "
               "agree with their references (source symmetry, and pygeodesic's exact MMP when installed) to "
-              f"{reference:.1e}; no edge-graph path or edge-flip geodesic between {sum(r['pairs'] for r in paired)} vertex pairs is "
-              f"shorter than the exact distance (smallest excess {smallest:.1e}). Against the exact distance from "
+              f"{reference:.1e}; no edge-graph path (nor, when potpourri3d is installed, FlipOut edge-flip geodesic) "
+              f"between {sum(r['pairs'] for r in paired)} vertex pairs is shorter than the exact distance (smallest "
+              f"excess {smallest:.1e}). Against the exact distance from "
               "vertex 0 the edge graph's largest relative excess is "
               + ", ".join(f"{r['max_relative_excess']:.3f}" for r in comparison["edge_graph"])
               + f" on levels 1-4 (valence-5 floor sqrt 5 - 2 = {S.EDGE_GRAPH_FLOOR:.3f}); the Steiner mean excess "
@@ -590,14 +596,16 @@ def mesh_geodesic_solver(ctx):
               + f"; {sum(r['shortest'] for r in short)} of {len(short)} length-1 traces on level 2 are shortest.")
     return {"state": task_state(findings), "findings": findings, "fields": fields(
         "Unfolding across edges (straight in faces, equal angles at edges) yields exact straightest geodesics on "
-        "developable meshes. Window propagation (Chen-Han with the Xin-Wang priority queue, saddle and reflex-boundary "
-        "pseudo-sources and pruning against vertex distances) yields the exact polyhedral distance, the length of the "
-        "globally shortest surface path, so that edge-graph, Steiner-graph and locally shortest paths never fall below "
-        "it; whether traced straightest geodesics shorter than pi are shortest paths is tested against it.",
+        "developable meshes. Window propagation (Chen-Han with the Xin-Wang priority queue, saddle, reflex-boundary "
+        "and flat pseudo-sources and pruning against vertex distances) yields the exact polyhedral distance, the "
+        "length of the globally shortest surface path, so that edge-graph, Steiner-graph and locally shortest paths "
+        "never fall below it; whether traced straightest geodesics shorter than pi are shortest paths is tested against "
+        "it.",
         "Straightest geodesic: in each face a straight segment; at an edge the direction keeps its edge component and "
         "the magnitude of its perpendicular component (rotation about the edge). Exact distance: windows (an edge "
         "interval with its source unfolded into the plane and the source's own distance) propagated face by face in "
-        "increasing order of the smallest distance they carry; a window part that a path through a vertex of its edge "
+        "increasing order of the smallest distance they carry; every vertex whose angle sum is not below flat by more "
+        "than 1e-9 re-emits windows as a pseudo-source; a window part that a path through a vertex of its edge "
         "or faces beats by more than a rounding margin is pruned; surface points become vertices by planar face and "
         "edge splits. Graph distances: Dijkstra on the edge graph and on the graph of k Steiner points per edge; "
         "vertex hits are refused by the tracer.",
@@ -620,13 +628,14 @@ def mesh_geodesic_solver(ctx):
         "graphs, the heat method and traced lengths with them.",
         result,
         "Deterministic computation; floating-point rounding only (exact distances agree with the closed forms to "
-        "about 1e-14). The strip layout, Floyd-Warshall, source symmetry and edge Lipschitz checks are "
-        "ciw code (same origin); the scipy, pygeodesic and potpourri3d comparisons are independent. " + ordering
+        "about 1e-14). The strip layout, Floyd-Warshall, source symmetry, edge Lipschitz and edge-graph path checks "
+        "are ciw code (same origin); the scipy, pygeodesic and potpourri3d comparisons are independent. " + ordering
         + " A trace counts as shortest when it is within 1e-10 of the exact distance; the others exceed it by at "
         f"least {separation:.1e}.",
         ["vertex hits (refused, none occurred in the declared set)", "boundary reached", "tracing through a face "
          "without an exit edge", "strip unfolding sign conventions", "graph duplicates from shared face edges",
          "saddle vertices (torus) and a reflex boundary corner (L-shape) as pseudo-sources of the exact solver",
+         "flat vertices (planes, cylinders, the torus's flat rings, inserted points) as pseudo-sources",
          "rays through vertices on regular grids (planes, cylinders, cube)",
          "points inserted inside a face and on an edge", "scipy absent (Floyd-Warshall only; the Dijkstra finding is "
          "then numerically_verified)", "pygeodesic or potpourri3d absent (their findings then rest on the same-origin "

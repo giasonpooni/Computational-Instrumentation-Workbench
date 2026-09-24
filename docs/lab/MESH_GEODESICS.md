@@ -81,9 +81,13 @@ interval is reached at distance `σ + |s − x|`.
 - **Pseudo-sources.** Shortest paths bend only at saddle vertices (angle sum
   above `2π`) and at reflex boundary vertices (angle sum above `π`). Such a
   vertex, once reached, starts windows of its own on the far edges of its
-  faces, with `σ` its distance. Flat vertices (within `1e-9` of `2π`, or `π`
-  on the boundary) are passed on both sides as limit rays of their
-  neighbouring windows.
+  faces, with `σ` its distance. Every vertex whose angle sum is not below
+  `2π` (`π` on the boundary) by more than `1e-9` is made one, flat vertices
+  included: a slight saddle taken for flat would leave the wedge behind it,
+  as wide as its angle excess, to no window (on a 4 × 4 grid with `1e-6`
+  height noise, 5 of its 25 vertices went unreached that way), while a flat
+  vertex taken for a pseudo-source only adds windows. Convex vertices are
+  passed on both sides.
 - **Pruning.** Along an edge `PQ`, `σ + |s − x| − |P x|` never increases away
   from `P` and `σ + |s − x| − |Q x|` never decreases towards `Q`, so each
   endpoint cuts one end of the interval at a single root of a linear
@@ -96,9 +100,11 @@ interval is reached at distance `σ + |s − x|`.
 - **Points on the surface.** `insert_points(mesh, [(face, xyz)])` makes each
   point a vertex: a point inside a face splits it 1-to-3, a point within
   `1e-9` (barycentric) of an edge splits both faces at the edge 1-to-2, and a
-  point at a vertex is that vertex. The new faces lie in the old face planes,
-  so the polyhedral metric, and every distance, is unchanged; the refined
-  mesh stays closed and consistently oriented.
+  point at a vertex is that vertex. The point is first projected onto the
+  face plane and, near an edge, moved onto the edge (by about `1e-9` of an
+  edge length at most), so the new faces lie in the old face planes and the
+  polyhedral metric, and every distance, is unchanged; the refined mesh stays
+  closed and consistently oriented.
 
 The loop is plain Python. Icosphere-4 (2562 vertices) propagates about 141000
 windows per source; the studies stop there. The solver returns distances only:
@@ -114,9 +120,12 @@ geodesic, so its length is at least the exact distance and equals it when that
 geodesic is also globally shortest. Their origins (`pygeodesic`,
 `potpourri3d`) are recognised independent families, and the ciw side of each
 check names `ciw <version>` and the solver module's source digest. Without a
-package its finding keeps the same claim and prose and rests on same-origin
-checks (source symmetry, the edge Lipschitz bound, edge-graph paths), so it
-is `numerically_verified` instead of `independently_verified`.
+package its finding keeps the same claim, value shape and prose and rests on
+same-origin checks (source symmetry and the edge Lipschitz bound; for FlipOut,
+the edge-graph paths it starts from), so it is `numerically_verified` instead
+of `independently_verified`. The run identity records both packages (with
+scipy, sympy and mpmath), so `ciw lab verify` names them ("optional modules
+differ") when such a label changes between environments.
 
 ### Distances
 
@@ -260,12 +269,12 @@ Exact polyhedral distances:
 
 | Check | Result |
 | --- | --- |
-| Sheared planar meshes, from a vertex and an inserted interior point: exact vs Euclidean | `2.4e-15` |
+| Sheared planar meshes, from a vertex and an inserted interior point: exact vs Euclidean | `2.7e-15` |
 | L-shaped grid (reflex corner at (0.5, 0.5)), two sources: exact vs segment or path bent at the corner | `1.1e-15`; 20 targets reached around the corner |
 | Prism cylinder, n = 8, 16, 32, from a boundary vertex and an inserted point: exact vs development over periodic images | `7.1e-15` |
 | Refined cube (4 × 4 squares per face), corner to corners: exact vs 1, √2, √5 | `8.9e-16`; the edge graph gives 1 + √2 = 2.414214 for √5 = 2.236068 |
-| Face point and edge point inserted as vertices (icosphere-2, torus 12 × 6): change of distances between original vertices | `1.8e-15` |
-| Three sources on icosphere levels 1–4 and a 24 × 12 torus (120 saddles): source symmetry and pygeodesic (11088 distances) | `8.0e-15` (`independently_verified` with pygeodesic) |
+| Face point and edge point inserted as vertices (icosphere-2, torus 12 × 6): change of distances between original vertices | `1.3e-15` |
+| Three sources on icosphere levels 1–4 and a 24 × 12 torus (120 saddles and 48 flat vertices as pseudo-sources): source symmetry and pygeodesic (11088 distances) | `8.0e-15` (`independently_verified` with pygeodesic) |
 | FlipOut geodesic − exact over 3267 vertex pairs (icosphere-2, icosphere-3, torus) | smallest −4.4e-15; shortest in 404 of 483, 1475 of 1923, 795 of 861 pairs; largest excess 7.5e-3, 4.9e-3, 0.14 |
 
 Compared with the exact distance from vertex 0 (valence 5):

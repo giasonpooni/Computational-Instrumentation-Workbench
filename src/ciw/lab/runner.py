@@ -9,6 +9,7 @@ from __future__ import annotations
 
 from copy import deepcopy
 import hashlib
+import importlib.metadata
 import importlib.util
 import json
 import math
@@ -69,15 +70,19 @@ def source_digest(relative: str) -> str | None:
     return hashlib.sha256(path.read_bytes().replace(b"\r\n", b"\n")).hexdigest()
 
 
-OPTIONAL_MODULES = ("scipy", "sympy", "mpmath")
+OPTIONAL_MODULES = ("scipy", "sympy", "mpmath", "pygeodesic", "potpourri3d")
+# Optional modules without a ``__version__``: the metadata of their installed distribution names the version.
+DISTRIBUTION_VERSIONED = ("potpourri3d",)
 
 
 def builtin_identity(changed_files) -> dict:
     """The workbench runtime: sources, interpreter and the optional reference modules that import here.
 
     An installed optional module that fails on import is recorded under
-    ``optional_module_errors`` (it is not present), and one without a string
-    ``__version__`` as ``unknown (...)``; identifying the runtime never aborts a run.
+    ``optional_module_errors`` (it is not present), and one whose version
+    cannot be read (``__version__``, or the distribution metadata for those in
+    ``DISTRIBUTION_VERSIONED``) as ``unknown (...)``; identifying the runtime
+    never aborts a run.
     """
     sources = {name: source_digest(name) for name in changed_files if source_digest(name)}
     identity = {"implementation": "ciw.lab", "ciw_version": __version__,
@@ -92,7 +97,8 @@ def builtin_identity(changed_files) -> dict:
             errors[optional] = f"{type(exc).__name__}: {exc}"
             continue
         try:
-            identity[optional] = str(module.__version__)
+            identity[optional] = str(importlib.metadata.version(optional) if optional in DISTRIBUTION_VERSIONED
+                                     else module.__version__)
         except Exception as exc:
             identity[optional] = f"unknown ({type(exc).__name__}: {exc})"
     if errors:

@@ -1,4 +1,6 @@
 import copy
+import importlib.metadata
+import importlib.util
 import math
 
 import numpy as np
@@ -20,8 +22,8 @@ DIJKSTRA_CLAIM = ("Heap Dijkstra edge-graph distances agree with a dense Floyd-W
 PYGEODESIC_CLAIM = ("Exact polyhedral distances from three sources are symmetric between the sources (and agree at "
                     "every vertex with pygeodesic's exact MMP implementation when installed) on icosphere levels 1-4 "
                     "and a torus with saddle vertices")
-FLIPOUT_CLAIM = ("Edge-graph paths and FlipOut edge-flip geodesics (potpourri3d, when installed) between vertex pairs "
-                 "are never shorter than the exact distance")
+FLIPOUT_CLAIM = ("FlipOut edge-flip geodesics between vertex pairs (potpourri3d; without it, the edge-graph paths FlipOut "
+                 "starts from) are never shorter than the exact distance")
 # The memoized studies T038 reads (surfaces_discrete_mesh:<name>).
 T038_STUDIES = ("sphere-traces", "cylinder", "plane", "steiner-nested", "dijkstra-independent", "exact-distances",
                 "exact-independent", "exact-comparison", "traced-exact", "exact-analytic", "exact-insertion")
@@ -203,11 +205,23 @@ def test_exact_checks_fall_back_without_external_packages(monkeypatch, tmp_path,
     for claim in (PYGEODESIC_CLAIM, FLIPOUT_CLAIM):
         record = _value(report, claim)
         assert "independent_check" not in record["basis"] and record["basis"]["checks"]
-    assert _value(report, FLIPOUT_CLAIM)["value"]["flipout"] is None
     assert report["state"] == "completed" and report["evidence_status"]["primary"] == "numerically_verified"
     assert set(labels) == set(_labels(reports["T038"]))
     for field in ("numerical_result", "uncertainty", "unresolved_assumptions"):
         assert runner._skeleton(report[field]) == runner._skeleton(reports["T038"][field]), field
+    # Values keep their shape and stay within tolerance, so `ciw lab verify` reports only the label changes, and
+    # names the packages behind them.
+    for record in reports["T038"]["findings"]:
+        tolerance = record.get("regression_tolerance", {"abs": 0.0, "rel": 1e-9})
+        assert runner._close(record["value"], _value(report, record["claim"])["value"], tolerance), record["claim"]
+    installed = {"provider_runtime_identity": {"implementation": "ciw.lab", "pygeodesic": "0.1.11",
+                                               "potpourri3d": "1.4.0"}}
+    bare = {"provider_runtime_identity": {"implementation": "ciw.lab"}}
+    assert runner._environment_note(installed, bare) == " (optional modules differ: -potpourri3d, -pygeodesic)"
+    identity = runner.builtin_identity([])
+    for package in ("pygeodesic", "potpourri3d"):  # potpourri3d has no __version__: its distribution names it
+        version = importlib.metadata.version(package) if importlib.util.find_spec(package) else None
+        assert identity.get(package) == version, package
     # The origins of the two external checkers are recognised, so an installed checker yields independence.
     from ciw.lab.evidence import supported_label
     base = {"reference_kind": "exact_arithmetic", "reference": "r", "observed": 0.0, "tolerance": 1e-12,
@@ -227,10 +241,14 @@ def test_exact_distances_match_closed_forms():
     assert cube["max_error"] <= 1e-12
     assert sorted(cube["closed_forms"]) == pytest.approx([0, 1, 1, 1, math.sqrt(2)] + [math.sqrt(2)] * 2
                                                          + [math.sqrt(5)])
-    # The L-shape needs its reflex corner as a pseudo-source: it is the only one, and paths bend there.
+    # The L-shape needs its reflex corner as a pseudo-source: it is the only vertex whose angle sum exceeds flat,
+    # and paths bend there. Flat vertices are pseudo-sources too (they only add windows); its convex corners are not.
     shape = S._l_shape(4)
     solver = E.ExactGeodesic(shape)
-    assert [shape.vertices[v].tolist() for v in np.flatnonzero(solver.pseudo)] == [[0.5, 0.5, 0.0]]
+    assert [shape.vertices[v].tolist() for v in np.flatnonzero(solver.excess > E.ANGLE_TOLERANCE)] == [[0.5, 0.5, 0.0]]
+    flat = np.flatnonzero(np.abs(solver.excess) < E.ANGLE_TOLERANCE)
+    assert len(flat) and all(solver.pseudo[v] for v in flat)
+    assert not any(solver.pseudo[v] for v in np.flatnonzero(solver.excess < -E.ANGLE_TOLERANCE))
     far = int(np.argmin(np.linalg.norm(shape.vertices - [0.5, 1.0, 0.0], axis=1)))
     source = int(np.argmin(np.linalg.norm(shape.vertices - [1.0, 0.0, 0.0], axis=1)))
     assert solver.distances(source)[far] == pytest.approx(math.sqrt(0.5) + 0.5, abs=1e-12)
@@ -259,6 +277,16 @@ def test_point_insertion_leaves_distances_unchanged():
     # From the inserted point: symmetric with the distances to it.
     from_point = E.ExactGeodesic(split).distances(new)
     assert from_point[0] == pytest.approx(after[new], abs=1e-12)
+    # A point within ON_EDGE of an edge is moved onto it, so the face across keeps its plane.
+    for f in range(0, len(mesh.faces), 7):
+        near = mesh.point(f, [0.3, 0.7 - 0.5 * E.ON_EDGE, 0.5 * E.ON_EDGE])
+        snapped, (new,) = E.insert_points(mesh, [(f, near)])
+        assert np.sum(np.any(snapped.faces == new, axis=1)) == 4
+        a, b = mesh.vertices[mesh.faces[f, :2]]
+        assert np.linalg.norm(np.cross(snapped.vertices[new] - a, b - a)) / np.linalg.norm(b - a) <= 1e-15
+        assert np.linalg.norm(snapped.vertices[new] - near) <= E.ON_EDGE
+        moved = E.ExactGeodesic(snapped).distances(0)[:len(mesh.vertices)]
+        assert np.max(np.abs(moved - before)) <= 1e-12
     with pytest.raises(G.MeshRefusal) as refused:
         E.insert_points(mesh, [(3, 2 * edge_point)])
     assert refused.value.code == "point_outside_face"
@@ -272,10 +300,37 @@ def test_exact_distances_agree_with_pygeodesic():
         for source, distances in zip(row["sources"], row["distances"]):
             reference, _ = algorithm.geodesicDistances(np.array([source], dtype=np.int32), None)
             assert np.max(np.abs(reference - distances)) <= 1e-12, (row["mesh"], source)
-    assert exact["rows"][-1]["pseudo_source_vertices"] > 0  # the torus exercises saddle pseudo-sources
+    assert exact["rows"][-1]["saddle_vertices"] > 0  # the torus exercises saddle pseudo-sources
     external = S.exact_independent_study(exact)
     assert external["pygeodesic_max_abs"] <= 1e-12
     assert external["pygeodesic_compared"] == sum(3 * r["vertices"] for r in exact["rows"])
+
+
+def test_nearly_flat_saddles_leave_no_shadow():
+    """A saddle whose angle excess is below the tolerance is still a pseudo-source, so no vertex behind it is missed."""
+    plane = G.plane_mesh(4, 4)
+    vertices = plane.vertices.copy()
+    vertices[:, 2] = 1e-6 * np.random.default_rng(0).standard_normal(len(vertices))
+    assert G.inspect(vertices, plane.faces) == []
+    solver = E.ExactGeodesic(G.TriMesh(vertices, plane.faces))
+    assert np.any((solver.excess > 0) & (solver.excess < E.ANGLE_TOLERANCE))  # slight saddles
+    distances = solver.distances(0)
+    assert np.all(np.isfinite(distances))
+    assert np.max(np.abs(distances - np.linalg.norm(vertices[:, :2] - vertices[0, :2], axis=1))) <= 1e-9
+
+
+def test_exact_distances_on_a_perturbed_cube_agree_with_pygeodesic():
+    """A closed cube with every vertex moved by about 1e-6 from the centre: slight saddles and cones, no boundary."""
+    geodesic = pytest.importorskip("pygeodesic.geodesic")
+    box = G.cube_mesh(3)
+    vertices = box.vertices + 1e-6 * np.random.default_rng(1).standard_normal(len(box.vertices))[:, None] * (
+        box.vertices - 0.5)
+    assert G.inspect(vertices, box.faces, require_closed=True) == []
+    solver = E.ExactGeodesic(G.TriMesh(vertices, box.faces))
+    assert np.any((solver.excess > 0) & (solver.excess < E.ANGLE_TOLERANCE))
+    reference, _ = geodesic.PyGeodesicAlgorithmExact(vertices, box.faces.astype(np.int32)).geodesicDistances(
+        np.array([0], dtype=np.int32), None)
+    assert np.max(np.abs(solver.distances(0) - reference)) <= 1e-10
 
 
 def test_flipout_geodesics_are_never_shorter():
