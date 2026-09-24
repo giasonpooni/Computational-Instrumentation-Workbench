@@ -57,3 +57,26 @@ def test_retained_provider_bytes_are_decoded_with_the_same_nonfinite_guard_as_th
         geodesic._parse(b'{"schema": "gte.circle-request.v1", "observations": [NaN], "constraint": {}, "policy": {}}')
     import inspect
     assert "_reject_constant" in inspect.getsource(investigation._validate_batch)
+
+
+def test_unknown_workspace_and_oscillator_run_keys_are_refused_on_reopen(tmp_path):
+    import json
+    from ciw.adapters.oscillator import validate_run
+    session = Session(make_demo_run(), tmp_path / "s")
+    saved = session.save_workspace(tmp_path / "w.json")
+    document = json.loads(saved.read_text(encoding="utf-8"))
+    for extra in ("audit_extra", "results_shadow"):
+        tampered = dict(document, **{extra: 1})
+        (tmp_path / "t.json").write_text(json.dumps(tampered), encoding="utf-8")
+        with pytest.raises(ValueError, match="Unknown workspace keys"):
+            Session.from_workspace(tmp_path / "t.json", tmp_path / "r")
+    tampered = json.loads(json.dumps(document))
+    tampered["run"]["audit_extra"] = {"stash": True}
+    (tmp_path / "t.json").write_text(json.dumps(tampered), encoding="utf-8")
+    with pytest.raises(ValueError, match="Unknown run keys"):
+        Session.from_workspace(tmp_path / "t.json", tmp_path / "r")
+    run = make_demo_run()
+    validate_run(dict(run, run_schema="run.v1"))
+    with pytest.raises(ValueError, match="Unknown run keys"):
+        validate_run(dict(run, sidecar=[]))
+    Session.from_workspace(saved, tmp_path / "clean")

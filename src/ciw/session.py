@@ -515,6 +515,15 @@ class Session:
         workspace = read_json(path)
         if not isinstance(workspace, dict) or type(workspace.get("workspace_version")) is not int or workspace["workspace_version"] not in (1, 2, 3):
             raise ValueError("Unsupported workspace format")
+        # The document's key set is defined entirely by this module; a key it
+        # does not know would survive a reopen unvalidated and vanish on the
+        # next save, so it is refused like any other unknown payload key.
+        # Version-specific presence of executions and workbench is checked below
+        # with its own message; this refuses keys no version defines.
+        allowed = {"workspace_version", "saved_at", "run", "selection", "results", "view_settings", "executions", "workbench"}
+        unknown = sorted(set(workspace) - allowed)
+        if unknown:
+            raise ValueError(f"Unknown workspace keys: {', '.join(map(str, unknown))}")
         from .workbench import Workbench
         if workspace["workspace_version"] == 3:
             retained_workbench = Workbench.restore(workspace.get("workbench"))

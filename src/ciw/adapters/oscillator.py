@@ -168,11 +168,20 @@ def make_demo_run() -> dict:
     return run
 
 
+# The oscillator record's own keys; the optional schema tag and an embedded
+# adapter manifest are the two additions the generic record contract allows.
+RUN_KEYS = frozenset({"run_id", "evidence_id", "instrument", "metadata", "time_s", "channels", "render",
+                      "run_schema", "adapter"})
+
+
 def validate_run(run: dict) -> None:
     """Validate every source channel and the complete v1 record contract."""
     _mapping(run, "run")
     for name in ("run_id", "evidence_id", "instrument"):
         _string(run.get(name), name)
+    unknown = sorted(set(run) - RUN_KEYS)
+    if unknown:
+        raise ValueError(f"Unknown run keys for the oscillator record: {', '.join(map(str, unknown))}")
     _finite_tree(run)
     metadata = _mapping(run.get("metadata"), "metadata")
     duration = _number(metadata.get("duration_s"), "duration_s")
