@@ -307,11 +307,11 @@ accuracy, and with the non-FMA kernel every step count from 350 to 450
 crossed both poles to 5e-14. T036 records this natural seed (`natural` in
 `meridian-steps.json`) as an observation, with the inputs of the kernel
 choice: NumPy's BLAS build, the `OPENBLAS_CORETYPE` override (none when the
-kernel is detected from the CPU) and the CPU features NumPy found
-(`blas_kernel` in the runtime identity and the artifact). It does not read the
-runtime core name, which would load native code outside the package's
-declared hardware probes (T144). Its finding claims only what holds on every
-kernel:
+kernel is detected from the CPU, as it is when the variable is empty) and the
+CPU features NumPy found (`blas_kernel` in the runtime identity and the
+artifact). It does not read the runtime core name, which would load native
+code outside the package's declared hardware probes (T144). Its finding
+claims only what holds on every kernel:
 rounding seeds `|L| ≤ 1e-16` before the first crossing, since
 `g_12 = x_θ·x_φ` sums two products of size up to `R²/2` whose exact sum is 0.
 The finding's regression tolerance is that bound, about 90 times the spread
@@ -320,17 +320,27 @@ measured across the three kernels.
 The experiment instead starts from a declared seed: the lifted meridian
 tangent with `v_φ` replaced by `L0/sin²θ0`, `L0 = 1e-12`, compared with the
 exact great circle of that initial state. The natural seed is at most 1e-4 of
-`L0`, so it moves every seeded error by at most that fraction; across the
-three kernels the seeded errors agreed to 8.3e-7 relative and every failure
-was the same.
+`L0`. It moves an error linear in the seed by at most 1e-4 relative and an
+error quadratic in it by at most about 2e-4: perturbing the seed by 1e-3 gave
+the exponent 1.00 for 83 of the 96 scan runs below that do not fail, and
+about 2 (1.86 to 2.01) for 13 runs between 1.8 and 4.6 `d*` from a pole.
+Across the three kernels the scan's errors agreed to 8.3e-7 relative and
+every failure was the same.
 
 At 400 steps chart A alone then crosses both poles with error 1.03e-7 (the
 atlas errs 4.9e-8), which is a counterexample to "fixed-step integration in a
 single polar chart across its pole always fails". The two crossings amplify
 `L` about 320-fold each, to 1.03e-7; after them the run follows a great circle
-tilted by that much, which is its error. The error is proportional to the
-seed: a hundredth of the seed gives a hundredth of the error, to 1.2e-4
-(the natural seed's share at that seed).
+tilted by that much, which is its error. On this grid, far from `d*`, the
+error is proportional to the seed: a tenth of the seed gives a tenth of the
+error, to 1.7e-6. That comparison is a finding of its own, because at `L0/10`
+the natural seed's bound is a larger share (1e-3) than at `L0` (1e-4). The
+regression tolerance of each of the two findings is the natural seed's
+largest share of what it compares: 1e-4 relative for the 400-step error
+(spread across the kernels 2.0e-7) and 1.1e-3 for the ratio of the two
+errors (spread 1.7e-6). The measured spreads are far smaller because the
+kernels' natural seeds, at most 1.1e-18, lie far below the bound; the derived
+tolerances let any kernel within the bound reproduce the values.
 
 That success belongs to the step grid and the seed, not to the chart. Near a
 pole the chart is the polar chart of the tangent plane, which is scale
@@ -338,35 +348,68 @@ invariant, so with unit speed the outcome depends only on `d/h` and `L/h`,
 where `d` is the closest stage point's distance to the pole and `h` the step.
 A crossing multiplies `L` by a factor proportional to `(h/d)²` and turns
 nonlinear once `L h²/d³` reaches order 1, so two crossings fail for
-`L0 h⁴/d⁵ ≳ 1`, inside the failure radius `d* = (L0 h⁴)^(1/5)` (the constant
-1 is fitted). At 400 steps `d* = 1.4e-4`, and the closest stage point lies
-2.5e-3 (17.7 `d*`) from a pole. A scan of 101 step counts (350 to 450) at
-`L0 = 1e-12`, with the step counts within `3 d*` rerun at `L0/100`:
+`L0 h⁴/d⁵ ≳ 1`, inside the failure radius `d* = (L0 h⁴)^(1/5)`, whose exponent
+follows from this argument and whose constant 1 is fitted. At 400 steps
+`d* = 1.4e-4`, and the closest stage point lies 2.5e-3 (17.7 `d*`) from a
+pole. A scan of 101 step counts (350 to 450) at `L0 = 1e-12`:
 
-| Steps | closest stage point to a pole | `d*` at 1e-12 | chart A alone, `L0 = 1e-12` | `L0 = 1e-14` |
+| Steps | closest stage point to a pole | `d*` | chart A alone |
+| --- | --- | --- | --- |
+| 355 | 8.5e-8 | 1.6e-4 | fails (nonfinite state) |
+| 377 | 2.4e-5 | 1.5e-4 | fails |
+| 399 | 4.4e-5 | 1.4e-4 | fails |
+| 400 | 2.5e-3 | 1.4e-4 | 1.03e-7 |
+| 421 | 6.3e-5 | 1.4e-4 | fails |
+| 443 | 8.0e-5 | 1.3e-4 | fails |
+| 446 | 2.4e-4 | 1.3e-4 | 5.7e-2 |
+| the other 94 | ≥ 1.98 `d*` | | 6.4e-8 to 1.3e-2 |
+
+At this seed exactly the five runs with a stage point within `d*` fail
+(largest `d/d*` 0.60; the closest run that does not fail lies at 1.81 `d*`),
+and the other errors grow as the stage point nears `d*`. This is a second
+counterexample: an accurate single-chart pole crossing at one step count does
+not carry over to the neighbouring step count.
+
+The constant of `d*` does not hold at every seed. T036 sweeps the seed over
+half decades from 1e-15 to 1e-10 and, at each seed other than 1e-12, runs the
+step counts whose closest stage point lies within 2 `d*` of a pole (87 runs):
+
+| `L0` | runs | failed | largest `d/d*` of a failure | smallest `d/d*` of a run that does not fail |
 | --- | --- | --- | --- | --- |
-| 355 | 8.5e-8 | 1.6e-4 | fails (nonfinite state) | fails |
-| 377 | 2.4e-5 | 1.5e-4 | fails | fails |
-| 399 | 4.4e-5 | 1.4e-4 | fails | fails |
-| 400 | 2.5e-3 | 1.4e-4 | 1.03e-7 | 1.03e-9 |
-| 421 | 6.3e-5 | 1.4e-4 | fails | 0.16 (1.15 `d*`) |
-| 443 | 8.0e-5 | 1.3e-4 | fails | 1.9e-2 (1.52 `d*`) |
-| 446 | 2.4e-4 | 1.3e-4 | 5.7e-2 | 7.3e-6 |
-| the other 94 | ≥ 1.98 `d*` | | 6.4e-8 to 1.3e-2 | |
+| 1e-15 | 4 | 2 | 0.62 (377) | 1.23 (399, error 0.04) |
+| 3e-15 | 5 | 2 | 0.50 (377) | 0.99 (399, error 0.37) |
+| 1e-14 | 5 | 3 | 0.78 (399) | 1.15 (421, error 0.16) |
+| 3e-14 | 5 | 4 | 0.92 (421) | 1.22 (443, error 0.18) |
+| 1e-13 | 5 | 5 | 0.96 (443) | none |
+| 3e-13 | 5 | 5 | 0.77 (443) | none |
+| 1e-12 | 101 | 5 | 0.60 (443) | 1.81 (446, error 5.7e-2) |
+| 3e-12 | 9 | 5 | 0.49 (443) | 1.45 (446, error 0.54) |
+| 1e-11 | 15 | 7 | 1.36 (402) | 1.25 (424, error 0.86) |
+| 3e-11 | 15 | 11 | 1.41 (396) | 1.18 (380, error 1.7) |
+| 1e-10 | 19 | 15 | 1.20 (440) | 1.68 (449, error 0.40) |
 
-At `L0 = 1e-12` exactly the five runs with a stage point within `d*` fail
-(largest `d/d*` 0.60; the closest run that does not fail lies at 1.81 `d*`).
-At `L0/100` the radius shrinks by `100^(1/5) = 2.5`, and exactly the three
-reruns still within it fail: 421 and 443 move outside and no longer fail.
-The other errors range from 6.4e-8 to 5.7e-2, growing as the stage point
-nears `d*`. This is a second counterexample: an accurate single-chart pole
-crossing at one step count does not carry over to the neighbouring step
-count. Stage distances and `d*` are exact arithmetic on the step grid; the
-counts must match exactly, and the seeded values within a relative tolerance
-(1e-3 for the 400-step finding, whose hundredth-seed rerun spreads by 1.2e-4
-across kernels; 5e-5 for the scan, whose errors spread by 8.3e-7). The
-exponent of `d*` follows from the scaling argument; its constant is fitted
-at these two seeds on one path and is not tested for larger seeds.
+Across the sweep every run with a stage point within 0.9 `d*` of a pole fails
+and none beyond 1.5 `d*` does, but failed and completed runs overlap between
+0.99 and 1.41 `d*`: at 1e-11, 3e-11 and 1e-10 runs fail beyond `d*`, and at
+3e-15 step count 399 completes at 0.99 `d*`. The finding claims that band and
+the overlap, and records the overlap's width, 0.42 in `d/d*`, as the
+uncertainty of the fitted constant. Measured in units of `d*` the band holds
+over five decades of the seed, across which `d*` changes tenfold, and step
+counts 399, 421 and 443, which fail at 1e-12, complete at smaller seeds. Near
+`d*` a run that does not fail can still err by order 1 (1.7 at 3e-11, step
+count 380). The band is observed on one path at these seeds; beyond 2 `d*`
+only the declared seed was run, and finer seed steps or other paths may widen
+it.
+
+Stage distances, `d*` and their ratios are exact arithmetic on the step grid,
+and the outcomes are set by the declared seed: moving every swept seed by
+±1e-16, the natural seed's bound, changed no outcome, even at 1e-15 where the
+bound is a tenth of the seed, and across the three kernels the outcomes were
+identical. The swept runs' errors are recorded in `meridian-steps.json` but
+not compared: at the smallest seeds the natural seed is a larger share, and
+they spread by 1.2e-3 relative across the kernels. The finding compares its
+ratios, counts and failing step lists exactly, and the 400-step error in its
+witness within 1e-4 relative.
 
 On the graph atlas, geodesics start in the polar chart at x = −1.5, offset δ
 from the apex, heading in +x, over length 3 with 200 RK4 steps; the reference

@@ -817,13 +817,18 @@ STEPS = 400
 # about 1e-18 on the OpenBLAS kernels measured) that each pole crossing
 # amplifies. The scan therefore starts from a declared seed that dominates it,
 # v_phi = MERIDIAN_SEED / sin^2(theta0); NATURAL_SEED_BOUND bounds the rounding
-# seed at 1e-4 of the declared one. Step counts whose closest RK4 stage point
-# lies within RERUN_BAND failure radii of a pole are rerun at MERIDIAN_SEED / SEED_RATIO.
+# seed at 1e-4 of the declared one. The STEPS grid is rerun at MERIDIAN_SEED /
+# SEED_RATIO (natural share at most 1e-3 there), and the seed is swept over
+# half decades on the step counts whose closest RK4 stage point lies within
+# SWEEP_BAND failure radii of a pole; the failure boundary is checked against
+# the band [BAND_INNER, BAND_OUTER] d* across the sweep.
 MERIDIAN_STEPS = tuple(range(350, 451))
 MERIDIAN_SEED = 1e-12
 NATURAL_SEED_BOUND = 1e-16
-SEED_RATIO = 100
-RERUN_BAND = 3.0
+SEED_RATIO = 10
+SWEEP_SEEDS = (1e-15, 3e-15, 1e-14, 3e-14, 1e-13, 3e-13, 1e-12, 3e-12, 1e-11, 3e-11, 1e-10)
+SWEEP_BAND = 2.0
+BAND_INNER, BAND_OUTER = 0.9, 1.5
 # Graph atlas of the Gaussian bump (Monge chart plus its polar chart): starts
 # at x = -GRAPH_START, offset delta from the apex, heading in +x; RK4 over
 # GRAPH_LENGTH; the reference is the Monge chart alone at GRAPH_REFINE times the steps.
@@ -912,7 +917,8 @@ def failure_radius(seed, step, radius=1.0) -> float:
     L0/h only. A crossing whose closest stage point lies at d multiplies L by
     a factor proportional to (h/d)^2 and turns nonlinear once L h^2/d^3
     reaches order 1; two crossings at d therefore fail for L0 h^4/d^5 >~ 1.
-    The exponent follows from this argument, the constant 1 is fitted (T036).
+    The exponent follows from this argument; the constant 1 is fitted, and the
+    boundary is not sharp (T036 checks it against a band of d* across a seed sweep).
     """
     return radius * (radius * seed * (step / radius) ** 4) ** 0.2
 
@@ -923,7 +929,7 @@ def blas_kernel() -> dict:
 
     The runtime core name is not read: the package loads native code only in its declared hardware probes (T144).
     """
-    info = {"openblas_coretype": os.environ.get("OPENBLAS_CORETYPE")}
+    info = {"openblas_coretype": os.environ.get("OPENBLAS_CORETYPE") or None}  # empty: detected from the CPU
     try:
         config = np.show_config(mode="dicts")
     except (TypeError, ValueError, AttributeError):  # older NumPy without mode="dicts"
@@ -934,7 +940,7 @@ def blas_kernel() -> dict:
     return info
 
 
-def meridian_study(radius=1.0, step_counts=MERIDIAN_STEPS, seed=MERIDIAN_SEED) -> dict:
+def meridian_study(radius=1.0, step_counts=MERIDIAN_STEPS, seed=MERIDIAN_SEED, sweep_seeds=SWEEP_SEEDS) -> dict:
     """Chart A alone on the meridian (delta = 0) from a declared angular-momentum seed, for many step counts.
 
     The path crosses the north pole at arclength R and the south pole half a
@@ -943,9 +949,10 @@ def meridian_study(radius=1.0, step_counts=MERIDIAN_STEPS, seed=MERIDIAN_SEED) -
     v_phi is the declared seed, not the rounding of g_12, and the reference is
     the exact great circle of that initial state. Each crossing amplifies L,
     the more the closer an RK4 stage point lands to the pole (failure_radius).
-    Step counts within RERUN_BAND failure radii, and STEPS, are rerun at
-    seed / SEED_RATIO. The unseeded run at STEPS records the platform's
-    natural seed: g_12 and v_phi at the start, and L before the first crossing.
+    Every other seed of ``sweep_seeds`` runs the step counts within SWEEP_BAND
+    failure radii; STEPS is rerun at seed / SEED_RATIO. The unseeded run at
+    STEPS records the platform's natural seed: g_12 and v_phi at the start,
+    and L before the first crossing.
     """
     atlas = SphereAtlas(radius)
     chart = atlas.charts["A"]
@@ -976,13 +983,15 @@ def meridian_study(radius=1.0, step_counts=MERIDIAN_STEPS, seed=MERIDIAN_SEED) -
         s, states = integrate_fixed(chart.geodesic_rhs, np.concatenate([u0, v0]), length, STEPS, "rk4")
         return s, states, np.sin(states[:, 0]) ** 2 * states[:, 3]
 
+    def near(steps, momentum):
+        return _stage_distance(steps, length, crossings) < SWEEP_BAND * failure_radius(momentum, length / steps, radius)
+
     rows = scan(seed, step_counts)
-    rerun_counts = sorted({row["steps"] for row in rows if row["stage_distance"] < RERUN_BAND * row["failure_radius"]}
-                          | {STEPS})
-    reruns = scan(seed / SEED_RATIO, rerun_counts)
+    sweep = [{"seed": other, "rows": scan(other, [n for n in step_counts if near(n, other)])}
+             for other in sweep_seeds if other != seed]
     at_steps = next((row for row in rows if row["steps"] == STEPS), None) or scan(seed, [STEPS])[0]
     _, _, momentum = momentum_along(initial(seed))
-    seeded = dict(at_steps, rerun_error=next(row["error"] for row in reruns if row["steps"] == STEPS),
+    seeded = dict(at_steps, rerun_seed=seed / SEED_RATIO, rerun_error=scan(seed / SEED_RATIO, [STEPS])[0]["error"],
                   momentum_after_crossings=float(momentum[-1]), max_abs_momentum=float(np.max(np.abs(momentum))))
     s, states, momentum = momentum_along(lifted)
     points = np.array([chart.embedding(y[:2]) for y in states])
@@ -992,7 +1001,7 @@ def meridian_study(radius=1.0, step_counts=MERIDIAN_STEPS, seed=MERIDIAN_SEED) -
                "max_abs_momentum": float(np.max(np.abs(momentum))), "max_abs_v_phi": float(np.max(np.abs(states[:, 3]))),
                "error": _path_error(points, great_circle(start, tangent, radius, s))}
     return {"seed": seed, "step_counts": [int(n) for n in step_counts], "failure_radius": "(L0 h^4)^(1/5)",
-            "rows": rows, "rerun_seed": seed / SEED_RATIO, "reruns": reruns, "at_steps": seeded, "natural": natural}
+            "rows": rows, "sweep_band": SWEEP_BAND, "sweep": sweep, "at_steps": seeded, "natural": natural}
 
 
 def transition_defects(atlas, source, target, points, rng, length=1.0, floor=0.05) -> dict:
@@ -1119,30 +1128,34 @@ def chart_transitions(ctx):
     degraded = [row for row in study["runs"] if row["delta"] > 0 and (
         row["single_chart_failure"] is not None or row["single_chart_error"] > 10 * row["atlas_error"])]
     failed = [row for row in study["runs"] if row["single_chart_failure"] is not None]
-    # Seeded meridian in chart A alone: the step grid decides the outcome.
+    # Seeded meridian in chart A alone: the step grid and the seed decide the outcome.
     natural, seeded = meridian["natural"], meridian["at_steps"]
     ceiling = 2.0  # a failed run counts as the largest possible error on the unit sphere, 2R
 
-    def within(row):
-        return row["stage_distance"] < row["failure_radius"]
+    def within(row, factor=1.0):
+        return row["stage_distance"] < factor * row["failure_radius"]
 
     def ratio(row):
         return row["stage_distance"] / row["failure_radius"]
 
+    def extremes(rows):
+        # Closest approaches of the two outcomes to d*: the largest d/d* of a failed run and the smallest of any other.
+        return (max((ratio(row) for row in rows if row["error"] is None), default=0.0),
+                min((ratio(row) for row in rows if row["error"] is not None), default=0.0))
+
     near = [row for row in meridian["rows"] if within(row)]
-    others = [row for row in meridian["rows"] if not within(row)]
     meridian_failed = [row["steps"] for row in meridian["rows"] if row["error"] is None]
-    near_kept = [row["steps"] for row in near if row["error"] is not None]
-    others_failed = [row["steps"] for row in others if row["error"] is None]
-    other_errors = [row["error"] for row in others if row["error"] is not None] or [ceiling]
-    # Closest approaches of the two outcomes to d*: the largest d/d* of a failed run and the smallest of any other.
-    failed_ratio = max((ratio(row) for row in meridian["rows"] if row["error"] is None), default=0.0)
-    kept_ratio = min((ratio(row) for row in meridian["rows"] if row["error"] is not None), default=0.0)
-    rerun_failed = [row["steps"] for row in meridian["reruns"] if row["error"] is None]
-    rerun_kept = [row["steps"] for row in meridian["reruns"] if within(row) and row["error"] is not None]
-    rerun_others_failed = [row["steps"] for row in meridian["reruns"] if not within(row) and row["error"] is None]
-    # Grids within d* at the declared seed but beyond it at the smaller seed: the failure radius moved with the seed.
-    moved = [row["steps"] for row in meridian["reruns"] if not within(row) and row["steps"] in meridian_failed]
+    other_errors = [row["error"] for row in meridian["rows"] if not within(row) and row["error"] is not None] or [ceiling]
+    declared_failed_ratio, declared_kept_ratio = extremes(meridian["rows"])
+    # The declared seed's full scan and, at the other seeds, the step counts within SWEEP_BAND d*.
+    swept = meridian["rows"] + [row for entry in meridian["sweep"] for row in entry["rows"]]
+    swept_failed = [row for row in swept if row["error"] is None]
+    inner_kept = [row for row in swept if within(row, BAND_INNER) and row["error"] is not None]
+    outer_failed = [row for row in swept_failed if not within(row, BAND_OUTER)]
+    failed_ratio, kept_ratio = extremes(swept)
+    # Step counts that fail at the declared seed but not at a smaller seed: d* shrinks with the seed.
+    moved = sorted({row["steps"] for entry in meridian["sweep"] if entry["seed"] < MERIDIAN_SEED
+                    for row in entry["rows"] if row["error"] is not None and row["steps"] in meridian_failed})
     linearity = abs(seeded["error"] / (SEED_RATIO * seeded["rerun_error"]) - 1.0)
     natural_share = NATURAL_SEED_BOUND / MERIDIAN_SEED
     # Graph atlas of the Gaussian bump.
@@ -1212,15 +1225,18 @@ def chart_transitions(ctx):
                                "plane's polar chart, so the outcome depends on d/h and L0/h only (d the closest RK4 "
                                "stage point's distance to the pole); a crossing multiplies L by a factor proportional "
                                "to (h/d)^2 and turns nonlinear once L h^2/d^3 reaches order 1, so two crossings fail "
-                               "within d* = (L0 h^4)^(1/5). Graph z = f(x, y): "
+                               "within about d* = (L0 h^4)^(1/5) (exponent from this argument, constant fitted). Graph "
+                               "z = f(x, y): "
                                "Monge chart g = I + grad f grad f^T with regularity 1/(1 + |grad f|^2), and the polar "
                                "chart (r, t) pulled back through PolarChart, singular at r = 0."),
         "input_data": [f"unit sphere; great circles with closest approach delta in {list(DELTAS)} to the north pole, "
                        f"azimuth {AZIMUTH}, full length 2 pi", f"RK4, {STEPS} steps (convergence: 200/400/800)",
                        f"meridian (delta = 0) in chart A alone from the declared angular-momentum seed "
                        f"L0 = sin^2(theta0) v_phi0 = {MERIDIAN_SEED:g} at {len(MERIDIAN_STEPS)} step counts "
-                       f"({MERIDIAN_STEPS[0]}..{MERIDIAN_STEPS[-1]}); rerun at L0 / {SEED_RATIO} where an RK4 stage "
-                       f"point comes within {RERUN_BAND:g} d* of a pole and at {STEPS} steps; unseeded at {STEPS} steps",
+                       f"({MERIDIAN_STEPS[0]}..{MERIDIAN_STEPS[-1]}); at the other half-decade seeds from "
+                       f"{SWEEP_SEEDS[0]:g} to {SWEEP_SEEDS[-1]:g} the step counts whose closest RK4 stage point lies "
+                       f"within {SWEEP_BAND:g} d* of a pole; {STEPS} steps also at L0 / {SEED_RATIO}; unseeded at "
+                       f"{STEPS} steps",
                        f"switch threshold: regularity < {SWITCH_THRESHOLD}",
                        f"{transitions['points']} + {transitions['dense_points']} seeded sphere points for transitions "
                        f"and covering (seed {transitions['seed']})",
@@ -1234,24 +1250,30 @@ def chart_transitions(ctx):
                               "the sphere, the refined Monge-chart run on the bump."),
         "expected_invariant": ("Atlas error independent of delta and fourth order in the step; transitions exact to "
                                "rounding; single-chart error grows or the integration fails for small delta > 0; on "
-                               "the seeded meridian the single chart fails exactly when an RK4 stage point lands within "
-                               "d* of a pole, and its error at a fixed grid is proportional to the seed."),
+                               "the seeded meridian the single chart fails when an RK4 stage point lands within about "
+                               "d* of a pole, and on the 400-step grid, far from d*, its error is proportional to the "
+                               "seed."),
         "experiment": ("Integrate each geodesic with chart switching and in the singular chart alone; verify "
                        "transitions by round trip, speed preservation and difference Jacobians; convergence at "
-                       "delta = 0; scan the step count of the seeded meridian in chart A alone, rerun the grids near "
-                       "a pole at a hundredth of the seed, and record the natural seed of the unseeded meridian."),
+                       "delta = 0; scan the step count of the seeded meridian in chart A alone, sweep the seed over "
+                       "half decades on the grids near a pole, rerun the 400-step grid at a tenth of the seed, and "
+                       "record the natural seed of the unseeded meridian."),
         "numerical_result": (f"sphere atlas through the pole: error {_fmt(through['atlas_error'])}, "
                              f"{through['switches']} switches ({', '.join(through['switch_path'])}); atlas error spread "
                              f"over delta {_fmt(spread)}x; orders {', '.join(_fmt(o) for o in study['orders'])}; single "
                              f"chart failed for {len(failed)} and degraded (>10x atlas) for {len(degraded)} of "
                              f"{len(positive)} delta > 0; meridian in chart A alone from the seed {MERIDIAN_SEED:g}: "
-                             f"{STEPS}-step error {_fmt(seeded['error'])} ({SEED_RATIO} times the error from a "
-                             f"hundredth of the seed is {_fmt(SEED_RATIO * seeded['rerun_error'])}), the two crossings "
-                             f"amplifying L to {_fmt(seeded['momentum_after_crossings'])}; over {len(MERIDIAN_STEPS)} "
-                             f"step counts the {len(near)} runs with an RK4 stage point within d* of a pole fail "
-                             f"({len(meridian_failed)} failures in all), the others err {_fmt(min(other_errors))} to "
-                             f"{_fmt(max(other_errors))}; at a hundredth of the seed {len(rerun_failed)} of "
-                             f"{len(meridian['reruns'])} reruns fail, all within the smaller d*; unseeded, g_12 = "
+                             f"{STEPS}-step error {_fmt(seeded['error'])} ({SEED_RATIO} times the error from a seed "
+                             f"of {seeded['rerun_seed']:g} is {_fmt(SEED_RATIO * seeded['rerun_error'])}), the two "
+                             f"crossings amplifying L to {_fmt(seeded['momentum_after_crossings'])}; over "
+                             f"{len(MERIDIAN_STEPS)} step counts {len(near)} runs have an RK4 stage point within d* of a "
+                             f"pole and {len(meridian_failed)} fail, the largest d/d* of a failure "
+                             f"{_fmt(declared_failed_ratio)} and the smallest of any other run "
+                             f"{_fmt(declared_kept_ratio)}; the runs beyond d* err {_fmt(min(other_errors))} to "
+                             f"{_fmt(max(other_errors))}; across {1 + len(meridian['sweep'])} seeds from "
+                             f"{SWEEP_SEEDS[0]:g} to {SWEEP_SEEDS[-1]:g} ({len(swept)} runs, {len(swept_failed)} "
+                             f"failures) the largest d/d* of a failure is {_fmt(failed_ratio)} and the smallest of a "
+                             f"run that did not fail {_fmt(kept_ratio)}; unseeded, g_12 = "
                              f"{_fmt(natural['g12_at_start'])} and v_phi = {_fmt(natural['v_phi_at_start'])} at the "
                              f"start and |L| <= {_fmt(natural['momentum_before_first_crossing'])} before the first "
                              f"crossing, amplified to {_fmt(natural['max_abs_momentum'])} with error "
@@ -1277,14 +1299,21 @@ def chart_transitions(ctx):
                         "(the BLAS build and the inputs of the OpenBLAS kernel choice are recorded in the runtime "
                         "identity and in meridian-steps.json), so the "
                         f"meridian runs from a declared seed of {MERIDIAN_SEED:g}: the natural seed is at most "
-                        f"{NATURAL_SEED_BOUND:g}, {natural_share:g} of the declared one, which bounds its share of every "
-                        f"seeded error; the {STEPS}-step error from a hundredth of the seed differs from proportionality "
-                        f"by {_fmt(linearity)}. The failure radius d* has a fitted constant 1; its exponent follows "
-                        "from the scaling argument."),
+                        f"{NATURAL_SEED_BOUND:g}, {natural_share:g} of the declared one. It moves an error linear in the "
+                        f"seed (the {STEPS}-step grid) by at most {natural_share:g} relative, an error quadratic in it "
+                        "(grids within a few d*, where perturbing the seed gave exponents up to 2.01) by at most about "
+                        f"{2 * natural_share:g}, and the {STEPS}-step error from a seed of {seeded['rerun_seed']:g} by "
+                        f"at most {SEED_RATIO * natural_share:g}; that error differs from proportionality by "
+                        f"{_fmt(linearity)}. At the smallest swept seeds the bound is a larger share (up to "
+                        f"{NATURAL_SEED_BOUND / SWEEP_SEEDS[0]:g} at {SWEEP_SEEDS[0]:g}), so of the swept runs only the "
+                        "outcomes are compared. The failure radius d* takes its exponent from the scaling argument and "
+                        "its constant 1 from a fit; across the seed sweep the largest d/d* of a failure is "
+                        f"{_fmt(failed_ratio)} and the smallest of a run that did not fail {_fmt(kept_ratio)}."),
         "failure_modes_checked": ["geodesic exactly through a pole or the apex", "geodesics 1e-1..1e-12 from a pole",
                                   "chattering between charts (bound 1/2 > threshold 1/4)",
                                   "longitude wrap-around in transition differences",
                                   "RK4 stage points (step points and half steps) landing near a pole on the meridian",
+                                  "a failure radius that holds at one seed only (swept over five decades of the seed)",
                                   "rounding-level angular momentum on the unseeded meridian (bounded, and dominated by "
                                   "the declared seed)",
                                   "nonfinite single-chart states and math domain errors (recorded with their message; "
@@ -1296,9 +1325,11 @@ def chart_transitions(ctx):
             "Switching happens between steps; an adaptive integrator would need event location at the threshold.",
             "The recorded minimum regularity of the active chart restates the switch threshold and the covering "
             "bound; it is reported, not checked.",
-            f"The failure radius d* = (L0 h^4)^(1/5) is checked at the seeds {MERIDIAN_SEED:g} and "
-            f"{MERIDIAN_SEED / SEED_RATIO:g} on one path; the scaling argument gives its exponent, and its constant 1 "
-            "is fitted there and may differ for larger seeds or other paths."],
+            f"The failure radius d* = (L0 h^4)^(1/5) takes its exponent from the scaling argument and its constant 1 "
+            f"from a fit. It is checked on one path at half-decade seeds from {SWEEP_SEEDS[0]:g} to "
+            f"{SWEEP_SEEDS[-1]:g}, beyond {SWEEP_BAND:g} d* at the declared seed only; finer seed steps or other paths "
+            "may widen the band of d/d* in which failed and completed runs overlap. Near d* a run that does not fail "
+            "can still err by order 1."],
         "recommended_next_task": NEXT_STEPS["T036"],
         # The BLAS kernel sets the unseeded meridian's natural seed; recorded here and in meridian-steps.json only.
         "provider_runtime_identity": dict(builtin_identity((MODULE, CHARTS, GEOMETRY, DOC, CORE, INTEGRATORS)),
@@ -1373,61 +1404,81 @@ def chart_transitions(ctx):
                                             else _log10(runs[0.1]["single_chart_error"]),
                                             "log10_delta_0.1_atlas_error": _log10(runs[0.1]["atlas_error"])}}),
         finding(f"From a declared angular-momentum seed of {MERIDIAN_SEED:g}, chart A alone crosses both poles of the "
-                f"meridian at {STEPS} RK4 steps to within 1e-6, with an error proportional to the seed", "numerical",
-                {"error": _sig(seeded["error"], 6),
-                 f"error_at_hundredth_seed_times_{SEED_RATIO}": _sig(SEED_RATIO * seeded["rerun_error"], 6),
-                 "closest_stage_to_pole": _sig(seeded["stage_distance"], 6)},
+                f"meridian at {STEPS} RK4 steps to within 1e-6", "numerical",
+                {"error": _sig(seeded["error"], 6), "closest_stage_to_pole": _sig(seeded["stage_distance"], 6)},
                 {"checks": [_check(f"chart A alone, seed {MERIDIAN_SEED:g}, {STEPS} steps: max |X - X_exact| against the "
                                    "great circle of the seeded initial state", seeded["error"], 1e-6, comparison="le",
-                                   kind="analytic"),
-                            _check(f"|e(L0) / ({SEED_RATIO} e(L0 / {SEED_RATIO})) - 1| at {STEPS} steps (first order "
-                                   "in L0)", linearity, 1e-2, comparison="le", kind="analytic")]},
+                                   kind="analytic")]},
                 unit="length", uncertainty={"kind": "roundoff", "value": _sig(seeded["error"] * natural_share, 2),
-                                            "basis": f"the natural seed (at most {NATURAL_SEED_BOUND:g}, {natural_share:g} "
-                                                     "of the declared one) enters the error in proportion. Across the "
-                                                     "SkylakeX, Haswell and Sandybridge OpenBLAS kernels the error "
-                                                     "agreed to 2e-7 relative and the rerun at a hundredth of the seed "
-                                                     "to 1.2e-4 (its natural share is 100 times larger), so the "
-                                                     "regression tolerance is 1e-3 relative, 8 times that spread"},
-                tolerance={"abs": 0.0, "rel": 1e-3},
+                                            "basis": "the error is linear in the seed on this grid, so the natural seed "
+                                                     f"(at most {NATURAL_SEED_BOUND:g}, {natural_share:g} of the declared "
+                                                     f"one) moves it by at most {natural_share:g} relative. Across the "
+                                                     "SkylakeX, Haswell and Sandybridge OpenBLAS kernels it agreed to "
+                                                     "2.0e-7 relative, since their natural seeds (at most 1.1e-18) lie "
+                                                     "far below the bound; the regression tolerance is the derived "
+                                                     f"bound, {natural_share:g} relative, so any kernel within it "
+                                                     "reproduces the value"},
+                tolerance={"abs": 0.0, "rel": natural_share},
                 counterexample={"statement": "Fixed-step integration in a single polar chart across its pole always fails",
                                 "witness": {"steps": STEPS, "seed": MERIDIAN_SEED, "error": _sig(seeded["error"], 6)}}),
-        finding(f"From a declared seed L0, chart A alone fails on the meridian exactly when an RK4 stage point lands "
-                f"within (L0 h^4)^(1/5) of a pole ({MERIDIAN_STEPS[0]} to {MERIDIAN_STEPS[-1]} RK4 steps at "
-                f"L0 = {MERIDIAN_SEED:g}, and the grids near a pole at L0 = {MERIDIAN_SEED / SEED_RATIO:g})", "numerical",
-                {"step_counts": len(MERIDIAN_STEPS), "within_d_star": len(near), "failed": len(meridian_failed),
-                 "largest_ratio_failed": _sig(failed_ratio, 6), "smallest_ratio_not_failed": _sig(kept_ratio, 6),
-                 "other_error_range": [_sig(min(other_errors), 6), _sig(max(other_errors), 6)],
-                 "reruns": len(meridian["reruns"]), "reruns_failed": len(rerun_failed),
-                 "failed_but_beyond_smaller_d_star": len(moved)},
-                {"checks": [_check(f"runs within d* at L0 = {MERIDIAN_SEED:g} that did not fail", len(near_kept), 0,
-                                   comparison="le", kind="analytic"),
-                            _check(f"runs beyond d* at L0 = {MERIDIAN_SEED:g} that failed", len(others_failed), 0,
-                                   comparison="le", kind="analytic"),
-                            _check(f"reruns within d* at L0 = {MERIDIAN_SEED / SEED_RATIO:g} that did not fail",
-                                   len(rerun_kept), 0, comparison="le", kind="analytic"),
-                            _check(f"reruns beyond d* at L0 = {MERIDIAN_SEED / SEED_RATIO:g} that failed",
-                                   len(rerun_others_failed), 0, comparison="le", kind="analytic"),
-                            _check("step counts with an RK4 stage point within d* of a pole", len(near), 1,
-                                   comparison="ge", kind="exact_arithmetic"),
-                            _check("runs that failed at the declared seed and lie beyond d* at a hundredth of it "
-                                   "(the radius moved with the seed)", len(moved), 1, comparison="ge",
+        finding(f"At {STEPS} RK4 steps the meridian error of chart A alone is proportional to the declared seed: "
+                f"{SEED_RATIO} times the error from a seed of {seeded['rerun_seed']:g} matches the error from "
+                f"{MERIDIAN_SEED:g} to within 1e-2", "numerical",
+                {"seed_ratio": SEED_RATIO, "error_ratio": _sig(seeded["error"] / seeded["rerun_error"], 6)},
+                {"checks": [_check(f"|e({MERIDIAN_SEED:g}) / ({SEED_RATIO} e({seeded['rerun_seed']:g})) - 1| at {STEPS} "
+                                   "steps (first order in the seed)", linearity, 1e-2, comparison="le",
                                    kind="analytic")]},
-                uncertainty={"kind": "reference_error", "value": 0,
-                             "basis": "counts, stage distances and d* are exact arithmetic on the step grid. The natural "
-                                      f"seed changes each error by at most {natural_share:g} of the seed's effect, far "
-                                      f"from moving a run across d* (closest ratios d/d* {_fmt(failed_ratio)} and "
-                                      f"{_fmt(kept_ratio)}); "
-                                      "across the SkylakeX, Haswell and Sandybridge OpenBLAS kernels the failures were "
-                                      "the same and the other errors agreed to 8.3e-7 relative, so the regression "
-                                      "tolerance is 5e-5 relative, about 60 times that spread and above the rounding "
-                                      "of the reported values to six digits"},
-                tolerance={"abs": 0.0, "rel": 5e-5},
+                uncertainty={"kind": "roundoff", "value": _sig((1 + SEED_RATIO) * natural_share, 2),
+                             "basis": f"the natural seed (at most {NATURAL_SEED_BOUND:g}) is at most "
+                                      f"{SEED_RATIO * natural_share:g} of the smaller seed and {natural_share:g} of the "
+                                      "larger, so it moves the ratio of the two errors, each linear in its seed, by at "
+                                      f"most {(1 + SEED_RATIO) * natural_share:g} relative. Across the SkylakeX, Haswell "
+                                      "and Sandybridge OpenBLAS kernels the ratio agreed to 1.7e-6 relative, since "
+                                      "their natural seeds (at most 1.1e-18) lie far below the bound; the regression "
+                                      "tolerance is the derived bound, so any kernel within it reproduces the value"},
+                tolerance={"abs": 0.0, "rel": (1 + SEED_RATIO) * natural_share}),
+        finding(f"Across declared seeds from {SWEEP_SEEDS[0]:g} to {SWEEP_SEEDS[-1]:g}, chart A alone fails on the "
+                f"meridian whenever an RK4 stage point lands within {BAND_INNER:g} d* of a pole and never beyond "
+                f"{BAND_OUTER:g} d*, d* = (L0 h^4)^(1/5), but no single multiple of d* separates the outcomes at every "
+                f"seed ({MERIDIAN_STEPS[0]} to {MERIDIAN_STEPS[-1]} RK4 steps at {MERIDIAN_SEED:g}, the step counts "
+                f"within {SWEEP_BAND:g} d* at the other half-decade seeds)", "numerical",
+                {"step_counts": len(MERIDIAN_STEPS), "seeds": 1 + len(meridian["sweep"]), "runs": len(swept),
+                 "failed": len(swept_failed), "largest_ratio_failed": _sig(failed_ratio, 6),
+                 "smallest_ratio_not_failed": _sig(kept_ratio, 6),
+                 "at_declared_seed": {"within_d_star": len(near), "failed": len(meridian_failed),
+                                      "largest_ratio_failed": _sig(declared_failed_ratio, 6),
+                                      "smallest_ratio_not_failed": _sig(declared_kept_ratio, 6)},
+                 "failed_at_declared_seed_not_at_smaller_seed": moved},
+                {"checks": [_check(f"swept runs with an RK4 stage point within {BAND_INNER:g} d* of a pole that did not "
+                                   "fail (d*: exponent from the scaling argument, constant 1 fitted)",
+                                   len(inner_kept), 0, comparison="le", kind="analytic"),
+                            _check(f"swept runs with no RK4 stage point within {BAND_OUTER:g} d* of a pole that failed",
+                                   len(outer_failed), 0, comparison="le", kind="analytic"),
+                            _check("smallest d/d* of a swept run that did not fail minus the largest of a failure "
+                                   "(negative when the outcomes overlap)", kept_ratio - failed_ratio, 0.0,
+                                   comparison="signed_le", kind="analytic"),
+                            _check(f"step counts with an RK4 stage point within d* of a pole at {MERIDIAN_SEED:g}",
+                                   len(near), 1, comparison="ge", kind="exact_arithmetic"),
+                            _check(f"step counts that fail at {MERIDIAN_SEED:g} but not at a smaller swept seed (d* "
+                                   "shrinks with the seed)", len(moved), 1, comparison="ge",
+                                   kind="analytic")]},
+                uncertainty={"kind": "fit", "value": _sig(failed_ratio - kept_ratio, 3),
+                             "basis": "the constant of d* is fitted, and failed and completed runs overlap "
+                                      "over this width in d/d*. Stage distances, d* and their ratios are exact "
+                                      "arithmetic on the step grid, and the outcomes are set by the declared seed: "
+                                      f"moving every swept seed by +-{NATURAL_SEED_BOUND:g}, the natural seed's bound, "
+                                      f"changed no outcome, even at {SWEEP_SEEDS[0]:g} where the bound is "
+                                      f"{NATURAL_SEED_BOUND / SWEEP_SEEDS[0]:g} of the seed, and across the SkylakeX, "
+                                      "Haswell and Sandybridge OpenBLAS kernels they were identical. The swept runs' "
+                                      "errors are recorded, not compared: at the smallest seeds the natural seed is a "
+                                      "larger share, and they spread by 1.2e-3 relative across those kernels. The regression "
+                                      f"tolerance, {natural_share:g} relative, is the natural seed's largest share of the "
+                                      f"{STEPS}-step error in the witness, which is linear in the seed; the ratios, "
+                                      "counts and step lists must match"},
+                tolerance={"abs": 0.0, "rel": natural_share},
                 counterexample={"statement": ("A single-chart integration that crosses a pole accurately at one step "
                                               "count stays accurate at nearby step counts"),
-                                "witness": {"failed_steps": meridian_failed,
-                                            "failed_steps_at_hundredth_seed": rerun_failed,
-                                            f"error_at_{STEPS}": _sig(seeded["error"], 6)}}),
+                                "witness": {"failed_steps": meridian_failed, f"error_at_{STEPS}": _sig(seeded["error"], 6)}}),
         finding(f"Without a declared seed, rounding seeds at most {NATURAL_SEED_BOUND:g} of angular momentum on the "
                 f"meridian before its first pole crossing ({STEPS} RK4 steps)", "numerical",
                 {"g12_at_start": _sig(natural["g12_at_start"], 3), "v_phi_at_start": _sig(natural["v_phi_at_start"], 3),
