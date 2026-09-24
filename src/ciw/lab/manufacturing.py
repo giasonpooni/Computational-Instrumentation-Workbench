@@ -1836,8 +1836,9 @@ def coating_study() -> dict:
         e = float(envelope[index])
         exact = geo.standoff_error_exact(surface, u, direction, e, TOOLS["welding torch"])
         approx = -0.5 * kappa_lateral * e ** 2
-        # Signed excess of the ray-cast error over the series beyond 5% (plus 1e-9 mm for rounding).
-        worst_rel = max(worst_rel, abs(exact - approx) - 0.05 * abs(approx) - 1e-9)
+        # Signed excess of the ray-cast error over the series beyond 0.1% (plus 1e-9 mm for rounding); the
+        # observed relative difference is below 1e-4, so a coefficient off by 0.1% would fail.
+        worst_rel = max(worst_rel, abs(exact - approx) - 1e-3 * abs(approx) - 1e-9)
         standoff_rows.append({"s_mm": float(transfer.s[index]), "lateral_error_mm": e, "kappa_lateral_per_mm": kappa_lateral,
                               "standoff_error_exact_mm": exact, "standoff_error_series_mm": approx,
                               "tilt_rad": abs(kappa_lateral) * e})
@@ -1903,7 +1904,7 @@ def trajectory_sensitivity(ctx):
                          {"max_abs_standoff_error_mm": abs(worst["standoff_error_exact_mm"]),
                           "max_tilt_rad": max(r["tilt_rad"] for r in study["standoff"]),
                           "cylinder_exact_mm_at_1mm": study["cylinder_control"]["exact_mm_at_1mm"]},
-                         {"checks": [_check("analytic", "max over stations of |ray-cast - series| - 5% |series| - 1e-9 mm",
+                         {"checks": [_check("analytic", "max over stations of abs(ray-cast - series) - 1e-3 abs(series) - 1e-9 mm",
                                             study["standoff_excess"], 0.0, "signed_le"),
                                      _check("analytic", "Monge-form cylinder: ray-cast standoff error vs R - sqrt(R^2 - e^2) "
                                             "at y = 0, 30, 60 mm and e = 1, 5 mm (mm)",
@@ -1949,7 +1950,7 @@ def trajectory_sensitivity(ctx):
         ["Coupon nominal route (T128)", "Declared registration box |delta| <= 0.3 mm, |dtheta| <= 2 mrad",
          "Declared standoffs: welding torch 15 mm, spray gun 120 mm"],
         "No observation: trajectories are modelled, not executed.",
-        "Envelope equals the sup over box vertices to second order; standoff series within 5%; TCP length element "
+        "Envelope equals the sup over box vertices to second order; standoff series within 0.1% (+ 1e-9 mm); TCP length element "
         "matches the polyline length; no cusp while H < concave radius.",
         "Integrate the route with Jacobi fields, perturb at the box vertices exactly, ray-cast standoff at nine "
         "stations, build the TCP path for both tools and count reversals.",
@@ -2485,19 +2486,35 @@ def start_error_scenario() -> dict:
     """
     nominal = nominal_study()
     prediction = separation_prediction()
-    steps = NOMINAL_STATIONS * 26
+    length, steps = nominal["length_mm"], NOMINAL_STATIONS * 26
+    stride = steps // NOMINAL_STATIONS
+    base = jacobi.transfer(geo.COUPON, geo.STATION, 0.0, length, steps=steps)
+
+    def route(delta, dheading):
+        return geo.separation_nonlinear(geo.COUPON, geo.STATION, 0.0, length, steps, delta, dheading, base=base)[::stride]
+
     realized_delta = nominal["lateral_mm"] + 2.0 * EXECUTION["lateral_mm"]
-    realized = geo.separation_nonlinear(geo.COUPON, geo.STATION, 0.0, nominal["length_mm"], steps, realized_delta, 0.0)
-    realized = realized[::steps // NOMINAL_STATIONS]
+    realized = route(realized_delta, 0.0)
     u_m = COVERAGE_K * PAIR_U
     predicted = np.array(prediction["separation_mm"])
     no_execution = COVERAGE_K * np.hypot(np.array(prediction["geometry_mm"]), np.array(prediction["solver_mm"]))
+    conditioned_u = np.array(prediction["conditioned_expanded_mm"])
     stations = slice(1, None)  # station 0 is where the start offset itself is read
+    # Measured branch: the prediction is re-integrated from a CMM estimate of the realized start pose that is
+    # off by 2 sigma of the estimate in lateral offset and heading (all four sign corners).
+    corners = {}
+    for sl, sh in itertools.product((1.0, -1.0), repeat=2):
+        estimate = route(realized_delta + sl * COVERAGE_K * START_POSE_U["lateral_mm"],
+                         sh * COVERAGE_K * START_POSE_U["heading_rad"])
+        corners[f"{sl:+.0f}{sh:+.0f}"] = rec.normalized_error(realized[stations], estimate[stations], u_m,
+                                                              conditioned_u[stations]).tolist()
     return {"realized_offset_mm": realized_delta, "realized_mm": realized.tolist(),
             "en_without_execution": rec.normalized_error(realized[stations], predicted[stations], u_m,
                                                          no_execution[stations]).tolist(),
             "en_open_loop": rec.normalized_error(realized[stations], predicted[stations], u_m,
-                                                 np.array(prediction["open_loop_expanded_mm"])[stations]).tolist()}
+                                                 np.array(prediction["open_loop_expanded_mm"])[stations]).tolist(),
+            "en_conditioned_corners": corners,
+            "en_conditioned": np.max(np.array(list(corners.values())), axis=0).tolist()}
 
 
 def _schema_fixture():
@@ -2537,14 +2554,17 @@ def predicted_vs_measured(ctx):
                                     "k = 2 open-loop expanded uncertainty: dome tolerances, start pose and solver (mm)"),
                      tolerance={"abs": 1e-6, "rel": 1e-6})
     en_bare, en_open = max(scenario["en_without_execution"]), max(scenario["en_open_loop"])
+    en_cond = max(scenario["en_conditioned"])
     f_start = finding("A 2-sigma start offset of the declared jig makes a correct model fail E_n <= 1 unless the start "
                       "pose is budgeted or measured", "numerical",
                       {"realized_offset_mm": scenario["realized_offset_mm"], "max_en_without_execution": en_bare,
-                       "max_en_open_loop": en_open},
+                       "max_en_open_loop": en_open, "max_en_conditioned": en_cond},
                       {"generator": _generator("exactly re-integrated realized tape (model output as ideal data)",
                                                realized_offset_mm=scenario["realized_offset_mm"]),
                        "checks": [_check("analytic", "max E_n at stations 1..8, U_p without the start-pose term", en_bare, 1.0, "ge"),
-                                  _check("analytic", "max E_n at stations 1..8, U_p with the declared start-pose term", en_open, 1.0, "le")]},
+                                  _check("analytic", "max E_n at stations 1..8, U_p with the declared start-pose term", en_open, 1.0, "le"),
+                                  _check("analytic", "max E_n at stations 1..8, prediction re-integrated from a start pose "
+                                                     "estimated with 2-sigma CMM error, conditioned U_p", en_cond, 1.0, "le")]},
                       uncertainty=_u("roundoff", 1e-9, "deterministic re-integration; E_n is a ratio of computed values"),
                       tolerance={"abs": 1e-6, "rel": 1e-6},
                       counterexample={"statement": "A physically correct model passes E_n <= 1 against its open-loop prediction "
@@ -2595,12 +2615,14 @@ def predicted_vs_measured(ctx):
         "The comparator refuses absent measurements, schema fixtures (also when relabelled) and digest mismatches; "
         "start-pose and geometry sensitivities are linear over their declared steps.",
         "Compute the prediction and its uncertainty components; evaluate a correct model against a tape realized 0.1 mm "
-        "off its nominal offset with and without the start-pose term; attempt the comparison with no measurement, with "
+        "off its nominal offset with and without the start-pose term, and against the prediction re-integrated from a "
+        "CMM start-pose estimate at the four 2-sigma corners; attempt the comparison with no measurement, with "
         "a schema fixture (as is and relabelled) and with a tampered record, and record the refusals.",
         "Predicted separation (mm) at stations: " + ", ".join(f"{v:.3f}" for v in prediction["separation_mm"])
         + f"; k = 2 uncertainty up to {open_loop.max():.3f} mm open loop and {conditioned.max():.3f} mm conditioned on the "
-        f"measured start pose; a 0.1 mm start error gives max E_n {en_bare:.2f} without the start-pose term and "
-        f"{en_open:.2f} with it. No measured value exists.",
+        f"measured start pose; a 0.1 mm start error gives max E_n {en_bare:.2f} without the start-pose term, "
+        f"{en_open:.2f} with it (open loop) and {en_cond:.2f} when the prediction is re-integrated from a CMM start-pose "
+        f"estimate 2 sigma off in offset and heading (conditioned U_p). No measured value exists.",
         "Prediction uncertainty only (geometry dominates beyond mid-route; start pose dominates near the start in the "
         "open-loop case); measurement uncertainty is declared until the protocol is executed.",
         ["absent measurement (refused)", "schema fixture as measurement, also relabelled (refused)",
@@ -2969,10 +2991,13 @@ def acceptance_boundary() -> dict:
     # by evidence.finding; only a screen on the claim text (here, this section's) catches it.
     loophole = finding("Coupon lot accepted for production", "computational_pipeline", "accepted", {"checks": [passing]})
     screen_code = rec.refusal_code(rec.screen_acceptance_language, [loophole])
+    rejection = finding("Coupon lot rejected for production", "computational_pipeline", "rejected", {"checks": [passing]})
+    reject_screen_code = rec.refusal_code(rec.screen_acceptance_language, [rejection])
     return {"cases": cases, "violations": violations, "decisions": decisions, "honest_label": record["evidence_status"],
             "forged_code": forged_code, "policy_record": policy.record({"part": "coupon-001"}),
             "domains": sorted(AUTHORITY_DOMAINS), "all_domains": len(DOMAINS),
-            "loophole_label": loophole["evidence_status"], "screen_code": screen_code}
+            "loophole_label": loophole["evidence_status"], "screen_code": screen_code,
+            "reject_label": rejection["evidence_status"], "reject_screen_code": reject_screen_code}
 
 
 @_task("T141", ("test_production_acceptance_stays_outside_the_system",))
@@ -2990,7 +3015,9 @@ def acceptance_outside(ctx):
                _refusal("protocol declaring acceptance inside the system", "acceptance_inside_system", matrix_code),
                _refusal("protocol criterion marked accepted", "criterion_is_decision", criterion_code),
                _refusal("acceptance statement filed in a computational domain (section screen)",
-                        "acceptance_outside_authority_domain", study["screen_code"])]
+                        "acceptance_outside_authority_domain", study["screen_code"]),
+               _refusal("rejection statement filed in a computational domain (section screen)",
+                        "acceptance_outside_authority_domain", study["reject_screen_code"])]
     f_api = finding("No basis establishes a claim filed in an authority domain, and the acceptance policy, the protocol "
                     "validator and this section's acceptance-language screen refuse acceptance decisions",
                     "computational_pipeline", {"basis_domain_cases": study["cases"], "violations": study["violations"],
@@ -3017,31 +3044,37 @@ def acceptance_outside(ctx):
                                                  "violations": study["violations"], "decisions": study["decisions"],
                                                  "honest_label_with_hardware_basis": study["honest_label"],
                                                  "computational_domain_loophole": {"label": study["loophole_label"],
-                                                                                   "screen": study["screen_code"]}})
+                                                                                   "screen": study["screen_code"],
+                                                                                   "rejection_label": study["reject_label"],
+                                                                                   "rejection_screen":
+                                                                                       study["reject_screen_code"]}})
     fields = _fields(
         "Production acceptance is an authority decision outside the workbench: no evidence basis makes a claim filed in "
         "an authority domain established, and no policy call or protocol field can record a decision; a statement "
         "filed in a computational domain is caught only by a screen on its wording.",
         "Label function L(basis, domain) = not_established for every authority domain; AcceptancePolicy.decide always "
         "refuses; protocols require production_acceptance = outside_system and hypothesis-status criteria; the section "
-        "screen refuses decision phrases (accepted, approved, signed off, dispositioned, released for production, "
-        "passed inspection, certified for production) in claims and string values outside the authority domains.",
+        "screen refuses decision phrases (accepted, approved, rejected, scrapped, quarantined, signed off, "
+        "dispositioned, released for or to production, passed or passes inspection or acceptance, certified for "
+        "production) in claims and string values outside the authority domains.",
         [f"{study['cases'] // len(AUTHORITY_DOMAINS)} bases (all combinations of derivation, generator, checks, provider, "
          f"independent check and acquisition) x the five authority domains = {study['cases']} cases",
          "Acceptance requests: accept, reject, conditional",
-         "One acceptance statement filed in computational_pipeline with a passing check"],
+         "One acceptance and one rejection statement filed in computational_pipeline with a passing check"],
         "No observation: the task enumerates bases and domains through the label function and calls the policy, the "
         "protocol validator and the language screen; no instrument, part or acceptance authority is involved.",
         "Zero bases establish a claim filed in an authority domain; every decision request, forged record and screened "
         "statement is refused.",
         "Enumerate bases, call the policy, forge a hardware_measured acceptance finding, mutate a protocol, file an "
-        "acceptance statement in a computational domain and screen it.",
+        "acceptance and a rejection statement in a computational domain and screen them.",
         f"{study['cases']} cases, {study['violations']} violations; all decisions refused; honest label of an acceptance "
         f"claim even with hardware acquisition: {study['honest_label']}; the same statement filed in a computational "
-        f"domain is labelled {study['loophole_label']} by evidence.finding and refused by the section screen.",
+        f"domain is labelled {study['loophole_label']} by evidence.finding and refused by the section screen, as is a "
+        f"rejection statement (labelled {study['reject_label']}).",
         "Exact: every outcome is a label or refusal code returned by deterministic validators; no quantity is estimated.",
         ["authority domain with hardware acquisition and passing checks", "forged label", "policy decide calls",
-         "protocol acceptance field and criterion status", "acceptance statement filed in a computational domain"],
+         "protocol acceptance field and criterion status",
+         "acceptance and rejection statements filed in a computational domain"],
         ["The external acceptance authority and its criteria are outside the repository.",
          "The language screen is a vocabulary check on this section only; paraphrased decisions and other sections "
          "rely on review, and evidence.finding itself does not refuse them."],

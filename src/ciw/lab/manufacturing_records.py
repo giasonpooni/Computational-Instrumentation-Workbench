@@ -295,10 +295,11 @@ def compare_separation(predicted: dict, measured: dict | None) -> dict:
 
 
 # Production acceptance -------------------------------------------------------
-# Words that state an acceptance decision (not the topic of acceptance): a claim or
+# Words that state an acceptance or rejection decision (not the topic of acceptance): a claim or
 # string value using them outside an authority domain is refused by the screen.
-DECISION_WORDS = re.compile(r"\b(accepted|approved|signed[ -]off|dispositioned|released for (?:production|use|shipment)|"
-                            r"passed (?:inspection|acceptance)|certified (?:for|as) (?:production|use|conforming))\b",
+DECISION_WORDS = re.compile(r"\b(accepted|approved|rejected|scrapped|quarantined|signed[ -]off|dispositioned|"
+                            r"released (?:for|to) (?:production|use|shipment)|pass(?:ed|es) (?:inspection|acceptance)|"
+                            r"certified (?:for|as) (?:production|use|conforming))\b",
                             re.IGNORECASE)
 
 

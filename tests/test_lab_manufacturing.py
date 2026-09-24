@@ -273,7 +273,16 @@ def test_coating_standoff_and_offset_cusp(section):
     assert cusp["value"]["min_concave_radius_mm"] < cusp["value"]["spray_standoff_mm"]
     assert cusp["value"]["reversed_segments"] > 0 and "counterexample" in cusp
     assert _labels(report)["The trajectory is safe to execute on a welding or coating robot cell"] == "not_established"
-    assert mfg.coating_study()["cylinder_control"]["max_difference_mm"] < 1e-12
+    study = mfg.coating_study()
+    assert study["cylinder_control"]["max_difference_mm"] < 1e-12
+    # The series check is tight: ray casting and -kappa e^2 / 2 agree to well within 0.1% at every station.
+    assert study["standoff_excess"] <= 0.0
+    for row in study["standoff"]:
+        exact, series = row["standoff_error_exact_mm"], row["standoff_error_series_mm"]
+        assert abs(exact - series) <= 1e-3 * abs(series) + 1e-9
+    standoff = _finding(report, "Standoff error from a lateral tool offset")
+    tight = [c for c in standoff["basis"]["checks"] if c["reference"].startswith("max over stations of abs(ray-cast")]
+    assert len(tight) == 1 and "1e-3 abs(series)" in tight[0]["reference"] and tight[0]["passed"]
     u = np.array([-20.0, 5.0])
     t = geo.COUPON.unit_tangent(u, 0.3)
     exact = geo.standoff_error_exact(geo.COUPON, u, geo.lateral_direction3(geo.COUPON, u, t), 0.01, 15.0)
@@ -334,6 +343,11 @@ def test_predicted_separation_has_no_measured_counterpart(section):
     assert _finding(report, "Measured separation on the coupon agrees")["evidence_status"] == "not_established"
     start = _finding(report, "A 2-sigma start offset of the declared jig")
     assert start["value"]["max_en_without_execution"] > 1.0 >= start["value"]["max_en_open_loop"]
+    # The measured branch: prediction re-integrated from a 2-sigma CMM start-pose estimate, conditioned U_p.
+    assert 0.0 < start["value"]["max_en_conditioned"] <= 1.0
+    conditioned = [c for c in start["basis"]["checks"] if "re-integrated from a start pose" in c["reference"]]
+    assert len(conditioned) == 1 and conditioned[0]["passed"] and conditioned[0]["comparison"] == "le"
+    assert start["evidence_status"] == "numerically_verified"
     assert "counterexample" in start
     prediction = mfg.separation_prediction()
     assert max(prediction["conditioned_expanded_mm"]) < max(prediction["open_loop_expanded_mm"])
@@ -414,6 +428,16 @@ def test_production_acceptance_stays_outside_the_system(section):
     passing = {"reference_kind": "analytic", "reference": "r", "observed": 0.0, "tolerance": 1.0, "passed": True}
     statement = finding("Coupon lot accepted for production", "computational_pipeline", "accepted", {"checks": [passing]})
     assert rec.refusal_code(rec.screen_acceptance_language, [statement]) == "acceptance_outside_authority_domain"
+    refs = {c["reference"]: c for c in api["basis"]["checks"]}
+    rejection_check = refs["rejection statement filed in a computational domain (section screen)"]
+    assert rejection_check["passed"] and rejection_check["observed_refusal"] == "acceptance_outside_authority_domain"
+    assert api["value"]["refusals"] == len(api["basis"]["checks"]) - 1
+    for claim in ("Coupon lot rejected for production", "Coupon lot rejected", "Coupon lot scrapped",
+                  "Coupon lot quarantined", "Coupon lot passes acceptance", "Coupon lot passed inspection",
+                  "Coupon lot conforms and is released to production"):
+        decision = finding(claim, "computational_pipeline", "ok", {"checks": [passing]})
+        assert decision["evidence_status"] == "numerically_verified"
+        assert rec.refusal_code(rec.screen_acceptance_language, [decision]) == "acceptance_outside_authority_domain", claim
     topic = finding("Acceptance criteria are hypotheses", "computational_pipeline", 1.0, {"checks": [passing]})
     assert rec.screen_acceptance_language([topic]) == ["Acceptance criteria are hypotheses"]
     assert _finding(report, "Production acceptance of the coupon")["evidence_status"] == "not_established"
