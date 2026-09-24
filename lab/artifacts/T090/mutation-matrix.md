@@ -4,6 +4,7 @@
 | T080 | alias.execution-result | workspace | oscillator execution | local | killed | Execution/result execution_id binding mismatch | Execution/result execution_id binding mismatch | killed |
 | T080 | alias.result-prefix | workspace | oscillator execution and result | local | killed | Invalid saved result identity | Invalid saved result identity | killed |
 | T080 | alias.operation | workspace | oscillator execution and result | local | killed | Invalid saved spectrum data fields or sample count | Invalid saved spectrum data fields or sample count | killed |
+| T080 | alias.swap-pairing | workspace | oscillator executions and results | local | accepted | accepted | accepted | SURVIVED |
 | T080 | revision.gap | workspace | oscillator selection history | local | accepted | accepted | accepted | SURVIVED |
 | T081 | energy-data.naive | workspace | energy replay result data | none | killed | Energy analysis bundle identity, schema or size differs | Energy analysis bundle identity, schema or size differs | killed |
 | T081 | energy-data.reforged | workspace | energy replay result data | full | killed | Retained energy analysis binding differs | Retained energy analysis binding differs | killed |
@@ -22,6 +23,8 @@
 | T083 | receipt.numerical-match-false | workspace | energy replay receipt | local | killed | Invalid retained energy replay receipt | Invalid retained energy replay receipt | killed |
 | T083 | receipt.transplanted | workspace | energy bundle | none | killed | Invalid retained energy replay receipt | Invalid retained energy replay receipt | killed |
 | T083 | receipt.transplanted-resealed | workspace | energy bundle | local | killed | Retained energy analysis binding differs | Retained energy analysis binding differs | killed |
+| T083 | receipt.transplanted-full | workspace | energy bundle | full | accepted | accepted | accepted | SURVIVED |
+| T083 | receipt.fabricated | workspace | energy bundle | full | accepted | accepted | accepted | SURVIVED |
 | T083 | receipt.deleted | workspace | energy replay bundle | none | accepted | accepted | accepted | SURVIVED |
 | T084 | receipt-source.naive | workspace | energy replay receipt | none | killed | Invalid retained energy replay receipt | Invalid retained energy replay receipt | killed |
 | T084 | receipt-source.replay-id | workspace | energy replay receipt | local | killed | Retained energy analysis binding differs | Retained energy analysis binding differs | killed |
@@ -38,6 +41,7 @@
 | T086 | receipt-subject.resealed | workspace | energy replay receipt verification | local | killed | Retained energy analysis binding differs | Retained energy analysis binding differs | killed |
 | T086 | bundle-subject.resealed | workspace | energy bundle verification | local | killed | Retained energy analysis binding differs | Retained energy analysis binding differs | killed |
 | T086 | oscillator-verification.resealed | workspace | oscillator result | local | killed | Protocol v1 saved results must remain not_verified with verification_id null | Protocol v1 saved results must remain not_verified with verification_id null | killed |
+| T086 | oscillator-subject.injected | workspace | oscillator result | local | accepted | accepted | accepted | SURVIVED |
 | T087 | receipt-method.naive | workspace | energy replay receipt verification | none | killed | Invalid retained energy replay receipt | Invalid retained energy replay receipt | killed |
 | T087 | receipt-method.resealed | workspace | energy replay receipt verification | local | killed | Retained energy analysis binding differs | Retained energy analysis binding differs | killed |
 | T087 | bundle-method.resealed | workspace | energy bundle verification | local | killed | Retained energy analysis binding differs | Retained energy analysis binding differs | killed |

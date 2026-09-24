@@ -25,7 +25,9 @@
  "findings": [
   {
    "assigned_by": "ciw.lab.evidence",
-   "basis": {},
+   "basis": {
+    "notes": "This task has no Julia execution path: it records the pin procedure and probes for julia only, so provisioning Julia changes no finding until a Julia worker behind the SCR boundary and a dispatch path from this task exist"
+   },
    "claim": "Julia environment pinned and exercised through the CIW to SCR boundary",
    "domain": "computational_pipeline",
    "evidence_status": "not_established",
@@ -139,12 +141,12 @@
   },
   "scipy": "1.16.2",
   "sources": {
-   "src/ciw/lab/implementation_targets.py": "4e27c12d31365590b7fb82d98b8d02e1668c7b8e73b03f71ef270eca9fcf6eea"
+   "src/ciw/lab/implementation_targets.py": "1df8bd67d28b18d70bcb5f74e4a14616ceb17868c7a9aa75595f15254426ee7e"
   },
   "sympy": "1.14.0"
  },
- "recommended_next_task": "Provision Julia 1.10.12 LTS through SCR per docs/JULIA_SP1.md, then rerun T145 with the oscillator fixtures",
- "report_id": "sha256:10d8dad92251e9aed82eb8ea4639220189373b55341d610c90b006e86769ef83",
+ "recommended_next_task": "Implement the Julia worker behind the SCR boundary (docs/JULIA_SP1.md: handshake, operation allowlist, retained bytes) and a T145 path that dispatches the oscillator fixtures to it; then provision Julia 1.10.12 LTS and rerun T145. Until both exist a Julia host changes no finding",
+ "report_id": "sha256:ab92ddd45a7b6d1fa99bbe1801e1356f93eef730ac775d1f34be7c278832b44f",
  "schema": "ciw.lab-task-report.v1",
  "section": "implementation-targets",
  "state": "partial",
@@ -159,6 +161,7 @@
  "uncertainty": "SymPy stands in for the symbolic role only; it says nothing about Julia performance or pinning.",
  "unresolved_assumptions": [
   "No Julia environment, manifest or worker exists; the pin procedure is unexecuted",
+  "The task has no Julia execution path; julia on PATH is recorded, never used",
   "Optimization and exploratory roles are not demonstrated"
  ]
 }

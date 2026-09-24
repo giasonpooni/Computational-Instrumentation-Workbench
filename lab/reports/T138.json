@@ -18,12 +18,13 @@
   },
   "primary": "numerically_verified"
  },
- "expected_invariant": "The comparator refuses absent measurements, schema fixtures (also when relabelled) and digest mismatches; start-pose and geometry sensitivities are linear over their declared steps.",
- "experiment": "Compute the prediction and its uncertainty components; evaluate a correct model against a tape realized 0.1 mm off its nominal offset with and without the start-pose term, and against the prediction re-integrated from a CMM start-pose estimate at the four 2-sigma corners; attempt the comparison with no measurement, with a schema fixture (as is and relabelled) and with a tampered record, and record the refusals.",
+ "expected_invariant": "The comparators refuse absent measurements, schema fixtures (also when relabelled) and digest mismatches; start-pose and geometry sensitivities are linear over their declared steps.",
+ "experiment": "Compute the prediction and its uncertainty components (open loop, conditioned on the start pose, and also on the as-built scan); evaluate a correct model against a tape realized 0.1 mm off its nominal offset with and without the start-pose term, and against the prediction re-integrated from a CMM start-pose estimate at the four 2-sigma corners; attempt the separation and pair comparisons with no measurement, with a schema fixture (as is and relabelled) and with a tampered record, and record the refusals.",
  "failure_modes_checked": [
   "absent measurement (refused)",
   "schema fixture as measurement, also relabelled (refused)",
   "raw digest mismatch (refused)",
+  "plate and cylinder pair comparisons without a measurement (refused)",
   "start-pose error outside the prediction uncertainty",
   "linearity of geometry and start-pose sensitivities"
  ],
@@ -109,6 +110,17 @@
      0.21016793425389638,
      0.26396199937135395,
      0.32033300742553683
+    ],
+    "scan_conditioned_expanded_mm": [
+     0.00565685338560051,
+     0.011604095615430509,
+     0.021240931305365904,
+     0.027109656421302173,
+     0.029876264880144412,
+     0.03339254661205189,
+     0.037044218559756405,
+     0.04076676741637622,
+     0.04454237506467937
     ],
     "separation_mm": [
      1.9999998978014066,
@@ -217,6 +229,27 @@
       "passed": true,
       "reference": "measurement record whose raw bytes do not match",
       "reference_kind": "refusal"
+     },
+     {
+      "expected_refusal": "measurement_absent",
+      "observed_refusal": "measurement_absent",
+      "passed": true,
+      "reference": "no measured plate marker-pair distance exists (pair comparator)",
+      "reference_kind": "refusal"
+     },
+     {
+      "expected_refusal": "measurement_absent",
+      "observed_refusal": "measurement_absent",
+      "passed": true,
+      "reference": "no measured cylinder chord-geodesic gap exists (pair comparator)",
+      "reference_kind": "refusal"
+     },
+     {
+      "expected_refusal": "fixture_is_not_measurement",
+      "observed_refusal": "fixture_is_not_measurement",
+      "passed": true,
+      "reference": "schema fixture offered as plate marker-pair measurements",
+      "reference_kind": "refusal"
      }
     ]
    },
@@ -233,7 +266,7 @@
     "value": 0.0
    },
    "unit": "refusals",
-   "value": 4
+   "value": 7
   },
   {
    "assigned_by": "ciw.lab.evidence",
@@ -258,21 +291,28 @@
  ],
  "generated_artifacts": [
   {
-   "bytes": 4485,
+   "bytes": 4892,
    "path": "artifacts/T138/predicted-separation.json",
-   "sha256": "7136fe6cfcf73bd09084fe95b2233e511e3fdb4818f8fed033d52e718aa63719"
+   "sha256": "82bc1033d7927d6410cd758f24d42afc447a25e7e8f8afc8a678e9082ee0e83c"
+  },
+  {
+   "bytes": 2575,
+   "path": "artifacts/T138/pair-predictions.json",
+   "sha256": "62a4c5bd341d50e8f34ce13583908210f71d347b08c76715e79712d7d4017e76"
   }
  ],
  "hypothesis": "The predicted separation of the 2 mm offset tape (and its crossing near s = 154 mm) can be compared with measurement by the normalized error E_n, provided the prediction uncertainty includes the realized start pose of the tape (budgeted open loop, or removed by conditioning on its measured start pose); the comparison is only meaningful against acquired hardware evidence.",
  "input_data": [
   "Nominal route and offset stations from T128 (k L / 8)",
   "Declared dome tolerances height +/- 0.2 mm, sigma +/- 0.5 mm",
+  "Scan-derived dome covariance of MFG-SCAN-01 (T129, synthetic verification; declared scanner terms)",
   "Declared relative start-pose error of the offset tape 0.05 mm and 0.5 mrad (1 sigma); CMM 0.002 mm",
-  "No measured separation (none exists)"
+  "Plate and cylinder marker-pair predictions (T126, T127); declared radius tolerance +/- 0.1 mm",
+  "No measured separation, distance or gap (none exists)"
  ],
- "mathematical_model": "E_n = |m - p| / sqrt(U_m^2 + U_p^2), U = 2 u. Open loop: u_p^2 = u_geometry^2 + u_solver^2 + u_start^2 with u_start from the declared jig error (0.05 mm, 0.5 mrad) times central-difference start sensitivities of the exactly re-integrated offset route. Conditioned: p is re-integrated from the CMM start pose and u_start uses its estimate uncertainty (offset sqrt(2) u_cmm, heading 2 u_cmm / 20 mm).",
+ "mathematical_model": "E_n = |m - p| / sqrt(U_m^2 + U_p^2), U = 2 u. Open loop: u_p^2 = u_geometry^2 + u_solver^2 + u_start^2 with u_start from the declared jig error (0.05 mm, 0.5 mrad) times central-difference start sensitivities of the exactly re-integrated offset route. Conditioned: p is re-integrated from the CMM start pose and u_start uses its estimate uncertainty (offset sqrt(2) u_cmm, heading 2 u_cmm / 20 mm). Scan-conditioned: u_geometry^2 = g^T C g with g the dome sensitivities (height, width, centre) and C the MFG-SCAN-01 covariance (T129) instead of the declared tolerances. Pair comparator: E_n per plate marker pair (chord = geodesic) or cylinder pair (chord-geodesic gap, U_p = 2 |d gap / dR| u_R).",
  "number": 138,
- "numerical_result": "Predicted separation (mm) at stations: 2.000, 2.005, 2.051, 1.733, 1.157, 0.607, 0.059, -0.489, -1.037; k = 2 uncertainty up to 0.320 mm open loop and 0.300 mm conditioned on the measured start pose; a 0.1 mm start error gives max E_n 1.81 without the start-pose term, 0.85 with it (open loop) and 0.46 when the prediction is re-integrated from a CMM start-pose estimate 2 sigma off in offset and heading (conditioned U_p). No measured value exists.",
+ "numerical_result": "Predicted separation (mm) at stations: 2.000, 2.005, 2.051, 1.733, 1.157, 0.607, 0.059, -0.489, -1.037; k = 2 uncertainty up to 0.320 mm open loop, 0.300 mm conditioned on the measured start pose and 0.045 mm conditioned also on the as-built scan; a 0.1 mm start error gives max E_n 1.81 without the start-pose term, 0.85 with it (open loop) and 0.46 when the prediction is re-integrated from a CMM start-pose estimate 2 sigma off in offset and heading (conditioned U_p). No measured value exists.",
  "observation_model": "No observation: the measurement slot of MFG-COUPON-01 is empty. The planned observation is photogrammetry of coded targets on the tape centrelines at the nine stations plus CMM probing of the start pose.",
  "physical_validation_status": {
   "statement": "Physical validation requires acquired hardware evidence; none was acquired for this task.",
@@ -286,15 +326,15 @@
   "python": "3.12.3",
   "scipy": "1.16.2",
   "sources": {
-   "src/ciw/lab/manufacturing.py": "088763a0bcc42bf085c1e228797a5dc0d702b994f2a49e053cbe2b0a5622e25d",
+   "src/ciw/lab/manufacturing.py": "f4cd90e1df33b910b78daf4b0556a8861e044d83701474f841e85fd9d96f9063",
    "src/ciw/lab/manufacturing_geometry.py": "1db6df2ddf778668da2ffd53a66bcddbff4fc933d6f299e8f283cedc60a9332f",
-   "src/ciw/lab/manufacturing_metrology.py": "afbb6fccf146ca4f47850805c118d2f1bf6186872f381b298ab924a9214257ec",
-   "src/ciw/lab/manufacturing_records.py": "66970104ea454e836c5cbafc3013c90e721c3e96ad7f16780c32250112cac921"
+   "src/ciw/lab/manufacturing_metrology.py": "aef4708b0f296fc66087a6382881a0564c5edcb6d7961b5e472aa711e29feb5d",
+   "src/ciw/lab/manufacturing_records.py": "015ea7fccc586f4b95f64e7ffbc1f6c34eec20b8245778ede3c2324006537087"
   },
   "sympy": "1.14.0"
  },
- "recommended_next_task": "Execute MFG-COUPON-01 on hardware, retain it with a T139 measurement record, add a raw-file reader, and rerun T138.",
- "report_id": "sha256:f7ea13178c444c0cb4f33b21e91357d1c774639084ce6b99a9e0a943bab40fc2",
+ "recommended_next_task": "Execute MFG-SCAN-01 and MFG-COUPON-01 on hardware, retain them with T139 measurement records, add a raw-file reader, and rerun T138 (the plate and cylinder protocols use its pair comparator).",
+ "report_id": "sha256:50d421e349cde8124262a7dee09fc0d5c2c7f83b24cfd2d6fd6be631ce6a6c45",
  "schema": "ciw.lab-task-report.v1",
  "section": "manufacturing",
  "state": "partial",
@@ -312,15 +352,19 @@
   "check: The comparison refuses to run without acquired hardware evidence vs schema fixture offered as a measurement",
   "check: The comparison refuses to run without acquired hardware evidence vs schema fixture relabelled as a measurement",
   "check: The comparison refuses to run without acquired hardware evidence vs measurement record whose raw bytes do not match",
+  "check: The comparison refuses to run without acquired hardware evidence vs no measured plate marker-pair distance exists (pair comparator)",
+  "check: The comparison refuses to run without acquired hardware evidence vs no measured cylinder chord-geodesic gap exists (pair comparator)",
+  "check: The comparison refuses to run without acquired hardware evidence vs schema fixture offered as plate marker-pair measurements",
   "pytest: tests/test_lab_manufacturing.py::test_predicted_separation_has_no_measured_counterpart",
+  "pytest: tests/test_lab_manufacturing.py::test_comparators_compute_normalized_errors_for_a_measurement_record",
   "pytest: tests/test_lab_manufacturing.py::test_every_task_is_registered_and_reports_honestly"
  ],
  "tests_skipped": [],
  "title": "Compare predicted and measured path separation.",
- "uncertainty": "Prediction uncertainty only (geometry dominates beyond mid-route; start pose dominates near the start in the open-loop case); measurement uncertainty is declared until the protocol is executed.",
+ "uncertainty": "Prediction uncertainty only (under the declared tolerances geometry dominates beyond mid-route; start pose dominates near the start in the open-loop case); the scan-conditioned uncertainty holds only if the as-built coupon passes the MFG-SCAN-01 model test; measurement uncertainty is declared until the protocol is executed.",
  "unresolved_assumptions": [
   "The physical comparison has not been performed; its outcome is unknown.",
   "The tapes are assumed to follow geodesics after their measured start; in-plane tape bending is not budgeted.",
-  "A registered reader that parses separations from raw photogrammetry files does not exist yet."
+  "A registered reader that parses separations or marker coordinates from raw photogrammetry files does not exist yet."
  ]
 }

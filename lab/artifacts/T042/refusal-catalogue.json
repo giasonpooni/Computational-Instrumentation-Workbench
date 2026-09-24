@@ -51,6 +51,18 @@
    "stage": "validation"
   },
   {
+   "case": "inward-oriented-octahedron",
+   "expected": "inverted_face",
+   "observed": "inverted_face",
+   "stage": "validation"
+  },
+  {
+   "case": "jittered-inverted-face",
+   "expected": "inverted_face",
+   "observed": "inverted_face",
+   "stage": "validation"
+  },
+  {
    "case": "unreferenced-vertex",
    "expected": "unreferenced_vertex",
    "observed": "unreferenced_vertex",
@@ -149,18 +161,27 @@
  ],
  "controls": [
   {
+   "center_declared": true,
    "issues": [],
    "mesh": "icosphere-2"
   },
   {
+   "center_declared": true,
+   "issues": [],
+   "mesh": "uv-sphere-10x16-t0.1"
+  },
+  {
+   "center_declared": false,
    "issues": [],
    "mesh": "prism-cylinder-12x6"
   },
   {
+   "center_declared": false,
    "issues": [],
    "mesh": "plane-5x5"
   },
   {
+   "center_declared": false,
    "issues": [],
    "mesh": "torus-16x8"
   }
@@ -170,6 +191,12 @@
   "inconsistent_orientation",
   "unreferenced_vertex"
  ],
+ "undetected_inversion": {
+  "amplitude": 0.2,
+  "inverted_faces": 1,
+  "seed": 20261940,
+  "structural_issues": []
+ },
  "unguarded_nonfinite_curvatures": 1,
  "unguarded_nonfinite_normals": 3
 }

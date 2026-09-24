@@ -8,18 +8,19 @@
    "hardware_measured": 0,
    "independently_verified": 0,
    "not_established": 0,
-   "numerically_verified": 1,
+   "numerically_verified": 2,
    "provider_backed": 0,
    "synthetic": 0
   },
   "primary": "numerically_verified"
  },
- "expected_invariant": "Aggregates are exact functions of retained reports and never change a label.",
- "experiment": "Collect every finding with a numerical value; tabulate declared uncertainties and list those without.",
+ "expected_invariant": "Every numerical finding appears once with its declared uncertainty restated exactly; the numerical and undeclared counts agree with a raw-text recount of the report files.",
+ "experiment": "Collect every finding whose value contains a number, write the table as JSON and Markdown, parse the Markdown back against the source findings, and recount numerical and undeclared findings from the raw text.",
  "failure_modes_checked": [
-  "missing reports",
-  "report identity mismatch (validate_report)",
-  "aggregate differs from its re-read bytes"
+  "uncertainty or value cells cut inside a number",
+  "pipes in claims breaking table columns",
+  "non-scalar numerical findings left out",
+  "traversal disagreeing with the raw report text"
  ],
  "findings": [
   {
@@ -27,45 +28,87 @@
    "basis": {
     "checks": [
      {
+      "comparison": "abs_le",
       "observed": 0.0,
       "passed": true,
-      "reference": "uncertainty-budget.json recomputed from a fresh read of the retained reports",
+      "reference": "table rows that do not parse back to their source finding and uncertainty",
+      "reference_kind": "exact_arithmetic",
+      "tolerance": 0.0
+     },
+     {
+      "comparison": "abs_le",
+      "observed": 0.0,
+      "passed": true,
+      "reference": "numerical findings minus a raw-text recount of numerical finding values",
       "reference_kind": "exact_arithmetic",
       "tolerance": 0.0
      }
     ]
    },
-   "claim": "Uncertainty budget reproduces from retained reports (findings with declared uncertainty)",
+   "claim": "Uncertainty table restates every numerical finding with its declared uncertainty",
    "domain": "computational_pipeline",
    "evidence_status": "numerically_verified",
    "regression_tolerance": {
     "abs": 0,
     "rel": 0
    },
-   "uncertainty": null,
+   "uncertainty": {
+    "basis": "integer count over retained report files; no rounding, sampling or tolerance",
+    "kind": "exact",
+    "value": 0
+   },
    "unit": "findings",
-   "value": 98
+   "value": 668
+  },
+  {
+   "assigned_by": "ciw.lab.evidence",
+   "basis": {
+    "checks": [
+     {
+      "comparison": "abs_le",
+      "observed": 0.0,
+      "passed": true,
+      "reference": "undeclared numerical findings minus a raw-text recount",
+      "reference_kind": "exact_arithmetic",
+      "tolerance": 0.0
+     }
+    ]
+   },
+   "claim": "Numerical findings that declare no per-finding uncertainty",
+   "domain": "computational_pipeline",
+   "evidence_status": "numerically_verified",
+   "regression_tolerance": {
+    "abs": 0,
+    "rel": 0
+   },
+   "uncertainty": {
+    "basis": "integer count over retained report files; no rounding, sampling or tolerance",
+    "kind": "exact",
+    "value": 0
+   },
+   "unit": "findings",
+   "value": 2
   }
  ],
  "generated_artifacts": [
   {
-   "bytes": 68114,
+   "bytes": 434303,
    "path": "artifacts/T159/uncertainty-budget.json",
-   "sha256": "466238befb59d9a32056a6ff47c9dc4a231f43de38d52f9be46a4dc7afbd558a"
+   "sha256": "2b5b8c6d420640f1eca254ce644e5ff2a21d6eaf46bfc3cf8a56b5d49a20172c"
   },
   {
-   "bytes": 29536,
+   "bytes": 254567,
    "path": "artifacts/T159/uncertainty-budget.md",
-   "sha256": "1fadd06a7af516c91f17aa8707889f82fb4a7bcfc51a80cfe3f1674b94a0d292"
+   "sha256": "204cadee315f037a58784f1de78810d280647e59f48f1c9f4610248dfe37f033"
   }
  ],
  "hypothesis": "Every numerical finding either declares an uncertainty or is identified as lacking one.",
  "input_data": [
-  "Retained reports T001-T154 in the same output directory"
+  "Retained reports of T001-T158 in the same output directory (this section's T155-T158 included)"
  ],
- "mathematical_model": "Budget rows = (task, claim, value, unit, declared uncertainty, evidence status).",
+ "mathematical_model": "Table rows = every finding whose value contains a number: (task, claim, value, unit, uncertainty kind, value and basis, evidence status). A listing of per-finding components, not a combined budget.",
  "number": 159,
- "numerical_result": "109 scalar numerical findings; 98 declare a per-finding uncertainty, 11 rely on their task's uncertainty statement only.",
+ "numerical_result": "991 findings, 668 numerical (value contains a number); 666 declare a per-finding uncertainty, 2 do not; kinds {'collision_bound': 1, 'exact': 58, 'fit': 17, 'fit_residual': 3, 'fit_spread': 17, 'grid_resolution': 1, 'method_error': 1, 'model_truncation': 5, 'monte_carlo_95ci': 89, 'none declared': 2, 'platform_spread': 1, 'quantization': 1, 'reference_error': 87, 'roundoff': 285, 'step_quantization': 1, 'step_sequence': 2, 'truncation_bound': 97}.",
  "observation_model": "No physical observation; reads retained computational records only.",
  "physical_validation_status": {
   "statement": "Physical validation requires acquired hardware evidence; none was acquired for this task.",
@@ -79,24 +122,28 @@
   "python": "3.12.3",
   "scipy": "1.16.2",
   "sources": {
-   "src/ciw/lab/research_portfolio.py": "6cd37207af02c6d64dc88b22c7ff2148e85f1eeebaa5445cd894879bc3043ba3"
+   "src/ciw/lab/research_portfolio.py": "0fd0ed475a38bf81fd2145f64cf1335856a471c58d406347c3b66b0f66672702"
   },
   "sympy": "1.14.0"
  },
- "recommended_next_task": "Require structured uncertainty components (instrument, geometry, solver) on every numerical finding.",
- "report_id": "sha256:bb8a71bcd60731c58b64fa2a2f5208cb57935243e47315b401253c682e52eb82",
+ "recommended_next_task": "Require structured uncertainty components (instrument, geometry, solver) on every numerical finding, so a budget can combine components of one quantity.",
+ "report_id": "sha256:1b344bea20c3b481d3117b548a5ef2e29c922c5420cfe0c279e6bb460b383f3c",
  "schema": "ciw.lab-task-report.v1",
  "section": "research-portfolio",
  "state": "completed",
  "task_id": "T159",
  "tests_passed": [
-  "check: Uncertainty budget reproduces from retained reports (findings with declared uncertainty) vs uncertainty-budget.json recomputed from a fresh read of the retained reports",
-  "pytest: tests/test_lab_research_portfolio.py::test_catalogue_tasks_aggregate_retained_reports"
+  "check: Uncertainty table restates every numerical finding with its declared uncertainty vs table rows that do not parse back to their source finding and uncertainty",
+  "check: Uncertainty table restates every numerical finding with its declared uncertainty vs numerical findings minus a raw-text recount of numerical finding values",
+  "check: Numerical findings that declare no per-finding uncertainty vs undeclared numerical findings minus a raw-text recount",
+  "pytest: tests/test_lab_research_portfolio.py::test_uncertainty_table_restates_every_numerical_finding"
  ],
  "tests_skipped": [],
  "title": "Generate uncertainty-budget tables.",
- "uncertainty": "Exact aggregation of declared values; undeclared per-finding uncertainty is reported, not imputed.",
+ "uncertainty": "Exact counts; declared values are restated in full, and undeclared uncertainty is reported, not imputed.",
  "unresolved_assumptions": [
-  "11 scalar findings carry no per-finding uncertainty."
+  "2 numerical findings declare no per-finding uncertainty: T099 (1), T139 (1)",
+  "Components are listed per finding and not combined: the findings of one task measure different quantities in different units, so a root-sum-square across them has no meaning, and no finding declares separate components of one quantity.",
+  "Findings of T160-T168 run after this table; the section's regression test asserts that each numerical one declares an uncertainty."
  ]
 }

@@ -17,8 +17,8 @@
   },
   "primary": "numerically_verified"
  },
- "expected_invariant": "All readings carry monotonic and UTC brackets; identity fields present; each tampering class refused with its specific message.",
- "experiment": "Validate the four fixtures; apply 9 mutations (with or without resealing); validate a resealed doubling, an origin relabelling and a UUID mismatch.",
+ "expected_invariant": "All readings carry monotonic and UTC brackets; identity fields present; each tampering class refused with its expected message (the two field-removal classes share the validator's generic field-set message).",
+ "experiment": "Retain the four fixtures' exact bytes as artifacts; validate them; apply 9 mutations (with or without resealing); validate a resealed doubling, an origin relabelling and a UUID mismatch.",
  "failure_modes_checked": [
   "raw counter reading edited without resealing",
   "sensor device UUID replaced by a non-UUID",
@@ -57,6 +57,12 @@
      }
     ],
     "generator": {
+     "fixture_sha256": {
+      "baseline": "3ff4cb68be07e36d9796fb83402b0f72a46a3f1edff0d9e70addc9ab1695ef81",
+      "missing": "0cffbd14cfcd2d0f14cc906dca689df4de1fd8191ed6fff4cb5a6dced837dacb",
+      "reset": "2c8e421e1fd24ce463f765dba365eacb859797facb82d42f180deb42d80a0ddb",
+      "under-target": "b09bf8b979c213a7ae6617327f9a060ea2c9b2af515eb4b8662ab94dc415e955"
+     },
      "name": "examples/energy-accuracy synthetic fixtures",
      "origin": "synthetic_fixture",
      "seed": null
@@ -79,28 +85,28 @@
     "baseline": {
      "batches": 2,
      "identity_fields_present": 14,
-     "placeholder_values": 10,
+     "placeholder_values": 11,
      "raw_counter_readings": 12,
      "samples": 12
     },
     "missing": {
      "batches": 2,
      "identity_fields_present": 14,
-     "placeholder_values": 10,
+     "placeholder_values": 11,
      "raw_counter_readings": 11,
      "samples": 11
     },
     "reset": {
      "batches": 2,
      "identity_fields_present": 14,
-     "placeholder_values": 10,
+     "placeholder_values": 11,
      "raw_counter_readings": 12,
      "samples": 12
     },
     "under-target": {
      "batches": 2,
      "identity_fields_present": 14,
-     "placeholder_values": 10,
+     "placeholder_values": 11,
      "raw_counter_readings": 12,
      "samples": 12
     }
@@ -175,6 +181,12 @@
      }
     ],
     "generator": {
+     "fixture_sha256": {
+      "baseline": "3ff4cb68be07e36d9796fb83402b0f72a46a3f1edff0d9e70addc9ab1695ef81",
+      "missing": "0cffbd14cfcd2d0f14cc906dca689df4de1fd8191ed6fff4cb5a6dced837dacb",
+      "reset": "2c8e421e1fd24ce463f765dba365eacb859797facb82d42f180deb42d80a0ddb",
+      "under-target": "b09bf8b979c213a7ae6617327f9a060ea2c9b2af515eb4b8662ab94dc415e955"
+     },
      "name": "examples/energy-accuracy synthetic fixtures",
      "origin": "synthetic_fixture",
      "seed": null
@@ -219,6 +231,12 @@
      }
     ],
     "generator": {
+     "fixture_sha256": {
+      "baseline": "3ff4cb68be07e36d9796fb83402b0f72a46a3f1edff0d9e70addc9ab1695ef81",
+      "missing": "0cffbd14cfcd2d0f14cc906dca689df4de1fd8191ed6fff4cb5a6dced837dacb",
+      "reset": "2c8e421e1fd24ce463f765dba365eacb859797facb82d42f180deb42d80a0ddb",
+      "under-target": "b09bf8b979c213a7ae6617327f9a060ea2c9b2af515eb4b8662ab94dc415e955"
+     },
      "name": "examples/energy-accuracy synthetic fixtures",
      "origin": "synthetic_fixture",
      "seed": null
@@ -263,6 +281,12 @@
      }
     ],
     "generator": {
+     "fixture_sha256": {
+      "baseline": "3ff4cb68be07e36d9796fb83402b0f72a46a3f1edff0d9e70addc9ab1695ef81",
+      "missing": "0cffbd14cfcd2d0f14cc906dca689df4de1fd8191ed6fff4cb5a6dced837dacb",
+      "reset": "2c8e421e1fd24ce463f765dba365eacb859797facb82d42f180deb42d80a0ddb",
+      "under-target": "b09bf8b979c213a7ae6617327f9a060ea2c9b2af515eb4b8662ab94dc415e955"
+     },
      "name": "examples/energy-accuracy synthetic fixtures",
      "origin": "synthetic_fixture",
      "seed": null
@@ -307,6 +331,12 @@
      }
     ],
     "generator": {
+     "fixture_sha256": {
+      "baseline": "3ff4cb68be07e36d9796fb83402b0f72a46a3f1edff0d9e70addc9ab1695ef81",
+      "missing": "0cffbd14cfcd2d0f14cc906dca689df4de1fd8191ed6fff4cb5a6dced837dacb",
+      "reset": "2c8e421e1fd24ce463f765dba365eacb859797facb82d42f180deb42d80a0ddb",
+      "under-target": "b09bf8b979c213a7ae6617327f9a060ea2c9b2af515eb4b8662ab94dc415e955"
+     },
      "name": "examples/energy-accuracy synthetic fixtures",
      "origin": "synthetic_fixture",
      "seed": null
@@ -346,29 +376,44 @@
  ],
  "generated_artifacts": [
   {
-   "bytes": 5807,
+   "bytes": 11350,
+   "path": "artifacts/T124/fixture-baseline.json",
+   "sha256": "3ff4cb68be07e36d9796fb83402b0f72a46a3f1edff0d9e70addc9ab1695ef81"
+  },
+  {
+   "bytes": 11347,
+   "path": "artifacts/T124/fixture-reset.json",
+   "sha256": "2c8e421e1fd24ce463f765dba365eacb859797facb82d42f180deb42d80a0ddb"
+  },
+  {
+   "bytes": 10942,
+   "path": "artifacts/T124/fixture-missing.json",
+   "sha256": "0cffbd14cfcd2d0f14cc906dca689df4de1fd8191ed6fff4cb5a6dced837dacb"
+  },
+  {
+   "bytes": 11154,
+   "path": "artifacts/T124/fixture-under-target.json",
+   "sha256": "b09bf8b979c213a7ae6617327f9a060ea2c9b2af515eb4b8662ab94dc415e955"
+  },
+  {
+   "bytes": 6259,
    "path": "artifacts/T124/inventory.json",
-   "sha256": "527bdcd69510678f8c550e8734b4dfc3b23b56372fd2c3414e3b14f28a32c9c1"
+   "sha256": "0c54a6dd9db4111a99dd85bea9aca891a361ccc7cf9529872ba7e0bf4eeae238"
   },
   {
    "bytes": 1384,
    "path": "artifacts/T124/tampering.json",
    "sha256": "49fa312ecfcda8ea45b1eef227f188673fe5a843f0eb7d6ec71b02a997dc15d1"
-  },
-  {
-   "bytes": 919,
-   "path": "artifacts/T124/baseline-measurement-samples.json",
-   "sha256": "f45be4e4033142b229bf52bc2e043bcff03e4603ece7711d4e853f71eca65f69"
   }
  ],
- "hypothesis": "Every retained energy log keeps raw timestamped counter readings with device and runtime identity fields, and the validator refuses edits to them unless the log is deliberately resealed.",
+ "hypothesis": "The energy-log format keeps raw timestamped counter readings with device and runtime identity fields, and its validator refuses edits to them unless the log is deliberately resealed. Scope: an audit of the log format on the four synthetic fixtures, whose exact bytes this task retains; retaining a real device's identity needs a hardware log (T116) and is not claimed here.",
  "input_data": [
   "examples/energy-accuracy/{baseline,reset,missing,under-target}.json: synthetic fixtures (origin synthetic_fixture) constructed on the CPU, not hardware captures"
  ],
  "mathematical_model": "log_digest = sha256(canonical(log without digest)); structural profile of energy_records.validate_log; analysis eligibility rules of energy_records.analyze.",
  "number": 124,
- "numerical_result": "47 raw readings retained; 14 identity fields per fixture, 40 placeholder values over the four fixtures; refusals {'raw counter reading edited without resealing': 'Retained log digest differs', 'sensor device UUID replaced by a non-UUID': 'Require a physical GPU UUID', 'calibration metadata invented for the sensor': 'Unsupported sensor scope or invented calibration metadata', 'monotonic read bracket reversed': 'Reversed monotonic hardware call bracket', 'failed counter read keeps a fabricated energy': 'Failed counter reading cannot contain fabricated energy', 'UTC timestamp of a reading removed': 'Require exactly the declared energy-log fields', 'runtime executable identity removed': 'Require exactly the declared energy-log fields', 'prepared device input identity replaced': 'Prepared device input differs from declared initial problem', 'retained batch output edited': 'Expanded result bytes differ from their digest'}; resealed doubling accepted; relabelled fixture classified physical_domain_measurement.",
- "observation_model": "Field inventory of each sealed fixture (identity fields present, and how many hold placeholder values); validation outcome of each mutated copy.",
+ "numerical_result": "47 raw readings present in the four synthetic fixtures (exact fixture bytes retained as artifacts for ['baseline', 'missing', 'reset', 'under-target']); 14 identity fields per fixture, 44 placeholder values over the four fixtures; refusals {'raw counter reading edited without resealing': 'Retained log digest differs', 'sensor device UUID replaced by a non-UUID': 'Require a physical GPU UUID', 'calibration metadata invented for the sensor': 'Unsupported sensor scope or invented calibration metadata', 'monotonic read bracket reversed': 'Reversed monotonic hardware call bracket', 'failed counter read keeps a fabricated energy': 'Failed counter reading cannot contain fabricated energy', 'UTC timestamp of a reading removed': 'Require exactly the declared energy-log fields', 'runtime executable identity removed': 'Require exactly the declared energy-log fields', 'prepared device input identity replaced': 'Prepared device input differs from declared initial problem', 'retained batch output edited': 'Expanded result bytes differ from their digest'}; resealed doubling accepted; relabelled fixture classified physical_domain_measurement.",
+ "observation_model": "Field inventory of each sealed fixture (identity fields present, and how many hold placeholder values, counting device-derived values of a placeholder device such as its compute capability); validation outcome of each mutated copy.",
  "physical_validation_status": {
   "statement": "Physical validation requires acquired hardware evidence; none was acquired for this task.",
   "status": "not_established"
@@ -381,14 +426,14 @@
   "python": "3.12.3",
   "scipy": "1.16.2",
   "sources": {
-   "src/ciw/lab/energy_gpu.py": "fca900557e7fac2261a168afe0ee81efc48508a874a5045bf4f6b74937165bb1",
-   "src/ciw/lab/energy_gpu_kernels.py": "03f3d92f8407f476cb74536911d476929843ee74232a7d7017c00f43c785a2b4",
-   "src/ciw/lab/energy_gpu_telemetry.py": "21cac5f654ce4a120887ff40da62fda47bd38a3c383bbad6cc3cb13b4168fa2d"
+   "src/ciw/lab/energy_gpu.py": "a66107417b5bfa398077a919b2f5351ca222e9961fa8dfb3256b78efc17fd930",
+   "src/ciw/lab/energy_gpu_kernels.py": "366c477ff1af7f59b626f4e64bf994ae4cbce5754c0e9c5be1c2acb515f99f4b",
+   "src/ciw/lab/energy_gpu_telemetry.py": "df82c8748d3aa75384e3928bffcf516cd6f72cccde99edf8d21f089cc768bafa"
   },
   "sympy": "1.14.0"
  },
- "recommended_next_task": "T125: replay the retained logs through a Session; later, signed capture on the RTX 2080 host (T116)",
- "report_id": "sha256:225ddebda2cb8e1de96e807d58a31bb9a4b87afb23b0a2cc500c046a8757479a",
+ "recommended_next_task": "T125: replay the retained logs through a Session; deferred research question: a signed capture that binds a log's readings to the device (no signature scheme exists; T116's gate binds a log only to the host's NVML identity)",
+ "report_id": "sha256:7089048b4e29636668b8a426a8e895a80b5da9dea54af9c172f288e13caf8165",
  "schema": "ciw.lab-task-report.v1",
  "section": "energy-gpu",
  "state": "completed",
@@ -418,6 +463,7 @@
  "unresolved_assumptions": [
   "Sealing is integrity, not authenticity: no signature binds a log to the device",
   "Hardware provenance of every fixture is not established",
-  "The fixtures' identity fields are present but mostly placeholders"
+  "The fixtures' identity fields are present but mostly placeholders, including a compute capability given to the placeholder device",
+  "No hardware log was audited: a real device's identity is bound only by T116's acquisition gate on the GPU host, outside this format audit"
  ]
 }

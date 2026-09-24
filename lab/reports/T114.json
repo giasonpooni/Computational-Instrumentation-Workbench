@@ -2,6 +2,7 @@
  "changed_files": [
   "src/ciw/lab/lyapunov.py",
   "src/ciw/lab/lyapunov_reference.py",
+  "src/ciw/lab/lyapunov_provider.py",
   "src/ciw/lab/lyapunov_research.py",
   "docs/lab/LYAPUNOV.md"
  ],
@@ -9,25 +10,155 @@
   "counts": {
    "analytic": 0,
    "hardware_measured": 0,
-   "independently_verified": 1,
+   "independently_verified": 2,
    "not_established": 6,
-   "numerically_verified": 4,
+   "numerically_verified": 6,
    "provider_backed": 0,
    "synthetic": 0
   },
   "primary": "numerically_verified"
  },
- "expected_invariant": "The unit-balanced P is exactly valid at every grid inertia; the monitor's code is constant without a level set and follows exact V > c with it; every abort code is produced by the scan; authority and physical claims remain not_established.",
- "experiment": "Build the sampled-data models, choose P, check each grid point exactly, verify the exponential, derive the level set, scan the monitor configuration, and retain the specification (JSON and Markdown).",
+ "expected_invariant": "The unit-balanced P is exactly valid at every grid inertia; {V <= c} lies inside the envelope; PLSR's monitor code is constant without a level set and follows exact V > c with it; every abort code is produced by the scan; authority and physical claims remain not_established.",
+ "experiment": "Build the sampled-data models, choose P, check each grid point exactly, verify the exponential, derive the level set and check its extent, evaluate the monitor configuration at the scan states with the pinned runtime and with the transcription, and retain the specification (JSON and Markdown).",
  "failure_modes_checked": [
   "certificate invalid on part of the interval",
   "exponential inaccurate",
   "monitor code independent of the state even with a level set",
   "abort trigger that the configuration cannot produce",
   "level set outside the envelope",
+  "runtime codes off the documented order",
   "authority or safety claimed"
  ],
  "findings": [
+  {
+   "assigned_by": "ciw.lab.evidence",
+   "basis": {
+    "checks": [
+     {
+      "comparison": "le",
+      "observed": 1.0,
+      "passed": true,
+      "reference": "distinct PLSR codes over the scan without a level set",
+      "reference_kind": "invariant",
+      "tolerance": 1.0
+     },
+     {
+      "comparison": "abs_le",
+      "observed": 0.0,
+      "passed": true,
+      "reference": "scan verdicts differing from the CIW transcription of the documented order (same specification)",
+      "reference_kind": "analytic",
+      "tolerance": 0.0
+     }
+    ],
+    "independent_check": {
+     "checker": {
+      "implementation": "ciw.lab.lyapunov_reference",
+      "revision": "0.1.0"
+     },
+     "comparison": "abs_le",
+     "observed": 0.0,
+     "passed": true,
+     "producer": {
+      "implementation": "Parameterized-Lyapunov-Stability-Runtime@19ea69670601",
+      "revision": "19ea6967060166ba09db6cd4563bd87bd6b3d196"
+     },
+     "reference": "states whose PLSR OUTSIDE_LEVEL_SET decision differs from exact V(x) > c (rationals)",
+     "reference_kind": "exact_arithmetic",
+     "tolerance": 0.0
+    },
+    "provider": {
+     "executed": true,
+     "package_version": "0.1.0rc1",
+     "repository": "https://github.com/giasonpooni/Parameterized-Lyapunov-Stability-Runtime",
+     "revision": "19ea6967060166ba09db6cd4563bd87bd6b3d196",
+     "role": "plsr-python",
+     "runtime_digest": "a6fee6b3b4eb7852b31f5a285fe8c50b535f25762e1daf82e36720ef8dd1b7c7"
+    }
+   },
+   "claim": "PLSR's monitor code on the declared configuration is the same at every scanned state without a level set and follows the exact V(x) > c decision with the declared level",
+   "domain": "numerical",
+   "evidence_status": "independently_verified",
+   "regression_tolerance": {
+    "abs": 0.0,
+    "rel": 0.0
+   },
+   "uncertainty": {
+    "basis": "exact rationals decide V > c; states lie between 1e-8 and 1e8 of the level radius",
+    "kind": "roundoff",
+    "value": 0.0
+   },
+   "unit": null,
+   "value": {
+    "codes_with_level": [
+     "CERTIFIED_WITH_MARGIN",
+     "OUTSIDE_LEVEL_SET"
+    ],
+    "codes_without_level": [
+     "CERTIFIED_WITH_MARGIN"
+    ],
+    "exceeding_states": 90,
+    "level_mismatches": 0,
+    "states": 200
+   }
+  },
+  {
+   "assigned_by": "ciw.lab.evidence",
+   "basis": {
+    "checks": [
+     {
+      "comparison": "abs_le",
+      "observed": 0.0,
+      "passed": true,
+      "reference": "abort codes never produced by the monitor scan",
+      "reference_kind": "invariant",
+      "tolerance": 0.0
+     },
+     {
+      "comparison": "abs_le",
+      "observed": 0.0,
+      "passed": true,
+      "reference": "produced codes outside the expected set",
+      "reference_kind": "invariant",
+      "tolerance": 0.0
+     }
+    ],
+    "provider": {
+     "executed": true,
+     "package_version": "0.1.0rc1",
+     "repository": "https://github.com/giasonpooni/Parameterized-Lyapunov-Stability-Runtime",
+     "revision": "19ea6967060166ba09db6cd4563bd87bd6b3d196",
+     "role": "plsr-python",
+     "runtime_digest": "a6fee6b3b4eb7852b31f5a285fe8c50b535f25762e1daf82e36720ef8dd1b7c7"
+    }
+   },
+   "claim": "PLSR produces every runtime code named as an abort trigger on the declared monitor configuration, and no code outside the expected set",
+   "domain": "computational_pipeline",
+   "evidence_status": "numerically_verified",
+   "regression_tolerance": {
+    "abs": 0.0,
+    "rel": 0.0
+   },
+   "uncertainty": {
+    "basis": "exact rational, integer or bitwise comparison; no rounding enters the value",
+    "kind": "roundoff",
+    "value": 0.0
+   },
+   "unit": null,
+   "value": {
+    "abort_codes": [
+     "OUTSIDE_LEVEL_SET"
+    ],
+    "expected_codes": [
+     "CERTIFIED_WITH_MARGIN",
+     "OUTSIDE_LEVEL_SET"
+    ],
+    "produced": [
+     "CERTIFIED_WITH_MARGIN",
+     "OUTSIDE_LEVEL_SET"
+    ]
+   }
+  },
   {
    "assigned_by": "ciw.lab.evidence",
    "basis": {
@@ -161,9 +292,53 @@
     "checks": [
      {
       "comparison": "le",
+      "observed": 0.9999990000000001,
+      "passed": true,
+      "reference": "largest c (P^-1)_ii / e_i^2 in exact rationals ((P^-1)_ii = P_jj / det P; max x_i^2 over the ellipsoid)",
+      "reference_kind": "exact_arithmetic",
+      "tolerance": 1.0
+     },
+     {
+      "comparison": "le",
+      "observed": 0.9999994999998749,
+      "passed": true,
+      "reference": "largest |x_i| / e_i over 3600 sampled points of the boundary x^T P x = c",
+      "reference_kind": "invariant",
+      "tolerance": 1.0
+     }
+    ],
+    "generator": {
+     "name": "level_set_boundary_extent",
+     "seed": null
+    }
+   },
+   "claim": "The declared level set {V <= c} lies inside the operating envelope",
+   "domain": "numerical",
+   "evidence_status": "numerically_verified",
+   "regression_tolerance": {
+    "abs": 1e-09,
+    "rel": 0.0
+   },
+   "uncertainty": {
+    "basis": "the exact ratio is exact; sampled boundary points carry float64 rounding and approach the maximum from below",
+    "kind": "roundoff",
+    "value": 1e-12
+   },
+   "unit": null,
+   "value": {
+    "exact_largest_squared_extent_ratio": 0.9999990000000001,
+    "sampled_boundary_extent_ratio": 0.9999994999998749
+   }
+  },
+  {
+   "assigned_by": "ciw.lab.evidence",
+   "basis": {
+    "checks": [
+     {
+      "comparison": "le",
       "observed": 1.0,
       "passed": true,
-      "reference": "distinct codes over the scan without a level set",
+      "reference": "distinct transcribed codes over the scan without a level set",
       "reference_kind": "invariant",
       "tolerance": 1.0
      },
@@ -171,25 +346,17 @@
       "comparison": "abs_le",
       "observed": 0.0,
       "passed": true,
-      "reference": "states whose OUTSIDE_LEVEL_SET decision differs from exact V(x) > c",
+      "reference": "states whose transcribed OUTSIDE_LEVEL_SET decision differs from exact V(x) > c (rationals)",
       "reference_kind": "exact_arithmetic",
       "tolerance": 0.0
-     },
-     {
-      "comparison": "le",
-      "observed": 0.999999499999875,
-      "passed": true,
-      "reference": "largest ratio of the level set's extent to the envelope bound",
-      "reference_kind": "analytic",
-      "tolerance": 1.0
      }
     ],
     "generator": {
-     "name": "monitor_scan",
+     "name": "monitor_states",
      "seed": 1141
     }
    },
-   "claim": "Without a level set the monitor's code is the same at every state; with the declared level it follows the exact V(x) > c decision",
+   "claim": "By the CIW transcription of the documented decision order, the monitor's code is the same at every scanned state without a level set and follows the exact V(x) > c decision with the declared level",
    "domain": "numerical",
    "evidence_status": "numerically_verified",
    "regression_tolerance": {
@@ -235,9 +402,13 @@
       "reference_kind": "invariant",
       "tolerance": 0.0
      }
-    ]
+    ],
+    "generator": {
+     "name": "monitor_states",
+     "seed": 1141
+    }
    },
-   "claim": "Every runtime code named as an abort trigger is produced by the declared monitor configuration, and the configuration produces no code outside the expected set",
+   "claim": "By the CIW transcription of the documented decision order, every runtime code named as an abort trigger is produced by the declared monitor configuration, and no code outside the expected set",
    "domain": "computational_pipeline",
    "evidence_status": "numerically_verified",
    "regression_tolerance": {
@@ -331,32 +502,33 @@
  ],
  "generated_artifacts": [
   {
-   "bytes": 5709,
+   "bytes": 5756,
    "path": "artifacts/T114/servo-pilot-spec.json",
-   "sha256": "3d4e5f4e5f56d013fbe937f81925d1c8898d389d08ce8b601c6aa742fed16294"
+   "sha256": "45e97418c2067654430f2cc01a8d71d300b9be3f2e15dd7bd8950a9e27e61c3b"
   },
   {
-   "bytes": 5813,
+   "bytes": 5859,
    "path": "artifacts/T114/servo-pilot-spec.md",
-   "sha256": "1416ea75c9808ac118290695523b6bb92bcbd99e10ccea5c38300aaf429e74b4"
+   "sha256": "3bd55c805c67ed6a00ba39c8033c1f843f4ac7579bf09e1326f7cb43381f8b55"
   },
   {
-   "bytes": 47500,
+   "bytes": 94980,
    "path": "artifacts/T114/monitor-scan.json",
-   "sha256": "905750db88c402d38eb3bd68d9d6456c24c88bae7ff0bf3644749ffe6bc2bb16"
+   "sha256": "594ef48ada919a6df6766094992f5962c386b4ca792a1e5da67548cf004ef578"
   }
  ],
- "hypothesis": "A non-production servo-axis pilot can be specified so that the Lyapunov monitor's scope, data, abort criteria and lack of authority are explicit, every runtime abort trigger can actually fire for the declared monitor configuration, and the offline certificate check passes at every grid inertia before any powered test.",
+ "hypothesis": "A non-production servo-axis pilot can be specified so that the Lyapunov monitor's scope, data, abort criteria and lack of authority are explicit, the declared level set lies inside the operating envelope, every runtime abort trigger can actually fire for the declared monitor configuration in the pinned runtime, and the offline certificate check passes at every grid inertia before any powered test.",
  "input_data": [
   "Placeholder parameters (not identified): J = 2e-3 kg m^2 +- 30 %, b = 1e-3 N m s, Kt = 0.1 N m/A, Ts = 1 ms",
   "Weightings Q = I and unit-balanced Q = diag(omega^2, 1), omega = 2 pi 20 rad/s",
   "Operating envelope |angle error| <= 0.05 rad, |rate| <= 2 rad/s (placeholder)",
-  "Monitor scan: 200 seeded states (PCG64 seed 1141) with V(x) = r^2 c, r = 10^U(-8, 8)"
+  "Monitor scan: 200 seeded states (PCG64 seed 1141) with V(x) = r^2 c, r = 10^U(-8, 8)",
+  "Level-set boundary sampled at 3600 directions"
  ],
- "mathematical_model": "Axis J theta'' = -b theta' + Kt u with PD state feedback designed for 20 Hz, damping 0.7 at nominal J; exact ZOH at Ts = 1 ms; closed loop A_cl(J) = Phi(J) - Gamma(J) K on a 9-point grid over J +- 30 %; common P from the discrete Lyapunov equation at nominal J. Online: PLSR on the nominal model with a declared level c such that {V <= c} lies inside the operating envelope; for a fixed model the decrease form's sign is state-independent, so the code depends on the state only through the level gate.",
+ "mathematical_model": "Axis J theta'' = -b theta' + Kt u with PD state feedback designed for 20 Hz, damping 0.7 at nominal J; exact ZOH at Ts = 1 ms; closed loop A_cl(J) = Phi(J) - Gamma(J) K on a 9-point grid over J +- 30 %; common P from the discrete Lyapunov equation at nominal J. Online: PLSR on the nominal model with a declared level c such that {V <= c} lies inside the operating envelope (max |x_i| over the ellipsoid is sqrt(c (P^-1)_ii)); for a fixed model the decrease form's sign is state-independent, so the code depends on the state only through the level gate.",
  "number": 114,
- "numerical_result": "K = [[315.827341, 3.508584]]; balanced-Q grid classes {'negative_definite': 9}; Q = I grid classes {'has_positive_eigenvalue': 4, 'negative_definite': 5}; ZOH exponential differs from its closed form by 6.94e-18 and from scipy.linalg.expm@1.16.2 by 2.17e-19; level c = 18.3337 (extent/envelope 0.999999); monitor codes without level ['CERTIFIED_WITH_MARGIN'], with level ['CERTIFIED_WITH_MARGIN', 'OUTSIDE_LEVEL_SET'], 0 level decisions differing from exact V > c; abort codes not produced: [].",
- "observation_model": "Exact rational class of A_cl(J)^T P A_cl(J) - P at each grid inertia; ZOH exponential against its closed form and an independent exponential; monitor codes over the scan by the documented decision order, against the exact V(x) > c decision.",
+ "numerical_result": "K = [[315.827341, 3.508584]]; balanced-Q grid classes {'negative_definite': 9}; Q = I grid classes {'has_positive_eigenvalue': 4, 'negative_definite': 5}; ZOH exponential differs from its closed form by 6.94e-18 and from scipy.linalg.expm@1.16.2 by 2.17e-19; level c = 18.3337, largest extent/envelope ratio 0.999999 exactly and 0.999999 on the sampled boundary; PLSR monitor codes without level ['CERTIFIED_WITH_MARGIN'], with level ['CERTIFIED_WITH_MARGIN', 'OUTSIDE_LEVEL_SET'], 0 level decisions differing from exact V > c, 0 scan verdicts differing from the transcription; abort codes not produced by PLSR: [].",
+ "observation_model": "Exact rational class of A_cl(J)^T P A_cl(J) - P at each grid inertia; ZOH exponential against its closed form and an independent exponential; the level set's extent in exact rationals and on the sampled boundary; PLSR's monitor codes over the scan (and the CIW transcription of the documented decision order) against the exact V(x) > c decision.",
  "physical_validation_status": {
   "statement": "Physical validation requires acquired hardware evidence; none was acquired for this task.",
   "status": "not_established"
@@ -366,40 +538,67 @@
   "implementation": "ciw.lab",
   "mpmath": "1.3.0",
   "numpy": "2.4.3",
+  "provider": {
+   "commit": "19ea6967060166ba09db6cd4563bd87bd6b3d196",
+   "entry": "lyapunov.verdict / lyapunov.solve_lyapunov / lyapunov.decrease_resolution",
+   "files_pinned": 20,
+   "files_verified": 20,
+   "implementation": "Parameterized-Lyapunov-Stability-Runtime",
+   "numpy_version": "2.4.3",
+   "package_version": "0.1.0rc1",
+   "python_version": "3.12.3",
+   "repository": "https://github.com/giasonpooni/Parameterized-Lyapunov-Stability-Runtime",
+   "role": "plsr-python",
+   "source_digest": "a6fee6b3b4eb7852b31f5a285fe8c50b535f25762e1daf82e36720ef8dd1b7c7",
+   "verification": "package version and per-file sha256 checked in the subprocess before use"
+  },
   "python": "3.12.3",
+  "requirement_probes": {
+   "provider:plsr-python": true
+  },
   "scipy": "1.16.2",
   "sources": {
-   "src/ciw/lab/lyapunov.py": "58d6c7473f0a42002b57888de0ccfbbf73b571bbbabbf9ee81e0a05c734f2320",
-   "src/ciw/lab/lyapunov_reference.py": "fa37ef453c23ad2bed2eab41132e72670e166b93eebd5fc9d67a4a89a7c92cca",
-   "src/ciw/lab/lyapunov_research.py": "528422e4137222e00fd93c63ac22a4bb326fe469030d347418427bac34907d0f"
+   "src/ciw/lab/lyapunov.py": "cbcb4d58d7313d7c537957a1b7dd35039a21bae80125bf59147eeed2c1232bbb",
+   "src/ciw/lab/lyapunov_provider.py": "da3465b48b5f5efc47bfe6ab8379cf2cf2bc23e4835dc7ff047252e77fa6ef17",
+   "src/ciw/lab/lyapunov_reference.py": "bdf0bb5074ae2caca6c8a5d8e63a15e346b007098e6def6b058d077719bc1336",
+   "src/ciw/lab/lyapunov_research.py": "8e6e5b4ac0a8ba3b12d4ee13ced778fe5070b43f6766752ffc8c5b88f1a4baef"
   },
   "sympy": "1.14.0"
  },
  "recommended_next_task": "Hardware-gated: identify J, friction and delay on the bench, replace the placeholder interval, re-run this check with an affine over-approximation suitable for PLSR's box semantics, then run T113's adapter on acquired encoder data.",
- "report_id": "sha256:9591a17130b24b987ea920da601654ee6bb176d73c9f6be157446b522e98c687",
+ "report_id": "sha256:fe319c8c5c6880344ce428b359d5f6de4c3f40f1ae1fe9c47f05f96f3fbc0e5e",
  "schema": "ciw.lab-task-report.v1",
  "section": "lyapunov",
  "state": "completed",
  "task_id": "T114",
  "tests_passed": [
+  "check: PLSR's monitor code on the declared configuration is the same at every scanned state without a level set and follows the exact V(x) > c decision with the declared level vs distinct PLSR codes over the scan without a level set",
+  "check: PLSR's monitor code on the declared configuration is the same at every scanned state without a level set and follows the exact V(x) > c decision with the declared level vs scan verdicts differing from the CIW transcription of the documented order (same specification)",
+  "independent: PLSR's monitor code on the declared configuration is the same at every scanned state without a level set and follows the exact V(x) > c decision with the declared level vs ciw.lab.lyapunov_reference",
+  "check: PLSR produces every runtime code named as an abort trigger on the declared monitor configuration, and no code outside the expected set vs abort codes never produced by the monitor scan",
+  "check: PLSR produces every runtime code named as an abort trigger on the declared monitor configuration, and no code outside the expected set vs produced codes outside the expected set",
   "check: The unit-balanced nominal P gives an exactly negative definite discrete decrease at every grid inertia vs grid inertias without an exactly negative definite decrease",
   "check: With Q = I the nominal-model P does not cover the declared inertia interval vs grid inertias failing with Q = I",
   "check: The ZOH exponential agrees with its closed form and, where available, an independent exponential vs max abs entry difference from the closed form of exp([[A, B], [0, 0]] Ts)",
   "independent: The ZOH exponential agrees with its closed form and, where available, an independent exponential vs scipy.linalg.expm@1.16.2",
-  "check: Without a level set the monitor's code is the same at every state; with the declared level it follows the exact V(x) > c decision vs distinct codes over the scan without a level set",
-  "check: Without a level set the monitor's code is the same at every state; with the declared level it follows the exact V(x) > c decision vs states whose OUTSIDE_LEVEL_SET decision differs from exact V(x) > c",
-  "check: Without a level set the monitor's code is the same at every state; with the declared level it follows the exact V(x) > c decision vs largest ratio of the level set's extent to the envelope bound",
-  "check: Every runtime code named as an abort trigger is produced by the declared monitor configuration, and the configuration produces no code outside the expected set vs abort codes never produced by the monitor scan",
-  "check: Every runtime code named as an abort trigger is produced by the declared monitor configuration, and the configuration produces no code outside the expected set vs produced codes outside the expected set",
+  "check: The declared level set {V <= c} lies inside the operating envelope vs largest c (P^-1)_ii / e_i^2 in exact rationals ((P^-1)_ii = P_jj / det P; max x_i^2 over the ellipsoid)",
+  "check: The declared level set {V <= c} lies inside the operating envelope vs largest |x_i| / e_i over 3600 sampled points of the boundary x^T P x = c",
+  "check: By the CIW transcription of the documented decision order, the monitor's code is the same at every scanned state without a level set and follows the exact V(x) > c decision with the declared level vs distinct transcribed codes over the scan without a level set",
+  "check: By the CIW transcription of the documented decision order, the monitor's code is the same at every scanned state without a level set and follows the exact V(x) > c decision with the declared level vs states whose transcribed OUTSIDE_LEVEL_SET decision differs from exact V(x) > c (rationals)",
+  "check: By the CIW transcription of the documented decision order, every runtime code named as an abort trigger is produced by the declared monitor configuration, and no code outside the expected set vs abort codes never produced by the monitor scan",
+  "check: By the CIW transcription of the documented decision order, every runtime code named as an abort trigger is produced by the declared monitor configuration, and no code outside the expected set vs produced codes outside the expected set",
   "pytest: tests/test_lab_lyapunov.py::test_t114_servo_pilot_spec",
-  "pytest: tests/test_lab_lyapunov.py::test_research_tasks_without_optional_modules"
+  "pytest: tests/test_lab_lyapunov.py::test_t114_level_set_and_monitor",
+  "pytest: tests/test_lab_lyapunov.py::test_level_set_extent_is_checked_independently",
+  "pytest: tests/test_lab_lyapunov.py::test_research_tasks_without_optional_modules",
+  "pytest: tests/test_lab_lyapunov.py::test_provider_tasks_are_partial_without_the_provider"
  ],
  "tests_skipped": [],
  "title": "Prepare a non-production servo-axis pilot specification.",
  "uncertainty": "Exact rational classes on the declared float matrices; the interval between grid points is not covered by a proof; the level-set scan decides V > c exactly.",
  "unresolved_assumptions": [
   "All parameters are placeholders; the grid is evidence on 9 inertias, not a proof over the interval.",
-  "The monitor scan uses CIW's transcription of the documented decision order, not the pinned runtime; T113 exercises the runtime on the analogous adapter.",
+  "The monitor is evaluated on the declared nominal model only; the inertia interval between grid points and the other grid models are covered by the offline check, not by the monitor.",
   "The current loop, friction nonlinearity, saturation and delay are not modelled; specification sections are guarded by the regression test, not by a finding."
  ]
 }

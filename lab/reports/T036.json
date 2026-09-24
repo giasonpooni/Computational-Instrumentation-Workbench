@@ -2,6 +2,7 @@
  "changed_files": [
   "src/ciw/lab/surfaces_discrete.py",
   "src/ciw/lab/surfaces_discrete_charts.py",
+  "src/ciw/lab/surfaces_discrete_geometry.py",
   "docs/lab/SURFACE_INTERFACE.md"
  ],
  "evidence_status": {
@@ -10,19 +11,20 @@
    "hardware_measured": 0,
    "independently_verified": 0,
    "not_established": 1,
-   "numerically_verified": 7,
+   "numerically_verified": 10,
    "provider_backed": 0,
    "synthetic": 0
   },
   "primary": "numerically_verified"
  },
- "expected_invariant": "Atlas error independent of delta and fourth order in the step; transitions exact to rounding; single-chart error grows or the integration fails for small delta > 0.",
- "experiment": "Integrate each great circle with chart switching and in chart A alone; verify transitions by round trip, speed preservation and difference Jacobians; convergence at delta = 0.",
+ "expected_invariant": "Atlas error independent of delta and fourth order in the step; transitions exact to rounding; single-chart error grows or the integration fails for small delta > 0; on the exact meridian the single chart is accurate only when no step point lands near a pole.",
+ "experiment": "Integrate each geodesic with chart switching and in the singular chart alone; verify transitions by round trip, speed preservation and difference Jacobians; convergence at delta = 0; scan the step count of the exact meridian in chart A alone and record the drift of v_phi.",
  "failure_modes_checked": [
-  "geodesic exactly through a pole",
+  "geodesic exactly through a pole or the apex",
   "geodesics 1e-1..1e-12 from a pole",
   "chattering between charts (bound 1/2 > threshold 1/4)",
   "longitude wrap-around in transition differences",
+  "step grids landing near a pole on the exact meridian",
   "nonfinite single-chart states and math domain errors (recorded with their message; any other exception propagates instead of counting as a failure)"
  ],
  "findings": [
@@ -55,7 +57,11 @@
     "abs": 1e-08,
     "rel": 0.05
    },
-   "uncertainty": null,
+   "uncertainty": {
+    "basis": "Richardson: largest distance of the 400-step error from the fourth-order predictions e(200)/16 and 16 e(800)",
+    "kind": "truncation_bound",
+    "value": 5.7e-09
+   },
    "unit": "length",
    "value": 4.86e-08
   },
@@ -80,7 +86,11 @@
     "abs": 0.1,
     "rel": 0.0
    },
-   "uncertainty": null,
+   "uncertainty": {
+    "basis": "each atlas error carries the relative Richardson spread of the delta = 0 run; a ratio of two errors carries at most about twice it",
+    "kind": "truncation_bound",
+    "value": 0.28
+   },
    "unit": null,
    "value": 1.21
   },
@@ -105,7 +115,11 @@
     "abs": 0.05,
     "rel": 0.0
    },
-   "uncertainty": null,
+   "uncertainty": {
+    "basis": "half the difference between the two pairwise orders (pre-asymptotic drift)",
+    "kind": "fit",
+    "value": 0.099
+   },
    "unit": null,
    "value": [
     4.16,
@@ -149,7 +163,11 @@
     "abs": 1e-07,
     "rel": 0.0
    },
-   "uncertainty": null,
+   "uncertainty": {
+    "basis": "the Jacobian comparison carries the central-difference error at h = 1e-6 (h^2 truncation ~1e-12, eps/h rounding ~2e-10); round trip and speed are rounding level (~1e-15)",
+    "kind": "truncation_bound",
+    "value": 1e-09
+   },
    "unit": null,
    "value": {
     "jacobian": 3.7175822615951626e-10,
@@ -163,17 +181,17 @@
     "checks": [
      {
       "comparison": "ge",
-      "observed": 0.5016141944817782,
+      "observed": 0.5016141944817785,
       "passed": true,
-      "reference": "min over 4352 sphere points of max(det_A, det_B) / R^4",
+      "reference": "min over 4352 sphere points of the better chart's regularity, evaluated through each chart's inverse and metric",
       "reference_kind": "analytic",
       "tolerance": 0.499999999999
      },
      {
       "comparison": "ge",
-      "observed": 0.7537661908770925,
+      "observed": 0.7537661908770927,
       "passed": true,
-      "reference": "min det g / R^4 right after a switch",
+      "reference": "min regularity right after a switch",
       "reference_kind": "analytic",
       "tolerance": 0.499999999999
      }
@@ -187,7 +205,11 @@
     "abs": 0.001,
     "rel": 0.0
    },
-   "uncertainty": null,
+   "uncertainty": {
+    "basis": "regularity from the chart inverse and the eigenvalues of g at sampled points; the bound itself is analytic",
+    "kind": "roundoff",
+    "value": 1e-15
+   },
    "unit": null,
    "value": {
     "covering_min": 0.501614,
@@ -221,13 +243,13 @@
    "counterexample": {
     "statement": "Fixed-step RK4 in a single polar chart integrates every great circle as accurately as a chart-switching atlas at the same step count",
     "witness": {
-     "delta_0.1_atlas_error": 5.68e-08,
-     "delta_0.1_single_error": 7.23e-06,
-     "delta_failed": [
-      0.01,
-      0.001,
-      0.0001,
-      1e-06
+     "log10_delta_0.1_atlas_error": -7.246,
+     "log10_delta_0.1_single_error": -5.141,
+     "log10_delta_failed": [
+      -2,
+      -3,
+      -4,
+      -6
      ]
     }
    },
@@ -237,7 +259,11 @@
     "abs": 1,
     "rel": 0.0
    },
-   "uncertainty": null,
+   "uncertainty": {
+    "basis": "counts at a fixed 400-step grid; which small-delta runs fail or degrade depends on rounding and may move by one case across platforms",
+    "kind": "reference_error",
+    "value": 1
+   },
    "unit": null,
    "value": {
     "cases": 8,
@@ -253,34 +279,218 @@
       "comparison": "le",
       "observed": 7.419744198533214e-14,
       "passed": true,
-      "reference": "chart A alone, delta = 0: max |X - X_exact|",
+      "reference": "chart A alone, delta = 0, 400 steps: max |X - X_exact|",
       "reference_kind": "analytic",
       "tolerance": 1e-10
      }
     ]
    },
-   "claim": "Along the exact meridian (v_phi = 0 exactly) chart A alone crosses the pole accurately",
+   "claim": "At 400 RK4 steps chart A alone crosses both poles on the exact meridian to within 1e-10",
    "counterexample": {
     "statement": "Single-chart integration exactly through a coordinate pole always fails",
     "witness": {
-     "delta": 0.0,
-     "single_chart_error": 7.4e-14,
-     "single_chart_error_by_delta": {
-      "1e-08": 0.1,
-      "1e-10": 1.1e-05,
-      "1e-12": 1e-07
-     }
+     "log10_error": -13.13,
+     "steps": 400
     }
    },
    "domain": "numerical",
    "evidence_status": "numerically_verified",
    "regression_tolerance": {
-    "abs": 1e-10,
+    "abs": 1.0,
     "rel": 0.0
    },
-   "uncertainty": null,
-   "unit": "length",
-   "value": 7.4e-14
+   "uncertainty": {
+    "basis": "the error is rounding level at this step count; v_phi is not exactly zero (rounding in g_12 seeds sin^2(theta) v_phi), and the result depends on the step grid",
+    "kind": "roundoff",
+    "value": 1e-13
+   },
+   "unit": "log10 of each quantity",
+   "value": {
+    "log10_closest_step_to_pole": -2.275,
+    "log10_error": -13.13,
+    "log10_max_abs_momentum": -13.13,
+    "log10_max_abs_v_phi": -9.607
+   }
+  },
+  {
+   "assigned_by": "ciw.lab.evidence",
+   "basis": {
+    "checks": [
+     {
+      "comparison": "ge",
+      "observed": 2.100344682764241e-08,
+      "passed": true,
+      "reference": "smallest error of the runs with a step point within 1e-4 of a pole (a failure counts as 2R)",
+      "reference_kind": "analytic",
+      "tolerance": 1e-09
+     },
+     {
+      "comparison": "le",
+      "observed": 1.1931208892476426e-10,
+      "passed": true,
+      "reference": "largest error of the other runs",
+      "reference_kind": "analytic",
+      "tolerance": 1e-09
+     },
+     {
+      "comparison": "ge",
+      "observed": 5.0,
+      "passed": true,
+      "reference": "step counts with a step point within the near-pole distance",
+      "reference_kind": "exact_arithmetic",
+      "tolerance": 1.0
+     }
+    ]
+   },
+   "claim": "On the exact meridian chart A alone fails or loses accuracy whenever a step point lands within 1e-4 of a pole (350 to 450 RK4 steps)",
+   "counterexample": {
+    "statement": "A single-chart integration that crosses a pole accurately at one step count stays accurate at nearby step counts",
+    "witness": {
+     "failed_steps": [
+      355
+     ],
+     "log10_error_at_399": -6.508,
+     "log10_error_at_400": -13.13,
+     "steps_near_pole": [
+      355,
+      377,
+      399,
+      421,
+      443
+     ]
+    }
+   },
+   "domain": "numerical",
+   "evidence_status": "numerically_verified",
+   "regression_tolerance": {
+    "abs": 1.0,
+    "rel": 0.0
+   },
+   "uncertainty": {
+    "basis": "near-pole errors amplify a rounding-level angular momentum, so their size may move by about a decade across platforms; grid distances are exact arithmetic",
+    "kind": "reference_error",
+    "value": 1.0
+   },
+   "unit": "log10 length",
+   "value": {
+    "failed": 1,
+    "log10_max_other_error": -9.923,
+    "log10_min_near_pole_error": -7.678,
+    "near_pole": 5,
+    "step_counts": 101
+   }
+  },
+  {
+   "assigned_by": "ciw.lab.evidence",
+   "basis": {
+    "checks": [
+     {
+      "comparison": "abs_le",
+      "observed": 6.004449063730082e-16,
+      "passed": true,
+      "reference": "polar -> Monge -> polar round trip, max |X' - X|",
+      "reference_kind": "invariant",
+      "tolerance": 1e-13
+     },
+     {
+      "comparison": "abs_le",
+      "observed": 8.170400087984381e-16,
+      "passed": true,
+      "reference": "relative speed change under the velocity pushforward",
+      "reference_kind": "invariant",
+      "tolerance": 1e-12
+     },
+     {
+      "comparison": "abs_le",
+      "observed": 3.021773264554725e-10,
+      "passed": true,
+      "reference": "pushforward vs central difference of the point transition (h = 1e-6)",
+      "reference_kind": "self_convergence",
+      "tolerance": 1e-07
+     },
+     {
+      "comparison": "signed_ge",
+      "observed": 1.52633563875737e-05,
+      "passed": true,
+      "reference": "min over sampled points of the better chart's regularity minus the Monge bound",
+      "reference_kind": "analytic",
+      "tolerance": -1e-12
+     }
+    ],
+    "derivation": "Monge chart g = I + grad f grad f^T: regularity 1 / (1 + |grad f|^2), and |grad f| <= h / (sqrt(e) sigma) for the Gaussian bump"
+   },
+   "claim": "The Monge-plus-polar atlas of a graph surface has exact transitions and covers the plane with regularity above the analytic Monge bound",
+   "domain": "numerical",
+   "evidence_status": "numerically_verified",
+   "regression_tolerance": {
+    "abs": 1e-07,
+    "rel": 0.0
+   },
+   "uncertainty": {
+    "basis": "the Jacobian comparison carries the central-difference error at h = 1e-6; round trip, speed and regularities are rounding level",
+    "kind": "truncation_bound",
+    "value": 1e-09
+   },
+   "unit": null,
+   "value": {
+    "covering_min": 0.915791,
+    "jacobian": 3.021773264554725e-10,
+    "monge_bound": 0.915776,
+    "roundtrip": 6.004449063730082e-16,
+    "speed": 8.170400087984381e-16
+   }
+  },
+  {
+   "assigned_by": "ciw.lab.evidence",
+   "basis": {
+    "checks": [
+     {
+      "comparison": "le",
+      "observed": 4.051070348765646e-09,
+      "passed": true,
+      "reference": "max over delta of |X_atlas - X_ref| (RK4 200 steps from the polar chart; reference Monge chart alone, 800 steps)",
+      "reference_kind": "cross_implementation",
+      "tolerance": 1e-08
+     },
+     {
+      "comparison": "ge",
+      "observed": 1.0,
+      "passed": true,
+      "reference": "chart switches per run (polar -> Monge)",
+      "reference_kind": "exact_arithmetic",
+      "tolerance": 1.0
+     },
+     {
+      "comparison": "ge",
+      "observed": 6.0,
+      "passed": true,
+      "reference": "delta > 0 cases where the polar chart alone fails or errs > 10x the atlas",
+      "reference_kind": "analytic",
+      "tolerance": 5.0
+     }
+    ]
+   },
+   "claim": "The graph atlas integrates geodesics through and near the Gaussian-bump apex, where its polar chart alone fails or loses accuracy",
+   "domain": "numerical",
+   "evidence_status": "numerically_verified",
+   "regression_tolerance": {
+    "abs": 1e-09,
+    "rel": 0.1
+   },
+   "uncertainty": {
+    "basis": "fourth-order error of the refined Monge reference, estimated as the 200-step Monge error / 4^4",
+    "kind": "truncation_bound",
+    "value": 2.4e-13
+   },
+   "unit": null,
+   "value": {
+    "atlas_error": 4.05e-09,
+    "cases": 6,
+    "min_switches": 1,
+    "monge_alone_error": 6.11e-11,
+    "polar_degraded": 6,
+    "polar_failed": 2
+   }
   },
   {
    "assigned_by": "ciw.lab.evidence",
@@ -295,14 +505,24 @@
  ],
  "generated_artifacts": [
   {
-   "bytes": 11018,
+   "bytes": 11106,
    "path": "artifacts/T036/atlas-runs.json",
-   "sha256": "13eec902595f2a14f387381f5cfd1baba1c4c9324145129c45c98599fba93c28"
+   "sha256": "8db410737367f32ae924381749da28144b5b5ec5923fd8818fe8eba3fe761d47"
   },
   {
-   "bytes": 207,
+   "bytes": 549,
    "path": "artifacts/T036/transitions.json",
-   "sha256": "fed66ea25c5e24bbe8cb1359d8e1a532237df94dd93fae3d51e24756137c0aa1"
+   "sha256": "ec086802a0402f377c1000241641f11adc712443ca9eda46cd2325e6b1fb2680"
+  },
+  {
+   "bytes": 13442,
+   "path": "artifacts/T036/meridian-steps.json",
+   "sha256": "a0d942d629fcff441b916bf1364344abcfe29a631f8fb641e939734aab53cf83"
+  },
+  {
+   "bytes": 2512,
+   "path": "artifacts/T036/graph-atlas-runs.json",
+   "sha256": "4801d1e3bda31843e7f17de802dde806171306ab27a001a20493ef3fb6957148"
   },
   {
    "bytes": 4875,
@@ -310,22 +530,30 @@
    "sha256": "37d6a4fe61ac6d939232b6096d0eb6ee1ce3699a259b65c4dac73848576b9bb9"
   },
   {
-   "bytes": 4837,
+   "bytes": 4863,
    "path": "artifacts/T036/regularity-profile.svg",
-   "sha256": "4d346e09d010d9de4c323d5325eb3bbeca497a86101465ab889c626a16ae7d84"
+   "sha256": "3154ff556bedb092ecf82b57fbadc62c84521d6215f86a9f4e04ae9e39b28d95"
+  },
+  {
+   "bytes": 16935,
+   "path": "artifacts/T036/meridian-steps.svg",
+   "sha256": "d7e32d301e5a629e01ec9a7a7356575861ba9c6a4ffea84ac8ce96852a9c0d61"
   }
  ],
- "hypothesis": "A two-chart polar atlas of the sphere with exact transitions integrates great circles through or near a pole with an accuracy that does not depend on how close they pass, while a single polar chart loses accuracy or fails near its poles.",
+ "hypothesis": "An atlas of charts with exact transitions through the embedding integrates geodesics through or near a chart's coordinate singularity with an accuracy that does not depend on how close they pass, while a single chart loses accuracy or fails near its singular point. Shown for the two-chart polar atlas of the sphere (great circles through and near a pole) and for the Monge-plus-polar atlas of the Gaussian bump built from a ChartMap (geodesics through and near the apex).",
  "input_data": [
   "unit sphere; great circles with closest approach delta in [0.0, 0.1, 0.01, 0.001, 0.0001, 1e-06, 1e-08, 1e-10, 1e-12] to the north pole, azimuth 1.3, full length 2 pi",
   "RK4, 400 steps (convergence: 200/400/800)",
-  "switch threshold det g / R^4 < 0.25",
-  "256 seeded sphere points for transitions (seed 3337)"
+  "exact meridian in chart A alone at 101 step counts (350..450)",
+  "switch threshold: regularity < 0.25",
+  "256 + 4096 seeded sphere points for transitions and covering (seed 3337)",
+  "Gaussian bump h = 0.5, sigma = 1: geodesics from x = -1.5 at offset delta in [0.0, 0.1, 0.01, 0.001, 0.0001, 1e-06, 1e-08] from the apex, length 3.0, RK4 200 steps, reference Monge chart alone at 800 steps; 256 seeded points of the Monge disc of radius 2.0 (seed 3661)",
+  "interface under test: ciw.lab.surfaces and ciw.lab.integrators at the source digests recorded in provider_runtime_identity.sources"
  ],
- "mathematical_model": "Chart A: X = R(sin t cos p, sin t sin p, cos t); chart B = R_y(pi/2) X_A, poles on A's equator. det g / R^4 = sin^2 theta in each chart and sin^2 theta_A + sin^2 theta_B = 1 + y^2/R^2 >= 1, so the better chart always has det g / R^4 >= 1/2. Transitions: u_B = X_B^{-1}(X_A(u_A)), v_B = g_B^{-1} J_B^T J_A v_A.",
+ "mathematical_model": "Atlas: charts X_c with closed-form inverses; u_B = X_B^{-1}(X_A(u_A)), v_B = g_B^{-1} J_B^T J_A v_A; regularity lambda_min / lambda_max of g (scale free); switch between RK4 steps when the active chart's regularity < 1/4. Sphere: chart A X = R(sin t cos p, sin t sin p, cos t), chart B = R_y(pi/2) X_A; regularity sin^2 theta = det g / R^4 in each chart and sin^2 theta_A + sin^2 theta_B = 1 + y^2/R^2 >= 1, so the better chart always has regularity >= 1/2. Graph z = f(x, y): Monge chart g = I + grad f grad f^T with regularity 1/(1 + |grad f|^2), and the polar chart (r, t) pulled back through PolarChart, singular at r = 0.",
  "number": 36,
- "numerical_result": "atlas through the pole: error 4.86e-08, 4 switches (A->B, B->A, A->B, B->A); atlas error spread over delta 1.21x; orders 4.16, 3.96; single chart failed for 4 and degraded (>10x atlas) for 7 of 8 delta > 0; exact meridian in chart A alone: error 7.42e-14; transitions round trip 6.5e-16, speed 5.25e-16, Jacobian 3.72e-10; covering bound 0.502.",
- "observation_model": "Ambient error max_s |X_num(s) - X_exact(s)|; exact great circle cos(s) X0 + sin(s) T0.",
+ "numerical_result": "sphere atlas through the pole: error 4.86e-08, 4 switches (A->B, B->A, A->B, B->A); atlas error spread over delta 1.21x; orders 4.16, 3.96; single chart failed for 4 and degraded (>10x atlas) for 7 of 8 delta > 0; exact meridian in chart A alone at 400 steps: error 7.42e-14 with |v_phi| up to 2.47e-10 from rounding; over 101 step counts the 5 runs with a step point within 1e-4 of a pole fail (1) or err >= 2.1e-08, the others err <= 1.19e-10; transitions round trip 6.5e-16, speed 5.25e-16, Jacobian 3.72e-10; covering bound 0.502. Gaussian-bump atlas: error <= 4.05e-09 for every delta (Monge chart alone 6.11e-11), polar chart alone failed for 2 and degraded for 6 of 6 delta > 0; transitions round trip 6e-16, speed 8.17e-16, Jacobian 3.02e-10.",
+ "observation_model": "Ambient error max_s |X_num(s) - X_ref(s)|: exact great circle cos(s) X0 + sin(s) T0 on the sphere, the refined Monge-chart run on the bump.",
  "physical_validation_status": {
   "statement": "Physical validation requires acquired hardware evidence; none was acquired for this task.",
   "status": "not_established"
@@ -338,13 +566,16 @@
   "python": "3.12.3",
   "scipy": "1.16.2",
   "sources": {
-   "src/ciw/lab/surfaces_discrete.py": "65515cd7d7440c047bb6cba986dbcd2b496978ebb32ed15939e371828e755eef",
-   "src/ciw/lab/surfaces_discrete_charts.py": "0e8ccfb050b8600a65e434970c3d7957327d8a03b8a47ae09457f3ad423c2f47"
+   "src/ciw/lab/integrators.py": "a8cd5b2c5042c70970ae27975ef9387c4492ac981132cd9096bf8eafa8dc6084",
+   "src/ciw/lab/surfaces.py": "e8f264c182743d0177d93b961a49d7ddf78f30d79a7a75b9fea4018b10d4eef0",
+   "src/ciw/lab/surfaces_discrete.py": "b47b6d9486e322c3e394e25b99849c0aa22039ce45b946825b0f3dbc1a3013b7",
+   "src/ciw/lab/surfaces_discrete_charts.py": "e1d7e0b8514c7795f0e41b26d993d44ae3f032ea67191b068194ec284f227e71",
+   "src/ciw/lab/surfaces_discrete_geometry.py": "d4445a253778e1dff32b68a903a9caf560affa08ca5a7110207e54c8e1baa60e"
   },
   "sympy": "1.14.0"
  },
- "recommended_next_task": "Queue extension after T168: locate the chart-switch crossing with event detection in the adaptive integrator, and drive switching from the T037 require_regular refusal codes instead of a fixed det g threshold.",
- "report_id": "sha256:76249f968a6d53af09104858368de87d988a4c0fed1e3cf0853a2a099d05d4ad",
+ "recommended_next_task": "Queue extension after T168: locate the chart-switch crossing with event detection in the adaptive integrator, and drive switching from the T037 require_regular refusal codes instead of a fixed regularity threshold.",
+ "report_id": "sha256:0ac0bef697122858d377984ea6b59e96cd6b324ac85042dda9931f67a2d5233d",
  "schema": "ciw.lab-task-report.v1",
  "section": "surfaces-discrete",
  "state": "completed",
@@ -357,22 +588,34 @@
   "check: Chart transitions are exact: round trip, speed preservation and difference Jacobian vs A -> B -> A round trip, max |X' - X| / R",
   "check: Chart transitions are exact: round trip, speed preservation and difference Jacobian vs |g_B(v_B, v_B) - g_A(v_A, v_A)| / g_A(v_A, v_A)",
   "check: Chart transitions are exact: round trip, speed preservation and difference Jacobian vs pushforward vs central difference of the point transition (h = 1e-6)",
-  "check: The better chart of the atlas always has det g / R^4 >= 1/2, so switching never chatters vs min over 4352 sphere points of max(det_A, det_B) / R^4",
-  "check: The better chart of the atlas always has det g / R^4 >= 1/2, so switching never chatters vs min det g / R^4 right after a switch",
+  "check: The better chart of the atlas always has det g / R^4 >= 1/2, so switching never chatters vs min over 4352 sphere points of the better chart's regularity, evaluated through each chart's inverse and metric",
+  "check: The better chart of the atlas always has det g / R^4 >= 1/2, so switching never chatters vs min regularity right after a switch",
   "check: A single polar chart fails or loses accuracy on great circles passing near its pole vs delta > 0 cases where chart A alone fails or errs > 10x the atlas",
   "check: A single polar chart fails or loses accuracy on great circles passing near its pole vs delta > 0 cases where chart A alone fails outright",
-  "check: Along the exact meridian (v_phi = 0 exactly) chart A alone crosses the pole accurately vs chart A alone, delta = 0: max |X - X_exact|",
+  "check: At 400 RK4 steps chart A alone crosses both poles on the exact meridian to within 1e-10 vs chart A alone, delta = 0, 400 steps: max |X - X_exact|",
+  "check: On the exact meridian chart A alone fails or loses accuracy whenever a step point lands within 1e-4 of a pole (350 to 450 RK4 steps) vs smallest error of the runs with a step point within 1e-4 of a pole (a failure counts as 2R)",
+  "check: On the exact meridian chart A alone fails or loses accuracy whenever a step point lands within 1e-4 of a pole (350 to 450 RK4 steps) vs largest error of the other runs",
+  "check: On the exact meridian chart A alone fails or loses accuracy whenever a step point lands within 1e-4 of a pole (350 to 450 RK4 steps) vs step counts with a step point within the near-pole distance",
+  "check: The Monge-plus-polar atlas of a graph surface has exact transitions and covers the plane with regularity above the analytic Monge bound vs polar -> Monge -> polar round trip, max |X' - X|",
+  "check: The Monge-plus-polar atlas of a graph surface has exact transitions and covers the plane with regularity above the analytic Monge bound vs relative speed change under the velocity pushforward",
+  "check: The Monge-plus-polar atlas of a graph surface has exact transitions and covers the plane with regularity above the analytic Monge bound vs pushforward vs central difference of the point transition (h = 1e-6)",
+  "check: The Monge-plus-polar atlas of a graph surface has exact transitions and covers the plane with regularity above the analytic Monge bound vs min over sampled points of the better chart's regularity minus the Monge bound",
+  "check: The graph atlas integrates geodesics through and near the Gaussian-bump apex, where its polar chart alone fails or loses accuracy vs max over delta of |X_atlas - X_ref| (RK4 200 steps from the polar chart; reference Monge chart alone, 800 steps)",
+  "check: The graph atlas integrates geodesics through and near the Gaussian-bump apex, where its polar chart alone fails or loses accuracy vs chart switches per run (polar -> Monge)",
+  "check: The graph atlas integrates geodesics through and near the Gaussian-bump apex, where its polar chart alone fails or loses accuracy vs delta > 0 cases where the polar chart alone fails or errs > 10x the atlas",
   "pytest: tests/test_lab_surfaces_discrete.py::test_atlas_transitions_are_exact",
   "pytest: tests/test_lab_surfaces_discrete.py::test_atlas_geodesic_through_pole_matches_great_circle",
   "pytest: tests/test_lab_surfaces_discrete.py::test_single_chart_near_pole_counterexample",
+  "pytest: tests/test_lab_surfaces_discrete.py::test_meridian_depends_on_the_step_grid",
+  "pytest: tests/test_lab_surfaces_discrete.py::test_graph_atlas_transitions_and_apex_geodesics",
   "pytest: tests/test_lab_surfaces_discrete.py::test_t036_report"
  ],
  "tests_skipped": [],
  "title": "Add chart-transition support.",
- "uncertainty": "Atlas errors are RK4 truncation errors (order 4). Single-chart errors for small delta come from the unresolved azimuthal rate 1/sin(delta) at a fixed step; the failure steps and the errors for delta <= 1e-8 depend on rounding and may differ across platforms.",
+ "uncertainty": "Atlas errors are RK4 truncation errors (order 4); the 400-step sphere error differs from the fourth-order predictions of the 200- and 800-step runs by 11.7%. Single-chart errors for small delta come from the unresolved azimuthal rate 1/sin(delta) at a fixed step; the failure steps and the errors for delta <= 1e-8 depend on rounding and may differ across platforms. On the exact meridian the single-chart result depends on the step grid: rounding in g_12 seeds an angular momentum sin^2(theta) v_phi that each pole crossing amplifies, so the 400-step success is a property of that grid (closest step point 0.00531 from a pole), not of the chart.",
  "unresolved_assumptions": [
-  "Only the sphere has an atlas here; other surfaces need their own charts and transitions.",
+  "An atlas needs an embedding and a closed-form inverse for each chart; atlases are built here for the sphere (rotated polar charts) and for graph surfaces (Monge chart and its polar ChartMap); intrinsic charts such as the hyperbolic plane are not covered.",
   "Switching happens between steps; an adaptive integrator would need event location at the threshold.",
-  "The recorded minimum det g / R^4 of the active chart restates the switch threshold and the covering bound; it is reported, not checked."
+  "The recorded minimum regularity of the active chart restates the switch threshold and the covering bound; it is reported, not checked."
  ]
 }

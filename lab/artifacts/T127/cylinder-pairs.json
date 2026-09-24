@@ -2,6 +2,8 @@
  "pairs": [
   {
    "chord_mm": 51.7638090205,
+   "dphi_rad": 0.523598775598,
+   "dz_mm": 0.0,
    "gap_mm": 0.596068539326,
    "geodesic_mm": 52.3598775598,
    "pair": "circumferential 30 deg",
@@ -11,6 +13,8 @@
   },
   {
    "chord_mm": 100.0,
+   "dphi_rad": 1.0471975512,
+   "dz_mm": 0.0,
    "gap_mm": 4.71975511966,
    "geodesic_mm": 104.71975512,
    "pair": "circumferential 60 deg",
@@ -20,6 +24,8 @@
   },
   {
    "chord_mm": 141.421356237,
+   "dphi_rad": 1.57079632679,
+   "dz_mm": 0.0,
    "gap_mm": 15.6582764422,
    "geodesic_mm": 157.079632679,
    "pair": "circumferential 90 deg",
@@ -29,6 +35,8 @@
   },
   {
    "chord_mm": 173.205080757,
+   "dphi_rad": 2.09439510239,
+   "dz_mm": 0.0,
    "gap_mm": 36.2344294824,
    "geodesic_mm": 209.439510239,
    "pair": "circumferential 120 deg",
@@ -38,6 +46,8 @@
   },
   {
    "chord_mm": 193.185165258,
+   "dphi_rad": 2.61799387799,
+   "dz_mm": 0.0,
    "gap_mm": 68.6142225413,
    "geodesic_mm": 261.799387799,
    "pair": "circumferential 150 deg",
@@ -47,6 +57,8 @@
   },
   {
    "chord_mm": 200.0,
+   "dphi_rad": 3.14159265359,
+   "dz_mm": 0.0,
    "gap_mm": 114.159265359,
    "geodesic_mm": 314.159265359,
    "pair": "circumferential 180 deg",
@@ -56,6 +68,8 @@
   },
   {
    "chord_mm": 100.0,
+   "dphi_rad": 0.0,
+   "dz_mm": 100.0,
    "gap_mm": 0.0,
    "geodesic_mm": 100.0,
    "pair": "axial 100 mm",
@@ -63,6 +77,8 @@
   },
   {
    "chord_mm": 200.0,
+   "dphi_rad": 0.0,
+   "dz_mm": 200.0,
    "gap_mm": 0.0,
    "geodesic_mm": 200.0,
    "pair": "axial 200 mm",
@@ -70,6 +86,8 @@
   },
   {
    "chord_mm": 141.421356237,
+   "dphi_rad": 1.0471975512,
+   "dz_mm": 100.0,
    "gap_mm": 3.37583680289,
    "geodesic_mm": 144.79719304,
    "pair": "helical 60 deg / 100 mm",
@@ -77,6 +95,8 @@
   },
   {
    "chord_mm": 244.948974278,
+   "dphi_rad": 1.57079632679,
+   "dz_mm": 200.0,
    "gap_mm": 9.36188078439,
    "geodesic_mm": 254.310855063,
    "pair": "helical 90 deg / 200 mm",

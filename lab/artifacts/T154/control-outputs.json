@@ -1,0 +1,97 @@
+{
+ "control_terms": [
+  "stop request",
+  "abort_action",
+  "abort_on",
+  "setpoint",
+  "to_command",
+  "safe torque",
+  "release a stop",
+  "command motion",
+  "change gains"
+ ],
+ "inventory": [
+  {
+   "kind": "heading proposal",
+   "modules": [
+    "ciw.lab.implementation_targets_authority",
+    "ciw.lab.implementation_targets"
+   ],
+   "output": "Jacobi heading correction",
+   "proposal": true,
+   "route": "ControlProposal; conversion to a command refused without separate authorization",
+   "task": "T154"
+  },
+  {
+   "kind": "actuator write",
+   "modules": [
+    "ciw.lab.implementation_targets_authority",
+    "ciw.lab.implementation_targets"
+   ],
+   "output": "Actuator writes on the declared channels (spindle speed, feed override, axis setpoint, coolant, laser power)",
+   "proposal": false,
+   "route": "ActuatorWritePolicy; refused by default and on every enabling route",
+   "task": "T153"
+  },
+  {
+   "kind": "device command frames",
+   "modules": [
+    "ciw.lab.implementation_targets_fpga",
+    "ciw.lab.implementation_targets"
+   ],
+   "output": "FPGA command, register-write, actuator-setpoint and bitstream-load frame types",
+   "proposal": false,
+   "route": "refused by the decoder, encoder and interface validator (command_path_refused)",
+   "task": "T149"
+  },
+  {
+   "kind": "bitstream change",
+   "modules": [
+    "ciw.lab.implementation_targets_fpga"
+   ],
+   "output": "FPGA rollback execution",
+   "proposal": false,
+   "route": "refused (rollback_requires_machine_authority)",
+   "task": "T151"
+  },
+  {
+   "kind": "abort / stop request",
+   "modules": [
+    "ciw.lab.lyapunov_research",
+    "ciw.lab.lyapunov"
+   ],
+   "output": "Servo-axis Lyapunov monitor abort: a stop request to the bench's independent safety function",
+   "proposal": false,
+   "route": "none here: declared in the pilot specification text; not a ControlProposal and not gated in this section",
+   "task": "T114"
+  }
+ ],
+ "modules_naming_control_terms": {
+  "ciw.lab.implementation_targets": [
+   "setpoint",
+   "stop request",
+   "to_command"
+  ],
+  "ciw.lab.implementation_targets_authority": [
+   "setpoint",
+   "stop request",
+   "to_command"
+  ],
+  "ciw.lab.implementation_targets_fpga": [
+   "setpoint"
+  ],
+  "ciw.lab.lyapunov": [
+   "stop request"
+  ],
+  "ciw.lab.lyapunov_research": [
+   "abort_action",
+   "abort_on",
+   "change gains",
+   "command motion",
+   "release a stop",
+   "safe torque",
+   "stop request"
+  ]
+ },
+ "package_sha256": "fd3bc9aa261ee331e4c848d995f8d9373428f14e2ac7974c2f34a39151bbc35b"
+}

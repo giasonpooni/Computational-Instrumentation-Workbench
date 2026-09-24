@@ -1,0 +1,641 @@
+{
+ "analysis": "ANOVA method (T131); raw components are reported, negative ones truncated at zero and flagged; no interaction pooling",
+ "blinding": "features are presented by coded identity; operators do not see earlier readings or other operators' results; a recorder enters readings",
+ "design": {
+  "operators": 3,
+  "parts": 10,
+  "replicates": 3
+ },
+ "hypotheses": [
+  "%GRR (P/T) <= 10%",
+  "ndc >= 5"
+ ],
+ "reference_variation": "declared tolerance of each measurand (P/T = 6 s_GRR / T); %GRR against the between-feature spread is reported but is not a process variation",
+ "schema": "ciw.lab-gage-rr-procedure.v1",
+ "status": "plan: no study has been performed",
+ "studies": {
+  "MFG-COUPON-01": {
+   "operators": [
+    "O1",
+    "O2",
+    "O3"
+   ],
+   "parts": [
+    {
+     "feature": "lateral tape L1 to nominal N1",
+     "id": "P01"
+    },
+    {
+     "feature": "lateral tape L2 to nominal N2",
+     "id": "P02"
+    },
+    {
+     "feature": "lateral tape L3 to nominal N3",
+     "id": "P03"
+    },
+    {
+     "feature": "lateral tape L4 to nominal N4",
+     "id": "P04"
+    },
+    {
+     "feature": "lateral tape L5 to nominal N5",
+     "id": "P05"
+    },
+    {
+     "feature": "lateral tape L6 to nominal N6",
+     "id": "P06"
+    },
+    {
+     "feature": "lateral tape L7 to nominal N7",
+     "id": "P07"
+    },
+    {
+     "feature": "lateral tape L8 to nominal N8",
+     "id": "P08"
+    },
+    {
+     "feature": "heading tape H4 to nominal N4",
+     "id": "P09"
+    },
+    {
+     "feature": "heading tape H8 to nominal N8",
+     "id": "P10"
+    }
+   ],
+   "replicates": 3,
+   "rounds": [
+    {
+     "before": "remove the specimen from FX-321, re-seat it, re-probe datums A, B, C and rebuild the PART frame",
+     "blocks": [
+      {
+       "operator": "O3",
+       "order": [
+        "lateral tape L4 to nominal N4",
+        "lateral tape L5 to nominal N5",
+        "lateral tape L1 to nominal N1",
+        "lateral tape L2 to nominal N2",
+        "heading tape H4 to nominal N4",
+        "heading tape H8 to nominal N8",
+        "lateral tape L6 to nominal N6",
+        "lateral tape L8 to nominal N8",
+        "lateral tape L3 to nominal N3",
+        "lateral tape L7 to nominal N7"
+       ]
+      },
+      {
+       "operator": "O1",
+       "order": [
+        "lateral tape L6 to nominal N6",
+        "heading tape H8 to nominal N8",
+        "lateral tape L3 to nominal N3",
+        "lateral tape L7 to nominal N7",
+        "lateral tape L4 to nominal N4",
+        "lateral tape L2 to nominal N2",
+        "lateral tape L1 to nominal N1",
+        "lateral tape L5 to nominal N5",
+        "lateral tape L8 to nominal N8",
+        "heading tape H4 to nominal N4"
+       ]
+      },
+      {
+       "operator": "O2",
+       "order": [
+        "lateral tape L6 to nominal N6",
+        "lateral tape L2 to nominal N2",
+        "heading tape H8 to nominal N8",
+        "lateral tape L5 to nominal N5",
+        "lateral tape L8 to nominal N8",
+        "heading tape H4 to nominal N4",
+        "lateral tape L1 to nominal N1",
+        "lateral tape L3 to nominal N3",
+        "lateral tape L4 to nominal N4",
+        "lateral tape L7 to nominal N7"
+       ]
+      }
+     ],
+     "replicate": 1
+    },
+    {
+     "before": "remove the specimen from FX-321, re-seat it, re-probe datums A, B, C and rebuild the PART frame",
+     "blocks": [
+      {
+       "operator": "O1",
+       "order": [
+        "lateral tape L7 to nominal N7",
+        "heading tape H8 to nominal N8",
+        "lateral tape L6 to nominal N6",
+        "lateral tape L1 to nominal N1",
+        "lateral tape L2 to nominal N2",
+        "lateral tape L8 to nominal N8",
+        "lateral tape L5 to nominal N5",
+        "lateral tape L3 to nominal N3",
+        "lateral tape L4 to nominal N4",
+        "heading tape H4 to nominal N4"
+       ]
+      },
+      {
+       "operator": "O2",
+       "order": [
+        "lateral tape L3 to nominal N3",
+        "lateral tape L2 to nominal N2",
+        "lateral tape L1 to nominal N1",
+        "lateral tape L7 to nominal N7",
+        "lateral tape L4 to nominal N4",
+        "lateral tape L5 to nominal N5",
+        "heading tape H8 to nominal N8",
+        "heading tape H4 to nominal N4",
+        "lateral tape L6 to nominal N6",
+        "lateral tape L8 to nominal N8"
+       ]
+      },
+      {
+       "operator": "O3",
+       "order": [
+        "lateral tape L2 to nominal N2",
+        "heading tape H4 to nominal N4",
+        "lateral tape L3 to nominal N3",
+        "lateral tape L1 to nominal N1",
+        "heading tape H8 to nominal N8",
+        "lateral tape L5 to nominal N5",
+        "lateral tape L7 to nominal N7",
+        "lateral tape L6 to nominal N6",
+        "lateral tape L4 to nominal N4",
+        "lateral tape L8 to nominal N8"
+       ]
+      }
+     ],
+     "replicate": 2
+    },
+    {
+     "before": "remove the specimen from FX-321, re-seat it, re-probe datums A, B, C and rebuild the PART frame",
+     "blocks": [
+      {
+       "operator": "O3",
+       "order": [
+        "lateral tape L2 to nominal N2",
+        "lateral tape L8 to nominal N8",
+        "lateral tape L6 to nominal N6",
+        "heading tape H4 to nominal N4",
+        "lateral tape L5 to nominal N5",
+        "heading tape H8 to nominal N8",
+        "lateral tape L4 to nominal N4",
+        "lateral tape L1 to nominal N1",
+        "lateral tape L3 to nominal N3",
+        "lateral tape L7 to nominal N7"
+       ]
+      },
+      {
+       "operator": "O2",
+       "order": [
+        "heading tape H4 to nominal N4",
+        "lateral tape L7 to nominal N7",
+        "lateral tape L5 to nominal N5",
+        "lateral tape L4 to nominal N4",
+        "heading tape H8 to nominal N8",
+        "lateral tape L2 to nominal N2",
+        "lateral tape L3 to nominal N3",
+        "lateral tape L6 to nominal N6",
+        "lateral tape L8 to nominal N8",
+        "lateral tape L1 to nominal N1"
+       ]
+      },
+      {
+       "operator": "O1",
+       "order": [
+        "heading tape H8 to nominal N8",
+        "lateral tape L5 to nominal N5",
+        "lateral tape L6 to nominal N6",
+        "lateral tape L3 to nominal N3",
+        "lateral tape L2 to nominal N2",
+        "lateral tape L4 to nominal N4",
+        "heading tape H4 to nominal N4",
+        "lateral tape L1 to nominal N1",
+        "lateral tape L7 to nominal N7",
+        "lateral tape L8 to nominal N8"
+       ]
+      }
+     ],
+     "replicate": 3
+    }
+   ]
+  },
+  "MFG-CYLINDER-01": {
+   "operators": [
+    "O1",
+    "O2",
+    "O3"
+   ],
+   "parts": [
+    {
+     "feature": "circumferential 30 deg",
+     "id": "P01"
+    },
+    {
+     "feature": "circumferential 60 deg",
+     "id": "P02"
+    },
+    {
+     "feature": "circumferential 90 deg",
+     "id": "P03"
+    },
+    {
+     "feature": "circumferential 120 deg",
+     "id": "P04"
+    },
+    {
+     "feature": "circumferential 150 deg",
+     "id": "P05"
+    },
+    {
+     "feature": "circumferential 180 deg",
+     "id": "P06"
+    },
+    {
+     "feature": "axial 100 mm",
+     "id": "P07"
+    },
+    {
+     "feature": "axial 200 mm",
+     "id": "P08"
+    },
+    {
+     "feature": "helical 60 deg / 100 mm",
+     "id": "P09"
+    },
+    {
+     "feature": "helical 90 deg / 200 mm",
+     "id": "P10"
+    }
+   ],
+   "replicates": 3,
+   "rounds": [
+    {
+     "before": "remove the specimen from FX-321, re-seat it, re-probe datums A, B, C and rebuild the PART frame",
+     "blocks": [
+      {
+       "operator": "O3",
+       "order": [
+        "circumferential 30 deg",
+        "axial 100 mm",
+        "circumferential 180 deg",
+        "axial 200 mm",
+        "circumferential 60 deg",
+        "helical 60 deg / 100 mm",
+        "circumferential 90 deg",
+        "circumferential 150 deg",
+        "helical 90 deg / 200 mm",
+        "circumferential 120 deg"
+       ]
+      },
+      {
+       "operator": "O1",
+       "order": [
+        "circumferential 90 deg",
+        "circumferential 30 deg",
+        "helical 60 deg / 100 mm",
+        "axial 100 mm",
+        "circumferential 60 deg",
+        "axial 200 mm",
+        "circumferential 180 deg",
+        "circumferential 150 deg",
+        "helical 90 deg / 200 mm",
+        "circumferential 120 deg"
+       ]
+      },
+      {
+       "operator": "O2",
+       "order": [
+        "circumferential 30 deg",
+        "circumferential 60 deg",
+        "circumferential 120 deg",
+        "circumferential 180 deg",
+        "circumferential 90 deg",
+        "helical 60 deg / 100 mm",
+        "axial 200 mm",
+        "circumferential 150 deg",
+        "helical 90 deg / 200 mm",
+        "axial 100 mm"
+       ]
+      }
+     ],
+     "replicate": 1
+    },
+    {
+     "before": "remove the specimen from FX-321, re-seat it, re-probe datums A, B, C and rebuild the PART frame",
+     "blocks": [
+      {
+       "operator": "O3",
+       "order": [
+        "circumferential 30 deg",
+        "circumferential 150 deg",
+        "circumferential 120 deg",
+        "circumferential 180 deg",
+        "helical 90 deg / 200 mm",
+        "axial 200 mm",
+        "axial 100 mm",
+        "helical 60 deg / 100 mm",
+        "circumferential 90 deg",
+        "circumferential 60 deg"
+       ]
+      },
+      {
+       "operator": "O2",
+       "order": [
+        "circumferential 60 deg",
+        "circumferential 90 deg",
+        "circumferential 180 deg",
+        "axial 200 mm",
+        "circumferential 120 deg",
+        "helical 60 deg / 100 mm",
+        "axial 100 mm",
+        "circumferential 150 deg",
+        "circumferential 30 deg",
+        "helical 90 deg / 200 mm"
+       ]
+      },
+      {
+       "operator": "O1",
+       "order": [
+        "circumferential 120 deg",
+        "circumferential 30 deg",
+        "circumferential 60 deg",
+        "axial 200 mm",
+        "circumferential 180 deg",
+        "axial 100 mm",
+        "circumferential 90 deg",
+        "helical 60 deg / 100 mm",
+        "helical 90 deg / 200 mm",
+        "circumferential 150 deg"
+       ]
+      }
+     ],
+     "replicate": 2
+    },
+    {
+     "before": "remove the specimen from FX-321, re-seat it, re-probe datums A, B, C and rebuild the PART frame",
+     "blocks": [
+      {
+       "operator": "O1",
+       "order": [
+        "circumferential 150 deg",
+        "helical 60 deg / 100 mm",
+        "axial 200 mm",
+        "circumferential 120 deg",
+        "circumferential 60 deg",
+        "circumferential 180 deg",
+        "circumferential 90 deg",
+        "axial 100 mm",
+        "circumferential 30 deg",
+        "helical 90 deg / 200 mm"
+       ]
+      },
+      {
+       "operator": "O3",
+       "order": [
+        "circumferential 30 deg",
+        "circumferential 60 deg",
+        "helical 60 deg / 100 mm",
+        "axial 100 mm",
+        "circumferential 150 deg",
+        "circumferential 120 deg",
+        "circumferential 180 deg",
+        "axial 200 mm",
+        "helical 90 deg / 200 mm",
+        "circumferential 90 deg"
+       ]
+      },
+      {
+       "operator": "O2",
+       "order": [
+        "axial 200 mm",
+        "circumferential 90 deg",
+        "circumferential 60 deg",
+        "circumferential 30 deg",
+        "circumferential 150 deg",
+        "helical 90 deg / 200 mm",
+        "circumferential 180 deg",
+        "helical 60 deg / 100 mm",
+        "axial 100 mm",
+        "circumferential 120 deg"
+       ]
+      }
+     ],
+     "replicate": 3
+    }
+   ]
+  },
+  "MFG-FLAT-PLATE-01": {
+   "operators": [
+    "O1",
+    "O2",
+    "O3"
+   ],
+   "parts": [
+    {
+     "feature": "M00-M01",
+     "id": "P01"
+    },
+    {
+     "feature": "M00-M02",
+     "id": "P02"
+    },
+    {
+     "feature": "M00-M03",
+     "id": "P03"
+    },
+    {
+     "feature": "M00-M04",
+     "id": "P04"
+    },
+    {
+     "feature": "M00-M06",
+     "id": "P05"
+    },
+    {
+     "feature": "M00-M12",
+     "id": "P06"
+    },
+    {
+     "feature": "M00-M18",
+     "id": "P07"
+    },
+    {
+     "feature": "M00-M24",
+     "id": "P08"
+    },
+    {
+     "feature": "M12-M13",
+     "id": "P09"
+    },
+    {
+     "feature": "M12-M18",
+     "id": "P10"
+    }
+   ],
+   "replicates": 3,
+   "rounds": [
+    {
+     "before": "remove the specimen from FX-321, re-seat it, re-probe datums A, B, C and rebuild the PART frame",
+     "blocks": [
+      {
+       "operator": "O3",
+       "order": [
+        "M00-M24",
+        "M00-M03",
+        "M12-M13",
+        "M00-M06",
+        "M00-M02",
+        "M00-M01",
+        "M12-M18",
+        "M00-M04",
+        "M00-M18",
+        "M00-M12"
+       ]
+      },
+      {
+       "operator": "O1",
+       "order": [
+        "M00-M04",
+        "M00-M02",
+        "M00-M01",
+        "M00-M18",
+        "M12-M18",
+        "M00-M12",
+        "M00-M03",
+        "M00-M24",
+        "M00-M06",
+        "M12-M13"
+       ]
+      },
+      {
+       "operator": "O2",
+       "order": [
+        "M00-M12",
+        "M00-M03",
+        "M00-M18",
+        "M00-M06",
+        "M00-M02",
+        "M12-M18",
+        "M12-M13",
+        "M00-M01",
+        "M00-M24",
+        "M00-M04"
+       ]
+      }
+     ],
+     "replicate": 1
+    },
+    {
+     "before": "remove the specimen from FX-321, re-seat it, re-probe datums A, B, C and rebuild the PART frame",
+     "blocks": [
+      {
+       "operator": "O3",
+       "order": [
+        "M12-M18",
+        "M00-M01",
+        "M00-M04",
+        "M00-M02",
+        "M00-M03",
+        "M12-M13",
+        "M00-M18",
+        "M00-M06",
+        "M00-M24",
+        "M00-M12"
+       ]
+      },
+      {
+       "operator": "O1",
+       "order": [
+        "M00-M03",
+        "M00-M18",
+        "M12-M18",
+        "M00-M12",
+        "M00-M04",
+        "M00-M01",
+        "M12-M13",
+        "M00-M02",
+        "M00-M24",
+        "M00-M06"
+       ]
+      },
+      {
+       "operator": "O2",
+       "order": [
+        "M00-M04",
+        "M12-M18",
+        "M00-M24",
+        "M00-M03",
+        "M00-M06",
+        "M00-M02",
+        "M00-M12",
+        "M00-M18",
+        "M12-M13",
+        "M00-M01"
+       ]
+      }
+     ],
+     "replicate": 2
+    },
+    {
+     "before": "remove the specimen from FX-321, re-seat it, re-probe datums A, B, C and rebuild the PART frame",
+     "blocks": [
+      {
+       "operator": "O2",
+       "order": [
+        "M00-M06",
+        "M00-M04",
+        "M00-M02",
+        "M00-M12",
+        "M00-M01",
+        "M00-M18",
+        "M12-M18",
+        "M00-M03",
+        "M00-M24",
+        "M12-M13"
+       ]
+      },
+      {
+       "operator": "O1",
+       "order": [
+        "M12-M18",
+        "M12-M13",
+        "M00-M01",
+        "M00-M03",
+        "M00-M24",
+        "M00-M18",
+        "M00-M04",
+        "M00-M02",
+        "M00-M06",
+        "M00-M12"
+       ]
+      },
+      {
+       "operator": "O3",
+       "order": [
+        "M00-M04",
+        "M12-M13",
+        "M12-M18",
+        "M00-M18",
+        "M00-M24",
+        "M00-M02",
+        "M00-M06",
+        "M00-M03",
+        "M00-M12",
+        "M00-M01"
+       ]
+      }
+     ],
+     "replicate": 3
+    }
+   ]
+  }
+ },
+ "type1_study": {
+  "hypothesis": "Cg = 0.2 T / (6 s) >= 1.33 and Cgk = (0.1 T - |bias|) / (3 s) >= 1.33",
+  "operator": "O1",
+  "readings": 25,
+  "reference": "SG-200 step at 100 mm (certificate value)",
+  "report": "bias against the certificate and repeatability s",
+  "setup": "one setup, no re-fixturing between readings"
+ }
+}

@@ -16,12 +16,12 @@
   },
   "primary": "numerically_verified"
  },
- "expected_invariant": "Front members are mutually non-dominated; every non-member is dominated by a front member.",
- "experiment": "Exhaustive pairwise dominance on the T024 route set; two-objective fronts for length/amplification and length/margin; retained JSON and SVG.",
+ "expected_invariant": "A second computation of every front, sharing no code with the first, gives the same members.",
+ "experiment": "Exhaustive pairwise dominance on the T024 route set; two-objective fronts for length/amplification and length/margin; every front recomputed from the route fields by a numpy dominance matrix (three objectives) and a sort-and-sweep (two objectives); retained JSON and SVG.",
  "failure_modes_checked": [
   "ties in objectives",
   "censored margins",
-  "dominance violations counted exhaustively",
+  "front membership recomputed by a second formulation",
   "front members past a conjugate point flagged"
  ],
  "findings": [
@@ -33,8 +33,16 @@
       "comparison": "abs_le",
       "observed": 0.0,
       "passed": true,
-      "reference": "dominance violations (members dominated or non-members undominated)",
-      "reference_kind": "exact_arithmetic",
+      "reference": "three-objective front members differing from a numpy dominance matrix",
+      "reference_kind": "cross_implementation",
+      "tolerance": 0.0
+     },
+     {
+      "comparison": "abs_le",
+      "observed": 0.0,
+      "passed": true,
+      "reference": "two-objective front members differing from a sort-and-sweep",
+      "reference_kind": "cross_implementation",
       "tolerance": 0.0
      },
      {
@@ -46,9 +54,9 @@
       "tolerance": 2.0
      }
     ],
-    "derivation": "The shortest route is always on the front: no route is strictly shorter, so none dominates it (exact length ties aside)"
+    "derivation": "Every route off the front is dominated by a front member because strict dominance is transitive and acyclic on a finite set (definitional, not tested); the shortest route is always on the front: no route is strictly shorter, so none dominates it (exact length ties aside)"
    },
-   "claim": "The three-objective front has several members, and every route off the front is dominated by a front member",
+   "claim": "The three-objective front has several members, and a second computation (numpy dominance matrix; sort-and-sweep for the two-objective fronts) reproduces every front",
    "domain": "numerical",
    "evidence_status": "numerically_verified",
    "regression_tolerance": {
@@ -99,9 +107,9 @@
  ],
  "generated_artifacts": [
   {
-   "bytes": 2971,
+   "bytes": 3143,
    "path": "artifacts/T025/pareto.json",
-   "sha256": "73ce8bde169399984aa8b87ec5547b914f0f91c9408245b43072135bdcc38012"
+   "sha256": "0a9bf7abc3fabc48b82fc11bbe7f5ce29de6aba71d68d3fb5ffd15f6053e8464"
   },
   {
    "bytes": 2586,
@@ -129,20 +137,21 @@
   "python": "3.12.3",
   "scipy": "1.16.2",
   "sources": {
-   "src/ciw/lab/flat_torus_topology.py": "4d8cf2437759501a1b9fa5ee0d8abfac43345ebee378c6ad08233e9155d4b184",
-   "src/ciw/lab/flat_torus_topology_routes.py": "cc2f3a7ce7a919c0aa83509104816ba8f4fedb15e14f5004c5982f8fff4de17a"
+   "src/ciw/lab/flat_torus_topology.py": "1221001d96bf1f9aa2f9fea169a2b10bfb37230da11bfb6f1608ba9355c86b9a",
+   "src/ciw/lab/flat_torus_topology_routes.py": "733568202260c5432d01d01976ee1b1a8a4d69b23e6d3c089ca00d1c46f2ab61"
   },
   "sympy": "1.14.0"
  },
  "recommended_next_task": "T032: build the counterexample library for 'shortest means safest'",
- "report_id": "sha256:3974b5d19da3e92732ce73341cd3a87bee411563e4cf7d0f8912f83190c2fb26",
+ "report_id": "sha256:767a36c022d2bc080840c1604bf2df5b0c431c70258cd1a82598e4662c12f463",
  "schema": "ciw.lab-task-report.v1",
  "section": "flat-torus-topology",
  "state": "completed",
  "task_id": "T025",
  "tests_passed": [
-  "check: The three-objective front has several members, and every route off the front is dominated by a front member vs dominance violations (members dominated or non-members undominated)",
-  "check: The three-objective front has several members, and every route off the front is dominated by a front member vs front size",
+  "check: The three-objective front has several members, and a second computation (numpy dominance matrix; sort-and-sweep for the two-objective fronts) reproduces every front vs three-objective front members differing from a numpy dominance matrix",
+  "check: The three-objective front has several members, and a second computation (numpy dominance matrix; sort-and-sweep for the two-objective fronts) reproduces every front vs two-objective front members differing from a sort-and-sweep",
+  "check: The three-objective front has several members, and a second computation (numpy dominance matrix; sort-and-sweep for the two-objective fronts) reproduces every front vs front size",
   "pytest: tests/test_lab_flat_torus_topology.py::test_t024_t025_route_ranking_and_front",
   "pytest: tests/test_lab_flat_torus_topology.py::test_route_helpers",
   "pytest: tests/test_lab_flat_torus_topology.py::test_every_task_is_registered_and_completes",

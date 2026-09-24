@@ -16,7 +16,7 @@
   },
   "primary": "numerically_verified"
  },
- "expected_invariant": "Round trip exact; CRC matches zlib and 0xCBF43926; all single-bit errors refused; every 32-bit window has full rank with the little-endian trailer (not with a big-endian trailer, nor in MSB-first numbering); command, write and malformed frames refused; the receiver has no sending method.",
+ "expected_invariant": "Round trip exact; CRC matches zlib and 0xCBF43926; all single-bit errors refused; every 32-bit window has full rank with the little-endian trailer (not with a big-endian trailer, nor in MSB-first numbering); command, write and malformed frames refused; the receiver's public interface is accept() and plain data, and a forged subclass with emit() and a transport handle is flagged.",
  "experiment": "Encode/decode random frames, compare CRC implementations, flip every bit, compute window ranks for three layouts and extract escaping bursts, corrupt at random, forge command frames, headers and specs.",
  "failure_modes_checked": [
   "command frame types",
@@ -464,13 +464,45 @@
       "comparison": "abs_le",
       "observed": 0.0,
       "passed": true,
-      "reference": "public receiver attributes naming a send/write/command path",
+      "reference": "public receiver methods other than accept",
       "reference_kind": "exact_arithmetic",
       "tolerance": 0.0
+     },
+     {
+      "comparison": "abs_le",
+      "observed": 0.0,
+      "passed": true,
+      "reference": "receiver base classes other than object",
+      "reference_kind": "exact_arithmetic",
+      "tolerance": 0.0
+     },
+     {
+      "comparison": "abs_le",
+      "observed": 0.0,
+      "passed": true,
+      "reference": "receiver attributes holding objects other than plain data, after receiving frames",
+      "reference_kind": "exact_arithmetic",
+      "tolerance": 0.0
+     },
+     {
+      "comparison": "ge",
+      "observed": 1.0,
+      "passed": true,
+      "reference": "forged subclass: public methods other than accept (emit)",
+      "reference_kind": "exact_arithmetic",
+      "tolerance": 1.0
+     },
+     {
+      "comparison": "ge",
+      "observed": 1.0,
+      "passed": true,
+      "reference": "forged subclass: attributes holding a transport handle (link)",
+      "reference_kind": "exact_arithmetic",
+      "tolerance": 1.0
      }
     ]
    },
-   "claim": "Host receiver exposes no sending or writing method",
+   "claim": "Host receiver exposes only accept() and plain data attributes, with no sending method or transport handle",
    "domain": "computational_pipeline",
    "evidence_status": "numerically_verified",
    "regression_tolerance": {
@@ -483,7 +515,15 @@
     "value": 0.0
    },
    "unit": null,
-   "value": []
+   "value": {
+    "bases": [
+     "object"
+    ],
+    "non_data_attributes": [],
+    "public_methods": [
+     "accept"
+    ]
+   }
   },
   {
    "assigned_by": "ciw.lab.evidence",
@@ -546,13 +586,13 @@
   "python": "3.12.3",
   "scipy": "1.16.2",
   "sources": {
-   "src/ciw/lab/implementation_targets.py": "4e27c12d31365590b7fb82d98b8d02e1668c7b8e73b03f71ef270eca9fcf6eea",
-   "src/ciw/lab/implementation_targets_fpga.py": "d546fbe93f98a17bb6a94d6e1e887da44edfb783f37684b9689d47adb1a9f477"
+   "src/ciw/lab/implementation_targets.py": "1df8bd67d28b18d70bcb5f74e4a14616ceb17868c7a9aa75595f15254426ee7e",
+   "src/ciw/lab/implementation_targets_fpga.py": "7af2bda8190c93108f5bac0d8b28ffd057267b6b428af3d8f820d0f594ea5e00"
   },
   "sympy": "1.14.0"
  },
  "recommended_next_task": "T152 (drive the decoder with a lossy, jittered stream)",
- "report_id": "sha256:26dbf0a8c5a0c689246f1271fcff50295969b4a81d62dd7b178929a55c75fcd8",
+ "report_id": "sha256:7ba897096723b788867ef6cf598561c2f7d2bb9af434f18cda5c9e513c34967b",
  "schema": "ciw.lab-task-report.v1",
  "section": "implementation-targets",
  "state": "completed",
@@ -581,7 +621,11 @@
   "check: Decoder, encoder and interface validator refuse every command, write or malformed path vs valid CRC, header without payload (trailing bytes missing)",
   "check: Decoder, encoder and interface validator refuse every command, write or malformed path vs valid CRC, magic 'XXXX'",
   "check: Decoder, encoder and interface validator refuse every command, write or malformed path vs valid CRC, frame version 2",
-  "check: Host receiver exposes no sending or writing method vs public receiver attributes naming a send/write/command path",
+  "check: Host receiver exposes only accept() and plain data attributes, with no sending method or transport handle vs public receiver methods other than accept",
+  "check: Host receiver exposes only accept() and plain data attributes, with no sending method or transport handle vs receiver base classes other than object",
+  "check: Host receiver exposes only accept() and plain data attributes, with no sending method or transport handle vs receiver attributes holding objects other than plain data, after receiving frames",
+  "check: Host receiver exposes only accept() and plain data attributes, with no sending method or transport handle vs forged subclass: public methods other than accept (emit)",
+  "check: Host receiver exposes only accept() and plain data attributes, with no sending method or transport handle vs forged subclass: attributes holding a transport handle (link)",
   "pytest: tests/test_lab_implementation_targets.py::test_t149_telemetry_only_frames"
  ],
  "tests_skipped": [],

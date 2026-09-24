@@ -145,7 +145,7 @@
      "passed": true,
      "producer": {
       "implementation": "ciw.lab.surfaces_discrete._declared_curvature",
-      "revision": "surfaces_discrete.py sha256 65515cd7d7440c047bb6cba986dbcd2b496978ebb32ed15939e371828e755eef"
+      "revision": "surfaces_discrete.py sha256 b47b6d9486e322c3e394e25b99849c0aa22039ce45b946825b0f3dbc1a3013b7"
      },
      "reference": "restated closed forms whose difference from the diffgeom curvature does not simplify to 0",
      "reference_kind": "exact_arithmetic",
@@ -208,7 +208,7 @@
       "observed": 4.4259596565437094e-16,
       "passed": true,
       "reference": "max normalized residual over metric, dg and Gamma (same ciw origin)",
-      "reference_kind": "analytic",
+      "reference_kind": "cross_implementation",
       "tolerance": 1e-12
      },
      {
@@ -216,7 +216,7 @@
       "observed": 4.440892098500626e-16,
       "passed": true,
       "reference": "max |X_dual - X| (formula re-expresses the same embedding)",
-      "reference_kind": "analytic",
+      "reference_kind": "cross_implementation",
       "tolerance": 1e-13
      }
     ]
@@ -245,7 +245,7 @@
       "observed": 1.0416744990940514e-15,
       "passed": true,
       "reference": "max normalized curvature residual",
-      "reference_kind": "analytic",
+      "reference_kind": "cross_implementation",
       "tolerance": 1e-12
      }
     ]
@@ -303,7 +303,7 @@
       "observed": 0.06083965588416231,
       "passed": true,
       "reference": "dropped-cross-term mutant: max normalized |dg_mutant - dg_dual|",
-      "reference_kind": "analytic",
+      "reference_kind": "cross_implementation",
       "tolerance": 0.001
      }
     ]
@@ -377,14 +377,15 @@
   },
   "scipy": "1.16.2",
   "sources": {
-   "src/ciw/lab/surfaces_discrete.py": "65515cd7d7440c047bb6cba986dbcd2b496978ebb32ed15939e371828e755eef",
+   "src/ciw/lab/surfaces.py": "e8f264c182743d0177d93b961a49d7ddf78f30d79a7a75b9fea4018b10d4eef0",
+   "src/ciw/lab/surfaces_discrete.py": "b47b6d9486e322c3e394e25b99849c0aa22039ce45b946825b0f3dbc1a3013b7",
    "src/ciw/lab/surfaces_discrete_ad.py": "a76cc131eeadc83d5c64a788dd8c0a1453a0c0ffc89a5f49e79cbb1bf35559c0",
    "src/ciw/lab/surfaces_discrete_geometry.py": "d4445a253778e1dff32b68a903a9caf560affa08ca5a7110207e54c8e1baa60e"
   },
   "sympy": "1.14.0"
  },
  "recommended_next_task": "T040: compare smooth and mesh Jacobi approximations using these verified smooth derivatives and curvatures as the reference. Complex-step derivatives remain open until the core surfaces accept complex coordinates.",
- "report_id": "sha256:c9f341a5aa4fee550ff43669b40092caa94cfcd5acac5041856fc0526eec75a3",
+ "report_id": "sha256:dcb93c9d2c9f5b3f70da586e323452f4768bcac3a3cf0ba6ca88f12952ef1b36",
  "schema": "ciw.lab-task-report.v1",
  "section": "surfaces-discrete",
  "state": "completed",

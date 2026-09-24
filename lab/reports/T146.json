@@ -680,13 +680,13 @@
   },
   "scipy": "1.16.2",
   "sources": {
-   "src/ciw/lab/implementation_targets.py": "4e27c12d31365590b7fb82d98b8d02e1668c7b8e73b03f71ef270eca9fcf6eea",
+   "src/ciw/lab/implementation_targets.py": "1df8bd67d28b18d70bcb5f74e4a14616ceb17868c7a9aa75595f15254426ee7e",
    "src/ciw/lab/implementation_targets_serial.py": "7978adc19db2c04e37532de2a5dbff32738b3c286c40e19ab8ec1d78361ef3e6"
   },
   "sympy": "1.14.0"
  },
  "recommended_next_task": "T150 (bind FPGA identity records to this encoding), then migrate ciw.core.identities with a versioned hash change",
- "report_id": "sha256:864796249c39a1a485c11aa28504fb070e7c2d5919444db2cc435eb2de4e6711",
+ "report_id": "sha256:383d64712e08eb5a0804db3400850b44ba641a410040721cc928079d4095c3bd",
  "schema": "ciw.lab-task-report.v1",
  "section": "implementation-targets",
  "state": "completed",

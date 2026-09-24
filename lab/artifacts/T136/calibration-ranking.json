@@ -17,6 +17,7 @@
     "-1-1": 0.765373276781
    },
    "derating": 1.0,
+   "derating_converged": true,
    "first_order_corner_ratios": {
     "+1+1": 0.765373276781,
     "+1-1": 0.760488834886,
@@ -27,6 +28,12 @@
    "first_order_lateral_tolerance_mm": 0.243664546643,
    "flat_plate_heading_tolerance_mrad": 1.23652384089,
    "heading_tolerance_mrad": 2.3160606014,
+   "independent_corner_ratios": {
+    "+1+1": 0.765373277112,
+    "+1-1": 0.760488826116,
+    "-1+1": 0.760488826116,
+    "-1-1": 0.765373277112
+   },
    "lateral_tolerance_mm": 0.243664546643,
    "length_mm": 202.179684477,
    "max_abs_j_head_mm": 107.941907845,
@@ -42,6 +49,7 @@
     "-1-1": 0.729605468954
    },
    "derating": 1.0,
+   "derating_converged": true,
    "first_order_corner_ratios": {
     "+1+1": 0.729773343466,
     "+1-1": 0.610973574837,
@@ -52,6 +60,12 @@
    "first_order_lateral_tolerance_mm": 0.243425457945,
    "flat_plate_heading_tolerance_mrad": 1.23552364101,
    "heading_tolerance_mrad": 1.97736184161,
+   "independent_corner_ratios": {
+    "+1+1": 0.729773342926,
+    "+1-1": 0.610973562934,
+    "-1+1": 0.614521720827,
+    "-1-1": 0.729605468631
+   },
    "lateral_tolerance_mm": 0.243425457945,
    "length_mm": 202.343356049,
    "max_abs_j_head_mm": 126.431083446,
@@ -67,6 +81,7 @@
     "-1-1": 0.712853302512
    },
    "derating": 1.0,
+   "derating_converged": true,
    "first_order_corner_ratios": {
     "+1+1": 0.745554564746,
     "+1-1": 0.485116946864,
@@ -77,6 +92,12 @@
    "first_order_lateral_tolerance_mm": 0.242558490616,
    "flat_plate_heading_tolerance_mrad": 1.2308352302,
    "heading_tolerance_mrad": 1.47574471908,
+   "independent_corner_ratios": {
+    "+1+1": 0.745554583795,
+    "+1-1": 0.485116946864,
+    "-1+1": 0.485117015751,
+    "-1-1": 0.71285332329
+   },
    "lateral_tolerance_mm": 0.242558490616,
    "length_mm": 203.114108099,
    "max_abs_j_head_mm": 169.405993305,
@@ -92,6 +113,7 @@
     "-1-1": 0.981681436183
    },
    "derating": 0.990834622062,
+   "derating_converged": true,
    "first_order_corner_ratios": {
     "+1+1": 1.00914923413,
     "+1-1": 0.423775060517,
@@ -102,6 +124,12 @@
    "first_order_lateral_tolerance_mm": 0.211887540781,
    "flat_plate_heading_tolerance_mrad": 1.21787542151,
    "heading_tolerance_mrad": 1.16238470998,
+   "independent_corner_ratios": {
+    "+1+1": 0.999817702849,
+    "+1-1": 0.419891002115,
+    "-1+1": 0.419891044054,
+    "-1-1": 0.981681429063
+   },
    "lateral_tolerance_mm": 0.209945511389,
    "length_mm": 205.275511424,
    "max_abs_j_head_mm": 213.103848827,
@@ -117,6 +145,7 @@
     "-1-1": 0.995211223016
    },
    "derating": 0.997598213214,
+   "derating_converged": true,
    "first_order_corner_ratios": {
     "+1+1": 1.0023073285,
     "+1-1": 0.307295949797,
@@ -127,6 +156,12 @@
    "first_order_lateral_tolerance_mm": 0.153647973822,
    "flat_plate_heading_tolerance_mrad": 1.19182867461,
    "heading_tolerance_mrad": 1.02720944808,
+   "independent_corner_ratios": {
+    "+1+1": 0.999894563783,
+    "+1-1": 0.30655789044,
+    "-1+1": 0.306557886533,
+    "-1-1": 0.995211206518
+   },
    "lateral_tolerance_mm": 0.153278944149,
    "length_mm": 209.761692537,
    "max_abs_j_head_mm": 242.793282099,
@@ -142,6 +177,7 @@
     "-1-1": 0.999899921152
    },
    "derating": 0.999649438271,
+   "derating_converged": true,
    "first_order_corner_ratios": {
     "+1+1": 0.999698754024,
     "+1-1": 0.282470491467,
@@ -152,6 +188,12 @@
    "first_order_lateral_tolerance_mm": 0.141235233826,
    "flat_plate_heading_tolerance_mrad": 1.15107446625,
    "heading_tolerance_mrad": 0.971449777016,
+   "independent_corner_ratios": {
+    "+1+1": 0.999348397623,
+    "+1-1": 0.282371468114,
+    "-1+1": 0.282371420789,
+    "-1-1": 0.999899906353
+   },
    "lateral_tolerance_mm": 0.141185722158,
    "length_mm": 217.188381229,
    "max_abs_j_head_mm": 257.257107347,

@@ -1,26 +1,217 @@
 {
  "ciw_version": "0.1.0",
  "labels": {
-  "analytic": 9,
+  "analytic": 11,
   "hardware_measured": 0,
-  "independently_verified": 55,
-  "not_established": 168,
-  "numerically_verified": 693,
+  "independently_verified": 57,
+  "not_established": 175,
+  "numerically_verified": 756,
   "provider_backed": 3,
   "synthetic": 0
  },
  "physical_validation": "not_established",
- "providers": [
-  "{\"commit\": \"19ea6967060166ba09db6cd4563bd87bd6b3d196\", \"entry\": \"lyapunov.verdict / lyapunov.solve_lyapunov / lyapunov.decrease_resolution\", \"files_pinned\": 20, \"files_verified\": 20, \"implementation\": \"Parameterized-Lyapunov-Stability-Runtime\", \"numpy_version\": \"2.4.3\", \"package_version\": \"0.1.0rc1\", \"python_version\": \"3.12.3\", \"repository\": \"https://github.com/giasonpooni/Parameterized-Lyapunov-Stability-Runtime\", \"role\": \"plsr-python\", \"source_digest\": \"a6fee6b3b4eb7852b31f5a285fe8c50b535f25762e1daf82e36720ef8dd1b7c7\", \"verification\": \"package version and per-file sha256 checked in the subprocess before use\"}",
-  "{\"dirty\": false, \"entry\": \"geodesic_testbed.jacobi.integrate_jacobi\", \"implementation\": \"Curved-Surface-Geodesic-Sensitivity-Runtime\", \"numpy\": \"2.4.3\", \"python\": \"3.12.3\", \"repository\": \"giasonpooni/Curved-Surface-Geodesic-Sensitivity-Runtime\", \"revision\": \"bbc535af29c30997e56fd120320c570830676462\", \"source_tree\": \"181b6eb73288d001f45c39bb149b1a80a431f34b\", \"subprocess\": true}",
-  "{\"dirty\": false, \"entry_points\": [\"flat_torus.fold.fold_to_fundamental_domain\", \"flat_torus.lengths.loop_length\", \"flat_torus.trajectories.trace_closed_geodesic\", \"flat_torus.lattice.normalized_lattice\"], \"executed\": true, \"interpreter\": \"<ftr-python>\", \"numpy\": \"2.4.3\", \"python\": \"3.12.3\", \"repository\": \"giasonpooni/Flat-Torus-Geodesic-Reference\", \"revision\": \"dc918562cd9e351a65475d29f46963c9f2fd7db8\", \"source_tree\": \"1f082c6b443f2e301ac5889122912f26968ae756\"}"
+ "queue": {
+  "not_reported": [
+   "T165",
+   "T166",
+   "T167",
+   "T168"
+  ],
+  "sections": [
+   {
+    "key": "geodesic-jacobi",
+    "name": "Geodesic/Jacobi experiments",
+    "reported": 18,
+    "tasks": 18
+   },
+   {
+    "key": "flat-torus-topology",
+    "name": "Flat torus and topology",
+    "reported": 14,
+    "tasks": 14
+   },
+   {
+    "key": "surfaces-discrete",
+    "name": "Arbitrary surfaces and discrete geometry",
+    "reported": 12,
+    "tasks": 12
+   },
+   {
+    "key": "observation",
+    "name": "Instrument observation experiments",
+    "reported": 15,
+    "tasks": 15
+   },
+   {
+    "key": "sensor-fusion",
+    "name": "Sensor-fusion experiments",
+    "reported": 17,
+    "tasks": 17
+   },
+   {
+    "key": "exchange-provenance",
+    "name": "CIW exchange and provenance",
+    "reported": 24,
+    "tasks": 24
+   },
+   {
+    "key": "lyapunov",
+    "name": "Lyapunov runtime experiments",
+    "reported": 14,
+    "tasks": 14
+   },
+   {
+    "key": "energy-gpu",
+    "name": "Energy and GPU experiments",
+    "reported": 11,
+    "tasks": 11
+   },
+   {
+    "key": "manufacturing",
+    "name": "Manufacturing and robotic use cases",
+    "reported": 16,
+    "tasks": 16
+   },
+   {
+    "key": "implementation-targets",
+    "name": "Rust, Python, Julia, C++, GPU, and FPGA",
+    "reported": 13,
+    "tasks": 13
+   },
+   {
+    "key": "research-portfolio",
+    "name": "Research and portfolio work",
+    "reported": 10,
+    "tasks": 14
+   }
+  ],
+  "tasks": 168
+ },
+ "release_digest": "sha256:3c39bdb52a7aa13fb6d111737fdc03dd3f7c5ae63b4f07c16fee5d59dd199591",
+ "release_digest_covers": "task states, headline labels, finding claims and finding labels",
+ "reports": 164,
+ "runtimes": [
+  {
+   "revision": "bbc535af29c30997e56fd120320c570830676462",
+   "runtime": "csg",
+   "tasks": [
+    "T005",
+    "T008",
+    "T098"
+   ],
+   "tree": "181b6eb73288d001f45c39bb149b1a80a431f34b"
+  },
+  {
+   "revision": "dc918562cd9e351a65475d29f46963c9f2fd7db8",
+   "runtime": "ftr",
+   "tasks": [
+    "T019",
+    "T020",
+    "T026",
+    "T098"
+   ],
+   "tree": "1f082c6b443f2e301ac5889122912f26968ae756"
+  },
+  {
+   "revision": "19ea6967060166ba09db6cd4563bd87bd6b3d196",
+   "runtime": "plsr",
+   "tasks": [
+    "T101",
+    "T102",
+    "T103",
+    "T104",
+    "T105",
+    "T106",
+    "T107",
+    "T108",
+    "T109",
+    "T110",
+    "T111",
+    "T113",
+    "T114"
+   ],
+   "tree": "a6fee6b3b4eb7852b31f5a285fe8c50b535f25762e1daf82e36720ef8dd1b7c7"
+  },
+  {
+   "revision": "a29845e13e55de30b24ae752b896058041d653e6",
+   "runtime": "ppda",
+   "tasks": [
+    "T097"
+   ],
+   "tree": null
+  },
+  {
+   "revision": "a29845e13e55de30b24ae752b896058041d653e6",
+   "runtime": "ppda",
+   "tasks": [
+    "T098"
+   ],
+   "tree": "7140bf71289161245e73801e0cd934dc93156509"
+  },
+  {
+   "revision": null,
+   "runtime": "rust",
+   "tasks": [
+    "T142",
+    "T146"
+   ],
+   "tree": "014343936914720e0dab50e5e34a1396f59c0ca5d4ac262cc553b5fbd869ce1c"
+  },
+  {
+   "revision": null,
+   "runtime": "rust",
+   "tasks": [
+    "T117"
+   ],
+   "tree": "4073fb9da1955d54a26a7d6da4f71aef0e2310af667cdd245b3cbed9fca4fcb4"
+  },
+  {
+   "revision": "a59aba283b0304faeeb3e5d305087e7709e171ca",
+   "runtime": "scr",
+   "tasks": [
+    "T097",
+    "T098",
+    "T099"
+   ],
+   "tree": "4068a711534932e8d89bb0d87d373376dafdf6cd"
+  },
+  {
+   "revision": "5f0409743e0098a0691a88302a9b3dcdcbcf25fd",
+   "runtime": "scr-exchange",
+   "tasks": [
+    "T097"
+   ],
+   "tree": null
+  },
+  {
+   "revision": "5f0409743e0098a0691a88302a9b3dcdcbcf25fd",
+   "runtime": "scr-exchange",
+   "tasks": [
+    "T098"
+   ],
+   "tree": "4b9ba4bf1f95562d299714d4ed4bf7b9d0c6e913"
+  },
+  {
+   "revision": "542e672be512bf43b61253f2b2a43cd967cb3062",
+   "runtime": "set",
+   "tasks": [
+    "T097"
+   ],
+   "tree": null
+  },
+  {
+   "revision": "542e672be512bf43b61253f2b2a43cd967cb3062",
+   "runtime": "set",
+   "tasks": [
+    "T098"
+   ],
+   "tree": "25c667fc507eb8404e1f077d46e87ed2fc6abc3d"
+  }
  ],
- "release_digest": "sha256:0e2338213ac01633a5f0491b4c8eae477491f72604db7011f5bb08536e974cb0",
- "schema": "ciw.lab-release-report.v1",
+ "schema": "ciw.lab-release-report.v2",
  "states": {
   "blocked": 2,
-  "completed": 142,
-  "partial": 10
- },
- "tasks": 154
+  "completed": 146,
+  "partial": 16
+ }
 }

@@ -16,7 +16,7 @@
 <text x="72" y="186.33" text-anchor="end">1e-14</text>
 <text x="274.00" y="406" text-anchor="middle">path index (figure_path_index)</text>
 <text x="16" y="201.00" text-anchor="middle" transform="rotate(-90 16 201.00)">max(position, transfer) gap</text>
-<path d="M78.00,126.19 L127.00,76.21 L176.00,139.06 L225.00,350.07 L274.00,51.93 L323.00,122.77 L372.00,108.09 L421.00,107.30 L470.00,107.29" fill="none" stroke="#1f5fa8" stroke-width="1.8"/>
+<path d="M78.00,126.19 L127.00,76.21 L176.00,139.06 L225.00,350.07 L274.00,51.93 L323.00,122.77 L372.00,108.09 L421.00,107.30 L470.00,117.60" fill="none" stroke="#1f5fa8" stroke-width="1.8"/>
 <circle cx="78.00" cy="126.19" r="2.6" fill="#1f5fa8"/>
 <circle cx="127.00" cy="76.21" r="2.6" fill="#1f5fa8"/>
 <circle cx="176.00" cy="139.06" r="2.6" fill="#1f5fa8"/>
@@ -25,10 +25,10 @@
 <circle cx="323.00" cy="122.77" r="2.6" fill="#1f5fa8"/>
 <circle cx="372.00" cy="108.09" r="2.6" fill="#1f5fa8"/>
 <circle cx="421.00" cy="107.30" r="2.6" fill="#1f5fa8"/>
-<circle cx="470.00" cy="107.29" r="2.6" fill="#1f5fa8"/>
+<circle cx="470.00" cy="117.60" r="2.6" fill="#1f5fa8"/>
 <line x1="482" y1="52" x2="502" y2="52" stroke="#1f5fa8" stroke-width="2"/>
 <text x="508" y="56">ciw Richardson</text>
-<path d="M78.00,335.64 L127.00,165.65 L176.00,303.94 L225.00,164.52 L274.00,134.07 L323.00,232.75 L372.00,258.47 L421.00,245.17 L470.00,259.47" fill="none" stroke="#c2410c" stroke-width="1.8"/>
+<path d="M78.00,335.64 L127.00,165.65 L176.00,303.94 L225.00,164.52 L274.00,134.07 L323.00,232.75 L372.00,258.47 L421.00,245.17 L470.00,173.58" fill="none" stroke="#c2410c" stroke-width="1.8"/>
 <circle cx="78.00" cy="335.64" r="2.6" fill="#c2410c"/>
 <circle cx="127.00" cy="165.65" r="2.6" fill="#c2410c"/>
 <circle cx="176.00" cy="303.94" r="2.6" fill="#c2410c"/>
@@ -37,7 +37,7 @@
 <circle cx="323.00" cy="232.75" r="2.6" fill="#c2410c"/>
 <circle cx="372.00" cy="258.47" r="2.6" fill="#c2410c"/>
 <circle cx="421.00" cy="245.17" r="2.6" fill="#c2410c"/>
-<circle cx="470.00" cy="259.47" r="2.6" fill="#c2410c"/>
+<circle cx="470.00" cy="173.58" r="2.6" fill="#c2410c"/>
 <line x1="482" y1="70" x2="502" y2="70" stroke="#c2410c" stroke-width="2"/>
 <text x="508" y="74">scipy DOP853</text>
 </svg>

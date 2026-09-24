@@ -9,9 +9,9 @@
   "counts": {
    "analytic": 0,
    "hardware_measured": 0,
-   "independently_verified": 4,
+   "independently_verified": 3,
    "not_established": 0,
-   "numerically_verified": 1,
+   "numerically_verified": 2,
    "provider_backed": 0,
    "synthetic": 0
   },
@@ -73,7 +73,7 @@
      },
      {
       "comparison": "abs_le",
-      "observed": 2.9041737216383977e-14,
+      "observed": 2.5084292464429545e-14,
       "passed": true,
       "reference": "closed-form geodesic and constant-curvature transfer on cylinder-polar",
       "reference_kind": "analytic",
@@ -81,33 +81,25 @@
      },
      {
       "comparison": "le",
-      "observed": 0.009569332222480373,
+      "observed": 0.01551709310869339,
       "passed": true,
       "reference": "gap over the Richardson error estimate on the curved closed-form charts (about 1 without extrapolation)",
       "reference_kind": "self_convergence",
       "tolerance": 0.1
+     },
+     {
+      "comparison": "abs_le",
+      "observed": 4.659383296651036e-14,
+      "passed": true,
+      "reference": "scipy DOP853 rtol 1e-13 on the ciw right-hand side (only the integrator is independent; the equations and closed forms are ciw code)",
+      "reference_kind": "high_precision",
+      "tolerance": 1e-12
      }
-    ],
-    "independent_check": {
-     "checker": {
-      "implementation": "scipy.integrate.solve_ivp(DOP853)",
-      "revision": "1.16.2"
-     },
-     "comparison": "abs_le",
-     "observed": 4.659383296651036e-14,
-     "passed": true,
-     "producer": {
-      "implementation": "ciw.lab.integrators.richardson_rk4",
-      "revision": "ciw 0.1.0"
-     },
-     "reference": "scipy DOP853 rtol 1e-13 on the same right-hand side",
-     "reference_kind": "high_precision",
-     "tolerance": 1e-12
-    }
+    ]
    },
    "claim": "ciw Richardson RK4 end states match closed-form geodesics and transfer matrices on the six closed-form charts",
    "domain": "numerical",
-   "evidence_status": "independently_verified",
+   "evidence_status": "numerically_verified",
    "regression_tolerance": {
     "abs": 1e-09,
     "rel": 0.0
@@ -120,7 +112,7 @@
    "unit": null,
    "value": {
     "cylinder": 1.8491463559123068e-14,
-    "cylinder-polar": 2.9041737216383977e-14,
+    "cylinder-polar": 2.5084292464429545e-14,
     "hyperbolic-plane": 2.871617124444836e-14,
     "plane": 2.220446049250313e-14,
     "plane-polar": 2.90394956512895e-14,
@@ -135,7 +127,7 @@
       "comparison": "abs_le",
       "observed": 1.4378105484480408e-24,
       "passed": true,
-      "reference": "mpmath macro-step 10 vs 20 at 34 digits",
+      "reference": "Gragg-Bulirsch-Stoer macro-step 10 vs 20 at 34 digits",
       "reference_kind": "high_precision",
       "tolerance": 1e-18
      },
@@ -151,15 +143,15 @@
       "comparison": "abs_le",
       "observed": 1.2878587085651816e-14,
       "passed": true,
-      "reference": "scipy DOP853 vs the mpmath reference",
+      "reference": "scipy DOP853 vs the 34-digit reference",
       "reference_kind": "high_precision",
       "tolerance": 1e-11
      }
     ],
     "independent_check": {
      "checker": {
-      "implementation": "mpmath",
-      "revision": "1.3.0"
+      "implementation": "sympy.lambdify(derived geodesic and Jacobi equations)",
+      "revision": "1.14.0"
      },
      "comparison": "abs_le",
      "observed": 9.222205069512407e-16,
@@ -168,12 +160,12 @@
       "implementation": "ciw.lab.integrators.richardson_rk4",
       "revision": "ciw 0.1.0"
      },
-     "reference": "34-digit Gragg-Bulirsch-Stoer reference on sympy-derived saddle equations",
+     "reference": "34-digit integration of the sympy-derived saddle geodesic and Jacobi equations by the ciw-authored Gragg-Bulirsch-Stoer integrator in mpmath arithmetic (the equations are independent; the integrator is not)",
      "reference_kind": "high_precision",
      "tolerance": 1e-12
     }
    },
-   "claim": "ciw Richardson RK4 matches the 34-digit mpmath reference on the saddle path",
+   "claim": "ciw Richardson RK4 matches a 34-digit integration of the sympy-derived equations on the saddle path",
    "domain": "numerical",
    "evidence_status": "independently_verified",
    "regression_tolerance": {
@@ -181,9 +173,9 @@
     "rel": 1e-07
    },
    "uncertainty": {
-    "basis": "mpmath 10 vs 20 macro-steps at 34 digits; the ciw Richardson estimate on this path is 7.21e-13",
-    "kind": "reference_error",
-    "value": 1.4378105484480408e-24
+    "basis": "larger of the binary64 rounding of the reference end state and of the gap evaluation (4 eps times the end-state scale 1.81: 1.61e-15) and the Gragg-Bulirsch-Stoer 10 vs 20 macro-step difference at 34 digits (1.44e-24); the ciw Richardson estimate on this path is 7.21e-13",
+    "kind": "roundoff",
+    "value": 1.6070511531400525e-15
    },
    "unit": null,
    "value": {
@@ -208,7 +200,7 @@
       "comparison": "abs_le",
       "observed": 4.3530344385152934e-23,
       "passed": true,
-      "reference": "mpmath macro-step 10 vs 20 at 34 digits",
+      "reference": "Gragg-Bulirsch-Stoer macro-step 10 vs 20 at 34 digits",
       "reference_kind": "high_precision",
       "tolerance": 1e-18
      },
@@ -224,15 +216,15 @@
       "comparison": "abs_le",
       "observed": 1.9850340605588998e-14,
       "passed": true,
-      "reference": "scipy DOP853 vs the mpmath reference",
+      "reference": "scipy DOP853 vs the 34-digit reference",
       "reference_kind": "high_precision",
       "tolerance": 1e-11
      }
     ],
     "independent_check": {
      "checker": {
-      "implementation": "mpmath",
-      "revision": "1.3.0"
+      "implementation": "sympy.lambdify(derived geodesic and Jacobi equations)",
+      "revision": "1.14.0"
      },
      "comparison": "abs_le",
      "observed": 6.378231276471524e-14,
@@ -241,12 +233,12 @@
       "implementation": "ciw.lab.integrators.richardson_rk4",
       "revision": "ciw 0.1.0"
      },
-     "reference": "34-digit Gragg-Bulirsch-Stoer reference on sympy-derived torus equations",
+     "reference": "34-digit integration of the sympy-derived torus geodesic and Jacobi equations by the ciw-authored Gragg-Bulirsch-Stoer integrator in mpmath arithmetic (the equations are independent; the integrator is not)",
      "reference_kind": "high_precision",
      "tolerance": 1e-12
     }
    },
-   "claim": "ciw Richardson RK4 matches the 34-digit mpmath reference on the torus path",
+   "claim": "ciw Richardson RK4 matches a 34-digit integration of the sympy-derived equations on the torus path",
    "domain": "numerical",
    "evidence_status": "independently_verified",
    "regression_tolerance": {
@@ -254,9 +246,9 @@
     "rel": 1e-07
    },
    "uncertainty": {
-    "basis": "mpmath 10 vs 20 macro-steps at 34 digits; the ciw Richardson estimate on this path is 1.25e-11",
-    "kind": "reference_error",
-    "value": 4.3530344385152934e-23
+    "basis": "larger of the binary64 rounding of the reference end state and of the gap evaluation (4 eps times the end-state scale 2.36: 2.09e-15) and the Gragg-Bulirsch-Stoer 10 vs 20 macro-step difference at 34 digits (4.35e-23); the ciw Richardson estimate on this path is 1.25e-11",
+    "kind": "roundoff",
+    "value": 2.094135185953612e-15
    },
    "unit": null,
    "value": {
@@ -281,7 +273,7 @@
       "comparison": "abs_le",
       "observed": 6.39498405169957e-22,
       "passed": true,
-      "reference": "mpmath macro-step 10 vs 20 at 34 digits",
+      "reference": "Gragg-Bulirsch-Stoer macro-step 10 vs 20 at 34 digits",
       "reference_kind": "high_precision",
       "tolerance": 1e-18
      },
@@ -297,15 +289,15 @@
       "comparison": "abs_le",
       "observed": 4.884981308350689e-15,
       "passed": true,
-      "reference": "scipy DOP853 vs the mpmath reference",
+      "reference": "scipy DOP853 vs the 34-digit reference",
       "reference_kind": "high_precision",
       "tolerance": 1e-11
      }
     ],
     "independent_check": {
      "checker": {
-      "implementation": "mpmath",
-      "revision": "1.3.0"
+      "implementation": "sympy.lambdify(derived geodesic and Jacobi equations)",
+      "revision": "1.14.0"
      },
      "comparison": "abs_le",
      "observed": 2.3309462240877263e-14,
@@ -314,12 +306,12 @@
       "implementation": "ciw.lab.integrators.richardson_rk4",
       "revision": "ciw 0.1.0"
      },
-     "reference": "34-digit Gragg-Bulirsch-Stoer reference on sympy-derived gaussian-bump equations",
+     "reference": "34-digit integration of the sympy-derived gaussian-bump geodesic and Jacobi equations by the ciw-authored Gragg-Bulirsch-Stoer integrator in mpmath arithmetic (the equations are independent; the integrator is not)",
      "reference_kind": "high_precision",
      "tolerance": 1e-12
     }
    },
-   "claim": "ciw Richardson RK4 matches the 34-digit mpmath reference on the gaussian-bump path",
+   "claim": "ciw Richardson RK4 matches a 34-digit integration of the sympy-derived equations on the gaussian-bump path",
    "domain": "numerical",
    "evidence_status": "independently_verified",
    "regression_tolerance": {
@@ -327,9 +319,9 @@
     "rel": 1e-07
    },
    "uncertainty": {
-    "basis": "mpmath 10 vs 20 macro-steps at 34 digits; the ciw Richardson estimate on this path is 1.37e-12",
-    "kind": "reference_error",
-    "value": 6.39498405169957e-22
+    "basis": "larger of the binary64 rounding of the reference end state and of the gap evaluation (4 eps times the end-state scale 2.33: 2.07e-15) and the Gragg-Bulirsch-Stoer 10 vs 20 macro-step difference at 34 digits (6.39e-22); the ciw Richardson estimate on this path is 1.37e-12",
+    "kind": "roundoff",
+    "value": 2.067513483239088e-15
    },
    "unit": null,
    "value": {
@@ -392,14 +384,14 @@
  ],
  "generated_artifacts": [
   {
-   "bytes": 11034,
+   "bytes": 11058,
    "path": "artifacts/T002/references.json",
-   "sha256": "7e2e38348f3f1b70ab8f9108ab86227de24c1667889a1f4c8005a8a537ebc543"
+   "sha256": "759a8f60f43772c7e2986a77a9cb91817a3d0120fa885f0aee7b14685dfb9b87"
   },
   {
    "bytes": 2941,
    "path": "artifacts/T002/agreement.svg",
-   "sha256": "20111894b8165fedd75328fb4fb25d91d0b258d170d41dfdcf3d31f2cdb77ca2"
+   "sha256": "5406809d5f4d7f28c673c491375ec9d4058acf669852953cbe9979ed3b4c258a"
   },
   {
    "bytes": 7306,
@@ -409,7 +401,7 @@
  ],
  "hypothesis": "Every declared standard path has a reference end state accurate far beyond the integrators under test: closed forms on constant-curvature charts and a 34-digit extrapolated integration on the saddle, torus and gaussian bump.",
  "input_data": [
-  "Standard paths: plane (L=2.0), sphere (L=2.0), cylinder (L=3.0), saddle (L=1.5), torus (L=3.0), gaussian-bump (L=2.5), hyperbolic-plane (L=1.5), plane-polar (L=2.0), cylinder-polar (L=2.0)",
+  "Standard paths: plane (L=2.0), sphere (L=2.0), cylinder (L=3.0), saddle (L=1.5), torus (L=3.0), gaussian-bump (L=2.5), hyperbolic-plane (L=1.5), plane-polar (L=2.0), cylinder-polar (L=2.5)",
   "Start states are the binary64 states used by the ciw integrators, converted exactly"
  ],
  "mathematical_model": "Great circle X(s) = cos(s/R) X0 + R sin(s/R) T0; helix and polar lines through the flat development; hyperbolic semicircles; transfer matrices cn_K, sn_K; otherwise the sympy-derived geodesic + Jacobi system integrated by Gragg-Bulirsch-Stoer in mpmath.",
@@ -433,13 +425,13 @@
   },
   "scipy": "1.16.2",
   "sources": {
-   "src/ciw/lab/geodesic_jacobi.py": "7f7307ebfb5c0a38ca1e7b9365fd7df627d9ae001791d99b823122873040d3c1",
-   "src/ciw/lab/geodesic_jacobi_common.py": "8616e9157492f0cd2aeebd695b3501215420c73af2cfbcb8c1b8cd5ab8d23a52"
+   "src/ciw/lab/geodesic_jacobi.py": "70e9794df40fbf882cd117859a112b1301552d2c4faca7979f06e7c287828798",
+   "src/ciw/lab/geodesic_jacobi_common.py": "7cb215a28e357a37f1c42cef6bdcb40e22abf7804ae9d58c4818fa40aa52da53"
   },
   "sympy": "1.14.0"
  },
  "recommended_next_task": "T003: measure Euler, midpoint, RK4 and adaptive orders against these references",
- "report_id": "sha256:45c80a7493b17270a8edbbcb8b567fd3d38e079bc56b13abf236581a5a51fc8e",
+ "report_id": "sha256:5b78952a7bf8819c8a27ee9501e459ac2539e012bb48e92aa5b78aa4fd7f00fe",
  "schema": "ciw.lab-task-report.v1",
  "section": "geodesic-jacobi",
  "state": "completed",
@@ -452,19 +444,19 @@
   "check: ciw Richardson RK4 end states match closed-form geodesics and transfer matrices on the six closed-form charts vs closed-form geodesic and constant-curvature transfer on plane-polar",
   "check: ciw Richardson RK4 end states match closed-form geodesics and transfer matrices on the six closed-form charts vs closed-form geodesic and constant-curvature transfer on cylinder-polar",
   "check: ciw Richardson RK4 end states match closed-form geodesics and transfer matrices on the six closed-form charts vs gap over the Richardson error estimate on the curved closed-form charts (about 1 without extrapolation)",
-  "independent: ciw Richardson RK4 end states match closed-form geodesics and transfer matrices on the six closed-form charts vs scipy.integrate.solve_ivp(DOP853)",
-  "check: ciw Richardson RK4 matches the 34-digit mpmath reference on the saddle path vs mpmath macro-step 10 vs 20 at 34 digits",
-  "check: ciw Richardson RK4 matches the 34-digit mpmath reference on the saddle path vs gap over the Richardson error estimate on saddle (about 1 without extrapolation)",
-  "check: ciw Richardson RK4 matches the 34-digit mpmath reference on the saddle path vs scipy DOP853 vs the mpmath reference",
-  "independent: ciw Richardson RK4 matches the 34-digit mpmath reference on the saddle path vs mpmath",
-  "check: ciw Richardson RK4 matches the 34-digit mpmath reference on the torus path vs mpmath macro-step 10 vs 20 at 34 digits",
-  "check: ciw Richardson RK4 matches the 34-digit mpmath reference on the torus path vs gap over the Richardson error estimate on torus (about 1 without extrapolation)",
-  "check: ciw Richardson RK4 matches the 34-digit mpmath reference on the torus path vs scipy DOP853 vs the mpmath reference",
-  "independent: ciw Richardson RK4 matches the 34-digit mpmath reference on the torus path vs mpmath",
-  "check: ciw Richardson RK4 matches the 34-digit mpmath reference on the gaussian-bump path vs mpmath macro-step 10 vs 20 at 34 digits",
-  "check: ciw Richardson RK4 matches the 34-digit mpmath reference on the gaussian-bump path vs gap over the Richardson error estimate on gaussian-bump (about 1 without extrapolation)",
-  "check: ciw Richardson RK4 matches the 34-digit mpmath reference on the gaussian-bump path vs scipy DOP853 vs the mpmath reference",
-  "independent: ciw Richardson RK4 matches the 34-digit mpmath reference on the gaussian-bump path vs mpmath",
+  "check: ciw Richardson RK4 end states match closed-form geodesics and transfer matrices on the six closed-form charts vs scipy DOP853 rtol 1e-13 on the ciw right-hand side (only the integrator is independent; the equations and closed forms are ciw code)",
+  "check: ciw Richardson RK4 matches a 34-digit integration of the sympy-derived equations on the saddle path vs Gragg-Bulirsch-Stoer macro-step 10 vs 20 at 34 digits",
+  "check: ciw Richardson RK4 matches a 34-digit integration of the sympy-derived equations on the saddle path vs gap over the Richardson error estimate on saddle (about 1 without extrapolation)",
+  "check: ciw Richardson RK4 matches a 34-digit integration of the sympy-derived equations on the saddle path vs scipy DOP853 vs the 34-digit reference",
+  "independent: ciw Richardson RK4 matches a 34-digit integration of the sympy-derived equations on the saddle path vs sympy.lambdify(derived geodesic and Jacobi equations)",
+  "check: ciw Richardson RK4 matches a 34-digit integration of the sympy-derived equations on the torus path vs Gragg-Bulirsch-Stoer macro-step 10 vs 20 at 34 digits",
+  "check: ciw Richardson RK4 matches a 34-digit integration of the sympy-derived equations on the torus path vs gap over the Richardson error estimate on torus (about 1 without extrapolation)",
+  "check: ciw Richardson RK4 matches a 34-digit integration of the sympy-derived equations on the torus path vs scipy DOP853 vs the 34-digit reference",
+  "independent: ciw Richardson RK4 matches a 34-digit integration of the sympy-derived equations on the torus path vs sympy.lambdify(derived geodesic and Jacobi equations)",
+  "check: ciw Richardson RK4 matches a 34-digit integration of the sympy-derived equations on the gaussian-bump path vs Gragg-Bulirsch-Stoer macro-step 10 vs 20 at 34 digits",
+  "check: ciw Richardson RK4 matches a 34-digit integration of the sympy-derived equations on the gaussian-bump path vs gap over the Richardson error estimate on gaussian-bump (about 1 without extrapolation)",
+  "check: ciw Richardson RK4 matches a 34-digit integration of the sympy-derived equations on the gaussian-bump path vs scipy DOP853 vs the 34-digit reference",
+  "independent: ciw Richardson RK4 matches a 34-digit integration of the sympy-derived equations on the gaussian-bump path vs sympy.lambdify(derived geodesic and Jacobi equations)",
   "check: Clairaut's integral rho^2 phi' is conserved along the torus reference path vs Clairaut drift of the ciw Richardson end state",
   "check: Clairaut's integral rho^2 phi' is conserved along the torus reference path vs Clairaut drift of the mpmath reference end state",
   "pytest: tests/test_lab_geodesic_jacobi.py::test_t002_references_agree",
@@ -474,8 +466,9 @@
  ],
  "tests_skipped": [],
  "title": "Build high-precision reference solutions for each surface.",
- "uncertainty": "Reference uncertainty is the 10-vs-20 macro-step difference at 34 digits (mpmath) or rounding of closed forms (about 1e-16); the ciw Richardson error estimate is retained per path.",
+ "uncertainty": "The 34-digit references change by at most 6.39e-22 between 10 and 20 macro-steps, but the reported end states and gaps are binary64, so each per-finding uncertainty is at least their binary64 rounding (about 1e-15); closed forms carry rounding only; the ciw Richardson error estimate is retained per path.",
  "unresolved_assumptions": [
-  "The mpmath reference is an extrapolated integration, not a closed form; its error estimate is empirical"
+  "The 34-digit reference is an extrapolated integration, not a closed form; its error estimate is empirical",
+  "Only the equations of the 34-digit reference are independent of ciw (sympy derives them); its Gragg-Bulirsch-Stoer integrator is ciw-authored and mpmath supplies the arithmetic. The scipy DOP853 comparison integrates the ciw equations, so only its integrator is independent"
  ]
 }

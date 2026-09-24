@@ -21,6 +21,7 @@
  "eps_star": "1/250",
  "float_eps_star": 0.003999999999999886,
  "heading_jump_deg": 126.86975096836686,
+ "length_continuity_bound": 4.481267010011209e-05,
  "length_jump": 8.944644025454807e-08,
  "scaling": [
   {

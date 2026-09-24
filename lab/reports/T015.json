@@ -10,16 +10,17 @@
    "hardware_measured": 0,
    "independently_verified": 0,
    "not_established": 0,
-   "numerically_verified": 6,
+   "numerically_verified": 9,
    "provider_backed": 0,
    "synthetic": 0
   },
   "primary": "numerically_verified"
  },
- "expected_invariant": "Adaptive drift exponent 1; sphere position exponent 1 (fixed RK4) and 2 (adaptive).",
- "experiment": "One run per surface and method to L = 320 (fixed steps stop at a nonfinite state or at the sphere chart's poles); envelopes and fits of energy, Clairaut, angular momentum and position error.",
+ "expected_invariant": "Adaptive drift exponent 1; sphere position exponent 1 (fixed RK4, cross-track, from plane precession) and 2 (adaptive, along-track, from the integrated speed error).",
+ "experiment": "One run per surface and method to L = 320 (fixed steps stop at a nonfinite state or at the sphere chart's poles); envelopes and fits of energy, Clairaut, angular momentum (split into orbit-plane tilt and size) and position error (split into cross-track and along-track parts, the latter compared with the integrated speed error).",
  "failure_modes_checked": [
   "no hidden renormalization of speed",
+  "position error decomposed into cross-track and along-track parts before a mechanism is attributed (the speed-error mechanism is refuted for fixed-step RK4)",
   "chart exit at the sphere poles detected and reported instead of integrating through the singularity",
   "nonfinite states stop the run",
   "dyadic step so every checkpoint is a node"
@@ -132,6 +133,202 @@
    "basis": {
     "checks": [
      {
+      "comparison": "abs_le",
+      "observed": 0.0074120844845493306,
+      "passed": true,
+      "reference": "RK4 orbit-plane tilt envelope exponent minus 1",
+      "reference_kind": "invariant",
+      "tolerance": 0.1
+     },
+     {
+      "comparison": "le",
+      "observed": 0.01951999457031639,
+      "passed": true,
+      "reference": "largest gap between the tilt exponent and consecutive-checkpoint slopes",
+      "reference_kind": "invariant",
+      "tolerance": 0.1
+     },
+     {
+      "comparison": "le",
+      "observed": 0.004362731990101097,
+      "passed": true,
+      "reference": "angular-momentum size drift / plane tilt at L = 320",
+      "reference_kind": "invariant",
+      "tolerance": 0.05
+     }
+    ],
+    "derivation": "docs/lab/GEODESIC_JACOBI_LIMITS.md#t015-long-horizon-drift",
+    "generator": {
+     "deterministic": true,
+     "h": 0.125,
+     "method": "rk4",
+     "name": "ciw.lab.geodesic_jacobi_limits:drift",
+     "seed": null
+    }
+   },
+   "claim": "Sphere angular-momentum drift of fixed-step RK4 grows linearly with length and is a tilt of the orbit plane, not a change of its size",
+   "domain": "numerical",
+   "evidence_status": "numerically_verified",
+   "regression_tolerance": {
+    "abs": 0.02,
+    "rel": 0.02
+   },
+   "uncertainty": {
+    "basis": "largest gap between the fitted tilt exponent and consecutive-checkpoint slopes",
+    "kind": "fit_spread",
+    "value": 0.01951999457031639
+   },
+   "unit": null,
+   "value": {
+    "angular_momentum_exponent": 1.0073868099004275,
+    "momentum_size_at_320": 2.3833006803641865e-06,
+    "plane_tilt_at_320": 0.0005462862916566549,
+    "plane_tilt_exponent": 1.0074120844845493,
+    "plane_tilt_spread": 0.01951999457031639
+   }
+  },
+  {
+   "assigned_by": "ciw.lab.evidence",
+   "basis": {
+    "checks": [
+     {
+      "comparison": "ge",
+      "observed": 0.9989011641437762,
+      "passed": true,
+      "reference": "cross-track envelope / position envelope at L = 320",
+      "reference_kind": "invariant",
+      "tolerance": 0.99
+     },
+     {
+      "comparison": "abs_le",
+      "observed": -0.009941719814466343,
+      "passed": true,
+      "reference": "cross-track envelope / orbit-plane tilt at L = 320, minus 1",
+      "reference_kind": "invariant",
+      "tolerance": 0.05
+     },
+     {
+      "comparison": "signed_le",
+      "observed": -0.16027306137215694,
+      "passed": true,
+      "reference": "along-track error / integrated speed error at L = 320 (nonpositive: opposite signs)",
+      "reference_kind": "invariant",
+      "tolerance": 0.0
+     }
+    ],
+    "derivation": "docs/lab/GEODESIC_JACOBI_LIMITS.md#t015-long-horizon-drift",
+    "generator": {
+     "deterministic": true,
+     "h": 0.125,
+     "method": "rk4",
+     "name": "ciw.lab.geodesic_jacobi_limits:drift",
+     "seed": null
+    }
+   },
+   "claim": "Fixed-step RK4 sphere position error is cross-track: the precessing orbit plane, not the speed error, sets it",
+   "counterexample": {
+    "statement": "The fixed-step RK4 position error on the sphere is the phase error of its speed error (a constant speed error gives position error ~ L)",
+    "witness": {
+     "L": 320.0,
+     "along_over_integrated_speed_error": -0.16027306137215694,
+     "along_track_at_320": -2.5966475792261697e-05,
+     "cross_track_at_320": 0.0005408552664065206,
+     "cross_track_over_plane_tilt": 0.9900582801855337,
+     "cross_track_share": 0.9989011641437762,
+     "h": 0.125,
+     "integrated_speed_error_at_320": 0.00016201397521176109,
+     "method": "rk4",
+     "position_at_320": 0.0005414502313350723
+    }
+   },
+   "domain": "numerical",
+   "evidence_status": "numerically_verified",
+   "regression_tolerance": {
+    "abs": 1e-06,
+    "rel": 0.05
+   },
+   "uncertainty": {
+    "basis": "gap between the cross-track envelope and the orbit-plane tilt at L = 320 (the tilt bounds the cross-track excursion)",
+    "kind": "model_truncation",
+    "value": 0.009941719814466343
+   },
+   "unit": null,
+   "value": {
+    "along_over_integrated_speed_error": -0.16027306137215694,
+    "along_track_at_320": -2.5966475792261697e-05,
+    "cross_track_at_320": 0.0005408552664065206,
+    "cross_track_over_plane_tilt": 0.9900582801855337,
+    "cross_track_share": 0.9989011641437762,
+    "integrated_speed_error_at_320": 0.00016201397521176109,
+    "position_at_320": 0.0005414502313350723
+   }
+  },
+  {
+   "assigned_by": "ciw.lab.evidence",
+   "basis": {
+    "checks": [
+     {
+      "comparison": "abs_le",
+      "observed": -0.0022506527825879585,
+      "passed": true,
+      "reference": "along-track error / integrated speed error at L = 320, minus 1",
+      "reference_kind": "analytic",
+      "tolerance": 0.02
+     },
+     {
+      "comparison": "ge",
+      "observed": 0.9999822020375145,
+      "passed": true,
+      "reference": "|along-track error| / position envelope at L = 320",
+      "reference_kind": "invariant",
+      "tolerance": 0.99
+     },
+     {
+      "comparison": "abs_le",
+      "observed": 0.04627089121151151,
+      "passed": true,
+      "reference": "exponent of |integrated speed error| minus 2",
+      "reference_kind": "analytic",
+      "tolerance": 0.2
+     }
+    ],
+    "derivation": "docs/lab/GEODESIC_JACOBI_LIMITS.md#t015-long-horizon-drift",
+    "generator": {
+     "deterministic": true,
+     "method": "adaptive",
+     "name": "ciw.lab.geodesic_jacobi_limits:drift",
+     "rtol": 1e-06,
+     "seed": null
+    }
+   },
+   "claim": "Adaptive DP45 sphere position error is along-track and equals its integrated speed error, which grows like L^2",
+   "domain": "numerical",
+   "evidence_status": "numerically_verified",
+   "regression_tolerance": {
+    "abs": 1e-06,
+    "rel": 0.05
+   },
+   "uncertainty": {
+    "basis": "relative gap between the along-track error and the integrated speed error at L = 320",
+    "kind": "model_truncation",
+    "value": 0.0022506527825879585
+   },
+   "unit": null,
+   "value": {
+    "along_over_integrated_speed_error": 0.997749347217412,
+    "along_track_at_320": -0.01020830012528686,
+    "along_track_share": 0.9999822020375145,
+    "cross_track_at_320": 0.00012167751069818315,
+    "integrated_speed_error_at_320": -0.010231327290522844,
+    "integrated_speed_error_exponent": 2.0462708912115115,
+    "position_at_320": 0.010208481815463246
+   }
+  },
+  {
+   "assigned_by": "ciw.lab.evidence",
+   "basis": {
+    "checks": [
+     {
       "comparison": "le",
       "observed": 0.027506236135538223,
       "passed": true,
@@ -213,22 +410,31 @@
     "checks": [
      {
       "comparison": "abs_le",
-      "observed": 0.07776497888029943,
+      "observed": -0.0007402400387456209,
       "passed": true,
-      "reference": "adaptive Clairaut-envelope exponent minus 1",
+      "reference": "adaptive Clairaut-envelope exponent over L = 40-320 minus 1",
       "reference_kind": "invariant",
-      "tolerance": 0.2
+      "tolerance": 0.1
+     },
+     {
+      "comparison": "le",
+      "observed": 0.07101325679399506,
+      "passed": true,
+      "reference": "largest gap between that exponent and its consecutive-checkpoint slopes",
+      "reference_kind": "invariant",
+      "tolerance": 0.1
      }
     ],
     "generator": {
      "deterministic": true,
+     "fit_from": 40.0,
      "method": "adaptive",
      "name": "ciw.lab.geodesic_jacobi_limits:drift",
      "rtol": 1e-06,
      "seed": null
     }
    },
-   "claim": "Torus Clairaut drift of adaptive DP45 grows linearly with length",
+   "claim": "Torus Clairaut drift of adaptive DP45 grows linearly with length from L = 40 on",
    "domain": "numerical",
    "evidence_status": "numerically_verified",
    "regression_tolerance": {
@@ -236,12 +442,21 @@
     "rel": 0.0
    },
    "uncertainty": {
-    "basis": "largest gap between the adaptive fitted exponent and consecutive-checkpoint slopes",
+    "basis": "largest gap between the adaptive fitted exponent and consecutive-checkpoint slopes over L = 40-320",
     "kind": "fit_spread",
-    "value": 0.2551334885865655
+    "value": 0.07101325679399506
    },
    "unit": null,
-   "value": 1.0777649788802994
+   "value": {
+    "exponent_L_40_to_320": 0.9992597599612544,
+    "local_slopes": [
+     1.332898467466863,
+     1.1607747969121782,
+     0.9282465031672579,
+     1.0528261521165936,
+     0.9988511605481313
+    ]
+   }
   },
   {
    "assigned_by": "ciw.lab.evidence",
@@ -343,9 +558,9 @@
  ],
  "generated_artifacts": [
   {
-   "bytes": 6356,
+   "bytes": 10075,
    "path": "artifacts/T015/drift.json",
-   "sha256": "992d4dc6cb2510f58892bddf5b34e47e8d57701ef0ecc8483e5e045664e1c06d"
+   "sha256": "8ab5b1178e8e6c1f4512153df7729616cca1fae0e953da7800092f923f496667"
   },
   {
    "bytes": 5980,
@@ -358,15 +573,15 @@
    "sha256": "d0acc03c356f93a518ab6123ebdc02b80fd94d32fe82595e49e18288e13b3ded"
   }
  ],
- "hypothesis": "Non-symplectic integrators drift in the first integrals of the geodesic flow (speed, Clairaut constant, angular momentum); adaptive local-error control accumulates a linear secular drift, while a fixed step on these closed or quasi-periodic orbits can keep the drift bounded over long stretches; bounded speed error does not guarantee the right orbit.",
+ "hypothesis": "Non-symplectic integrators drift in the first integrals of the geodesic flow (speed, Clairaut constant, angular momentum); adaptive local-error control accumulates a linear secular drift, while a fixed step on these closed or quasi-periodic orbits can keep the speed drift bounded over long stretches; bounded speed error does not guarantee the right orbit.",
  "input_data": [
   "Torus(2, 1) start (0, 0.5) heading 0.7 (bounded oscillation about the outer equator)",
   "Unit sphere start (pi/2, 0) heading 1.0 (great circle)",
   "Fixed step h = 0.125 for Euler, midpoint, RK4; DP45 rtol 1e-06, atol 1e-09; checkpoints L = 10, 20, 40, 80, 160, 320"
  ],
- "mathematical_model": "Energy g(v, v) = 1, torus Clairaut rho^2 phi' and sphere angular momentum X x X' are exact first integrals. A constant speed error gives a constant frequency error on the sphere, hence position error ~ L; a speed error growing ~ L gives position error ~ L^2. On Torus(2, 1) the orbit oscillates between |theta| <= arccos((c - R)/r); a Clairaut drift across the separatrix changes it into an orbit winding around the tube.",
+ "mathematical_model": "Energy g(v, v) = 1, torus Clairaut rho^2 phi' and sphere angular momentum M = X x X' are exact first integrals. On the unit sphere |M| is the speed and M/|M| the normal of the orbit plane, so a position error splits into a cross-track part, bounded by the tilt of M/|M|, and an along-track (phase) part. A speed error advances the point along its circle by the integrated excess arclength int (|X'| - 1) ds; a speed error growing ~ L therefore gives along-track error ~ L^2 (adaptive DP45). A tilt of the orbit plane growing ~ L gives cross-track error ~ L (fixed-step RK4, whose local error rotates the plane secularly while its speed error stays bounded). On Torus(2, 1) the orbit oscillates between |theta| <= arccos((c - R)/r); a Clairaut drift across the separatrix changes it into an orbit winding around the tube.",
  "number": 15,
- "numerical_result": "Energy exponents: adaptive torus 0.934, sphere 0.998; RK4 envelope exponent 0.0275 (torus, L = 10-160) and 0.00661 (sphere, L = 10-320), torus RK4 local slope 0.861 from L = 160 to 320; sphere position exponent RK4 1.02, adaptive 2.05; torus adaptive Clairaut exponent 1.08; fixed-step Clairaut envelopes are not described by one exponent (local slopes: Euler 1.3, 0.82, 0.5, 0.11, 0.0047, RK4 0.18, 0.23, 0.43, 0.57, 0.74); torus Euler max energy error 0.035 but max |theta| 285 versus turning latitude 1.369; sphere Euler stopped at s = 14.",
+ "numerical_result": "Energy exponents: adaptive torus 0.934, sphere 0.998; RK4 envelope exponent 0.0275 (torus, L = 10-160) and 0.00661 (sphere, L = 10-320), torus RK4 local slope 0.861 from L = 160 to 320; sphere position exponent RK4 1.02, adaptive 2.05; at L = 320 the RK4 position error 0.000541 is cross-track 0.000541 (orbit-plane tilt 0.000546, tilt exponent 1.01), its along-track part -2.6e-05 has the opposite sign to the integrated speed error 0.00016; the adaptive position error 0.0102 is along-track -0.01021 against an integrated speed error -0.01023; torus adaptive Clairaut exponent 0.999 over L = 40-320 (local slopes 1.33, 1.16, 0.928, 1.05, 0.999); fixed-step Clairaut envelopes are not described by one exponent (local slopes: Euler 1.3, 0.82, 0.5, 0.11, 0.0047, RK4 0.18, 0.23, 0.43, 0.57, 0.74); torus Euler max energy error 0.035 but max |theta| 285 versus turning latitude 1.369; sphere Euler stopped at s = 14.",
  "observation_model": "Running maxima (envelopes) of |I(s) - I(0)| at checkpoints; exponents are log-log slopes over the reached checkpoints; no renormalization at any step.",
  "physical_validation_status": {
   "statement": "Physical validation requires acquired hardware evidence; none was acquired for this task.",
@@ -380,13 +595,13 @@
   "python": "3.12.3",
   "scipy": "1.16.2",
   "sources": {
-   "src/ciw/lab/geodesic_jacobi_limits.py": "29c8472e91cdf4deb2e1f526ab40e57f703f41e20ef14edd8fb1cc2fc6ede661",
-   "src/ciw/lab/geodesic_jacobi_limits_core.py": "8aa707ec2a190208bf07cd3b1f94a40f191a7a9c4be277714ed8b627e2c5fcb9"
+   "src/ciw/lab/geodesic_jacobi_limits.py": "07d850980ac10ad34ca0d1b8c29942c90fe635e15135a5db1f74e90674e3bb18",
+   "src/ciw/lab/geodesic_jacobi_limits_core.py": "0e0b8f85ed4e83c3fcdc866e8a7e580a17432e174b8db8d8277230e226473d7f"
   },
   "sympy": "1.14.0"
  },
  "recommended_next_task": "T016 (negative curvature) and a symmetric-integrator comparison on the same horizons",
- "report_id": "sha256:9f3e3df9bd0e59c41a5d51e471e7a78235c8ebaef3a7a3554841557ce07cead0",
+ "report_id": "sha256:e0d8481def4a0cb5ffbb9f8acbe506b096d3bdf98cbb6eb4ef91827330d2bb30",
  "schema": "ciw.lab-task-report.v1",
  "section": "geodesic-jacobi",
  "state": "completed",
@@ -396,10 +611,20 @@
   "check: Adaptive DP45 energy error grows linearly with length on the torus and the sphere vs sphere energy-envelope exponent minus 1",
   "check: Sphere position error grows like L for fixed-step RK4 and like L^2 for adaptive DP45 vs RK4 position exponent minus 1",
   "check: Sphere position error grows like L for fixed-step RK4 and like L^2 for adaptive DP45 vs adaptive position exponent minus 2",
+  "check: Sphere angular-momentum drift of fixed-step RK4 grows linearly with length and is a tilt of the orbit plane, not a change of its size vs RK4 orbit-plane tilt envelope exponent minus 1",
+  "check: Sphere angular-momentum drift of fixed-step RK4 grows linearly with length and is a tilt of the orbit plane, not a change of its size vs largest gap between the tilt exponent and consecutive-checkpoint slopes",
+  "check: Sphere angular-momentum drift of fixed-step RK4 grows linearly with length and is a tilt of the orbit plane, not a change of its size vs angular-momentum size drift / plane tilt at L = 320",
+  "check: Fixed-step RK4 sphere position error is cross-track: the precessing orbit plane, not the speed error, sets it vs cross-track envelope / position envelope at L = 320",
+  "check: Fixed-step RK4 sphere position error is cross-track: the precessing orbit plane, not the speed error, sets it vs cross-track envelope / orbit-plane tilt at L = 320, minus 1",
+  "check: Fixed-step RK4 sphere position error is cross-track: the precessing orbit plane, not the speed error, sets it vs along-track error / integrated speed error at L = 320 (nonpositive: opposite signs)",
+  "check: Adaptive DP45 sphere position error is along-track and equals its integrated speed error, which grows like L^2 vs along-track error / integrated speed error at L = 320, minus 1",
+  "check: Adaptive DP45 sphere position error is along-track and equals its integrated speed error, which grows like L^2 vs |along-track error| / position envelope at L = 320",
+  "check: Adaptive DP45 sphere position error is along-track and equals its integrated speed error, which grows like L^2 vs exponent of |integrated speed error| minus 2",
   "check: Fixed-step RK4 energy error has a flat (oscillation-dominated) envelope up to L = 160 on the torus and L = 320 on the sphere; on the torus a secular term emerges between L = 160 and 320 vs torus RK4 energy-envelope exponent over L = 10-160",
   "check: Fixed-step RK4 energy error has a flat (oscillation-dominated) envelope up to L = 160 on the torus and L = 320 on the sphere; on the torus a secular term emerges between L = 160 and 320 vs sphere RK4 energy-envelope exponent over L = 10-320",
   "check: Fixed-step RK4 energy error has a flat (oscillation-dominated) envelope up to L = 160 on the torus and L = 320 on the sphere; on the torus a secular term emerges between L = 160 and 320 vs torus RK4 local envelope slope from L = 160 to 320",
-  "check: Torus Clairaut drift of adaptive DP45 grows linearly with length vs adaptive Clairaut-envelope exponent minus 1",
+  "check: Torus Clairaut drift of adaptive DP45 grows linearly with length from L = 40 on vs adaptive Clairaut-envelope exponent over L = 40-320 minus 1",
+  "check: Torus Clairaut drift of adaptive DP45 grows linearly with length from L = 40 on vs largest gap between that exponent and its consecutive-checkpoint slopes",
   "check: Euler on the torus keeps a bounded energy error but changes the orbit type (Clairaut drift) vs max energy error of the Euler run",
   "check: Euler on the torus keeps a bounded energy error but changes the orbit type (Clairaut drift) vs max |theta| minus exact turning latitude",
   "check: Euler on the sphere leaves the polar chart before the horizon vs arclength at which the Euler run was stopped",
@@ -407,7 +632,7 @@
  ],
  "tests_skipped": [],
  "title": "Explore long-horizon numerical drift.",
- "uncertainty": "Envelope exponents mix oscillatory and secular parts, so single-exponent fits are reported only where the local slopes agree; the torus RK4 energy local slopes are 0, 0, 0, 0.14, 0.86 over L = 10-320, so its secular part appears between L = 160 and 320 and may dominate beyond. Fits use the six checkpoints or the stated subrange.",
+ "uncertainty": "Envelope exponents mix oscillatory and secular parts, so single-exponent fits are reported only where the local slopes agree; the torus RK4 energy local slopes are 0, 0, 0, 0.14, 0.86 over L = 10-320, so its secular part appears between L = 160 and 320 and may dominate beyond; the adaptive torus Clairaut slopes settle only from L = 40, so its exponent is fitted there. Fits use the six checkpoints or the stated subrange. The sphere position decomposition is linear in errors below 0.01 (RK4 and adaptive), so second-order cross terms are negligible.",
  "unresolved_assumptions": [
   "Two geodesics only; resonant or chaotic geodesics are not sampled",
   "Horizon 320 is limited by the run budget; asymptotic drift laws are not established",

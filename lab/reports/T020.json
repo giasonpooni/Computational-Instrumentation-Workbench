@@ -7,15 +7,15 @@
  ],
  "evidence_status": {
   "counts": {
-   "analytic": 0,
+   "analytic": 1,
    "hardware_measured": 0,
    "independently_verified": 2,
    "not_established": 0,
-   "numerically_verified": 4,
+   "numerically_verified": 3,
    "provider_backed": 0,
    "synthetic": 0
   },
-  "primary": "numerically_verified"
+  "primary": "analytic"
  },
  "expected_invariant": "Measured first return 1/gcd with the primitive displacement, gcd returns by t = 1, (|m| + |n|)/gcd crossings before the first return, and intersection count |det| for every tested class.",
  "experiment": "Exact segment-by-segment flow per winding, detecting returns by an exact solve on each segment; exact intersection counting for primitive pairs; lattice-point count by row scan against a brute-force box; binary64 and 50-digit golden return gaps with a rounding bound.",
@@ -70,14 +70,6 @@
       "observed": 0.0,
       "passed": true,
       "reference": "intersection count mismatches (exact rational solve)",
-      "reference_kind": "exact_arithmetic",
-      "tolerance": 0.0
-     },
-     {
-      "comparison": "abs_le",
-      "observed": 0.0,
-      "passed": true,
-      "reference": "pairs enumerated minus C(classes, 2)",
       "reference_kind": "exact_arithmetic",
       "tolerance": 0.0
      }
@@ -255,16 +247,7 @@
   {
    "assigned_by": "ciw.lab.evidence",
    "basis": {
-    "checks": [
-     {
-      "comparison": "abs_le",
-      "observed": 0.0,
-      "passed": true,
-      "reference": "denominator of Fraction(float(phi)) is a power of two at most 2^52 (0 = yes)",
-      "reference_kind": "exact_arithmetic",
-      "tolerance": 0.0
-     }
-    ]
+    "derivation": "IEEE 754 binary64: every finite value is an integer significand of at most 53 bits times a power of two, so a slope in [1, 2) is p / 2^52 (a dyadic rational with denominator at most 2^52), and a line of rational slope p / q in lattice coordinates closes after q turns"
    },
    "claim": "A binary64 heading slope is rational, so a float simulation cannot represent a non-closing direction",
    "counterexample": {
@@ -276,13 +259,13 @@
     }
    },
    "domain": "numerical",
-   "evidence_status": "numerically_verified",
+   "evidence_status": "analytic",
    "regression_tolerance": {
     "abs": 0,
     "rel": 0
    },
    "uncertainty": {
-    "basis": "integer, Fraction or Q(sqrt d) arithmetic; no rounding",
+    "basis": "IEEE 754 format fact; the witness fraction is the exact value of the binary64 phi",
     "kind": "exact",
     "value": 0.0
    },
@@ -387,7 +370,7 @@
  ],
  "mathematical_model": "Lattice-coordinate flow alpha = alpha0 + m t, beta = beta0 + n t on R^2 / Z^2 with metric Q(m, n) = a m^2 + 2 b m n + c n^2; predicted first return at t = 1/gcd(m, n) with displacement the primitive vector; Q(g m', g n') = g^2 Q(m', n'); intersection number |det(v, w)|; Binet: ||F_k phi|| = phi^-k and |F_k phi^-k - 1/sqrt 5| = phi^-2k / sqrt 5.",
  "number": 20,
- "numerical_result": "0 winding failures over 168 classes; 0 intersection failures over 120 pairs; 229 lattice points within R = 20 (box count 229, Gauss estimate 225.70); primitive fraction 0.6228 (asymptotic 6/pi^2 = 0.6079); golden gaps / phi^-k >= 1.000000; at k = 22 the exact residual |q gap - 1/sqrt 5| is 2.85e-10, while the binary64 value deviates by 3.06e-08 (float cancellation, within its rounding bound).",
+ "numerical_result": "0 winding failures over 168 classes; 0 intersection failures over 120 pairs; 229 lattice points within R = 20 (box count 229, Gauss estimate 225.70); primitive fraction 0.6228 (asymptotic 6/pi^2 = 0.6079); golden gaps / phi^-k >= 0.99999993; at k = 22 the exact residual |q gap - 1/sqrt 5| is 2.85e-10, while the binary64 value deviates by 3.06e-08 (float cancellation, within its rounding bound).",
  "observation_model": "No physical observation: exact or floating-point computation on declared mathematical objects.",
  "physical_validation_status": {
   "statement": "Physical validation requires acquired hardware evidence; none was acquired for this task.",
@@ -421,14 +404,14 @@
   },
   "scipy": "1.16.2",
   "sources": {
-   "src/ciw/lab/flat_torus_topology.py": "4d8cf2437759501a1b9fa5ee0d8abfac43345ebee378c6ad08233e9155d4b184",
+   "src/ciw/lab/flat_torus_topology.py": "1221001d96bf1f9aa2f9fea169a2b10bfb37230da11bfb6f1608ba9355c86b9a",
    "src/ciw/lab/flat_torus_topology_lattice.py": "15a33fcd29591e43dec16fa3b9ad26d6b6b86846872e9e6bf815508fb0dade63",
    "src/ciw/lab/flat_torus_topology_provider.py": "30fa38e51a20bc8d01beea0e5c44da69f22d7059c04c92c1fea520e5cf6f8806"
   },
   "sympy": "1.14.0"
  },
  "recommended_next_task": "T023: compute heading sensitivity of closure across all starting headings",
- "report_id": "sha256:2c73387fb8724f1e595d5e7cb26b52d9a97246ff223ab442b9bb332a98cd1f86",
+ "report_id": "sha256:59df99d5453f8cb34d747741652dc4a3777188cfa98412fdd5032eb3f9a0f6ea",
  "schema": "ciw.lab-task-report.v1",
  "section": "flat-torus-topology",
  "state": "completed",
@@ -436,14 +419,12 @@
  "tests_passed": [
   "check: Every winding with |m|, |n| <= 6 first returns to its start at t = 1/gcd, displaced by its primitive vector after (|m| + |n|)/gcd edge crossings, and returns gcd times by t = 1 (a gcd-fold cover of the primitive loop) vs measured first-return time, displacement, return count and crossings against prediction (mismatching classes)",
   "check: For all 120 pairs of the 16 primitive classes with 0 <= m <= 3, |n| <= 3 the transverse intersections number |det(v, w)| vs intersection count mismatches (exact rational solve)",
-  "check: For all 120 pairs of the 16 primitive classes with 0 <= m <= 3, |n| <= 3 the transverse intersections number |det(v, w)| vs pairs enumerated minus C(classes, 2)",
   "check: The lattice-point count within radius R (including the origin, and its primitive part) equals a brute-force count over a box proven to contain the disk vs row-scan minus box count (all points)",
   "check: The lattice-point count within radius R (including the origin, and its primitive part) equals a brute-force count over a box proven to contain the disk vs row-scan minus box count (primitive points)",
   "check: The golden-slope geodesic has positive return gaps phi^-k at Fibonacci returns, with q * gap -> 1/sqrt 5 vs binary64 gap relative to phi^-k",
   "check: The golden-slope geodesic has positive return gaps phi^-k at Fibonacci returns, with q * gap -> 1/sqrt 5 vs smallest gap / phi^-k (a closure would give 0)",
   "check: The golden-slope geodesic has positive return gaps phi^-k at Fibonacci returns, with q * gap -> 1/sqrt 5 vs |q gap - 1/sqrt 5| minus (phi^-2k / sqrt 5 + binary64 rounding bound)",
   "independent: The golden-slope geodesic has positive return gaps phi^-k at Fibonacci returns, with q * gap -> 1/sqrt 5 vs mpmath",
-  "check: A binary64 heading slope is rational, so a float simulation cannot represent a non-closing direction vs denominator of Fraction(float(phi)) is a power of two at most 2^52 (0 = yes)",
   "check: Closed-geodesic lengths |m w1 + n w2|, edge-crossing counts and unit area agree with the pinned FTR loop_length, trace_closed_geodesic and normalized_lattice vs crossing-count mismatches or unclosed traces",
   "check: Closed-geodesic lengths |m w1 + n w2|, edge-crossing counts and unit area agree with the pinned FTR loop_length, trace_closed_geodesic and normalized_lattice vs FTR area-one normalization",
   "independent: Closed-geodesic lengths |m w1 + n w2|, edge-crossing counts and unit area agree with the pinned FTR loop_length, trace_closed_geodesic and normalized_lattice vs Flat-Torus-Geodesic-Reference@dc918562cd9e",

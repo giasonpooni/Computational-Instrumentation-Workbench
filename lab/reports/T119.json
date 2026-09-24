@@ -17,15 +17,16 @@
   },
   "primary": "numerically_verified"
  },
- "expected_invariant": "Recomputation equals energy_records.analyze; the metric is withheld for reset, missing bracket and under-target fixtures.",
- "experiment": "Analyze all four fixtures; recompute the baseline metric from raw readings and raw outputs; compare with the naive gross/executed ratio, with the per-distinct-result denominator and with a whole-run boundary.",
+ "expected_invariant": "Recomputation equals energy_records.analyze; the metric is withheld for exactly the reset, missing-bracket and under-target fixtures, each for its declared defect; an operator log supports a physical value only through the T116 acquisition gate.",
+ "experiment": "Analyze all four fixtures; recompute the baseline metric from raw readings and raw outputs; compare with the naive gross/executed ratio, with the per-distinct-result denominator and with a whole-run boundary. When CIW_LAB_ENERGY_LOG names an operator log, recompute E_acc from its raw readings and outputs and report it as physical only when the log declares physical_measurement, its analysis is eligible, its sensor identity equals this host's NVML identity, the GPU probe answers in this task and its raw bytes are retained.",
  "failure_modes_checked": [
   "counter reset",
   "missing endpoint brackets",
   "accuracy target not met",
   "naive division by executed solves",
   "replica copies counted as distinct results",
-  "boundary choice"
+  "boundary choice",
+  "operator log: synthetic origin, ineligible analysis, host NVML identity, GPU probe, raw bytes retained (regression tests)"
  ],
  "findings": [
   {
@@ -51,6 +52,12 @@
     ],
     "generator": {
      "fixture": "baseline",
+     "fixture_sha256": {
+      "baseline": "3ff4cb68be07e36d9796fb83402b0f72a46a3f1edff0d9e70addc9ab1695ef81",
+      "missing": "0cffbd14cfcd2d0f14cc906dca689df4de1fd8191ed6fff4cb5a6dced837dacb",
+      "reset": "2c8e421e1fd24ce463f765dba365eacb859797facb82d42f180deb42d80a0ddb",
+      "under-target": "b09bf8b979c213a7ae6617327f9a060ea2c9b2af515eb4b8662ab94dc415e955"
+     },
      "name": "examples/energy-accuracy synthetic fixtures",
      "origin": "synthetic_fixture",
      "seed": null
@@ -79,13 +86,19 @@
       "comparison": "abs_le",
       "observed": 0.0,
       "passed": true,
-      "reference": "accepted replica solves minus replicas per batch times accepted batch outputs",
+      "reference": "distinct binary64 byte strings among the accepted outputs minus accepted batch outputs",
       "reference_kind": "exact_arithmetic",
       "tolerance": 0.0
      }
     ],
     "generator": {
      "fixture": "baseline",
+     "fixture_sha256": {
+      "baseline": "3ff4cb68be07e36d9796fb83402b0f72a46a3f1edff0d9e70addc9ab1695ef81",
+      "missing": "0cffbd14cfcd2d0f14cc906dca689df4de1fd8191ed6fff4cb5a6dced837dacb",
+      "reset": "2c8e421e1fd24ce463f765dba365eacb859797facb82d42f180deb42d80a0ddb",
+      "under-target": "b09bf8b979c213a7ae6617327f9a060ea2c9b2af515eb4b8662ab94dc415e955"
+     },
      "name": "examples/energy-accuracy synthetic fixtures",
      "origin": "synthetic_fixture",
      "seed": null
@@ -111,15 +124,29 @@
    "basis": {
     "checks": [
      {
-      "comparison": "abs_le",
+      "comparison": "le",
       "observed": 0.0,
       "passed": true,
-      "reference": "three fixtures with a declared defect",
+      "reference": "fixtures in the symmetric difference of the withheld set and {reset, missing, under-target}",
+      "reference_kind": "exact_arithmetic",
+      "tolerance": 0.0
+     },
+     {
+      "comparison": "le",
+      "observed": 0.0,
+      "passed": true,
+      "reference": "declared defects (reset_or_wrap_ambiguous, missing_endpoint_brackets, accuracy_target_not_met_by_every_batch) absent from their fixture's analysis reasons",
       "reference_kind": "exact_arithmetic",
       "tolerance": 0.0
      }
     ],
     "generator": {
+     "fixture_sha256": {
+      "baseline": "3ff4cb68be07e36d9796fb83402b0f72a46a3f1edff0d9e70addc9ab1695ef81",
+      "missing": "0cffbd14cfcd2d0f14cc906dca689df4de1fd8191ed6fff4cb5a6dced837dacb",
+      "reset": "2c8e421e1fd24ce463f765dba365eacb859797facb82d42f180deb42d80a0ddb",
+      "under-target": "b09bf8b979c213a7ae6617327f9a060ea2c9b2af515eb4b8662ab94dc415e955"
+     },
      "name": "examples/energy-accuracy synthetic fixtures",
      "origin": "synthetic_fixture",
      "seed": null
@@ -167,6 +194,12 @@
     ],
     "generator": {
      "fixture": "under-target",
+     "fixture_sha256": {
+      "baseline": "3ff4cb68be07e36d9796fb83402b0f72a46a3f1edff0d9e70addc9ab1695ef81",
+      "missing": "0cffbd14cfcd2d0f14cc906dca689df4de1fd8191ed6fff4cb5a6dced837dacb",
+      "reset": "2c8e421e1fd24ce463f765dba365eacb859797facb82d42f180deb42d80a0ddb",
+      "under-target": "b09bf8b979c213a7ae6617327f9a060ea2c9b2af515eb4b8662ab94dc415e955"
+     },
      "name": "examples/energy-accuracy synthetic fixtures",
      "origin": "synthetic_fixture",
      "seed": null
@@ -215,6 +248,12 @@
     ],
     "generator": {
      "fixture": "baseline",
+     "fixture_sha256": {
+      "baseline": "3ff4cb68be07e36d9796fb83402b0f72a46a3f1edff0d9e70addc9ab1695ef81",
+      "missing": "0cffbd14cfcd2d0f14cc906dca689df4de1fd8191ed6fff4cb5a6dced837dacb",
+      "reset": "2c8e421e1fd24ce463f765dba365eacb859797facb82d42f180deb42d80a0ddb",
+      "under-target": "b09bf8b979c213a7ae6617327f9a060ea2c9b2af515eb4b8662ab94dc415e955"
+     },
      "name": "examples/energy-accuracy synthetic fixtures",
      "origin": "synthetic_fixture",
      "seed": null
@@ -239,32 +278,33 @@
    "assigned_by": "ciw.lab.evidence",
    "basis": {
     "notes": [
-     "the fixtures are synthetic and no GPU counter was read here"
+     "no operator NVML log was supplied (CIW_LAB_ENERGY_LOG); the repository fixtures are synthetic, so no physical energy per accepted result was measured"
     ]
    },
    "claim": "Physical GPU energy per accepted numerical result",
    "domain": "physical",
    "evidence_status": "not_established",
    "uncertainty": null,
-   "unit": "J/accepted solve",
+   "unit": "J/accepted replica solve",
    "value": null
   }
  ],
  "generated_artifacts": [
   {
-   "bytes": 1887,
+   "bytes": 2629,
    "path": "artifacts/T119/energy-per-accepted-result.json",
-   "sha256": "3450a18edf4ab977c6c5c66c5409e893ff5c5e1b05c994fc0a425e8c9e0b2f29"
+   "sha256": "89e4a5bfe940d138d6bc0f178cd0d16c330484724088796c17cb37ecda72c249"
   }
  ],
  "hypothesis": "Energy per accepted result is well defined only when counter brackets are valid and every counted solve meets the declared accuracy target; otherwise it must be withheld. Its denominator must say whether it counts replica solves or distinct results.",
  "input_data": [
-  "examples/energy-accuracy/{baseline,reset,missing,under-target}.json: synthetic fixtures (origin synthetic_fixture) constructed on the CPU, not hardware captures"
+  "examples/energy-accuracy/{baseline,reset,missing,under-target}.json: synthetic fixtures (origin synthetic_fixture) constructed on the CPU, not hardware captures",
+  "optional operator NVML log named by CIW_LAB_ENERGY_LOG (written by `ciw energy record` on a GPU host)"
  ],
- "mathematical_model": "E_acc = Delta E_measurement / #{replica solves with KL(q || p) <= target}; replicas in a batch are bitwise-identical copies of one result (constant-row encoding), so E per distinct accepted result = Delta E / #{accepted batch outputs}; boundary-dependent (measurement phase only, gross, no idle subtraction).",
+ "mathematical_model": "E_acc = Delta E_measurement / #{replica solves with KL(q || p) <= target}; replicas in a batch are bitwise-identical copies of one result (constant-row encoding), so E per distinct accepted result = Delta E / #{distinct accepted output byte strings}; boundary-dependent (measurement phase only, gross, no idle subtraction).",
  "number": 119,
- "numerical_result": "baseline E_acc = 0.05 J per accepted replica solve and 0.2 J per distinct accepted result (synthetic); withheld for ['missing', 'reset', 'under-target']; naive under-target ratio 0.05 J/solve with 0 accepted; whole-run boundary ratio 7.",
- "observation_model": "Counter readings and retained batch outputs from each fixture; outputs decoded directly from the constant-row values and scored with a textbook Gaussian KL against an information-form posterior written in this module.",
+ "numerical_result": "baseline E_acc = 0.05 J per accepted replica solve and 0.2 J per distinct accepted result (synthetic); withheld for ['missing', 'reset', 'under-target']; naive under-target ratio 0.05 J/solve with 0 accepted; whole-run boundary ratio 7; physical energy per accepted result not measured: no operator NVML log was supplied (CIW_LAB_ENERGY_LOG); the repository fixtures are synthetic, so no physical energy per accepted result was measured.",
+ "observation_model": "Counter readings and retained batch outputs from each fixture (and from an operator log when supplied); outputs decoded directly from the constant-row values and scored with a textbook Gaussian KL against an information-form posterior written in this module.",
  "physical_validation_status": {
   "statement": "Physical validation requires acquired hardware evidence; none was acquired for this task.",
   "status": "not_established"
@@ -277,14 +317,14 @@
   "python": "3.12.3",
   "scipy": "1.16.2",
   "sources": {
-   "src/ciw/lab/energy_gpu.py": "fca900557e7fac2261a168afe0ee81efc48508a874a5045bf4f6b74937165bb1",
-   "src/ciw/lab/energy_gpu_kernels.py": "03f3d92f8407f476cb74536911d476929843ee74232a7d7017c00f43c785a2b4",
-   "src/ciw/lab/energy_gpu_telemetry.py": "21cac5f654ce4a120887ff40da62fda47bd38a3c383bbad6cc3cb13b4168fa2d"
+   "src/ciw/lab/energy_gpu.py": "a66107417b5bfa398077a919b2f5351ca222e9961fa8dfb3256b78efc17fd930",
+   "src/ciw/lab/energy_gpu_kernels.py": "366c477ff1af7f59b626f4e64bf994ae4cbce5754c0e9c5be1c2acb515f99f4b",
+   "src/ciw/lab/energy_gpu_telemetry.py": "df82c8748d3aa75384e3928bffcf516cd6f72cccde99edf8d21f089cc768bafa"
   },
   "sympy": "1.14.0"
  },
- "recommended_next_task": "T116 on the RTX 2080 host, then rerun T119 on the captured log",
- "report_id": "sha256:b9c9b44d7428e93b4d0ec165d4a6c6a2d28c3bf52d4483e65814e5bce0bb9969",
+ "recommended_next_task": "On the RTX 2080 host: capture with the T116 protocol, then run `CIW_LAB_ENERGY_LOG=runs/rtx2080-<date>/capture/log.json ciw lab run T116 T119` there; T119 then reports physical energy per accepted replica solve through the same acquisition gate as T116",
+ "report_id": "sha256:551b36ea35b7808063e45457de0c792f6f864a437a0f2316c3b36ea8ac42456a",
  "schema": "ciw.lab-task-report.v1",
  "section": "energy-gpu",
  "state": "partial",
@@ -292,12 +332,14 @@
  "tests_passed": [
   "check: Energy per accepted replica solve of the synthetic baseline fixture, recomputed from raw counter readings, directly decoded outputs and a textbook Gaussian KL, equals the CIW analysis value vs energy_records.analyze amortized_domain_energy_j_per_qualified_solve",
   "check: Energy per accepted replica solve of the synthetic baseline fixture, recomputed from raw counter readings, directly decoded outputs and a textbook Gaussian KL, equals the CIW analysis value vs largest per-batch KL difference to energy_records.analyze",
-  "check: Energy per distinct accepted result (one batch output; its replicas are bitwise copies) of the synthetic baseline fixture vs accepted replica solves minus replicas per batch times accepted batch outputs",
-  "check: The metric is withheld for the reset, missing-bracket and under-target fixtures vs three fixtures with a declared defect",
+  "check: Energy per distinct accepted result (one batch output; its replicas are bitwise copies) of the synthetic baseline fixture vs distinct binary64 byte strings among the accepted outputs minus accepted batch outputs",
+  "check: The metric is withheld for the reset, missing-bracket and under-target fixtures vs fixtures in the symmetric difference of the withheld set and {reset, missing, under-target}",
+  "check: The metric is withheld for the reset, missing-bracket and under-target fixtures vs declared defects (reset_or_wrap_ambiguous, missing_endpoint_brackets, accuracy_target_not_met_by_every_batch) absent from their fixture's analysis reasons",
   "check: Dividing gross energy by executed solves reports a finite energy per result for the under-target fixture although no result is accepted vs accepted solves in the under-target fixture",
   "check: Widening the boundary from the measurement phase to the whole run multiplies the baseline energy per accepted result by 7 vs (2400 - 1000) mJ / (2100 - 1900) mJ",
   "pytest: tests/test_lab_energy_gpu.py::test_energy_per_accepted_result_on_fixtures",
   "pytest: tests/test_lab_energy_gpu.py::test_textbook_kl_matches_closed_form_values",
+  "pytest: tests/test_lab_energy_gpu.py::test_t119_operator_log_is_gated_like_t116",
   "pytest: tests/test_lab_energy_gpu.py::test_fixture_tasks_without_repository_files",
   "pytest: tests/test_lab_energy_gpu.py::test_every_numerical_finding_declares_uncertainty_and_tolerance"
  ],
@@ -305,8 +347,9 @@
  "title": "Measure energy per accepted numerical result.",
  "uncertainty": "Synthetic values carry no physical uncertainty model; a real NVML counter has undeclared resolution and background-inclusive scope.",
  "unresolved_assumptions": [
-  "The physical measurement part (T116) could not run here",
   "Idle subtraction and first-attainment accounting are intentionally not applied",
-  "The recomputation shares its origin (ciw) with energy_records, so it is a cross-implementation check, not independent verification"
+  "The recomputation shares its origin (ciw) with energy_records, so it is a cross-implementation check, not independent verification",
+  "An operator log is an unauthenticated record; the gate binds it to this host's NVML identity but cannot prove the capture genuine",
+  "no operator NVML log was supplied (CIW_LAB_ENERGY_LOG); the repository fixtures are synthetic, so no physical energy per accepted result was measured"
  ]
 }

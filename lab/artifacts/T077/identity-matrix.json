@@ -14,8 +14,8 @@
    "properties": {
     "recomputed_from_scientific_fields": true,
     "render_excluded": true,
-    "retained_across_reopen": true,
-    "sample_edit_refused": true
+    "sample_edit_refused": true,
+    "stable_across_reopen": true
    },
    "scope": "oscillator recording",
    "validated_at": [
@@ -34,7 +34,8 @@
    "identity": "recording file name",
    "properties": {
     "file_is_reserialization_not_input_bytes": true,
-    "recomputed_from_run": true
+    "recomputed_from_run": true,
+    "stable_across_reopen": true
    },
    "scope": "oscillator recording",
    "validated_at": [
@@ -54,7 +55,7 @@
     "equals_bundle_artifact_ref": true,
     "label_independent": true,
     "recomputed_sha256_of_bytes": true,
-    "retained_across_reopen": true
+    "stable_across_reopen": true
    },
    "scope": "workbench source",
    "validated_at": [
@@ -75,7 +76,8 @@
     "byte_bound_under_one_label": true,
     "label_bound": true,
     "recomputed_from_descriptor": true,
-    "same_bytes_and_label_same_id_across_sessions": true
+    "same_bytes_and_label_same_id_across_sessions": true,
+    "stable_across_reopen": true
    },
    "scope": "workbench source",
    "validated_at": [
@@ -95,6 +97,7 @@
    "properties": {
     "byte_layout_insensitive": true,
     "recomputed_from_parsed_content": true,
+    "stable_across_reopen": true,
     "stable_across_replay_and_sessions": true
    },
    "scope": "energy bundle source",
@@ -112,6 +115,7 @@
    "identity": "energy log run_id (bundle experiment_id)",
    "properties": {
     "copied_from_log": true,
+    "stable_across_reopen": true,
     "unchanged_by_resealed_content_edit": true
    },
    "scope": "energy log",
@@ -134,8 +138,8 @@
    },
    "properties": {
     "device_uuid_copied_into_analysis": true,
-    "fixture_hashes_are_placeholders": true,
     "resealed_edit_accepted_format_only": true,
+    "stable_across_reopen": true,
     "unsealed_edit_refused_by_log_digest": true
    },
    "scope": "energy log",
@@ -154,6 +158,7 @@
    "identity": "oscillator operation_id",
    "properties": {
     "same_for_repeat": true,
+    "stable_across_reopen": true,
     "versioned_name": true
    },
    "scope": "oscillator operation",
@@ -172,6 +177,7 @@
    "identity": "energy operation_id",
    "properties": {
     "constant_across_occurrences": true,
+    "stable_across_reopen": true,
     "versioned_name": true
    },
    "scope": "energy bundle step",
@@ -191,6 +197,7 @@
    "properties": {
     "fresh_per_execution": true,
     "result_links_execution": true,
+    "stable_across_reopen": true,
     "uuid4_form": true
    },
    "scope": "oscillator execution",
@@ -211,6 +218,7 @@
    "properties": {
     "fresh_per_occurrence": true,
     "result_execution_ref_matches": true,
+    "stable_across_reopen": true,
     "uuid4_form": true
    },
    "scope": "energy bundle step",
@@ -229,6 +237,7 @@
    "identity": "oscillator result_id",
    "properties": {
     "fresh_per_execution": true,
+    "stable_across_reopen": true,
     "uuid4_form": true
    },
    "scope": "oscillator result",
@@ -253,7 +262,8 @@
     "ciw_accepts_recomputed_result_id": true,
     "ciw_refuses_stale_result_id_after_occurrence_change": true,
     "fresh_per_occurrence": true,
-    "recomputed_from_result": true
+    "recomputed_from_result": true,
+    "stable_across_reopen": true
    },
    "scope": "energy bundle step",
    "validated_at": [
@@ -273,7 +283,8 @@
     "metadata_only_resealed_edit_changes_it": true,
     "occurrence_change_leaves_it_unchanged": true,
     "recomputed_from_operation_and_data": true,
-    "single_value_across_replay_reopen_and_sessions": true
+    "single_value_across_replay_reopen_and_sessions": true,
+    "stable_across_reopen": true
    },
    "scope": "energy bundle step",
    "validated_at": [
@@ -291,6 +302,7 @@
    "identity": "oscillator numerical-result identity",
    "properties": {
     "absent": true,
+    "absent_after_reopen": true,
     "equal_data_distinct_ids": true
    },
    "scope": "oscillator result",
@@ -310,7 +322,8 @@
     "exchange_status_not_authenticated": true,
     "fresh_per_reproduction": true,
     "receipt_subject_is_source": true,
-    "recomputed": true
+    "recomputed": true,
+    "stable_across_reopen": true
    },
    "scope": "energy verification",
    "validated_at": [
@@ -328,7 +341,8 @@
    "exercised": true,
    "identity": "oscillator verification_id",
    "properties": {
-    "null_and_not_verified": true
+    "null_and_not_verified": true,
+    "stable_across_reopen": true
    },
    "scope": "oscillator result",
    "validated_at": [
@@ -348,6 +362,7 @@
     "fresh_per_execution_and_replay": true,
     "receipts_excluded": true,
     "recomputed_excluding_verification_and_receipts": true,
+    "stable_across_reopen": true,
     "verification_excluded": true
    },
    "scope": "energy bundle",
@@ -367,6 +382,7 @@
    "identity": "bundle session_id",
    "properties": {
     "fresh_per_bundle": true,
+    "stable_across_reopen": true,
     "uuid4_form": true
    },
    "scope": "energy bundle",
@@ -403,7 +419,8 @@
    "identity": "replay_id",
    "properties": {
     "fresh_per_replay": true,
-    "recomputed": true
+    "recomputed": true,
+    "stable_across_reopen": true
    },
    "scope": "energy replay receipt",
    "validated_at": [
@@ -421,7 +438,8 @@
    "identity": "oscillator record_digest (seal)",
    "properties": {
     "legacy_result_unsealed": true,
-    "recomputed_without_secret": true
+    "recomputed_without_secret": true,
+    "stable_across_reopen": true
    },
    "scope": "oscillator execution and result",
    "validated_at": [
@@ -439,7 +457,8 @@
    "identity": "oscillator runtime identity",
    "properties": {
     "declared_by_provider": true,
-    "no_code_digest": true
+    "no_code_digest": true,
+    "stable_across_reopen": true
    },
    "scope": "oscillator execution and result",
    "validated_at": [
@@ -456,7 +475,8 @@
    "identity": "energy runtime identity",
    "properties": {
     "equals_current_analysis_identity": true,
-    "stable_across_occurrences": true
+    "stable_across_occurrences": true,
+    "stable_across_reopen": true
    },
    "scope": "energy bundle",
    "validated_at": [
@@ -558,6 +578,22 @@
    "scope": "workbench candidate receipt",
    "validated_at": [
     "src/ciw/workbench.py:Workbench._validate_candidate"
+   ]
+  },
+  {
+   "across_reopen": "pin and format checked",
+   "across_replay": "compared on replay (runtime projection without host paths)",
+   "binds": "the pinned provider revision plus host-measured tree and interpreter digests (format-checked on reopen)",
+   "derivation": "revision, module and source_root must equal CIW's pin; source_tree (40 hex), python_sha256 (64 hex), python_version and dependencies are reported by the host adapter",
+   "derivation_class": "provider_pinned",
+   "exercised": false,
+   "identity": "pinned-provider runtime identity (ciw.subprocess-runtime.v1)",
+   "properties": {},
+   "scope": "provider-backed bundle runtime",
+   "validated_at": [
+    "src/ciw/declared_workload.py:DeclaredWorkflow._validate",
+    "src/ciw/declared_workload.py:DeclaredWorkflow._runtime_projection",
+    "src/ciw/workbench.py:_validate_links"
    ]
   }
  ],

@@ -55,9 +55,9 @@
     "rel": 1e-06
    },
    "uncertainty": {
-    "basis": "each standardized moment has unit sampling standard deviation; the bound is family-wise",
+    "basis": "null sampling spread of the reported max |z| over 28 standardized mean and covariance moments: half-width of the central 95% interval of the maximum of that many independent |N(0, 1)| (dependence among the moments changes it)",
     "kind": "monte_carlo_95ci",
-    "value": 1.96
+    "value": 0.8891841122369775
    },
    "unit": null,
    "value": {
@@ -348,15 +348,15 @@
   "python": "3.12.3",
   "scipy": "1.16.2",
   "sources": {
-   "src/ciw/lab/sensor_fusion.py": "65b367d0079a3a037969f69ceec717d0ec7279bb12bfc0d53ed5c08887b46a15",
+   "src/ciw/lab/sensor_fusion.py": "40b135c5bf93c1932bc774d41ddaef98419aceb524fba12ce16c1786e00f15d2",
    "src/ciw/lab/sensor_fusion_bench.py": "f373849a4c6836fa20685c59ce7a6fe6bf732f6df9d6a49646cdc017262dd656",
-   "src/ciw/lab/sensor_fusion_common.py": "6787aa47d199d50d0b4de4d7e53714ce7b8b5aad37d647cfc1a954414e90209f",
-   "src/ciw/lab/sensor_fusion_objects.py": "a795ffc235e0a4118cb7b9ac7800191a90984372d79e59f1a934442d98d7a1f1"
+   "src/ciw/lab/sensor_fusion_common.py": "db3b0430ad5c13920239cef354da61b64ab1b01f84b2d3d5aff2f78840a5867a",
+   "src/ciw/lab/sensor_fusion_objects.py": "93fc55ddca91f1adfb886d21805ea8f82586548ee84e1f6cc7daed4df1f53bb9"
   },
   "sympy": "1.14.0"
  },
  "recommended_next_task": "T062: test independent versus correlated noise in the filter.",
- "report_id": "sha256:82b11cb88d72d9957ccc4eafe23c57ee960b8098511ec420414d54e0d6398f3f",
+ "report_id": "sha256:41901b2978f20a6c7b4e0cd510b4a2ec6bca010652cc51f20ea3c3244ffccaf7",
  "schema": "ciw.lab-task-report.v1",
  "section": "sensor-fusion",
  "state": "completed",

@@ -272,6 +272,51 @@
    1.8108975072833187
   ]
  },
+ "declared_latency": {
+  "api_readings": 995,
+  "api_runs": 5,
+  "codes": {
+   "lagged_reading_after_newer_reference": "out_of_order",
+   "lagged_reading_before_tick_0": "out_of_order",
+   "prediction_backwards": "out_of_order",
+   "undelayed_reading_older_than_clock": "out_of_order"
+  },
+  "lagged_reading_at_clock_fused_at": 5,
+  "latency_ticks": 1,
+  "max_relative_difference_from_timed_filter": 4.1406820185214455e-16,
+  "readings_fused_at_another_tick": 0,
+  "reference_tick": 5,
+  "refused_reading_dispositions": [
+   "refused:out_of_order",
+   "refused:out_of_order",
+   "refused:out_of_order"
+  ],
+  "session_refusals_changing_state": 0,
+  "timed_nees": {
+   "fraction_above": 0.0,
+   "fraction_below": 0.0,
+   "fraction_inside": 1.0,
+   "grand_mean": 3.983010121556724,
+   "interval": [
+    3.5036250326357607,
+    4.533930905960961
+   ],
+   "runs": 200,
+   "ticks": 149
+  },
+  "timed_position_error_mean": [
+   0.0023187347370621815,
+   0.002291082437203197
+  ],
+  "timed_position_error_mean_z": [
+   1.3958384571301872,
+   1.4538945865484898
+  ],
+  "timed_position_error_se": [
+   0.0016611769973937016,
+   0.0015758243124366883
+  ]
+ },
  "runs": 200,
  "seed": 702026,
  "tau_s": 0.1,
@@ -347,5 +392,5 @@
    -1.173428275251129
   ]
  },
- "z_critical": 4.003167571450172
+ "z_critical": 4.030934372846465
 }

@@ -1,0 +1,722 @@
+{
+ "drift": {
+  "g12_at_start": 1.4653034249551195e-17,
+  "grid_distance": 0.005309649148733886,
+  "max_abs_momentum": 7.350170740135669e-14,
+  "max_abs_v_phi": 2.4692436105680155e-10,
+  "steps": 400,
+  "v_phi_at_start": 0.0
+ },
+ "near_pole": 0.0001,
+ "rows": [
+  {
+   "error": 1.5432524357306513e-14,
+   "failure": null,
+   "grid_distance": 0.005309649148733442,
+   "steps": 350
+  },
+  {
+   "error": 1.244659869742975e-13,
+   "failure": null,
+   "grid_distance": 0.002445519094179005,
+   "steps": 351
+  },
+  {
+   "error": 6.674518536675094e-11,
+   "failure": null,
+   "grid_distance": 0.00040233749415641284,
+   "steps": 352
+  },
+  {
+   "error": 1.6786135233326974e-14,
+   "failure": null,
+   "grid_distance": 0.0032340589176861334,
+   "steps": 353
+  },
+  {
+   "error": 2.9150966360207644e-14,
+   "failure": null,
+   "grid_distance": 0.006049781915093533,
+   "steps": 354
+  },
+  {
+   "error": null,
+   "failure": "FloatingPointError: rk4 produced a nonfinite state at step 236",
+   "grid_distance": 8.491367164964458e-08,
+   "steps": 355
+  },
+  {
+   "error": 2.192966255365862e-14,
+   "failure": null,
+   "grid_distance": 0.006015625025944882,
+   "steps": 356
+  },
+  {
+   "error": 1.8793312341931574e-14,
+   "failure": null,
+   "grid_distance": 0.0031976540874969483,
+   "steps": 357
+  },
+  {
+   "error": 1.1071486579678443e-10,
+   "failure": null,
+   "grid_distance": 0.0003954260034531032,
+   "steps": 358
+  },
+  {
+   "error": 3.704828747224066e-14,
+   "failure": null,
+   "grid_distance": 0.002391190782071395,
+   "steps": 359
+  },
+  {
+   "error": 5.649173809957249e-14,
+   "failure": null,
+   "grid_distance": 0.005162326363231884,
+   "steps": 360
+  },
+  {
+   "error": 3.496008195282308e-12,
+   "failure": null,
+   "grid_distance": 0.0007843633319293275,
+   "steps": 361
+  },
+  {
+   "error": 5.061997294779438e-14,
+   "failure": null,
+   "grid_distance": 0.00669819838788932,
+   "steps": 362
+  },
+  {
+   "error": 2.937961439044964e-14,
+   "failure": null,
+   "grid_distance": 0.0039249251140938135,
+   "steps": 363
+  },
+  {
+   "error": 7.026241158403011e-13,
+   "failure": null,
+   "grid_distance": 0.001166889605538124,
+   "steps": 364
+  },
+  {
+   "error": 6.762610947577893e-13,
+   "failure": null,
+   "grid_distance": 0.0015760333796822623,
+   "steps": 365
+  },
+  {
+   "error": 3.807308565594421e-14,
+   "failure": null,
+   "grid_distance": 0.004303967714710311,
+   "steps": 366
+  },
+  {
+   "error": 3.6188538730417357e-13,
+   "failure": null,
+   "grid_distance": 0.0015431620436130444,
+   "steps": 367
+  },
+  {
+   "error": 3.045009506939659e-13,
+   "failure": null,
+   "grid_distance": 0.007358513922813614,
+   "steps": 368
+  },
+  {
+   "error": 4.912976517429197e-14,
+   "failure": null,
+   "grid_distance": 0.0038852561788464968,
+   "steps": 369
+  },
+  {
+   "error": 2.0856546115993845e-13,
+   "failure": null,
+   "grid_distance": 0.0019133327664746513,
+   "steps": 370
+  },
+  {
+   "error": 7.277662348221456e-12,
+   "failure": null,
+   "grid_distance": 0.0007872422544592528,
+   "steps": 371
+  },
+  {
+   "error": 3.694412578761876e-14,
+   "failure": null,
+   "grid_distance": 0.0034732980548505266,
+   "steps": 372
+  },
+  {
+   "error": 2.141989681430417e-14,
+   "failure": null,
+   "grid_distance": 0.0022775490004969257,
+   "steps": 373
+  },
+  {
+   "error": 9.882510654708607e-11,
+   "failure": null,
+   "grid_distance": 0.00799764286303506,
+   "steps": 374
+  },
+  {
+   "error": 5.472292633587703e-14,
+   "failure": null,
+   "grid_distance": 0.003067931260839707,
+   "steps": 375
+  },
+  {
+   "error": 2.0782106558399215e-14,
+   "failure": null,
+   "grid_distance": 0.0026359532733382096,
+   "steps": 376
+  },
+  {
+   "error": 1.5442316517919937e-06,
+   "failure": null,
+   "grid_distance": 2.3558539057888517e-05,
+   "steps": 377
+  },
+  {
+   "error": 3.606256532952957e-14,
+   "failure": null,
+   "grid_distance": 0.002668998860382743,
+   "steps": 378
+  },
+  {
+   "error": 4.3544243493354736e-14,
+   "failure": null,
+   "grid_distance": 0.00298868359990756,
+   "steps": 379
+  },
+  {
+   "error": 1.1931208892476426e-10,
+   "failure": null,
+   "grid_distance": 0.00791810939269677,
+   "steps": 380
+  },
+  {
+   "error": 1.328380653305487e-13,
+   "failure": null,
+   "grid_distance": 0.0022763488599339965,
+   "steps": 381
+  },
+  {
+   "error": 2.3859465138216253e-14,
+   "failure": null,
+   "grid_distance": 0.0033358736595674454,
+   "steps": 382
+  },
+  {
+   "error": 4.411662153334368e-12,
+   "failure": null,
+   "grid_distance": 0.0007161977492291527,
+   "steps": 383
+  },
+  {
+   "error": 8.220651991267915e-14,
+   "failure": null,
+   "grid_distance": 0.0018898340157428306,
+   "steps": 384
+  },
+  {
+   "error": 3.594432772709238e-14,
+   "failure": null,
+   "grid_distance": 0.0036776529650515144,
+   "steps": 385
+  },
+  {
+   "error": 6.017019108187676e-14,
+   "failure": null,
+   "grid_distance": 0.0070613892799098466,
+   "steps": 386
+  },
+  {
+   "error": 1.347635419462317e-13,
+   "failure": null,
+   "grid_distance": 0.0015093116497562065,
+   "steps": 387
+  },
+  {
+   "error": 3.437445960052691e-14,
+   "failure": null,
+   "grid_distance": 0.004014147023542192,
+   "steps": 388
+  },
+  {
+   "error": 1.2769317883738951e-13,
+   "failure": null,
+   "grid_distance": 0.001433133792119179,
+   "steps": 389
+  },
+  {
+   "error": 1.5415740779562208e-13,
+   "failure": null,
+   "grid_distance": 0.001134643474014485,
+   "steps": 390
+  },
+  {
+   "error": 3.1332403890338754e-14,
+   "failure": null,
+   "grid_distance": 0.003689286329579655,
+   "steps": 391
+  },
+  {
+   "error": 2.2331657610060936e-13,
+   "failure": null,
+   "grid_distance": 0.006230895293024674,
+   "steps": 392
+  },
+  {
+   "error": 4.511603835599013e-12,
+   "failure": null,
+   "grid_distance": 0.0007656954230945701,
+   "steps": 393
+  },
+  {
+   "error": 2.048752578579731e-14,
+   "failure": null,
+   "grid_distance": 0.004671762315517469,
+   "steps": 394
+  },
+  {
+   "error": 1.433329928553442e-13,
+   "failure": null,
+   "grid_distance": 0.0021282894995289237,
+   "steps": 395
+  },
+  {
+   "error": 4.457064934252654e-11,
+   "failure": null,
+   "grid_distance": 0.00040233749415641284,
+   "steps": 396
+  },
+  {
+   "error": 2.925612782841567e-14,
+   "failure": null,
+   "grid_distance": 0.002920215737244436,
+   "steps": 397
+  },
+  {
+   "error": 3.334670700904408e-14,
+   "failure": null,
+   "grid_distance": 0.005425441325844105,
+   "steps": 398
+  },
+  {
+   "error": 3.105872600465375e-07,
+   "failure": null,
+   "grid_distance": 4.444359422617339e-05,
+   "steps": 399
+  },
+  {
+   "error": 7.419744198533214e-14,
+   "failure": null,
+   "grid_distance": 0.005309649148733886,
+   "steps": 400
+  },
+  {
+   "error": 8.608583012735407e-14,
+   "failure": null,
+   "grid_distance": 0.002802642542377942,
+   "steps": 401
+  },
+  {
+   "error": 5.6387897078005736e-11,
+   "failure": null,
+   "grid_distance": 0.00030810860570529286,
+   "steps": 402
+  },
+  {
+   "error": 1.7114030306697675e-14,
+   "failure": null,
+   "grid_distance": 0.0021740455099416023,
+   "steps": 403
+  },
+  {
+   "error": 2.4921365899204667e-14,
+   "failure": null,
+   "grid_distance": 0.004643911733926975,
+   "steps": 404
+  },
+  {
+   "error": 3.926915640686241e-12,
+   "failure": null,
+   "grid_distance": 0.000655437810082482,
+   "steps": 405
+  },
+  {
+   "error": 7.058567245449745e-14,
+   "failure": null,
+   "grid_distance": 0.005928682183923506,
+   "steps": 406
+  },
+  {
+   "error": 1.87637750235242e-14,
+   "failure": null,
+   "grid_distance": 0.003457112940228768,
+   "steps": 407
+  },
+  {
+   "error": 1.1073891566465348e-13,
+   "failure": null,
+   "grid_distance": 0.0009976592320419808,
+   "steps": 408
+  },
+  {
+   "error": 1.3040067053831366e-13,
+   "failure": null,
+   "grid_distance": 0.0014497678076452747,
+   "steps": 409
+  },
+  {
+   "error": 6.131210955452005e-14,
+   "failure": null,
+   "grid_distance": 0.0038852561788461637,
+   "steps": 410
+  },
+  {
+   "error": 4.58557611361003e-13,
+   "failure": null,
+   "grid_distance": 0.0013348847208343173,
+   "steps": 411
+  },
+  {
+   "error": 2.381989391816981e-13,
+   "failure": null,
+   "grid_distance": 0.00652968513070995,
+   "steps": 412
+  },
+  {
+   "error": 2.1941726123212246e-14,
+   "failure": null,
+   "grid_distance": 0.0035141946240608846,
+   "steps": 413
+  },
+  {
+   "error": 6.208653637048345e-14,
+   "failure": null,
+   "grid_distance": 0.0016672228837020242,
+   "steps": 414
+  },
+  {
+   "error": 2.505214940145159e-12,
+   "failure": null,
+   "grid_distance": 0.0007464330750537318,
+   "steps": 415
+  },
+  {
+   "error": 7.52835814745123e-14,
+   "failure": null,
+   "grid_distance": 0.0031484849186234065,
+   "steps": 416
+  },
+  {
+   "error": 7.019961035718115e-14,
+   "failure": null,
+   "grid_distance": 0.0019947792024996858,
+   "steps": 417
+  },
+  {
+   "error": 2.534370664177196e-12,
+   "failure": null,
+   "grid_distance": 0.007113434404383057,
+   "steps": 418
+  },
+  {
+   "error": 2.1671297674103912e-14,
+   "failure": null,
+   "grid_distance": 0.0027880121063423857,
+   "steps": 419
+  },
+  {
+   "error": 1.143018906263516e-13,
+   "failure": null,
+   "grid_distance": 0.0023176561453150946,
+   "steps": 420
+  },
+  {
+   "error": 2.100344682764241e-08,
+   "failure": null,
+   "grid_distance": 6.314588828437717e-05,
+   "steps": 421
+  },
+  {
+   "error": 8.193583818455251e-14,
+   "failure": null,
+   "grid_distance": 0.0024326644999232983,
+   "steps": 422
+  },
+  {
+   "error": 6.223164870074554e-14,
+   "failure": null,
+   "grid_distance": 0.0026359532733382096,
+   "steps": 423
+  },
+  {
+   "error": 4.407766804657663e-11,
+   "failure": null,
+   "grid_distance": 0.007138170799452115,
+   "steps": 424
+  },
+  {
+   "error": 2.44291956632088e-14,
+   "failure": null,
+   "grid_distance": 0.0020823335655952846,
+   "steps": 425
+  },
+  {
+   "error": 4.064634674418625e-14,
+   "failure": null,
+   "grid_distance": 0.0029497673432201665,
+   "steps": 426
+  },
+  {
+   "error": 2.3785842048232564e-12,
+   "failure": null,
+   "grid_distance": 0.0006009388482715039,
+   "steps": 427
+  },
+  {
+   "error": 3.2052594901285366e-14,
+   "failure": null,
+   "grid_distance": 0.0017369138125891137,
+   "steps": 428
+  },
+  {
+   "error": 2.1069923631608864e-14,
+   "failure": null,
+   "grid_distance": 0.003259192405132616,
+   "steps": 429
+  },
+  {
+   "error": 1.1908478010641633e-13,
+   "failure": null,
+   "grid_distance": 0.006379997934391035,
+   "steps": 430
+  },
+  {
+   "error": 1.252296533198451e-13,
+   "failure": null,
+   "grid_distance": 0.001396302687235007,
+   "steps": 431
+  },
+  {
+   "error": 2.9299004382198737e-14,
+   "failure": null,
+   "grid_distance": 0.003564319896739221,
+   "steps": 432
+  },
+  {
+   "error": 6.014082961596447e-13,
+   "failure": null,
+   "grid_distance": 0.0012466193888946986,
+   "steps": 433
+  },
+  {
+   "error": 1.5148341221328687e-14,
+   "failure": null,
+   "grid_distance": 0.0010604004714482862,
+   "steps": 434
+  },
+  {
+   "error": 3.2909758509651295e-14,
+   "failure": null,
+   "grid_distance": 0.003356813343927789,
+   "steps": 435
+  },
+  {
+   "error": 7.055176056637598e-14,
+   "failure": null,
+   "grid_distance": 0.005642692212404654,
+   "steps": 436
+  },
+  {
+   "error": 1.0435830838299465e-12,
+   "failure": null,
+   "grid_distance": 0.0007291101853974524,
+   "steps": 437
+  },
+  {
+   "error": 3.20933677380605e-14,
+   "failure": null,
+   "grid_distance": 0.004162035393997954,
+   "steps": 438
+  },
+  {
+   "error": 6.034209606484858e-14,
+   "failure": null,
+   "grid_distance": 0.001874650347542195,
+   "steps": 439
+  },
+  {
+   "error": 2.2769037409121032e-11,
+   "failure": null,
+   "grid_distance": 0.0004023374941567459,
+   "steps": 440
+  },
+  {
+   "error": 3.7700409699607045e-14,
+   "failure": null,
+   "grid_distance": 0.002668998860383187,
+   "steps": 441
+  },
+  {
+   "error": 4.846114166294441e-14,
+   "failure": null,
+   "grid_distance": 0.004925403840337017,
+   "steps": 442
+  },
+  {
+   "error": 3.515604036849246e-08,
+   "failure": null,
+   "grid_distance": 7.999061814700781e-05,
+   "steps": 443
+  },
+  {
+   "error": 2.243739707408395e-14,
+   "failure": null,
+   "grid_distance": 0.00474359641835731,
+   "steps": 444
+  },
+  {
+   "error": 1.874863965694112e-14,
+   "failure": null,
+   "grid_distance": 0.0024857456398890143,
+   "steps": 445
+  },
+  {
+   "error": 5.5827372459159774e-11,
+   "failure": null,
+   "grid_distance": 0.00023801975280401955,
+   "steps": 446
+  },
+  {
+   "error": 4.70114972959823e-14,
+   "failure": null,
+   "grid_distance": 0.0019996491951886908,
+   "steps": 447
+  },
+  {
+   "error": 2.372275396537245e-14,
+   "failure": null,
+   "grid_distance": 0.004227328549663789,
+   "steps": 448
+  },
+  {
+   "error": 7.766685840814448e-12,
+   "failure": null,
+   "grid_distance": 0.0005517805419605892,
+   "steps": 449
+  },
+  {
+   "error": 9.174212312142812e-14,
+   "failure": null,
+   "grid_distance": 0.005309649148733886,
+   "steps": 450
+  }
+ ],
+ "step_counts": [
+  350,
+  351,
+  352,
+  353,
+  354,
+  355,
+  356,
+  357,
+  358,
+  359,
+  360,
+  361,
+  362,
+  363,
+  364,
+  365,
+  366,
+  367,
+  368,
+  369,
+  370,
+  371,
+  372,
+  373,
+  374,
+  375,
+  376,
+  377,
+  378,
+  379,
+  380,
+  381,
+  382,
+  383,
+  384,
+  385,
+  386,
+  387,
+  388,
+  389,
+  390,
+  391,
+  392,
+  393,
+  394,
+  395,
+  396,
+  397,
+  398,
+  399,
+  400,
+  401,
+  402,
+  403,
+  404,
+  405,
+  406,
+  407,
+  408,
+  409,
+  410,
+  411,
+  412,
+  413,
+  414,
+  415,
+  416,
+  417,
+  418,
+  419,
+  420,
+  421,
+  422,
+  423,
+  424,
+  425,
+  426,
+  427,
+  428,
+  429,
+  430,
+  431,
+  432,
+  433,
+  434,
+  435,
+  436,
+  437,
+  438,
+  439,
+  440,
+  441,
+  442,
+  443,
+  444,
+  445,
+  446,
+  447,
+  448,
+  449,
+  450
+ ]
+}

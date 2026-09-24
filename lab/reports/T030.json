@@ -239,13 +239,13 @@
   },
   "scipy": "1.16.2",
   "sources": {
-   "src/ciw/lab/flat_torus_topology.py": "4d8cf2437759501a1b9fa5ee0d8abfac43345ebee378c6ad08233e9155d4b184",
+   "src/ciw/lab/flat_torus_topology.py": "1221001d96bf1f9aa2f9fea169a2b10bfb37230da11bfb6f1608ba9355c86b9a",
    "src/ciw/lab/flat_torus_topology_discrete.py": "6c2ed09d3b8968a96dc8e576d2281ccac18af9b48a0a3bc1660f11f630aef72f"
   },
   "sympy": "1.14.0"
  },
  "recommended_next_task": "T031: study route changes under small metric perturbations",
- "report_id": "sha256:d594f334f1b93885dd9897c899c0d7a9ea89645ac7b3c2cc06a4a163e7e8151d",
+ "report_id": "sha256:4823bcb02484bc5d4ebd7342bd05372f814d14abf13efc64ece34ed1643d9567",
  "schema": "ciw.lab-task-report.v1",
  "section": "flat-torus-topology",
  "state": "completed",

@@ -223,7 +223,11 @@
     "runs": 200,
     "ticks": 20
    },
+   "early_grand_nis": 4.1307324105019,
+   "early_predicted_nis": 4.090633987763374,
    "early_se": 0.039332895314896234,
+   "early_z_vs_nominal": 3.323742365144154,
+   "early_z_vs_predicted": 1.0194627783564252,
    "final_nees": 313.793072652473,
    "final_nees_se": 15.331289657476889,
    "final_predicted_nees": 308.36830232417213,
@@ -666,7 +670,11 @@
     "runs": 200,
     "ticks": 20
    },
+   "early_grand_nis": 2.003529489477828,
+   "early_predicted_nis": 2.001239324038783,
    "early_se": 0.031589310401925315,
+   "early_z_vs_nominal": 0.11173050101192071,
+   "early_z_vs_predicted": 0.07249811439077944,
    "final_nees": 343.25789304896057,
    "final_nees_se": 16.804415647323793,
    "final_predicted_nees": 338.25052957256463,
@@ -1109,7 +1117,11 @@
     "runs": 200,
     "ticks": 20
    },
+   "early_grand_nis": 4.035848057635244,
+   "early_predicted_nis": 4.000000000000005,
    "early_se": 0.03850662196660881,
+   "early_z_vs_nominal": 0.9309582561235781,
+   "early_z_vs_predicted": 0.9309582561234531,
    "final_nees": 4.0809639998989296,
    "final_nees_se": 0.19146338878687652,
    "final_predicted_nees": 4.000000000013028,
@@ -1343,5 +1355,5 @@
  "runs": 200,
  "seed": 712026,
  "ticks": 100,
- "z_critical": 3.5879146722879613
+ "z_critical": 3.662259930887615
 }

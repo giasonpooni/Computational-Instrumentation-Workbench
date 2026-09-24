@@ -267,13 +267,13 @@
   "python": "3.12.3",
   "scipy": "1.16.2",
   "sources": {
-   "src/ciw/lab/observation.py": "9ebedc1a1693aaa28965ba0c97837ad2d2c45bf0fd360857cf7b32c0993ed5fc",
+   "src/ciw/lab/observation.py": "6e5bf960e17dffb62bdaf29d28be9a0f165fd68f8498d173b66eab08fa22ad70",
    "src/ciw/lab/observation_modes.py": "bfd6aa4471cc876a7ac2fb8790a4a5c4f478c547350b059311f5e6d53702c83e"
   },
   "sympy": "1.14.0"
  },
  "recommended_next_task": "T057: compare raw, filtered and smoothed measurements",
- "report_id": "sha256:8b6b2e71a6b9b218cf3138991c0d392796590849d804b9ee833d7a081826e0ef",
+ "report_id": "sha256:1d143f4cef7c384dc86b045e49652b77b5456c27c34614f3df271ed7cf46b6b6",
  "schema": "ciw.lab-task-report.v1",
  "section": "observation",
  "state": "completed",

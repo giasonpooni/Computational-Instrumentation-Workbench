@@ -18,14 +18,16 @@
   "primary": "numerically_verified"
  },
  "expected_invariant": "Detection count matches the Poisson-binomial expectation; gated RMSE approaches the oracle for gross outliers except after a cold-start lock-out, which can cancel the mean benefit; false alarms ~1%.",
- "experiment": "Run ungated, gated (p = 0.99) and oracle filters (the oracle skips exactly the contaminated readings) on the same readings; count detections and false alarms; per-run MSE after a 20-tick burn-in; paired per-run MSE tests and a sign test over all runs; identify lock-out runs (>= 5 consecutive valid readings rejected) and, separately and post hoc, compare RMSE without them.",
+ "experiment": "Run ungated, gated (p = 0.99) and oracle filters (the oracle skips exactly the contaminated readings) on the same readings; count detections and false alarms; per-run MSE after a 20-tick burn-in; a sign test over all runs, with the paired mean difference reported descriptively; identify lock-out runs (>= 5 consecutive valid readings rejected) and, separately and post hoc, describe RMSE without them; replay the first 30 runs and every lock-out run through FusionSession(gate_probability=0.99).",
  "failure_modes_checked": [
   "missed small outliers",
   "false alarms on clean data",
   "estimate corruption without gating",
   "cold-start lock-out",
   "oracle comparison",
-  "outcome-conditioned selection (reported separately from the all-run test)"
+  "outcome-conditioned selection (reported descriptively, never as a test)",
+  "reading an absence of significance as an absence of effect",
+  "the fusion API's gate diverging from the experiment helper"
  ],
  "findings": [
   {
@@ -75,18 +77,18 @@
    "basis": {
     "checks": [
      {
-      "comparison": "abs_le",
-      "observed": -0.7022936860857409,
-      "passed": true,
-      "reference": "paired per-run MSE difference gated - ungated (z, not significant)",
-      "reference_kind": "analytic",
-      "tolerance": 3.4807564043462422
-     },
-     {
       "comparison": "ge",
       "observed": 0.8904947576520857,
       "passed": true,
       "reference": "Wilson 99.9% lower bound of the fraction of runs where gating wins",
+      "reference_kind": "analytic",
+      "tolerance": 0.5
+     },
+     {
+      "comparison": "ge",
+      "observed": 0.6180538260207067,
+      "passed": true,
+      "reference": "summed MSE excess of the lock-out runs over the summed gain of the others (decomposition of the realized total)",
       "reference_kind": "analytic",
       "tolerance": 0.5
      }
@@ -97,17 +99,7 @@
      "seed": 682026
     }
    },
-   "claim": "Over all runs with gross outliers, gating lowers the mean squared error in most runs (sign test) but its mean improvement over fusing every reading is not statistically significant, because the cold-start lock-out runs lose heavily",
-   "counterexample": {
-    "statement": "Gating that wins in most runs improves the mean error",
-    "witness": {
-     "gated_better_runs": 374,
-     "paired_z": -0.7022936860857409,
-     "rmse_gated": 0.17795991041645262,
-     "rmse_ungated": 0.1964153397312212,
-     "runs": 400
-    }
-   },
+   "claim": "Over all runs with gross outliers, gating lowers the per-run mean squared error in most runs (sign test), while the cold-start lock-out runs together give back more than half of the summed MSE it gains in the other runs; the mean difference, its paired z and the outcome-conditioned comparison without the lock-out runs are reported descriptively, not as tests",
    "domain": "numerical",
    "evidence_status": "numerically_verified",
    "regression_tolerance": {
@@ -121,12 +113,27 @@
    },
    "unit": null,
    "value": {
-    "paired_mse_difference": {
-     "mean": -0.0069092559662992,
-     "median": -0.016819429476439093,
-     "standard_error": 0.009838129123455724
+    "descriptive": {
+     "paired_mse_difference": {
+      "mean": -0.0069092559662992,
+      "median": -0.016819429476439093,
+      "standard_error": 0.009838129123455724
+     },
+     "paired_mse_z_gated_minus_ungated": -0.7022936860857409,
+     "post_hoc_rmse_without_lockout_runs": {
+      "gated": 0.14123228348840525,
+      "oracle": 0.13777613676893002,
+      "ungated": 0.1962141697122598
+     },
+     "post_hoc_selection": "lock-out runs removed after the fact, selected by the gated filter's own failure; favours gating by construction"
     },
-    "paired_mse_z_gated_minus_ungated": -0.7022936860857409,
+    "lockout_runs": 10,
+    "lockout_runs_lost_by_gating": 3,
+    "lockout_share_of_other_runs_gain": 0.6180538260207067,
+    "mse_difference_sum_gated_minus_ungated_m2": {
+     "lockout_runs": 4.472140187123984,
+     "other_runs": -7.235842573643665
+    },
     "rmse_all_runs": {
      "gated": 0.17795991041645262,
      "oracle": 0.13794394236831456,
@@ -155,53 +162,82 @@
     "checks": [
      {
       "comparison": "abs_le",
-      "observed": 0.02508523464605239,
+      "observed": 0.0,
       "passed": true,
-      "reference": "gated / oracle RMSE minus one",
-      "reference_kind": "analytic",
-      "tolerance": 0.05
+      "reference": "reading-by-reading decisions differing from run_gated",
+      "reference_kind": "exact_arithmetic",
+      "tolerance": 0.0
      },
      {
-      "comparison": "ge",
-      "observed": 1.4241520651819304,
+      "comparison": "abs_le",
+      "observed": 0.0,
       "passed": true,
-      "reference": "ungated / oracle RMSE",
-      "reference_kind": "analytic",
-      "tolerance": 1.3
+      "reference": "session rejections minus run_gated rejections on the same runs",
+      "reference_kind": "exact_arithmetic",
+      "tolerance": 0.0
+     },
+     {
+      "comparison": "abs_le",
+      "observed": 0.0,
+      "passed": true,
+      "reference": "lock-out runs replayed minus lock-out runs locked out in the session",
+      "reference_kind": "exact_arithmetic",
+      "tolerance": 0.0
+     },
+     {
+      "comparison": "abs_le",
+      "observed": 0.0,
+      "passed": true,
+      "reference": "lock-out runs not replayed",
+      "reference_kind": "exact_arithmetic",
+      "tolerance": 0.0
+     },
+     {
+      "comparison": "abs_le",
+      "observed": 0.0,
+      "passed": true,
+      "reference": "refusals other than innovation_gate_rejected",
+      "reference_kind": "exact_arithmetic",
+      "tolerance": 0.0
+     },
+     {
+      "comparison": "abs_le",
+      "observed": 3.019106466923501e-16,
+      "passed": true,
+      "reference": "final session state against run_gated (relative)",
+      "reference_kind": "cross_implementation",
+      "tolerance": 1e-09
      }
     ],
     "generator": {
      "bit_generator": "PCG64",
      "name": "ciw.lab.sensor_fusion_bench",
+     "runs": 39,
      "seed": 682026
     }
    },
-   "claim": "Post hoc, conditioning on the outcome: after removing the lock-out runs (selected by the gated filter's own failure, which favours gating by construction) the gated RMSE is within 5% of the oracle that knows which readings are bad, while fusing every reading is at least 30% worse",
-   "domain": "numerical",
+   "claim": "The fusion API reproduces the gated filter on the contaminated readings: FusionSession(gate_probability=0.99) makes run_gated's accept/reject decision for every reading of the replayed runs, including every lock-out run, which locks out in the session too, and ends in the same state to roundoff",
+   "domain": "computational_pipeline",
    "evidence_status": "numerically_verified",
    "regression_tolerance": {
     "abs": 1e-09,
-    "rel": 1e-06
+    "rel": 0.0
    },
    "uncertainty": {
-    "basis": "delta-method standard error of the conditioned gated RMSE (m); the selection bias of the conditioning is not included",
-    "kind": "monte_carlo_95ci",
-    "value": 0.001958902028355682
+    "basis": "largest relative difference between the session and run_gated final states; the decisions are exact",
+    "kind": "roundoff",
+    "value": 3.019106466923501e-16
    },
    "unit": null,
    "value": {
-    "lockout_runs_removed": 10,
-    "rmse_all_runs": {
-     "gated": 0.17795991041645262,
-     "oracle": 0.13794394236831456,
-     "ungated": 0.1964153397312212
-    },
-    "rmse_without_lockout_runs": {
-     "gated": 0.14123228348840525,
-     "oracle": 0.13777613676893002,
-     "ungated": 0.1962141697122598
-    },
-    "selection": "post hoc, outcome-conditioned"
+    "decision_mismatches": 0,
+    "lockout_runs_locked_out_in_session": 10,
+    "lockout_runs_replayed": 10,
+    "max_relative_final_state_difference": 3.019106466923501e-16,
+    "run_gated_rejections_same_runs": 381,
+    "runs": 39,
+    "session_rejections": 381,
+    "trials": 3900
    }
   },
   {
@@ -462,9 +498,9 @@
  ],
  "generated_artifacts": [
   {
-   "bytes": 4290,
+   "bytes": 5388,
    "path": "artifacts/T068/outliers.json",
-   "sha256": "058439c427201b5521c785ab6435dde95bebb7409a8199cd25cd92a76ddaf63c"
+   "sha256": "e9117682c5d92db2ee2e7dc378f50f6cfb3649138e90cc3c57a8945f8d9800e5"
   },
   {
    "bytes": 2150,
@@ -481,7 +517,7 @@
  ],
  "mathematical_model": "Readings z = H x + v + o with o = b u (u uniform on the unit circle) at 5% of ticks; an outlier's NIS is noncentral chi2(2) with lambda = b^T S^-1 b when the prior error is N(0, P-). Under the broad prior P0 (0.5 m std) a 1.5 m first-reading outlier has small lambda and often passes.",
  "number": 68,
- "numerical_result": "gross: detection 0.993 (predicted 0.991); all runs RMSE ungated/gated/oracle 0.196/0.178/0.138 m, paired MSE z -0.70 (not significant), gating better in 374 of 400 runs; post hoc without 10 lock-out runs 0.196/0.141/0.138 m; worst lock-out run RMSE 1.98 m. subtle: detection 0.081 (predicted 0.078). clean: false alarms 0.0103, RMSE 0.1354 -> 0.1388 m with gating.",
+ "numerical_result": "gross: detection 0.993 (predicted 0.991); all runs RMSE ungated/gated/oracle 0.196/0.178/0.138 m, paired MSE z -0.70 (descriptive), gating better in 374 of 400 runs; the 10 lock-out runs give back 62% of the summed MSE gained in the others; fusion API decisions differing from run_gated 0 of 3900; post hoc without 10 lock-out runs 0.196/0.141/0.138 m; worst lock-out run RMSE 1.98 m. subtle: detection 0.081 (predicted 0.078). clean: false alarms 0.0103, RMSE 0.1354 -> 0.1388 m with gating.",
  "observation_model": "Camera position every tick, correlated R, CV motion dt = 0.1 s, q = 0.05.",
  "physical_validation_status": {
   "statement": "Physical validation requires acquired hardware evidence; none was acquired for this task.",
@@ -496,24 +532,28 @@
   "scipy": "1.16.2",
   "sources": {
    "src/ciw/lab/sensor_fusion_bench.py": "f373849a4c6836fa20685c59ce7a6fe6bf732f6df9d6a49646cdc017262dd656",
-   "src/ciw/lab/sensor_fusion_common.py": "6787aa47d199d50d0b4de4d7e53714ce7b8b5aad37d647cfc1a954414e90209f",
-   "src/ciw/lab/sensor_fusion_filtering.py": "6b886646d4fb49b584d7e02c13cd96d604e800bfd0defc717489a010de26bb58",
-   "src/ciw/lab/sensor_fusion_objects.py": "a795ffc235e0a4118cb7b9ac7800191a90984372d79e59f1a934442d98d7a1f1"
+   "src/ciw/lab/sensor_fusion_common.py": "db3b0430ad5c13920239cef354da61b64ab1b01f84b2d3d5aff2f78840a5867a",
+   "src/ciw/lab/sensor_fusion_filtering.py": "716a44ff8f4921d188d17179fa80c6b1695c68a90fb16ab85239efb4295b4f8a",
+   "src/ciw/lab/sensor_fusion_objects.py": "93fc55ddca91f1adfb886d21805ea8f82586548ee84e1f6cc7daed4df1f53bb9"
   },
   "sympy": "1.14.0"
  },
  "recommended_next_task": "T069: missing data must be handled by prediction only, never by zero-filling.",
- "report_id": "sha256:9fd9ce631ce3ec5994320f0917607a30bf872b6c05ba769a1b4d55fc932aa134",
+ "report_id": "sha256:5bc440f81b3767a9af3c82c4844e1ec2b6f5b8b8ef0e8cc54a9f048fdbfca601",
  "schema": "ciw.lab-task-report.v1",
  "section": "sensor-fusion",
  "state": "completed",
  "task_id": "T068",
  "tests_passed": [
   "check: Gross 1.5 m outliers are detected at the rate predicted by the noncentral chi-square(2) law with lambda = b^T S^-1 b at each outlier's own prior covariance vs detections against the Poisson-binomial prediction (z)",
-  "check: Over all runs with gross outliers, gating lowers the mean squared error in most runs (sign test) but its mean improvement over fusing every reading is not statistically significant, because the cold-start lock-out runs lose heavily vs paired per-run MSE difference gated - ungated (z, not significant)",
-  "check: Over all runs with gross outliers, gating lowers the mean squared error in most runs (sign test) but its mean improvement over fusing every reading is not statistically significant, because the cold-start lock-out runs lose heavily vs Wilson 99.9% lower bound of the fraction of runs where gating wins",
-  "check: Post hoc, conditioning on the outcome: after removing the lock-out runs (selected by the gated filter's own failure, which favours gating by construction) the gated RMSE is within 5% of the oracle that knows which readings are bad, while fusing every reading is at least 30% worse vs gated / oracle RMSE minus one",
-  "check: Post hoc, conditioning on the outcome: after removing the lock-out runs (selected by the gated filter's own failure, which favours gating by construction) the gated RMSE is within 5% of the oracle that knows which readings are bad, while fusing every reading is at least 30% worse vs ungated / oracle RMSE",
+  "check: Over all runs with gross outliers, gating lowers the per-run mean squared error in most runs (sign test), while the cold-start lock-out runs together give back more than half of the summed MSE it gains in the other runs; the mean difference, its paired z and the outcome-conditioned comparison without the lock-out runs are reported descriptively, not as tests vs Wilson 99.9% lower bound of the fraction of runs where gating wins",
+  "check: Over all runs with gross outliers, gating lowers the per-run mean squared error in most runs (sign test), while the cold-start lock-out runs together give back more than half of the summed MSE it gains in the other runs; the mean difference, its paired z and the outcome-conditioned comparison without the lock-out runs are reported descriptively, not as tests vs summed MSE excess of the lock-out runs over the summed gain of the others (decomposition of the realized total)",
+  "check: The fusion API reproduces the gated filter on the contaminated readings: FusionSession(gate_probability=0.99) makes run_gated's accept/reject decision for every reading of the replayed runs, including every lock-out run, which locks out in the session too, and ends in the same state to roundoff vs reading-by-reading decisions differing from run_gated",
+  "check: The fusion API reproduces the gated filter on the contaminated readings: FusionSession(gate_probability=0.99) makes run_gated's accept/reject decision for every reading of the replayed runs, including every lock-out run, which locks out in the session too, and ends in the same state to roundoff vs session rejections minus run_gated rejections on the same runs",
+  "check: The fusion API reproduces the gated filter on the contaminated readings: FusionSession(gate_probability=0.99) makes run_gated's accept/reject decision for every reading of the replayed runs, including every lock-out run, which locks out in the session too, and ends in the same state to roundoff vs lock-out runs replayed minus lock-out runs locked out in the session",
+  "check: The fusion API reproduces the gated filter on the contaminated readings: FusionSession(gate_probability=0.99) makes run_gated's accept/reject decision for every reading of the replayed runs, including every lock-out run, which locks out in the session too, and ends in the same state to roundoff vs lock-out runs not replayed",
+  "check: The fusion API reproduces the gated filter on the contaminated readings: FusionSession(gate_probability=0.99) makes run_gated's accept/reject decision for every reading of the replayed runs, including every lock-out run, which locks out in the session too, and ends in the same state to roundoff vs refusals other than innovation_gate_rejected",
+  "check: The fusion API reproduces the gated filter on the contaminated readings: FusionSession(gate_probability=0.99) makes run_gated's accept/reject decision for every reading of the replayed runs, including every lock-out run, which locks out in the session too, and ends in the same state to roundoff vs final session state against run_gated (relative)",
   "check: Cold-start lock-out: a gross outlier in the first reading passes the gate under the broad prior, and the corrupted state then rejects runs of valid readings; every lock-out run starts this way vs number of lock-out runs",
   "check: Cold-start lock-out: a gross outlier in the first reading passes the gate under the broad prior, and the corrupted state then rejects runs of valid readings; every lock-out run starts this way vs lock-out runs not explained by an accepted first-reading outlier",
   "check: On clean data the 99% gate raises false alarms at about 1% and increases the mean squared error: the rejected valid readings are the ones that would have corrected a large prior error vs Wilson lower bound of the clean false-alarm rate",
@@ -524,13 +564,14 @@
   "check: Subtle 0.3 m outliers pass the gate at the predicted low detection rate; for them gating costs more accuracy than the outliers do vs paired per-run MSE difference gated - ungated (z)",
   "check: The vectorized and scalar noncentral chi-square CDFs agree vs scalar vs vectorized at lambda = 4",
   "pytest: tests/test_lab_sensor_fusion.py::test_outlier_rejection_detection_lockout_and_cost",
+  "pytest: tests/test_lab_sensor_fusion.py::test_session_gate_refuses_without_side_effects",
   "pytest: tests/test_lab_sensor_fusion.py::test_section_reports_labels_and_states[T068]"
  ],
  "tests_skipped": [],
  "title": "Add outlier rejection.",
- "uncertainty": "Detection prediction uses each outlier's own prior covariance from the gated run and assumes the prior error is still N(0, P-); lock-out runs violate that assumption. Paired and sign tests use run-level independence. The lock-out-free comparison is conditioned on the gated filter's outcome and is descriptive, not a test.",
+ "uncertainty": "Detection prediction uses each outlier's own prior covariance from the gated run and assumes the prior error is still N(0, P-); lock-out runs violate that assumption. Paired and sign tests use run-level independence. A paired z that is not significant is not evidence that the mean effect is zero, so it is reported, not tested. The lock-out-free comparison is conditioned on the gated filter's outcome and is descriptive, not a test.",
  "unresolved_assumptions": [
   "Outliers are independent across ticks; bursts and persistent biases defeat a per-reading gate and need T070-style bias states.",
-  "Lock-out recovery (covariance inflation or reacquisition) is not implemented in the gated filter; T073 handles reacquisition explicitly in the session API."
+  "Lock-out recovery (covariance inflation or automatic reacquisition) is implemented neither in run_gated nor in the session gate; T073's explicit reacquisition is the only recovery path in the fusion API."
  ]
 }

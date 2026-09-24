@@ -17,7 +17,7 @@
   },
   "primary": "analytic"
  },
- "expected_invariant": "resolution_PLSR = resolution_CIW; in the normal range the code is CERTIFIED_WITH_MARGIN iff eps > eps* at every scale; NUMERICAL_OVERFLOW exactly where the decrease form overflows; exactly-indefinite declared forms are never certified.",
+ "expected_invariant": "resolution_PLSR = resolution_CIW; in the normal range the code is CERTIFIED_WITH_MARGIN iff eps > eps* at every scale; NUMERICAL_OVERFLOW exactly where the decrease form overflows; the resolution covers the rounding error of forming M at every scale, so exactly-indefinite declared forms cannot be certified.",
  "experiment": "Evaluate every case with PLSR, recompute the documented resolution and the exact rational class of the declared form in CIW, compare codes with the analytic threshold and the exact class, and locate where the prediction stops holding.",
  "failure_modes_checked": [
   "resolution differs from the documented formula",
@@ -26,7 +26,7 @@
   "code differs from the unit-scale code",
   "NUMERICAL_OVERFLOW before the decrease form overflows",
   "no NUMERICAL_OVERFLOW once it overflows",
-  "false certificate below the normal range (exact rational class)"
+  "resolution below the rounding error of PLSR's formed decrease matrix (subnormal witness, exact rational form)"
  ],
  "findings": [
   {
@@ -220,20 +220,28 @@
       "tolerance": 1.0
      },
      {
+      "comparison": "ge",
+      "observed": 8.0,
+      "passed": true,
+      "reference": "determinant of PLSR's formed binary64 decrease matrix, units (2^-1074)^2, or 0 unless its (1, 1) entry is negative (at least 1 means negative definite)",
+      "reference_kind": "invariant",
+      "tolerance": 1.0
+     },
+     {
+      "comparison": "ge",
+      "observed": 1.0,
+      "passed": true,
+      "reference": "largest entry of PLSR's formed matrix minus the exact form, units of 2^-1074 (a lower bound on the formation error the resolution must cover)",
+      "reference_kind": "exact_arithmetic",
+      "tolerance": 1.0
+     },
+     {
       "comparison": "abs_le",
       "observed": 0.0,
       "passed": true,
       "reference": "PLSR resolution of the witness (underflows to zero)",
       "reference_kind": "invariant",
       "tolerance": 0.0
-     },
-     {
-      "comparison": "ge",
-      "observed": 1.0,
-      "passed": true,
-      "reference": "PLSR code on the witness is certifying (1 if so)",
-      "reference_kind": "invariant",
-      "tolerance": 1.0
      }
     ],
     "provider": {
@@ -245,9 +253,9 @@
      "runtime_digest": "a6fee6b3b4eb7852b31f5a285fe8c50b535f25762e1daf82e36720ef8dd1b7c7"
     }
    },
-   "claim": "A subnormal plant whose declared decrease form is exactly indefinite drives the PLSR resolution to zero; PLSR's code on it is recorded",
+   "claim": "PLSR's resolution of a subnormal plant is zero while forming its decrease matrix rounds an exactly indefinite declared form to a negative definite one",
    "counterexample": {
-    "statement": "The float64 resolution floor bounds the rounding error of the decrease form at every matrix scale, so an exactly indefinite declared form is never certified",
+    "statement": "The float64 resolution floor bounds the rounding error of the decrease form at every matrix scale",
     "witness": {
      "A_hex": [
       [
@@ -269,17 +277,6 @@
        "0x1.0000000000000p+0"
       ]
      ],
-     "binary64_form_units_of_2^-1074": [
-      [
-       -4.0,
-       4.0
-      ],
-      [
-       4.0,
-       -6.0
-      ]
-     ],
-     "code": "CERTIFIED_WITH_MARGIN",
      "exact_form_units_of_2^-1074": [
       [
        -4.0,
@@ -290,7 +287,17 @@
        -6.0
       ]
      ],
-     "plsr_details": "V=1.000e+00, decrease=-1.976e-323, max eig(M)=-4.941e-324 at infx resolution",
+     "plsr_form_units_of_2^-1074": [
+      [
+       -4.0,
+       4.0
+      ],
+      [
+       4.0,
+       -6.0
+      ]
+     ],
+     "resolution": 0.0,
      "x": [
       1.0,
       0.0
@@ -304,16 +311,25 @@
     "rel": 0.0
    },
    "uncertainty": {
-    "basis": "the exact class and the zero resolution are exact; whether PLSR certifies depends on LAPACK's subnormal handling",
-    "kind": "reference_error",
+    "basis": "IEEE-deterministic where subnormals are kept (no flush to zero): exact products with 1 and 0 and one halving rounded to even; PLSR's code on the witness depends on LAPACK's subnormal eigenvalue and is retained as an artifact",
+    "kind": "roundoff",
     "value": 0.0
    },
    "unit": null,
    "value": {
-    "certified": true,
-    "code": "CERTIFIED_WITH_MARGIN",
     "exact_class": "has_positive_eigenvalue",
     "exact_det_units2": -1.0,
+    "formation_error_units": 1.0,
+    "plsr_form_units": [
+     [
+      -4.0,
+      4.0
+     ],
+     [
+      4.0,
+      -6.0
+     ]
+    ],
     "resolution": 0.0
    }
   },
@@ -454,9 +470,9 @@
  ],
  "generated_artifacts": [
   {
-   "bytes": 70774,
+   "bytes": 71006,
    "path": "artifacts/T101/resolution-floor.json",
-   "sha256": "8d8c3ab9be4275eef611f5e404dcc14fc3fe9178de50999256309a243c498b3e"
+   "sha256": "f8c47f9d063e9ac7db83e3fdfb0af54440bc9d82991741fa50062bee4106e7c1"
   },
   {
    "bytes": 9279,
@@ -473,7 +489,7 @@
  ],
  "mathematical_model": "Continuous decrease form M = A^T P + P A (symmetrised); resolution = n*(2 gamma_{n+3} n max|A| max|P|) + n^3 u max|M|; certified iff -max eig(M) > resolution. For A = s[[-eps, 1], [-1, -eps]], P = I the threshold is eps* = 4 gamma_5/(1 - 8u) = 2.2204e-15 for every s with normal arithmetic.",
  "number": 101,
- "numerical_result": "Resolution matches the documented formula (max relative difference 0.00e+00 over 288 cases). In 112 normal-range threshold cases 0 codes differ from the analytic threshold eps* = 2.220446e-15 and 0 from the unit-scale code. Outside the normal range 36 threshold cases depart from the unit-scale code; F2 has 0 certifying verdicts whose exact form is not negative definite. The witness returns CERTIFIED_WITH_MARGIN with resolution 0 (unit-scale twin: DECREASE_NOT_DEFINITE). First overflow exponents: {0: 512, 1: 512, 2: 512, 3: 512}; 0 early overflow reports in 28 F3 rows. Conclusion: the floor is exactly the documented bound and the threshold stays at eps* while every quantity is a normal number; no F2 certificate contradicts its exact class; below that range it underflows and the subnormal witness, whose exact decrease form is indefinite, is certified (CERTIFIED_WITH_MARGIN).",
+ "numerical_result": "Resolution matches the documented formula (max relative difference 0.00e+00 over 288 cases). In 112 normal-range threshold cases 0 codes differ from the analytic threshold eps* = 2.220446e-15 and 0 from the unit-scale code. Outside the normal range 36 threshold cases depart from the unit-scale code and F2 has 0 certifying verdicts whose exact form is not negative definite (both retained in the artifact; subnormal-range codes depend on the LAPACK build). The subnormal witness's resolution is 0 while PLSR's formed decrease matrix is off the exact form by 1 x 2^-1074 in its largest entry (unit-scale twin: DECREASE_NOT_DEFINITE; the witness's code is retained in the artifact). First overflow exponents: {0: 512, 1: 512, 2: 512, 3: 512}; 0 early overflow reports in 28 F3 rows. Conclusion: the floor is exactly the documented bound and the threshold stays at eps* while every quantity is a normal number; below that range the floor underflows beneath the rounding error of forming the decrease matrix, so an exactly indefinite form reaches the eigensolver as a negative definite one with nothing to absorb the error.",
  "observation_model": "Runtime verdict code, resolution and margin per case, returned by the pinned PLSR in a subprocess.",
  "physical_validation_status": {
   "statement": "Physical validation requires acquired hardware evidence; none was acquired for this task.",
@@ -504,14 +520,14 @@
   },
   "scipy": "1.16.2",
   "sources": {
-   "src/ciw/lab/lyapunov.py": "58d6c7473f0a42002b57888de0ccfbbf73b571bbbabbf9ee81e0a05c734f2320",
+   "src/ciw/lab/lyapunov.py": "cbcb4d58d7313d7c537957a1b7dd35039a21bae80125bf59147eeed2c1232bbb",
    "src/ciw/lab/lyapunov_provider.py": "da3465b48b5f5efc47bfe6ab8379cf2cf2bc23e4835dc7ff047252e77fa6ef17",
-   "src/ciw/lab/lyapunov_reference.py": "fa37ef453c23ad2bed2eab41132e72670e166b93eebd5fc9d67a4a89a7c92cca"
+   "src/ciw/lab/lyapunov_reference.py": "bdf0bb5074ae2caca6c8a5d8e63a15e346b007098e6def6b058d077719bc1336"
   },
   "sympy": "1.14.0"
  },
  "recommended_next_task": "T102: test power-of-two homogeneous scaling of A, P and x together; then propose a subnormal-aware resolution term (an absolute n^2 * 2^-1074 floor) upstream and re-run T101.",
- "report_id": "sha256:db5496e9511aa91b2b2e89e2a545b769db8fe8aaa84576d5c5a03345e695bc78",
+ "report_id": "sha256:0e35d1ccc7141c8cd2bf403ad96daa7c61643c7242affe446eb38bdaaca5c555",
  "schema": "ciw.lab-task-report.v1",
  "section": "lyapunov",
  "state": "completed",
@@ -524,9 +540,10 @@
   "check: NUMERICAL_OVERFLOW first appears exactly where the CIW-recomputed decrease form overflows vs seeds whose first overflowing scale is not NUMERICAL_OVERFLOW",
   "check: NUMERICAL_OVERFLOW first appears exactly where the CIW-recomputed decrease form overflows vs F3 rows reported NUMERICAL_OVERFLOW while the recomputed form and scaled values are finite",
   "check: NUMERICAL_OVERFLOW first appears exactly where the CIW-recomputed decrease form overflows vs seeds that never overflow on the exponent grid",
-  "check: A subnormal plant whose declared decrease form is exactly indefinite drives the PLSR resolution to zero; PLSR's code on it is recorded vs negated exact determinant of the declared 2x2 decrease form, units (2^-1074)^2 (at least 1 means indefinite)",
-  "check: A subnormal plant whose declared decrease form is exactly indefinite drives the PLSR resolution to zero; PLSR's code on it is recorded vs PLSR resolution of the witness (underflows to zero)",
-  "check: A subnormal plant whose declared decrease form is exactly indefinite drives the PLSR resolution to zero; PLSR's code on it is recorded vs PLSR code on the witness is certifying (1 if so)",
+  "check: PLSR's resolution of a subnormal plant is zero while forming its decrease matrix rounds an exactly indefinite declared form to a negative definite one vs negated exact determinant of the declared 2x2 decrease form, units (2^-1074)^2 (at least 1 means indefinite)",
+  "check: PLSR's resolution of a subnormal plant is zero while forming its decrease matrix rounds an exactly indefinite declared form to a negative definite one vs determinant of PLSR's formed binary64 decrease matrix, units (2^-1074)^2, or 0 unless its (1, 1) entry is negative (at least 1 means negative definite)",
+  "check: PLSR's resolution of a subnormal plant is zero while forming its decrease matrix rounds an exactly indefinite declared form to a negative definite one vs largest entry of PLSR's formed matrix minus the exact form, units of 2^-1074 (a lower bound on the formation error the resolution must cover)",
+  "check: PLSR's resolution of a subnormal plant is zero while forming its decrease matrix rounds an exactly indefinite declared form to a negative definite one vs PLSR resolution of the witness (underflows to zero)",
   "check: The documented decision order, transcribed in CIW, places the family's threshold at eps* in the normal range vs codes of the transcribed order differing from the analytic threshold eps*",
   "check: CIW's re-derived resolution scales exactly with a power-of-two matrix scale in the normal range vs res(2^k A) 2^-k versus res(A), bitwise",
   "check: The subnormal witness's exact decrease form is indefinite while its binary64 evaluation is negative definite vs negated exact determinant of [[-4, 5], [5, -6]] (units 2^-2148; at least 1 means indefinite)",
@@ -534,14 +551,15 @@
   "pytest: tests/test_lab_lyapunov.py::test_t101_resolution_floor",
   "pytest: tests/test_lab_lyapunov.py::test_reference_witness_is_exactly_indefinite",
   "pytest: tests/test_lab_lyapunov.py::test_t101_threshold_is_analytic",
+  "pytest: tests/test_lab_lyapunov.py::test_checks_are_unconditional_and_observed_values_are_computed",
   "pytest: tests/test_lab_lyapunov.py::test_provider_tasks_are_partial_without_the_provider"
  ],
  "tests_skipped": [],
  "title": "Test the resolution floor over many matrix scales.",
- "uncertainty": "Resolution comparison is deterministic float arithmetic (relative 1e-12 allowed). Subnormal-range codes depend on LAPACK's handling of tiny matrices and may differ between BLAS builds; the witness's exact class is exact rational arithmetic.",
+ "uncertainty": "Resolution comparison is deterministic float arithmetic (relative 1e-12 allowed). Subnormal-range codes depend on LAPACK's handling of tiny matrices and may differ between BLAS builds, so they are retained in the artifact only; the witness's formed matrix and zero resolution are IEEE-deterministic and its exact class is exact rational arithmetic.",
  "unresolved_assumptions": [
   "The exact class concerns the declared binary64 numbers; they are synthetic, not measured plants.",
   "The resolution comparison is against CIW's transcription of the documented formula: a same-specification check, not an independent one.",
-  "Subnormal behaviour of numpy.linalg.eigvalsh (LAPACK dsyevd) may differ between BLAS builds."
+  "Subnormal behaviour of numpy.linalg.eigvalsh (LAPACK dsyevd) may differ between BLAS builds, so the codes below the normal range, the witness's code included, are retained in the artifact and not compared by a finding."
  ]
 }

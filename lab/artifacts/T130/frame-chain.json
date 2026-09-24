@@ -6,12 +6,18 @@
     0.0382894669313,
     0.0399097891566
    ],
+   "linearization_mm": 4.39638568606e-10,
    "mc_std_mm": [
     0.0426831989476,
     0.0379629902498,
     0.0401297416243
    ],
-   "rel_frobenius": 0.0291248394138
+   "rel_frobenius": 0.0291248394138,
+   "sigma_point_std_mm": [
+    0.0419416411339,
+    0.038289467371,
+    0.0399097888852
+   ]
   },
   "coupon_far_corner": {
    "linear_std_mm": [
@@ -19,12 +25,18 @@
     0.0396740068508,
     0.0452038826336
    ],
+   "linearization_mm": 2.18252346751e-10,
    "mc_std_mm": [
     0.0442064576551,
     0.0386211307534,
     0.0455040236302
    ],
-   "rel_frobenius": 0.0332039440574
+   "rel_frobenius": 0.0332039440574,
+   "sigma_point_std_mm": [
+    0.0449164408232,
+    0.0396740069214,
+    0.0452038824153
+   ]
   }
  },
  "contributions_rss_mm": {
@@ -38,6 +50,10 @@
   "equivariance": 5.68434188608e-14,
   "orthonormality": 2.22044604925e-16,
   "recovery": 1.11022302463e-16,
+  "refusals": {
+   "collinear_primary": "datum_degenerate",
+   "secondary_normal_to_primary": "datum_degenerate"
+  },
   "std_rotation_urad": [
    102.573714845,
    117.40608407,

@@ -45,6 +45,37 @@
  "envelope_max_mm": 0.420118098361,
  "length_mm": 202.179684477,
  "min_concave_radius_mm": 94.498471761,
+ "off_axis_heading_deg": 10.0,
+ "off_axis_tools": {
+  "spray gun": {
+   "integral_length_mm": 233.484929568,
+   "max_H_tau_g": 0.780667143063,
+   "pointwise_max_difference": 9.18989639942e-09,
+   "polyline_length_mm": 233.466666762,
+   "reversed_segments": 24,
+   "segment_max_difference": 0.0013777080946,
+   "sign_changes_of_1_minus_H_kn": 4,
+   "smooth_segments": 204,
+   "speed_factor_max": 3.5540148519,
+   "speed_factor_min": 0.288259151022,
+   "standoff_mm": 120.0,
+   "tau_term_max": 0.615465369818
+  },
+  "welding torch": {
+   "integral_length_mm": 202.832869427,
+   "max_H_tau_g": 0.0975833928828,
+   "pointwise_max_difference": 1.14873555113e-09,
+   "polyline_length_mm": 202.831976703,
+   "reversed_segments": 0,
+   "segment_max_difference": 0.000171475711215,
+   "sign_changes_of_1_minus_H_kn": 0,
+   "smooth_segments": 208,
+   "speed_factor_max": 1.31925117667,
+   "speed_factor_min": 0.862447919822,
+   "standoff_mm": 15.0,
+   "tau_term_max": 0.00474446536073
+  }
+ },
  "standoff": [
   {
    "kappa_lateral_per_mm": -0.00027768636326,
@@ -123,21 +154,31 @@
  "tools": {
   "spray gun": {
    "integral_length_mm": 215.622696847,
+   "max_H_tau_g": 0.0,
+   "pointwise_max_difference": 1.80709962549e-08,
    "polyline_length_mm": 215.603444209,
    "reversed_segments": 33,
+   "segment_max_difference": 0.00211088916648,
    "sign_changes_of_1_minus_H_kn": 4,
+   "smooth_segments": 204,
    "speed_factor_max": 3.9996939968,
    "speed_factor_min": 0.00521616480172,
-   "standoff_mm": 120.0
+   "standoff_mm": 120.0,
+   "tau_term_max": 0.0
   },
   "welding torch": {
    "integral_length_mm": 202.429908537,
+   "max_H_tau_g": 0.0,
+   "pointwise_max_difference": 2.25887442085e-09,
    "polyline_length_mm": 202.428886765,
    "reversed_segments": 0,
+   "segment_max_difference": 0.00024234370203,
    "sign_changes_of_1_minus_H_kn": 0,
+   "smooth_segments": 208,
    "speed_factor_max": 1.3749617496,
    "speed_factor_min": 0.841267274269,
-   "standoff_mm": 15.0
+   "standoff_mm": 15.0,
+   "tau_term_max": 0.0
   }
  },
  "vertex_max_mm": 0.420116568058

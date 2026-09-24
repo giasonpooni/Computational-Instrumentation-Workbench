@@ -3,31 +3,103 @@
   "csg": [
    {
     "at_head": true,
+    "control": false,
     "declared_in": "ciw.geodesic_reference.PINS[curved-path-transfer]",
     "outcome": "accepted",
     "revision": "bbc535af29c30997e56fd120320c570830676462"
+   },
+   {
+    "at_head": false,
+    "control": true,
+    "declared_in": "control: ciw.geodesic_reference.PINS[curved-path-transfer] module at the ciw/telemetry-runtimes.json[set] revision",
+    "outcome": "SOURCE_PIN_MISMATCH: The bound checkout is not at the declared revision",
+    "revision": "1467ec5058b3e7ebd6ba4a45f2d9b49148a2560d"
    }
   ],
   "ftr": [
    {
     "at_head": true,
+    "control": false,
     "declared_in": "ciw.geodesic_reference.PINS[flat-torus-reference]",
     "outcome": "accepted",
     "revision": "dc918562cd9e351a65475d29f46963c9f2fd7db8"
+   },
+   {
+    "at_head": false,
+    "control": true,
+    "declared_in": "control: ciw.geodesic_reference.PINS[flat-torus-reference] module at the ciw/telemetry-runtimes.json[set] revision",
+    "outcome": "SOURCE_PIN_MISMATCH: The bound checkout is not at the declared revision",
+    "revision": "1467ec5058b3e7ebd6ba4a45f2d9b49148a2560d"
+   }
+  ],
+  "ppda": [
+   {
+    "at_head": false,
+    "control": false,
+    "declared_in": "ciw/telemetry-runtimes.json[ppda]",
+    "outcome": "SOURCE_PIN_MISMATCH: The bound checkout is not at the declared revision",
+    "revision": "209985a8c7482aba037021035c2f0b550c9b1ddc"
+   },
+   {
+    "at_head": false,
+    "control": true,
+    "declared_in": "control: ciw/telemetry-runtimes.json[ppda] module at the ciw/telemetry-runtimes.json[set] revision",
+    "outcome": "SOURCE_PIN_MISMATCH: The bound checkout is not at the declared revision",
+    "revision": "1467ec5058b3e7ebd6ba4a45f2d9b49148a2560d"
    }
   ],
   "scr": [
    {
     "at_head": true,
+    "control": false,
     "declared_in": "ciw.declared_workload.PINS[numerical-heat]",
     "outcome": "accepted",
     "revision": "a59aba283b0304faeeb3e5d305087e7709e171ca"
    },
    {
     "at_head": true,
+    "control": false,
     "declared_in": "ciw.proved_heat.PIN",
     "outcome": "accepted",
     "revision": "a59aba283b0304faeeb3e5d305087e7709e171ca"
+   },
+   {
+    "at_head": false,
+    "control": true,
+    "declared_in": "control: ciw.declared_workload.PINS[numerical-heat] module at the ciw/telemetry-runtimes.json[set] revision",
+    "outcome": "SOURCE_PIN_MISMATCH: The bound checkout is not at the declared revision",
+    "revision": "1467ec5058b3e7ebd6ba4a45f2d9b49148a2560d"
+   }
+  ],
+  "scr-exchange": [],
+  "set": [
+   {
+    "at_head": false,
+    "control": false,
+    "declared_in": "ciw/telemetry-runtimes.json[set]",
+    "outcome": "SOURCE_PIN_MISMATCH: The bound checkout is not at the declared revision",
+    "revision": "1467ec5058b3e7ebd6ba4a45f2d9b49148a2560d"
+   },
+   {
+    "at_head": false,
+    "control": false,
+    "declared_in": "ciw/calibrated-observable-runtimes.json[set]",
+    "outcome": "SOURCE_PIN_MISMATCH: The bound checkout is not at the declared revision",
+    "revision": "5e7bda36f521a5c1b0082b512f35e29803bffafc"
+   },
+   {
+    "at_head": false,
+    "control": false,
+    "declared_in": "ciw/calibrated-window-runtimes.json[set]",
+    "outcome": "SOURCE_PIN_MISMATCH: The bound checkout is not at the declared revision",
+    "revision": "2f838f4e196f453efc3a59045b0b3ec4b5680296"
+   },
+   {
+    "at_head": false,
+    "control": true,
+    "declared_in": "control: ciw/telemetry-runtimes.json[set] module at the ciw/plsr-runtime.json revision",
+    "outcome": "SOURCE_PIN_MISMATCH: The bound checkout is not at the declared revision",
+    "revision": "19ea6967060166ba09db6cd4563bd87bd6b3d196"
    }
   ]
  },
@@ -249,6 +321,18 @@
    "tree_refusals": [],
    "unmatched": []
   },
+  "ppda": {
+   "accepted": true,
+   "clean": true,
+   "matched": [
+    ".github/workflows/exchange.yml"
+   ],
+   "role": "ppda",
+   "tree_refusals": [],
+   "unmatched": [
+    "ciw/telemetry-runtimes.json[ppda]"
+   ]
+  },
   "scr": {
    "accepted": true,
    "clean": true,
@@ -259,6 +343,31 @@
    "role": "scr",
    "tree_refusals": [],
    "unmatched": []
+  },
+  "scr-exchange": {
+   "accepted": true,
+   "clean": true,
+   "matched": [
+    ".github/workflows/exchange.yml"
+   ],
+   "role": "scr-exchange",
+   "tree_refusals": [],
+   "unmatched": []
+  },
+  "set": {
+   "accepted": true,
+   "clean": true,
+   "matched": [
+    "ciw/exchange-runtime.json",
+    ".github/workflows/exchange.yml"
+   ],
+   "role": "set",
+   "tree_refusals": [],
+   "unmatched": [
+    "ciw/calibrated-observable-runtimes.json[set]",
+    "ciw/calibrated-window-runtimes.json[set]",
+    "ciw/telemetry-runtimes.json[set]"
+   ]
   }
  },
  "engine": {
@@ -273,10 +382,12 @@
  "errors": {},
  "identities": {
   "csg": {
-   "cargo_locks": {},
    "dirty": false,
    "gitlinks": 0,
    "head": "bbc535af29c30997e56fd120320c570830676462",
+   "lockfiles": {
+    "uv.lock": "d552b3f5719f40d1abe6d7aebc6af4d7103dcea2744f2dba18a023e70e451b99"
+   },
    "mismatched_files": [],
    "object_format": "sha1",
    "path": "<csg>",
@@ -287,10 +398,10 @@
    "untracked_outside_caches": 0
   },
   "ftr": {
-   "cargo_locks": {},
    "dirty": false,
    "gitlinks": 0,
    "head": "dc918562cd9e351a65475d29f46963c9f2fd7db8",
+   "lockfiles": {},
    "mismatched_files": [],
    "object_format": "sha1",
    "path": "<ftr>",
@@ -300,8 +411,25 @@
    "tree": "1f082c6b443f2e301ac5889122912f26968ae756",
    "untracked_outside_caches": 0
   },
+  "ppda": {
+   "dirty": false,
+   "gitlinks": 1,
+   "head": "a29845e13e55de30b24ae752b896058041d653e6",
+   "lockfiles": {},
+   "mismatched_files": [],
+   "object_format": "sha1",
+   "path": "<ppda>",
+   "recomputed_tree": "7140bf71289161245e73801e0cd934dc93156509",
+   "tracked_files": 536,
+   "tracked_sha256": "e56bb3a1b5a3fce899509482a8335f71a3a3ae88808787a798a6fd3e7c96d1a8",
+   "tree": "7140bf71289161245e73801e0cd934dc93156509",
+   "untracked_outside_caches": 0
+  },
   "scr": {
-   "cargo_locks": {
+   "dirty": false,
+   "gitlinks": 0,
+   "head": "a59aba283b0304faeeb3e5d305087e7709e171ca",
+   "lockfiles": {
     "crates/Cargo.lock": "24b1db68d762d3457eb40465dae6c3edc8a2da2925d42f3f794d090d18a5f2bc",
     "zk/Cargo.lock": "d306d736c6212b081f441057318041f6b82e64e46348e81ec0f2a36529308613",
     "zk/guest-heat-nexus/Cargo.lock": "21009e13c513af590adb03b25d67b779af5e5c67c25da19f08787e0134416345",
@@ -312,9 +440,6 @@
     "zk/nexus/Cargo.lock": "5231c9bfb2f4f93e985fcee0e534a98069f0f5a5ad3c6b0ed357418f6dcf4201",
     "zk/risc0/Cargo.lock": "589ae1270f71de9e745efac59a6cb6d822c5825d8386ada8e342b242237e2054"
    },
-   "dirty": false,
-   "gitlinks": 0,
-   "head": "a59aba283b0304faeeb3e5d305087e7709e171ca",
    "mismatched_files": [],
    "object_format": "sha1",
    "path": "<scr>",
@@ -323,6 +448,115 @@
    "tracked_sha256": "b1c1ef22c6de60ecf1d348eff896b9e10ca62e9cff3af06e59b269dda7e455ea",
    "tree": "4068a711534932e8d89bb0d87d373376dafdf6cd",
    "untracked_outside_caches": 0
+  },
+  "scr-exchange": {
+   "dirty": false,
+   "gitlinks": 0,
+   "head": "5f0409743e0098a0691a88302a9b3dcdcbcf25fd",
+   "lockfiles": {
+    "crates/Cargo.lock": "24b1db68d762d3457eb40465dae6c3edc8a2da2925d42f3f794d090d18a5f2bc",
+    "zk/Cargo.lock": "d306d736c6212b081f441057318041f6b82e64e46348e81ec0f2a36529308613",
+    "zk/guest-heat-nexus/Cargo.lock": "21009e13c513af590adb03b25d67b779af5e5c67c25da19f08787e0134416345",
+    "zk/guest-heat-risc0/Cargo.lock": "d98241e518f939795dbaef44c5430db005a7c30f26ac0db99163ab66bfa8a81d",
+    "zk/guest-heat/Cargo.lock": "a3a91548ec428e26e69445b84d6215b85ec416f84cb160e810cde5fd9a075eea",
+    "zk/guest-pairwise-nexus/Cargo.lock": "314ae7ce66a002ae9c7067acaa1453405469f17383f19bfff8af286c608d37fb",
+    "zk/guest-pairwise/Cargo.lock": "1257bd33d7f18a625b33c4367c782824e5bf3e76a21d49a989c987fcf7a434a8",
+    "zk/nexus/Cargo.lock": "5231c9bfb2f4f93e985fcee0e534a98069f0f5a5ad3c6b0ed357418f6dcf4201",
+    "zk/risc0/Cargo.lock": "589ae1270f71de9e745efac59a6cb6d822c5825d8386ada8e342b242237e2054"
+   },
+   "mismatched_files": [],
+   "object_format": "sha1",
+   "path": "<scr-exchange>",
+   "recomputed_tree": "4b9ba4bf1f95562d299714d4ed4bf7b9d0c6e913",
+   "tracked_files": 509,
+   "tracked_sha256": "84ec4524fe7ab1d3df26a4e995a8d2339d863d03de38d45af9e1d364c78a6fc4",
+   "tree": "4b9ba4bf1f95562d299714d4ed4bf7b9d0c6e913",
+   "untracked_outside_caches": 0
+  },
+  "set": {
+   "dirty": false,
+   "gitlinks": 0,
+   "head": "542e672be512bf43b61253f2b2a43cd967cb3062",
+   "lockfiles": {},
+   "mismatched_files": [],
+   "object_format": "sha1",
+   "path": "<set>",
+   "recomputed_tree": "25c667fc507eb8404e1f077d46e87ed2fc6abc3d",
+   "tracked_files": 10,
+   "tracked_sha256": "1d25a905641ec19555f3ddcfb74f36705d47d9055f021097ead83ef86ea92ea9",
+   "tree": "25c667fc507eb8404e1f077d46e87ed2fc6abc3d",
+   "untracked_outside_caches": 0
+  }
+ },
+ "interpreter_errors": {},
+ "interpreters": {
+  "ftr-python": {
+   "byte_count": 8020928,
+   "entry_is_symlink": false,
+   "implementation": "CPython",
+   "plsr": {
+    "files": {
+     "__init__.py": "c0d6030af61ea074abd3eca7a92bd96a7e69fbe50e4bf85c22ce593f9701c0ce",
+     "benchmarks.py": "5b11cb2aec0e9c2169572b79fe6426d7ca98cbd2a0d6801e270598627bc6caf5",
+     "certificates.py": "c92bdc3fe617b53bdf2c13e970f5aa3061c108961c1cd218e98b5b27085f4a40",
+     "charts.py": "589c33fb78eb0d00c2a90da40baee9a3718b6381f52978a6390d442fd3ff57de",
+     "checks.py": "eca0b6644e85b58d44bf13f95757d4b054f40173d1e0d1e65a443866dbded965",
+     "claims.py": "75975df703b6e7d8e1bb4011f4b9a3cb04e6e15747bd98b78ae45f9e5d041402",
+     "constitution.py": "b378b0c178d9c9681adbe03bb4efbe001d0973ace68de5689f3efa5a98029bb7",
+     "discrete_guest.py": "5161cb8131c891309edfdd7638525332c7e19d4c28710671f99d9d2e4fa6d9cc",
+     "equation.py": "b74aeaec74b810977328d0e090c06ba4c5ad0f3255b43c11855051326eb8a0a7",
+     "host_callback.py": "7aad9afb77debcd8fb0061a1b098cb6a5cae32187a5de99605f0c9779d2e5ef0",
+     "linalg.py": "485544b229daa1f63691f604a320297d170ae33199b7c337f2c811c4e791b814",
+     "model_artifact.py": "0c430e4cd0534029596679e3427491a63e0a2ba2ba32d9fcc78cf19fe669bc7c",
+     "plants.py": "0161f54d8b2cce386f90fc8b2ede008b19614659371510c1b4c973a6c72083cb",
+     "py.typed": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855",
+     "record.py": "eee92a38b8e7277627db71d9d15547be069bae4b3f1762425ee1b6f5a9ac0f36",
+     "reference_plants.py": "f8bc457f6d27d731cf96d8dc7022e8c5550bbe87200255aba7da59958292bfdf",
+     "reports.py": "fcfc766c53c46707e5e37cb2c7515527454e0f5ff63fd977b6e8274efa72a0a2",
+     "runtime.py": "dfcd5de8b692ed0b9503825b9c065079bb5b94f44248e1e39e3a42db10f26ca5",
+     "schemas/model-artifact-v1.schema.json": "c430c7dd7848b1914f15a511469cfac09f6362b7df8a07c8508cd0bc7081142e",
+     "statuses.py": "908e4061f13707e44f636e167fcac5d8cad381b3e219fe3920790871c051960b"
+    },
+    "install_commit": "19ea6967060166ba09db6cd4563bd87bd6b3d196",
+    "install_kind": "vcs_info",
+    "version": "0.1.0rc1"
+   },
+   "python_version": "3.12.3",
+   "sha256": "8295ee25cfdb239f3e165afceda7f46de73e2b606ff0e2e3d8623e3facd30acc"
+  },
+  "plsr-python": {
+   "byte_count": 8020928,
+   "entry_is_symlink": false,
+   "implementation": "CPython",
+   "plsr": {
+    "files": {
+     "__init__.py": "c0d6030af61ea074abd3eca7a92bd96a7e69fbe50e4bf85c22ce593f9701c0ce",
+     "benchmarks.py": "5b11cb2aec0e9c2169572b79fe6426d7ca98cbd2a0d6801e270598627bc6caf5",
+     "certificates.py": "c92bdc3fe617b53bdf2c13e970f5aa3061c108961c1cd218e98b5b27085f4a40",
+     "charts.py": "589c33fb78eb0d00c2a90da40baee9a3718b6381f52978a6390d442fd3ff57de",
+     "checks.py": "eca0b6644e85b58d44bf13f95757d4b054f40173d1e0d1e65a443866dbded965",
+     "claims.py": "75975df703b6e7d8e1bb4011f4b9a3cb04e6e15747bd98b78ae45f9e5d041402",
+     "constitution.py": "b378b0c178d9c9681adbe03bb4efbe001d0973ace68de5689f3efa5a98029bb7",
+     "discrete_guest.py": "5161cb8131c891309edfdd7638525332c7e19d4c28710671f99d9d2e4fa6d9cc",
+     "equation.py": "b74aeaec74b810977328d0e090c06ba4c5ad0f3255b43c11855051326eb8a0a7",
+     "host_callback.py": "7aad9afb77debcd8fb0061a1b098cb6a5cae32187a5de99605f0c9779d2e5ef0",
+     "linalg.py": "485544b229daa1f63691f604a320297d170ae33199b7c337f2c811c4e791b814",
+     "model_artifact.py": "0c430e4cd0534029596679e3427491a63e0a2ba2ba32d9fcc78cf19fe669bc7c",
+     "plants.py": "0161f54d8b2cce386f90fc8b2ede008b19614659371510c1b4c973a6c72083cb",
+     "py.typed": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855",
+     "record.py": "eee92a38b8e7277627db71d9d15547be069bae4b3f1762425ee1b6f5a9ac0f36",
+     "reference_plants.py": "f8bc457f6d27d731cf96d8dc7022e8c5550bbe87200255aba7da59958292bfdf",
+     "reports.py": "fcfc766c53c46707e5e37cb2c7515527454e0f5ff63fd977b6e8274efa72a0a2",
+     "runtime.py": "dfcd5de8b692ed0b9503825b9c065079bb5b94f44248e1e39e3a42db10f26ca5",
+     "schemas/model-artifact-v1.schema.json": "c430c7dd7848b1914f15a511469cfac09f6362b7df8a07c8508cd0bc7081142e",
+     "statuses.py": "908e4061f13707e44f636e167fcac5d8cad381b3e219fe3920790871c051960b"
+    },
+    "install_commit": "19ea6967060166ba09db6cd4563bd87bd6b3d196",
+    "install_kind": "vcs_info",
+    "version": "0.1.0rc1"
+   },
+   "python_version": "3.12.3",
+   "sha256": "8295ee25cfdb239f3e165afceda7f46de73e2b606ff0e2e3d8623e3facd30acc"
   }
  },
  "pins_by_repository": {

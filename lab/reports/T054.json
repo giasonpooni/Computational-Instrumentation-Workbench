@@ -33,7 +33,7 @@
       "comparison": "abs_le",
       "observed": 0.0004987614543296992,
       "passed": true,
-      "reference": "log-log slope of max |e + v delta| minus 2",
+      "reference": "log-log slope of max |e + v delta| over delta = 0.0001-0.01 s (7 offsets) minus 2",
       "reference_kind": "analytic",
       "tolerance": 0.02
      },
@@ -41,7 +41,7 @@
       "comparison": "abs_le",
       "observed": 0.0,
       "passed": true,
-      "reference": "samples exceeding a_max delta^2 / 2",
+      "reference": "samples exceeding a_max delta^2 / 2 over the scanned offsets",
       "reference_kind": "invariant",
       "tolerance": 0.0
      }
@@ -75,7 +75,7 @@
       "comparison": "abs_le",
       "observed": 9.118140270603092e-17,
       "passed": true,
-      "reference": "|error + S delta| away from knots (m)",
+      "reference": "|error + S delta| away from knots at delta = 0.002 s (m)",
       "reference_kind": "analytic",
       "tolerance": 1e-12
      },
@@ -83,7 +83,7 @@
       "comparison": "abs_le",
       "observed": -0.00017325058082651168,
       "passed": true,
-      "reference": "regression coefficient on -v delta minus the velocity-weighted sinc^2(omega h/2)",
+      "reference": "regression coefficient on -v delta at delta = 0.002 s minus the velocity-weighted sinc^2(omega h/2)",
       "reference_kind": "analytic",
       "tolerance": 0.0005
      }
@@ -163,8 +163,8 @@
       "reference_kind": "refusal"
      },
      {
-      "expected_refusal": "accepted",
-      "observed_refusal": "accepted",
+      "expected_refusal": "none",
+      "observed_refusal": "none",
       "passed": true,
       "reference": "combining after the declared mapping",
       "reference_kind": "refusal"
@@ -180,7 +180,7 @@
       "comparison": "abs_le",
       "observed": 0.0,
       "passed": true,
-      "reference": "interpolation with mapped stamps against true stamps (m)",
+      "reference": "interpolation with stamps mapped by the declared offset 0.00390625 s against true stamps (m)",
       "reference_kind": "analytic",
       "tolerance": 1e-15
      }
@@ -231,7 +231,9 @@
  ],
  "hypothesis": "An uncorrected clock offset delta between two sensors produces an error -v delta to first order at the sample times and exactly -S delta after linear interpolation to a common time, where the interpolant slope S equals the velocity up to a sinc(omega h/2) factor; jitter adds a predictable variance; a declared clock mapping removes the offset.",
  "input_data": [
-  "Declared timing {'rate_a_hz': 100.0, 'rate_b_hz': 30.0, 'offset_s': 0.00390625, 'jitter_s': 0.0005, 'runs': 300}",
+  "Declared timing {'rate_a_hz': 100.0, 'rate_b_hz': 30.0, 'offset_s': 0.00390625, 'jitter_s': 0.0005, 'runs': 300}; offset_s is the clock B offset removed by the declared ClockMapping",
+  "Sample-level offset scan delta in geomspace(0.0001, 0.01, 7) s",
+  "Interpolation offset delta = 0.002 s for the exact -S delta law and the velocity regression",
   "Signal 50 mm sin(2 pi 0.7 t) + 20 mm sin(2 pi 1.9 t + 0.3)",
   "Seed 54"
  ],
@@ -251,28 +253,28 @@
   "python": "3.12.3",
   "scipy": "1.16.2",
   "sources": {
-   "src/ciw/lab/observation.py": "9ebedc1a1693aaa28965ba0c97837ad2d2c45bf0fd360857cf7b32c0993ed5fc",
+   "src/ciw/lab/observation.py": "6e5bf960e17dffb62bdaf29d28be9a0f165fd68f8498d173b66eab08fa22ad70",
    "src/ciw/lab/observation_modes.py": "bfd6aa4471cc876a7ac2fb8790a4a5c4f478c547350b059311f5e6d53702c83e",
    "src/ciw/lab/observation_signals.py": "19e94cb28160a07e5a285b5a4acd76e3820deb37ee5ed180f5c7bf1975a56793"
   },
   "sympy": "1.14.0"
  },
  "recommended_next_task": "T055: add dropped observations",
- "report_id": "sha256:c6ec1f6480b87ba163a0cf1abd1371b60e060cb690c52f3e31acbec681db399d",
+ "report_id": "sha256:baa96697dd633c0adcf689fefe2983591bfd9800de0df13d1d2dc86bd7385a3a",
  "schema": "ciw.lab-task-report.v1",
  "section": "observation",
  "state": "completed",
  "task_id": "T054",
  "tests_passed": [
-  "check: A clock offset delta produces error -v delta + O(delta^2) at the sample times vs log-log slope of max |e + v delta| minus 2",
-  "check: A clock offset delta produces error -v delta + O(delta^2) at the sample times vs samples exceeding a_max delta^2 / 2",
-  "check: After linear interpolation to a common time the offset error is exactly -S delta (S the interpolant slope); its regression on -v delta is the velocity-weighted sinc^2(omega h/2) vs |error + S delta| away from knots (m)",
-  "check: After linear interpolation to a common time the offset error is exactly -S delta (S the interpolant slope); its regression on -v delta is the velocity-weighted sinc^2(omega h/2) vs regression coefficient on -v delta minus the velocity-weighted sinc^2(omega h/2)",
+  "check: A clock offset delta produces error -v delta + O(delta^2) at the sample times vs log-log slope of max |e + v delta| over delta = 0.0001-0.01 s (7 offsets) minus 2",
+  "check: A clock offset delta produces error -v delta + O(delta^2) at the sample times vs samples exceeding a_max delta^2 / 2 over the scanned offsets",
+  "check: After linear interpolation to a common time the offset error is exactly -S delta (S the interpolant slope); its regression on -v delta is the velocity-weighted sinc^2(omega h/2) vs |error + S delta| away from knots at delta = 0.002 s (m)",
+  "check: After linear interpolation to a common time the offset error is exactly -S delta (S the interpolant slope); its regression on -v delta is the velocity-weighted sinc^2(omega h/2) vs regression coefficient on -v delta at delta = 0.002 s minus the velocity-weighted sinc^2(omega h/2)",
   "check: Timestamp jitter adds mean squared error S^2 sigma_j^2 ((1 - w)^2 + w^2) vs per-run mean squared jitter error against the first-order prediction (|z| <= 3.2905, two-sided 99.9 %)",
   "check: A declared clock mapping removes the offset error; combining clocks without one is refused vs combining clock A and clock B records without a mapping",
   "check: A declared clock mapping removes the offset error; combining clocks without one is refused vs combining after the declared mapping",
   "check: A declared clock mapping removes the offset error; combining clocks without one is refused vs applying the mapping to a record of another epoch",
-  "check: A declared clock mapping removes the offset error; combining clocks without one is refused vs interpolation with mapped stamps against true stamps (m)",
+  "check: A declared clock mapping removes the offset error; combining clocks without one is refused vs interpolation with stamps mapped by the declared offset 0.00390625 s against true stamps (m)",
   "pytest: tests/test_lab_observation.py::test_t054_asynchronous_timestamps"
  ],
  "tests_skipped": [],

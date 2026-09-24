@@ -130,14 +130,15 @@
       "tolerance": 90.0
      },
      {
-      "comparison": "le",
-      "observed": 8.944644025454807e-08,
+      "comparison": "signed_le",
+      "observed": -4.472322365985754e-05,
       "passed": true,
-      "reference": "length change across the switch",
-      "reference_kind": "invariant",
-      "tolerance": 0.001
+      "reference": "length change across the bracket minus bracket width x max |dL/deps| (the continuity bound)",
+      "reference_kind": "analytic",
+      "tolerance": 0.0
      }
-    ]
+    ],
+    "derivation": "Each route's coordinate heading is fixed (a constant metric does not bend a translate), and its length has dL/deps = x1 x2 / L, so the minimal length can change by at most the bracket width times max |x1 x2| / L inside the bracket"
    },
    "claim": "A metric perturbation just above eps* = 1/250 (0.4%) turns the shortest-route heading by about 127 deg while the minimal length changes continuously",
    "counterexample": {
@@ -172,9 +173,12 @@
     "rel": 1e-07
    },
    "uncertainty": {
-    "basis": "sweep step in eps; the jump is measured between sweep points bracketing eps*",
+    "basis": "heading_jump_deg (degrees): each route's heading is independent of eps, so the bracket adds nothing and only atan2 and degree-conversion rounding (a few ulps) remain; length_jump (length units): the continuous length change possible between the sweep points bracketing eps*, bracket width times max |dL/deps|",
     "kind": "truncation_bound",
-    "value": 0.0001
+    "value": {
+     "heading_jump_deg": 2.2737367544323206e-13,
+     "length_jump": 4.481267010011209e-05
+    }
    },
    "unit": null,
    "value": {
@@ -195,9 +199,9 @@
  ],
  "generated_artifacts": [
   {
-   "bytes": 15929,
+   "bytes": 15980,
    "path": "artifacts/T031/metric-perturbation.json",
-   "sha256": "b4b4a5d0a1ee397bbbd7d423776cc4bf405188d895ae641d48a1ef0413898a89"
+   "sha256": "6a6b42daf7d1d15ae8273570d6f15d03912b6e119a177ee2eab2a20e785a0bd9"
   },
   {
    "bytes": 3253,
@@ -229,13 +233,13 @@
   },
   "scipy": "1.16.2",
   "sources": {
-   "src/ciw/lab/flat_torus_topology.py": "4d8cf2437759501a1b9fa5ee0d8abfac43345ebee378c6ad08233e9155d4b184",
+   "src/ciw/lab/flat_torus_topology.py": "1221001d96bf1f9aa2f9fea169a2b10bfb37230da11bfb6f1608ba9355c86b9a",
    "src/ciw/lab/flat_torus_topology_lattice.py": "15a33fcd29591e43dec16fa3b9ad26d6b6b86846872e9e6bf815508fb0dade63"
   },
   "sympy": "1.14.0"
  },
  "recommended_next_task": "T032: counterexample library for 'shortest means safest'",
- "report_id": "sha256:cc2aecfbcbf21afe883907e9d840381f2e1c013e13909451d60d3a00d3595a3f",
+ "report_id": "sha256:1af0ba792b50d42348039a9eba35d4754bc9699056696ce7eb24651dc13cdfa4",
  "schema": "ciw.lab-task-report.v1",
  "section": "flat-torus-topology",
  "state": "completed",
@@ -247,7 +251,7 @@
   "check: The shortest route switches at eps* = 4 delta, which vanishes as the unperturbed gap vanishes vs tie multiplicity at eps* minus 2",
   "independent: The shortest route switches at eps* = 4 delta, which vanishes as the unperturbed gap vanishes vs sympy.solve",
   "check: A metric perturbation just above eps* = 1/250 (0.4%) turns the shortest-route heading by about 127 deg while the minimal length changes continuously vs heading jump (deg)",
-  "check: A metric perturbation just above eps* = 1/250 (0.4%) turns the shortest-route heading by about 127 deg while the minimal length changes continuously vs length change across the switch",
+  "check: A metric perturbation just above eps* = 1/250 (0.4%) turns the shortest-route heading by about 127 deg while the minimal length changes continuously vs length change across the bracket minus bracket width x max |dL/deps| (the continuity bound)",
   "pytest: tests/test_lab_flat_torus_topology.py::test_t031_route_switch",
   "pytest: tests/test_lab_flat_torus_topology.py::test_regeneration_is_within_tolerance",
   "pytest: tests/test_lab_flat_torus_topology.py::test_every_task_is_registered_and_completes",

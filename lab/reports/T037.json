@@ -11,7 +11,7 @@
    "hardware_measured": 0,
    "independently_verified": 0,
    "not_established": 1,
-   "numerically_verified": 12,
+   "numerically_verified": 13,
    "provider_backed": 0,
    "synthetic": 0
   },
@@ -25,7 +25,7 @@
   "Christoffel blow-up without curvature blow-up and vice versa",
   "metric blow-up at an infinite-distance boundary",
   "slow curvature blow-up (K ~ r^-0.4) and a finite-distance boundary with K blow-up",
-  "removable metric blow-up at finite distance (left unclassified)",
+  "removable metric blow-up at finite distance (missed: left unclassified, recorded as a counterexample)",
   "cases just beyond each detection threshold",
   "approach loops that are not geodesic-circle preimages",
   "apex evaluation (refused)"
@@ -107,35 +107,118 @@
    "basis": {
     "checks": [
      {
+      "comparison": "ge",
+      "observed": 9.0,
+      "passed": true,
+      "reference": "declared approaches classified as their true type",
+      "reference_kind": "exact_arithmetic",
+      "tolerance": 9.0
+     },
+     {
       "comparison": "abs_le",
       "observed": 0.0,
       "passed": true,
-      "reference": "misclassified declared approaches",
+      "reference": "declared approaches misclassified other than plane-cube-root-chart",
+      "reference_kind": "exact_arithmetic",
+      "tolerance": 0.0
+     },
+     {
+      "comparison": "abs_le",
+      "observed": 0.0,
+      "passed": true,
+      "reference": "regular approaches classified as singular",
       "reference_kind": "exact_arithmetic",
       "tolerance": 0.0
      }
     ]
    },
-   "claim": "Every declared approach is classified as expected, with no false positive at regular points",
+   "claim": "The scan classifies 9 of the 10 declared approaches as their true type, with no false positive at regular points",
    "domain": "computational_pipeline",
    "evidence_status": "numerically_verified",
    "regression_tolerance": {
     "abs": 0,
     "rel": 0
    },
-   "uncertainty": null,
+   "uncertainty": {
+    "basis": "exact classification outcome per scan",
+    "kind": "reference_error",
+    "value": 0
+   },
    "unit": null,
    "value": {
-    "cone-apex": "conical_singularity",
-    "conformal-0.9-boundary": "curvature_singularity",
-    "hyperbolic-boundary": "infinite_distance_boundary",
-    "plane-cube-root-chart": "unclassified",
-    "plane-polar-origin": "coordinate_singularity",
-    "power-graph-1.8-apex": "curvature_singularity",
-    "power-graph-apex": "curvature_singularity",
-    "saddle-origin": "regular",
-    "sphere-equator": "regular",
-    "sphere-north-pole": "coordinate_singularity"
+    "classes": {
+     "cone-apex": "conical_singularity",
+     "conformal-0.9-boundary": "curvature_singularity",
+     "hyperbolic-boundary": "infinite_distance_boundary",
+     "plane-cube-root-chart": "unclassified",
+     "plane-polar-origin": "coordinate_singularity",
+     "power-graph-1.8-apex": "curvature_singularity",
+     "power-graph-apex": "curvature_singularity",
+     "saddle-origin": "regular",
+     "sphere-equator": "regular",
+     "sphere-north-pole": "coordinate_singularity"
+    },
+    "correct": 9
+   }
+  },
+  {
+   "assigned_by": "ciw.lab.evidence",
+   "basis": {
+    "checks": [
+     {
+      "comparison": "ge",
+      "observed": 1.0,
+      "passed": true,
+      "reference": "classified as other than its true type, coordinate_singularity (1 = yes)",
+      "reference_kind": "exact_arithmetic",
+      "tolerance": 1.0
+     },
+     {
+      "comparison": "abs_le",
+      "observed": -2.220446049250313e-16,
+      "passed": true,
+      "reference": "|cond exponent + 4/3| (cond g -> infinity)",
+      "reference_kind": "analytic",
+      "tolerance": 1e-06
+     },
+     {
+      "comparison": "abs_le",
+      "observed": 4.3998144461099287e-08,
+      "passed": true,
+      "reference": "|radial-speed exponent + 2/3| (the point is at finite distance)",
+      "reference_kind": "analytic",
+      "tolerance": 1e-06
+     }
+    ]
+   },
+   "claim": "The scan misses the removable coordinate singularity of the plane in the cube-root chart",
+   "counterexample": {
+    "statement": "The scan detects every coordinate singularity, that is every det g -> 0 or cond g -> infinity at finite distance with bounded K",
+    "witness": {
+     "approach": "plane-cube-root-chart",
+     "observed": "unclassified",
+     "true": "coordinate_singularity"
+    }
+   },
+   "domain": "numerical",
+   "evidence_status": "numerically_verified",
+   "regression_tolerance": {
+    "abs": 1e-06,
+    "rel": 0.0
+   },
+   "uncertainty": {
+    "basis": "least-squares fit on r <= 1e-5; the radial speed carries an O(r^(4/3)) correction from the unscaled coordinate",
+    "kind": "truncation_bound",
+    "value": 1e-06
+   },
+   "unit": null,
+   "value": {
+    "condition_exponent": -1.33333,
+    "det_exponent": -1.33333,
+    "max_abs_curvature": 0.0,
+    "observed": "unclassified",
+    "radial_speed_exponent": -0.666667,
+    "true": "coordinate_singularity"
    }
   },
   {
@@ -616,7 +699,11 @@
     "abs": 0,
     "rel": 0
    },
-   "uncertainty": null,
+   "uncertainty": {
+    "basis": "exact refusal codes",
+    "kind": "reference_error",
+    "value": 0
+   },
    "unit": null,
    "value": {
     "cone apex r = 0 (guard)": "degenerate_metric",
@@ -634,13 +721,6 @@
    "basis": {
     "checks": [
      {
-      "expected_refusal": "conical_singularity",
-      "observed_refusal": "conical_singularity",
-      "passed": true,
-      "reference": "cone curvature at r = 0",
-      "reference_kind": "refusal"
-     },
-     {
       "expected_refusal": "curvature_singularity",
       "observed_refusal": "curvature_singularity",
       "passed": true,
@@ -649,17 +729,20 @@
      }
     ]
    },
-   "claim": "Singular surfaces declare their apex refusal codes, and the guard propagates them unchanged",
+   "claim": "The pointwise guard propagates a refusal code that a surface raises at its own apex unchanged",
    "domain": "computational_pipeline",
    "evidence_status": "numerically_verified",
    "regression_tolerance": {
     "abs": 0,
     "rel": 0
    },
-   "uncertainty": null,
+   "uncertainty": {
+    "basis": "exact refusal codes",
+    "kind": "reference_error",
+    "value": 0
+   },
    "unit": null,
    "value": {
-    "cone curvature at r = 0": "conical_singularity",
     "power graph apex through the guard": "curvature_singularity"
    }
   },
@@ -705,14 +788,14 @@
  ],
  "generated_artifacts": [
   {
-   "bytes": 64716,
+   "bytes": 64728,
    "path": "artifacts/T037/singularity-scans.json",
-   "sha256": "b2b45a2308cece3261a5b95b3d26722fa5fee4c8a822fbf5fc596f5017243638"
+   "sha256": "62bd0cf6b476b9e1d6a77d8802c0e0ac28f23871ba16a517bd423580ba30027d"
   },
   {
-   "bytes": 1311,
+   "bytes": 1341,
    "path": "artifacts/T037/refusals.json",
-   "sha256": "657b7c1c897f9e9175c8346379d8857647b080b9ccae814a5090d8b2a447a8ea"
+   "sha256": "4e489b301abb849217753dfb78a466298f50fb4722adcf31b3067cc55068fbad"
   },
   {
    "bytes": 15843,
@@ -720,16 +803,17 @@
    "sha256": "58e12c58133b978f45ade00a12172aba7aaeb4e2ca4f5cc8ba4d98b8b7d1fb8a"
   }
  ],
- "hypothesis": "A scan into a candidate point, along approach loops that are preimages of geodesic circles, separates coordinate singularities (det g -> 0 or cond g -> infinity with bounded K and circumference ratio 1) from conical points (circumference deficit above 1e-6), curvature singularities (|K| ~ r^a with a <= -0.05) and boundaries at infinite distance (radial speed ~ r^b with b <= -1 + 1e-3); beyond these detection limits it misclassifies. A pointwise guard refuses points whose metric condition number or |K| exceeds its declared bounds, with codes.",
+ "hypothesis": "A scan into a candidate point, along approach loops that are preimages of geodesic circles, separates coordinate singularities (det g -> 0 or cond g -> infinity with bounded K and circumference ratio 1) from conical points (circumference deficit above 1e-6), curvature singularities (|K| ~ r^a with a <= -0.05) and boundaries at infinite distance (radial speed ~ r^b with b <= -1 + 1e-3); beyond these detection limits it misclassifies, and it leaves a metric blow-up at finite distance with bounded K unclassified even when that is a removable coordinate singularity. A pointwise guard refuses points whose metric condition number or |K| exceeds its declared bounds, with codes.",
  "input_data": [
   "10 declared approaches: sphere-north-pole, plane-polar-origin, cone-apex, power-graph-apex, power-graph-1.8-apex, hyperbolic-boundary, conformal-0.9-boundary, plane-cube-root-chart, saddle-origin, sphere-equator",
   "3 detection-limit cases: power-graph-1.99-apex, conformal-0.9995-boundary, cone-small-deficit-apex",
   "the sphere pole with Cartesian loops in chart A",
-  "29 log-spaced distances 1e-1..1e-8"
+  "29 log-spaced distances 1e-1..1e-8",
+  "interface under test: ciw.lab.surfaces at the source digest recorded in provider_runtime_identity.sources"
  ],
  "mathematical_model": "Fit power laws r^a on r in [1e-8, 1e-5] for det g, cond(g), max|Gamma|, |K| and the radial speed |dX/dr|; a fit is clean when its max log residual is <= 0.05. Radial distance int r^b dr diverges iff b <= -1; circumference ratio C(r) / (2 pi rho(r)) -> 1 at smooth points and sin(alpha) at a cone apex.",
  "number": 37,
- "numerical_result": "10/10 declared approaches classified as expected; 3/3 detection-limit cases misclassified as predicted; sphere pole exponents det 2, cond -2, Gamma -1, K 0; r^(3/2) graph K exponent -1.000005, K r -> 1.125 (9/8 expected); cone circumference ratio 0.5; hyperbolic radial-speed exponent -1; Cartesian loops at the sphere pole give ratio 0.832 (conical_singularity); core check accepts cond(g) up to 3.16e+11; 8/8 computed and 2/2 surface-declared refusal codes as expected.",
+ "numerical_result": "9/10 declared approaches classified as their true type (missed: plane-cube-root-chart, read as unclassified); 3/3 detection-limit cases misclassified as predicted; sphere pole exponents det 2, cond -2, Gamma -1, K 0; r^(3/2) graph K exponent -1.000005, K r -> 1.125 (9/8 expected); cone circumference ratio 0.5; hyperbolic radial-speed exponent -1; Cartesian loops at the sphere pole give ratio 0.832 (conical_singularity); core check accepts cond(g) up to 3.16e+11; 8/8 computed refusal codes as expected, and 1/1 surface-raised apex code propagated unchanged by the guard.",
  "observation_model": "Pointwise invariants of the chart; loop length by 64-point trapezoid; radial length by 16-point Gauss-Legendre.",
  "physical_validation_status": {
   "statement": "Physical validation requires acquired hardware evidence; none was acquired for this task.",
@@ -743,14 +827,15 @@
   "python": "3.12.3",
   "scipy": "1.16.2",
   "sources": {
-   "src/ciw/lab/surfaces_discrete.py": "65515cd7d7440c047bb6cba986dbcd2b496978ebb32ed15939e371828e755eef",
-   "src/ciw/lab/surfaces_discrete_charts.py": "0e8ccfb050b8600a65e434970c3d7957327d8a03b8a47ae09457f3ad423c2f47",
+   "src/ciw/lab/surfaces.py": "e8f264c182743d0177d93b961a49d7ddf78f30d79a7a75b9fea4018b10d4eef0",
+   "src/ciw/lab/surfaces_discrete.py": "b47b6d9486e322c3e394e25b99849c0aa22039ce45b946825b0f3dbc1a3013b7",
+   "src/ciw/lab/surfaces_discrete_charts.py": "e1d7e0b8514c7795f0e41b26d993d44ae3f032ea67191b068194ec284f227e71",
    "src/ciw/lab/surfaces_discrete_geometry.py": "d4445a253778e1dff32b68a903a9caf560affa08ca5a7110207e54c8e1baa60e"
   },
   "sympy": "1.14.0"
  },
  "recommended_next_task": "T042: adopt these refusal codes (nonfinite_point, nonfinite_metric, degenerate_metric, curvature_blowup, outside_chart, curvature_singularity, conical_singularity) as the refusal states for invalid or incomplete surface data.",
- "report_id": "sha256:6bd65810c556bcf07e92b3591745568dda3e9c43987aa87e9a605a4f9254aca5",
+ "report_id": "sha256:623001d9a3a006cc0c017d25ab3767e116cb20c6329737064d862dac821f01f7",
  "schema": "ciw.lab-task-report.v1",
  "section": "surfaces-discrete",
  "state": "completed",
@@ -761,7 +846,12 @@
   "check: The sphere pole in the polar chart is a coordinate singularity: det g -> 0 while K stays 1 vs |Gamma exponent + 1|",
   "check: The sphere pole in the polar chart is a coordinate singularity: det g -> 0 while K stays 1 vs |K exponent|",
   "check: The sphere pole in the polar chart is a coordinate singularity: det g -> 0 while K stays 1 vs chart B det g / R^4 at the pole of chart A",
-  "check: Every declared approach is classified as expected, with no false positive at regular points vs misclassified declared approaches",
+  "check: The scan classifies 9 of the 10 declared approaches as their true type, with no false positive at regular points vs declared approaches classified as their true type",
+  "check: The scan classifies 9 of the 10 declared approaches as their true type, with no false positive at regular points vs declared approaches misclassified other than plane-cube-root-chart",
+  "check: The scan classifies 9 of the 10 declared approaches as their true type, with no false positive at regular points vs regular approaches classified as singular",
+  "check: The scan misses the removable coordinate singularity of the plane in the cube-root chart vs classified as other than its true type, coordinate_singularity (1 = yes)",
+  "check: The scan misses the removable coordinate singularity of the plane in the cube-root chart vs |cond exponent + 4/3| (cond g -> infinity)",
+  "check: The scan misses the removable coordinate singularity of the plane in the cube-root chart vs |radial-speed exponent + 2/3| (the point is at finite distance)",
   "check: The graph z = r^(3/2) has a curvature singularity although its Monge metric is regular vs |K exponent + 1|",
   "check: The graph z = r^(3/2) has a curvature singularity although its Monge metric is regular vs |det exponent|",
   "check: The graph z = r^(3/2) has a curvature singularity although its Monge metric is regular vs |K r - 9 c^2 / 8| at r = 1e-8",
@@ -790,8 +880,7 @@
   "check: The pointwise guard and the core check refuse degenerate, blown-up, nonfinite and out-of-chart points with computed codes, and accept curvature below the declared bound vs hyperbolic y = -1 (guard, core outside_chart propagated)",
   "check: The pointwise guard and the core check refuse degenerate, blown-up, nonfinite and out-of-chart points with computed codes, and accept curvature below the declared bound vs nonfinite coordinates (guard)",
   "check: The pointwise guard and the core check refuse degenerate, blown-up, nonfinite and out-of-chart points with computed codes, and accept curvature below the declared bound vs sphere equator (guard)",
-  "check: Singular surfaces declare their apex refusal codes, and the guard propagates them unchanged vs cone curvature at r = 0",
-  "check: Singular surfaces declare their apex refusal codes, and the guard propagates them unchanged vs power graph apex through the guard",
+  "check: The pointwise guard propagates a refusal code that a surface raises at its own apex unchanged vs power graph apex through the guard",
   "check: The core Surface.check accepts sphere-chart points with metric condition number above 1e10 vs max cond(g) accepted by Surface.check on the pole approach",
   "pytest: tests/test_lab_surfaces_discrete.py::test_singularity_scans_classify_every_case",
   "pytest: tests/test_lab_surfaces_discrete.py::test_singularity_detection_limits",
@@ -804,9 +893,10 @@
  "unresolved_assumptions": [
   "The rules assume rotationally symmetric approaches whose radial chart lines are geodesics and whose loops are preimages of geodesic circles; Approach.polar encodes that knowledge of the chart and is chosen by the caller, and a wrong choice misclassifies.",
   "Detection limits: |K| blow-up slower than r^0.05 over the fit window, radial-speed exponents within 1e-3 of -1 and circumference deficits below 1e-6 are misclassified; logarithmic corrections are read through their fitted exponent.",
-  "A metric blow-up at finite distance with bounded K is left unclassified; the cube-root chart of the plane is such a case although it is removable.",
+  "A metric blow-up at finite distance with bounded K is left unclassified, so the removable coordinate singularity of the plane in the cube-root chart is missed (counted as misclassified); telling it apart from a genuine singularity would need a removability test, for example regularity of the metric in radial arclength coordinates.",
   "Non-rotationally-symmetric singular points (edges, cusps along curves) are not covered.",
   "The pointwise guard reports a conical point and a coordinate singularity alike as degenerate_metric, accepts curvature below its declared bound however fast it grows, and does not flag the hyperbolic boundary at any finite y (cond g = 1, K = -1); only the scan separates them.",
-  "The core Surface.check threshold (det g <= 1e-12 max(1, tr g)^2) is left unchanged; a condition-number threshold is proposed as a core change."
+  "The core Surface.check threshold is scale free (det(g / tr g) = det g / (tr g)^2 <= 1e-12, roughly cond g > 1e12) and is left unchanged; a tighter condition bound (1e8, as in require_regular) is proposed as a core change.",
+  "The apex codes that the cone and the power graph raise themselves (conical_singularity, curvature_singularity) are author labels, recorded in refusals.json but not counted as detections."
  ]
 }

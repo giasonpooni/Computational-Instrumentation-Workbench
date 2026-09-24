@@ -2,96 +2,128 @@
  "basis_rotations": [
   {
    "beta": 0.3,
+   "frame_residual": 1.11022302463e-16,
+   "jacobi_relative_gap": 2.1271427145e-08,
    "max_state_difference": 0.0,
    "surface": "sphere",
    "tangent_difference": 0.0
   },
   {
    "beta": 1.1,
+   "frame_residual": 1.50895397977e-17,
+   "jacobi_relative_gap": 2.12669906521e-08,
    "max_state_difference": 1.11022302463e-16,
    "surface": "sphere",
    "tangent_difference": 1.11022302463e-16
   },
   {
    "beta": 2.5,
+   "frame_residual": 1.49899357659e-17,
+   "jacobi_relative_gap": 2.12669906521e-08,
    "max_state_difference": 0.0,
    "surface": "sphere",
    "tangent_difference": 0.0
   },
   {
    "beta": -2.0,
+   "frame_residual": 7.1148330417e-18,
+   "jacobi_relative_gap": 2.12669483512e-08,
    "max_state_difference": 2.49800180541e-16,
    "surface": "sphere",
    "tangent_difference": 1.11022302463e-16
   },
   {
    "beta": 0.3,
+   "frame_residual": 1.11022302463e-16,
+   "jacobi_relative_gap": 1.51949407652e-08,
    "max_state_difference": 0.0,
    "surface": "torus",
    "tangent_difference": 0.0
   },
   {
    "beta": 1.1,
+   "frame_residual": 1.50895397977e-17,
+   "jacobi_relative_gap": 1.51948177726e-08,
    "max_state_difference": 0.0,
    "surface": "torus",
    "tangent_difference": 0.0
   },
   {
    "beta": 2.5,
-   "max_state_difference": 4.4408920985e-16,
+   "frame_residual": 2.22044604925e-16,
+   "jacobi_relative_gap": 1.51948177726e-08,
+   "max_state_difference": 0.0,
    "surface": "torus",
-   "tangent_difference": 5.55111512313e-17
+   "tangent_difference": 0.0
   },
   {
    "beta": -2.0,
+   "frame_residual": 2.22044604925e-16,
+   "jacobi_relative_gap": 1.51921531845e-08,
    "max_state_difference": 1.7763568394e-15,
    "surface": "torus",
    "tangent_difference": 2.22044604925e-16
   },
   {
    "beta": 0.3,
+   "frame_residual": 2.22044604925e-16,
+   "jacobi_relative_gap": 2.26132696502e-09,
    "max_state_difference": 4.4408920985e-16,
    "surface": "saddle",
    "tangent_difference": 1.11022302463e-16
   },
   {
    "beta": 1.1,
+   "frame_residual": 2.22044604925e-16,
+   "jacobi_relative_gap": 2.26144911391e-09,
    "max_state_difference": 1.11022302463e-16,
    "surface": "saddle",
    "tangent_difference": 1.11022302463e-16
   },
   {
    "beta": 2.5,
+   "frame_residual": 4.4408920985e-16,
+   "jacobi_relative_gap": 2.26126769053e-09,
    "max_state_difference": 4.4408920985e-16,
    "surface": "saddle",
-   "tangent_difference": 2.22044604925e-16
+   "tangent_difference": 1.11022302463e-16
   },
   {
    "beta": -2.0,
+   "frame_residual": 2.22044604925e-16,
+   "jacobi_relative_gap": 2.26103040636e-09,
    "max_state_difference": 4.4408920985e-16,
    "surface": "saddle",
    "tangent_difference": 2.22044604925e-16
   },
   {
    "beta": 0.3,
+   "frame_residual": 1.11022302463e-16,
+   "jacobi_relative_gap": 1.23617841097e-08,
    "max_state_difference": 4.4408920985e-16,
    "surface": "hyperbolic-plane",
    "tangent_difference": 1.11022302463e-16
   },
   {
    "beta": 1.1,
+   "frame_residual": 1.50895397977e-17,
+   "jacobi_relative_gap": 1.23615266385e-08,
    "max_state_difference": 3.33066907388e-16,
    "surface": "hyperbolic-plane",
    "tangent_difference": 1.11022302463e-16
   },
   {
    "beta": 2.5,
+   "frame_residual": 1.49899357659e-17,
+   "jacobi_relative_gap": 1.23619570086e-08,
    "max_state_difference": 3.33066907388e-16,
    "surface": "hyperbolic-plane",
    "tangent_difference": 1.11022302463e-16
   },
   {
    "beta": -2.0,
+   "frame_residual": 7.1148330417e-18,
+   "jacobi_relative_gap": 1.23613537397e-08,
    "max_state_difference": 4.4408920985e-16,
    "surface": "hyperbolic-plane",
    "tangent_difference": 1.11022302463e-16

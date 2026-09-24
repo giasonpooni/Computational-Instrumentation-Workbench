@@ -17,7 +17,7 @@
   },
   "primary": "numerically_verified"
  },
- "expected_invariant": "Exact equality of spectra, det and systole; float spectra equal to rounding.",
+ "expected_invariant": "Exact equality of spectra, det and systole; area-one float spectra equal within 1e-8 (limited by the conditioning of skewed bases).",
  "experiment": "Transform, enumerate spectra exactly (row scan with exact filtering), compare; test the correct and the naive winding rules; exhibit the mirror (det -1) and index-2 (det 2) counterexamples; optionally compare fold length pairs with the pinned FTR provider.",
  "failure_modes_checked": [
   "naive winding transport (M instead of M^-1)",
@@ -77,7 +77,7 @@
      }
     ]
    },
-   "claim": "Area-one float spectra agree to rounding under the same basis changes",
+   "claim": "Area-one float spectra (first 30 lengths) agree within 1e-8 under all 368 basis changes, a conditioning-limited agreement rather than unit roundoff",
    "domain": "numerical",
    "evidence_status": "numerically_verified",
    "regression_tolerance": {
@@ -85,7 +85,7 @@
     "rel": 0
    },
    "uncertainty": {
-    "basis": "binary64 Gram entries of skewed bases (entries up to 85)",
+    "basis": "measured relative deviation of binary64 lengths from Mobius images under skewed bases (entries up to 85); far above unit roundoff because the skew amplifies rounding",
     "kind": "roundoff",
     "value": 1.1122324405657753e-10
    },
@@ -110,8 +110,44 @@
    "counterexample": {
     "statement": "Winding labels transform with the same matrix as the basis",
     "witness": {
+     "correct_label": [
+      -1,
+      1
+     ],
      "correct_rule": "c' = M^-1 c",
-     "mismatches": 6428
+     "gram": [
+      "5",
+      "2",
+      "7"
+     ],
+     "lattice": "generic",
+     "matrix": [
+      [
+       -5,
+       -4
+      ],
+      [
+       -1,
+       -1
+      ]
+     ],
+     "mismatches": 6428,
+     "naive_label": [
+      -5,
+      -1
+     ],
+     "q_g_of_winding": "5",
+     "q_h_of_correct_label": "5",
+     "q_h_of_naive_label": "5153",
+     "transformed_gram": [
+      "152",
+      "125",
+      "103"
+     ],
+     "winding": [
+      1,
+      0
+     ]
     }
    },
    "domain": "mathematical",
@@ -203,19 +239,12 @@
       "comparison": "abs_le",
       "observed": 0.0,
       "passed": true,
-      "reference": "squared-area ratio minus 4",
-      "reference_kind": "exact_arithmetic",
-      "tolerance": 0.0
-     },
-     {
-      "comparison": "abs_le",
-      "observed": 0.0,
-      "passed": true,
       "reference": "spectrum unchanged (0 = changed)",
       "reference_kind": "exact_arithmetic",
       "tolerance": 0.0
      }
-    ]
+    ],
+    "derivation": "det(M^T G M) = det(M)^2 det G: a det-2 matrix multiplies the squared area by 4"
    },
    "claim": "A det-2 integer matrix changes area and spectrum (an index-2 sublattice, not a basis change)",
    "domain": "mathematical",
@@ -308,9 +337,9 @@
  ],
  "generated_artifacts": [
   {
-   "bytes": 1490,
+   "bytes": 1904,
    "path": "artifacts/T026/modular-invariance.json",
-   "sha256": "be8b8282f59c7c51d50706e201a9b9f3b09acba568b4156533347e6b40fd199c"
+   "sha256": "75941e3c8c21a62b97bf52016303da72d9425dcf9eb6f9d3afedca7f3dd588d2"
   },
   {
    "bytes": 10046,
@@ -357,25 +386,24 @@
   "python": "3.12.3",
   "scipy": "1.16.2",
   "sources": {
-   "src/ciw/lab/flat_torus_topology.py": "4d8cf2437759501a1b9fa5ee0d8abfac43345ebee378c6ad08233e9155d4b184",
+   "src/ciw/lab/flat_torus_topology.py": "1221001d96bf1f9aa2f9fea169a2b10bfb37230da11bfb6f1608ba9355c86b9a",
    "src/ciw/lab/flat_torus_topology_lattice.py": "15a33fcd29591e43dec16fa3b9ad26d6b6b86846872e9e6bf815508fb0dade63",
    "src/ciw/lab/flat_torus_topology_provider.py": "30fa38e51a20bc8d01beea0e5c44da69f22d7059c04c92c1fea520e5cf6f8806"
   },
   "sympy": "1.14.0"
  },
  "recommended_next_task": "T027: build polygonal translation-surface examples",
- "report_id": "sha256:bc49b3ccf657fcb375a8aef67aba88624ae267afd716f0a33ff4816ee7ee7841",
+ "report_id": "sha256:ca637e94b6a33ec9e06676cf431bf093f2ee9aa56f2f61295e001a88014dd0b6",
  "schema": "ciw.lab-task-report.v1",
  "section": "flat-torus-topology",
  "state": "completed",
  "task_id": "T026",
  "tests_passed": [
   "check: Length spectrum (R^2 <= 60), area and systole are exactly invariant under every tested SL(2,Z) change of basis and under reduction vs exact spectrum/area/systole/winding-transport failures",
-  "check: Area-one float spectra agree to rounding under the same basis changes vs max relative deviation of the first 30 lengths (bases with entries up to 85)",
+  "check: Area-one float spectra (first 30 lengths) agree within 1e-8 under all 368 basis changes, a conditioning-limited agreement rather than unit roundoff vs max relative deviation of the first 30 lengths (bases with entries up to 85)",
   "check: Transporting winding labels with M instead of M^-1 breaks length invariance vs naive-rule mismatches",
   "check: The length spectrum does not determine the oriented shape: a mirror image is isospectral but not SL(2,Z)-equivalent vs isospectral mirror (0 = same spectrum)",
   "check: The length spectrum does not determine the oriented shape: a mirror image is isospectral but not SL(2,Z)-equivalent vs mirror canonical form equal (0 = different)",
-  "check: A det-2 integer matrix changes area and spectrum (an index-2 sublattice, not a basis change) vs squared-area ratio minus 4",
   "check: A det-2 integer matrix changes area and spectrum (an index-2 sublattice, not a basis change) vs spectrum unchanged (0 = changed)",
   "check: Closed-geodesic lengths before and after the fold agree with the pinned FTR length_pair and its winding transport vs FTR reduced-winding mismatches (sign-consistent)",
   "check: Closed-geodesic lengths before and after the fold agree with the pinned FTR length_pair and its winding transport vs FTR length_pair invariance",

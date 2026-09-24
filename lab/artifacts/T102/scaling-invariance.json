@@ -513,5 +513,10 @@
    "unsound": 0
   }
  },
- "unsound_base_verdicts": 0
+ "unsound_base_verdicts": 0,
+ "witness": {
+  "scaled_code": "CERTIFIED_WITH_MARGIN",
+  "scaled_details": "V=1.000e+00, decrease=-1.976e-323, max eig(M)=-4.941e-324 at infx resolution",
+  "unit_code": "DECREASE_NOT_DEFINITE"
+ }
 }

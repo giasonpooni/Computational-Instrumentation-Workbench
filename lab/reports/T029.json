@@ -113,14 +113,6 @@
       "reference": "V - E + F or Riemann-Hurwitz chi differing from the declared chi",
       "reference_kind": "exact_arithmetic",
       "tolerance": 0.0
-     },
-     {
-      "comparison": "abs_le",
-      "observed": 0.0,
-      "passed": true,
-      "reference": "surfaces violating the V - E + F identity (consistency only)",
-      "reference_kind": "invariant",
-      "tolerance": 0.0
      }
     ],
     "derivation": "With chi = V - E + F from the same vertex classes the identity holds for any partition of the corners, so the test uses an independent chi"
@@ -237,13 +229,13 @@
   "python": "3.12.3",
   "scipy": "1.16.2",
   "sources": {
-   "src/ciw/lab/flat_torus_topology.py": "4d8cf2437759501a1b9fa5ee0d8abfac43345ebee378c6ad08233e9155d4b184",
-   "src/ciw/lab/flat_torus_topology_surfaces.py": "654ca2094a5742a0e397ced722161068aab79ec9cd8bca9947b98db5a1f5e4e7"
+   "src/ciw/lab/flat_torus_topology.py": "1221001d96bf1f9aa2f9fea169a2b10bfb37230da11bfb6f1608ba9355c86b9a",
+   "src/ciw/lab/flat_torus_topology_surfaces.py": "da9f9a8e304f9fd8a72044525c78fdd66d2f188ef3d65cfa0d38af31b9f798b2"
   },
   "sympy": "1.14.0"
  },
  "recommended_next_task": "T030: compare smooth and discrete geodesic approximations",
- "report_id": "sha256:87fb82bc6a7ad33a7727073c94608440db5849d8b81c1999759c3be73937c38b",
+ "report_id": "sha256:462f94dfa91bf921bb21f4ffbe8aa698856644db878a9e2395de38febdf2d063",
  "schema": "ciw.lab-task-report.v1",
  "section": "flat-torus-topology",
  "state": "completed",
@@ -254,7 +246,6 @@
   "check: Cone angles: octagon and L-shape one 6 pi point, H(1,1) two 4 pi points, pillowcase four pi points, square and hexagon tori none vs angle recognition residual",
   "check: Gauss-Bonnet sum (2 pi - theta_v) = 2 pi chi holds exactly on every surface with chi known independently of the vertex classes (declared topology; Riemann-Hurwitz for origamis) vs surfaces with nonzero defect against the independent chi",
   "check: Gauss-Bonnet sum (2 pi - theta_v) = 2 pi chi holds exactly on every surface with chi known independently of the vertex classes (declared topology; Riemann-Hurwitz for origamis) vs V - E + F or Riemann-Hurwitz chi differing from the declared chi",
-  "check: Gauss-Bonnet sum (2 pi - theta_v) = 2 pi chi holds exactly on every surface with chi known independently of the vertex classes (declared topology; Riemann-Hurwitz for origamis) vs surfaces violating the V - E + F identity (consistency only)",
   "check: Polygon vertices need not be cone singularities: the glued hexagon's vertices are regular points vs singular vertex classes on the hexagon torus",
   "pytest: tests/test_lab_flat_torus_topology.py::test_t027_t029_surfaces_and_cones",
   "pytest: tests/test_lab_flat_torus_topology.py::test_gauss_bonnet_check_detects_wrong_vertex_classes",

@@ -285,13 +285,13 @@
   "python": "3.12.3",
   "scipy": "1.16.2",
   "sources": {
-   "src/ciw/lab/flat_torus_topology.py": "4d8cf2437759501a1b9fa5ee0d8abfac43345ebee378c6ad08233e9155d4b184",
-   "src/ciw/lab/flat_torus_topology_surfaces.py": "654ca2094a5742a0e397ced722161068aab79ec9cd8bca9947b98db5a1f5e4e7"
+   "src/ciw/lab/flat_torus_topology.py": "1221001d96bf1f9aa2f9fea169a2b10bfb37230da11bfb6f1608ba9355c86b9a",
+   "src/ciw/lab/flat_torus_topology_surfaces.py": "da9f9a8e304f9fd8a72044525c78fdd66d2f188ef3d65cfa0d38af31b9f798b2"
   },
   "sympy": "1.14.0"
  },
  "recommended_next_task": "T028: trace geodesics across glued edges",
- "report_id": "sha256:173384af382c9a6dfc6962fdb402e1dd9aae73bb40f6fd039ac415b2aa97bceb",
+ "report_id": "sha256:6384edc15de5b718e2ba4e6f2a0de60e88a652dca0363fd2663920f819016988",
  "schema": "ciw.lab-task-report.v1",
  "section": "flat-torus-topology",
  "state": "completed",

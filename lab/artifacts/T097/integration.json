@@ -6,16 +6,35 @@
  },
  "optional_providers": {
   "ppda": {
-   "reason": "no ppda checkout bound (needs Provenance-Preserving-Data-Acquisition at a29845e13e55de30b24ae752b896058041d653e6)",
-   "state": "not_bound"
+   "clean": true,
+   "head": "a29845e13e55de30b24ae752b896058041d653e6",
+   "matched": [
+    ".github/workflows/exchange.yml"
+   ],
+   "reason": null,
+   "state": "ready",
+   "tree": "7140bf71289161245e73801e0cd934dc93156509"
   },
   "scr-exchange": {
-   "reason": "no scr-exchange checkout bound (needs Scientific-Computation-Runtime at 5f0409743e0098a0691a88302a9b3dcdcbcf25fd)",
-   "state": "not_bound"
+   "clean": true,
+   "head": "5f0409743e0098a0691a88302a9b3dcdcbcf25fd",
+   "matched": [
+    ".github/workflows/exchange.yml"
+   ],
+   "reason": null,
+   "state": "ready",
+   "tree": "4b9ba4bf1f95562d299714d4ed4bf7b9d0c6e913"
   },
   "set": {
-   "reason": "no set checkout bound (needs State-Estimation-Evaluation-Testbed at 542e672be512bf43b61253f2b2a43cd967cb3062)",
-   "state": "not_bound"
+   "clean": true,
+   "head": "542e672be512bf43b61253f2b2a43cd967cb3062",
+   "matched": [
+    "ciw/exchange-runtime.json",
+    ".github/workflows/exchange.yml"
+   ],
+   "reason": null,
+   "state": "ready",
+   "tree": "25c667fc507eb8404e1f077d46e87ed2fc6abc3d"
   }
  },
  "parts": {
@@ -64,6 +83,45 @@
    ],
    "descriptor_sha256": "223827f3570c6a265a172ddd08d4f6eb7ab5e73c87398087410fad988893d234"
   },
+  "roundtrip": {
+   "authority": {
+    "execution_behavior": "not_assessed",
+    "may_authorize": false,
+    "native_workspace_import": "not_performed",
+    "physical_validation": "not_established",
+    "source_admission": "not_assessed",
+    "verification_independence": "not_established"
+   },
+   "changed_result_refusal": "result_id does not match the artifact content",
+   "links": [
+    "matched_supplied_reference",
+    "matched_supplied_reference",
+    "unresolved_external_reference"
+   ],
+   "status": "conformant",
+   "verification_outcome": "failed"
+  },
+  "set": {
+   "authority": {
+    "execution_behavior": "not_assessed",
+    "may_authorize": false,
+    "native_workspace_import": "not_performed",
+    "physical_validation": "not_established",
+    "source_admission": "not_assessed",
+    "verification_independence": "not_established"
+   },
+   "effective_rank": 2,
+   "identity_status": "caller_declared_reference",
+   "indefinite_covariance": "covariance.matrix is not positive-semidefinite",
+   "status": "conformant",
+   "unchanged_input": true,
+   "validator": {
+    "path": "state_estimation_testbed/contracts.py",
+    "repository": "https://github.com/giasonpooni/State-Estimation-Evaluation-Testbed",
+    "revision": "542e672be512bf43b61253f2b2a43cd967cb3062",
+    "sha256": "2385537daa6147ef2475d17bd75c026fe187077b90841515a9e9378e0246ae54"
+   }
+  },
   "workbench": {
    "reopen_attempts": [],
    "reopened_available": [
@@ -72,7 +130,7 @@
    "reopened_bindings": [],
    "runs": [
     {
-     "bundle_id": "sha256:4bf5df3290fd34a45c63b2dd1f91f9556420614faaa099d003e8ed7222a19ebd",
+     "bundle_id": "sha256:678a509b746e2738c86036fab60635b4d9d62b7dc5b85264af00754d1c15201f",
      "fresh_occurrences": 4,
      "initial_values": [
       0,
@@ -130,9 +188,10 @@
    "workspace_mentions_engine_path": false
   }
  },
- "roundtrip_reason": "no ppda checkout bound (needs Provenance-Preserving-Data-Acquisition at a29845e13e55de30b24ae752b896058041d653e6); no scr-exchange checkout bound (needs Scientific-Computation-Runtime at 5f0409743e0098a0691a88302a9b3dcdcbcf25fd); no set checkout bound (needs State-Estimation-Evaluation-Testbed at 542e672be512bf43b61253f2b2a43cd967cb3062)",
+ "roundtrip_reason": null,
  "scr_identity": {
-  "cargo_locks": {
+  "head": "a59aba283b0304faeeb3e5d305087e7709e171ca",
+  "lockfiles": {
    "crates/Cargo.lock": "24b1db68d762d3457eb40465dae6c3edc8a2da2925d42f3f794d090d18a5f2bc",
    "zk/Cargo.lock": "d306d736c6212b081f441057318041f6b82e64e46348e81ec0f2a36529308613",
    "zk/guest-heat-nexus/Cargo.lock": "21009e13c513af590adb03b25d67b779af5e5c67c25da19f08787e0134416345",
@@ -143,7 +202,6 @@
    "zk/nexus/Cargo.lock": "5231c9bfb2f4f93e985fcee0e534a98069f0f5a5ad3c6b0ed357418f6dcf4201",
    "zk/risc0/Cargo.lock": "589ae1270f71de9e745efac59a6cb6d822c5825d8386ada8e342b242237e2054"
   },
-  "head": "a59aba283b0304faeeb3e5d305087e7709e171ca",
   "tracked_files": 511,
   "tracked_sha256": "b1c1ef22c6de60ecf1d348eff896b9e10ca62e9cff3af06e59b269dda7e455ea",
   "tree": "4068a711534932e8d89bb0d87d373376dafdf6cd"
@@ -159,5 +217,5 @@
   "tree_refusals": [],
   "unmatched": []
  },
- "set_reason": "no set checkout bound (needs State-Estimation-Evaluation-Testbed at 542e672be512bf43b61253f2b2a43cd967cb3062)"
+ "set_reason": null
 }

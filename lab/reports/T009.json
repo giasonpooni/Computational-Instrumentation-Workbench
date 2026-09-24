@@ -81,8 +81,6 @@
       "torus",
       "gaussian-bump",
       "hyperbolic-plane",
-      "plane-polar",
-      "cylinder-polar",
       "sphere-great-circle",
       "hyperbolic-long",
       "torus-outer-equator",
@@ -115,10 +113,6 @@
      "heading": 3.0000000000000027,
      "lateral": 1.0
     },
-    "cylinder-polar": {
-     "heading": 2.000000000000004,
-     "lateral": 1.0
-    },
     "gaussian-bump": {
      "heading": 2.327813238157718,
      "lateral": 0.8457031056482209
@@ -132,10 +126,6 @@
      "lateral": 2.3524096139143134
     },
     "plane": {
-     "heading": 2.000000000000004,
-     "lateral": 1.0
-    },
-    "plane-polar": {
      "heading": 2.000000000000004,
      "lateral": 1.0
     },
@@ -187,7 +177,7 @@
      },
      {
       "comparison": "ge",
-      "observed": 43.0,
+      "observed": 33.0,
       "passed": true,
       "reference": "discordant path pairs",
       "reference_kind": "invariant",
@@ -204,8 +194,6 @@
       "torus",
       "gaussian-bump",
       "hyperbolic-plane",
-      "plane-polar",
-      "cylinder-polar",
       "sphere-great-circle",
       "hyperbolic-long",
       "torus-outer-equator",
@@ -248,8 +236,8 @@
    },
    "unit": null,
    "value": {
-    "discordant_pairs": 43,
-    "kendall_tau": 0.23333333333333334,
+    "discordant_pairs": 33,
+    "kendall_tau": 0.26373626373626374,
     "witness_reversal_margin": 0.946371351997063
    }
   },
@@ -420,7 +408,7 @@
   {
    "assigned_by": "ciw.lab.evidence",
    "basis": {},
-   "claim": "Which starting error dominates the endpoint error of real tool or vehicle paths on physical curved parts",
+   "claim": "The ranking of lateral versus heading start errors computed here predicts which error dominates the endpoint error of real tool or vehicle paths on physical curved parts",
    "domain": "physical",
    "evidence_status": "not_established",
    "uncertainty": null,
@@ -430,14 +418,14 @@
  ],
  "generated_artifacts": [
   {
-   "bytes": 19977,
+   "bytes": 18928,
    "path": "artifacts/T009/columns.json",
-   "sha256": "dbabecc598f9976683f85101e0ebb450c4958f452543ff1f0b96189e059755a0"
+   "sha256": "37fe2f0d4b19c208b415f28912cb16019d6cc31dbb87a8506e1afa3883173d34"
   },
   {
-   "bytes": 3939,
+   "bytes": 3529,
    "path": "artifacts/T009/ranking.svg",
-   "sha256": "89511d5fb209395156e08fd724898acbcca2e97b9531b4fc889a6b5468c8e7eb"
+   "sha256": "0f4fa6f9665cf63aace6a73fee1e200b47e6dd5c5a76fb06bea23fcc575625e2"
   },
   {
    "bytes": 14312,
@@ -452,13 +440,13 @@
  ],
  "hypothesis": "On a constant-K background a curvature change at arclength s moves j_lat(L) with weight sn(L-s) cn(s), which decreases along the path when K <= 0 or sqrt(K) L <= pi/2 (before the first focal distance), and j_head(L) with weight sn(L-s) sn(s), which is symmetric about mid-path for every K and vanishes at both ends; exactly, reversing the curvature profile leaves j_head(L) unchanged. The two columns therefore respond differently to where curvature sits along a path and can order paths differently.",
  "input_data": [
-  "16 declared paths: plane, sphere, cylinder, saddle, torus, gaussian-bump, hyperbolic-plane, plane-polar, cylinder-polar, sphere-great-circle, hyperbolic-long, torus-outer-equator, torus-inner-equator, bump-radial, torus-outer-to-inner, torus-inner-to-outer",
+  "14 declared paths: plane, sphere, cylinder, saddle, torus, gaussian-bump, hyperbolic-plane, sphere-great-circle, hyperbolic-long, torus-outer-equator, torus-inner-equator, bump-radial, torus-outer-to-inner, torus-inner-to-outer",
   "Witness pair torus-outer-to-inner / torus-inner-to-outer: same torus, same length 3, curvature order reversed but not mirror profiles",
   "Curvature bump of amplitude 0.001, width 0.3 at s in [0.5, 1.5, 2.5] on a flat path of length 3.0"
  ],
  "mathematical_model": "Endpoint normal displacement = j_lat(L) delta_perp + j_head(L) delta_alpha; delta j(L) = -int G(L, s) j(s) delta K(s) ds with G(L, s) = j_lat(s) j_head(L) - j_head(s) j_lat(L); reversal maps Phi(L) to D Phi(L)^-1 D; model spaces give j_head/j_lat = tan(sqrt(K)L)/sqrt(K), L, tanh(sqrt(-K)L)/sqrt(-K).",
  "number": 9,
- "numerical_result": "Kendall tau 0.233 with 43 discordant pairs; witness lateral 0.8568 vs 1.803, heading 3.907 vs 2.846; finite-difference confirmation error 1.87e-06; bump response lateral early/late 4.94, heading early/late asymmetry 1.74e-11; reversal reciprocity error 1.23e-11.",
+ "numerical_result": "Kendall tau 0.264 with 33 discordant pairs; witness lateral 0.8568 vs 1.803, heading 3.907 vs 2.846; finite-difference confirmation error 1.87e-06; bump response lateral early/late 4.94, heading early/late asymmetry 1.74e-11; reversal reciprocity error 1.23e-11.",
  "observation_model": "|j(L)| per unit perturbation; confirmed on the witness pair by central differences of perturbed geodesics (eps = 0.001); reversed paths start at the end point with negated velocity.",
  "physical_validation_status": {
   "statement": "Physical validation requires acquired hardware evidence; none was acquired for this task.",
@@ -472,13 +460,13 @@
   "python": "3.12.3",
   "scipy": "1.16.2",
   "sources": {
-   "src/ciw/lab/geodesic_jacobi.py": "7f7307ebfb5c0a38ca1e7b9365fd7df627d9ae001791d99b823122873040d3c1",
-   "src/ciw/lab/geodesic_jacobi_common.py": "8616e9157492f0cd2aeebd695b3501215420c73af2cfbcb8c1b8cd5ab8d23a52"
+   "src/ciw/lab/geodesic_jacobi.py": "70e9794df40fbf882cd117859a112b1301552d2c4faca7979f06e7c287828798",
+   "src/ciw/lab/geodesic_jacobi_common.py": "7cb215a28e357a37f1c42cef6bdcb40e22abf7804ae9d58c4818fa40aa52da53"
   },
   "sympy": "1.14.0"
  },
  "recommended_next_task": "T010: generate near-focus and post-focus counterexamples",
- "report_id": "sha256:9097e67f06757006ee025d1b1a549c2b191c223998b4253396996b814f23d01a",
+ "report_id": "sha256:df2c19647cf9325277cfe7690da2acf36ce155c644dc8a7ec382ce9edc89fd81",
  "schema": "ciw.lab-task-report.v1",
  "section": "geodesic-jacobi",
  "state": "completed",
@@ -508,6 +496,7 @@
  "uncertainty": "Column values carry RK4 error near 1e-8; the reversal margin exceeds it by eight orders.",
  "unresolved_assumptions": [
   "Rankings are over declared paths of unequal lengths except the witness pair",
+  "The polar charts are excluded from the ranking: they re-express flat paths, and the Jacobi columns do not depend on the chart",
   "The witness heading difference comes from the two curvature profiles not being mirror images; the first-order kernels explain it only qualitatively",
   "No physical platform, tool or perturbation statistics were measured"
  ]

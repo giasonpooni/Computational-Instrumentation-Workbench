@@ -10,13 +10,13 @@
    "hardware_measured": 0,
    "independently_verified": 0,
    "not_established": 0,
-   "numerically_verified": 6,
+   "numerically_verified": 7,
    "provider_backed": 0,
    "synthetic": 0
   },
   "primary": "numerically_verified"
  },
- "expected_invariant": "Every fixture refused by the validator it targets with its exact CIW text; wrong-type cases are single-field mutations of a valid input so the refusal is attributable.",
+ "expected_invariant": "Every input with a declared CIW refusal text refused by the validator it targets with that text; wrong-type cases are single-field mutations of a valid input so the refusal is attributable; the committed fixtures equal their generator's bytes.",
  "experiment": "Write each committed fixture from its generator, apply the byte-level validators to each, apply the structural validators to the runtime-generated cases, and compare exact CIW messages.",
  "failure_modes_checked": [
   "duplicate keys",
@@ -42,7 +42,15 @@
       "comparison": "abs_le",
       "observed": 0.0,
       "passed": true,
-      "reference": "malformed fixtures not refused with their expected text",
+      "reference": "malformed inputs with a declared text not refused with it",
+      "reference_kind": "exact_arithmetic",
+      "tolerance": 0.0
+     },
+     {
+      "comparison": "abs_le",
+      "observed": 0.0,
+      "passed": true,
+      "reference": "inputs without a declared refusal that no counterexample finding covers",
       "reference_kind": "exact_arithmetic",
       "tolerance": 0.0
      },
@@ -181,7 +189,7 @@
      }
     ]
    },
-   "claim": "Every malformed exchange fixture is refused by the CIW validator it targets, with the error text retained",
+   "claim": "Every malformed exchange input with a declared CIW refusal text is refused by the validator it targets with exactly that text",
    "domain": "computational_pipeline",
    "evidence_status": "numerically_verified",
    "regression_tolerance": {
@@ -195,8 +203,13 @@
    },
    "unit": null,
    "value": {
-    "fixtures": 19,
-    "refused": 19
+    "inputs": 21,
+    "refused_with_declared_text": 19,
+    "with_declared_refusal": 19,
+    "without_declared_refusal": {
+     "extra top-level workspace field (Session.from_workspace)": "accepted",
+     "incomplete-workspace.json": "session_from_workspace: AttributeError"
+    }
    }
   },
   {
@@ -391,6 +404,40 @@
    "basis": {
     "checks": [
      {
+      "comparison": "abs_le",
+      "observed": 0.0,
+      "passed": true,
+      "reference": "committed malformed fixtures differing from, missing from or extra to the generator",
+      "reference_kind": "exact_arithmetic",
+      "tolerance": 0.0
+     }
+    ]
+   },
+   "claim": "The committed malformed fixtures equal their generator's bytes",
+   "domain": "provenance",
+   "evidence_status": "numerically_verified",
+   "regression_tolerance": {
+    "abs": 0,
+    "rel": 0
+   },
+   "uncertainty": {
+    "basis": "exact counts, digests and string comparisons; no rounding is involved",
+    "kind": "roundoff",
+    "value": 0
+   },
+   "unit": null,
+   "value": {
+    "differing": [],
+    "extra": [],
+    "fixtures": 14,
+    "missing": []
+   }
+  },
+  {
+   "assigned_by": "ciw.lab.evidence",
+   "basis": {
+    "checks": [
+     {
       "expected_refusal": "MALFORMED_RESPONSE: The bound runtime did not return finite, unambiguous JSON",
       "observed_refusal": "MALFORMED_RESPONSE: The bound runtime did not return finite, unambiguous JSON",
       "passed": true,
@@ -425,9 +472,9 @@
  ],
  "generated_artifacts": [
   {
-   "bytes": 13700,
+   "bytes": 15735,
    "path": "artifacts/T095/malformed-refusals.json",
-   "sha256": "ee7ade157ff2ead0c92d80cd9ed6efee77d2b1532770cecc43f3a1d529e154f5"
+   "sha256": "bbee37b9a5311e8aae9146418f8ac66b3ebba32ecfdca7c4627feed12dc7d541"
   }
  ],
  "hypothesis": "Each malformed exchange input (duplicate keys, NaN/Infinity, overflow, wrong schema, oversize, truncated bytes, invalid UTF-8, wrong types, extra fields, forged identity) is refused by the relevant CIW validator.",
@@ -456,8 +503,8 @@
  ],
  "mathematical_model": "Validators: Workbench source.add (energy-accuracy), ciw.session.read_json, ciw.exchange.inspect_exchange (parsing stage, no SET checkout), ciw.exchange._identity, Session.from_workspace, Workbench.restore.",
  "number": 95,
- "numerical_result": "19/19 malformed inputs refused with their expected text; read_json accepted 1e999 as inf and raised RecursionError on 20000-deep nesting; Session.from_workspace raised AttributeError on a version-only workspace; an extra top-level workspace field was accepted and dropped on re-save.",
- "observation_model": "Refused/accepted, exception type and exact message per validator (retained in malformed-refusals.json).",
+ "numerical_result": "19/21 malformed inputs refused with their declared CIW text (19 have one); the other 2 are counterexamples (incomplete-workspace.json: session_from_workspace: AttributeError; extra top-level workspace field (Session.from_workspace): accepted); read_json accepted 1e999 as inf and raised RecursionError on 20000-deep nesting; the extra top-level workspace field was dropped on re-save; committed fixtures match their generator.",
+ "observation_model": "Refused (ValueError), crashed (any other exception) or accepted, exception type and exact message per validator (retained in malformed-refusals.json).",
  "physical_validation_status": {
   "statement": "Physical validation requires acquired hardware evidence; none was acquired for this task.",
   "status": "not_established"
@@ -470,38 +517,39 @@
   "python": "3.12.3",
   "scipy": "1.16.2",
   "sources": {
-   "src/ciw/lab/exchange_provenance_bundles.py": "a505b35560263c1b473912f79e61b15b7e474f8eb1807e691847e4c69791c2d3",
-   "src/ciw/lab/exchange_provenance_bundles_fixtures.py": "f30205e8305a225f24d94b06cba8b519ecea4680ca723aaca3591ff707d04e1c"
+   "src/ciw/lab/exchange_provenance_bundles.py": "3acc6fd6976bb5e6dd8ad3bfc3d09a1d9594ca0a06f4db823581e5b651d4835e",
+   "src/ciw/lab/exchange_provenance_bundles_fixtures.py": "7d6da1148d3744ae1e754b53f697b5b4919aff2666788ae6aec0e48e6e2380c9"
   },
   "sympy": "1.14.0"
  },
  "recommended_next_task": "T096: provider-free conformance of exchange identities and ESM candidate responses.",
- "report_id": "sha256:9f187ad8806e306e65f31f035d434432fc7ad7d564f321e92f01c004ae6dd858",
+ "report_id": "sha256:7cbd246ce3b5734a4ed407877dfefdb8ea8271ebdf6f280bd049911e4a2d695c",
  "schema": "ciw.lab-task-report.v1",
  "section": "exchange-provenance",
  "state": "completed",
  "task_id": "T095",
  "tests_passed": [
-  "check: Every malformed exchange fixture is refused by the CIW validator it targets, with the error text retained vs malformed fixtures not refused with their expected text",
-  "check: Every malformed exchange fixture is refused by the CIW validator it targets, with the error text retained vs deep-nesting.json via exchange_inspect",
-  "check: Every malformed exchange fixture is refused by the CIW validator it targets, with the error text retained vs duplicate-key.json via exchange_inspect",
-  "check: Every malformed exchange fixture is refused by the CIW validator it targets, with the error text retained vs extra-field-energy-log.json via workbench_source_add",
-  "check: Every malformed exchange fixture is refused by the CIW validator it targets, with the error text retained vs infinity.json via exchange_inspect",
-  "check: Every malformed exchange fixture is refused by the CIW validator it targets, with the error text retained vs invalid-utf8.json via exchange_inspect",
-  "check: Every malformed exchange fixture is refused by the CIW validator it targets, with the error text retained vs nan.json via exchange_inspect",
-  "check: Every malformed exchange fixture is refused by the CIW validator it targets, with the error text retained vs overflow.json via exchange_inspect",
-  "check: Every malformed exchange fixture is refused by the CIW validator it targets, with the error text retained vs truncated-energy-log.json via workbench_source_add",
-  "check: Every malformed exchange fixture is refused by the CIW validator it targets, with the error text retained vs wrong-identity-result.json via exchange_identity",
-  "check: Every malformed exchange fixture is refused by the CIW validator it targets, with the error text retained vs wrong-revision-workbench.json via workbench_restore",
-  "check: Every malformed exchange fixture is refused by the CIW validator it targets, with the error text retained vs wrong-schema-energy-log.json via workbench_source_add",
-  "check: Every malformed exchange fixture is refused by the CIW validator it targets, with the error text retained vs wrong-schema-exchange.json via exchange_inspect",
-  "check: Every malformed exchange fixture is refused by the CIW validator it targets, with the error text retained vs wrong-type-energy-log.json via workbench_source_add",
-  "check: Every malformed exchange fixture is refused by the CIW validator it targets, with the error text retained vs extra source payload field",
-  "check: Every malformed exchange fixture is refused by the CIW validator it targets, with the error text retained vs non-canonical base64",
-  "check: Every malformed exchange fixture is refused by the CIW validator it targets, with the error text retained vs oversize-energy-source (4 MiB + 1 byte)",
-  "check: Every malformed exchange fixture is refused by the CIW validator it targets, with the error text retained vs oversize-exchange (1 MiB + 1 byte)",
-  "check: Every malformed exchange fixture is refused by the CIW validator it targets, with the error text retained vs wrong-type selection revision (Session.from_workspace)",
-  "check: Every malformed exchange fixture is refused by the CIW validator it targets, with the error text retained vs wrong-type workspace_version (Session.from_workspace)",
+  "check: Every malformed exchange input with a declared CIW refusal text is refused by the validator it targets with exactly that text vs malformed inputs with a declared text not refused with it",
+  "check: Every malformed exchange input with a declared CIW refusal text is refused by the validator it targets with exactly that text vs inputs without a declared refusal that no counterexample finding covers",
+  "check: Every malformed exchange input with a declared CIW refusal text is refused by the validator it targets with exactly that text vs deep-nesting.json via exchange_inspect",
+  "check: Every malformed exchange input with a declared CIW refusal text is refused by the validator it targets with exactly that text vs duplicate-key.json via exchange_inspect",
+  "check: Every malformed exchange input with a declared CIW refusal text is refused by the validator it targets with exactly that text vs extra-field-energy-log.json via workbench_source_add",
+  "check: Every malformed exchange input with a declared CIW refusal text is refused by the validator it targets with exactly that text vs infinity.json via exchange_inspect",
+  "check: Every malformed exchange input with a declared CIW refusal text is refused by the validator it targets with exactly that text vs invalid-utf8.json via exchange_inspect",
+  "check: Every malformed exchange input with a declared CIW refusal text is refused by the validator it targets with exactly that text vs nan.json via exchange_inspect",
+  "check: Every malformed exchange input with a declared CIW refusal text is refused by the validator it targets with exactly that text vs overflow.json via exchange_inspect",
+  "check: Every malformed exchange input with a declared CIW refusal text is refused by the validator it targets with exactly that text vs truncated-energy-log.json via workbench_source_add",
+  "check: Every malformed exchange input with a declared CIW refusal text is refused by the validator it targets with exactly that text vs wrong-identity-result.json via exchange_identity",
+  "check: Every malformed exchange input with a declared CIW refusal text is refused by the validator it targets with exactly that text vs wrong-revision-workbench.json via workbench_restore",
+  "check: Every malformed exchange input with a declared CIW refusal text is refused by the validator it targets with exactly that text vs wrong-schema-energy-log.json via workbench_source_add",
+  "check: Every malformed exchange input with a declared CIW refusal text is refused by the validator it targets with exactly that text vs wrong-schema-exchange.json via exchange_inspect",
+  "check: Every malformed exchange input with a declared CIW refusal text is refused by the validator it targets with exactly that text vs wrong-type-energy-log.json via workbench_source_add",
+  "check: Every malformed exchange input with a declared CIW refusal text is refused by the validator it targets with exactly that text vs extra source payload field",
+  "check: Every malformed exchange input with a declared CIW refusal text is refused by the validator it targets with exactly that text vs non-canonical base64",
+  "check: Every malformed exchange input with a declared CIW refusal text is refused by the validator it targets with exactly that text vs oversize-energy-source (4 MiB + 1 byte)",
+  "check: Every malformed exchange input with a declared CIW refusal text is refused by the validator it targets with exactly that text vs oversize-exchange (1 MiB + 1 byte)",
+  "check: Every malformed exchange input with a declared CIW refusal text is refused by the validator it targets with exactly that text vs wrong-type selection revision (Session.from_workspace)",
+  "check: Every malformed exchange input with a declared CIW refusal text is refused by the validator it targets with exactly that text vs wrong-type workspace_version (Session.from_workspace)",
   "check: session.read_json accepts an overflowing number as infinity while the exchange and workbench parsers refuse it vs read_json refusals of 1e999",
   "check: session.read_json accepts an overflowing number as infinity while the exchange and workbench parsers refuse it vs read_json values of 1e999 other than inf",
   "check: session.read_json accepts an overflowing number as infinity while the exchange and workbench parsers refuse it vs exchange refusals of 1e999",
@@ -510,6 +558,7 @@
   "check: Session.from_workspace raises AttributeError, not a ValueError refusal, on a workspace holding only its version vs Session.from_workspace on incomplete-workspace.json",
   "check: Session.from_workspace accepts an unknown top-level field and drops it on re-save vs extra-field workspaces refused",
   "check: Session.from_workspace accepts an unknown top-level field and drops it on re-save vs extra field kept after re-save",
+  "check: The committed malformed fixtures equal their generator's bytes vs committed malformed fixtures differing from, missing from or extra to the generator",
   "check: Workbench source.add reports malformed source JSON with text that names a bound runtime vs source.add of duplicate-key.json",
   "pytest: tests/test_lab_exchange_provenance_bundles.py::test_t095_malformed_fixtures_are_refused_with_retained_text",
   "pytest: tests/test_lab_exchange_provenance_bundles.py::test_committed_malformed_fixtures_match_their_generator"

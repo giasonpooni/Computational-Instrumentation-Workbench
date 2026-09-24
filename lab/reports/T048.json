@@ -24,14 +24,21 @@
   "markers outside the image or back-facing (visibility check)",
   "DLT versus ray-midpoint disagreement",
   "chord substituted for geodesic distance",
-  "conversion without a surface model (refused in T045)",
-  "correlated rounding errors (grid phase drawn per marker)"
+  "conversion without a surface model (refused in T045)"
  ],
  "findings": [
   {
    "assigned_by": "ciw.lab.evidence",
    "basis": {
     "checks": [
+     {
+      "comparison": "abs_le",
+      "observed": 0.0,
+      "passed": true,
+      "reference": "markers not visible (front-facing, inside both images)",
+      "reference_kind": "invariant",
+      "tolerance": 0.0
+     },
      {
       "comparison": "abs_le",
       "observed": 3.885780586188048e-16,
@@ -371,20 +378,21 @@
   "python": "3.12.3",
   "scipy": "1.16.2",
   "sources": {
-   "src/ciw/lab/observation.py": "9ebedc1a1693aaa28965ba0c97837ad2d2c45bf0fd360857cf7b32c0993ed5fc",
-   "src/ciw/lab/observation_camera.py": "dbf305a988b5ad39796c8220477dd065671a490a26a9ff03738510296087ab68",
-   "src/ciw/lab/observation_chord.py": "9b6fe24560daf8b06617824d20854f695e1f73774215a03acc41a28855ba164a",
+   "src/ciw/lab/observation.py": "6e5bf960e17dffb62bdaf29d28be9a0f165fd68f8498d173b66eab08fa22ad70",
+   "src/ciw/lab/observation_camera.py": "130cf51175050a5eb947b8d434553bdfa19bd102a33108f414d7a5fa9c651bce",
+   "src/ciw/lab/observation_chord.py": "cfbaaaf604b32b686178ea036d27c153d8eebc7d290444c60d7699c1fc60faf5",
    "src/ciw/lab/observation_modes.py": "bfd6aa4471cc876a7ac2fb8790a4a5c4f478c547350b059311f5e6d53702c83e"
   },
   "sympy": "1.14.0"
  },
  "recommended_next_task": "T049: perturb focal length, principal point and extrinsic rotation",
- "report_id": "sha256:3e5c1827be9704d4f87c211f7ad2521f6aca4c9c4f095243ffb000bd964c5d2e",
+ "report_id": "sha256:5d7165aad96625dbc1194a364e61ec5620ce4c9bfc0fb7bef58f25aac020235d",
  "schema": "ciw.lab-task-report.v1",
  "section": "observation",
  "state": "completed",
  "task_id": "T048",
  "tests_passed": [
+  "check: Noise-free triangulation of the synthetic rig reproduces ground-truth marker chords vs markers not visible (front-facing, inside both images)",
   "check: Noise-free triangulation of the synthetic rig reproduces ground-truth marker chords vs |triangulated chord - true chord| (m)",
   "check: Noise-free triangulation of the synthetic rig reproduces ground-truth marker chords vs DLT against ray-midpoint triangulation (m)",
   "check: Using the camera chord as geodesic distance underestimates it by exactly s - c(s); the largest bias is on the circumferential helix vs measured bias against s - helix_chord(s) from T047 (m)",
@@ -404,9 +412,10 @@
  ],
  "tests_skipped": [],
  "title": "Generate synthetic camera measurements.",
- "uncertainty": "Noise-free results are exact to rounding; noisy RMS values carry about 3.2 % relative Monte Carlo standard error (95 % half-widths per helix in the finding).",
+ "uncertainty": "Noise-free results are exact to rounding; the per-helix noisy RMS values carry 1.7-2.1 % relative Monte Carlo standard error from 500 independent trials (95 % half-widths per helix in the finding).",
  "unresolved_assumptions": [
   "Pinhole cameras with perfectly known calibration (perturbed in T049/T050)",
-  "Marker centres are detected without bias; occlusion is not modelled"
+  "Marker centres are detected without bias (the perspective bias of circular markers is quantified in T050); occlusion is not modelled",
+  "Rounding errors are independent between markers: the grid phase is drawn per marker, camera and axis (a phase shared by the markers of a camera is studied in T051)"
  ]
 }

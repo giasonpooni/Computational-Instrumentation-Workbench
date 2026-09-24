@@ -268,11 +268,12 @@
      "L2": 3.0,
      "N1": 113,
      "N2": 300,
-     "differing_final_components": 6,
+     "differs": true,
      "h_direct": 0.01,
      "h_first": 0.009999999999999998,
      "h_rest": 0.01,
-     "max_abs_difference": 4.440892098500626e-16
+     "max_abs_difference": 4.440892098500626e-16,
+     "step_mismatch": true
     }
    },
    "domain": "computational_pipeline",
@@ -343,9 +344,9 @@
    "sha256": "f262bf06b7bebcf51da232820c2318b2d4e0b35a2309b86f703357b28b15aba8"
   },
   {
-   "bytes": 402,
+   "bytes": 456,
    "path": "artifacts/T014/truncation.json",
-   "sha256": "516f385ff36cf45e165137ff876d13959547126d0a695a2967e4fea766133dcc"
+   "sha256": "55019d3c088c8b9cf16526e560c9051632dac248d2ec83e0168bd87f56d458b9"
   },
   {
    "bytes": 5429,
@@ -361,7 +362,7 @@
  ],
  "mathematical_model": "With (u, v, j, j') -> (u, -v, j, -j') the flow over L is inverted. For a one-step method with local error C h^(p+1), the step with -h has local error C (-h)^(p+1); the composition cancels at order h^(p+1) when p is even, so the return error is O(h^(p+1)) for even p and O(h^p) for odd p. Linear check: RK4 R(z) R(-z) = 1 + z^6/72 + ..., midpoint 1 + z^4/4, Euler 1 - z^2.",
  "number": 14,
- "numerical_result": "Mean reversal orders euler 1.05, midpoint 3.001, rk4 4.999; adaptive return error up to 0.955 x rtol; dyadic continuation difference 0; decimal witness L1 = 1.13 with 6 differing final components (max 4.4e-16); adaptive restart difference 0.0107 x rtol.",
+ "numerical_result": "Mean reversal orders euler 1.05, midpoint 3.001, rk4 4.999; adaptive return error up to 0.955 x rtol; dyadic continuation difference 0; decimal witness L1 = 1.13 with a step-size mismatch and a bitwise different result (max difference 4.4e-16); adaptive restart difference 0.0107 x rtol.",
  "observation_model": "Max absolute difference of the full joint state (geodesic and both Jacobi columns).",
  "physical_validation_status": {
   "statement": "Physical validation requires acquired hardware evidence; none was acquired for this task.",
@@ -375,13 +376,13 @@
   "python": "3.12.3",
   "scipy": "1.16.2",
   "sources": {
-   "src/ciw/lab/geodesic_jacobi_limits.py": "29c8472e91cdf4deb2e1f526ab40e57f703f41e20ef14edd8fb1cc2fc6ede661",
-   "src/ciw/lab/geodesic_jacobi_limits_core.py": "8aa707ec2a190208bf07cd3b1f94a40f191a7a9c4be277714ed8b627e2c5fcb9"
+   "src/ciw/lab/geodesic_jacobi_limits.py": "07d850980ac10ad34ca0d1b8c29942c90fe635e15135a5db1f74e90674e3bb18",
+   "src/ciw/lab/geodesic_jacobi_limits_core.py": "0e0b8f85ed4e83c3fcdc866e8a7e580a17432e174b8db8d8277230e226473d7f"
   },
   "sympy": "1.14.0"
  },
  "recommended_next_task": "T015 (long-horizon drift) and a symmetric integrator (implicit midpoint) for exact reversal",
- "report_id": "sha256:100f23e45d17bb3fb0ec3c6f2b7f49dfcb93c85466a2b35022dcc4e3973f4e7f",
+ "report_id": "sha256:dc1ec51d344daa70c871c520c9020b8a5ef40e2bfb5d628228112bae62fcdc22",
  "schema": "ciw.lab-task-report.v1",
  "section": "geodesic-jacobi",
  "state": "completed",

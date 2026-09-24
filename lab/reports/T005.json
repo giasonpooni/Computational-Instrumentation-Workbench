@@ -18,11 +18,11 @@
   "primary": "numerically_verified"
  },
  "expected_invariant": "Integrated columns equal sn_K and cn_K to RK4 accuracy with K from the surface parameters; K stays constant along the path; closed-form separations approach eps |sn_K| and eps |cn_K|.",
- "experiment": "Integrate geodesic and Jacobi columns jointly on each surface, compare with the model-space closed forms at h and 2h; measure the separation of closed-form perturbed geodesics on the sphere and hyperbolic plane; compare (when bound) with the pinned CSG provider in a subprocess.",
+ "experiment": "Integrate geodesic and Jacobi columns jointly on each surface, compare with the model-space closed forms at h and 2h; measure the separation of closed-form perturbed geodesics on the sphere, the plane (polar chart) and the hyperbolic plane; compare (when bound) with the pinned CSG provider in a subprocess.",
  "failure_modes_checked": [
   "sign of K (oscillation versus exponential growth)",
   "curvature reference taken from the surface parameters, not from gaussian_curvature",
-  "separation law on actual geodesics, not only on the scalar equation",
+  "separation law on actual geodesics, not only on the scalar equation, for K = 1, 0 and -1 (K = 0 on straight lines seen through the polar chart, whose Christoffel symbols are nonzero)",
   "torus equator stays on the equator (theta drift)",
   "flat charts where the columns are exactly 1 and s",
   "provider checkout identity verified before and after execution"
@@ -255,6 +255,30 @@
       "tolerance": 0.005
      },
      {
+      "comparison": "le",
+      "observed": 4.4853010194856324e-14,
+      "passed": true,
+      "reference": "lateral d(gamma_eps, gamma_0)/eps against |cn_K| = 1 on plane-polar (K = 0: parallel geodesics, no remainder), every eps",
+      "reference_kind": "analytic",
+      "tolerance": 1e-09
+     },
+     {
+      "comparison": "abs_le",
+      "observed": -1.3527244252964366e-05,
+      "passed": true,
+      "reference": "heading d(gamma_eps, gamma_0)/eps against |sn_K| on plane-polar: remainder order 2 in eps",
+      "reference_kind": "self_convergence",
+      "tolerance": 0.15
+     },
+     {
+      "comparison": "le",
+      "observed": 4.166661469849109e-06,
+      "passed": true,
+      "reference": "heading d(gamma_eps, gamma_0)/eps against |sn_K| on plane-polar at eps = 0.01",
+      "reference_kind": "analytic",
+      "tolerance": 0.005
+     },
+     {
       "comparison": "abs_le",
       "observed": -0.012132985466016821,
       "passed": true,
@@ -297,11 +321,12 @@
      "nodes": 141,
      "paths": [
       "sphere-great-circle",
+      "plane-polar",
       "hyperbolic-long"
      ]
     }
    },
-   "claim": "Neighbouring closed-form geodesics on the sphere and hyperbolic plane separate as |sn_K| (heading) and |cn_K| (lateral) per unit perturbation",
+   "claim": "Neighbouring closed-form geodesics on the sphere, the plane (seen in its polar chart) and the hyperbolic plane separate as |sn_K| (heading) and |cn_K| (lateral) per unit perturbation (K = 1, 0, -1)",
    "domain": "numerical",
    "evidence_status": "numerically_verified",
    "regression_tolerance": {
@@ -323,6 +348,16 @@
      "lateral": {
       "error_at_smallest_eps": 0.00041768199824695123,
       "order": 1.9878670145339832
+     }
+    },
+    "plane-polar": {
+     "heading": {
+      "error_at_smallest_eps": 4.166661469849109e-06,
+      "order": 1.999986472755747
+     },
+     "lateral": {
+      "error_at_smallest_eps": 4.4853010194856324e-14,
+      "order": null
      }
     },
     "sphere-great-circle": {
@@ -535,8 +570,8 @@
       "comparison": "abs_le",
       "observed": 4.072120660106376e-15,
       "passed": true,
-      "reference": "CSG integrate_jacobi RK4 trace against the ciw RK4 transfer on the same grid (same method, different origin; not a same-origin comparison)",
-      "reference_kind": "cross_implementation",
+      "reference": "CSG integrate_jacobi RK4 trace against the ciw RK4 transfer on the same grid: same method, different origin, so the ciw discrete solution is reproduced to rounding",
+      "reference_kind": "high_precision",
       "tolerance": 1e-09
      }
     ],
@@ -616,9 +651,9 @@
  ],
  "generated_artifacts": [
   {
-   "bytes": 7278,
+   "bytes": 7771,
    "path": "artifacts/T005/separation-law.json",
-   "sha256": "914b5fa9a8363a369eee690f2bfe120c4182555ef5b33a226e7d7326c66b0aa3"
+   "sha256": "1fd5fbb6268a864bdb05e9be555a18c86d4b1cc3582b7752c0b7cd76f07cecb3"
   },
   {
    "bytes": 8298,
@@ -639,11 +674,11 @@
   "hyperbolic-long: K = -1, L = 3.0, 200 RK4 steps",
   "torus-outer-equator: K = 0.333333, L = 11.5, 768 RK4 steps",
   "torus-inner-equator: K = -1, L = 6.5, 434 RK4 steps",
-  "Closed-form perturbed geodesics on sphere-great-circle, hyperbolic-long with eps in [0.04, 0.02, 0.01]"
+  "Closed-form perturbed geodesics on sphere-great-circle, plane-polar, hyperbolic-long with eps in [0.04, 0.02, 0.01]"
  ],
  "mathematical_model": "j'' + K j = 0 with j(0) = 0, j'(0) = 1 (heading) and j(0) = 1, j'(0) = 0 (lateral); on a torus of radii R > r the equators theta = 0 and theta = pi are geodesics with K = cos(theta)/(r(R + r cos(theta))); on constant curvature d(gamma_eps(s), gamma_0(s)) = |eps| |j(s)| (1 + O(eps^2)), e.g. sin(d/2) = sin(eps/2) |sin s| on the unit sphere.",
  "number": 5,
- "numerical_result": "Largest model-space error 2.69e-09; observed orders sphere-great-circle 4, hyperbolic-long 3.98, torus-outer-equator 4, torus-inner-equator 3.98; closed-form separation error at eps = 0.01 sphere-great-circle 1.6e-06, hyperbolic-long 0.000422; ciw vs CSG closed form 2.69e-09, ciw vs CSG RK4 4.07e-15.",
+ "numerical_result": "Largest model-space error 2.69e-09; observed orders sphere-great-circle 4, hyperbolic-long 3.98, torus-outer-equator 4, torus-inner-equator 3.98; closed-form separation error at eps = 0.01 sphere-great-circle 1.6e-06, plane-polar 4.17e-06, hyperbolic-long 0.000422; ciw vs CSG closed form 2.69e-09, ciw vs CSG RK4 4.07e-15.",
  "observation_model": "Relative error max |j - model| / max(1, |model|) over all nodes, per column and rate; exact intrinsic distance of matched points of closed-form geodesics.",
  "physical_validation_status": {
   "statement": "Physical validation requires acquired hardware evidence; none was acquired for this task.",
@@ -658,8 +693,8 @@
    "python": "3.12.3",
    "scipy": "1.16.2",
    "sources": {
-    "src/ciw/lab/geodesic_jacobi.py": "7f7307ebfb5c0a38ca1e7b9365fd7df627d9ae001791d99b823122873040d3c1",
-    "src/ciw/lab/geodesic_jacobi_common.py": "8616e9157492f0cd2aeebd695b3501215420c73af2cfbcb8c1b8cd5ab8d23a52"
+    "src/ciw/lab/geodesic_jacobi.py": "70e9794df40fbf882cd117859a112b1301552d2c4faca7979f06e7c287828798",
+    "src/ciw/lab/geodesic_jacobi_common.py": "7cb215a28e357a37f1c42cef6bdcb40e22abf7804ae9d58c4818fa40aa52da53"
    },
    "sympy": "1.14.0"
   },
@@ -679,7 +714,7 @@
   }
  },
  "recommended_next_task": "T006: compare the integrated columns with finite-difference flow perturbations",
- "report_id": "sha256:67bfd975889c01c7250187d012b5a8d9da0bf5596e7493d15541c55d106058fa",
+ "report_id": "sha256:740e1c074f2c9785b8b5ae85a470ae371fee8ecd01c5c657fb2e5078e02ef356",
  "schema": "ciw.lab-task-report.v1",
  "section": "geodesic-jacobi",
  "state": "completed",
@@ -697,14 +732,17 @@
   "check: The full integrated transfer matrix (lateral column and both rates) follows the model-space law cn_K, sn_K vs cn_K, -K sn_K, sn_K, cn_K on hyperbolic-long",
   "check: The full integrated transfer matrix (lateral column and both rates) follows the model-space law cn_K, sn_K vs cn_K, -K sn_K, sn_K, cn_K on torus-outer-equator",
   "check: The full integrated transfer matrix (lateral column and both rates) follows the model-space law cn_K, sn_K vs cn_K, -K sn_K, sn_K, cn_K on torus-inner-equator",
-  "check: Neighbouring closed-form geodesics on the sphere and hyperbolic plane separate as |sn_K| (heading) and |cn_K| (lateral) per unit perturbation vs lateral d(gamma_eps, gamma_0)/eps against |cn_K| on sphere-great-circle: remainder order 2 in eps",
-  "check: Neighbouring closed-form geodesics on the sphere and hyperbolic plane separate as |sn_K| (heading) and |cn_K| (lateral) per unit perturbation vs lateral d(gamma_eps, gamma_0)/eps against |cn_K| on sphere-great-circle at eps = 0.01",
-  "check: Neighbouring closed-form geodesics on the sphere and hyperbolic plane separate as |sn_K| (heading) and |cn_K| (lateral) per unit perturbation vs heading d(gamma_eps, gamma_0)/eps against |sn_K| on sphere-great-circle: remainder order 2 in eps",
-  "check: Neighbouring closed-form geodesics on the sphere and hyperbolic plane separate as |sn_K| (heading) and |cn_K| (lateral) per unit perturbation vs heading d(gamma_eps, gamma_0)/eps against |sn_K| on sphere-great-circle at eps = 0.01",
-  "check: Neighbouring closed-form geodesics on the sphere and hyperbolic plane separate as |sn_K| (heading) and |cn_K| (lateral) per unit perturbation vs lateral d(gamma_eps, gamma_0)/eps against |cn_K| on hyperbolic-long: remainder order 2 in eps",
-  "check: Neighbouring closed-form geodesics on the sphere and hyperbolic plane separate as |sn_K| (heading) and |cn_K| (lateral) per unit perturbation vs lateral d(gamma_eps, gamma_0)/eps against |cn_K| on hyperbolic-long at eps = 0.01",
-  "check: Neighbouring closed-form geodesics on the sphere and hyperbolic plane separate as |sn_K| (heading) and |cn_K| (lateral) per unit perturbation vs heading d(gamma_eps, gamma_0)/eps against |sn_K| on hyperbolic-long: remainder order 2 in eps",
-  "check: Neighbouring closed-form geodesics on the sphere and hyperbolic plane separate as |sn_K| (heading) and |cn_K| (lateral) per unit perturbation vs heading d(gamma_eps, gamma_0)/eps against |sn_K| on hyperbolic-long at eps = 0.01",
+  "check: Neighbouring closed-form geodesics on the sphere, the plane (seen in its polar chart) and the hyperbolic plane separate as |sn_K| (heading) and |cn_K| (lateral) per unit perturbation (K = 1, 0, -1) vs lateral d(gamma_eps, gamma_0)/eps against |cn_K| on sphere-great-circle: remainder order 2 in eps",
+  "check: Neighbouring closed-form geodesics on the sphere, the plane (seen in its polar chart) and the hyperbolic plane separate as |sn_K| (heading) and |cn_K| (lateral) per unit perturbation (K = 1, 0, -1) vs lateral d(gamma_eps, gamma_0)/eps against |cn_K| on sphere-great-circle at eps = 0.01",
+  "check: Neighbouring closed-form geodesics on the sphere, the plane (seen in its polar chart) and the hyperbolic plane separate as |sn_K| (heading) and |cn_K| (lateral) per unit perturbation (K = 1, 0, -1) vs heading d(gamma_eps, gamma_0)/eps against |sn_K| on sphere-great-circle: remainder order 2 in eps",
+  "check: Neighbouring closed-form geodesics on the sphere, the plane (seen in its polar chart) and the hyperbolic plane separate as |sn_K| (heading) and |cn_K| (lateral) per unit perturbation (K = 1, 0, -1) vs heading d(gamma_eps, gamma_0)/eps against |sn_K| on sphere-great-circle at eps = 0.01",
+  "check: Neighbouring closed-form geodesics on the sphere, the plane (seen in its polar chart) and the hyperbolic plane separate as |sn_K| (heading) and |cn_K| (lateral) per unit perturbation (K = 1, 0, -1) vs lateral d(gamma_eps, gamma_0)/eps against |cn_K| = 1 on plane-polar (K = 0: parallel geodesics, no remainder), every eps",
+  "check: Neighbouring closed-form geodesics on the sphere, the plane (seen in its polar chart) and the hyperbolic plane separate as |sn_K| (heading) and |cn_K| (lateral) per unit perturbation (K = 1, 0, -1) vs heading d(gamma_eps, gamma_0)/eps against |sn_K| on plane-polar: remainder order 2 in eps",
+  "check: Neighbouring closed-form geodesics on the sphere, the plane (seen in its polar chart) and the hyperbolic plane separate as |sn_K| (heading) and |cn_K| (lateral) per unit perturbation (K = 1, 0, -1) vs heading d(gamma_eps, gamma_0)/eps against |sn_K| on plane-polar at eps = 0.01",
+  "check: Neighbouring closed-form geodesics on the sphere, the plane (seen in its polar chart) and the hyperbolic plane separate as |sn_K| (heading) and |cn_K| (lateral) per unit perturbation (K = 1, 0, -1) vs lateral d(gamma_eps, gamma_0)/eps against |cn_K| on hyperbolic-long: remainder order 2 in eps",
+  "check: Neighbouring closed-form geodesics on the sphere, the plane (seen in its polar chart) and the hyperbolic plane separate as |sn_K| (heading) and |cn_K| (lateral) per unit perturbation (K = 1, 0, -1) vs lateral d(gamma_eps, gamma_0)/eps against |cn_K| on hyperbolic-long at eps = 0.01",
+  "check: Neighbouring closed-form geodesics on the sphere, the plane (seen in its polar chart) and the hyperbolic plane separate as |sn_K| (heading) and |cn_K| (lateral) per unit perturbation (K = 1, 0, -1) vs heading d(gamma_eps, gamma_0)/eps against |sn_K| on hyperbolic-long: remainder order 2 in eps",
+  "check: Neighbouring closed-form geodesics on the sphere, the plane (seen in its polar chart) and the hyperbolic plane separate as |sn_K| (heading) and |cn_K| (lateral) per unit perturbation (K = 1, 0, -1) vs heading d(gamma_eps, gamma_0)/eps against |sn_K| on hyperbolic-long at eps = 0.01",
   "check: The torus equators are geodesics of constant curvature 1/(r(R+r)) and -1/(r(R-r)) whose Jacobi columns obey the model-space laws vs K(gamma(s)) - K0 along torus-outer-equator",
   "check: The torus equators are geodesics of constant curvature 1/(r(R+r)) and -1/(r(R-r)) whose Jacobi columns obey the model-space laws vs theta stays on torus-outer-equator",
   "check: The torus equators are geodesics of constant curvature 1/(r(R+r)) and -1/(r(R-r)) whose Jacobi columns obey the model-space laws vs transfer matrix against cn_K, sn_K on torus-outer-equator",
@@ -716,7 +754,7 @@
   "check: Residuals against the model-space law are fourth-order RK4 discretization error vs error ratio at h and 2h on torus-outer-equator",
   "check: Residuals against the model-space law are fourth-order RK4 discretization error vs error ratio at h and 2h on torus-inner-equator",
   "check: ciw joint geodesic + Jacobi transfer matrices match the pinned CSG provider on six constant-curvature paths vs CSG constant_curvature_transfer against ciw.lab.jacobi.constant_curvature",
-  "check: ciw joint geodesic + Jacobi transfer matrices match the pinned CSG provider on six constant-curvature paths vs CSG integrate_jacobi RK4 trace against the ciw RK4 transfer on the same grid (same method, different origin; not a same-origin comparison)",
+  "check: ciw joint geodesic + Jacobi transfer matrices match the pinned CSG provider on six constant-curvature paths vs CSG integrate_jacobi RK4 trace against the ciw RK4 transfer on the same grid: same method, different origin, so the ciw discrete solution is reproduced to rounding",
   "independent: ciw joint geodesic + Jacobi transfer matrices match the pinned CSG provider on six constant-curvature paths vs Curved-Surface-Geodesic-Sensitivity-Runtime@bbc535af29c30997e56fd120320c570830676462",
   "pytest: tests/test_lab_geodesic_jacobi.py::test_t005_separation_law",
   "pytest: tests/test_lab_geodesic_jacobi.py::test_t005_csg_provider_agreement",
@@ -731,6 +769,7 @@
  "uncertainty": "RK4 discretization error (about 1e-8 relative at the fine step), confirmed by step halving.",
  "unresolved_assumptions": [
   "Paths of constant curvature only; variable curvature is covered by T006-T009",
+  "On the flat Cartesian charts (plane, cylinder) RK4 integrates j'' = 0 exactly, so those scalar-equation checks test only that K = 0 is integrated; the K = 0 separation law itself is measured on neighbouring straight lines through the polar chart of the plane",
   "No physical trajectories were measured; the physical-domain claim is recorded as not established"
  ]
 }

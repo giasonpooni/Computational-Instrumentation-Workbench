@@ -1,6 +1,6 @@
 {
  "gpu": {
-  "available": false,
+  "device_answered_probe": false,
   "implemented": false
  },
  "initial_states": [
@@ -42,8 +42,8 @@
   ]
  ],
  "julia": {
-  "available": false,
-  "implemented": false
+  "implemented": false,
+  "tool_on_path": false
  },
  "length": 3.0,
  "python_closed_form_endpoints": [

@@ -18,14 +18,14 @@
   },
   "primary": "numerically_verified"
  },
- "expected_invariant": "Valid records validate; each mutation is refused with its code; a record of kind schema_fixture, or one carrying the fixture's bytes, serial or zero calibration digest, is refused as hardware evidence.",
- "experiment": "Validate the fixture, mutate it 11 ways, check a rank-deficient covariance at lever-arm scale, check identity invariance and the fixture/measurement boundary.",
+ "expected_invariant": "Valid records validate; each mutation is refused with its code; covariance tolerances scale with the matrix; a record of kind schema_fixture, or one carrying the fixture's bytes, serial or zero calibration digest, is refused as hardware evidence.",
+ "experiment": "Partial: only the retention mechanism was exercised. Validate the fixture, mutate it 11 ways, keep a rank-deficient covariance that an absolute threshold would refuse and refuse a negative one at the same scale, check identity invariance and the fixture/measurement boundary. Not performed: retaining raw measurements, calibration and frame metadata, because no acquisition exists.",
  "failure_modes_checked": [
   "digest mismatch",
   "calibration digest and validity window",
   "broken frame chain",
   "invalid rotation or covariance",
-  "scale of covariance tolerances",
+  "scale of covariance tolerances (kept above an absolute threshold, refused when negative at scale)",
   "clock without timezone",
   "fixture promoted or relabelled as a measurement",
   "measurement without raw bytes"
@@ -137,35 +137,50 @@
       "expected_refusal": "none",
       "observed_refusal": "none",
       "passed": true,
-      "reference": "rank-3 PSD covariance with rounding-level negative eigenvalues",
+      "reference": "rank-3 covariance at a 1e6 mm^2 scale with a -1e-8 mm^2 eigenvalue (kept by the scale-aware rule)",
       "reference_kind": "refusal"
      },
      {
-      "comparison": "le",
-      "observed": 2.0528336872047052e-17,
+      "comparison": "ge",
+      "observed": 9973.07337115007,
       "passed": true,
-      "reference": "rounding-level negative eigenvalue relative to the largest",
+      "reference": "rounding residue (max of asymmetry and -min eigenvalue) over an absolute 1e-12 mm^2 threshold: an absolute rule would refuse this covariance",
+      "reference_kind": "analytic",
+      "tolerance": 1.0
+     },
+     {
+      "comparison": "le",
+      "observed": 9.97307337115007e-15,
+      "passed": true,
+      "reference": "negative eigenvalue relative to the largest (rounding level)",
       "reference_kind": "analytic",
       "tolerance": 1e-12
+     },
+     {
+      "expected_refusal": "frame_covariance_invalid",
+      "observed_refusal": "frame_covariance_invalid",
+      "passed": true,
+      "reference": "same scale with an eigenvalue of -1e-3 times the largest",
+      "reference_kind": "refusal"
      }
     ]
    },
-   "claim": "The retention schema keeps a valid rank-deficient frame covariance at 1e2 mm^2 scale",
+   "claim": "The retention schema keeps a rank-deficient frame covariance whose rounding-level negative eigenvalue an absolute threshold would refuse, and still refuses a negative one at the same scale",
    "domain": "computational_pipeline",
    "evidence_status": "numerically_verified",
    "regression_tolerance": {
-    "abs": 1e-09,
+    "abs": 5e-09,
     "rel": 1e-06
    },
    "uncertainty": {
-    "basis": "rounding of the rank-deficient product (mm^2)",
+    "basis": "eigensolver rounding, 6 eps max|lambda| (mm^2)",
     "kind": "roundoff",
-    "value": 2.1721893570630545e-14
+    "value": 1.3322676295501878e-09
    },
    "unit": "mm^2",
    "value": {
-    "max_entry_mm2": 701.1088329904487,
-    "min_eigenvalue_mm2": -2.1721893570630545e-14
+    "max_eigenvalue_mm2": 1000000.0,
+    "min_eigenvalue_mm2": -9.97307337115007e-09
    }
   },
   {
@@ -281,11 +296,12 @@
  "hypothesis": "A retention record that binds raw-byte digests, calibration reference and validity window, frame chain with covariances and an explicit clock is sufficient to supply the acquisition fields of a hardware_measured finding, and every omission is refused.",
  "input_data": [
   "Schema fixture with explicit 'SCHEMA FIXTURE - NOT A MEASUREMENT' raw bytes (not retained)",
-  "11 refused mutations and one valid rank-deficient covariance"
+  "11 refused mutations, one rank-deficient covariance at a 1e6 mm^2 scale with a -1e-8 mm^2 eigenvalue and one with a negative eigenvalue of -1e-3 of its largest",
+  "No acquisition: nothing exists to retain"
  ],
  "mathematical_model": "Record = {raw digests, instrument identity, calibration (applied/not_applied), frame chain links (R, t, C), clock}; identity = SHA-256 of canonical JSON; to_acquisition maps a valid measurement record to device / raw_sha256 (SHA-256 of the raw manifest) / acquired_at / calibration.",
  "number": 139,
- "numerical_result": "11/11 mutations refused with the expected code; rank-deficient covariance kept (min eigenvalue -2.2e-14 mm^2 against a largest of 1.1e+03 mm^2); retained real measurements: 0.",
+ "numerical_result": "11/11 mutations refused with the expected code; rank-deficient covariance kept (min eigenvalue -1.0e-08 mm^2 against a largest of 1.0e+06 mm^2, 1e+04 times an absolute 1e-12 mm^2 threshold); retained real measurements: 0.",
  "observation_model": "No observation: no instrument produced data. The validators read only the declared schema fixture and its mutations.",
  "physical_validation_status": {
   "statement": "Physical validation requires acquired hardware evidence; none was acquired for this task.",
@@ -299,18 +315,18 @@
   "python": "3.12.3",
   "scipy": "1.16.2",
   "sources": {
-   "src/ciw/lab/manufacturing.py": "088763a0bcc42bf085c1e228797a5dc0d702b994f2a49e053cbe2b0a5622e25d",
+   "src/ciw/lab/manufacturing.py": "f4cd90e1df33b910b78daf4b0556a8861e044d83701474f841e85fd9d96f9063",
    "src/ciw/lab/manufacturing_geometry.py": "1db6df2ddf778668da2ffd53a66bcddbff4fc933d6f299e8f283cedc60a9332f",
-   "src/ciw/lab/manufacturing_metrology.py": "afbb6fccf146ca4f47850805c118d2f1bf6186872f381b298ab924a9214257ec",
-   "src/ciw/lab/manufacturing_records.py": "66970104ea454e836c5cbafc3013c90e721c3e96ad7f16780c32250112cac921"
+   "src/ciw/lab/manufacturing_metrology.py": "aef4708b0f296fc66087a6382881a0564c5edcb6d7961b5e472aa711e29feb5d",
+   "src/ciw/lab/manufacturing_records.py": "015ea7fccc586f4b95f64e7ffbc1f6c34eec20b8245778ede3c2324006537087"
   },
   "sympy": "1.14.0"
  },
- "recommended_next_task": "Retain the first MFG-FLAT-PLATE-01 acquisition with this schema, then rerun T138.",
- "report_id": "sha256:a4d5b796a670d9135fd5a4ce554db058040fe2635dd52c92bc3e3f44456b02c7",
+ "recommended_next_task": "Retain the first MFG-FLAT-PLATE-01 acquisition with this schema, then rerun T138, whose pair comparator (compare_pair_distances) compares its marker-pair distances.",
+ "report_id": "sha256:8fbabadb7e328743143d0d7e2f7df52a32da9b95b1425a261094db481f5e1da0",
  "schema": "ciw.lab-task-report.v1",
  "section": "manufacturing",
- "state": "completed",
+ "state": "partial",
  "task_id": "T139",
  "tests_passed": [
   "check: The retention schema refuses records missing raw digests, calibration, frame-chain or clock metadata vs retention mutation: missing raw list",
@@ -324,8 +340,10 @@
   "check: The retention schema refuses records missing raw digests, calibration, frame-chain or clock metadata vs retention mutation: clock without timezone",
   "check: The retention schema refuses records missing raw digests, calibration, frame-chain or clock metadata vs retention mutation: missing clock",
   "check: The retention schema refuses records missing raw digests, calibration, frame-chain or clock metadata vs retention mutation: missing instrument serial",
-  "check: The retention schema keeps a valid rank-deficient frame covariance at 1e2 mm^2 scale vs rank-3 PSD covariance with rounding-level negative eigenvalues",
-  "check: The retention schema keeps a valid rank-deficient frame covariance at 1e2 mm^2 scale vs rounding-level negative eigenvalue relative to the largest",
+  "check: The retention schema keeps a rank-deficient frame covariance whose rounding-level negative eigenvalue an absolute threshold would refuse, and still refuses a negative one at the same scale vs rank-3 covariance at a 1e6 mm^2 scale with a -1e-8 mm^2 eigenvalue (kept by the scale-aware rule)",
+  "check: The retention schema keeps a rank-deficient frame covariance whose rounding-level negative eigenvalue an absolute threshold would refuse, and still refuses a negative one at the same scale vs rounding residue (max of asymmetry and -min eigenvalue) over an absolute 1e-12 mm^2 threshold: an absolute rule would refuse this covariance",
+  "check: The retention schema keeps a rank-deficient frame covariance whose rounding-level negative eigenvalue an absolute threshold would refuse, and still refuses a negative one at the same scale vs negative eigenvalue relative to the largest (rounding level)",
+  "check: The retention schema keeps a rank-deficient frame covariance whose rounding-level negative eigenvalue an absolute threshold would refuse, and still refuses a negative one at the same scale vs same scale with an eigenvalue of -1e-3 times the largest",
   "check: Retention record identity is independent of key order and bound to every raw digest vs identity changes under key reordering",
   "check: Retention record identity is independent of key order and bound to every raw digest vs identity unchanged after altering a raw digest",
   "check: Retention record identity is independent of key order and bound to every raw digest vs raw manifest (acquisition digest) unchanged after altering the second raw file's digest",
@@ -339,6 +357,7 @@
  "title": "Retain raw measurements, calibration, and frame metadata.",
  "uncertainty": "Exact: the outcomes are booleans and refusal codes of deterministic validators; the only floating-point quantity is the rounding-level eigenvalue of the rank-deficient covariance.",
  "unresolved_assumptions": [
+  "No acquisition exists, so no raw measurement, calibration record or frame metadata has been retained: the task stays partial until the first protocol is executed.",
   "Media-type-specific readers (images, point clouds) are not defined; digests cover bytes, not content semantics.",
   "The validators cannot tell whether raw bytes came from an instrument; the runner also requires a hardware probe in the task that cites them."
  ]

@@ -18,10 +18,10 @@
   },
   "primary": "numerically_verified"
  },
- "expected_invariant": "Payloads carry only plant, certificate and numeric sample fields; host statuses are host-owned codes; forwarded codes equal the CIW transcription of the documented order; no window whose guard interval leaves the box is accepted; theta estimates lie within 3 standard errors of the synthetic truth.",
- "experiment": "Run the adapter on every window, serialise the kernel payloads and search them for envelope metadata, evaluate every forwarded sample with PLSR, apply the host's window rule, and compare with the documented decision order.",
+ "expected_invariant": "Emitted samples carry only the four sample fields with numeric values; host statuses are host-owned codes; forwarded codes equal the CIW transcription of the documented order; no window whose guard interval leaves the box is accepted; theta estimates lie within 3 standard errors of the synthetic truth.",
+ "experiment": "Run the adapter on every window, serialise the samples it emits and search them for envelope metadata, evaluate every forwarded sample with PLSR, apply the host's window rule, and compare with the documented decision order.",
  "failure_modes_checked": [
-  "metadata in the kernel payload",
+  "metadata in the adapter's emitted samples",
   "non-numeric or extra sample field",
   "host status forwarded to the kernel",
   "kernel accepts a host-owned code",
@@ -210,7 +210,7 @@
       "comparison": "abs_le",
       "observed": 0.0,
       "passed": true,
-      "reference": "envelope keys or strings found in serialised payloads",
+      "reference": "envelope keys or strings found in the serialised adapter output",
       "reference_kind": "invariant",
       "tolerance": 0.0
      },
@@ -218,7 +218,7 @@
       "comparison": "ge",
       "observed": 1.0,
       "passed": true,
-      "reference": "positive control: leaks flagged in a payload with a planted sensor id",
+      "reference": "positive control: leaks flagged in adapter output with a planted sensor id",
       "reference_kind": "invariant",
       "tolerance": 1.0
      },
@@ -232,7 +232,7 @@
      }
     ]
    },
-   "claim": "Kernel payloads built by the adapter carry only the declared model and numeric sample fields, and no envelope metadata",
+   "claim": "Samples the adapter emits for the kernel carry only the plsr-sample-v1 fields with numeric values, and no envelope metadata",
    "domain": "computational_pipeline",
    "evidence_status": "numerically_verified",
    "regression_tolerance": {
@@ -246,9 +246,10 @@
    },
    "unit": null,
    "value": {
+    "emitted_windows": 4,
     "malformed_samples": 0,
     "metadata_leaks": [],
-    "payloads": 12
+    "samples": 12
    }
   },
   {
@@ -452,7 +453,7 @@
  "mathematical_model": "Declared discrete map A(theta) = I + h [[0, 1], [-(4 + theta), -0.4]], h = 0.01 s, theta in [-0.5, 0.5], common P from the nominal discrete Lyapunov equation (exactly valid at both vertices, hence on the box by convexity). An EKF on (x, v, theta) yields x_hat, theta_hat, its standard error se and the innovation NIS; mean NIS above 1 + 6 sqrt(2/N) is MODEL_MISMATCH. The adapter forwards theta_hat and theta_hat +- 3 se; the host accepts a window only if the kernel certifies all three.",
  "number": 113,
  "numerical_result": "Windows: 8; forwarded ['nominal theta 0.1', 'nominal theta -0.3', 'estimate near bound theta 0.48', 'estimate outside box theta 0.9'] as 12 samples with kernel codes {'nominal theta 0.1': {'estimate': 'CERTIFIED_WITH_MARGIN', 'lower': 'CERTIFIED_WITH_MARGIN', 'upper': 'CERTIFIED_WITH_MARGIN'}, 'nominal theta -0.3': {'estimate': 'CERTIFIED_WITH_MARGIN', 'lower': 'CERTIFIED_WITH_MARGIN', 'upper': 'CERTIFIED_WITH_MARGIN'}, 'estimate near bound theta 0.48': {'estimate': 'CERTIFIED_WITH_MARGIN', 'lower': 'CERTIFIED_WITH_MARGIN', 'upper': 'OUTSIDE_PARAMETER_BOX'}, 'estimate outside box theta 0.9': {'estimate': 'OUTSIDE_PARAMETER_BOX', 'lower': 'OUTSIDE_PARAMETER_BOX', 'upper': 'OUTSIDE_PARAMETER_BOX'}}; host decisions {'nominal theta 0.1': True, 'nominal theta -0.3': True, 'estimate near bound theta 0.48': False, 'estimate outside box theta 0.9': False}; host statuses {'structural mismatch damping 3': 'MODEL_MISMATCH', 'stale window': 'STALE_STATE', 'sensor dropout': 'INVALID_SENSOR_DATA', 'certificate expired': 'CERTIFICATE_EXPIRED'}; metadata leaks 0; malformed samples 0; guard errors 0; theta estimate misses 0 (largest forwarded se 0.0121); kernel refusal of host codes {'CERTIFICATE_EXPIRED': 'raises ValueError', 'INVALID_SENSOR_DATA': 'raises ValueError', 'MODEL_MISMATCH': 'raises ValueError', 'STALE_STATE': 'raises ValueError'}.",
- "observation_model": "Adapter outputs (samples or host status), serialised kernel payloads, PLSR codes for forwarded samples, the host's window decision, and PLSR's treatment of host-owned codes.",
+ "observation_model": "Adapter outputs (samples or host status), the serialised samples the adapter emits for forwarding, PLSR codes for forwarded samples, the host's window decision, and PLSR's treatment of host-owned codes.",
  "physical_validation_status": {
   "statement": "Physical validation requires acquired hardware evidence; none was acquired for this task.",
   "status": "not_established"
@@ -482,15 +483,15 @@
   },
   "scipy": "1.16.2",
   "sources": {
-   "src/ciw/lab/lyapunov.py": "58d6c7473f0a42002b57888de0ccfbbf73b571bbbabbf9ee81e0a05c734f2320",
+   "src/ciw/lab/lyapunov.py": "cbcb4d58d7313d7c537957a1b7dd35039a21bae80125bf59147eeed2c1232bbb",
    "src/ciw/lab/lyapunov_provider.py": "da3465b48b5f5efc47bfe6ab8379cf2cf2bc23e4835dc7ff047252e77fa6ef17",
-   "src/ciw/lab/lyapunov_reference.py": "fa37ef453c23ad2bed2eab41132e72670e166b93eebd5fc9d67a4a89a7c92cca",
-   "src/ciw/lab/lyapunov_research.py": "528422e4137222e00fd93c63ac22a4bb326fe469030d347418427bac34907d0f"
+   "src/ciw/lab/lyapunov_reference.py": "bdf0bb5074ae2caca6c8a5d8e63a15e346b007098e6def6b058d077719bc1336",
+   "src/ciw/lab/lyapunov_research.py": "8e6e5b4ac0a8ba3b12d4ee13ced778fe5070b43f6766752ffc8c5b88f1a4baef"
   },
   "sympy": "1.14.0"
  },
  "recommended_next_task": "T114: servo-axis pilot specification; then bind the adapter to acquired encoder data (hardware-gated) and check the coverage of the three-standard-error interval there.",
- "report_id": "sha256:de5a6ddfe1ca34e8c642d7c271e328d39581a271eed77fa034ef47ef11ad5c5a",
+ "report_id": "sha256:040d07a33d3222f81962de065f623c500360cfc512fa773442608d2fbb745ca9",
  "schema": "ciw.lab-task-report.v1",
  "section": "lyapunov",
  "state": "completed",
@@ -503,9 +504,9 @@
   "check: The kernel refuses every host-owned code the adapter emitted vs require_status(INVALID_SENSOR_DATA)",
   "check: The kernel refuses every host-owned code the adapter emitted vs require_status(MODEL_MISMATCH)",
   "check: The kernel refuses every host-owned code the adapter emitted vs require_status(STALE_STATE)",
-  "check: Kernel payloads built by the adapter carry only the declared model and numeric sample fields, and no envelope metadata vs envelope keys or strings found in serialised payloads",
-  "check: Kernel payloads built by the adapter carry only the declared model and numeric sample fields, and no envelope metadata vs positive control: leaks flagged in a payload with a planted sensor id",
-  "check: Kernel payloads built by the adapter carry only the declared model and numeric sample fields, and no envelope metadata vs samples with extra, missing or non-finite fields",
+  "check: Samples the adapter emits for the kernel carry only the plsr-sample-v1 fields with numeric values, and no envelope metadata vs envelope keys or strings found in the serialised adapter output",
+  "check: Samples the adapter emits for the kernel carry only the plsr-sample-v1 fields with numeric values, and no envelope metadata vs positive control: leaks flagged in adapter output with a planted sensor id",
+  "check: Samples the adapter emits for the kernel carry only the plsr-sample-v1 fields with numeric values, and no envelope metadata vs samples with extra, missing or non-finite fields",
   "check: The adapter forwards theta_hat with both ends of its three-standard-error interval, and a near-bound estimate yields an interval end outside the box vs forwarded samples whose theta differs from theta_hat, theta_hat - 3 se or theta_hat + 3 se",
   "check: The adapter forwards theta_hat with both ends of its three-standard-error interval, and a near-bound estimate yields an interval end outside the box vs positive control: forwarded windows with theta_hat inside the box and an interval end outside",
   "check: Host statuses are decided in the adapter, are host-owned codes and are never forwarded vs adapter statuses outside the host-owned list",

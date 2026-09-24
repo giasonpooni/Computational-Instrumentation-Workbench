@@ -133,7 +133,7 @@
       "comparison": "abs_le",
       "observed": 0.0,
       "passed": true,
-      "reference": "reopened replay not dated before its source bundle",
+      "reference": "reopened replay dated before its source bundle (0 = shown)",
       "reference_kind": "exact_arithmetic",
       "tolerance": 0.0
      }
@@ -229,13 +229,13 @@
   "python": "3.12.3",
   "scipy": "1.16.2",
   "sources": {
-   "src/ciw/lab/exchange_provenance.py": "5cc267c7777c9b434b8747b0cc841ac85313e1cfb6ff4c429ee93aa5ddbb645b",
-   "src/ciw/lab/exchange_provenance_common.py": "22028c4008079fba23c5e807de0104ba1a0014027e1d40a9209881cdf232f486"
+   "src/ciw/lab/exchange_provenance.py": "f55593eb90af9ed82e40f0f04987c7f0a06cf1c40e7079b0a371e0506607618b",
+   "src/ciw/lab/exchange_provenance_common.py": "f8e765184af4e893a0c4c6d9e5cb2988b79e6f3dfc3d941444f335ecc894d775"
   },
   "sympy": "1.14.0"
  },
  "recommended_next_task": "T086 (mutate verification subject)",
- "report_id": "sha256:1fd3e83700657857b60e781353b278dc5f366d9583274e143a74cc341815cc15",
+ "report_id": "sha256:acac1286bdb3d9b3a8ea4dd02c5aa7a8a4f9e9320f3fcebab8520181d1a694c9",
  "schema": "ciw.lab-task-report.v1",
  "section": "exchange-provenance",
  "state": "completed",
@@ -248,7 +248,7 @@
   "check: Replay receipt replayed digest forgeries that leave a digest stale or contradict a recomputed, fixed or cross-referenced value are refused with the pinned message vs harness control: the forger's recomputation of the unedited workspace reproduces every CIW digest",
   "check: Replay receipt replayed digest forgeries that leave a digest stale or contradict a recomputed, fixed or cross-referenced value are refused with the pinned message vs harness control: the unedited saved workspace reopens",
   "check: Surviving mutant receipt-replayed.reidentified-bundle: a replay re-sessioned and dated before its source, with recomputed digests, reopens vs receipt-replayed.reidentified-bundle: accepted (1 = accepted)",
-  "check: Surviving mutant receipt-replayed.reidentified-bundle: a replay re-sessioned and dated before its source, with recomputed digests, reopens vs reopened replay not dated before its source bundle",
+  "check: Surviving mutant receipt-replayed.reidentified-bundle: a replay re-sessioned and dated before its source, with recomputed digests, reopens vs reopened replay dated before its source bundle (0 = shown)",
   "pytest: tests/test_lab_exchange_provenance.py::test_receipt_digest_mutations"
  ],
  "tests_skipped": [],

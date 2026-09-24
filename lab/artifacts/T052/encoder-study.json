@@ -11,6 +11,7 @@
  ],
  "falling_engaged_offset_m": 8.165397611531455e-19,
  "falling_fraction": 0.45825,
+ "max_abs_reference_m": 0.01561828997961133,
  "naive_bias_error_over_backlash": 0.49788561310110585,
  "naive_estimates": [
   1.000430368260331,

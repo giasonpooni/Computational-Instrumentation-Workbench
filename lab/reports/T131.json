@@ -19,7 +19,7 @@
   "primary": "numerically_verified"
  },
  "expected_invariant": "SS_total = SS_P + SS_O + SS_PO + SS_E exactly; raw component estimators are unbiased.",
- "experiment": "Simulate studies, estimate components, compare means with truth in standard errors, record the %GRR sampling distribution and the truncation frequency, and check refusals of unbalanced data.",
+ "experiment": "Simulate studies, estimate components, compare means with truth in standard errors, record the %GRR sampling distribution and the truncation frequency, check refusals of unbalanced data, and write the procedure of the real crossed and type-1 studies with their thresholds as hypotheses.",
  "failure_modes_checked": [
   "SS decomposition",
   "negative variance estimates (truncation)",
@@ -157,9 +157,13 @@
     "rel": 1e-06
    },
    "uncertainty": {
-    "basis": "95% half-width of the 5% and 95% quantile levels (probability)",
+    "basis": "half-widths of the distribution-free 95% order-statistic intervals of the sample %GRR quantiles (%); the true %GRR is exact",
     "kind": "monte_carlo_95ci",
-    "value": 0.009551858457912784
+    "value": {
+     "0.05": 0.3508691381612117,
+     "0.5": 0.38959595913147815,
+     "0.95": 0.9156735743314783
+    }
    },
    "unit": "%",
    "value": {
@@ -264,17 +268,23 @@
  ],
  "generated_artifacts": [
   {
-   "bytes": 1935,
+   "bytes": 2052,
    "path": "artifacts/T131/gage-rr.json",
-   "sha256": "f9859ec7eaa18084ab5a46495660767049b41bc1bfae52884349f308811cc82b"
+   "sha256": "7ec414e1f6ad28c9031796710c8738ef7695ea25ea1dc3a7c6791c3a54fd008d"
+  },
+  {
+   "bytes": 15202,
+   "path": "artifacts/T131/gage-rr-procedure.json",
+   "sha256": "3c55554fe1d94338a760838d40527e2bd345d3379300a7fa666aadda0bae8751"
   }
  ],
- "hypothesis": "The ANOVA method recovers the variance components of a balanced crossed study without bias (before truncation), and a single 10 x 3 x 3 study estimates %GRR only within a wide sampling interval.",
+ "hypothesis": "The ANOVA method recovers the variance components of a balanced crossed study without bias (before truncation), and a single 10 x 3 x 3 study estimates %GRR only within a wide sampling interval; the procedure of a real study must therefore fix its parts, run order, blinding, re-fixturing and reference variation in advance.",
  "input_data": [
   "Declared synthetic truth (mm): part 0.050, operator 0.006, interaction 0.004, repeatability 0.010",
-  "Design 10 parts x 3 operators x 3 replicates; 2000 simulated studies (seed 20260928)"
+  "Design 10 parts x 3 operators x 3 replicates; 2000 simulated studies (seed 20260928)",
+  "Procedure (gage-rr-procedure.json): the ten parts of each protocol are ten features of its specimen (plate marker pairs, cylinder marker pairs, coupon target separations); SHA-256-keyed run order per replicate and operator; re-fixturing before every replicate round; blinded coded features; a type-1 study on the SG-200 100 mm step"
  ],
- "mathematical_model": "y_ijk = mu + P_i + O_j + (PO)_ij + e_ijk; expected mean squares give s_e^2 = MS_E, s_po^2 = (MS_PO - MS_E)/r, s_o^2 = (MS_O - MS_PO)/(p r), s_p^2 = (MS_P - MS_PO)/(o r); %GRR = 100 sqrt(GRR / total); ndc = 1.41 s_p / s_GRR.",
+ "mathematical_model": "y_ijk = mu + P_i + O_j + (PO)_ij + e_ijk; expected mean squares give s_e^2 = MS_E, s_po^2 = (MS_PO - MS_E)/r, s_o^2 = (MS_O - MS_PO)/(p r), s_p^2 = (MS_P - MS_PO)/(o r); %GRR = 100 sqrt(GRR / total); ndc = 1.41 s_p / s_GRR; type-1 study Cg = 0.2 T / (6 s), Cgk = (0.1 T - |bias|) / (3 s).",
  "number": 131,
  "numerical_result": "True %GRR 23.94% (ndc 5.72); single-study 90% interval [16.5%, 38.9%]; operator component truncated in 10.8% of studies (F-distribution: 11.3%).",
  "observation_model": "Synthetic readings only; no gage, operator or part was involved.",
@@ -290,15 +300,15 @@
   "python": "3.12.3",
   "scipy": "1.16.2",
   "sources": {
-   "src/ciw/lab/manufacturing.py": "088763a0bcc42bf085c1e228797a5dc0d702b994f2a49e053cbe2b0a5622e25d",
+   "src/ciw/lab/manufacturing.py": "f4cd90e1df33b910b78daf4b0556a8861e044d83701474f841e85fd9d96f9063",
    "src/ciw/lab/manufacturing_geometry.py": "1db6df2ddf778668da2ffd53a66bcddbff4fc933d6f299e8f283cedc60a9332f",
-   "src/ciw/lab/manufacturing_metrology.py": "afbb6fccf146ca4f47850805c118d2f1bf6186872f381b298ab924a9214257ec",
-   "src/ciw/lab/manufacturing_records.py": "66970104ea454e836c5cbafc3013c90e721c3e96ad7f16780c32250112cac921"
+   "src/ciw/lab/manufacturing_metrology.py": "aef4708b0f296fc66087a6382881a0564c5edcb6d7961b5e472aa711e29feb5d",
+   "src/ciw/lab/manufacturing_records.py": "015ea7fccc586f4b95f64e7ffbc1f6c34eec20b8245778ede3c2324006537087"
   },
   "sympy": "1.14.0"
  },
  "recommended_next_task": "T140: feed measured repeatability into the uncertainty budget once a real study exists (retained via T139).",
- "report_id": "sha256:54202d4bf05e27bca8e20137db4dabbec3f643ee35c5fd9385754ecdc641817e",
+ "report_id": "sha256:e08c2922d937b8537f65816f73b326f9faa3195e2b81867aba5cfffee03e82b5",
  "schema": "ciw.lab-task-report.v1",
  "section": "manufacturing",
  "state": "completed",
@@ -320,9 +330,10 @@
  ],
  "tests_skipped": [],
  "title": "Define repeatability and Gage R&R procedures.",
- "uncertainty": "Monte Carlo standard errors are in the checks; quantiles are sample quantiles of 2000 studies.",
+ "uncertainty": "Monte Carlo standard errors are in the checks; quantiles are sample quantiles of 2000 studies with distribution-free 95% order-statistic intervals (in %).",
  "unresolved_assumptions": [
   "AIAG interaction pooling (p > 0.25) is not applied; components are reported unpooled.",
-  "Normal random effects; real operator effects may be systematic or drift in time."
+  "Normal random effects; real operator effects may be systematic or drift in time.",
+  "Features of one specimen stand in for parts, so the between-part variance is a spread of measurands, not of a process; the procedure reports %GRR against the declared tolerance (P/T) for that reason."
  ]
 }

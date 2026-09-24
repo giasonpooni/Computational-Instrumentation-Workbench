@@ -38,10 +38,10 @@
   "max_accepted_condition": 316227766017.1712
  },
  "declared_by_surface": {
-  "cone curvature at r = 0": {
-   "expected": "conical_singularity",
-   "observed": "conical_singularity"
-  },
+  "cone curvature at r = 0": "conical_singularity",
+  "power graph metric at rho = 0": "curvature_singularity"
+ },
+ "propagated_by_guard": {
   "power graph apex through the guard": {
    "expected": "curvature_singularity",
    "observed": "curvature_singularity"

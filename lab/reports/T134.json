@@ -18,12 +18,13 @@
   },
   "primary": "numerically_verified"
  },
- "expected_invariant": "Envelope equals the sup over box vertices to second order; standoff series within 0.1% (+ 1e-9 mm); TCP length element matches the polyline length; no cusp while H < concave radius.",
- "experiment": "Integrate the route with Jacobi fields, perturb at the box vertices exactly, ray-cast standoff at nine stations, build the TCP path for both tools and count reversals.",
+ "expected_invariant": "Envelope equals the sup over box vertices to second order; standoff series within 0.1% (+ 1e-9 mm); |dP/ds| equals the closed-form factor at every node and the polyline speed segment by segment; no cusp while H < concave radius.",
+ "experiment": "Integrate the route with Jacobi fields, perturb at the box vertices exactly, ray-cast standoff at nine stations, build the TCP path for both tools on the nominal and the off-axis route, compare |t + H dn/ds| (central differences of the unit normal) with the factor at every node and the polyline speed with it segment by segment, and count reversals.",
  "failure_modes_checked": [
   "box-vertex nonlinear check",
   "ray casting vs series",
-  "TCP length element vs polyline",
+  "TCP speed factor vs |t + H dn/ds| at every node, on and off the symmetry axis (tau_g term exercised)",
+  "TCP polyline speed vs factor segment by segment",
   "cusp detection by two routes (sign of 1 - H kappa_n and reversed segments)"
  ],
  "findings": [
@@ -107,11 +108,27 @@
     "checks": [
      {
       "comparison": "abs_le",
-      "observed": -5.0475351897061316e-06,
+      "observed": 1.8070996254948568e-08,
       "passed": true,
-      "reference": "welding TCP polyline length vs integral (relative)",
+      "reference": "max over the nodes of both routes (on axis and 10 deg off axis) and both tools of | |t + H dn/ds| - factor |, dn/ds from central differences of the unit normal",
       "reference_kind": "analytic",
-      "tolerance": 0.001
+      "tolerance": 1e-07
+     },
+     {
+      "comparison": "abs_le",
+      "observed": 0.00024234370203024547,
+      "passed": true,
+      "reference": "welding torch, both routes: max over segments of | |P(k+1) - P(k)| / ds - mean factor at the segment ends |",
+      "reference_kind": "analytic",
+      "tolerance": 0.002
+     },
+     {
+      "comparison": "ge",
+      "observed": 0.004744465360727923,
+      "passed": true,
+      "reference": "off-axis welding route: max of factor - |1 - H kappa_n| (the tau_g term the pointwise check resolves)",
+      "reference_kind": "analytic",
+      "tolerance": 1e-05
      }
     ]
    },
@@ -123,12 +140,24 @@
     "rel": 1e-07
    },
    "uncertainty": {
-    "basis": "polyline vs trapezoid discretization at the route nodes (relative)",
+    "basis": "central-difference derivative of the unit normal (1 um RK4 steps) vs the closed-form factor, max over nodes, routes and tools",
     "kind": "truncation_bound",
-    "value": 5.0475351897061316e-06
+    "value": 1.8070996254948568e-08
    },
    "unit": null,
    "value": {
+    "off_axis_max_H_tau_g": {
+     "spray gun": 0.7806671430626173,
+     "welding torch": 0.09758339288282716
+    },
+    "off_axis_spray_speed_factor_range": [
+     0.28825915102154626,
+     3.5540148519001815
+    ],
+    "off_axis_welding_speed_factor_range": [
+     0.8624479198217959,
+     1.3192511766664745
+    ],
     "spray_speed_factor_range": [
      0.005216164801718826,
      3.9996939968028538
@@ -219,25 +248,25 @@
  ],
  "generated_artifacts": [
   {
-   "bytes": 3900,
+   "bytes": 5225,
    "path": "artifacts/T134/trajectory.json",
-   "sha256": "9191724fccfbbda091e79cb252625bc43fa595f7ff2fb9f8785f31207f7c1ac6"
+   "sha256": "54d153deb25def2856e3b047159cbbb1ebc774cf28f3760cfba145198610037e"
   },
   {
-   "bytes": 3671,
+   "bytes": 5668,
    "path": "artifacts/T134/tcp-speed-factor.svg",
-   "sha256": "caf65807f06b0833be9bdaeac6d84c6311a559f1ef3e4acdc58eda271befc18a"
+   "sha256": "d239c075f9c6bf64af8df18ae255e6ceb9493398ece3a569b40336db273fcee5"
   }
  ],
- "hypothesis": "Along a trajectory across the dome, lateral registration errors propagate by the Jacobi transfer, produce a second-order standoff error -kappa e^2 / 2 and a first-order tilt kappa e, and the tool-centre-point path X + H n has speed factor |1 - H kappa_n| that vanishes where the standoff equals the concave radius.",
+ "hypothesis": "Along a trajectory across the dome, lateral registration errors propagate by the Jacobi transfer, produce a second-order standoff error -kappa e^2 / 2 and a first-order tilt kappa e, and the tool-centre-point path X + H n has speed factor sqrt((1 - H kappa_n)^2 + (H tau_g)^2), which on the symmetry axis (tau_g = 0) is |1 - H kappa_n| and vanishes where the standoff equals the concave radius.",
  "input_data": [
-  "Coupon nominal route (T128)",
+  "Coupon nominal route (T128) and a route launched 10 deg off the symmetry axis (tau_g != 0)",
   "Declared registration box |delta| <= 0.3 mm, |dtheta| <= 2 mrad",
   "Declared standoffs: welding torch 15 mm, spray gun 120 mm"
  ],
- "mathematical_model": "e(s) = delta j_lat + dtheta j_head; standoff error by ray casting along the programmed axis; TCP path P = X + H n with |P'| = sqrt((1 - H kappa_n)^2 + (H tau_g)^2).",
+ "mathematical_model": "e(s) = delta j_lat + dtheta j_head; standoff error by ray casting along the programmed axis; TCP path P = X + H n with dn/ds = -kappa_n t - tau_g N (Weingarten), so |P'| = sqrt((1 - H kappa_n)^2 + (H tau_g)^2).",
  "number": 134,
- "numerical_result": "max lateral error 0.420 mm at s = 60.3 mm; max standoff error 1.79e-03 mm; welding TCP speed factor [0.841, 1.375]; spray path folds (33 reversed segments; concave radius 94.5 mm < 120 mm).",
+ "numerical_result": "max lateral error 0.420 mm at s = 60.3 mm; max standoff error 1.79e-03 mm; welding TCP speed factor [0.841, 1.375] on axis and [0.862, 1.319] off axis (max H tau_g 0.098); |dP/ds| vs factor 1.8e-08 pointwise and 2.4e-04 per segment; spray path folds (33 reversed segments; concave radius 94.5 mm < 120 mm).",
  "observation_model": "No observation: trajectories are modelled, not executed.",
  "physical_validation_status": {
   "statement": "Physical validation requires acquired hardware evidence; none was acquired for this task.",
@@ -251,15 +280,15 @@
   "python": "3.12.3",
   "scipy": "1.16.2",
   "sources": {
-   "src/ciw/lab/manufacturing.py": "088763a0bcc42bf085c1e228797a5dc0d702b994f2a49e053cbe2b0a5622e25d",
+   "src/ciw/lab/manufacturing.py": "f4cd90e1df33b910b78daf4b0556a8861e044d83701474f841e85fd9d96f9063",
    "src/ciw/lab/manufacturing_geometry.py": "1db6df2ddf778668da2ffd53a66bcddbff4fc933d6f299e8f283cedc60a9332f",
-   "src/ciw/lab/manufacturing_metrology.py": "afbb6fccf146ca4f47850805c118d2f1bf6186872f381b298ab924a9214257ec",
-   "src/ciw/lab/manufacturing_records.py": "66970104ea454e836c5cbafc3013c90e721c3e96ad7f16780c32250112cac921"
+   "src/ciw/lab/manufacturing_metrology.py": "aef4708b0f296fc66087a6382881a0564c5edcb6d7961b5e472aa711e29feb5d",
+   "src/ciw/lab/manufacturing_records.py": "015ea7fccc586f4b95f64e7ffbc1f6c34eec20b8245778ede3c2324006537087"
   },
   "sympy": "1.14.0"
  },
  "recommended_next_task": "T135: generate inspection scan paths over the coupon and measure coverage versus path length.",
- "report_id": "sha256:5d8c1b51a239adf2543c708091d32eab09c95a2e9b3dda0f693cf3b45e28779d",
+ "report_id": "sha256:cffe8b9f5f06eb484e754952843d6169c442ea44e3c2926605bf666e3d088d53",
  "schema": "ciw.lab-task-report.v1",
  "section": "manufacturing",
  "state": "completed",
@@ -268,7 +297,9 @@
   "check: Lateral-error envelope of the coupon trajectory under the declared registration box vs max over box vertices of the exactly perturbed separation / linear envelope - 1",
   "check: Standoff error from a lateral tool offset follows -kappa_lateral e^2 / 2 vs max over stations of abs(ray-cast - series) - 1e-3 abs(series) - 1e-9 mm",
   "check: Standoff error from a lateral tool offset follows -kappa_lateral e^2 / 2 vs Monge-form cylinder: ray-cast standoff error vs R - sqrt(R^2 - e^2) at y = 0, 30, 60 mm and e = 1, 5 mm (mm)",
-  "check: Tool-centre-point path length element is sqrt((1 - H kappa_n)^2 + (H tau_g)^2) vs welding TCP polyline length vs integral (relative)",
+  "check: Tool-centre-point path length element is sqrt((1 - H kappa_n)^2 + (H tau_g)^2) vs max over the nodes of both routes (on axis and 10 deg off axis) and both tools of | |t + H dn/ds| - factor |, dn/ds from central differences of the unit normal",
+  "check: Tool-centre-point path length element is sqrt((1 - H kappa_n)^2 + (H tau_g)^2) vs welding torch, both routes: max over segments of | |P(k+1) - P(k)| / ds - mean factor at the segment ends |",
+  "check: Tool-centre-point path length element is sqrt((1 - H kappa_n)^2 + (H tau_g)^2) vs off-axis welding route: max of factor - |1 - H kappa_n| (the tau_g term the pointwise check resolves)",
   "check: A spray standoff beyond the concave radius of curvature folds the tool-centre-point path vs sign changes of 1 - H kappa_n along the route",
   "check: A spray standoff beyond the concave radius of curvature folds the tool-centre-point path vs TCP segments running backwards along the route",
   "check: A spray standoff beyond the concave radius of curvature folds the tool-centre-point path vs welding torch keeps 1 - H kappa_n > 0 (sign changes)",
@@ -277,7 +308,7 @@
  ],
  "tests_skipped": [],
  "title": "Model coating or welding trajectory sensitivity.",
- "uncertainty": "Linear-envelope accuracy is second order in the box size; ray casting converges to 1e-14.",
+ "uncertainty": "Linear-envelope accuracy is second order in the box size; ray casting converges to 1e-14; the pointwise speed check is limited by the O(h^2) central difference of the normal, the segment check by the polyline discretization (O(ds^2)).",
  "unresolved_assumptions": [
   "Deposition footprint, spray cone and heat input are not modelled; the speed factor is a kinematic proxy.",
   "Robot joint limits and singularities are not checked."

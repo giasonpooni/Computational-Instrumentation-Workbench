@@ -23,7 +23,7 @@
   "certificate without exact validity",
   "solver disagreement beyond conditioning",
   "transient bound violated",
-  "eigenvalue sign wrong for an exactly Hurwitz matrix",
+  "numpy eigenvalue of an exactly defective matrix not misplaced beyond rounding (its sign is retained in the artifact)",
   "P = I threshold misplaced",
   "solver refusal outside the documented gates",
   "solver refuses a plant with a valid certificate (searched as counterexample)"
@@ -90,8 +90,8 @@
       "implementation": "Parameterized-Lyapunov-Stability-Runtime@19ea69670601",
       "revision": "19ea6967060166ba09db6cd4563bd87bd6b3d196"
      },
-     "reference": "max over solved cases of the relative Frobenius difference divided by n^2 u cond(P)",
-     "reference_kind": "exact_arithmetic",
+     "reference": "max over solved cases of the relative Frobenius difference divided by n^2 u cond(P) (forward-error bound of a backward-stable solve)",
+     "reference_kind": "analytic",
      "tolerance": 10.0
     },
     "provider": {
@@ -103,23 +103,22 @@
      "runtime_digest": "a6fee6b3b4eb7852b31f5a285fe8c50b535f25762e1daf82e36720ef8dd1b7c7"
     }
    },
-   "claim": "PLSR Lyapunov solutions agree with an independent solver to within 10 n^2 u cond(P) on every solved adversarial case",
+   "claim": "PLSR Lyapunov solutions agree with the reference solver (SciPy's Bartels-Stewart when installed) to within 10 n^2 u cond(P) on every solved adversarial case",
    "domain": "numerical",
    "evidence_status": "independently_verified",
    "regression_tolerance": {
-    "abs": 1e-12,
-    "rel": 1.0
+    "abs": 0.0,
+    "rel": 0.0
    },
    "uncertainty": {
-    "basis": "largest observed relative difference; the normalised value may vary by a small factor between BLAS builds",
+    "basis": "largest observed relative difference (normalised by n^2 u cond(P): at most 1.67; it may vary by a small factor between BLAS builds and is not a compared value",
     "kind": "roundoff",
     "value": 1.797306547226615e-15
    },
    "unit": null,
    "value": {
-    "cases": 14,
-    "max_normalised_difference": 1.6683571401477033,
-    "max_relative_difference": 1.797306547226615e-15
+    "beyond_bound": 0,
+    "cases": 14
    }
   },
   {
@@ -337,14 +336,6 @@
       "reference": "exactly defective cases whose numpy abscissa lies within 1e3 eps max|A| of the exact eigenvalue -lambda (A = T J T^-1 verified exactly)",
       "reference_kind": "analytic",
       "tolerance": 0.0
-     },
-     {
-      "comparison": "ge",
-      "observed": 5.0,
-      "passed": true,
-      "reference": "exactly Hurwitz defective cases with numpy abscissa >= 0",
-      "reference_kind": "analytic",
-      "tolerance": 1.0
      }
     ],
     "generator": {
@@ -352,76 +343,30 @@
      "seed": 109
     }
    },
-   "claim": "numpy.linalg.eigvals misplaces the exact eigenvalue -lambda of every defective test matrix by far more than machine precision; whether the sign flips is recorded",
-   "counterexample": {
-    "statement": "The sign of the floating-point spectral abscissa decides Hurwitz stability",
-    "witness": {
-     "A": [
-      [
-       -1.000244140625,
-       1.0,
-       0.0,
-       0.0,
-       0.0
-      ],
-      [
-       0.0,
-       0.999755859375,
-       1.0,
-       0.0,
-       0.0
-      ],
-      [
-       1.0,
-       -1.0,
-       0.999755859375,
-       1.0,
-       0.0
-      ],
-      [
-       -2.0,
-       1.0,
-       -3.0,
-       -2.000244140625,
-       1.0
-      ],
-      [
-       -1.0,
-       0.0,
-       -1.0,
-       0.0,
-       0.999755859375
-      ]
-     ],
-     "exact_spectrum": -0.000244140625,
-     "name": "Jordan n=5, lambda=2^-12",
-     "numpy_abscissa": 0.00018266938715315225
-    }
-   },
+   "claim": "numpy.linalg.eigvals misplaces the exact eigenvalue -lambda of every defective test matrix by far more than machine precision",
    "domain": "numerical",
    "evidence_status": "numerically_verified",
    "regression_tolerance": {
-    "abs": 7.0,
+    "abs": 0.0,
     "rel": 0.0
    },
    "uncertainty": {
-    "basis": "numpy eigenvalues of defective matrices vary at the eps^(1/n) level between builds; the misplacement exceeds 1e3 eps by orders of magnitude, the sign count may change",
+    "basis": "the counts are robust: the smallest misplacement is 9.23e+10 eps max|A|, orders of magnitude above the 1e3 threshold, while numpy eigenvalues of defective matrices vary at the eps^(1/n) level between builds",
     "kind": "reference_error",
     "value": 0.0
    },
    "unit": null,
    "value": {
     "cases": 7,
-    "misplaced_beyond_1e3_eps": 7,
-    "wrong_sign": 5
+    "misplaced_beyond_1e3_eps": 7
    }
   }
  ],
  "generated_artifacts": [
   {
-   "bytes": 10537,
+   "bytes": 10748,
    "path": "artifacts/T109/adversarial.json",
-   "sha256": "1b9cc6ba634ab04403d73760becbb322c07524374f4184194691aeaaf34f062b"
+   "sha256": "7a7fc21a01b3ab4f8f94e6f661d2e8e7c42450b1cedb9c9411ddc2ba9110b017"
   },
   {
    "bytes": 4504,
@@ -438,7 +383,7 @@
  ],
  "mathematical_model": "Lyapunov: A Hurwitz iff A^T P + P A = -Q has P > 0 for Q > 0; a certified P bounds transients by ||exp(At)|| <= sqrt(cond P). Non-normal A = [[-1, K], [0, -2]]: P = I certifies iff K < 2 sqrt 2. Defective A = T J T^-1 with integer unimodular T (T Ti = I checked exactly) has exact spectrum {-lambda}; eigenvalue perturbation of an n-Jordan block is O(eps^(1/n)). A backward-stable solve has forward error of order n^2 u cond(P).",
  "number": 109,
- "numerical_result": "30 certifying verdicts, 0 without an exactly valid certificate. Solver agreement on 14 solved cases: max relative difference 1.80e-15, max normalised by n^2 u cond(P) 1.67 (scipy.linalg.solve_continuous_lyapunov@1.16.2). Transient peak / sqrt(cond P): max 0.618 over 8 certified K. P = I threshold mismatches: 0. Jordan: numpy abscissa >= 0 in 5 of 7 exactly Hurwitz cases; PLSR's solver returned P for 1 and refused 6 (0 refusals outside the documented gates, 0 returned P invalid); refused plants with an exactly valid independent certificate that PLSR's verdict certifies: 1. Conclusion: every PLSR certificate on these plants is exactly valid; the solver's refusals are conservative, including plants that do have a valid certificate; the floating-point eigenvalue sign misjudges exactly Hurwitz defective matrices.",
+ "numerical_result": "30 certifying verdicts, 0 without an exactly valid certificate. Solver agreement on 14 solved cases: max relative difference 1.80e-15, max normalised by n^2 u cond(P) 1.67 (scipy.linalg.solve_continuous_lyapunov@1.16.2). Transient peak / sqrt(cond P): max 0.618 over 8 certified K. P = I threshold mismatches: 0. Jordan: numpy abscissa >= 0 in 5 of 7 exactly Hurwitz cases (build-dependent); PLSR's solver returned P for 1 and refused 6 (0 refusals outside the documented gates, 0 returned P invalid); refused plants with an exactly valid independent certificate that PLSR's verdict certifies: 1. Conclusion: every PLSR certificate on these plants is exactly valid; the solver's refusals are conservative, including plants that do have a valid certificate; numpy misplaces the exact defective eigenvalues far beyond rounding, which is why a sign read off its abscissa (retained in the artifact) is not a stability test for these plants.",
  "observation_model": "PLSR solve_lyapunov outcome and verdicts with P = I, with the independent P and with PLSR's own P; numpy eigenvalues; exact rational checks of every certifying verdict and of every candidate P.",
  "physical_validation_status": {
   "statement": "Physical validation requires acquired hardware evidence; none was acquired for this task.",
@@ -469,37 +414,37 @@
   },
   "scipy": "1.16.2",
   "sources": {
-   "src/ciw/lab/lyapunov.py": "58d6c7473f0a42002b57888de0ccfbbf73b571bbbabbf9ee81e0a05c734f2320",
+   "src/ciw/lab/lyapunov.py": "cbcb4d58d7313d7c537957a1b7dd35039a21bae80125bf59147eeed2c1232bbb",
    "src/ciw/lab/lyapunov_provider.py": "da3465b48b5f5efc47bfe6ab8379cf2cf2bc23e4835dc7ff047252e77fa6ef17",
-   "src/ciw/lab/lyapunov_reference.py": "fa37ef453c23ad2bed2eab41132e72670e166b93eebd5fc9d67a4a89a7c92cca"
+   "src/ciw/lab/lyapunov_reference.py": "bdf0bb5074ae2caca6c8a5d8e63a15e346b007098e6def6b058d077719bc1336"
   },
   "sympy": "1.14.0"
  },
  "recommended_next_task": "T110: discrete versus continuous interpretation; add an exact-arithmetic Lyapunov solve (rational Bartels-Stewart) to decide defective cases that PLSR's residual gate refuses, and propose that solve_lyapunov report the residual gate separately from definiteness.",
- "report_id": "sha256:cb3db4bd712dcbf1ef4b2713d19371e621c8a7542060dd3e487009c0c028e53b",
+ "report_id": "sha256:8897f9e87b0f2b31a9d68eac0b4dabbe31ef38d29724992f19b7e3636c2e6a28",
  "schema": "ciw.lab-task-report.v1",
  "section": "lyapunov",
  "state": "completed",
  "task_id": "T109",
  "tests_passed": [
   "independent: Every certifying PLSR verdict on the adversarial plants uses an exactly valid certificate vs ciw.lab.lyapunov_reference",
-  "independent: PLSR Lyapunov solutions agree with an independent solver to within 10 n^2 u cond(P) on every solved adversarial case vs scipy.linalg.solve_continuous_lyapunov@1.16.2",
+  "independent: PLSR Lyapunov solutions agree with the reference solver (SciPy's Bartels-Stewart when installed) to within 10 n^2 u cond(P) on every solved adversarial case vs scipy.linalg.solve_continuous_lyapunov@1.16.2",
   "check: Certified non-normal plants respect the Lyapunov transient bound ||exp(At)|| <= sqrt(cond P) vs max over K of peak ||exp(At)|| / sqrt(cond P)",
   "check: With P = I the non-normal plants are certified exactly when K < 2 sqrt 2, including K = 2.82 and 2.83 on either side vs codes against the analytic threshold",
   "check: PLSR's solve_lyapunov returns only exactly valid certificates on the exactly Hurwitz Jordan plants and otherwise raises ValueError at a documented gate vs refusals not raised as ValueError by the positive-definiteness, residual or singularity gate",
   "independent: PLSR's solve_lyapunov returns only exactly valid certificates on the exactly Hurwitz Jordan plants and otherwise raises ValueError at a documented gate vs ciw.lab.lyapunov_reference",
   "check: solve_lyapunov refuses an exactly Hurwitz plant for which an exactly valid quadratic certificate exists and PLSR's own verdict certifies it vs refused plants whose independent P is exactly valid and certified by PLSR's verdict",
-  "check: numpy.linalg.eigvals misplaces the exact eigenvalue -lambda of every defective test matrix by far more than machine precision; whether the sign flips is recorded vs exactly defective cases whose numpy abscissa lies within 1e3 eps max|A| of the exact eigenvalue -lambda (A = T J T^-1 verified exactly)",
-  "check: numpy.linalg.eigvals misplaces the exact eigenvalue -lambda of every defective test matrix by far more than machine precision; whether the sign flips is recorded vs exactly Hurwitz defective cases with numpy abscissa >= 0",
+  "check: numpy.linalg.eigvals misplaces the exact eigenvalue -lambda of every defective test matrix by far more than machine precision vs exactly defective cases whose numpy abscissa lies within 1e3 eps max|A| of the exact eigenvalue -lambda (A = T J T^-1 verified exactly)",
   "pytest: tests/test_lab_lyapunov.py::test_t109_adversarial_eigenvalues",
   "pytest: tests/test_lab_lyapunov.py::test_numpy_misreads_exact_jordan_block",
+  "pytest: tests/test_lab_lyapunov.py::test_checks_are_unconditional_and_observed_values_are_computed",
   "pytest: tests/test_lab_lyapunov.py::test_provider_tasks_are_partial_without_the_provider"
  ],
  "tests_skipped": [],
  "title": "Add adversarial eigenvalue cases.",
- "uncertainty": "Exact checks are exact. Solver agreement scales with cond(P) (retained per case). numpy eigenvalues of defective matrices vary at the eps^(1/n) level between builds, so the count of wrong signs may change; the misplacement beyond 1e3 eps does not.",
+ "uncertainty": "Exact checks are exact. Solver agreement scales with cond(P) (retained per case). numpy eigenvalues of defective matrices vary at the eps^(1/n) level between builds, so the count of wrong signs may change and is retained in the artifact only; the misplacement beyond 1e3 eps does not.",
  "unresolved_assumptions": [
   "Jordan and clustered plants are synthetic stress cases, not identified plant models.",
-  "The independent solver is SciPy when installed, otherwise the CIW Kronecker solve."
+  "The independent solver is SciPy when installed. Without SciPy the CIW Kronecker solve stands in, but it solves the same Kronecker system with numpy.linalg.solve as PLSR's solve_lyapunov, so agreement with it is then recorded as an ordinary check, not an independent one."
  ]
 }

@@ -18,11 +18,12 @@
   "primary": "numerically_verified"
  },
  "expected_invariant": "Zero structural and heuristic violations on the real package; every forged mutation violates its intended rule; PATH-resolved spawners exist, so pinning is not established.",
- "experiment": "Scan the package, compute the evidence closure, evaluate the rules, replay 8 forged mutations and list spawners that resolve executables on PATH.",
+ "experiment": "Scan the package, compute the evidence closure, evaluate the rules, replay 11 forged mutations and list spawners that resolve executables on PATH.",
  "failure_modes_checked": [
   "third-party import in evidence closure",
   "native loading",
   "process spawn in evidence",
+  "violation in a package __init__ that runs on import (ciw, ciw.lab, ciw.core)",
   "shell=True",
   "asyncio shell spawn",
   "os.posix_spawn imported by name",
@@ -61,7 +62,10 @@
    },
    "unit": null,
    "value": [
+    "ciw",
+    "ciw.core",
     "ciw.core.identities",
+    "ciw.lab",
     "ciw.lab.evidence",
     "ciw.lab.report"
    ]
@@ -158,6 +162,27 @@
       "reference_kind": "refusal"
      },
      {
+      "expected_refusal": "evidence_closure_not_stdlib",
+      "observed_refusal": "evidence_closure_not_stdlib",
+      "passed": true,
+      "reference": "forged ciw.lab (evidence_closure_not_stdlib)",
+      "reference_kind": "refusal"
+     },
+     {
+      "expected_refusal": "evidence_native_loading",
+      "observed_refusal": "evidence_native_loading",
+      "passed": true,
+      "reference": "forged ciw.core (evidence_native_loading)",
+      "reference_kind": "refusal"
+     },
+     {
+      "expected_refusal": "evidence_spawns_process",
+      "observed_refusal": "evidence_spawns_process",
+      "passed": true,
+      "reference": "forged ciw (evidence_spawns_process)",
+      "reference_kind": "refusal"
+     },
+     {
       "expected_refusal": "shell_invocation",
       "observed_refusal": "shell_invocation",
       "passed": true,
@@ -207,7 +232,7 @@
     "value": 0.0
    },
    "unit": "detected mutations",
-   "value": 8
+   "value": 11
   },
   {
    "assigned_by": "ciw.lab.evidence",
@@ -320,23 +345,23 @@
  ],
  "generated_artifacts": [
   {
-   "bytes": 72081,
+   "bytes": 73562,
    "path": "artifacts/T144/import-graph.json",
-   "sha256": "db0765ee6d642c3512c4ccd69bd4ee63ed13e822bc2210ec3396438806dfb7cd"
+   "sha256": "d1e1003edb611ea94d6fd8151fc2f0eadc85ba160c382f51a970c1edab2de216"
   },
   {
-   "bytes": 2446,
+   "bytes": 2532,
    "path": "artifacts/T144/architecture-scan.json",
-   "sha256": "fcedbfa0041a0b293ebc18b88f47fd5cb877eed74dbf1264cfd2c7ec61f119ba"
+   "sha256": "3add4f83843edd0c6868d5cbcdd876a6b1af77aeb86b84183a89d00bf353f3ad"
   }
  ],
- "hypothesis": "The evidence and identity layer (ciw.lab.evidence, ciw.lab.report, ciw.core.identities and their ciw imports) is pure standard-library Python; process spawns use argument vectors without a shell; native loading is confined to declared hardware probes. Whether spawned providers are pinned is not decidable from source and is tested only by a heuristic plus counterexample search.",
+ "hypothesis": "The evidence and identity layer (ciw.lab.evidence, ciw.lab.report, ciw.core.identities, their ciw imports and the packages whose __init__ runs when they are imported) is pure standard-library Python; process spawns use argument vectors without a shell; native loading is confined to declared hardware probes. Whether spawned providers are pinned is not decidable from source and is tested only by a heuristic plus counterexample search.",
  "input_data": [
   "141 parsed modules of the installed ciw package (source text only, not imported); package digest in the provider/runtime identity"
  ],
- "mathematical_model": "Directed import graph over parsed modules; transitive closure from the evidence roots; structural rules {closure stdlib-only, no native/spawn in closure, native loading within allowlist, no shell (shell=True, os.system/popen, asyncio.create_subprocess_shell), no compiled extensions}; heuristic rule: a spawning module names an identity token in identifiers or non-docstring strings.",
+ "mathematical_model": "Directed import graph over parsed modules; transitive closure from the evidence roots, adding each visited module's ancestor packages (Python executes their __init__ first); structural rules {closure stdlib-only, no native/spawn in closure, native loading within allowlist, no shell (shell=True, os.system/popen, asyncio.create_subprocess_shell), no compiled extensions}; heuristic rule: a spawning module names an identity token in identifiers or non-docstring strings.",
  "number": 144,
- "numerical_result": "Evidence closure ['ciw.core.identities', 'ciw.lab.evidence', 'ciw.lab.report']; 0 structural and 0 heuristic violations over 141 modules; 9 spawning modules, 4 of them PATH-resolved; 8/8 forged mutations detected.",
+ "numerical_result": "Evidence closure ['ciw', 'ciw.core', 'ciw.core.identities', 'ciw.lab', 'ciw.lab.evidence', 'ciw.lab.report']; 0 structural and 0 heuristic violations over 141 modules; 9 spawning modules, 4 of them PATH-resolved; 11/11 forged mutations detected.",
  "observation_model": "Static source analysis with ast; nothing from the scanned modules is imported or executed.",
  "physical_validation_status": {
   "statement": "Physical validation requires acquired hardware evidence; none was acquired for this task.",
@@ -349,16 +374,16 @@
   "numpy": "2.4.3",
   "python": "3.12.3",
   "scanned_files": 141,
-  "scanned_package_sha256": "174aaed8ad336470183d93f2e65b7f0496bfa7bef5b66f792ca1813fb5fe3672",
+  "scanned_package_sha256": "fd3bc9aa261ee331e4c848d995f8d9373428f14e2ac7974c2f34a39151bbc35b",
   "scipy": "1.16.2",
   "sources": {
-   "src/ciw/lab/implementation_targets.py": "4e27c12d31365590b7fb82d98b8d02e1668c7b8e73b03f71ef270eca9fcf6eea",
-   "src/ciw/lab/implementation_targets_architecture.py": "ca8740919708c84da241982b390b513ef15b3a465d0295386fb7525927e7e701"
+   "src/ciw/lab/implementation_targets.py": "1df8bd67d28b18d70bcb5f74e4a14616ceb17868c7a9aa75595f15254426ee7e",
+   "src/ciw/lab/implementation_targets_architecture.py": "3c0ba23187cae208b492ff7adbceba135e2d7e071c6a4c978bbe5e3b2ac0ad62"
   },
   "sympy": "1.14.0"
  },
  "recommended_next_task": "T146 (fix one canonical serialization for identities crossing the language boundary); pin the Rust probe and other PATH-resolved tools against expected identities",
- "report_id": "sha256:a91a942ff7a390d7fdd11f4516a7bdc45169a89bda19d9e854b9dd946f8bd9e7",
+ "report_id": "sha256:8f240976cebdc602ee0754a2a14eb5704f34087ea89af5aa13b85e2bd080837b",
  "schema": "ciw.lab-task-report.v1",
  "section": "implementation-targets",
  "state": "completed",
@@ -371,6 +396,9 @@
   "check: Scanner flags forged modules that cross the boundary vs forged ciw.lab.evidence (evidence_native_loading)",
   "check: Scanner flags forged modules that cross the boundary vs forged ciw.lab.report (evidence_closure_not_stdlib)",
   "check: Scanner flags forged modules that cross the boundary vs forged ciw.lab.evidence (evidence_spawns_process)",
+  "check: Scanner flags forged modules that cross the boundary vs forged ciw.lab (evidence_closure_not_stdlib)",
+  "check: Scanner flags forged modules that cross the boundary vs forged ciw.core (evidence_native_loading)",
+  "check: Scanner flags forged modules that cross the boundary vs forged ciw (evidence_spawns_process)",
   "check: Scanner flags forged modules that cross the boundary vs forged ciw.lab.forged_provider (shell_invocation)",
   "check: Scanner flags forged modules that cross the boundary vs forged ciw.lab.forged_provider (shell_invocation)",
   "check: Scanner flags forged modules that cross the boundary vs forged ciw.lab.forged_provider (spawn_without_runtime_identity)",

@@ -1,7 +1,10 @@
 {
  "compiled_extensions": [],
  "evidence_closure": [
+  "ciw",
+  "ciw.core",
   "ciw.core.identities",
+  "ciw.lab",
   "ciw.lab.evidence",
   "ciw.lab.report"
  ],
@@ -25,6 +28,7 @@
   "ciw.identified_design",
   "ciw.identified_stability",
   "ciw.investigation",
+  "ciw.lab.exchange_provenance",
   "ciw.lab.exchange_provenance_bundles_fixtures",
   "ciw.lab.geodesic_jacobi",
   "ciw.lab.implementation_targets",
@@ -50,28 +54,29 @@
    "ctypes.util"
   ]
  },
- "package_sha256": "174aaed8ad336470183d93f2e65b7f0496bfa7bef5b66f792ca1813fb5fe3672",
+ "package_sha256": "fd3bc9aa261ee331e4c848d995f8d9373428f14e2ac7974c2f34a39151bbc35b",
  "path_resolved_spawners": {
   "ciw.lab.energy_gpu_kernels": {
    "spawn_lines": [
-    315,
-    316,
-    331
+    295,
+    296,
+    311
    ],
    "which_lines": [
-    303
+    283
    ]
   },
   "ciw.lab.exchange_provenance_bundles_providers": {
    "spawn_lines": [
-    110,
-    218,
-    242,
-    291,
-    416
+    137,
+    302,
+    346,
+    370,
+    419,
+    544
    ],
    "which_lines": [
-    440
+    568
    ]
   },
   "ciw.lab.implementation_targets_serial": {
@@ -100,26 +105,27 @@
    83
   ],
   "ciw.lab.energy_gpu_kernels": [
-   315,
-   316,
-   331
+   295,
+   296,
+   311
   ],
   "ciw.lab.exchange_provenance_bundles": [
-   1980
+   2183
   ],
   "ciw.lab.exchange_provenance_bundles_providers": [
-   110,
-   218,
-   242,
-   291,
-   416
+   137,
+   302,
+   346,
+   370,
+   419,
+   544
   ],
   "ciw.lab.flat_torus_topology_provider": [
    140
   ],
   "ciw.lab.geodesic_jacobi_common": [
-   523,
-   653
+   526,
+   656
   ],
   "ciw.lab.implementation_targets_serial": [
    689,

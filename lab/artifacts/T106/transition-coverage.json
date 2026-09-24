@@ -1,0 +1,1084 @@
+{
+ "crossings": [
+  [
+   "box"
+  ],
+  [
+   "overflow"
+  ],
+  [
+   "not_positive"
+  ],
+  [
+   "level"
+  ],
+  [
+   "scalar_positive"
+  ],
+  [
+   "certified"
+  ],
+  [
+   "margin_low"
+  ],
+  [
+   "not_definite"
+  ],
+  [
+   "not_definite",
+   "scalar_positive"
+  ],
+  [
+   "certified",
+   "margin_low"
+  ]
+ ],
+ "pairs": {
+  "CERTIFIED_WITH_MARGIN <-> CERTIFICATE_NOT_POSITIVE": {
+   "codes": [
+    "CERTIFIED_WITH_MARGIN",
+    "CERTIFICATE_NOT_POSITIVE"
+   ],
+   "crossings": [
+    [
+     "not_positive"
+    ]
+   ],
+   "exercised_on": [],
+   "fewest_changed_gates": [
+    "not_positive"
+   ],
+   "status": "rounding only"
+  },
+  "CERTIFIED_WITH_MARGIN <-> DECREASE_NOT_DEFINITE": {
+   "codes": [
+    "CERTIFIED_WITH_MARGIN",
+    "DECREASE_NOT_DEFINITE"
+   ],
+   "crossings": [],
+   "exercised_on": [],
+   "fewest_changed_gates": [
+    "certified",
+    "not_definite"
+   ],
+   "status": "excluded"
+  },
+  "CERTIFIED_WITH_MARGIN <-> MARGIN_LOW": {
+   "codes": [
+    "CERTIFIED_WITH_MARGIN",
+    "MARGIN_LOW"
+   ],
+   "crossings": [
+    [
+     "margin_low"
+    ]
+   ],
+   "exercised_on": [
+    "required_margin (margin 2)"
+   ],
+   "fewest_changed_gates": [
+    "margin_low"
+   ],
+   "status": "allowed"
+  },
+  "CERTIFIED_WITH_MARGIN <-> NOT_CERTIFIED": {
+   "codes": [
+    "CERTIFIED_WITH_MARGIN",
+    "NOT_CERTIFIED"
+   ],
+   "crossings": [],
+   "exercised_on": [],
+   "fewest_changed_gates": [
+    "scalar_positive",
+    "certified",
+    "not_definite"
+   ],
+   "status": "excluded"
+  },
+  "CERTIFIED_WITH_MARGIN <-> NUMERICAL_INCONCLUSIVE": {
+   "codes": [
+    "CERTIFIED_WITH_MARGIN",
+    "NUMERICAL_INCONCLUSIVE"
+   ],
+   "crossings": [
+    [
+     "certified"
+    ]
+   ],
+   "exercised_on": [
+    "stability a, A = [[a, 1], [-1, a]]",
+    "top eigenvalue b, A = diag(-1, b)"
+   ],
+   "fewest_changed_gates": [
+    "certified"
+   ],
+   "status": "allowed"
+  },
+  "CERTIFIED_WITH_MARGIN <-> NUMERICAL_OVERFLOW": {
+   "codes": [
+    "CERTIFIED_WITH_MARGIN",
+    "NUMERICAL_OVERFLOW"
+   ],
+   "crossings": [
+    [
+     "overflow"
+    ]
+   ],
+   "exercised_on": [
+    "matrix scale k, A = -2^k I"
+   ],
+   "fewest_changed_gates": [
+    "overflow"
+   ],
+   "status": "allowed"
+  },
+  "CERTIFIED_WITH_MARGIN <-> OUTSIDE_LEVEL_SET": {
+   "codes": [
+    "CERTIFIED_WITH_MARGIN",
+    "OUTSIDE_LEVEL_SET"
+   ],
+   "crossings": [
+    [
+     "level"
+    ]
+   ],
+   "exercised_on": [
+    "level (V = 4)"
+   ],
+   "fewest_changed_gates": [
+    "level"
+   ],
+   "status": "allowed"
+  },
+  "CERTIFIED_WITH_MARGIN <-> OUTSIDE_PARAMETER_BOX": {
+   "codes": [
+    "CERTIFIED_WITH_MARGIN",
+    "OUTSIDE_PARAMETER_BOX"
+   ],
+   "crossings": [
+    [
+     "box"
+    ]
+   ],
+   "exercised_on": [
+    "theta, box [-1, 1]",
+    "theta_dot, rate box [-0.2, 0.2]"
+   ],
+   "fewest_changed_gates": [
+    "box"
+   ],
+   "status": "allowed"
+  },
+  "DECREASE_NOT_DEFINITE <-> CERTIFICATE_NOT_POSITIVE": {
+   "codes": [
+    "DECREASE_NOT_DEFINITE",
+    "CERTIFICATE_NOT_POSITIVE"
+   ],
+   "crossings": [
+    [
+     "not_positive"
+    ]
+   ],
+   "exercised_on": [],
+   "fewest_changed_gates": [
+    "not_positive"
+   ],
+   "status": "rounding only"
+  },
+  "DECREASE_NOT_DEFINITE <-> NUMERICAL_INCONCLUSIVE": {
+   "codes": [
+    "DECREASE_NOT_DEFINITE",
+    "NUMERICAL_INCONCLUSIVE"
+   ],
+   "crossings": [
+    [
+     "not_definite"
+    ]
+   ],
+   "exercised_on": [
+    "top eigenvalue b, A = diag(-1, b)"
+   ],
+   "fewest_changed_gates": [
+    "not_definite"
+   ],
+   "status": "allowed"
+  },
+  "DECREASE_NOT_DEFINITE <-> NUMERICAL_OVERFLOW": {
+   "codes": [
+    "DECREASE_NOT_DEFINITE",
+    "NUMERICAL_OVERFLOW"
+   ],
+   "crossings": [
+    [
+     "overflow"
+    ]
+   ],
+   "exercised_on": [
+    "matrix scale across overflow, DECREASE_NOT_DEFINITE below"
+   ],
+   "fewest_changed_gates": [
+    "overflow"
+   ],
+   "status": "allowed"
+  },
+  "DECREASE_NOT_DEFINITE <-> OUTSIDE_LEVEL_SET": {
+   "codes": [
+    "DECREASE_NOT_DEFINITE",
+    "OUTSIDE_LEVEL_SET"
+   ],
+   "crossings": [
+    [
+     "level"
+    ]
+   ],
+   "exercised_on": [
+    "level across V = 4, DECREASE_NOT_DEFINITE inside"
+   ],
+   "fewest_changed_gates": [
+    "level"
+   ],
+   "status": "allowed"
+  },
+  "DECREASE_NOT_DEFINITE <-> OUTSIDE_PARAMETER_BOX": {
+   "codes": [
+    "DECREASE_NOT_DEFINITE",
+    "OUTSIDE_PARAMETER_BOX"
+   ],
+   "crossings": [
+    [
+     "box"
+    ]
+   ],
+   "exercised_on": [
+    "box edge theta = 1, DECREASE_NOT_DEFINITE inside"
+   ],
+   "fewest_changed_gates": [
+    "box"
+   ],
+   "status": "allowed"
+  },
+  "MARGIN_LOW <-> CERTIFICATE_NOT_POSITIVE": {
+   "codes": [
+    "MARGIN_LOW",
+    "CERTIFICATE_NOT_POSITIVE"
+   ],
+   "crossings": [
+    [
+     "not_positive"
+    ]
+   ],
+   "exercised_on": [],
+   "fewest_changed_gates": [
+    "not_positive"
+   ],
+   "status": "rounding only"
+  },
+  "MARGIN_LOW <-> DECREASE_NOT_DEFINITE": {
+   "codes": [
+    "MARGIN_LOW",
+    "DECREASE_NOT_DEFINITE"
+   ],
+   "crossings": [],
+   "exercised_on": [],
+   "fewest_changed_gates": [
+    "certified",
+    "margin_low",
+    "not_definite"
+   ],
+   "status": "excluded"
+  },
+  "MARGIN_LOW <-> NOT_CERTIFIED": {
+   "codes": [
+    "MARGIN_LOW",
+    "NOT_CERTIFIED"
+   ],
+   "crossings": [],
+   "exercised_on": [],
+   "fewest_changed_gates": [
+    "scalar_positive",
+    "certified",
+    "margin_low",
+    "not_definite"
+   ],
+   "status": "excluded"
+  },
+  "MARGIN_LOW <-> NUMERICAL_INCONCLUSIVE": {
+   "codes": [
+    "MARGIN_LOW",
+    "NUMERICAL_INCONCLUSIVE"
+   ],
+   "crossings": [
+    [
+     "certified",
+     "margin_low"
+    ]
+   ],
+   "exercised_on": [
+    "stability a with required margin 1"
+   ],
+   "fewest_changed_gates": [
+    "certified",
+    "margin_low"
+   ],
+   "status": "allowed"
+  },
+  "MARGIN_LOW <-> NUMERICAL_OVERFLOW": {
+   "codes": [
+    "MARGIN_LOW",
+    "NUMERICAL_OVERFLOW"
+   ],
+   "crossings": [
+    [
+     "overflow"
+    ]
+   ],
+   "exercised_on": [
+    "matrix scale across overflow, MARGIN_LOW below"
+   ],
+   "fewest_changed_gates": [
+    "overflow"
+   ],
+   "status": "allowed"
+  },
+  "MARGIN_LOW <-> OUTSIDE_LEVEL_SET": {
+   "codes": [
+    "MARGIN_LOW",
+    "OUTSIDE_LEVEL_SET"
+   ],
+   "crossings": [
+    [
+     "level"
+    ]
+   ],
+   "exercised_on": [
+    "level across V = 4, MARGIN_LOW inside"
+   ],
+   "fewest_changed_gates": [
+    "level"
+   ],
+   "status": "allowed"
+  },
+  "MARGIN_LOW <-> OUTSIDE_PARAMETER_BOX": {
+   "codes": [
+    "MARGIN_LOW",
+    "OUTSIDE_PARAMETER_BOX"
+   ],
+   "crossings": [
+    [
+     "box"
+    ]
+   ],
+   "exercised_on": [
+    "box edge theta = 1, MARGIN_LOW inside"
+   ],
+   "fewest_changed_gates": [
+    "box"
+   ],
+   "status": "allowed"
+  },
+  "NOT_CERTIFIED <-> CERTIFICATE_NOT_POSITIVE": {
+   "codes": [
+    "NOT_CERTIFIED",
+    "CERTIFICATE_NOT_POSITIVE"
+   ],
+   "crossings": [
+    [
+     "not_positive"
+    ]
+   ],
+   "exercised_on": [],
+   "fewest_changed_gates": [
+    "not_positive"
+   ],
+   "status": "rounding only"
+  },
+  "NOT_CERTIFIED <-> DECREASE_NOT_DEFINITE": {
+   "codes": [
+    "NOT_CERTIFIED",
+    "DECREASE_NOT_DEFINITE"
+   ],
+   "crossings": [
+    [
+     "scalar_positive"
+    ]
+   ],
+   "exercised_on": [
+    "direction phi, A = diag(-1, 1)"
+   ],
+   "fewest_changed_gates": [
+    "scalar_positive"
+   ],
+   "status": "allowed"
+  },
+  "NOT_CERTIFIED <-> NUMERICAL_INCONCLUSIVE": {
+   "codes": [
+    "NOT_CERTIFIED",
+    "NUMERICAL_INCONCLUSIVE"
+   ],
+   "crossings": [
+    [
+     "scalar_positive",
+     "not_definite"
+    ]
+   ],
+   "exercised_on": [
+    "stability a, A = [[a, 1], [-1, a]]"
+   ],
+   "fewest_changed_gates": [
+    "scalar_positive",
+    "not_definite"
+   ],
+   "status": "allowed"
+  },
+  "NOT_CERTIFIED <-> NUMERICAL_OVERFLOW": {
+   "codes": [
+    "NOT_CERTIFIED",
+    "NUMERICAL_OVERFLOW"
+   ],
+   "crossings": [
+    [
+     "overflow"
+    ]
+   ],
+   "exercised_on": [
+    "matrix scale across overflow, NOT_CERTIFIED below"
+   ],
+   "fewest_changed_gates": [
+    "overflow"
+   ],
+   "status": "allowed"
+  },
+  "NOT_CERTIFIED <-> OUTSIDE_LEVEL_SET": {
+   "codes": [
+    "NOT_CERTIFIED",
+    "OUTSIDE_LEVEL_SET"
+   ],
+   "crossings": [
+    [
+     "level"
+    ]
+   ],
+   "exercised_on": [
+    "level across V = 4, NOT_CERTIFIED inside"
+   ],
+   "fewest_changed_gates": [
+    "level"
+   ],
+   "status": "allowed"
+  },
+  "NOT_CERTIFIED <-> OUTSIDE_PARAMETER_BOX": {
+   "codes": [
+    "NOT_CERTIFIED",
+    "OUTSIDE_PARAMETER_BOX"
+   ],
+   "crossings": [
+    [
+     "box"
+    ]
+   ],
+   "exercised_on": [
+    "box edge theta = 1, NOT_CERTIFIED inside"
+   ],
+   "fewest_changed_gates": [
+    "box"
+   ],
+   "status": "allowed"
+  },
+  "NUMERICAL_INCONCLUSIVE <-> CERTIFICATE_NOT_POSITIVE": {
+   "codes": [
+    "NUMERICAL_INCONCLUSIVE",
+    "CERTIFICATE_NOT_POSITIVE"
+   ],
+   "crossings": [
+    [
+     "not_positive"
+    ]
+   ],
+   "exercised_on": [],
+   "fewest_changed_gates": [
+    "not_positive"
+   ],
+   "status": "rounding only"
+  },
+  "NUMERICAL_INCONCLUSIVE <-> NUMERICAL_OVERFLOW": {
+   "codes": [
+    "NUMERICAL_INCONCLUSIVE",
+    "NUMERICAL_OVERFLOW"
+   ],
+   "crossings": [
+    [
+     "overflow"
+    ]
+   ],
+   "exercised_on": [
+    "matrix scale across overflow, NUMERICAL_INCONCLUSIVE below"
+   ],
+   "fewest_changed_gates": [
+    "overflow"
+   ],
+   "status": "allowed"
+  },
+  "NUMERICAL_INCONCLUSIVE <-> OUTSIDE_LEVEL_SET": {
+   "codes": [
+    "NUMERICAL_INCONCLUSIVE",
+    "OUTSIDE_LEVEL_SET"
+   ],
+   "crossings": [
+    [
+     "level"
+    ]
+   ],
+   "exercised_on": [
+    "level across V = 4, NUMERICAL_INCONCLUSIVE inside"
+   ],
+   "fewest_changed_gates": [
+    "level"
+   ],
+   "status": "allowed"
+  },
+  "NUMERICAL_INCONCLUSIVE <-> OUTSIDE_PARAMETER_BOX": {
+   "codes": [
+    "NUMERICAL_INCONCLUSIVE",
+    "OUTSIDE_PARAMETER_BOX"
+   ],
+   "crossings": [
+    [
+     "box"
+    ]
+   ],
+   "exercised_on": [
+    "box edge theta = 1, NUMERICAL_INCONCLUSIVE inside"
+   ],
+   "fewest_changed_gates": [
+    "box"
+   ],
+   "status": "allowed"
+  },
+  "NUMERICAL_OVERFLOW <-> CERTIFICATE_NOT_POSITIVE": {
+   "codes": [
+    "NUMERICAL_OVERFLOW",
+    "CERTIFICATE_NOT_POSITIVE"
+   ],
+   "crossings": [
+    [
+     "overflow"
+    ]
+   ],
+   "exercised_on": [],
+   "fewest_changed_gates": [
+    "overflow"
+   ],
+   "status": "rounding only"
+  },
+  "NUMERICAL_OVERFLOW <-> OUTSIDE_LEVEL_SET": {
+   "codes": [
+    "NUMERICAL_OVERFLOW",
+    "OUTSIDE_LEVEL_SET"
+   ],
+   "crossings": [
+    [
+     "overflow"
+    ]
+   ],
+   "exercised_on": [
+    "matrix scale across overflow, OUTSIDE_LEVEL_SET below"
+   ],
+   "fewest_changed_gates": [
+    "overflow"
+   ],
+   "status": "allowed"
+  },
+  "NUMERICAL_OVERFLOW <-> OUTSIDE_PARAMETER_BOX": {
+   "codes": [
+    "NUMERICAL_OVERFLOW",
+    "OUTSIDE_PARAMETER_BOX"
+   ],
+   "crossings": [
+    [
+     "box"
+    ]
+   ],
+   "exercised_on": [
+    "box edge theta = 1, NUMERICAL_OVERFLOW inside"
+   ],
+   "fewest_changed_gates": [
+    "box"
+   ],
+   "status": "allowed"
+  },
+  "OUTSIDE_LEVEL_SET <-> CERTIFICATE_NOT_POSITIVE": {
+   "codes": [
+    "OUTSIDE_LEVEL_SET",
+    "CERTIFICATE_NOT_POSITIVE"
+   ],
+   "crossings": [
+    [
+     "not_positive"
+    ]
+   ],
+   "exercised_on": [],
+   "fewest_changed_gates": [
+    "not_positive"
+   ],
+   "status": "rounding only"
+  },
+  "OUTSIDE_PARAMETER_BOX <-> CERTIFICATE_NOT_POSITIVE": {
+   "codes": [
+    "OUTSIDE_PARAMETER_BOX",
+    "CERTIFICATE_NOT_POSITIVE"
+   ],
+   "crossings": [
+    [
+     "box"
+    ]
+   ],
+   "exercised_on": [],
+   "fewest_changed_gates": [
+    "box"
+   ],
+   "status": "rounding only"
+  },
+  "OUTSIDE_PARAMETER_BOX <-> OUTSIDE_LEVEL_SET": {
+   "codes": [
+    "OUTSIDE_PARAMETER_BOX",
+    "OUTSIDE_LEVEL_SET"
+   ],
+   "crossings": [
+    [
+     "box"
+    ]
+   ],
+   "exercised_on": [
+    "box edge theta = 1, OUTSIDE_LEVEL_SET inside"
+   ],
+   "fewest_changed_gates": [
+    "box"
+   ],
+   "status": "allowed"
+  }
+ },
+ "transitions": [
+  {
+   "changed_gates": [
+    "margin_low"
+   ],
+   "codes": [
+    "CERTIFIED_WITH_MARGIN",
+    "MARGIN_LOW"
+   ],
+   "direct": true,
+   "path": "required_margin (margin 2)",
+   "steps": [
+    2,
+    3
+   ]
+  },
+  {
+   "changed_gates": [
+    "level"
+   ],
+   "codes": [
+    "CERTIFIED_WITH_MARGIN",
+    "OUTSIDE_LEVEL_SET"
+   ],
+   "direct": true,
+   "path": "level (V = 4)",
+   "steps": [
+    1,
+    2
+   ]
+  },
+  {
+   "changed_gates": [
+    "certified"
+   ],
+   "codes": [
+    "CERTIFIED_WITH_MARGIN",
+    "NUMERICAL_INCONCLUSIVE"
+   ],
+   "direct": true,
+   "path": "stability a, A = [[a, 1], [-1, a]]",
+   "steps": [
+    1,
+    2
+   ]
+  },
+  {
+   "changed_gates": [
+    "scalar_positive",
+    "not_definite"
+   ],
+   "codes": [
+    "NUMERICAL_INCONCLUSIVE",
+    "NOT_CERTIFIED"
+   ],
+   "direct": true,
+   "path": "stability a, A = [[a, 1], [-1, a]]",
+   "steps": [
+    4,
+    5
+   ]
+  },
+  {
+   "changed_gates": [
+    "scalar_positive"
+   ],
+   "codes": [
+    "DECREASE_NOT_DEFINITE",
+    "NOT_CERTIFIED"
+   ],
+   "direct": true,
+   "path": "direction phi, A = diag(-1, 1)",
+   "steps": [
+    2,
+    3
+   ]
+  },
+  {
+   "changed_gates": [
+    "overflow"
+   ],
+   "codes": [
+    "CERTIFIED_WITH_MARGIN",
+    "NUMERICAL_OVERFLOW"
+   ],
+   "direct": true,
+   "path": "matrix scale k, A = -2^k I",
+   "steps": [
+    2,
+    3
+   ]
+  },
+  {
+   "changed_gates": [
+    "box"
+   ],
+   "codes": [
+    "OUTSIDE_PARAMETER_BOX",
+    "CERTIFIED_WITH_MARGIN"
+   ],
+   "direct": true,
+   "path": "theta, box [-1, 1]",
+   "steps": [
+    0,
+    1
+   ]
+  },
+  {
+   "changed_gates": [
+    "box"
+   ],
+   "codes": [
+    "CERTIFIED_WITH_MARGIN",
+    "OUTSIDE_PARAMETER_BOX"
+   ],
+   "direct": true,
+   "path": "theta, box [-1, 1]",
+   "steps": [
+    3,
+    4
+   ]
+  },
+  {
+   "changed_gates": [
+    "box"
+   ],
+   "codes": [
+    "OUTSIDE_PARAMETER_BOX",
+    "CERTIFIED_WITH_MARGIN"
+   ],
+   "direct": true,
+   "path": "theta_dot, rate box [-0.2, 0.2]",
+   "steps": [
+    0,
+    1
+   ]
+  },
+  {
+   "changed_gates": [
+    "box"
+   ],
+   "codes": [
+    "CERTIFIED_WITH_MARGIN",
+    "OUTSIDE_PARAMETER_BOX"
+   ],
+   "direct": true,
+   "path": "theta_dot, rate box [-0.2, 0.2]",
+   "steps": [
+    3,
+    4
+   ]
+  },
+  {
+   "changed_gates": [
+    "box"
+   ],
+   "codes": [
+    "NUMERICAL_OVERFLOW",
+    "OUTSIDE_PARAMETER_BOX"
+   ],
+   "direct": true,
+   "path": "box edge theta = 1, NUMERICAL_OVERFLOW inside",
+   "steps": [
+    0,
+    1
+   ]
+  },
+  {
+   "changed_gates": [
+    "box"
+   ],
+   "codes": [
+    "OUTSIDE_LEVEL_SET",
+    "OUTSIDE_PARAMETER_BOX"
+   ],
+   "direct": true,
+   "path": "box edge theta = 1, OUTSIDE_LEVEL_SET inside",
+   "steps": [
+    0,
+    1
+   ]
+  },
+  {
+   "changed_gates": [
+    "box"
+   ],
+   "codes": [
+    "NOT_CERTIFIED",
+    "OUTSIDE_PARAMETER_BOX"
+   ],
+   "direct": true,
+   "path": "box edge theta = 1, NOT_CERTIFIED inside",
+   "steps": [
+    0,
+    1
+   ]
+  },
+  {
+   "changed_gates": [
+    "box"
+   ],
+   "codes": [
+    "MARGIN_LOW",
+    "OUTSIDE_PARAMETER_BOX"
+   ],
+   "direct": true,
+   "path": "box edge theta = 1, MARGIN_LOW inside",
+   "steps": [
+    0,
+    1
+   ]
+  },
+  {
+   "changed_gates": [
+    "box"
+   ],
+   "codes": [
+    "DECREASE_NOT_DEFINITE",
+    "OUTSIDE_PARAMETER_BOX"
+   ],
+   "direct": true,
+   "path": "box edge theta = 1, DECREASE_NOT_DEFINITE inside",
+   "steps": [
+    0,
+    1
+   ]
+  },
+  {
+   "changed_gates": [
+    "box"
+   ],
+   "codes": [
+    "NUMERICAL_INCONCLUSIVE",
+    "OUTSIDE_PARAMETER_BOX"
+   ],
+   "direct": true,
+   "path": "box edge theta = 1, NUMERICAL_INCONCLUSIVE inside",
+   "steps": [
+    0,
+    1
+   ]
+  },
+  {
+   "changed_gates": [
+    "overflow"
+   ],
+   "codes": [
+    "OUTSIDE_LEVEL_SET",
+    "NUMERICAL_OVERFLOW"
+   ],
+   "direct": true,
+   "path": "matrix scale across overflow, OUTSIDE_LEVEL_SET below",
+   "steps": [
+    0,
+    1
+   ]
+  },
+  {
+   "changed_gates": [
+    "overflow"
+   ],
+   "codes": [
+    "NOT_CERTIFIED",
+    "NUMERICAL_OVERFLOW"
+   ],
+   "direct": true,
+   "path": "matrix scale across overflow, NOT_CERTIFIED below",
+   "steps": [
+    0,
+    1
+   ]
+  },
+  {
+   "changed_gates": [
+    "overflow"
+   ],
+   "codes": [
+    "MARGIN_LOW",
+    "NUMERICAL_OVERFLOW"
+   ],
+   "direct": true,
+   "path": "matrix scale across overflow, MARGIN_LOW below",
+   "steps": [
+    0,
+    1
+   ]
+  },
+  {
+   "changed_gates": [
+    "overflow"
+   ],
+   "codes": [
+    "DECREASE_NOT_DEFINITE",
+    "NUMERICAL_OVERFLOW"
+   ],
+   "direct": true,
+   "path": "matrix scale across overflow, DECREASE_NOT_DEFINITE below",
+   "steps": [
+    0,
+    1
+   ]
+  },
+  {
+   "changed_gates": [
+    "overflow"
+   ],
+   "codes": [
+    "NUMERICAL_INCONCLUSIVE",
+    "NUMERICAL_OVERFLOW"
+   ],
+   "direct": true,
+   "path": "matrix scale across overflow, NUMERICAL_INCONCLUSIVE below",
+   "steps": [
+    0,
+    1
+   ]
+  },
+  {
+   "changed_gates": [
+    "level"
+   ],
+   "codes": [
+    "NOT_CERTIFIED",
+    "OUTSIDE_LEVEL_SET"
+   ],
+   "direct": true,
+   "path": "level across V = 4, NOT_CERTIFIED inside",
+   "steps": [
+    0,
+    1
+   ]
+  },
+  {
+   "changed_gates": [
+    "level"
+   ],
+   "codes": [
+    "MARGIN_LOW",
+    "OUTSIDE_LEVEL_SET"
+   ],
+   "direct": true,
+   "path": "level across V = 4, MARGIN_LOW inside",
+   "steps": [
+    0,
+    1
+   ]
+  },
+  {
+   "changed_gates": [
+    "level"
+   ],
+   "codes": [
+    "DECREASE_NOT_DEFINITE",
+    "OUTSIDE_LEVEL_SET"
+   ],
+   "direct": true,
+   "path": "level across V = 4, DECREASE_NOT_DEFINITE inside",
+   "steps": [
+    0,
+    1
+   ]
+  },
+  {
+   "changed_gates": [
+    "level"
+   ],
+   "codes": [
+    "NUMERICAL_INCONCLUSIVE",
+    "OUTSIDE_LEVEL_SET"
+   ],
+   "direct": true,
+   "path": "level across V = 4, NUMERICAL_INCONCLUSIVE inside",
+   "steps": [
+    0,
+    1
+   ]
+  },
+  {
+   "changed_gates": [
+    "certified",
+    "margin_low"
+   ],
+   "codes": [
+    "MARGIN_LOW",
+    "NUMERICAL_INCONCLUSIVE"
+   ],
+   "direct": true,
+   "path": "stability a with required margin 1",
+   "steps": [
+    0,
+    1
+   ]
+  },
+  {
+   "changed_gates": [
+    "certified"
+   ],
+   "codes": [
+    "CERTIFIED_WITH_MARGIN",
+    "NUMERICAL_INCONCLUSIVE"
+   ],
+   "direct": true,
+   "path": "top eigenvalue b, A = diag(-1, b)",
+   "steps": [
+    0,
+    1
+   ]
+  },
+  {
+   "changed_gates": [
+    "not_definite"
+   ],
+   "codes": [
+    "NUMERICAL_INCONCLUSIVE",
+    "DECREASE_NOT_DEFINITE"
+   ],
+   "direct": true,
+   "path": "top eigenvalue b, A = diag(-1, b)",
+   "steps": [
+    2,
+    3
+   ]
+  }
+ ]
+}

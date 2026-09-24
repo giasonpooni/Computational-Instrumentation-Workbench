@@ -11,17 +11,19 @@
    "hardware_measured": 0,
    "independently_verified": 0,
    "not_established": 2,
-   "numerically_verified": 3,
+   "numerically_verified": 5,
    "provider_backed": 0,
    "synthetic": 0
   },
   "primary": "numerically_verified"
  },
- "expected_invariant": "All binding equalities hold for every retained receipt; transplanted receipts and false numerical matches are refused; a receipt can be removed without changing any digest (receipt.deleted reopens).",
- "experiment": "Check the binding equalities for three receipts (replay, replay after reopen, replay of a replay); reopen receipt transplant, false numerical match and deletion forgeries. Digest re-derivations use a local canonical-JSON/SHA-256 implementation in ciw.lab, the same implementation origin as CIW, so they are cross_implementation checks (numerically_verified, never independently_verified); every other check compares CIW's own outputs or refusal messages. Retained receipt-binding.json and receipt-mutations.json/.md.",
+ "expected_invariant": "All binding equalities hold for every retained receipt; the three predicted kills are refused with their pinned messages; receipt.transplanted-full, receipt.fabricated and receipt.deleted reopen, and the reopened catalog shows the forged receipt placement.",
+ "experiment": "Check the binding equalities for three receipts (replay, replay after reopen, replay of a replay); reopen a false numerical match, receipt transplants with no, local and full recomputation, a fabricated receipt and a receipt deletion. Digest re-derivations use a local canonical-JSON/SHA-256 implementation in ciw.lab, the same implementation origin as CIW, so they are cross_implementation checks (numerically_verified, never independently_verified); every other check compares CIW's own outputs or refusal messages. Retained receipt-binding.json and receipt-mutations.json/.md.",
  "failure_modes_checked": [
-  "receipt moved to another bundle",
-  "receipt moved and resealed",
+  "receipt moved to another bundle (no recompute)",
+  "receipt moved with replayed digest and replay_id recomputed (donor reproduction step kept)",
+  "receipt moved and fully rebuilt on the target",
+  "receipt fabricated for a never-replayed original",
   "false numerical_match",
   "receipt deleted"
  ],
@@ -142,7 +144,7 @@
      }
     ]
    },
-   "claim": "Transplanted receipts and false numerical-match claims are refused on reopen",
+   "claim": "A false numerical-match claim, and a receipt moved onto another bundle with a stale replayed digest or with the donor's reproduction step, are refused on reopen",
    "domain": "provenance",
    "evidence_status": "numerically_verified",
    "regression_tolerance": {
@@ -184,13 +186,143 @@
       "comparison": "ge",
       "observed": 1.0,
       "passed": true,
-      "reference": "receipt.deleted: accepted (1 = accepted)",
+      "reference": "receipt.transplanted-full: accepted (1 = accepted)",
       "reference_kind": "invariant",
       "tolerance": 1.0
+     },
+     {
+      "comparison": "abs_le",
+      "observed": 0.0,
+      "passed": true,
+      "reference": "reopened bundles list the receipt sources {'bundle:B0': [], 'bundle:B0b': ['bundle:B0'], 'bundle:Bother': [], 'bundle:B1': []} (0 = shown)",
+      "reference_kind": "exact_arithmetic",
+      "tolerance": 0.0
      }
     ]
    },
-   "claim": "Surviving mutant receipt.deleted: a replay bundle reopens without its replay receipt, indistinguishable from an original execution",
+   "claim": "Surviving mutant receipt.transplanted-full: a replay receipt moved onto an original sibling and rebuilt from the two bundles reopens there, and the replay reopens without it",
+   "counterexample": {
+    "statement": "A replay receipt cannot be moved from its replay bundle onto another retained bundle",
+    "witness": {
+     "description": "receipt moved from the replay B1 onto the original sibling B0b and rebuilt there (source B0, replayed B0b, verification rebuilt from B0 with B0b's own step as the reproduction, ids recomputed)",
+     "name": "receipt.transplanted-full",
+     "observed": "accepted",
+     "post_reopen": {
+      "receipt_sources": {
+       "bundle:B0": [],
+       "bundle:B0b": [
+        "bundle:B0"
+       ],
+       "bundle:B1": [],
+       "bundle:Bother": []
+      }
+     },
+     "recompute": "full",
+     "target": "energy bundle"
+    }
+   },
+   "domain": "provenance",
+   "evidence_status": "numerically_verified",
+   "regression_tolerance": {
+    "abs": 0.0,
+    "rel": 0.0
+   },
+   "uncertainty": {
+    "basis": "exact equality of SHA-256 digests, bytes, counts, booleans or refusal strings; no rounding",
+    "kind": "exact",
+    "value": 0.0
+   },
+   "unit": null,
+   "value": {
+    "mutant": "receipt.transplanted-full",
+    "observed": "accepted"
+   }
+  },
+  {
+   "assigned_by": "ciw.lab.evidence",
+   "basis": {
+    "checks": [
+     {
+      "comparison": "ge",
+      "observed": 1.0,
+      "passed": true,
+      "reference": "receipt.fabricated: accepted (1 = accepted)",
+      "reference_kind": "invariant",
+      "tolerance": 1.0
+     },
+     {
+      "comparison": "abs_le",
+      "observed": 0.0,
+      "passed": true,
+      "reference": "reopened bundles list the receipt sources {'bundle:B0': [], 'bundle:B0b': ['bundle:B0'], 'bundle:Bother': [], 'bundle:B1': ['bundle:B0']} (0 = shown)",
+      "reference_kind": "exact_arithmetic",
+      "tolerance": 0.0
+     }
+    ]
+   },
+   "claim": "Surviving mutant receipt.fabricated: a receipt written onto a never-replayed original, claiming it replays its sibling, reopens",
+   "counterexample": {
+    "statement": "A replay receipt can only be retained on a bundle produced by that replay",
+    "witness": {
+     "description": "a new receipt written onto the never-replayed original B0b claiming it replays B0 (verification built from B0 and B0b's step, ids recomputed); B1 keeps its own receipt",
+     "name": "receipt.fabricated",
+     "observed": "accepted",
+     "post_reopen": {
+      "receipt_sources": {
+       "bundle:B0": [],
+       "bundle:B0b": [
+        "bundle:B0"
+       ],
+       "bundle:B1": [
+        "bundle:B0"
+       ],
+       "bundle:Bother": []
+      }
+     },
+     "recompute": "full",
+     "target": "energy bundle"
+    }
+   },
+   "domain": "provenance",
+   "evidence_status": "numerically_verified",
+   "regression_tolerance": {
+    "abs": 0.0,
+    "rel": 0.0
+   },
+   "uncertainty": {
+    "basis": "exact equality of SHA-256 digests, bytes, counts, booleans or refusal strings; no rounding",
+    "kind": "exact",
+    "value": 0.0
+   },
+   "unit": null,
+   "value": {
+    "mutant": "receipt.fabricated",
+    "observed": "accepted"
+   }
+  },
+  {
+   "assigned_by": "ciw.lab.evidence",
+   "basis": {
+    "checks": [
+     {
+      "comparison": "ge",
+      "observed": 1.0,
+      "passed": true,
+      "reference": "receipt.deleted: accepted (1 = accepted)",
+      "reference_kind": "invariant",
+      "tolerance": 1.0
+     },
+     {
+      "comparison": "abs_le",
+      "observed": 0.0,
+      "passed": true,
+      "reference": "reopened bundles list the receipt sources {'bundle:B0': [], 'bundle:B0b': [], 'bundle:Bother': [], 'bundle:B1': []} (0 = shown)",
+      "reference_kind": "exact_arithmetic",
+      "tolerance": 0.0
+     }
+    ]
+   },
+   "claim": "Surviving mutant receipt.deleted: a replay bundle reopens without its replay receipt, listed with no receipt like an original execution",
    "counterexample": {
     "statement": "A replay bundle cannot be retained without its replay receipt",
     "witness": {
@@ -198,8 +330,12 @@
      "name": "receipt.deleted",
      "observed": "accepted",
      "post_reopen": {
-      "bundles_with_receipts": 0,
-      "replay_bundle_listed": true
+      "receipt_sources": {
+       "bundle:B0": [],
+       "bundle:B0b": [],
+       "bundle:B1": [],
+       "bundle:Bother": []
+      }
      },
      "recompute": "none",
      "target": "energy replay bundle"
@@ -263,21 +399,23 @@
    "unit": null,
    "value": {
     "surviving_mutants_in_this_task": [
-     "receipt.deleted"
+     "receipt.deleted",
+     "receipt.fabricated",
+     "receipt.transplanted-full"
     ]
    }
   }
  ],
  "generated_artifacts": [
   {
-   "bytes": 2210,
+   "bytes": 3858,
    "path": "artifacts/T083/receipt-mutations.json",
-   "sha256": "af3ac175ad9d761db60e63e070dc706f5c9c9954660a5ea9c1f5a6e4f5afb372"
+   "sha256": "be87a8a01cc461d7b08bb88504dabf323b22eacd7a9451a265a93fc5d7367fcc"
   },
   {
-   "bytes": 798,
+   "bytes": 1023,
    "path": "artifacts/T083/receipt-mutations.md",
-   "sha256": "bc4406910b4609e46d353471adf1935071f9fa45d281f763b32492db6500deb9"
+   "sha256": "1223ea55678f6883dae7bf6d534de65e5c9057f84e17f70d79e0fe57e69ec111"
   },
   {
    "bytes": 1200,
@@ -285,15 +423,15 @@
    "sha256": "969e9e901b9842a44a8b2eead8e8b1920e3fb6dd104adb856aab3af68cfc1413"
   }
  ],
- "hypothesis": "A replay receipt binds the source bundle digest, the replayed bundle digest, the verification subject, the fresh reproduction step, the runtime digest and a not_performed admission, but the replay bundle's own identity does not bind the receipt.",
+ "hypothesis": "A replay receipt binds the source bundle digest, the replayed bundle digest, the verification subject, the fresh reproduction step, the runtime digest and a not_performed admission, but nothing binds it to a replay event: every field is a copy of, or an unkeyed digest over, retained bundles, and the replay bundle's own identity excludes the receipt. Predicted kills: a false numerical_match, and a receipt moved onto another bundle while its replayed digest stays stale or its verification keeps the donor's reproduction step. Predicted survivors: the same move with the receipt rebuilt from the two bundles (receipt.transplanted-full), a receipt written onto a never-replayed original (receipt.fabricated) and receipt deletion (receipt.deleted).",
  "input_data": [
   "make_demo_run() damped-oscillator recording; statistics.v1 on channel v over [1, 2] s, twice, plus one legacy analysis.stats result",
   "examples/energy-accuracy/{baseline,reset}.json (origin synthetic_fixture): two original executions of baseline, one of reset, replays, and a separate session in the same process",
   "Workspaces saved by Session.save_workspace and reopened by Session.from_workspace in temporary directories"
  ],
- "mathematical_model": "replay_id = sha256(receipt \\ replay_id); receipt.verification.subject_ref = source_bundle_digest; bundle_digest = sha256(bundle \\ {bundle_digest, verification, replay_receipts}).",
+ "mathematical_model": "replay_id = sha256(receipt \\ replay_id); receipt.verification.subject_ref = source_bundle_digest; receipt.verification.reproduction = the containing bundle's step; bundle_digest = sha256(bundle \\ {bundle_digest, verification, replay_receipts}). Every term is computable from retained bundles alone.",
  "number": 83,
- "numerical_result": "30/30 receipt binding properties held over 3 receipts; mutants: 4 rows (4 workspace mutants, 0 pure-validator rows): 3 refused; 1 surviving forgery (receipt.deleted); kill/survive predictions matched 4/4; refusal messages matched their regression pins 3/3",
+ "numerical_result": "30/30 receipt binding properties held over 3 receipts; mutants: 6 rows (6 workspace mutants, 0 pure-validator rows): 3 refused; 3 surviving forgeries (receipt.transplanted-full, receipt.fabricated, receipt.deleted); kill/survive predictions matched 6/6; refusal messages matched their regression pins 3/3",
  "observation_model": "No physical observation. The observed objects are CIW records (sessions, executions, results, bundles, receipts, saved workspace JSON) produced offline by the unmodified CIW code; the energy logs are synthetic fixtures and no hardware was sampled.",
  "physical_validation_status": {
   "statement": "Physical validation requires acquired hardware evidence; none was acquired for this task.",
@@ -307,13 +445,13 @@
   "python": "3.12.3",
   "scipy": "1.16.2",
   "sources": {
-   "src/ciw/lab/exchange_provenance.py": "5cc267c7777c9b434b8747b0cc841ac85313e1cfb6ff4c429ee93aa5ddbb645b",
-   "src/ciw/lab/exchange_provenance_common.py": "22028c4008079fba23c5e807de0104ba1a0014027e1d40a9209881cdf232f486"
+   "src/ciw/lab/exchange_provenance.py": "f55593eb90af9ed82e40f0f04987c7f0a06cf1c40e7079b0a371e0506607618b",
+   "src/ciw/lab/exchange_provenance_common.py": "f8e765184af4e893a0c4c6d9e5cb2988b79e6f3dfc3d941444f335ecc894d775"
   },
   "sympy": "1.14.0"
  },
- "recommended_next_task": "T084 (mutate replay receipt source digest); CIW change: bind receipts into the replay bundle identity or a catalog-level seal so deletion is detected",
- "report_id": "sha256:c075074308bff8eedd6cdf73795e9f446235b2a85bd06d91f28a88ebd9b4b7d5",
+ "recommended_next_task": "T084 (mutate replay receipt source digest); CIW change: bind receipts into the replay bundle identity or a catalog-level seal so accidental deletion is detected, and sign receipts with a host-held key at replay time so a transplanted or fabricated receipt is refused",
+ "report_id": "sha256:b95b2f73c4245b6fd7380b8c249a6aee7836fc489b186ef45630f7cb7661302f",
  "schema": "ciw.lab-task-report.v1",
  "section": "exchange-provenance",
  "state": "completed",
@@ -325,18 +463,24 @@
   "check: Every retained replay receipt binds its source and replayed bundle digests, verification subject, fresh reproduction step, runtime digest and limited authority vs B2 receipt binding: observed properties that did not hold",
   "check: Every retained replay receipt binds its source and replayed bundle digests, verification subject, fresh reproduction step, runtime digest and limited authority vs B3 receipt binding: re-derived digest properties that did not hold",
   "check: Every retained replay receipt binds its source and replayed bundle digests, verification subject, fresh reproduction step, runtime digest and limited authority vs B3 receipt binding: observed properties that did not hold",
-  "check: Transplanted receipts and false numerical-match claims are refused on reopen vs receipt.numerical-match-false (local recompute): refusal on reopen",
-  "check: Transplanted receipts and false numerical-match claims are refused on reopen vs receipt.transplanted (none recompute): refusal on reopen",
-  "check: Transplanted receipts and false numerical-match claims are refused on reopen vs receipt.transplanted-resealed (local recompute): refusal on reopen",
-  "check: Transplanted receipts and false numerical-match claims are refused on reopen vs harness control: the forger's recomputation of the unedited workspace reproduces every CIW digest",
-  "check: Transplanted receipts and false numerical-match claims are refused on reopen vs harness control: the unedited saved workspace reopens",
-  "check: Surviving mutant receipt.deleted: a replay bundle reopens without its replay receipt, indistinguishable from an original execution vs receipt.deleted: accepted (1 = accepted)",
+  "check: A false numerical-match claim, and a receipt moved onto another bundle with a stale replayed digest or with the donor's reproduction step, are refused on reopen vs receipt.numerical-match-false (local recompute): refusal on reopen",
+  "check: A false numerical-match claim, and a receipt moved onto another bundle with a stale replayed digest or with the donor's reproduction step, are refused on reopen vs receipt.transplanted (none recompute): refusal on reopen",
+  "check: A false numerical-match claim, and a receipt moved onto another bundle with a stale replayed digest or with the donor's reproduction step, are refused on reopen vs receipt.transplanted-resealed (local recompute): refusal on reopen",
+  "check: A false numerical-match claim, and a receipt moved onto another bundle with a stale replayed digest or with the donor's reproduction step, are refused on reopen vs harness control: the forger's recomputation of the unedited workspace reproduces every CIW digest",
+  "check: A false numerical-match claim, and a receipt moved onto another bundle with a stale replayed digest or with the donor's reproduction step, are refused on reopen vs harness control: the unedited saved workspace reopens",
+  "check: Surviving mutant receipt.transplanted-full: a replay receipt moved onto an original sibling and rebuilt from the two bundles reopens there, and the replay reopens without it vs receipt.transplanted-full: accepted (1 = accepted)",
+  "check: Surviving mutant receipt.transplanted-full: a replay receipt moved onto an original sibling and rebuilt from the two bundles reopens there, and the replay reopens without it vs reopened bundles list the receipt sources {'bundle:B0': [], 'bundle:B0b': ['bundle:B0'], 'bundle:Bother': [], 'bundle:B1': []} (0 = shown)",
+  "check: Surviving mutant receipt.fabricated: a receipt written onto a never-replayed original, claiming it replays its sibling, reopens vs receipt.fabricated: accepted (1 = accepted)",
+  "check: Surviving mutant receipt.fabricated: a receipt written onto a never-replayed original, claiming it replays its sibling, reopens vs reopened bundles list the receipt sources {'bundle:B0': [], 'bundle:B0b': ['bundle:B0'], 'bundle:Bother': [], 'bundle:B1': ['bundle:B0']} (0 = shown)",
+  "check: Surviving mutant receipt.deleted: a replay bundle reopens without its replay receipt, listed with no receipt like an original execution vs receipt.deleted: accepted (1 = accepted)",
+  "check: Surviving mutant receipt.deleted: a replay bundle reopens without its replay receipt, listed with no receipt like an original execution vs reopened bundles list the receipt sources {'bundle:B0': [], 'bundle:B0b': [], 'bundle:Bother': [], 'bundle:B1': []} (0 = shown)",
   "pytest: tests/test_lab_exchange_provenance.py::test_replay_receipt_binding"
  ],
  "tests_skipped": [],
  "title": "Test replay receipt binding.",
- "uncertainty": "Exact equalities. Receipt deletion is accepted because bundle_digest excludes replay_receipts (src/ciw/telemetry.py:_bundle_digest); nothing else records that a replay happened.",
+ "uncertainty": "Exact equalities. Kills show only that these particular edits are detected, not that every receipt edit is. Receipt deletion, full transplant and fabrication are accepted because every receipt field is recomputable from retained bundles and bundle_digest excludes replay_receipts (src/ciw/telemetry.py:_bundle_digest); nothing else records that a replay happened.",
  "unresolved_assumptions": [
-  "Only energy-accuracy receipts were exercised; provider-backed receipts share workbench._validate_receipts but have workflow-specific checks."
+  "Only energy-accuracy receipts were exercised; provider-backed receipts share workbench._validate_receipts but have workflow-specific checks.",
+  "A fabricated receipt needs a sibling of the same source bytes, configuration and runtime; one was retained here (B0b), which any user can create by executing a source twice."
  ]
 }

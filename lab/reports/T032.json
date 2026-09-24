@@ -453,9 +453,9 @@
     "rel": 1e-05
    },
    "uncertainty": {
-    "basis": "RK4 step estimate for ciw.lab.jacobi route quantities (step about 0.04)",
+    "basis": "max of the measured relative j_head differences (batch RK4 search and, when scipy and sympy are available, the scipy/sympy integration) and the absolute scipy/sympy conjugate-point difference bounding the focus margin (length units)",
     "kind": "reference_error",
-    "value": 1e-06
+    "value": 5.825320985298427e-08
    },
    "unit": null,
    "value": {
@@ -612,9 +612,9 @@
     "rel": 0
    },
    "uncertainty": {
-    "basis": "route sets compared by length and heading to 1e-6",
+    "basis": "completeness of the fan search is not proven: no bound on routes missed at both fan densities; routes are matched by length and heading to 1e-6",
     "kind": "truncation_bound",
-    "value": 0.0
+    "value": null
    },
    "unit": null,
    "value": {
@@ -701,13 +701,13 @@
   },
   "scipy": "1.16.2",
   "sources": {
-   "src/ciw/lab/flat_torus_topology.py": "4d8cf2437759501a1b9fa5ee0d8abfac43345ebee378c6ad08233e9155d4b184",
-   "src/ciw/lab/flat_torus_topology_routes.py": "cc2f3a7ce7a919c0aa83509104816ba8f4fedb15e14f5004c5982f8fff4de17a"
+   "src/ciw/lab/flat_torus_topology.py": "1221001d96bf1f9aa2f9fea169a2b10bfb37230da11bfb6f1608ba9355c86b9a",
+   "src/ciw/lab/flat_torus_topology_routes.py": "733568202260c5432d01d01976ee1b1a8a4d69b23e6d3c089ca00d1c46f2ab61"
   },
   "sympy": "1.14.0"
  },
  "recommended_next_task": "Extend the library to variable-curvature meshes (surfaces-discrete section) and to manufacturing paths",
- "report_id": "sha256:47dd2fb2c0042d02c4af5b71454e7ee75347ea7636872e54501e217082577669",
+ "report_id": "sha256:bb5b68cba56d24dba581adc93b0d0cf9bea26e3a29541b5724db4b80eebe60b6",
  "schema": "ciw.lab-task-report.v1",
  "section": "flat-torus-topology",
  "state": "completed",

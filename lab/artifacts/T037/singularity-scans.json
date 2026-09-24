@@ -845,18 +845,6 @@
    "true": "curvature_singularity"
   }
  },
- "expected": {
-  "cone-apex": "conical_singularity",
-  "conformal-0.9-boundary": "curvature_singularity",
-  "hyperbolic-boundary": "infinite_distance_boundary",
-  "plane-cube-root-chart": "unclassified",
-  "plane-polar-origin": "coordinate_singularity",
-  "power-graph-1.8-apex": "curvature_singularity",
-  "power-graph-apex": "curvature_singularity",
-  "saddle-origin": "regular",
-  "sphere-equator": "regular",
-  "sphere-north-pole": "coordinate_singularity"
- },
  "scans": {
   "cone-apex": {
    "approach": "cone-apex",
@@ -2946,5 +2934,17 @@
   "divergence_tolerance": 0.001,
   "fit_residual": 0.05,
   "fit_window": 1e-05
+ },
+ "true_class": {
+  "cone-apex": "conical_singularity",
+  "conformal-0.9-boundary": "curvature_singularity",
+  "hyperbolic-boundary": "infinite_distance_boundary",
+  "plane-cube-root-chart": "coordinate_singularity",
+  "plane-polar-origin": "coordinate_singularity",
+  "power-graph-1.8-apex": "curvature_singularity",
+  "power-graph-apex": "curvature_singularity",
+  "saddle-origin": "regular",
+  "sphere-equator": "regular",
+  "sphere-north-pole": "coordinate_singularity"
  }
 }

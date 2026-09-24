@@ -11,14 +11,14 @@
    "hardware_measured": 0,
    "independently_verified": 0,
    "not_established": 1,
-   "numerically_verified": 3,
+   "numerically_verified": 4,
    "provider_backed": 0,
    "synthetic": 0
   },
   "primary": "numerically_verified"
  },
- "expected_invariant": "No string is used in two identity roles; CIW's own step validator refuses a moved occurrence with a stale result_id and accepts it with a recomputed one, whose numerical and operation identities are unchanged; execution/result aliasing forgeries are refused; revision.gap reopens.",
- "experiment": "Compare identity sets across oscillator and energy occurrences, move one energy step to a new execution_ref and let EnergyAccuracyWorkflow._validate_step judge it, and reopen four aliasing forgeries and one selection-revision forgery. Digest re-derivations use a local canonical-JSON/SHA-256 implementation in ciw.lab, the same implementation origin as CIW, so they are cross_implementation checks (numerically_verified, never independently_verified); every other check compares CIW's own outputs or refusal messages. Mutation rows retained as aliasing-mutations.json/.md.",
+ "expected_invariant": "No string is used in two identity roles; CIW's own step validator refuses a moved occurrence with a stale result_id and accepts it with a recomputed one, whose numerical and operation identities are unchanged; the four inconsistent aliasing forgeries are refused; alias.swap-pairing and revision.gap reopen.",
+ "experiment": "Compare identity sets across oscillator and energy occurrences, move one energy step to a new execution_ref and let EnergyAccuracyWorkflow._validate_step judge it, and reopen four inconsistent aliasing forgeries, one consistent re-pairing of the two statistics occurrences and one selection-revision forgery. Digest re-derivations use a local canonical-JSON/SHA-256 implementation in ciw.lab, the same implementation origin as CIW, so they are cross_implementation checks (numerically_verified, never independently_verified); every other check compares CIW's own outputs or refusal messages. Mutation rows retained as aliasing-mutations.json/.md.",
  "failure_modes_checked": [
   "identity reuse across roles",
   "result pointing at another execution",
@@ -26,6 +26,7 @@
   "wrong identity prefix",
   "operation substitution (alias.operation is killed incidentally by payload-shape validation: only statistics.v1 and spectrum.periodogram.v1 are registered and their payload shapes differ, so no shape-compatible substitution exists offline)",
   "stale result identity after an occurrence change",
+  "consistent re-pairing of two execution/result occurrences",
   "selection revision gap"
  ],
  "findings": [
@@ -171,7 +172,7 @@
      }
     ]
    },
-   "claim": "Execution/result aliasing forgeries are refused on reopen with the pinned message; operation substitution is refused only by payload-shape validation",
+   "claim": "Inconsistent execution/result aliases (a result or execution naming another occurrence's identity, a result identity with the execution prefix) are refused on reopen with the pinned message; operation substitution is refused only by payload-shape validation",
    "domain": "provenance",
    "evidence_status": "numerically_verified",
    "regression_tolerance": {
@@ -219,9 +220,73 @@
       "comparison": "ge",
       "observed": 1.0,
       "passed": true,
+      "reference": "alias.swap-pairing: accepted (1 = accepted)",
+      "reference_kind": "invariant",
+      "tolerance": 1.0
+     },
+     {
+      "comparison": "abs_le",
+      "observed": 0.0,
+      "passed": true,
+      "reference": "reopened R1 names execution E2 and E2 names result R1 (and R2/E1 the converse) (0 = shown)",
+      "reference_kind": "exact_arithmetic",
+      "tolerance": 0.0
+     }
+    ]
+   },
+   "claim": "Surviving mutant alias.swap-pairing: two statistics occurrences whose execution and result identities and creation times are exchanged consistently reopen re-paired",
+   "counterexample": {
+    "statement": "A retained oscillator result stays bound to the execution occurrence that produced it",
+    "witness": {
+     "description": "R1 and R2 exchange executions consistently: result execution_ids, execution result_ids and result created_at swapped between the two pairs; all four records resealed",
+     "name": "alias.swap-pairing",
+     "observed": "accepted",
+     "post_reopen": {
+      "execution:E1": "result:R2",
+      "execution:E2": "result:R1",
+      "result:R1": "execution:E2",
+      "result:R2": "execution:E1"
+     },
+     "recompute": "local",
+     "target": "oscillator executions and results"
+    }
+   },
+   "domain": "provenance",
+   "evidence_status": "numerically_verified",
+   "regression_tolerance": {
+    "abs": 0.0,
+    "rel": 0.0
+   },
+   "uncertainty": {
+    "basis": "exact equality of SHA-256 digests, bytes, counts, booleans or refusal strings; no rounding",
+    "kind": "exact",
+    "value": 0.0
+   },
+   "unit": null,
+   "value": {
+    "mutant": "alias.swap-pairing",
+    "observed": "accepted"
+   }
+  },
+  {
+   "assigned_by": "ciw.lab.evidence",
+   "basis": {
+    "checks": [
+     {
+      "comparison": "ge",
+      "observed": 1.0,
+      "passed": true,
       "reference": "revision.gap: accepted (1 = accepted)",
       "reference_kind": "invariant",
       "tolerance": 1.0
+     },
+     {
+      "comparison": "abs_le",
+      "observed": 0.0,
+      "passed": true,
+      "reference": "reopened selection revision 1000 with the execution claiming 999 (0 = shown)",
+      "reference_kind": "exact_arithmetic",
+      "tolerance": 0.0
      }
     ]
    },
@@ -274,6 +339,7 @@
    "unit": null,
    "value": {
     "surviving_mutants_in_this_task": [
+     "alias.swap-pairing",
      "revision.gap"
     ]
    }
@@ -281,17 +347,17 @@
  ],
  "generated_artifacts": [
   {
-   "bytes": 2934,
+   "bytes": 3677,
    "path": "artifacts/T080/aliasing-mutations.json",
-   "sha256": "9bd6ec75c82c134a71ff870cf49089c3dc0879ea5317ae8484c9a52f0c73120f"
+   "sha256": "ad7fc3a50389039d5592e11e6d991f8a17cce8673524aeb9c7db81e35170c461"
   },
   {
-   "bytes": 1024,
+   "bytes": 1154,
    "path": "artifacts/T080/aliasing-mutations.md",
-   "sha256": "9f259b9a849fc3383d8d410963fa09cef9787fbe6849bc08a6cb2507f227e120"
+   "sha256": "bbe9ae285781ae7e576e99a39edb4a06fd605d0cbc5b38d62b2eb154717e1754"
   }
  ],
- "hypothesis": "Operation, execution and result identities have different kinds (name, fresh occurrence, result occurrence); forged aliases between execution and result identities are refused on reopen, while the selection revision a record claims is not checked against any history.",
+ "hypothesis": "Operation, execution and result identities have different kinds (name, fresh occurrence, result occurrence); inconsistent aliases between execution and result identities are refused on reopen, but a consistent re-pairing of two occurrences (execution and result identities and creation times exchanged together) reopens, because oscillator identities are uuid4 draws that bind no content; the selection revision a record claims is not checked against any history.",
  "input_data": [
   "make_demo_run() damped-oscillator recording; statistics.v1 on channel v over [1, 2] s, twice, plus one legacy analysis.stats result",
   "examples/energy-accuracy/{baseline,reset}.json (origin synthetic_fixture): two original executions of baseline, one of reset, replays, and a separate session in the same process",
@@ -299,7 +365,7 @@
  ],
  "mathematical_model": "operation_id is a constant per operation; execution_id and result_id are independent uuid4 draws per occurrence (energy result_id = sha256 over a record that includes execution_ref); numerical_result_id excludes the occurrence.",
  "number": 80,
- "numerical_result": "distinct identities per role {'operation': 2, 'execution': 17, 'result': 17, 'numerical_result': 2, 'bundle': 7}; cross-role overlaps 0; moved step: stale result_id -> Retained energy analysis binding differs, recomputed -> accepted; mutants: 5 rows (5 workspace mutants, 0 pure-validator rows): 4 refused; 1 surviving forgery (revision.gap); kill/survive predictions matched 5/5; refusal messages matched their regression pins 4/4",
+ "numerical_result": "distinct identities per role {'operation': 2, 'execution': 17, 'result': 17, 'numerical_result': 2, 'bundle': 7}; cross-role overlaps 0; moved step: stale result_id -> Retained energy analysis binding differs, recomputed -> accepted; mutants: 6 rows (6 workspace mutants, 0 pure-validator rows): 4 refused; 2 surviving forgeries (alias.swap-pairing, revision.gap); kill/survive predictions matched 6/6; refusal messages matched their regression pins 4/4",
  "observation_model": "No physical observation. The observed objects are CIW records (sessions, executions, results, bundles, receipts, saved workspace JSON) produced offline by the unmodified CIW code; the energy logs are synthetic fixtures and no hardware was sampled.",
  "physical_validation_status": {
   "statement": "Physical validation requires acquired hardware evidence; none was acquired for this task.",
@@ -313,13 +379,13 @@
   "python": "3.12.3",
   "scipy": "1.16.2",
   "sources": {
-   "src/ciw/lab/exchange_provenance.py": "5cc267c7777c9b434b8747b0cc841ac85313e1cfb6ff4c429ee93aa5ddbb645b",
-   "src/ciw/lab/exchange_provenance_common.py": "22028c4008079fba23c5e807de0104ba1a0014027e1d40a9209881cdf232f486"
+   "src/ciw/lab/exchange_provenance.py": "f55593eb90af9ed82e40f0f04987c7f0a06cf1c40e7079b0a371e0506607618b",
+   "src/ciw/lab/exchange_provenance_common.py": "f8e765184af4e893a0c4c6d9e5cb2988b79e6f3dfc3d941444f335ecc894d775"
   },
   "sympy": "1.14.0"
  },
  "recommended_next_task": "T081 (stable numerical-result identity); CIW change: persist the selection history or drop selection_revision from sealed records",
- "report_id": "sha256:448b026f84b26105aa827164c97c52dfe3a8a76df044ada4e9035342918e0885",
+ "report_id": "sha256:af53f4a552362db6f13f1b0937cd956e6f219dac8f684daaa7698d01045ed1c9",
  "schema": "ciw.lab-task-report.v1",
  "section": "exchange-provenance",
  "state": "completed",
@@ -332,20 +398,24 @@
   "check: Operation, execution, result, numerical-result and bundle identities never share a value, and CIW's step validator requires a new result identity, but no new numerical or operation identity, for a new occurrence vs EnergyAccuracyWorkflow._validate_step on a step moved to a new execution_ref with its stale result_id",
   "check: Operation, execution, result, numerical-result and bundle identities never share a value, and CIW's step validator requires a new result identity, but no new numerical or operation identity, for a new occurrence vs EnergyAccuracyWorkflow._validate_step refuses the moved step with recomputed digests",
   "check: Operation, execution, result, numerical-result and bundle identities never share a value, and CIW's step validator requires a new result identity, but no new numerical or operation identity, for a new occurrence vs identities that did not move as predicted (result_id changes; numerical_result_id and operation_id do not)",
-  "check: Execution/result aliasing forgeries are refused on reopen with the pinned message; operation substitution is refused only by payload-shape validation vs alias.result-execution (local recompute): refusal on reopen",
-  "check: Execution/result aliasing forgeries are refused on reopen with the pinned message; operation substitution is refused only by payload-shape validation vs alias.execution-result (local recompute): refusal on reopen",
-  "check: Execution/result aliasing forgeries are refused on reopen with the pinned message; operation substitution is refused only by payload-shape validation vs alias.result-prefix (local recompute): refusal on reopen",
-  "check: Execution/result aliasing forgeries are refused on reopen with the pinned message; operation substitution is refused only by payload-shape validation vs alias.operation (local recompute): refusal on reopen",
-  "check: Execution/result aliasing forgeries are refused on reopen with the pinned message; operation substitution is refused only by payload-shape validation vs harness control: the forger's recomputation of the unedited workspace reproduces every CIW digest",
-  "check: Execution/result aliasing forgeries are refused on reopen with the pinned message; operation substitution is refused only by payload-shape validation vs harness control: the unedited saved workspace reopens",
+  "check: Inconsistent execution/result aliases (a result or execution naming another occurrence's identity, a result identity with the execution prefix) are refused on reopen with the pinned message; operation substitution is refused only by payload-shape validation vs alias.result-execution (local recompute): refusal on reopen",
+  "check: Inconsistent execution/result aliases (a result or execution naming another occurrence's identity, a result identity with the execution prefix) are refused on reopen with the pinned message; operation substitution is refused only by payload-shape validation vs alias.execution-result (local recompute): refusal on reopen",
+  "check: Inconsistent execution/result aliases (a result or execution naming another occurrence's identity, a result identity with the execution prefix) are refused on reopen with the pinned message; operation substitution is refused only by payload-shape validation vs alias.result-prefix (local recompute): refusal on reopen",
+  "check: Inconsistent execution/result aliases (a result or execution naming another occurrence's identity, a result identity with the execution prefix) are refused on reopen with the pinned message; operation substitution is refused only by payload-shape validation vs alias.operation (local recompute): refusal on reopen",
+  "check: Inconsistent execution/result aliases (a result or execution naming another occurrence's identity, a result identity with the execution prefix) are refused on reopen with the pinned message; operation substitution is refused only by payload-shape validation vs harness control: the forger's recomputation of the unedited workspace reproduces every CIW digest",
+  "check: Inconsistent execution/result aliases (a result or execution naming another occurrence's identity, a result identity with the execution prefix) are refused on reopen with the pinned message; operation substitution is refused only by payload-shape validation vs harness control: the unedited saved workspace reopens",
+  "check: Surviving mutant alias.swap-pairing: two statistics occurrences whose execution and result identities and creation times are exchanged consistently reopen re-paired vs alias.swap-pairing: accepted (1 = accepted)",
+  "check: Surviving mutant alias.swap-pairing: two statistics occurrences whose execution and result identities and creation times are exchanged consistently reopen re-paired vs reopened R1 names execution E2 and E2 names result R1 (and R2/E1 the converse) (0 = shown)",
   "check: Surviving mutant revision.gap: a workspace whose selection revision jumps to 1000, with records claiming revision 999, reopens vs revision.gap: accepted (1 = accepted)",
+  "check: Surviving mutant revision.gap: a workspace whose selection revision jumps to 1000, with records claiming revision 999, reopens vs reopened selection revision 1000 with the execution claiming 999 (0 = shown)",
   "pytest: tests/test_lab_exchange_provenance.py::test_identity_separation"
  ],
  "tests_skipped": [],
  "title": "Test operation/execution/result identity separation.",
- "uncertainty": "Exact comparisons. The saved selection history is not retained, so revision claims cannot be checked by any validator.",
+ "uncertainty": "Exact comparisons. The saved selection history is not retained, so revision claims cannot be checked by any validator. Kills show only that these particular aliases are detected; the re-pairing survivor is harmless in this fixture only because R1 and R2 carry equal data.",
  "unresolved_assumptions": [
   "uuid4 freshness is probabilistic, not enforced by a registry across workspaces.",
+  "Oscillator result and execution identities bind no content, so which execution produced a result is recorded but not verifiable; the re-pairing was tested only between occurrences of one operation with equal parameters and data.",
   "Selection history is not persisted, so selection_revision is only bounded, not bound.",
   "No binding between operation_id and the other identities was isolated from payload validation."
  ]

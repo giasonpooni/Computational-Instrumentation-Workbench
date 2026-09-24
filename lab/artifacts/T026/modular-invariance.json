@@ -171,5 +171,43 @@
   "same_spectrum": false,
   "systole_sq": "7"
  },
- "wrong_rule_mismatches": 6428
+ "wrong_rule_mismatches": 6428,
+ "wrong_rule_witness": {
+  "correct_label": [
+   -1,
+   1
+  ],
+  "gram": [
+   "5",
+   "2",
+   "7"
+  ],
+  "lattice": "generic",
+  "matrix": [
+   [
+    -5,
+    -4
+   ],
+   [
+    -1,
+    -1
+   ]
+  ],
+  "naive_label": [
+   -5,
+   -1
+  ],
+  "q_g_of_winding": "5",
+  "q_h_of_correct_label": "5",
+  "q_h_of_naive_label": "5153",
+  "transformed_gram": [
+   "152",
+   "125",
+   "103"
+  ],
+  "winding": [
+   1,
+   0
+  ]
+ }
 }

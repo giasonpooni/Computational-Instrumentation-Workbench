@@ -127,7 +127,7 @@
    "assigned_by": "ciw.lab.evidence",
    "basis": {
     "notes": [
-     "log.json brackets launch, synchronization and copy; kernel spans need an Nsight Systems report, which this section does not ingest"
+     "log.json brackets launch, synchronization and copy; kernel spans need an Nsight Systems report, which this section does not ingest (deferred research question: ingest `nsys stats --report cuda_gpu_kern_sum` output)"
     ]
    },
    "claim": "RTX 2080 kernel-only duration of the Gaussian VI kernel",
@@ -164,14 +164,14 @@
   },
   "scipy": "1.16.2",
   "sources": {
-   "src/ciw/lab/energy_gpu.py": "fca900557e7fac2261a168afe0ee81efc48508a874a5045bf4f6b74937165bb1",
-   "src/ciw/lab/energy_gpu_kernels.py": "03f3d92f8407f476cb74536911d476929843ee74232a7d7017c00f43c785a2b4",
-   "src/ciw/lab/energy_gpu_telemetry.py": "21cac5f654ce4a120887ff40da62fda47bd38a3c383bbad6cc3cb13b4168fa2d"
+   "src/ciw/lab/energy_gpu.py": "a66107417b5bfa398077a919b2f5351ca222e9961fa8dfb3256b78efc17fd930",
+   "src/ciw/lab/energy_gpu_kernels.py": "366c477ff1af7f59b626f4e64bf994ae4cbce5754c0e9c5be1c2acb515f99f4b",
+   "src/ciw/lab/energy_gpu_telemetry.py": "df82c8748d3aa75384e3928bffcf516cd6f72cccde99edf8d21f089cc768bafa"
   },
   "sympy": "1.14.0"
  },
- "recommended_next_task": "T147: compare CPU and GPU outputs of the same workload on the RTX 2080 host",
- "report_id": "sha256:94392e83a4be56cae7420301cc3cb2043e44c5bf20198558883b86b8856951f4",
+ "recommended_next_task": "Run the T118 protocol on the RTX 2080 host for power, temperature, clock and utilization; kernel-only duration awaits the deferred research question of ingesting `nsys stats --report cuda_gpu_kern_sum` output (see unresolved assumptions)",
+ "report_id": "sha256:56c617fa983dc0673f21d8ce8cb2128ba3d9fc2295ed1c2db483207bd82d5fb1",
  "schema": "ciw.lab-task-report.v1",
  "section": "energy-gpu",
  "state": "blocked",
@@ -188,6 +188,7 @@
  "unresolved_assumptions": [
   "Blocked here: no NVIDIA GPU",
   "Batch windows in log.json include launch, synchronization and copy; they are not kernel durations",
-  "The steady-state limits (CV 0.10, 5 C) are declared protocol criteria, not derived"
+  "The steady-state limits (CV 0.10, 5 C) are declared protocol criteria, not derived",
+  "Deferred research question: ingest `nsys stats --report cuda_gpu_kern_sum` output (its raw bytes retained as an artifact, bound through the acquisition gate to the same device UUID and capture session) so T118 can report RTX 2080 kernel-only duration; until then that claim stays not_established on every host"
  ]
 }

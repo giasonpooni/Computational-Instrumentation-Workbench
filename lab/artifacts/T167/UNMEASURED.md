@@ -5,7 +5,7 @@ Hardware-measured findings in this run: 0.
 ## Physical and authority claims not established
 
 - T005 [physical]: Nearby real trajectories on a physical curved surface separate according to this Jacobi law
-- T009 [physical]: Which starting error dominates the endpoint error of real tool or vehicle paths on physical curved parts
+- T009 [physical]: The ranking of lateral versus heading start errors computed here predicts which error dominates the endpoint error of real tool or vehicle paths on physical curved parts
 - T013 [physical]: A physical cylinder or large-radius torus workpiece shows these separations
 - T017 [machine_safety]: These validity domains certify first-order path corrections as safe on real machines
 - T018 [sensor_performance]: Curvature signals resolvable here would be resolvable in measured sensor data
@@ -35,6 +35,7 @@ Hardware-measured findings in this run: 0.
 - T048 [sensor_performance]: A physical stereo rig with this geometry achieves the synthetic chord accuracy
 - T049 [calibration]: The declared perturbation magnitudes bound the calibration error of a real stereo rig
 - T050 [calibration]: A two-term radial plus tangential Brown-Conrady model describes a real lens to the required accuracy
+- T050 [sensor_performance]: Real circular markers and their detector show only the modelled perspective centre bias
 - T051 [sensor_performance]: Real image noise is Gaussian with sigma = 0.25 px and marker localization rounds to whole pixels
 - T052 [physical]: A real encoder drive train behaves as a constant-width play operator with constant scale and bias
 - T053 [sensor_performance]: Real gyroscopes have constant bias and white rate noise with the declared densities
@@ -46,7 +47,7 @@ Hardware-measured findings in this run: 0.
 - T059 [actuator_authority]: Admission as workbench state confers authority to act on a machine
 - T060 [sensor_performance]: The bench's noise levels, rates and motion describe real camera, encoder, IMU or tracker hardware
 - T061 [sensor_performance]: Real sensors' noise covariance equals the covariance declared for this bench
-- T062 [sensor_performance]: Real camera and tracker noises share the common-mode covariance assumed here
+- T062 [sensor_performance]: Real camera and tracker noises share the common-mode covariance assumed here, or are independent
 - T063 [calibration]: The declared 35 degree rotation, translation and body covariance describe a real sensor mounting or extrinsic calibration
 - T064 [physical]: The declared [lateral, heading] covariance and these surfaces predict the path uncertainty of a real vehicle or tool on a real curved part
 - T065 [sensor_performance]: A real sensor's internally filtered output can be fused downstream as white noise
@@ -112,6 +113,8 @@ Hardware-measured findings in this run: 0.
 - T128 [physical]: An unsteered 3 mm tape laid on the coupon follows a geodesic of the as-built surface (no in-plane bending, lift-off or slip)
 - T128 [calibration]: The start jig and tape laying realize the relative start pose of the offset tape within the declared 0.05 mm and 0.5 mrad
 - T129 [sensor_performance]: A real laser line scanner achieves the declared 0.01 mm point noise on the coupon surface (finish, incidence angle, speckle)
+- T129 [physical]: The formed coupon passes the Gaussian model test and its fitted height and width lie within the declared forming tolerances
+- T129 [calibration]: The declared scanner scale (20 ppm) and target registration uncertainties hold for the scan
 - T130 [calibration]: The physical gauge sphere, step gauge and scale bar have their certified dimensions, and the lab frame chain has the declared covariances
 - T131 [sensor_performance]: The real gage (instrument, fixture and operators) has %GRR below 10% on the coupon features
 - T131 [production_acceptance]: The measurement system is approved for production use
@@ -148,7 +151,92 @@ Hardware-measured findings in this run: 0.
 - T154 [actuator_authority]: Heading proposals are authorized for execution as actuator commands
 - T154 [machine_safety]: Applying the proposed heading corrections on a machine is safe
 
-## Blocked or deferred tasks
+## Findings of tasks whose hardware probe failed
 
-- T116 (blocked): Blocked: unavailable requirement(s) hardware:nvidia-gpu. Planned: On the RTX 2080 host: (0) `mkdir -p runs/rtx2080-<date>`; (1) `ciw energy probe --gpu-index 0` must return a reading with status ok; (2) `ciw energy record --problem examples/energy-accuracy/problem.json --output-dir runs/rtx2080-<dat
-- T118 (blocked): Blocked: unavailable requirement(s) hardware:nvidia-gpu. Planned: On the RTX 2080 host: (0) `mkdir -p runs/rtx2080-<date>`; (1) start `TZ=UTC nvidia-smi --query-gpu=timestamp,uuid,name,utilization.gpu,utilization.memory,temperature.gpu,power.draw,clocks.sm,clocks.mem,pstate --format=csv,nounits -lms
+- T116 [physical; hardware:nvidia-gpu unavailable]: GPU-domain gross energy per measured batch
+- T116 [sensor_performance; hardware:nvidia-gpu unavailable]: The NVML total-energy counter of the RTX 2080 has a characterized accuracy and resolution
+- T117 [numerical; hardware:nvidia-gpu unavailable]: A Julia implementation agrees with the Python kernel
+- T117 [numerical; hardware:nvidia-gpu unavailable]: A GPU implementation agrees with the Python kernel
+- T117 [physical; hardware:nvidia-gpu unavailable]: The Rust kernel uses less energy per trajectory than the Python kernel on real hardware
+- T118 [physical; hardware:nvidia-gpu unavailable]: RTX 2080 power draw during the measurement phase (NVML)
+- T118 [physical; hardware:nvidia-gpu unavailable]: RTX 2080 temperature during the measurement phase (NVML)
+- T118 [physical; hardware:nvidia-gpu unavailable]: RTX 2080 graphics clock during the measurement phase (NVML)
+- T118 [physical; hardware:nvidia-gpu unavailable]: Host-bracketed batch solve duration (launch, sync and copy included)
+- T118 [physical; hardware:nvidia-gpu unavailable]: RTX 2080 GPU utilization during the measurement phase (nvidia-smi rows inside the measurement window)
+- T118 [physical; hardware:nvidia-gpu unavailable]: RTX 2080 power draw is steady over the measurement phase (coefficient of variation <= 0.10)
+- T118 [physical; hardware:nvidia-gpu unavailable]: RTX 2080 temperature drifts by at most 5 C over the measurement phase
+- T118 [physical; hardware:nvidia-gpu unavailable]: RTX 2080 kernel-only duration of the Gaussian VI kernel
+- T147 [numerical; hardware:nvidia-gpu unavailable]: CPU and GPU outputs agree under the tolerance policy on GPU hardware
+- T147 [industrial_readiness; hardware:nvidia-gpu unavailable]: GPU/CPU agreement establishes industrial readiness
+
+## Blocked, deferred and partial tasks
+
+- T038 (partial): Trace declared geodesics; compare with exact developments; re-derive lengths by a second ciw implementation (strip layout from edge lengths); compare Dijkstra with a dense Floyd-Warshall and, when installed, scipy.sparse.csgraph; test every Steiner-graph edge for a common face; sandwich traced …
+  - Unrun or unresolved: Partial delivery: the solver is an initial-value tracer (straightest geodesics from a point and heading) plus approximate distances. No exact two-point polyhedral geodesic (MMP, ICH or iterative edge flipping) is implemented, so no shortest path between two given points is solved exactly and the graph and heat distances are not compared with an exact polyhedral distance.
+  - Unrun or unresolved: Vertex hits are refused rather than continued by the Polthier-Schmies angle-bisection rule.
+  - Unrun or unresolved: Traced geodesics are shortest paths only when no shorter corridor exists; not proved here.
+- T077 (partial): Build an oscillator session and energy-accuracy bundles offline, replay, save, reopen, replay again, replay a replay, and repeat in a separate session (same process and code); retain byte and resealed content variants; check every predicted property per identity, with CIW's own validators judging …
+  - Unrun or unresolved: Partial: ESM candidate_id and candidate execution identities (they need an operator-bound ESM adapter and a telemetry or calibrated bundle) and pinned-provider runtime identities (ciw.subprocess-runtime.v1; they need a provider checkout bound to a declared-workload or telemetry workflow) are planned matrix rows that the offline path cannot exercise; their predictions are read from the code, not observed.
+  - Unrun or unresolved: The ESM rows use a synthetic telemetry-shaped record (schema, digest, three step occurrences), not a telemetry session validated by the telemetry workflow, which needs provider checkouts.
+  - Unrun or unresolved: Provider-backed workflows (telemetry, declared workloads, proved heat) were not exercised offline; their identity rows are inferred only where they share the energy-accuracy code path.
+  - Unrun or unresolved: Reopen stability is observed as the value CIW saves again after reopening, which is the reopened session's own serialization of its restored state.
+  - Unrun or unresolved: Content identities establish consistency, not authorship.
+- T099 (partial): Bind --provider scr=<checkout> with cargo on PATH; command: CARGO_TARGET_DIR=<tmp> cargo build --release --locked --offline --manifest-path <scr>/crates/Cargo.toml -p execution-cli. The SP1 proved-heat build is recorded as blocked with its requirements and never attempted.
+  - Unrun or unresolved: The binary digest depends on the Rust toolchain recorded in provider_runtime_identity; CI pins rustc 1.94.0 for the proved-heat gate, and other toolchains may produce different digests.
+  - Unrun or unresolved: The SP1 proved-heat build needs crates.io and GitHub release downloads, the SP1 checkout, the Succinct compiler archive, protoc and >= 7 GiB RAM / 20 GiB disk (.github/workflows/proved-heat.yml); host probes are in sp1-requirements.json.
+- T115 (partial): Integrate each geodesic with RK4 (N = 256) and adaptive DP5(4); count evaluations; when CIW_LAB_RAPL_LOG names a capture from `python -m ciw.lab.energy_gpu_telemetry rapl-capture` (repeated fixed-step batches, three by default, then an idle interval of equal length), gate and analyze it.
+  - Unrun or unresolved: Evaluation counts are a work proxy, not an energy measurement
+  - Unrun or unresolved: Package energy is not attributed to this process; idle subtraction assumes the idle interval after the workload represents the background during it
+  - Unrun or unresolved: A capture is an operator record: identity binding is checked, authenticity is not
+- T116 (blocked): Blocked: unavailable requirement(s) hardware:nvidia-gpu. Planned: On the RTX 2080 host: (0) `mkdir -p runs/rtx2080-<date>`; (1) `ciw energy probe --gpu-index 0` must return a reading with status ok; (2) `ciw energy record --problem examples/energy-accuracy/problem.json --output-dir …
+  - Unrun or unresolved: Blocked here: no NVIDIA GPU or NVML
+  - Unrun or unresolved: NVML documents the total-energy counter for Volta-or-newer fully supported devices; GeForce support is not documented, so `ciw energy probe` must confirm it on this RTX 2080
+  - Unrun or unresolved: An operator log is an unauthenticated record; the gate binds it to this host's NVML identity but cannot prove the capture genuine
+- T117 (partial): Integrate the same initial states with the generic Python path, the closed-form Python path and the compiled Rust kernel; compare endpoints, counted evaluations and exact endpoints; send the Rust kernel a malformed and a nonfinite input; record the Julia and GPU probes (no Julia or GPU kernel of …
+  - Unrun or unresolved: No Julia or GPU implementation of this sphere RK4 kernel exists in the repository (src/ciw/energy_cuda.py is a Gaussian VI PTX kernel, not this geodesic kernel), so those comparisons cannot run on any host, whatever the tool:julia and hardware:nvidia-gpu probes report
+  - Unrun or unresolved: Deferred research question: write a CUDA/PTX RK4 kernel of this sphere geodesic (for example through the ciw.energy_cuda JIT path) and a Julia kernel, both with the operation order of ciw.lab.integrators.step_rk4, then compare their endpoints and ulp distances with the Python kernel on the RTX 2080 host
+  - Unrun or unresolved: Cross-platform bitwise identity is not claimed
+- T118 (blocked): Blocked: unavailable requirement(s) hardware:nvidia-gpu. Planned: On the RTX 2080 host: (0) `mkdir -p runs/rtx2080-<date>`; (1) start `TZ=UTC nvidia-smi --query-gpu=timestamp,uuid,name,utilization.gpu,utilization.memory,temperature.gpu,power.draw,clocks.sm,clocks.mem,pstate --format=csv,nounits …
+  - Unrun or unresolved: Blocked here: no NVIDIA GPU
+  - Unrun or unresolved: Batch windows in log.json include launch, synchronization and copy; they are not kernel durations
+  - Unrun or unresolved: The steady-state limits (CV 0.10, 5 C) are declared protocol criteria, not derived
+  - Unrun or unresolved: Deferred research question: ingest `nsys stats --report cuda_gpu_kern_sum` output (its raw bytes retained as an artifact, bound through the acquisition gate to the same device UUID and capture session) so T118 can report RTX 2080 kernel-only duration; until then that claim stays not_established on every host
+- T119 (partial): Analyze all four fixtures; recompute the baseline metric from raw readings and raw outputs; compare with the naive gross/executed ratio, with the per-distinct-result denominator and with a whole-run boundary. When CIW_LAB_ENERGY_LOG names an operator log, recompute E_acc from its raw readings and …
+  - Unrun or unresolved: Idle subtraction and first-attainment accounting are intentionally not applied
+  - Unrun or unresolved: The recomputation shares its origin (ciw) with energy_records, so it is a cross-implementation check, not independent verification
+  - Unrun or unresolved: An operator log is an unauthenticated record; the gate binds it to this host's NVML identity but cannot prove the capture genuine
+  - Unrun or unresolved: no operator NVML log was supplied (CIW_LAB_ENERGY_LOG); the repository fixtures are synthetic, so no physical energy per accepted result was measured
+- T120 (partial): Vectorized RK4 in float32 and float64 across the step grid; smallest grid N per accuracy target; operation counts derived from the kernel source and checked by running one step of the same code on a counting view of a real float32 and a real float64 array (every ufunc call counted and its result …
+  - Unrun or unresolved: Energy cost was not measured; operation counts do not capture memory traffic, vector width, transcendental cost or GPU float32 throughput
+  - Unrun or unresolved: Deferred research question: a dtype-parameterized capture of energy_gpu_kernels.rk4_batch (a RAPL bracket with the dtype named in the declared workload, or an NVML capture of a float32 and a float64 GPU kernel) gated like T115/T116, so energy per accepted trajectory can be compared across precisions; no existing capture path measures a float32 RK4 workload
+- T121 (partial): Emulate the orders in float32 and float64; search seeds for a sign flip among the sequential and two tree orders; test a pass/fail tolerance across atomic orders; test the guarded sign decision; evaluate a comparison-select maximum on signed zeros in both operand orders and retain numpy.max's …
+  - Unrun or unresolved: Real GPU reduction orders, FMA contraction and warp-shuffle trees were not observed
+  - Unrun or unresolved: The pass/fail tolerance 0.01 was chosen inside the observed atomic spread; it shows that such flips exist, not how often they occur
+  - Unrun or unresolved: The a priori guard is sound but so conservative that it decides none of the cancellation signs
+- T138 (partial): Compute the prediction and its uncertainty components (open loop, conditioned on the start pose, and also on the as-built scan); evaluate a correct model against a tape realized 0.1 mm off its nominal offset with and without the start-pose term, and against the prediction re-integrated from a CMM …
+  - Unrun or unresolved: The physical comparison has not been performed; its outcome is unknown.
+  - Unrun or unresolved: The tapes are assumed to follow geodesics after their measured start; in-plane tape bending is not budgeted.
+  - Unrun or unresolved: A registered reader that parses separations or marker coordinates from raw photogrammetry files does not exist yet.
+- T139 (partial): Partial: only the retention mechanism was exercised. Validate the fixture, mutate it 11 ways, keep a rank-deficient covariance that an absolute threshold would refuse and refuse a negative one at the same scale, check identity invariance and the fixture/measurement boundary. Not performed …
+  - Unrun or unresolved: No acquisition exists, so no raw measurement, calibration record or frame metadata has been retained: the task stays partial until the first protocol is executed.
+  - Unrun or unresolved: Media-type-specific readers (images, point clouds) are not defined; digests cover bytes, not content semantics.
+  - Unrun or unresolved: The validators cannot tell whether raw bytes came from an instrument; the runner also requires a hardware probe in the task that cites them.
+- T145 (partial): Probe for julia; record the pin procedure; derive torus geometry with SymPy and compare with the core.
+  - Unrun or unresolved: No Julia environment, manifest or worker exists; the pin procedure is unexecuted
+  - Unrun or unresolved: The task has no Julia execution path; julia on PATH is recorded, never used
+  - Unrun or unresolved: Optimization and exploratory roles are not demonstrated
+- T147 (partial): Compute the dot products in four orders/precisions, compare with the harness under each policy, drop each partial product in turn from the float64 and float32 candidates and judge every faulty candidate with the harness, then compare detection with the operational guarantee, the threshold band and …
+  - Unrun or unresolved: No GPU kernel path exists in this task: the recommended rerun on a CUDA host needs a GPU implementation of the batched dot products first
+  - Unrun or unresolved: GPU reductions may use FMA and tree shapes not modelled by the 32-lane order
+  - Unrun or unresolved: Only single dropped products were injected; other fault classes (duplicated terms, wrong operands) have their own detection limits
+  - Unrun or unresolved: No GPU hardware or driver was exercised
+- T158 (partial): Hash and parse every retained SVG; re-execute the 41 declared inexpensive figure tasks plus every figure task that retains wall-clock timings in a scratch directory, and compare each regenerated figure's SHA-256 (and, for a difference, its bytes) with the retained one.
+  - Unrun or unresolved: 41 figure tasks (77 figures) were not re-executed within the section's time budget: T001, T002, T003, T004, T005, T006, T007, T008, T009, T010, T011, T012, T014, T015, T016, T017, T018, T025, T036, T039, T040, T041, T043, T044, T046, T047, T051, T064, T067, T068, T097, T101, T107, T109, T126, T128, T133, T134, T135, T136, T137
+  - Unrun or unresolved: Wall-clock timing figures are recognized by a retained JSON artifact of their task that mentions wall-clock or elapsed time; a timing figure without such a note counts as a mismatch.
+  - Unrun or unresolved: Byte identity is established on one platform; Windows and other BLAS builds are not compared.
+- T160 (partial): Generate the draft from retained reports of sections observation, sensor-fusion, manufacturing, energy-gpu and parse its results table back against the source findings.
+  - Unrun or unresolved: Prose beyond the generated structure, related work and peer review are outstanding.
+- T161 (partial): Generate the draft from retained reports of sections geodesic-jacobi, flat-torus-topology, surfaces-discrete and parse its results table back against the source findings.
+  - Unrun or unresolved: Prose beyond the generated structure, related work and peer review are outstanding.
+- T162 (partial): Generate the draft from retained reports of sections exchange-provenance, implementation-targets, lyapunov and parse its results table back against the source findings.
+  - Unrun or unresolved: Prose beyond the generated structure, related work and peer review are outstanding.

@@ -17,12 +17,13 @@
   },
   "primary": "numerically_verified"
  },
- "expected_invariant": "Every exercised identity shows its predicted properties: content identities recompute exactly and are stable when their content is; event identities are distinct per occurrence; declared identities are copied, not derived.",
- "experiment": "Build an oscillator session and energy-accuracy bundles offline, replay, save, reopen, replay again, replay a replay, and repeat in a separate session (same process and code); retain byte and resealed content variants; check every predicted property per identity, with CIW's own validators judging refusals and moved occurrences. Digest re-derivations use a local canonical-JSON/SHA-256 implementation in ciw.lab, the same implementation origin as CIW, so they are cross_implementation checks (numerically_verified, never independently_verified); every other check compares CIW's own outputs or refusal messages. Matrix retained as identity-matrix.json/.md (observed refusal messages included per row).",
+ "expected_invariant": "Every exercised identity shows its predicted properties: content identities recompute exactly and are stable when their content is; event identities are distinct per occurrence; declared identities are copied, not derived; every identity predicted stable across reopen has the same value after the saved workspace is reopened and saved again.",
+ "experiment": "Build an oscillator session and energy-accuracy bundles offline, replay, save, reopen, replay again, replay a replay, and repeat in a separate session (same process and code); retain byte and resealed content variants; check every predicted property per identity, with CIW's own validators judging refusals and moved occurrences; compare every retained identity before reopen with the value the reopened session saves again (records paired by catalog position). Planned but offline-unreachable: ESM candidate_id and candidate execution identities (they need an operator-bound ESM adapter and a telemetry or calibrated bundle) and pinned-provider runtime identities (ciw.subprocess-runtime.v1; they need a provider checkout bound to a declared-workload or telemetry workflow) are planned matrix rows that the offline path cannot exercise; their predictions are read from the code, not observed. Digest re-derivations use a local canonical-JSON/SHA-256 implementation in ciw.lab, the same implementation origin as CIW, so they are cross_implementation checks (numerically_verified, never independently_verified); every other check compares CIW's own outputs or refusal messages. Matrix retained as identity-matrix.json/.md (observed refusal messages included per row).",
  "failure_modes_checked": [
   "digest recomputation mismatch",
   "identity reused across occurrences",
-  "identity not stable across replay or reopen",
+  "identity not stable across replay",
+  "identity value changed by save, reopen and re-save (per row, records paired by catalog position)",
   "label-independent source identity",
   "source identity insensitive to bytes under one label",
   "result identity after an occurrence change (judged by CIW's step validator)",
@@ -351,7 +352,7 @@
      }
     ]
    },
-   "claim": "Every exercised identity shows its predicted derivation, freshness and binding properties on the offline paths",
+   "claim": "Every exercised identity shows its predicted derivation, freshness, binding and reopen properties on the offline paths",
    "domain": "provenance",
    "evidence_status": "numerically_verified",
    "regression_tolerance": {
@@ -377,13 +378,19 @@
      "content_hash_of_fresh_occurrence": 2,
      "fresh_event_uuid": 5,
      "provider_declared": 1,
+     "provider_pinned": 1,
      "unkeyed_seal": 1
     },
     "exercised_rows": 28,
-    "properties": 77,
-    "properties_held": 77,
+    "properties": 97,
+    "properties_held": 97,
     "rederived_properties": 11,
-    "rows": 29
+    "reopen_stability_properties": 23,
+    "rows": 30,
+    "unexercised_rows": [
+     "ESM candidate_id / candidate execution_id",
+     "pinned-provider runtime identity (ciw.subprocess-runtime.v1)"
+    ]
    }
   },
   {
@@ -518,6 +525,7 @@
    "uncertainty": null,
    "unit": null,
    "value": {
+    "fixture_hashes_are_placeholders": true,
     "runtime.implementation.code_sha256": "dddddddddddddddddddddddddddddddddddddddddddddddddddddddddddddddd",
     "runtime.python.executable_sha256": "cccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccc",
     "runtime.workload.kernel_sha256": "aaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa",
@@ -551,14 +559,14 @@
  ],
  "generated_artifacts": [
   {
-   "bytes": 19079,
+   "bytes": 20601,
    "path": "artifacts/T077/identity-matrix.json",
-   "sha256": "bdbe3df5f8ea5e4983f6312ffda020ed93472b44619415162b7c5bd692c5a2ec"
+   "sha256": "981ae0743fe0ee85c3f5a0805b1961d188723b881b28c800e8853a5fdf90409b"
   },
   {
-   "bytes": 9457,
+   "bytes": 10119,
    "path": "artifacts/T077/identity-matrix.md",
-   "sha256": "db6a7067a20e925f57da4dbff9ed4f981fcb2e5ed6cd298be38c91307fff0fc0"
+   "sha256": "2c9e645950fbbd9c420d94d3335afbd837857d30579fbf9e63f62474bde1cbb1"
   }
  ],
  "hypothesis": "Each CIW identity on the offline paths is a content or byte hash, a fresh event UUID, a caller- or provider-declared value, or absent, and its binding, replay and reopen behaviour follow from how it is derived.",
@@ -566,11 +574,13 @@
   "make_demo_run() damped-oscillator recording; statistics.v1 on channel v over [1, 2] s, twice, plus one legacy analysis.stats result",
   "examples/energy-accuracy/{baseline,reset}.json (origin synthetic_fixture): two original executions of baseline, one of reset, replays, and a separate session in the same process",
   "Workspaces saved by Session.save_workspace and reopened by Session.from_workspace in temporary directories",
-  "examples/energy-accuracy/{baseline,reset,missing,under-target}.json, eight byte variants of baseline under one shared label (original, crlf, minified, tab-indented, sorted-keys, reversed-keys, trailing-whitespace, float-spelling 1e-09 -> 0.000000001) and two resealed content variants (sensor name renamed; initial_covariance diagonal written as integers)"
+  "examples/energy-accuracy/{baseline,reset,missing,under-target}.json, eight byte variants of baseline under one shared label (original, crlf, minified, tab-indented, sorted-keys, reversed-keys, trailing-whitespace, float-spelling 1e-09 -> 0.000000001) and two resealed content variants (sensor name renamed; initial_covariance diagonal written as integers)",
+  "Synthetic telemetry-shaped records (schema, bundle digest, three step occurrences; exchange_provenance_common.telemetry_shaped_bundle) and a minimal ESM candidate inspection of them (esm_case), judged only by candidate_evidence.validate_response; no telemetry workflow or ESM process",
+  "Synthetic exchange result and verification artifacts whose content identities are computed locally (exchange_provenance_common.exchange_artifact), judged only by exchange._identity"
  ],
- "mathematical_model": "Derivation classes used in the matrix: content_hash, byte_hash, content_hash_of_fresh_occurrence and unkeyed_seal (SHA-256 over canonical JSON or raw bytes); fresh_event_uuid (uuid4 draws); caller_declared, caller_declared_name, constant_name and provider_declared (copied, not derived); code_hash_plus_declared_versions (a code digest beside self-reported versions); absent. Content identities are sha256 over canonical JSON (sort_keys, compact separators); byte identities are sha256 over raw bytes; event identities are uuid4 draws (collision probability ~2^-122 per pair).",
+ "mathematical_model": "Derivation classes used in the matrix: content_hash, byte_hash, content_hash_of_fresh_occurrence and unkeyed_seal (SHA-256 over canonical JSON or raw bytes); fresh_event_uuid (uuid4 draws); caller_declared, caller_declared_name, constant_name and provider_declared (copied, not derived); code_hash_plus_declared_versions (a code digest beside self-reported versions); provider_pinned (a pinned revision beside host-measured digests); absent. Content identities are sha256 over canonical JSON (sort_keys, compact separators); byte identities are sha256 over raw bytes; event identities are uuid4 draws (collision probability ~2^-122 per pair).",
  "number": 77,
- "numerical_result": "29 identities (28 exercised offline); 77/77 predicted properties held (11 are same-origin digest re-derivations, the rest observe CIW outputs, refusals or validators); classes {'absent': 2, 'byte_hash': 2, 'caller_declared': 4, 'caller_declared_name': 1, 'code_hash_plus_declared_versions': 1, 'constant_name': 1, 'content_hash': 8, 'content_hash / fresh_event_uuid': 1, 'content_hash_of_fresh_occurrence': 2, 'fresh_event_uuid': 5, 'provider_declared': 1, 'unkeyed_seal': 1}",
+ "numerical_result": "30 identities (28 exercised offline; not exercised: ESM candidate_id / candidate execution_id, pinned-provider runtime identity (ciw.subprocess-runtime.v1)); 97/97 predicted properties held (11 are same-origin digest re-derivations, the rest observe CIW outputs, refusals or validators; 23 rows compare their identity before and after reopen); classes {'absent': 2, 'byte_hash': 2, 'caller_declared': 4, 'caller_declared_name': 1, 'code_hash_plus_declared_versions': 1, 'constant_name': 1, 'content_hash': 8, 'content_hash / fresh_event_uuid': 1, 'content_hash_of_fresh_occurrence': 2, 'fresh_event_uuid': 5, 'provider_declared': 1, 'provider_pinned': 1, 'unkeyed_seal': 1}",
  "observation_model": "No physical observation. The observed objects are CIW records (sessions, executions, results, bundles, receipts, saved workspace JSON) produced offline by the unmodified CIW code; the energy logs are synthetic fixtures and no hardware was sampled.",
  "physical_validation_status": {
   "statement": "Physical validation requires acquired hardware evidence; none was acquired for this task.",
@@ -584,57 +594,57 @@
   "python": "3.12.3",
   "scipy": "1.16.2",
   "sources": {
-   "src/ciw/lab/exchange_provenance.py": "5cc267c7777c9b434b8747b0cc841ac85313e1cfb6ff4c429ee93aa5ddbb645b",
-   "src/ciw/lab/exchange_provenance_common.py": "22028c4008079fba23c5e807de0104ba1a0014027e1d40a9209881cdf232f486"
+   "src/ciw/lab/exchange_provenance.py": "f55593eb90af9ed82e40f0f04987c7f0a06cf1c40e7079b0a371e0506607618b",
+   "src/ciw/lab/exchange_provenance_common.py": "f8e765184af4e893a0c4c6d9e5cb2988b79e6f3dfc3d941444f335ecc894d775"
   },
   "sympy": "1.14.0"
  },
  "recommended_next_task": "T078 (exact source-byte retention); CIW change: add a numerical_result_id to oscillator operation results and bind replay receipts into a catalog-level seal",
- "report_id": "sha256:be54599f083c82dac398a93cc4a80a33ebbc6e6800bde7a790c1214503e26211",
+ "report_id": "sha256:663bb55398316ae6ae92eba0126c9b25c9c6806dda9ab78a8fa9bd27fe5cb13d",
  "schema": "ciw.lab-task-report.v1",
  "section": "exchange-provenance",
- "state": "completed",
+ "state": "partial",
  "task_id": "T077",
  "tests_passed": [
-  "check: Every exercised identity shows its predicted derivation, freshness and binding properties on the offline paths vs recording evidence_id: re-derived digest properties that did not hold",
-  "check: Every exercised identity shows its predicted derivation, freshness and binding properties on the offline paths vs recording evidence_id: observed properties that did not hold",
-  "check: Every exercised identity shows its predicted derivation, freshness and binding properties on the offline paths vs recording file name: re-derived digest properties that did not hold",
-  "check: Every exercised identity shows its predicted derivation, freshness and binding properties on the offline paths vs recording file name: observed properties that did not hold",
-  "check: Every exercised identity shows its predicted derivation, freshness and binding properties on the offline paths vs workbench source evidence_id: re-derived digest properties that did not hold",
-  "check: Every exercised identity shows its predicted derivation, freshness and binding properties on the offline paths vs workbench source evidence_id: observed properties that did not hold",
-  "check: Every exercised identity shows its predicted derivation, freshness and binding properties on the offline paths vs workbench source_id: re-derived digest properties that did not hold",
-  "check: Every exercised identity shows its predicted derivation, freshness and binding properties on the offline paths vs workbench source_id: observed properties that did not hold",
-  "check: Every exercised identity shows its predicted derivation, freshness and binding properties on the offline paths vs bundle experiment_digest: re-derived digest properties that did not hold",
-  "check: Every exercised identity shows its predicted derivation, freshness and binding properties on the offline paths vs bundle experiment_digest: observed properties that did not hold",
-  "check: Every exercised identity shows its predicted derivation, freshness and binding properties on the offline paths vs energy log run_id (bundle experiment_id): observed properties that did not hold",
-  "check: Every exercised identity shows its predicted derivation, freshness and binding properties on the offline paths vs energy log producer identities: observed properties that did not hold",
-  "check: Every exercised identity shows its predicted derivation, freshness and binding properties on the offline paths vs oscillator operation_id: observed properties that did not hold",
-  "check: Every exercised identity shows its predicted derivation, freshness and binding properties on the offline paths vs energy operation_id: observed properties that did not hold",
-  "check: Every exercised identity shows its predicted derivation, freshness and binding properties on the offline paths vs oscillator execution_id: observed properties that did not hold",
-  "check: Every exercised identity shows its predicted derivation, freshness and binding properties on the offline paths vs energy step execution_id: observed properties that did not hold",
-  "check: Every exercised identity shows its predicted derivation, freshness and binding properties on the offline paths vs oscillator result_id: observed properties that did not hold",
-  "check: Every exercised identity shows its predicted derivation, freshness and binding properties on the offline paths vs energy result_id: re-derived digest properties that did not hold",
-  "check: Every exercised identity shows its predicted derivation, freshness and binding properties on the offline paths vs energy result_id: observed properties that did not hold",
-  "check: Every exercised identity shows its predicted derivation, freshness and binding properties on the offline paths vs energy numerical_result_id: re-derived digest properties that did not hold",
-  "check: Every exercised identity shows its predicted derivation, freshness and binding properties on the offline paths vs energy numerical_result_id: observed properties that did not hold",
-  "check: Every exercised identity shows its predicted derivation, freshness and binding properties on the offline paths vs oscillator numerical-result identity: observed properties that did not hold",
-  "check: Every exercised identity shows its predicted derivation, freshness and binding properties on the offline paths vs energy verification_id: re-derived digest properties that did not hold",
-  "check: Every exercised identity shows its predicted derivation, freshness and binding properties on the offline paths vs energy verification_id: observed properties that did not hold",
-  "check: Every exercised identity shows its predicted derivation, freshness and binding properties on the offline paths vs oscillator verification_id: observed properties that did not hold",
-  "check: Every exercised identity shows its predicted derivation, freshness and binding properties on the offline paths vs bundle_digest (workbench bundle_id): re-derived digest properties that did not hold",
-  "check: Every exercised identity shows its predicted derivation, freshness and binding properties on the offline paths vs bundle_digest (workbench bundle_id): observed properties that did not hold",
-  "check: Every exercised identity shows its predicted derivation, freshness and binding properties on the offline paths vs bundle session_id: observed properties that did not hold",
-  "check: Every exercised identity shows its predicted derivation, freshness and binding properties on the offline paths vs protocol Session.session_id: observed properties that did not hold",
-  "check: Every exercised identity shows its predicted derivation, freshness and binding properties on the offline paths vs replay_id: re-derived digest properties that did not hold",
-  "check: Every exercised identity shows its predicted derivation, freshness and binding properties on the offline paths vs replay_id: observed properties that did not hold",
-  "check: Every exercised identity shows its predicted derivation, freshness and binding properties on the offline paths vs oscillator record_digest (seal): re-derived digest properties that did not hold",
-  "check: Every exercised identity shows its predicted derivation, freshness and binding properties on the offline paths vs oscillator record_digest (seal): observed properties that did not hold",
-  "check: Every exercised identity shows its predicted derivation, freshness and binding properties on the offline paths vs oscillator runtime identity: observed properties that did not hold",
-  "check: Every exercised identity shows its predicted derivation, freshness and binding properties on the offline paths vs energy runtime identity: observed properties that did not hold",
-  "check: Every exercised identity shows its predicted derivation, freshness and binding properties on the offline paths vs exchange result_id / verification_id: observed properties that did not hold",
-  "check: Every exercised identity shows its predicted derivation, freshness and binding properties on the offline paths vs exchange batch_id: observed properties that did not hold",
-  "check: Every exercised identity shows its predicted derivation, freshness and binding properties on the offline paths vs ESM requestId / inspectedAt: observed properties that did not hold",
-  "check: Every exercised identity shows its predicted derivation, freshness and binding properties on the offline paths vs ESM bundleBytesDigest: observed properties that did not hold",
+  "check: Every exercised identity shows its predicted derivation, freshness, binding and reopen properties on the offline paths vs recording evidence_id: re-derived digest properties that did not hold",
+  "check: Every exercised identity shows its predicted derivation, freshness, binding and reopen properties on the offline paths vs recording evidence_id: observed properties that did not hold",
+  "check: Every exercised identity shows its predicted derivation, freshness, binding and reopen properties on the offline paths vs recording file name: re-derived digest properties that did not hold",
+  "check: Every exercised identity shows its predicted derivation, freshness, binding and reopen properties on the offline paths vs recording file name: observed properties that did not hold",
+  "check: Every exercised identity shows its predicted derivation, freshness, binding and reopen properties on the offline paths vs workbench source evidence_id: re-derived digest properties that did not hold",
+  "check: Every exercised identity shows its predicted derivation, freshness, binding and reopen properties on the offline paths vs workbench source evidence_id: observed properties that did not hold",
+  "check: Every exercised identity shows its predicted derivation, freshness, binding and reopen properties on the offline paths vs workbench source_id: re-derived digest properties that did not hold",
+  "check: Every exercised identity shows its predicted derivation, freshness, binding and reopen properties on the offline paths vs workbench source_id: observed properties that did not hold",
+  "check: Every exercised identity shows its predicted derivation, freshness, binding and reopen properties on the offline paths vs bundle experiment_digest: re-derived digest properties that did not hold",
+  "check: Every exercised identity shows its predicted derivation, freshness, binding and reopen properties on the offline paths vs bundle experiment_digest: observed properties that did not hold",
+  "check: Every exercised identity shows its predicted derivation, freshness, binding and reopen properties on the offline paths vs energy log run_id (bundle experiment_id): observed properties that did not hold",
+  "check: Every exercised identity shows its predicted derivation, freshness, binding and reopen properties on the offline paths vs energy log producer identities: observed properties that did not hold",
+  "check: Every exercised identity shows its predicted derivation, freshness, binding and reopen properties on the offline paths vs oscillator operation_id: observed properties that did not hold",
+  "check: Every exercised identity shows its predicted derivation, freshness, binding and reopen properties on the offline paths vs energy operation_id: observed properties that did not hold",
+  "check: Every exercised identity shows its predicted derivation, freshness, binding and reopen properties on the offline paths vs oscillator execution_id: observed properties that did not hold",
+  "check: Every exercised identity shows its predicted derivation, freshness, binding and reopen properties on the offline paths vs energy step execution_id: observed properties that did not hold",
+  "check: Every exercised identity shows its predicted derivation, freshness, binding and reopen properties on the offline paths vs oscillator result_id: observed properties that did not hold",
+  "check: Every exercised identity shows its predicted derivation, freshness, binding and reopen properties on the offline paths vs energy result_id: re-derived digest properties that did not hold",
+  "check: Every exercised identity shows its predicted derivation, freshness, binding and reopen properties on the offline paths vs energy result_id: observed properties that did not hold",
+  "check: Every exercised identity shows its predicted derivation, freshness, binding and reopen properties on the offline paths vs energy numerical_result_id: re-derived digest properties that did not hold",
+  "check: Every exercised identity shows its predicted derivation, freshness, binding and reopen properties on the offline paths vs energy numerical_result_id: observed properties that did not hold",
+  "check: Every exercised identity shows its predicted derivation, freshness, binding and reopen properties on the offline paths vs oscillator numerical-result identity: observed properties that did not hold",
+  "check: Every exercised identity shows its predicted derivation, freshness, binding and reopen properties on the offline paths vs energy verification_id: re-derived digest properties that did not hold",
+  "check: Every exercised identity shows its predicted derivation, freshness, binding and reopen properties on the offline paths vs energy verification_id: observed properties that did not hold",
+  "check: Every exercised identity shows its predicted derivation, freshness, binding and reopen properties on the offline paths vs oscillator verification_id: observed properties that did not hold",
+  "check: Every exercised identity shows its predicted derivation, freshness, binding and reopen properties on the offline paths vs bundle_digest (workbench bundle_id): re-derived digest properties that did not hold",
+  "check: Every exercised identity shows its predicted derivation, freshness, binding and reopen properties on the offline paths vs bundle_digest (workbench bundle_id): observed properties that did not hold",
+  "check: Every exercised identity shows its predicted derivation, freshness, binding and reopen properties on the offline paths vs bundle session_id: observed properties that did not hold",
+  "check: Every exercised identity shows its predicted derivation, freshness, binding and reopen properties on the offline paths vs protocol Session.session_id: observed properties that did not hold",
+  "check: Every exercised identity shows its predicted derivation, freshness, binding and reopen properties on the offline paths vs replay_id: re-derived digest properties that did not hold",
+  "check: Every exercised identity shows its predicted derivation, freshness, binding and reopen properties on the offline paths vs replay_id: observed properties that did not hold",
+  "check: Every exercised identity shows its predicted derivation, freshness, binding and reopen properties on the offline paths vs oscillator record_digest (seal): re-derived digest properties that did not hold",
+  "check: Every exercised identity shows its predicted derivation, freshness, binding and reopen properties on the offline paths vs oscillator record_digest (seal): observed properties that did not hold",
+  "check: Every exercised identity shows its predicted derivation, freshness, binding and reopen properties on the offline paths vs oscillator runtime identity: observed properties that did not hold",
+  "check: Every exercised identity shows its predicted derivation, freshness, binding and reopen properties on the offline paths vs energy runtime identity: observed properties that did not hold",
+  "check: Every exercised identity shows its predicted derivation, freshness, binding and reopen properties on the offline paths vs exchange result_id / verification_id: observed properties that did not hold",
+  "check: Every exercised identity shows its predicted derivation, freshness, binding and reopen properties on the offline paths vs exchange batch_id: observed properties that did not hold",
+  "check: Every exercised identity shows its predicted derivation, freshness, binding and reopen properties on the offline paths vs ESM requestId / inspectedAt: observed properties that did not hold",
+  "check: Every exercised identity shows its predicted derivation, freshness, binding and reopen properties on the offline paths vs ESM bundleBytesDigest: observed properties that did not hold",
   "check: Oscillator operation results carry no replay-stable numerical-result identity vs equal data, distinct result ids and no numerical identity (1 = observed)",
   "check: The energy replay bundle identity excludes its replay receipt and verification vs bundle digest recomputed by CIW without replay_receipts differs from the retained one",
   "check: The energy replay bundle identity excludes its replay receipt and verification vs bundle digest recomputed by CIW with the verification replaced differs from the retained one",
@@ -642,11 +652,12 @@
  ],
  "tests_skipped": [],
  "title": "Build an identity matrix for: source evidence; operation; execution; result; numerical result; verification; bundle; replay; external producer IDs.",
- "uncertainty": "Exact equality tests on digests, UUID draws and exact refusal messages; a uuid4 collision among the ~40 fresh identities has probability below 1e-33. Properties are sampled on one fixture, not proved for all inputs. Checks that could not fail by construction (identifier prefix tests, a lab-set ESM digest, label-driven source_id counts) were removed.",
+ "uncertainty": "Exact equality tests on digests, UUID draws and exact refusal messages; a uuid4 collision among the fewer than 40 fresh uuid4 draws has probability below 1e-33. Properties are sampled on one fixture, not proved for all inputs. Checks that could not fail by construction (identifier prefix tests, a lab-set ESM digest, label-driven source_id counts, the fixture's placeholder hashes) are not counted as properties.",
  "unresolved_assumptions": [
-  "ESM candidate_id and candidate execution identities were not exercised: they need an operator-bound ESM adapter and a telemetry or calibrated bundle.",
+  "Partial: ESM candidate_id and candidate execution identities (they need an operator-bound ESM adapter and a telemetry or calibrated bundle) and pinned-provider runtime identities (ciw.subprocess-runtime.v1; they need a provider checkout bound to a declared-workload or telemetry workflow) are planned matrix rows that the offline path cannot exercise; their predictions are read from the code, not observed.",
   "The ESM rows use a synthetic telemetry-shaped record (schema, digest, three step occurrences), not a telemetry session validated by the telemetry workflow, which needs provider checkouts.",
   "Provider-backed workflows (telemetry, declared workloads, proved heat) were not exercised offline; their identity rows are inferred only where they share the energy-accuracy code path.",
+  "Reopen stability is observed as the value CIW saves again after reopening, which is the reopened session's own serialization of its restored state.",
   "Content identities establish consistency, not authorship."
  ]
 }

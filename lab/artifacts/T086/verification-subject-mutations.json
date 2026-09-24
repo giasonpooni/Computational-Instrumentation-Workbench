@@ -65,6 +65,28 @@
    "task": "T086"
   },
   {
+   "description": "subject_ref naming the sibling result R2 injected into a sealed result; resealed",
+   "error": null,
+   "killed": false,
+   "kind": "workspace",
+   "message_matches_pin": true,
+   "name": "oscillator-subject.injected",
+   "observed": "accepted",
+   "observed_outcome": "accepted",
+   "outcome_matches_prediction": true,
+   "pinned_message": "accepted",
+   "post_reopen": {
+    "result.get": {
+     "subject_ref": "result:R2",
+     "verification_status": "not_verified"
+    }
+   },
+   "predicted_outcome": "accepted",
+   "recompute": "local",
+   "target": "oscillator result",
+   "task": "T086"
+  },
+  {
    "description": "candidate bundleDigest set to another synthetic bundle",
    "error": "ValueError",
    "killed": true,

@@ -11,19 +11,20 @@
    "hardware_measured": 0,
    "independently_verified": 0,
    "not_established": 1,
-   "numerically_verified": 4,
+   "numerically_verified": 5,
    "provider_backed": 0,
    "synthetic": 0
   },
   "primary": "numerically_verified"
  },
  "expected_invariant": "Open-loop rate in the Wilson interval of 1 - p; closed loop >= 1 - p.",
- "experiment": "Evaluate the gate on the ungated filter's NIS (open loop) and inside run_gated where rejected readings are dropped (closed loop); compare counts with Wilson 99.9% intervals; repeat with the raw-R NIS.",
+ "experiment": "Evaluate the gate on the ungated filter's NIS (open loop) and inside run_gated where rejected readings are dropped (closed loop); compare counts with Wilson 99.9% intervals; replay the first 40 runs through FusionSession(gate_probability=p) and compare decisions and final states with run_gated; repeat the open-loop gate with the raw-R NIS.",
  "failure_modes_checked": [
   "quantile inversion error",
   "raw-R normalization",
   "closed-loop feedback of rejections",
-  "low-count regime at p = 0.999"
+  "low-count regime at p = 0.999",
+  "the fusion API fusing a reading the gate rejects, or changing state on a rejection"
  ],
  "findings": [
   {
@@ -259,6 +260,100 @@
   {
    "assigned_by": "ciw.lab.evidence",
    "basis": {
+    "checks": [
+     {
+      "comparison": "abs_le",
+      "observed": 0.0,
+      "passed": true,
+      "reference": "reading-by-reading decisions differing from run_gated",
+      "reference_kind": "exact_arithmetic",
+      "tolerance": 0.0
+     },
+     {
+      "comparison": "abs_le",
+      "observed": 0.0,
+      "passed": true,
+      "reference": "session rejections minus run_gated rejections on the same runs",
+      "reference_kind": "exact_arithmetic",
+      "tolerance": 0.0
+     },
+     {
+      "comparison": "ge",
+      "observed": 42.0,
+      "passed": true,
+      "reference": "readings the session gate rejected (the gate is exercised)",
+      "reference_kind": "analytic",
+      "tolerance": 1.0
+     },
+     {
+      "comparison": "abs_le",
+      "observed": 0.0,
+      "passed": true,
+      "reference": "refusals other than innovation_gate_rejected",
+      "reference_kind": "exact_arithmetic",
+      "tolerance": 0.0
+     },
+     {
+      "comparison": "abs_le",
+      "observed": 0.0,
+      "passed": true,
+      "reference": "rejections not retained with the gate disposition",
+      "reference_kind": "exact_arithmetic",
+      "tolerance": 0.0
+     },
+     {
+      "comparison": "abs_le",
+      "observed": 7.201338694084583e-16,
+      "passed": true,
+      "reference": "final session state against run_gated (relative)",
+      "reference_kind": "cross_implementation",
+      "tolerance": 1e-09
+     }
+    ],
+    "generator": {
+     "bit_generator": "PCG64",
+     "name": "ciw.lab.sensor_fusion_bench",
+     "runs": 40,
+     "seed": 672026
+    }
+   },
+   "claim": "The fusion API gates the same way: a FusionSession constructed with gate_probability p refuses exactly the readings run_gated rejects in closed loop (same rates at p = 0.9 and 0.99 over the replayed runs), retains each with disposition refused:innovation_gate_rejected, and ends in the same state to roundoff",
+   "domain": "computational_pipeline",
+   "evidence_status": "numerically_verified",
+   "regression_tolerance": {
+    "abs": 1e-09,
+    "rel": 0.0
+   },
+   "uncertainty": {
+    "basis": "largest relative difference between the session and run_gated final states; the decisions are exact",
+    "kind": "roundoff",
+    "value": 7.201338694084583e-16
+   },
+   "unit": null,
+   "value": {
+    "0.9": {
+     "decision_mismatches": 0,
+     "max_relative_final_state_difference": 5.479357980515638e-16,
+     "run_gated_rejections_same_runs": 534,
+     "runs": 40,
+     "session_rate": 0.1335,
+     "session_rejections": 534,
+     "trials": 4000
+    },
+    "0.99": {
+     "decision_mismatches": 0,
+     "max_relative_final_state_difference": 7.201338694084583e-16,
+     "run_gated_rejections_same_runs": 42,
+     "runs": 40,
+     "session_rate": 0.0105,
+     "session_rejections": 42,
+     "trials": 4000
+    }
+   }
+  },
+  {
+   "assigned_by": "ciw.lab.evidence",
+   "basis": {
     "generator": {
      "bit_generator": "PCG64",
      "name": "ciw.lab.sensor_fusion_bench",
@@ -276,9 +371,9 @@
  ],
  "generated_artifacts": [
   {
-   "bytes": 2210,
+   "bytes": 2899,
    "path": "artifacts/T067/gating_rates.json",
-   "sha256": "e5b9c2aa06fe756e0efa9fe03a11c9a52aedf90babfa983159219b662ab7db72"
+   "sha256": "2f0d633e9ec3d65bb096a595c67a8d5e0fb2c97bfb37cf57babe12c6afadd810"
   },
   {
    "bytes": 2230,
@@ -294,7 +389,7 @@
  ],
  "mathematical_model": "NIS = nu^T S^-1 nu ~ chi2(2), independent across ticks for the optimal filter (white innovations); rejections ~ Binomial(N, 1 - p). Gates: chi2_2(p) = -2 ln(1 - p).",
  "number": 67,
- "numerical_result": "open p=0.9: 0.1016; open p=0.99: 0.0106; open p=0.999: 0.0014; closed p=0.9: 0.1352; closed p=0.99: 0.0113; raw-R gate at 0.99: 0.037.",
+ "numerical_result": "open p=0.9: 0.1016; open p=0.99: 0.0106; open p=0.999: 0.0014; closed p=0.9: 0.1352; closed p=0.99: 0.0113; session gate over p=0.9: 534 rejections, 0 decisions differing, p=0.99: 42 rejections, 0 decisions differing; raw-R gate at 0.99: 0.037.",
  "observation_model": "Camera position every tick; no outliers.",
  "physical_validation_status": {
   "statement": "Physical validation requires acquired hardware evidence; none was acquired for this task.",
@@ -309,14 +404,14 @@
   "scipy": "1.16.2",
   "sources": {
    "src/ciw/lab/sensor_fusion_bench.py": "f373849a4c6836fa20685c59ce7a6fe6bf732f6df9d6a49646cdc017262dd656",
-   "src/ciw/lab/sensor_fusion_common.py": "6787aa47d199d50d0b4de4d7e53714ce7b8b5aad37d647cfc1a954414e90209f",
-   "src/ciw/lab/sensor_fusion_filtering.py": "6b886646d4fb49b584d7e02c13cd96d604e800bfd0defc717489a010de26bb58",
-   "src/ciw/lab/sensor_fusion_objects.py": "a795ffc235e0a4118cb7b9ac7800191a90984372d79e59f1a934442d98d7a1f1"
+   "src/ciw/lab/sensor_fusion_common.py": "db3b0430ad5c13920239cef354da61b64ab1b01f84b2d3d5aff2f78840a5867a",
+   "src/ciw/lab/sensor_fusion_filtering.py": "716a44ff8f4921d188d17179fa80c6b1695c68a90fb16ab85239efb4295b4f8a",
+   "src/ciw/lab/sensor_fusion_objects.py": "93fc55ddca91f1adfb886d21805ea8f82586548ee84e1f6cc7daed4df1f53bb9"
   },
   "sympy": "1.14.0"
  },
  "recommended_next_task": "T068: inject outliers and measure detection, false alarms and estimate error.",
- "report_id": "sha256:9baf6ae7f88874d6d806e7c855ccd9485a2b13f38dd974f92600a3b622ae1172",
+ "report_id": "sha256:424d025bb544902000280cd83377422cc917f1d75e871ff682161a203a745ea8",
  "schema": "ciw.lab-task-report.v1",
  "section": "sensor-fusion",
  "state": "completed",
@@ -327,7 +422,14 @@
   "check: The chi-square quantiles used by the gate invert the closed-form chi-square CDF to roundoff for 1-6 degrees of freedom vs dof 4 closed form 1 - exp(-x/2)(1 + x/2)",
   "check: Closed loop, a gated filter rejects valid readings more often than 1 - p at p = 0.9: a rejected reading signals a large prior error that the filter then keeps vs Wilson lower bound of the closed-loop rate at p = 0.9 minus 0.1",
   "check: Gating the NIS computed with the raw sensor covariance R at the 99% quantile rejects valid readings at more than twice the nominal 1% rate vs Wilson lower bound of the raw-R rejection rate",
+  "check: The fusion API gates the same way: a FusionSession constructed with gate_probability p refuses exactly the readings run_gated rejects in closed loop (same rates at p = 0.9 and 0.99 over the replayed runs), retains each with disposition refused:innovation_gate_rejected, and ends in the same state to roundoff vs reading-by-reading decisions differing from run_gated",
+  "check: The fusion API gates the same way: a FusionSession constructed with gate_probability p refuses exactly the readings run_gated rejects in closed loop (same rates at p = 0.9 and 0.99 over the replayed runs), retains each with disposition refused:innovation_gate_rejected, and ends in the same state to roundoff vs session rejections minus run_gated rejections on the same runs",
+  "check: The fusion API gates the same way: a FusionSession constructed with gate_probability p refuses exactly the readings run_gated rejects in closed loop (same rates at p = 0.9 and 0.99 over the replayed runs), retains each with disposition refused:innovation_gate_rejected, and ends in the same state to roundoff vs readings the session gate rejected (the gate is exercised)",
+  "check: The fusion API gates the same way: a FusionSession constructed with gate_probability p refuses exactly the readings run_gated rejects in closed loop (same rates at p = 0.9 and 0.99 over the replayed runs), retains each with disposition refused:innovation_gate_rejected, and ends in the same state to roundoff vs refusals other than innovation_gate_rejected",
+  "check: The fusion API gates the same way: a FusionSession constructed with gate_probability p refuses exactly the readings run_gated rejects in closed loop (same rates at p = 0.9 and 0.99 over the replayed runs), retains each with disposition refused:innovation_gate_rejected, and ends in the same state to roundoff vs rejections not retained with the gate disposition",
+  "check: The fusion API gates the same way: a FusionSession constructed with gate_probability p refuses exactly the readings run_gated rejects in closed loop (same rates at p = 0.9 and 0.99 over the replayed runs), retains each with disposition refused:innovation_gate_rejected, and ends in the same state to roundoff vs final session state against run_gated (relative)",
   "pytest: tests/test_lab_sensor_fusion.py::test_gating_rates_open_and_closed_loop",
+  "pytest: tests/test_lab_sensor_fusion.py::test_session_gate_refuses_without_side_effects",
   "pytest: tests/test_lab_sensor_fusion.py::test_section_reports_labels_and_states[T067]"
  ],
  "tests_skipped": [],
@@ -335,6 +437,7 @@
  "uncertainty": "Wilson 99.9% score intervals on binomial counts; the open-loop independence rests on the whiteness of optimal innovations (T065).",
  "unresolved_assumptions": [
   "At p = 0.99 the closed-loop excess is inside the sampling interval here; it is not shown to be zero.",
+  "The fusion API is replayed on 40 of the runs (reading-by-reading agreement there); the rates over all runs come from run_gated.",
   "No re-acquisition logic follows repeated rejections (see T073)."
  ]
 }

@@ -8,18 +8,18 @@
    "hardware_measured": 0,
    "independently_verified": 0,
    "not_established": 1,
-   "numerically_verified": 1,
+   "numerically_verified": 2,
    "provider_backed": 0,
    "synthetic": 0
   },
   "primary": "numerically_verified"
  },
- "expected_invariant": "Aggregates are exact functions of retained reports and never change a label.",
- "experiment": "Collect those findings and task states into JSON and Markdown.",
+ "expected_invariant": "The ledger's counts of not-established physical/authority claims and of unfinished tasks agree with a raw-text recount of the report files.",
+ "experiment": "Collect those findings, task states and hardware probe outcomes into JSON and Markdown and recount them from the raw report text.",
  "failure_modes_checked": [
-  "missing reports",
-  "report identity mismatch (validate_report)",
-  "aggregate differs from its re-read bytes"
+  "claims dropped by the traversal (raw-text recount)",
+  "partial tasks omitted",
+  "hardware claims filed under a computational domain"
  ],
  "findings": [
   {
@@ -27,24 +27,58 @@
    "basis": {
     "checks": [
      {
+      "comparison": "abs_le",
       "observed": 0.0,
       "passed": true,
-      "reference": "unmeasured.json recomputed from a fresh read of the retained reports",
+      "reference": "listed claims minus a raw-text recount of not-established physical/authority findings",
       "reference_kind": "exact_arithmetic",
       "tolerance": 0.0
      }
     ]
    },
-   "claim": "Unmeasured ledger reproduces from retained reports (physical and authority claims)",
+   "claim": "Unmeasured ledger lists every not-established physical or authority claim",
    "domain": "provenance",
    "evidence_status": "numerically_verified",
    "regression_tolerance": {
     "abs": 0,
     "rel": 0
    },
-   "uncertainty": null,
+   "uncertainty": {
+    "basis": "integer count over retained report files; no rounding, sampling or tolerance",
+    "kind": "exact",
+    "value": 0
+   },
    "unit": "claims",
-   "value": 143
+   "value": 146
+  },
+  {
+   "assigned_by": "ciw.lab.evidence",
+   "basis": {
+    "checks": [
+     {
+      "comparison": "abs_le",
+      "observed": 0.0,
+      "passed": true,
+      "reference": "listed tasks minus a raw-text recount of blocked, deferred and partial states",
+      "reference_kind": "exact_arithmetic",
+      "tolerance": 0.0
+     }
+    ]
+   },
+   "claim": "Unmeasured ledger lists every blocked, deferred or partial task",
+   "domain": "provenance",
+   "evidence_status": "numerically_verified",
+   "regression_tolerance": {
+    "abs": 0,
+    "rel": 0
+   },
+   "uncertainty": {
+    "basis": "integer count over retained report files; no rounding, sampling or tolerance",
+    "kind": "exact",
+    "value": 0
+   },
+   "unit": "tasks",
+   "value": 18
   },
   {
    "assigned_by": "ciw.lab.evidence",
@@ -59,23 +93,23 @@
  ],
  "generated_artifacts": [
   {
-   "bytes": 23261,
+   "bytes": 39833,
    "path": "artifacts/T167/unmeasured.json",
-   "sha256": "be4bc30c3f5be4c24ad0d1a1b8799c61f746ee68c1ef65866a713dda7ba73a6c"
+   "sha256": "ab5a43b82b98acf19eef71084e3747dedb30d07e9cf769603e3497600cc639d9"
   },
   {
-   "bytes": 15913,
+   "bytes": 31148,
    "path": "artifacts/T167/UNMEASURED.md",
-   "sha256": "904bc7d4e0e63a85482acbc2f8116cf87256696ad508ce2418d69c2c21e14b84"
+   "sha256": "4bc345945480628180e625d3375ee8748a7e38d380e62def62091ae72eaa4d7f"
   }
  ],
- "hypothesis": "Everything that remains physically unmeasured is enumerable from the retained reports.",
+ "hypothesis": "Everything that remains physically unmeasured or unrun is enumerable from the retained reports.",
  "input_data": [
-  "Retained reports T001-T154 in the same output directory"
+  "Retained reports of T001-T166 in the same output directory"
  ],
- "mathematical_model": "Unmeasured = physical/authority-domain findings not established, plus blocked or deferred tasks.",
+ "mathematical_model": "Unmeasured = physical/authority-domain findings not established; blocked, deferred and partial tasks with their unrun parts; not_established findings of tasks whose hardware probe failed.",
  "number": 167,
- "numerical_result": "143 physical/authority claims not established; 2 blocked or deferred tasks; 0 hardware-measured findings.",
+ "numerical_result": "146 physical/authority claims not established; 18 unfinished tasks {'blocked': 2, 'partial': 16}; 15 not_established findings in tasks whose hardware probe failed; 0 hardware-measured findings.",
  "observation_model": "No physical observation; reads retained computational records only.",
  "physical_validation_status": {
   "statement": "Physical validation requires acquired hardware evidence; none was acquired for this task.",
@@ -89,22 +123,26 @@
   "python": "3.12.3",
   "scipy": "1.16.2",
   "sources": {
-   "src/ciw/lab/research_portfolio.py": "6cd37207af02c6d64dc88b22c7ff2148e85f1eeebaa5445cd894879bc3043ba3"
+   "src/ciw/lab/research_portfolio.py": "0fd0ed475a38bf81fd2145f64cf1335856a471c58d406347c3b66b0f66672702"
   },
   "sympy": "1.14.0"
  },
  "recommended_next_task": "Execute the manufacturing measurement protocols (T126-T128) on hardware and retain raw data.",
- "report_id": "sha256:b7c2be7c0db5e117e6a29b1e91418cd7ef483ef13c005e2b27434fc00942051b",
+ "report_id": "sha256:0f1618c06b8a259955921478e19a168fc667862e05b834a1e707088bfe652c5b",
  "schema": "ciw.lab-task-report.v1",
  "section": "research-portfolio",
  "state": "completed",
  "task_id": "T167",
  "tests_passed": [
-  "check: Unmeasured ledger reproduces from retained reports (physical and authority claims) vs unmeasured.json recomputed from a fresh read of the retained reports",
-  "pytest: tests/test_lab_research_portfolio.py::test_catalogue_tasks_aggregate_retained_reports"
+  "check: Unmeasured ledger lists every not-established physical or authority claim vs listed claims minus a raw-text recount of not-established physical/authority findings",
+  "check: Unmeasured ledger lists every blocked, deferred or partial task vs listed tasks minus a raw-text recount of blocked, deferred and partial states",
+  "pytest: tests/test_lab_research_portfolio.py::test_unmeasured_ledger"
  ],
  "tests_skipped": [],
  "title": "Document what remains unmeasured.",
- "uncertainty": "Exact aggregation.",
- "unresolved_assumptions": []
+ "uncertainty": "Exact counts.",
+ "unresolved_assumptions": [
+  "T168 runs after this ledger.",
+  "Hardware needs are inferred from failed hardware probes; a claim that needs hardware in a task that probed none is listed only when its domain is physical or authority."
+ ]
 }

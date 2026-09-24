@@ -41,11 +41,21 @@
    "smallest_order_bound": 0.9990954694065205
   }
  },
- "max_values": [
-  999.9925537109375
- ],
  "n": 16384,
  "native_float64_seed": 1,
+ "numpy_max_signed_zero_this_build": {
+  "machine": "x86_64",
+  "note": "numpy's maximum kernel is architecture-specific for equal signed zeros (x86 maxsd returns its second operand, aarch64 fmax returns +0); IEEE 754-2019 maximum returns +0 in either order",
+  "numpy": "2.4.3",
+  "orders": [
+   "[0.0, -0.0]",
+   "[-0.0, 0.0]"
+  ],
+  "signbits": [
+   true,
+   false
+  ]
+ },
  "order_depths": {
   "atomic": 71,
   "block-sequential": 318,
@@ -54,9 +64,9 @@
   "tree-adjacent": 14,
   "tree-strided": 14
  },
- "signed_zero_max_signbits": [
-  true,
-  false
+ "select_max_signed_zero_signbits": [
+  false,
+  true
  ],
  "study": {
   "cancellation-float32": {

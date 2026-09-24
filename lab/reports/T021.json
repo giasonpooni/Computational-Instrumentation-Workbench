@@ -161,13 +161,13 @@
   "python": "3.12.3",
   "scipy": "1.16.2",
   "sources": {
-   "src/ciw/lab/flat_torus_topology.py": "4d8cf2437759501a1b9fa5ee0d8abfac43345ebee378c6ad08233e9155d4b184",
+   "src/ciw/lab/flat_torus_topology.py": "1221001d96bf1f9aa2f9fea169a2b10bfb37230da11bfb6f1608ba9355c86b9a",
    "src/ciw/lab/flat_torus_topology_lattice.py": "15a33fcd29591e43dec16fa3b9ad26d6b6b86846872e9e6bf815508fb0dade63"
   },
   "sympy": "1.14.0"
  },
  "recommended_next_task": "T022: detect degenerate (tied) shortest representatives",
- "report_id": "sha256:b3e99b5f1b853366b9b25f497fe350805a95c3ffd66d07b32345cae165ff4e8c",
+ "report_id": "sha256:f561f7dfab1b30340f7afdcb1fc8b5267437aba17f6a8aed2bb085471971a7a0",
  "schema": "ciw.lab-task-report.v1",
  "section": "flat-torus-topology",
  "state": "completed",

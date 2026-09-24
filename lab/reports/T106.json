@@ -11,19 +11,22 @@
    "hardware_measured": 0,
    "independently_verified": 0,
    "not_established": 1,
-   "numerically_verified": 6,
+   "numerically_verified": 9,
    "provider_backed": 0,
    "synthetic": 0
   },
   "primary": "numerically_verified"
  },
- "expected_invariant": "The eight codes that do not depend on rounding are reached on paths far from every threshold, each path step equals the CIW transcription of the documented order, CERTIFICATE_NOT_POSITIVE is reached only through rounding and never with a certificate, and every host-owned code is refused.",
- "experiment": "Build each path, evaluate all steps in one PLSR subprocess, recompute each expected code in CIW from A, P and x, and tabulate transitions and coverage.",
+ "expected_invariant": "The eight rounding-free codes are reached; every step equals the transcription; each allowed transition occurs between consecutive steps whose gate vectors differ by exactly its crossing, and no code changes at a crossing the order does not allow; CERTIFICATE_NOT_POSITIVE is not reached rounding-free and never with a certificate; every host-owned code is refused.",
+ "experiment": "Derive the transition graph by enumerating the gate vectors the decision order can hold, build each path, evaluate all steps in one PLSR subprocess, recompute gates and codes in CIW, and tabulate the direct transitions and their coverage (transition-coverage.json and .md).",
  "failure_modes_checked": [
   "a code unreachable",
-  "a transition out of documented order",
+  "a step off the documented order",
+  "an allowed transition not realised",
+  "a code change at a crossing the order does not allow",
   "a host-owned code accepted",
-  "CERTIFICATE_NOT_POSITIVE only reachable through rounding"
+  "CERTIFICATE_NOT_POSITIVE reachable without rounding",
+  "a certificate on an exactly indefinite P"
  ],
  "findings": [
   {
@@ -48,7 +51,7 @@
      "runtime_digest": "a6fee6b3b4eb7852b31f5a285fe8c50b535f25762e1daf82e36720ef8dd1b7c7"
     }
    },
-   "claim": "The eight rounding-free runtime-status-v1 codes are reached on one-parameter paths far from every threshold",
+   "claim": "The eight rounding-free runtime-status-v1 codes are reached on one-parameter paths far from every rounding threshold",
    "domain": "numerical",
    "evidence_status": "numerically_verified",
    "regression_tolerance": {
@@ -110,6 +113,30 @@
    },
    "unit": null,
    "value": {
+    "box edge theta = 1, DECREASE_NOT_DEFINITE inside": [
+     "DECREASE_NOT_DEFINITE",
+     "OUTSIDE_PARAMETER_BOX"
+    ],
+    "box edge theta = 1, MARGIN_LOW inside": [
+     "MARGIN_LOW",
+     "OUTSIDE_PARAMETER_BOX"
+    ],
+    "box edge theta = 1, NOT_CERTIFIED inside": [
+     "NOT_CERTIFIED",
+     "OUTSIDE_PARAMETER_BOX"
+    ],
+    "box edge theta = 1, NUMERICAL_INCONCLUSIVE inside": [
+     "NUMERICAL_INCONCLUSIVE",
+     "OUTSIDE_PARAMETER_BOX"
+    ],
+    "box edge theta = 1, NUMERICAL_OVERFLOW inside": [
+     "NUMERICAL_OVERFLOW",
+     "OUTSIDE_PARAMETER_BOX"
+    ],
+    "box edge theta = 1, OUTSIDE_LEVEL_SET inside": [
+     "OUTSIDE_LEVEL_SET",
+     "OUTSIDE_PARAMETER_BOX"
+    ],
     "direction phi, A = diag(-1, 1)": [
      "DECREASE_NOT_DEFINITE",
      "DECREASE_NOT_DEFINITE",
@@ -124,6 +151,42 @@
      "OUTSIDE_LEVEL_SET",
      "OUTSIDE_LEVEL_SET"
     ],
+    "level across V = 4, DECREASE_NOT_DEFINITE inside": [
+     "DECREASE_NOT_DEFINITE",
+     "OUTSIDE_LEVEL_SET"
+    ],
+    "level across V = 4, MARGIN_LOW inside": [
+     "MARGIN_LOW",
+     "OUTSIDE_LEVEL_SET"
+    ],
+    "level across V = 4, NOT_CERTIFIED inside": [
+     "NOT_CERTIFIED",
+     "OUTSIDE_LEVEL_SET"
+    ],
+    "level across V = 4, NUMERICAL_INCONCLUSIVE inside": [
+     "NUMERICAL_INCONCLUSIVE",
+     "OUTSIDE_LEVEL_SET"
+    ],
+    "matrix scale across overflow, DECREASE_NOT_DEFINITE below": [
+     "DECREASE_NOT_DEFINITE",
+     "NUMERICAL_OVERFLOW"
+    ],
+    "matrix scale across overflow, MARGIN_LOW below": [
+     "MARGIN_LOW",
+     "NUMERICAL_OVERFLOW"
+    ],
+    "matrix scale across overflow, NOT_CERTIFIED below": [
+     "NOT_CERTIFIED",
+     "NUMERICAL_OVERFLOW"
+    ],
+    "matrix scale across overflow, NUMERICAL_INCONCLUSIVE below": [
+     "NUMERICAL_INCONCLUSIVE",
+     "NUMERICAL_OVERFLOW"
+    ],
+    "matrix scale across overflow, OUTSIDE_LEVEL_SET below": [
+     "OUTSIDE_LEVEL_SET",
+     "NUMERICAL_OVERFLOW"
+    ],
     "matrix scale k, A = -2^k I": [
      "CERTIFIED_WITH_MARGIN",
      "CERTIFIED_WITH_MARGIN",
@@ -137,6 +200,10 @@
      "MARGIN_LOW",
      "MARGIN_LOW",
      "MARGIN_LOW"
+    ],
+    "stability a with required margin 1": [
+     "MARGIN_LOW",
+     "NUMERICAL_INCONCLUSIVE"
     ],
     "stability a, A = [[a, 1], [-1, a]]": [
      "CERTIFIED_WITH_MARGIN",
@@ -160,7 +227,63 @@
      "CERTIFIED_WITH_MARGIN",
      "CERTIFIED_WITH_MARGIN",
      "OUTSIDE_PARAMETER_BOX"
+    ],
+    "top eigenvalue b, A = diag(-1, b)": [
+     "CERTIFIED_WITH_MARGIN",
+     "NUMERICAL_INCONCLUSIVE",
+     "NUMERICAL_INCONCLUSIVE",
+     "DECREASE_NOT_DEFINITE"
     ]
+   }
+  },
+  {
+   "assigned_by": "ciw.lab.evidence",
+   "basis": {
+    "checks": [
+     {
+      "comparison": "abs_le",
+      "observed": 0.0,
+      "passed": true,
+      "reference": "allowed pairs without a direct PLSR transition on the paths",
+      "reference_kind": "invariant",
+      "tolerance": 0.0
+     },
+     {
+      "comparison": "abs_le",
+      "observed": 0.0,
+      "passed": true,
+      "reference": "PLSR code changes between consecutive steps whose transcribed gates differ by other than an allowed crossing",
+      "reference_kind": "invariant",
+      "tolerance": 0.0
+     }
+    ],
+    "provider": {
+     "executed": true,
+     "package_version": "0.1.0rc1",
+     "repository": "https://github.com/giasonpooni/Parameterized-Lyapunov-Stability-Runtime",
+     "revision": "19ea6967060166ba09db6cd4563bd87bd6b3d196",
+     "role": "plsr-python",
+     "runtime_digest": "a6fee6b3b4eb7852b31f5a285fe8c50b535f25762e1daf82e36720ef8dd1b7c7"
+    }
+   },
+   "claim": "Every transition the decision order allows between two rounding-free codes occurs in PLSR between consecutive path steps at its crossing, and no PLSR code changes at a crossing the order does not allow",
+   "domain": "numerical",
+   "evidence_status": "numerically_verified",
+   "regression_tolerance": {
+    "abs": 0.0,
+    "rel": 0.0
+   },
+   "uncertainty": {
+    "basis": "exact rational, integer or bitwise comparison; no rounding enters the value",
+    "kind": "roundoff",
+    "value": 0.0
+   },
+   "unit": null,
+   "value": {
+    "allowed": 24,
+    "code_changes": 28,
+    "exercised": 24,
+    "undeclared": 0
    }
   },
   {
@@ -174,14 +297,6 @@
       "reference": "certifying verdicts on the exactly indefinite P witnesses",
       "reference_kind": "invariant",
       "tolerance": 0.0
-     },
-     {
-      "comparison": "ge",
-      "observed": 6.0,
-      "passed": true,
-      "reference": "CERTIFICATE_NOT_POSITIVE verdicts observed",
-      "reference_kind": "invariant",
-      "tolerance": 1.0
      }
     ],
     "provider": {
@@ -193,7 +308,7 @@
      "runtime_digest": "a6fee6b3b4eb7852b31f5a285fe8c50b535f25762e1daf82e36720ef8dd1b7c7"
     }
    },
-   "claim": "The exactly indefinite P witnesses are never certified along their weak direction; whether they reach CERTIFICATE_NOT_POSITIVE is recorded",
+   "claim": "The exactly indefinite P witnesses are never certified along their weak direction",
    "domain": "numerical",
    "evidence_status": "numerically_verified",
    "regression_tolerance": {
@@ -201,15 +316,89 @@
     "rel": 0.0
    },
    "uncertainty": {
-    "basis": "whether the witnesses reach CERTIFICATE_NOT_POSITIVE depends on eigvalsh and dot-product rounding; the certification count does not",
+    "basis": "which code the witnesses receive (CERTIFICATE_NOT_POSITIVE or NUMERICAL_INCONCLUSIVE) depends on eigvalsh and dot-product rounding and is retained in the artifact; the certification count does not",
     "kind": "reference_error",
     "value": 0.0
    },
    "unit": null,
    "value": {
-    "certificate_not_positive_reached": true,
     "certifying": 0,
     "witnesses": 8
+   }
+  },
+  {
+   "assigned_by": "ciw.lab.evidence",
+   "basis": {
+    "checks": [
+     {
+      "expected_refusal": "raises ValueError",
+      "observed_refusal": "raises ValueError",
+      "passed": true,
+      "reference": "P(theta) = diag(1, 0) at theta = -1 inside the box [-1, 1]",
+      "reference_kind": "refusal"
+     },
+     {
+      "comparison": "abs_le",
+      "observed": 0.0,
+      "passed": true,
+      "reference": "refusals not raised by the certificate's positive-definiteness test",
+      "reference_kind": "invariant",
+      "tolerance": 0.0
+     },
+     {
+      "comparison": "abs_le",
+      "observed": 0.0,
+      "passed": true,
+      "reference": "control P(-0.5) = diag(1, 0.5) verdicts other than CERTIFIED_WITH_MARGIN",
+      "reference_kind": "invariant",
+      "tolerance": 0.0
+     }
+    ],
+    "provider": {
+     "executed": true,
+     "package_version": "0.1.0rc1",
+     "repository": "https://github.com/giasonpooni/Parameterized-Lyapunov-Stability-Runtime",
+     "revision": "19ea6967060166ba09db6cd4563bd87bd6b3d196",
+     "role": "plsr-python",
+     "runtime_digest": "a6fee6b3b4eb7852b31f5a285fe8c50b535f25762e1daf82e36720ef8dd1b7c7"
+    }
+   },
+   "claim": "An affine certificate that is singular at an in-box theta raises ValueError instead of returning CERTIFICATE_NOT_POSITIVE",
+   "counterexample": {
+    "statement": "An in-box sample at which P is not positive definite yields CERTIFICATE_NOT_POSITIVE, which RUNTIME-STATUS-v1 at the pinned commit describes as 'P is not positive definite here, so there is no certificate to evaluate'",
+    "witness": {
+     "A0": "-I",
+     "A1": "0",
+     "P0": "I",
+     "P1": "diag(0, 1)",
+     "box": [
+      -1.0,
+      1.0
+     ],
+     "outcome": "raises ValueError",
+     "theta": -1.0,
+     "theta_dot": 0.0,
+     "x": [
+      1.0,
+      0.0
+     ]
+    }
+   },
+   "domain": "numerical",
+   "evidence_status": "numerically_verified",
+   "regression_tolerance": {
+    "abs": 0.0,
+    "rel": 0.0
+   },
+   "uncertainty": {
+    "basis": "P(-1) = diag(1, 0) is formed exactly and its eigenvalue 0 is exact",
+    "kind": "roundoff",
+    "value": 0.0
+   },
+   "unit": null,
+   "value": {
+    "theta = -0.5": "CERTIFIED_WITH_MARGIN",
+    "theta = -1": "raises ValueError"
    }
   },
   {
@@ -345,12 +534,12 @@
       "tolerance": 0.0
      },
      {
-      "comparison": "ge",
-      "observed": 1.0,
+      "comparison": "abs_le",
+      "observed": 0.0,
       "passed": true,
-      "reference": "NUMERICAL_POLICY_VERSION is float64-decrease-v1 (1 if so)",
+      "reference": "NUMERICAL_POLICY_VERSION differs from float64-decrease-v1 (1 if so)",
       "reference_kind": "invariant",
-      "tolerance": 1.0
+      "tolerance": 0.0
      },
      {
       "comparison": "abs_le",
@@ -464,6 +653,54 @@
   {
    "assigned_by": "ciw.lab.evidence",
    "basis": {
+    "checks": [
+     {
+      "comparison": "abs_le",
+      "observed": 0.0,
+      "passed": true,
+      "reference": "allowed pairs with no direct transition of the transcription on the paths",
+      "reference_kind": "analytic",
+      "tolerance": 0.0
+     },
+     {
+      "comparison": "abs_le",
+      "observed": 0.0,
+      "passed": true,
+      "reference": "transcribed code changes between consecutive steps at a crossing the order does not allow",
+      "reference_kind": "analytic",
+      "tolerance": 0.0
+     }
+    ],
+    "derivation": "gate vectors of the documented order under its implications (Rayleigh: scalar_positive => not_definite and not certified; certified => not not_definite; margin_low => certified), paired when they differ by one threshold crossing (lyapunov.transition_graph)",
+    "generator": {
+     "name": "status_paths",
+     "seed": null
+    }
+   },
+   "claim": "The decision order connects the eight rounding-free codes by one threshold crossing in the pairs the transition graph allows, and the CIW transcription realises each at its crossing on the constructed paths",
+   "domain": "numerical",
+   "evidence_status": "numerically_verified",
+   "regression_tolerance": {
+    "abs": 0.0,
+    "rel": 0.0
+   },
+   "uncertainty": {
+    "basis": "exact rational, integer or bitwise comparison; no rounding enters the value",
+    "kind": "roundoff",
+    "value": 0.0
+   },
+   "unit": null,
+   "value": {
+    "allowed": 24,
+    "excluded": 4,
+    "realised": 24,
+    "rounding_only": 8,
+    "undeclared": 0
+   }
+  },
+  {
+   "assigned_by": "ciw.lab.evidence",
+   "basis": {
     "derivation": "runtime-status-v1: operationally_acceptable is not an authorization; host statuses and machine-safety functions are outside the evaluator"
    },
    "claim": "A CERTIFIED_WITH_MARGIN verdict (operationally_acceptable) authorizes actuation",
@@ -476,26 +713,37 @@
  ],
  "generated_artifacts": [
   {
-   "bytes": 8469,
+   "bytes": 16268,
    "path": "artifacts/T106/status-coverage.json",
-   "sha256": "5b59ca300aefa8bc668fafb0c9d29b54ddc1d26c59006e8db5b992e7efd0904a"
+   "sha256": "95462d347751aac8c286e02c260b220708241b1dd91a6fb41209f8ae6fda1382"
   },
   {
-   "bytes": 545,
+   "bytes": 18073,
+   "path": "artifacts/T106/transition-coverage.json",
+   "sha256": "669d735d4c8aeba739596f97d178c4b59697ab1d8c768d420b702c7eb802679a"
+  },
+  {
+   "bytes": 928,
+   "path": "artifacts/T106/transition-coverage.md",
+   "sha256": "713ffaaac9a8572c623db10f6ec1b03df934ae0f2e1eb1b2629b20c723f6ecf6"
+  },
+  {
+   "bytes": 701,
    "path": "artifacts/T106/status-coverage.md",
-   "sha256": "9ac78e6693bedb137cc474b303dac9d4b6c597fe2e46452968390bd99c785494"
+   "sha256": "674ad24bc6ec14a938ce95b003757d4dc6f2aad6fe4c621ba7ca578a2e1dbe9c"
   }
  ],
- "hypothesis": "Each of the nine runtime-status-v1 codes is reachable with declared inputs, codes change along one-parameter paths exactly as the documented decision order predicts, and the runtime refuses the five host-owned codes.",
+ "hypothesis": "Each of the nine runtime-status-v1 codes is reachable with declared inputs; every transition between two codes that the documented decision order allows through one threshold crossing occurs directly on a one-parameter path, at that crossing; the transitions the order excludes pass through a third code; those involving CERTIFICATE_NOT_POSITIVE need rounding; and the runtime refuses the five host-owned codes.",
  "input_data": [
-  "Seven paths: required margin 0..3; level 5..-1; stability a in [-1, 1] for [[a, 1], [-1, a]]; state direction 0..90 degrees for diag(-1, 1); matrix scale 2^0..2^1023; theta across [-1, 1]; theta_dot across [-0.2, 0.2]",
+  "24 paths: seven sweeps (required margin 0..3; level 5..-1; stability a in [-1, 1] for [[a, 1], [-1, a]]; state direction 0..90 degrees for diag(-1, 1); matrix scale 2^0..2^1023; theta across [-1, 1]; theta_dot across [-0.2, 0.2]) and seventeen short paths across one crossing (box edge theta = 1 -> nextafter(1, inf) with A1 = 0 under six in-box codes; power-of-two matrix scale across the overflow edge under five codes; level 4 -> 3.99 at V = 4 under four codes; stability a = -1e-10 -> -1e-15 with required margin 1; top eigenvalue b = -1, 0, 1e-16, 1 of diag(-1, b))",
   "8 candidate P that NumPy calls positive definite but are exactly indefinite (seed 1041) evaluated along their weak direction",
+  "Affine certificate P(theta) = I + theta diag(0, 1) with A = -I at theta = -0.5 and at theta = -1 (singular) inside the box [-1, 1]",
   "Host-owned codes MODEL_MISMATCH, STALE_STATE, INVALID_SENSOR_DATA, CERTIFICATE_EXPIRED, RUNTIME_FAULT"
  ],
- "mathematical_model": "Decision order: outside box -> NUMERICAL_OVERFLOW -> CERTIFICATE_NOT_POSITIVE (min eig P <= 0 or V < 0) -> OUTSIDE_LEVEL_SET -> NOT_CERTIFIED (x^T M x > res |x|^2) -> CERTIFIED_WITH_MARGIN / MARGIN_LOW (margin > res, MARGIN_LOW iff margin <= required margin) -> DECREASE_NOT_DEFINITE (max eig M > res) -> NUMERICAL_INCONCLUSIVE.",
+ "mathematical_model": "Decision order: outside box -> NUMERICAL_OVERFLOW -> CERTIFICATE_NOT_POSITIVE (min eig P <= 0 or V < 0) -> OUTSIDE_LEVEL_SET -> NOT_CERTIFIED (x^T M x > res |x|^2) -> CERTIFIED_WITH_MARGIN / MARGIN_LOW (margin > res, MARGIN_LOW iff margin <= required margin) -> DECREASE_NOT_DEFINITE (max eig M > res) -> NUMERICAL_INCONCLUSIVE. Its conditions form a gate vector (box, overflow, not_positive, level, scalar_positive, certified, margin_low, not_definite) constrained by scalar_positive => not_definite and not certified (Rayleigh), certified => not not_definite, margin_low => certified. A one-parameter path crosses one threshold at a time: one gate changes, or two whose thresholds coincide (scalar_positive with not_definite for x a top eigenvector of M; certified with margin_low). Two codes are directly connected iff consistent gate vectors giving them differ by one crossing: 24 pairs among the eight rounding-free codes, 8 pairs with CERTIFICATE_NOT_POSITIVE (only through rounding: both certificate kinds refuse min eig P <= 0 when built), 4 pairs excluded.",
  "number": 106,
- "numerical_result": "Codes reached: 9/9 (['CERTIFICATE_NOT_POSITIVE', 'CERTIFIED_WITH_MARGIN', 'DECREASE_NOT_DEFINITE', 'MARGIN_LOW', 'NOT_CERTIFIED', 'NUMERICAL_INCONCLUSIVE', 'NUMERICAL_OVERFLOW', 'OUTSIDE_LEVEL_SET', 'OUTSIDE_PARAMETER_BOX']); rounding-free codes on the paths: 8/8. 0 of 37 path steps differ from the CIW transcription of the documented order. Indefinite-P witnesses: {'CERTIFICATE_NOT_POSITIVE': 6, 'NUMERICAL_INCONCLUSIVE': 2} (0 certifying). Transitions: {'required_margin (margin 2)': ['CERTIFIED_WITH_MARGIN', 'CERTIFIED_WITH_MARGIN', 'CERTIFIED_WITH_MARGIN', 'MARGIN_LOW', 'MARGIN_LOW', 'MARGIN_LOW'], 'level (V = 4)': ['CERTIFIED_WITH_MARGIN', 'CERTIFIED_WITH_MARGIN', 'OUTSIDE_LEVEL_SET', 'OUTSIDE_LEVEL_SET', 'OUTSIDE_LEVEL_SET'], 'stability a, A = [[a, 1], [-1, a]]': ['CERTIFIED_WITH_MARGIN', 'CERTIFIED_WITH_MARGIN', 'NUMERICAL_INCONCLUSIVE', 'NUMERICAL_INCONCLUSIVE', 'NUMERICAL_INCONCLUSIVE', 'NOT_CERTIFIED', 'NOT_CERTIFIED'], 'direction phi, A = diag(-1, 1)': ['DECREASE_NOT_DEFINITE', 'DECREASE_NOT_DEFINITE', 'DECREASE_NOT_DEFINITE', 'NOT_CERTIFIED', 'NOT_CERTIFIED'], 'matrix scale k, A = -2^k I': ['CERTIFIED_WITH_MARGIN', 'CERTIFIED_WITH_MARGIN', 'CERTIFIED_WITH_MARGIN', 'NUMERICAL_OVERFLOW'], 'theta, box [-1, 1]': ['OUTSIDE_PARAMETER_BOX', 'CERTIFIED_WITH_MARGIN', 'CERTIFIED_WITH_MARGIN', 'CERTIFIED_WITH_MARGIN', 'OUTSIDE_PARAMETER_BOX'], 'theta_dot, rate box [-0.2, 0.2]': ['OUTSIDE_PARAMETER_BOX', 'CERTIFIED_WITH_MARGIN', 'CERTIFIED_WITH_MARGIN', 'CERTIFIED_WITH_MARGIN', 'OUTSIDE_PARAMETER_BOX']}. Host-owned codes refused: 5/5. Constants: resolution factor 1.0, policy float64-decrease-v1.",
- "observation_model": "PLSR verdict code per step; require_status and Verdict construction outcomes for host-owned codes; the runtime's published constants.",
+ "numerical_result": "Rounding-free codes reached on the paths: 8/8 (['CERTIFIED_WITH_MARGIN', 'DECREASE_NOT_DEFINITE', 'MARGIN_LOW', 'NOT_CERTIFIED', 'NUMERICAL_INCONCLUSIVE', 'NUMERICAL_OVERFLOW', 'OUTSIDE_LEVEL_SET', 'OUTSIDE_PARAMETER_BOX']); 0 of 73 path steps differ from the CIW transcription of the documented order. Transition graph: 24 allowed pairs among the rounding-free codes, 4 excluded, 8 involving CERTIFICATE_NOT_POSITIVE only through rounding; 24 of the 24 allowed transitions occurred directly in PLSR (28 code changes, 0 at a crossing the order does not allow; matrix in transition-coverage.md). Indefinite-P witnesses: 0 of 8 certifying (codes retained in the artifact). Affine certificate singular in the box: raises ValueError (neighbour theta = -0.5: CERTIFIED_WITH_MARGIN). Host-owned codes refused: 5/5. Constants: resolution factor 1.0, policy float64-decrease-v1.",
+ "observation_model": "PLSR verdict code per step; the CIW transcription's gate vector and code per step (at an overflowing step the later gates are read at A scaled down by a power of two, where each is homogeneous); require_status and Verdict construction outcomes for host-owned codes; the runtime's published constants.",
  "physical_validation_status": {
   "statement": "Physical validation requires acquired hardware evidence; none was acquired for this task.",
   "status": "not_established"
@@ -525,23 +773,27 @@
   },
   "scipy": "1.16.2",
   "sources": {
-   "src/ciw/lab/lyapunov.py": "58d6c7473f0a42002b57888de0ccfbbf73b571bbbabbf9ee81e0a05c734f2320",
+   "src/ciw/lab/lyapunov.py": "cbcb4d58d7313d7c537957a1b7dd35039a21bae80125bf59147eeed2c1232bbb",
    "src/ciw/lab/lyapunov_provider.py": "da3465b48b5f5efc47bfe6ab8379cf2cf2bc23e4835dc7ff047252e77fa6ef17",
-   "src/ciw/lab/lyapunov_reference.py": "fa37ef453c23ad2bed2eab41132e72670e166b93eebd5fc9d67a4a89a7c92cca"
+   "src/ciw/lab/lyapunov_reference.py": "bdf0bb5074ae2caca6c8a5d8e63a15e346b007098e6def6b058d077719bc1336"
   },
   "sympy": "1.14.0"
  },
- "recommended_next_task": "T107: near-boundary spectra; add an upstream regression that pins one witness per code, including a CERTIFICATE_NOT_POSITIVE witness that does not depend on eigvalsh rounding.",
- "report_id": "sha256:28322d4c406c7c27215235ef47dd03a98470278a3d7eca2dfb029a51f1f61b61",
+ "recommended_next_task": "T107: near-boundary spectra; add an upstream regression that pins one witness per code and per allowed transition, and decide whether a P(theta) that loses definiteness in the box should return CERTIFICATE_NOT_POSITIVE rather than raise.",
+ "report_id": "sha256:d1c52cbdb37e33ba0d49309f22c2961857c48125b969f2b4989d3c8b69630c4c",
  "schema": "ciw.lab-task-report.v1",
  "section": "lyapunov",
  "state": "completed",
  "task_id": "T106",
  "tests_passed": [
-  "check: The eight rounding-free runtime-status-v1 codes are reached on one-parameter paths far from every threshold vs rounding-free codes reached",
+  "check: The eight rounding-free runtime-status-v1 codes are reached on one-parameter paths far from every rounding threshold vs rounding-free codes reached",
   "check: Codes along each one-parameter path follow the documented decision order vs path steps differing from the CIW transcription of the documented order (same specification)",
-  "check: The exactly indefinite P witnesses are never certified along their weak direction; whether they reach CERTIFICATE_NOT_POSITIVE is recorded vs certifying verdicts on the exactly indefinite P witnesses",
-  "check: The exactly indefinite P witnesses are never certified along their weak direction; whether they reach CERTIFICATE_NOT_POSITIVE is recorded vs CERTIFICATE_NOT_POSITIVE verdicts observed",
+  "check: Every transition the decision order allows between two rounding-free codes occurs in PLSR between consecutive path steps at its crossing, and no PLSR code changes at a crossing the order does not allow vs allowed pairs without a direct PLSR transition on the paths",
+  "check: Every transition the decision order allows between two rounding-free codes occurs in PLSR between consecutive path steps at its crossing, and no PLSR code changes at a crossing the order does not allow vs PLSR code changes between consecutive steps whose transcribed gates differ by other than an allowed crossing",
+  "check: The exactly indefinite P witnesses are never certified along their weak direction vs certifying verdicts on the exactly indefinite P witnesses",
+  "check: An affine certificate that is singular at an in-box theta raises ValueError instead of returning CERTIFICATE_NOT_POSITIVE vs P(theta) = diag(1, 0) at theta = -1 inside the box [-1, 1]",
+  "check: An affine certificate that is singular at an in-box theta raises ValueError instead of returning CERTIFICATE_NOT_POSITIVE vs refusals not raised by the certificate's positive-definiteness test",
+  "check: An affine certificate that is singular at an in-box theta raises ValueError instead of returning CERTIFICATE_NOT_POSITIVE vs control P(-0.5) = diag(1, 0.5) verdicts other than CERTIFIED_WITH_MARGIN",
   "check: The runtime refuses to emit the five host-owned status codes vs require_status for MODEL_MISMATCH",
   "check: The runtime refuses to emit the five host-owned status codes vs Verdict for MODEL_MISMATCH",
   "check: The runtime refuses to emit the five host-owned status codes vs require_status for STALE_STATE",
@@ -553,20 +805,26 @@
   "check: The runtime refuses to emit the five host-owned status codes vs require_status for RUNTIME_FAULT",
   "check: The runtime refuses to emit the five host-owned status codes vs Verdict for RUNTIME_FAULT",
   "check: Pinned runtime constants: resolution factor, numerical policy, status vocabulary vs DECREASE_RESOLUTION_FACTOR minus the documented 1.0",
-  "check: Pinned runtime constants: resolution factor, numerical policy, status vocabulary vs NUMERICAL_POLICY_VERSION is float64-decrease-v1 (1 if so)",
+  "check: Pinned runtime constants: resolution factor, numerical policy, status vocabulary vs NUMERICAL_POLICY_VERSION differs from float64-decrease-v1 (1 if so)",
   "check: Pinned runtime constants: resolution factor, numerical policy, status vocabulary vs status codes outside or missing from the documented nine",
   "check: Pinned runtime constants: resolution factor, numerical policy, status vocabulary vs host-owned codes outside or missing from the documented five",
   "check: The documented decision order, transcribed in CIW, assigns the eight rounding-free codes to the constructed path steps vs rounding-free runtime codes predicted on the paths",
+  "check: The decision order connects the eight rounding-free codes by one threshold crossing in the pairs the transition graph allows, and the CIW transcription realises each at its crossing on the constructed paths vs allowed pairs with no direct transition of the transcription on the paths",
+  "check: The decision order connects the eight rounding-free codes by one threshold crossing in the pairs the transition graph allows, and the CIW transcription realises each at its crossing on the constructed paths vs transcribed code changes between consecutive steps at a crossing the order does not allow",
   "pytest: tests/test_lab_lyapunov.py::test_t106_status_coverage",
   "pytest: tests/test_lab_lyapunov.py::test_documented_decision_order",
+  "pytest: tests/test_lab_lyapunov.py::test_transition_graph",
   "pytest: tests/test_lab_lyapunov.py::test_t106_offline_findings_without_the_provider",
+  "pytest: tests/test_lab_lyapunov.py::test_checks_are_unconditional_and_observed_values_are_computed",
   "pytest: tests/test_lab_lyapunov.py::test_provider_tasks_are_partial_without_the_provider"
  ],
  "tests_skipped": [],
  "title": "Test every runtime status transition.",
- "uncertainty": "Path codes are far from thresholds and platform-independent. The indefinite-P witnesses depend on eigvalsh and dot-product rounding, so only their non-certification is checked and CERTIFICATE_NOT_POSITIVE reachability is recorded.",
+ "uncertainty": "Path codes are far from rounding thresholds and platform-independent. The indefinite-P witnesses depend on eigvalsh and dot-product rounding, so only their non-certification is checked and their codes are retained in the artifact.",
  "unresolved_assumptions": [
-  "CERTIFICATE_NOT_POSITIVE is reached only when a P accepted by quadratic() evaluates V < 0, which depends on eigvalsh rounding; min eig P <= 0 cannot follow a passed construction check. Its reachability is therefore recorded, not required.",
+  "Transitions the documented order excludes (every path between the two codes passes through a third code): CERTIFIED_WITH_MARGIN <-> DECREASE_NOT_DEFINITE (differ in at least certified, not_definite); CERTIFIED_WITH_MARGIN <-> NOT_CERTIFIED (differ in at least scalar_positive, certified, not_definite); MARGIN_LOW <-> DECREASE_NOT_DEFINITE (differ in at least certified, margin_low, not_definite); MARGIN_LOW <-> NOT_CERTIFIED (differ in at least scalar_positive, certified, margin_low, not_definite).",
+  "The 8 transitions involving CERTIFICATE_NOT_POSITIVE are not exercised: QuadraticCertificate and every P(theta) of an AffineCertificate refuse min eig(P) <= 0 when built (an affine P(theta) that loses definiteness inside the box raises ValueError, probed here), so the code needs V < 0 at the scaled state for a P whose computed eigenvalues are positive, which only rounding produces. The eight exactly indefinite witnesses may reach it; their codes depend on eigvalsh and dot-product rounding and are retained in the artifact.",
+  "A transition is judged at the resolution of the path's steps: 'direct' means consecutive steps whose transcribed gate vectors differ by one crossing. Rounding at the crossing itself is not probed (T107 covers the resolution threshold).",
   "The CIW transcription shares the documented specification with the runtime, so it checks implementation against specification (a same-specification check), not the specification itself."
  ]
 }

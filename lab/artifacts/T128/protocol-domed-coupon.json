@@ -386,11 +386,11 @@
   "Soak specimen and fixture; log temperatures.",
   "Verify instruments on GS-25.4 and SB-1000 before and after; retain both checks.",
   "Locate the specimen in FX-321; probe datums A, B, C and build the PART frame.",
-  "Scan the coupon surface (T129 design) to identify the as-built dome before laying the tapes.",
+  "Scan the coupon surface with protocol MFG-SCAN-01 (T129) to identify the as-built dome and its covariance before laying the tapes.",
   "Lay the nominal and offset tapes from the start jig without in-plane steering (a robot may carry the tape head but must not steer it); never draw a path traced from the model.",
   "Probe each tape centreline with the CMM at s = 0 and s = 20 mm; the relative start offset and heading of the offset tape condition the prediction (T138).",
   "Place coded targets on the tape centrelines at the stations; measure them by photogrammetry; fit the crossing arclength of the lateral offset tape.",
-  "Repeat the full acquisition three times with re-fixturing (T131 design) and retain every raw file through the T139 retention record."
+  "Repeat the full acquisition three times, removing and re-seating the specimen in FX-321 between repeats (repeatability replicates); the crossed Gage R&R and type-1 studies follow the separate T131 procedure (gage-rr-procedure.json). Retain every raw file through the T139 retention record."
  ],
  "production_acceptance": "outside_system",
  "protocol_id": "MFG-COUPON-01",

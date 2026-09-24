@@ -1,12 +1,14 @@
 {
- "definition": "E_acc = (counter(last measurement read) - counter(first measurement read)) / accepted replica solves; a replica solve is accepted when its batch output has KL <= target_kl_nats; undefined when the analysis is ineligible or no solve is accepted. The denominator counts replica solves (identical thread work on one declared problem), not distinct numerical results: every replica of a batch is a bitwise copy of one output. E per distinct accepted result divides by accepted batch outputs instead.",
+ "definition": "E_acc = (counter(last measurement read) - counter(first measurement read)) / accepted replica solves; a replica solve is accepted when its batch output has KL <= target_kl_nats; undefined when the analysis is ineligible or no solve is accepted. The denominator counts replica solves (identical thread work on one declared problem), not distinct numerical results: every replica of a batch is a bitwise copy of one output. E per distinct accepted result divides by the distinct accepted output byte strings instead.",
  "fixtures": {
   "baseline": {
    "accepted": 4,
    "accepted_batches": 1,
    "analysis_value": 0.05,
    "delta_j": 0.2,
+   "distinct_accepted_outputs": 1,
    "executed": 4,
+   "fixture_sha256": "3ff4cb68be07e36d9796fb83402b0f72a46a3f1edff0d9e70addc9ab1695ef81",
    "gross_energy_j": 0.2,
    "max_kl_difference_to_analysis": 1.1102230246251573e-16,
    "reasons": [],
@@ -18,7 +20,9 @@
    "accepted_batches": 1,
    "analysis_value": null,
    "delta_j": 0.1,
+   "distinct_accepted_outputs": 1,
    "executed": 4,
+   "fixture_sha256": "0cffbd14cfcd2d0f14cc906dca689df4de1fd8191ed6fff4cb5a6dced837dacb",
    "gross_energy_j": null,
    "max_kl_difference_to_analysis": 1.1102230246251573e-16,
    "reasons": [
@@ -33,7 +37,9 @@
    "accepted_batches": 1,
    "analysis_value": null,
    "delta_j": 0.2,
+   "distinct_accepted_outputs": 1,
    "executed": 4,
+   "fixture_sha256": "2c8e421e1fd24ce463f765dba365eacb859797facb82d42f180deb42d80a0ddb",
    "gross_energy_j": null,
    "max_kl_difference_to_analysis": 1.1102230246251573e-16,
    "reasons": [
@@ -48,7 +54,9 @@
    "accepted_batches": 0,
    "analysis_value": null,
    "delta_j": 0.2,
+   "distinct_accepted_outputs": 0,
    "executed": 4,
+   "fixture_sha256": "b09bf8b979c213a7ae6617327f9a060ea2c9b2af515eb4b8662ab94dc415e955",
    "gross_energy_j": 0.2,
    "max_kl_difference_to_analysis": 4.440892098500626e-16,
    "reasons": [
@@ -57,6 +65,12 @@
    "replicas_per_batch": 4,
    "span_j": 1.4
   }
+ },
+ "operator_log": {
+  "supplied": false,
+  "withheld_reasons": [
+   "no operator NVML log was supplied (CIW_LAB_ENERGY_LOG); the repository fixtures are synthetic, so no physical energy per accepted result was measured"
+  ]
  },
  "origin": "synthetic_fixture"
 }

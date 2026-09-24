@@ -80,16 +80,16 @@
   }
  },
  "registration": {
-  "lever_arm_error_mm": 0.00987920764393,
-  "lever_arm_mm": 130.064089336,
+  "lever_arm_error_mm": 0.00668977476598,
+  "lever_arm_mm": 120.415945788,
   "noise_mm": 0.01,
-  "rotation_cov_rel_frobenius": 0.0380708716517,
+  "rotation_cov_rel_frobenius": 0.0348593821516,
   "rotation_std_urad": [
-   66.1827932223,
-   62.6278623575,
-   45.0775654097
+   50.893839288,
+   55.0855391095,
+   38.4501794768
   ],
-  "ssr_ratio": 0.999101808918,
+  "ssr_ratio": 0.997826157495,
   "ssr_ratio_se": 0.00912870929175,
   "targets": 6,
   "trials": 2000

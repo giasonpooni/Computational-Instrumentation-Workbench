@@ -133,7 +133,7 @@
      ]
     }
    },
-   "claim": "RK4 error falls at least like h^3.7 in every chart; smooth charts show order 4, near-fold charts are still pre-asymptotic (order above 4) at N = 256",
+   "claim": "Between N = 128 and 256 RK4 error falls at least like h^3.7 in every chart; smooth charts show order 4, near-fold charts are still pre-asymptotic (order above 4) at N = 256",
    "domain": "numerical",
    "evidence_status": "numerically_verified",
    "regression_tolerance": {
@@ -149,6 +149,8 @@
    "value": {
     "min_fold_order": 4.430712529325345,
     "min_order": 3.9497846937534242,
+    "min_order_N_64_128": 3.676474289394472,
+    "min_order_N_64_128_chart": "plane: near-fold mu=0.1",
     "orders": {
      "plane: exponential-stretch": 4.014960782844365,
      "plane: near-fold mu=0.1": 4.573165776157114,
@@ -284,7 +286,7 @@
  ],
  "mathematical_model": "Pullback metric g'(a) = J^T g(phi(a)) J with exact Hessian terms (Reparametrized); the initial tangent is t_a = J^{-1} t_u, so the geometric initial data coincide. RK4 local error ~ h^5 y^(5); a near fold u = c + mu a + a^3/3 makes the chart velocity ~ 1/mu over an arclength window ~ mu^(3/2), so the derivatives entering the error grow as mu decreases.",
  "number": 11,
- "numerical_result": "Adaptive max error 1.32e-10 over all charts; RK4 orders at N = 128/256: min 3.95 over all charts, smooth charts within 0.05 of 4, near-fold charts 4.43-5.53 (pre-asymptotic); fold mu = 0.1 multiplies the N = 256 error by 1.07e+06 (sphere) and 9.81e+04 (torus); smooth charts change it by 1.45-17.4x; the plane is exact to 1.1e-14 in its base chart but has error 1.19e-05 in the fold chart; the adaptive integrator spends 3.95x the torus base steps in the fold chart; identity chart max difference 0.",
+ "numerical_result": "Adaptive max error 1.32e-10 over all charts; RK4 orders at N = 128/256: min 3.95 over all charts, smooth charts within 0.05 of 4, near-fold charts 4.43-5.53 (pre-asymptotic); at N = 64/128 the smallest order is 3.676 (plane: near-fold mu=0.1), so the h^3.7 bound is claimed for N = 128/256 only; fold mu = 0.1 multiplies the N = 256 error by 1.07e+06 (sphere) and 9.81e+04 (torus); smooth charts change it by 1.45-17.4x; the plane is exact to 1.1e-14 in its base chart but has error 1.19e-05 in the fold chart; the adaptive integrator spends 3.95x the torus base steps in the fold chart; identity chart max difference 0.",
  "observation_model": "Embedded endpoint X(L) = base embedding of phi(a(L)), transfer matrix entries at L, and the trapezoid length of sqrt(g(v, v)); error = max absolute deviation from the reference.",
  "physical_validation_status": {
   "statement": "Physical validation requires acquired hardware evidence; none was acquired for this task.",
@@ -298,13 +300,13 @@
   "python": "3.12.3",
   "scipy": "1.16.2",
   "sources": {
-   "src/ciw/lab/geodesic_jacobi_limits.py": "29c8472e91cdf4deb2e1f526ab40e57f703f41e20ef14edd8fb1cc2fc6ede661",
-   "src/ciw/lab/geodesic_jacobi_limits_core.py": "8aa707ec2a190208bf07cd3b1f94a40f191a7a9c4be277714ed8b627e2c5fcb9"
+   "src/ciw/lab/geodesic_jacobi_limits.py": "07d850980ac10ad34ca0d1b8c29942c90fe635e15135a5db1f74e90674e3bb18",
+   "src/ciw/lab/geodesic_jacobi_limits_core.py": "0e0b8f85ed4e83c3fcdc866e8a7e580a17432e174b8db8d8277230e226473d7f"
   },
   "sympy": "1.14.0"
  },
  "recommended_next_task": "T012 (frame-change invariance) and a fold-scaling study of error versus mu",
- "report_id": "sha256:c12e4c2a1f7617e705f0d9e3e13940696fa33514751968b00a22db2f6616e2dd",
+ "report_id": "sha256:579fff6484c49c09b64565c48ffc59acc0520dc5ef30323597ad0b7e7d8f7094",
  "schema": "ciw.lab-task-report.v1",
  "section": "geodesic-jacobi",
  "state": "completed",
@@ -313,9 +315,9 @@
   "check: Converged geodesic endpoints, lengths and Jacobi transfer matrices agree in every chart vs adaptive error against exact plane and sphere geodesics",
   "check: Converged geodesic endpoints, lengths and Jacobi transfer matrices agree in every chart vs adaptive error (rtol 1e-10) against the same DP45 at rtol 1e-13 (torus)",
   "check: Converged geodesic endpoints, lengths and Jacobi transfer matrices agree in every chart vs |integral of speed - L| in every chart",
-  "check: RK4 error falls at least like h^3.7 in every chart; smooth charts show order 4, near-fold charts are still pre-asymptotic (order above 4) at N = 256 vs smallest observed order between N = 128 and 256 (all charts)",
-  "check: RK4 error falls at least like h^3.7 in every chart; smooth charts show order 4, near-fold charts are still pre-asymptotic (order above 4) at N = 256 vs max |order - 4| over the smooth charts (N = 128/256)",
-  "check: RK4 error falls at least like h^3.7 in every chart; smooth charts show order 4, near-fold charts are still pre-asymptotic (order above 4) at N = 256 vs smallest near-fold order between N = 128 and 256 (pre-asymptotic from above)",
+  "check: Between N = 128 and 256 RK4 error falls at least like h^3.7 in every chart; smooth charts show order 4, near-fold charts are still pre-asymptotic (order above 4) at N = 256 vs smallest observed order between N = 128 and 256 (all charts)",
+  "check: Between N = 128 and 256 RK4 error falls at least like h^3.7 in every chart; smooth charts show order 4, near-fold charts are still pre-asymptotic (order above 4) at N = 256 vs max |order - 4| over the smooth charts (N = 128/256)",
+  "check: Between N = 128 and 256 RK4 error falls at least like h^3.7 in every chart; smooth charts show order 4, near-fold charts are still pre-asymptotic (order above 4) at N = 256 vs smallest near-fold order between N = 128 and 256 (pre-asymptotic from above)",
   "check: A geometry-preserving near-fold chart multiplies the fixed-step error by a large factor vs min over sphere and torus of error(fold 0.1)/error(base)",
   "check: The identity chart reproduces the base-chart integration bit for bit vs max |identity-chart state - base state|",
   "pytest: tests/test_lab_geodesic_jacobi_limits.py::test_t011_chart_invariance_and_fold_amplification",

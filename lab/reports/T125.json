@@ -272,7 +272,7 @@
   {
    "bytes": 5530,
    "path": "artifacts/T125/session-replay.json",
-   "sha256": "9fa8121177cbd8274585e5c0a6c041d1ff907894ca2e71420eb19e3d66786895"
+   "sha256": "b6359646dfad4b1fecca600fd717a6af0437144412930d062b8750d6dfca3a79"
   }
  ],
  "hypothesis": "Replaying a retained energy analysis through a ciw Session recomputes the same numerical result (stable numerical_result_id) under fresh execution and result identities.",
@@ -295,14 +295,14 @@
   "python": "3.12.3",
   "scipy": "1.16.2",
   "sources": {
-   "src/ciw/lab/energy_gpu.py": "fca900557e7fac2261a168afe0ee81efc48508a874a5045bf4f6b74937165bb1",
-   "src/ciw/lab/energy_gpu_kernels.py": "03f3d92f8407f476cb74536911d476929843ee74232a7d7017c00f43c785a2b4",
-   "src/ciw/lab/energy_gpu_telemetry.py": "21cac5f654ce4a120887ff40da62fda47bd38a3c383bbad6cc3cb13b4168fa2d"
+   "src/ciw/lab/energy_gpu.py": "a66107417b5bfa398077a919b2f5351ca222e9961fa8dfb3256b78efc17fd930",
+   "src/ciw/lab/energy_gpu_kernels.py": "366c477ff1af7f59b626f4e64bf994ae4cbce5754c0e9c5be1c2acb515f99f4b",
+   "src/ciw/lab/energy_gpu_telemetry.py": "df82c8748d3aa75384e3928bffcf516cd6f72cccde99edf8d21f089cc768bafa"
   },
   "sympy": "1.14.0"
  },
  "recommended_next_task": "T146: canonical serialization so numerical ids agree across platforms and languages",
- "report_id": "sha256:63e1e29735a34fb57345ee59b4d6ace94e70bf83642d06f8591f101b9024b457",
+ "report_id": "sha256:fb77c97c12993edb70a135cbc8d72a45e58bb416ce114e889306ae4b2c596051",
  "schema": "ciw.lab-task-report.v1",
  "section": "energy-gpu",
  "state": "completed",

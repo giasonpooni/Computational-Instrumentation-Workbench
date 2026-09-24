@@ -185,14 +185,6 @@
       "reference": "certifying verdicts with an accepted, exactly indefinite P",
       "reference_kind": "exact_arithmetic",
       "tolerance": 0.0
-     },
-     {
-      "comparison": "ge",
-      "observed": 8.0,
-      "passed": true,
-      "reference": "accepted candidates with negative exact determinant",
-      "reference_kind": "exact_arithmetic",
-      "tolerance": 1.0
      }
     ],
     "provider": {
@@ -205,24 +197,6 @@
     }
    },
    "claim": "No verdict certifies with a P that quadratic() accepts although it is exactly indefinite",
-   "counterexample": {
-    "statement": "A P accepted by PLSR's QuadraticCertificate is exactly positive definite",
-    "witness": {
-     "P_hex": [
-      [
-       "0x1.67f6ca5722b82p-1",
-       "0x1.d3e0cbd54bf46p-2"
-      ],
-      [
-       "0x1.d3e0cbd54bf46p-2",
-       "0x1.30126b51ba8ffp-2"
-      ]
-     ],
-     "e1_code": "NUMERICAL_INCONCLUSIVE",
-     "exact_det_sign": -1,
-     "weak_direction_code": "NUMERICAL_INCONCLUSIVE"
-    }
-   },
    "domain": "numerical",
    "evidence_status": "numerically_verified",
    "regression_tolerance": {
@@ -230,7 +204,7 @@
     "rel": 0.0
    },
    "uncertainty": {
-    "basis": "which candidates quadratic() accepts depends on eigvalsh rounding; the certification count does not",
+    "basis": "which candidates quadratic() accepts depends on eigvalsh rounding and is retained in the artifact; the certification count does not",
     "kind": "reference_error",
     "value": 0.0
    },
@@ -314,9 +288,9 @@
  ],
  "generated_artifacts": [
   {
-   "bytes": 7173,
+   "bytes": 9749,
    "path": "artifacts/T104/edge-cases.json",
-   "sha256": "2f0f6086f4b2d876f479595db40ff15b6bb290310fe0cd30ba167ebcdc47af8b"
+   "sha256": "3266b9a6083c3b0583a620e5c22870deab3ebea2a127ae924b9233c4a3996fb5"
   }
  ],
  "hypothesis": "PLSR never certifies a decrease form that is only semidefinite or indefinite: skew-symmetric plants with P = I give an exactly zero form and must be NUMERICAL_INCONCLUSIVE; defective (Jordan) plants are certified with P = I exactly when lambda > 1/2; a semidefinite Q is refused by the solver.",
@@ -327,7 +301,7 @@
  ],
  "mathematical_model": "Skew A: A^T + A = 0 exactly; with any P, trace(A^T P + P A) = 0 so the form is never negative definite. Jordan A = [[-l, 1], [0, -l]], P = I: M = [[-2l, 1], [1, -2l]] is negative definite iff l > 1/2 and singular at l = 1/2. Orthogonal discrete A: A^T A - I = 0 up to rounding.",
  "number": 104,
- "numerical_result": "28 edge cases: 0 certifying verdicts on non-definite forms, 0 codes outside the class expectation. Skew with P = I: {'NUMERICAL_INCONCLUSIVE': 5}. Jordan with P = I: {'Jordan lambda=0.25, P=I': 'DECREASE_NOT_DEFINITE', 'Jordan lambda=0.49, P=I': 'DECREASE_NOT_DEFINITE', 'Jordan lambda=0.5, P=I': 'NUMERICAL_INCONCLUSIVE', 'Jordan lambda=0.51, P=I': 'CERTIFIED_WITH_MARGIN', 'Jordan lambda=1.0, P=I': 'CERTIFIED_WITH_MARGIN', 'Jordan lambda=2.0, P=I': 'CERTIFIED_WITH_MARGIN'}. Solver and constructor: {'solve:0.001': 'P returned', 'solve:0.01': 'P returned', 'solve:0.1': 'P returned', 'solve:1.0': 'P returned', 'solve:psdQ': 'raises ValueError', 'quadratic:psd': 'raises ValueError'}. Candidates (8207 draws searched): 16/16 accepted by quadratic(), 8 of them exactly indefinite; verdicts on accepted candidates: 6 CERTIFICATE_NOT_POSITIVE, 0 certifying, 32 in total. Conclusion: no semidefinite, skew or indefinite edge case was certified; the constructor's eigenvalue-sign test admitted 8 exactly indefinite P, whose verdicts were {'CERTIFICATE_NOT_POSITIVE': 6, 'NUMERICAL_INCONCLUSIVE': 10}.",
+ "numerical_result": "28 edge cases: 0 certifying verdicts on non-definite forms, 0 codes outside the class expectation. Skew with P = I: {'NUMERICAL_INCONCLUSIVE': 5}. Jordan with P = I: {'Jordan lambda=0.25, P=I': 'DECREASE_NOT_DEFINITE', 'Jordan lambda=0.49, P=I': 'DECREASE_NOT_DEFINITE', 'Jordan lambda=0.5, P=I': 'NUMERICAL_INCONCLUSIVE', 'Jordan lambda=0.51, P=I': 'CERTIFIED_WITH_MARGIN', 'Jordan lambda=1.0, P=I': 'CERTIFIED_WITH_MARGIN', 'Jordan lambda=2.0, P=I': 'CERTIFIED_WITH_MARGIN'}. Solver and constructor: {'solve:0.001': 'P returned', 'solve:0.01': 'P returned', 'solve:0.1': 'P returned', 'solve:1.0': 'P returned', 'solve:psdQ': 'raises ValueError', 'quadratic:psd': 'raises ValueError'}. Candidates (8207 draws searched): 16/16 accepted by quadratic(), 8 of them exactly indefinite; verdicts on accepted candidates: 0 certifying of 32 (codes and the accepted indefinite P are retained in the artifact). Conclusion: no semidefinite, skew or indefinite edge case was certified; the constructor's floating-point eigenvalue-sign test is not an exact definiteness test, and no verdict certified with an exactly indefinite P it admitted.",
  "observation_model": "PLSR code per case; PLSR solve_lyapunov outcome; quadratic() acceptance; exact rational class of each declared form and exact positive-definiteness of each declared P.",
  "physical_validation_status": {
   "statement": "Physical validation requires acquired hardware evidence; none was acquired for this task.",
@@ -358,14 +332,14 @@
   },
   "scipy": "1.16.2",
   "sources": {
-   "src/ciw/lab/lyapunov.py": "58d6c7473f0a42002b57888de0ccfbbf73b571bbbabbf9ee81e0a05c734f2320",
+   "src/ciw/lab/lyapunov.py": "cbcb4d58d7313d7c537957a1b7dd35039a21bae80125bf59147eeed2c1232bbb",
    "src/ciw/lab/lyapunov_provider.py": "da3465b48b5f5efc47bfe6ab8379cf2cf2bc23e4835dc7ff047252e77fa6ef17",
-   "src/ciw/lab/lyapunov_reference.py": "fa37ef453c23ad2bed2eab41132e72670e166b93eebd5fc9d67a4a89a7c92cca"
+   "src/ciw/lab/lyapunov_reference.py": "bdf0bb5074ae2caca6c8a5d8e63a15e346b007098e6def6b058d077719bc1336"
   },
   "sympy": "1.14.0"
  },
  "recommended_next_task": "T105: parameter boxes across unit scales; propose that PLSR's QuadraticCertificate check positive definiteness with an exact LDL^T (or a resolution-aware eigenvalue floor) instead of the eigvalsh sign.",
- "report_id": "sha256:33a816739795cad3cd5351498c45cab6aff9a2a90de006b3e93edd4ed1476d12",
+ "report_id": "sha256:7bfc96e8f45b02e036bf385e38b9c5dd457f48bcd533195b5a8831024fcef2da",
  "schema": "ciw.lab-task-report.v1",
  "section": "lyapunov",
  "state": "completed",
@@ -376,16 +350,16 @@
   "check: PLSR's Lyapunov solver and certificate constructor refuse a semidefinite Q and a singular P vs solve_lyapunov with Q = diag(1, 0)",
   "check: PLSR's Lyapunov solver and certificate constructor refuse a semidefinite Q and a singular P vs quadratic(diag(1, 0))",
   "check: No verdict certifies with a P that quadratic() accepts although it is exactly indefinite vs certifying verdicts with an accepted, exactly indefinite P",
-  "check: No verdict certifies with a P that quadratic() accepts although it is exactly indefinite vs accepted candidates with negative exact determinant",
   "check: Exact rational classes of the declared edge-case decrease forms vs skew A with P = I whose exact form is not identically zero",
   "check: Exact rational classes of the declared edge-case decrease forms vs skew A with SPD P classified negative definite",
   "pytest: tests/test_lab_lyapunov.py::test_t104_semidefinite_edges",
   "pytest: tests/test_lab_lyapunov.py::test_edge_case_exact_classes",
+  "pytest: tests/test_lab_lyapunov.py::test_checks_are_unconditional_and_observed_values_are_computed",
   "pytest: tests/test_lab_lyapunov.py::test_provider_tasks_are_partial_without_the_provider"
  ],
  "tests_skipped": [],
  "title": "Test semidefinite and skew-symmetric edge cases.",
- "uncertainty": "Exact classes are exact. Which candidates quadratic() accepts depends on the sign of a rounded eigenvalue and may differ between LAPACK builds; it is recorded as a counterexample when observed, and only the certification count is a checked value.",
+ "uncertainty": "Exact classes are exact. Which candidates quadratic() accepts depends on the sign of a rounded eigenvalue and may differ between LAPACK builds; the accepted candidates and their codes are retained in the artifact, and only the certification count is a checked value.",
  "unresolved_assumptions": [
   "Exact classes describe the declared binary64 matrices; the intended real matrices may differ by rounding.",
   "Codes for semidefinite forms depend on the resolution, which is designed to exceed the rounding error."

@@ -9,18 +9,20 @@
    "hardware_measured": 0,
    "independently_verified": 0,
    "not_established": 0,
-   "numerically_verified": 2,
+   "numerically_verified": 3,
    "provider_backed": 0,
    "synthetic": 0
   },
   "primary": "numerically_verified"
  },
- "expected_invariant": "Aggregates are exact functions of retained reports and never change a label.",
- "experiment": "Enumerate 2*2*3*2*2*2 bases x 14 domains; check authority, physical, failed-check and hardware invariants; map each specification section to its tasks and count established findings.",
+ "expected_invariant": "L equals the oracle on every case (refusals included), every oracle rule branch is exercised, every computational task is named, and established-finding counts agree with a raw-text recount.",
+ "experiment": "Enumerate 2 x 2 x 4 x 3 x 8 x 2 bases x 12 domains = 9216 cases (failing, reversed, same-origin, cross-implementation, unknown-family and embedded-ciw independent checks included) and compare L with the oracle; map each specification unit to the tasks it names and count established findings.",
  "failure_modes_checked": [
-  "missing reports",
-  "report identity mismatch (validate_report)",
-  "aggregate differs from its re-read bytes"
+  "label function departing from a written rule (precedence, origin rule, physical gate, authority)",
+  "grammar that leaves a rule branch unexercised",
+  "computational task named by no specification",
+  "family page listed but absent",
+  "established-finding traversal disagreeing with the report text"
  ],
  "findings": [
   {
@@ -31,22 +33,34 @@
       "comparison": "abs_le",
       "observed": 0.0,
       "passed": true,
-      "reference": "authority/physical/failed-check/hardware invariants",
+      "reference": "cases where L differs from the rules 1-5 oracle",
+      "reference_kind": "exact_arithmetic",
+      "tolerance": 0.0
+     },
+     {
+      "comparison": "abs_le",
+      "observed": 0.0,
+      "passed": true,
+      "reference": "oracle rule branches not exercised by the grammar",
       "reference_kind": "exact_arithmetic",
       "tolerance": 0.0
      }
     ],
     "derivation": "docs/lab/SPECIFICATIONS.md#evidence-labels"
    },
-   "claim": "Evidence-label invariants hold on the exhaustive basis grammar",
+   "claim": "The evidence-label function agrees with the reference oracle for rules 1-5 on the exhaustive basis grammar",
    "domain": "mathematical",
    "evidence_status": "numerically_verified",
    "regression_tolerance": {
     "abs": 0,
     "rel": 0
    },
-   "uncertainty": null,
-   "unit": null,
+   "uncertainty": {
+    "basis": "exhaustive enumeration of a finite grammar",
+    "kind": "exact",
+    "value": 0
+   },
+   "unit": "cases",
    "value": 0
   },
   {
@@ -54,53 +68,97 @@
    "basis": {
     "checks": [
      {
+      "comparison": "abs_le",
       "observed": 0.0,
       "passed": true,
-      "reference": "specification-coverage.json recomputed from a fresh read of the retained reports",
+      "reference": "computational queue tasks named by no specification document",
       "reference_kind": "exact_arithmetic",
       "tolerance": 0.0
      },
      {
-      "comparison": "ge",
-      "observed": 8.0,
+      "comparison": "abs_le",
+      "observed": 0.0,
       "passed": true,
-      "reference": "sections with established findings",
+      "reference": "family pages listed in the index but absent",
       "reference_kind": "exact_arithmetic",
-      "tolerance": 1.0
+      "tolerance": 0.0
      }
     ]
    },
-   "claim": "Specification coverage reproduces from retained reports",
+   "claim": "Every computational queue task is named by a specification document",
+   "domain": "provenance",
+   "evidence_status": "numerically_verified",
+   "regression_tolerance": {
+    "abs": 0,
+    "rel": 0
+   },
+   "uncertainty": {
+    "basis": "integer count over retained report files; no rounding, sampling or tolerance",
+    "kind": "exact",
+    "value": 0
+   },
+   "unit": "tasks",
+   "value": 0
+  },
+  {
+   "assigned_by": "ciw.lab.evidence",
+   "basis": {
+    "checks": [
+     {
+      "comparison": "abs_le",
+      "observed": 0.0,
+      "passed": true,
+      "reference": "specification units whose named tasks retain no established finding",
+      "reference_kind": "exact_arithmetic",
+      "tolerance": 0.0
+     },
+     {
+      "comparison": "abs_le",
+      "observed": 0.0,
+      "passed": true,
+      "reference": "tasks whose established-finding count differs from a raw-text recount",
+      "reference_kind": "exact_arithmetic",
+      "tolerance": 0.0
+     }
+    ]
+   },
+   "claim": "Specification documents are exercised by retained established findings",
    "domain": "computational_pipeline",
    "evidence_status": "numerically_verified",
    "regression_tolerance": {
     "abs": 0,
     "rel": 0
    },
-   "uncertainty": null,
-   "unit": "sections",
-   "value": 8
+   "uncertainty": {
+    "basis": "integer count over retained report files; no rounding, sampling or tolerance",
+    "kind": "exact",
+    "value": 0
+   },
+   "unit": "units",
+   "value": 21
   }
  ],
  "generated_artifacts": [
   {
-   "bytes": 254,
+   "bytes": 848,
    "path": "artifacts/T155/label-invariants.json",
-   "sha256": "c0ca26e009313e6c701e81a8f4669530a72805cf7fb74f4d98e5e25147f79bd1"
+   "sha256": "0625711bb39e88b3f1fd4a508f1015bed02c5ac6528ba0d461e94d571bb95a18"
   },
   {
-   "bytes": 640,
+   "bytes": 3613,
    "path": "artifacts/T155/specification-coverage.json",
-   "sha256": "a3e714091938775e41f561cfe45e32fd9c84048511d8671c602311db100d3cac"
+   "sha256": "b8841609bab15d6573c53e489008a1b3d011a468494579677a8a1e3ed97abe7c"
   }
  ],
- "hypothesis": "The label function satisfies its stated invariants on every basis in a finite grammar, and every specification section is exercised by retained tasks with established computational findings.",
+ "hypothesis": "The label function agrees with rules 1-5 of the specification on every basis of a finite grammar, every computational queue task is named by a specification document, and every specification document is exercised by retained established findings.",
  "input_data": [
-  "Retained reports T001-T154 in the same output directory"
+  "Retained reports of T001-T154 in the same output directory",
+  "docs/lab/SPECIFICATIONS.md and the family pages it lists",
+  "Packaged queue definition (tasks T001-T154)"
  ],
- "mathematical_model": "Specification text in docs/lab/SPECIFICATIONS.md; label function L(basis, domain) from ciw.lab.evidence.",
+ "mathematical_model": "Label function L(basis, domain) from ciw.lab.evidence against a reference oracle restating rules 1-5 of docs/lab/SPECIFICATIONS.md; specification units = its sections plus the family pages it lists as specifications of record.",
  "number": 155,
- "numerical_result": "1152 label cases, 0 invariant violations; 8/8 specification sections have established findings.",
+ "numerical_result": "9216 label cases, 0 disagreements with the rules 1-5 oracle, 0 unexercised rule branches; 21 specification units name 154/154 computational tasks; 21/21 units have established findings.",
  "observation_model": "No physical observation; reads retained computational records only.",
  "physical_validation_status": {
   "statement": "Physical validation requires acquired hardware evidence; none was acquired for this task.",
@@ -114,24 +172,32 @@
   "python": "3.12.3",
   "scipy": "1.16.2",
   "sources": {
-   "src/ciw/lab/research_portfolio.py": "6cd37207af02c6d64dc88b22c7ff2148e85f1eeebaa5445cd894879bc3043ba3"
+   "src/ciw/lab/research_portfolio.py": "0fd0ed475a38bf81fd2145f64cf1335856a471c58d406347c3b66b0f66672702"
   },
   "sympy": "1.14.0"
  },
- "recommended_next_task": "Extend the grammar with malformed bases (T168 regression) and add a machine-checked proof of the invariants.",
- "report_id": "sha256:4f0b718b4cd1d63bfc8a09c51d9b9024c10cdf9881251beb7972d1c39cce9b27",
+ "recommended_next_task": "Machine-check the label rules (for example in Lean or with a SAT encoding over the basis grammar).",
+ "report_id": "sha256:30e3ab3454f2c4ab517bf0779ecc02a4e8762a2f1a4a048b21d8d9d43da1948b",
  "schema": "ciw.lab-task-report.v1",
  "section": "research-portfolio",
  "state": "completed",
  "task_id": "T155",
  "tests_passed": [
-  "check: Evidence-label invariants hold on the exhaustive basis grammar vs authority/physical/failed-check/hardware invariants",
-  "check: Specification coverage reproduces from retained reports vs specification-coverage.json recomputed from a fresh read of the retained reports",
-  "check: Specification coverage reproduces from retained reports vs sections with established findings",
-  "pytest: tests/test_lab_research_portfolio.py::test_label_invariants_hold_exhaustively"
+  "check: The evidence-label function agrees with the reference oracle for rules 1-5 on the exhaustive basis grammar vs cases where L differs from the rules 1-5 oracle",
+  "check: The evidence-label function agrees with the reference oracle for rules 1-5 on the exhaustive basis grammar vs oracle rule branches not exercised by the grammar",
+  "check: Every computational queue task is named by a specification document vs computational queue tasks named by no specification document",
+  "check: Every computational queue task is named by a specification document vs family pages listed in the index but absent",
+  "check: Specification documents are exercised by retained established findings vs specification units whose named tasks retain no established finding",
+  "check: Specification documents are exercised by retained established findings vs tasks whose established-finding count differs from a raw-text recount",
+  "pytest: tests/test_lab_research_portfolio.py::test_label_function_matches_the_reference_oracle_exhaustively",
+  "pytest: tests/test_lab_research_portfolio.py::test_formal_specifications_cover_the_queue"
  ],
  "tests_skipped": [],
  "title": "Write formal mathematical specifications.",
- "uncertainty": "Exact enumeration; coverage depends on which tasks ran in this output directory.",
- "unresolved_assumptions": []
+ "uncertainty": "Exact enumeration and exact counts; coverage depends on which tasks ran in this output directory.",
+ "unresolved_assumptions": [
+  "Only the families on SPECIFICATIONS.md are stated in formal notation; the family pages it lists specify the other families as method descriptions (models, references and decision rules), not in one uniform notation.",
+  "T155 does not recompute retained values from the specification formulas; each task's own reference checks compare its results with its model.",
+  "The oracle restates rules 1-5 by hand: agreement shows that the implementation and the written rules coincide on the grammar, not that the rules are the right ones or that they hold off the grammar."
+ ]
 }

@@ -2,6 +2,7 @@
  "changed_files": [
   "src/ciw/lab/implementation_targets.py",
   "src/ciw/lab/implementation_targets_authority.py",
+  "src/ciw/lab/implementation_targets_architecture.py",
   "docs/lab/IMPLEMENTATION_TARGETS.md"
  ],
  "evidence_status": {
@@ -9,15 +10,15 @@
    "analytic": 0,
    "hardware_measured": 0,
    "independently_verified": 0,
-   "not_established": 2,
-   "numerically_verified": 3,
+   "not_established": 3,
+   "numerically_verified": 4,
    "provider_backed": 0,
    "synthetic": 0
   },
   "primary": "numerically_verified"
  },
- "expected_invariant": "Proposal matches -cot(L) d on the sphere; corrected residual order 2, uncorrected order 1; all conversions refused, including of an object whose status was forced in memory.",
- "experiment": "Compute proposals, verify them by integration, then attempt construction as a command and conversion under each authorization route.",
+ "expected_invariant": "Proposal matches -cot(L) d on the sphere; corrected residual order 2, uncorrected order 1; all conversions refused, including of an object whose status was forced in memory; every module naming a control-like output is in the inventory.",
+ "experiment": "Compute proposals, verify them by integration, then attempt construction as a command and conversion under each authorization route; check the control-output inventory against a keyword scan of the package.",
  "failure_modes_checked": [
   "conjugate point",
   "status forgery at construction",
@@ -82,7 +83,7 @@
      }
     ]
    },
-   "claim": "Control outputs are constructed with status proposal and cannot be converted to a command here",
+   "claim": "Control outputs built by this section are constructed with status proposal and cannot be converted to a command here",
    "domain": "computational_pipeline",
    "evidence_status": "numerically_verified",
    "regression_tolerance": {
@@ -213,6 +214,82 @@
   },
   {
    "assigned_by": "ciw.lab.evidence",
+   "basis": {
+    "checks": [
+     {
+      "comparison": "abs_le",
+      "observed": 0.0,
+      "passed": true,
+      "reference": "modules naming a control-like output (stop request, abort, setpoint, command conversion, gain change) outside the inventory",
+      "reference_kind": "exact_arithmetic",
+      "tolerance": 0.0
+     },
+     {
+      "comparison": "abs_le",
+      "observed": 0.0,
+      "passed": true,
+      "reference": "inventoried modules missing from the package",
+      "reference_kind": "exact_arithmetic",
+      "tolerance": 0.0
+     },
+     {
+      "comparison": "ge",
+      "observed": 1.0,
+      "passed": true,
+      "reference": "forged module returning a setpoint found outside the inventory",
+      "reference_kind": "exact_arithmetic",
+      "tolerance": 1.0
+     }
+    ]
+   },
+   "claim": "Control-like outputs named in the package are all inventoried (keyword scan)",
+   "domain": "computational_pipeline",
+   "evidence_status": "numerically_verified",
+   "regression_tolerance": {
+    "abs": 0,
+    "rel": 0
+   },
+   "uncertainty": {
+    "basis": "exact integer, byte, digest or refusal-code comparison; no rounding enters the value",
+    "kind": "roundoff",
+    "value": 0.0
+   },
+   "unit": null,
+   "value": {
+    "modules_naming_control_terms": [
+     "ciw.lab.implementation_targets",
+     "ciw.lab.implementation_targets_authority",
+     "ciw.lab.implementation_targets_fpga",
+     "ciw.lab.lyapunov",
+     "ciw.lab.lyapunov_research"
+    ],
+    "outputs": [
+     "Jacobi heading correction",
+     "Actuator writes on the declared channels (spindle speed, feed override, axis setpoint, coolant, laser power)",
+     "FPGA command, register-write, actuator-setpoint and bitstream-load frame types",
+     "FPGA rollback execution",
+     "Servo-axis Lyapunov monitor abort: a stop request to the bench's independent safety function"
+    ],
+    "proposals": [
+     "Jacobi heading correction"
+    ]
+   }
+  },
+  {
+   "assigned_by": "ciw.lab.evidence",
+   "basis": {
+    "notes": "Only the T154 heading correction is a ControlProposal. Not covered: Actuator writes on the declared channels (spindle speed, feed override, axis setpoint, coolant, laser power) (T153: ActuatorWritePolicy; refused by default and on every enabling route); FPGA command, register-write, actuator-setpoint and bitstream-load frame types (T149: refused by the decoder, encoder and interface validator (command_path_refused)); FPGA rollback execution (T151: refused (rollback_requires_machine_authority)); Servo-axis Lyapunov monitor abort: a stop request to the bench's independent safety function (T114: none here: declared in the pilot specification text; not a ControlProposal and not gated in this section)"
+   },
+   "claim": "Every control-like output of the workbench is a ControlProposal",
+   "domain": "computational_pipeline",
+   "evidence_status": "not_established",
+   "expected_not_established": true,
+   "uncertainty": null,
+   "unit": null,
+   "value": null
+  },
+  {
+   "assigned_by": "ciw.lab.evidence",
    "basis": {},
    "claim": "Heading proposals are authorized for execution as actuator commands",
    "domain": "actuator_authority",
@@ -244,19 +321,24 @@
    "sha256": "2e709d993562087732a0825f2897b36dbb8d12795d7927ae6d28398dcffa323d"
   },
   {
+   "bytes": 2527,
+   "path": "artifacts/T154/control-outputs.json",
+   "sha256": "022056fc22d99aec5eb55dc666d1d1409400ba524deccb512ee918ecf88ac5ab"
+  },
+  {
    "bytes": 2036,
    "path": "artifacts/T154/proposal-residual.svg",
    "sha256": "0c53ed9a967d8c8e9e0523bbf2fdf68f3a48cd909bb01a600f33587aaa24fbfa"
   }
  ],
- "hypothesis": "Control outputs can be computed and retained as proposals (frozen objects whose status is re-checked on every use), with content identities, while every conversion to a command is refused without separate authorization; the geometric proposal itself is sound to the order the Jacobi model predicts.",
+ "hypothesis": "Control outputs can be computed and retained as proposals (frozen objects whose status is re-checked on every use), with content identities, while every conversion to a command is refused without separate authorization; the geometric proposal itself is sound to the order the Jacobi model predicts. This holds for the outputs built here; an inventory records which other control-like outputs of the workbench are not proposals.",
  "input_data": [
   "Unit sphere, u0=(1.1, 0.2), heading 0.3, L=1.3 and L=pi",
   "Torus R=2, r=1, u0=(0.4, 0.3), heading 0.5, L=2, 200 RK4 steps, d in {0.02, 0.01, 0.005}"
  ],
  "mathematical_model": "Normal Jacobi field j(L) = j_lat(L) d + j_head(L) h; proposal h = -j_lat(L) d / j_head(L), undefined at a conjugate point (j_head(L) = 0). On the unit sphere h = -cot(L) d. With h applied, the residual separation is O(d^2).",
  "number": 154,
- "numerical_result": "Sphere proposal relative error 4.69e-12; residual orders corrected 2.016, uncorrected 1.002; 7/7 refusals; a status forced in memory is refused by 3/3 paths.",
+ "numerical_result": "Sphere proposal relative error 4.69e-12; residual orders corrected 2.016, uncorrected 1.002; 7/7 refusals; a status forced in memory is refused by 3/3 paths; 5 control-like outputs inventoried, 1 of them proposals; modules naming control terms outside the inventory: 0.",
  "observation_model": "Nonlinear geodesic integration of the offset start with and without the proposal; separation g(du, N) at L.",
  "physical_validation_status": {
   "statement": "Physical validation requires acquired hardware evidence; none was acquired for this task.",
@@ -270,25 +352,26 @@
   "python": "3.12.3",
   "scipy": "1.16.2",
   "sources": {
-   "src/ciw/lab/implementation_targets.py": "4e27c12d31365590b7fb82d98b8d02e1668c7b8e73b03f71ef270eca9fcf6eea",
-   "src/ciw/lab/implementation_targets_authority.py": "d6bed9b77e929252173070b28d8ce0f30b6b3bc1ff544100379515e999ec017a"
+   "src/ciw/lab/implementation_targets.py": "1df8bd67d28b18d70bcb5f74e4a14616ceb17868c7a9aa75595f15254426ee7e",
+   "src/ciw/lab/implementation_targets_architecture.py": "3c0ba23187cae208b492ff7adbceba135e2d7e071c6a4c978bbe5e3b2ac0ad62",
+   "src/ciw/lab/implementation_targets_authority.py": "d1e8750a38aab38f856203f46b2be0ac975963403c1789a04d4763415eff778f"
   },
   "sympy": "1.14.0"
  },
- "recommended_next_task": "T141 (keep production acceptance outside the system) and a hardware-in-the-loop authority design review",
- "report_id": "sha256:0263e36ab3a834392ce80a3d34541124e28a8b0681bf33315f061b50c7007d38",
+ "recommended_next_task": "Route the T114 servo-axis stop request through a proposal-and-authorization record (lyapunov section), then T141 (keep production acceptance outside the system) and a hardware-in-the-loop authority design review",
+ "report_id": "sha256:7b93a48e350d49ca020e0cfc30d2f333e651aeb584670d1d90799565b0f61d4f",
  "schema": "ciw.lab-task-report.v1",
  "section": "implementation-targets",
  "state": "completed",
  "task_id": "T154",
  "tests_passed": [
-  "check: Control outputs are constructed with status proposal and cannot be converted to a command here vs proposal at the conjugate point L = pi",
-  "check: Control outputs are constructed with status proposal and cannot be converted to a command here vs construct a control output with status 'command'",
-  "check: Control outputs are constructed with status proposal and cannot be converted to a command here vs convert a proposal without authorization",
-  "check: Control outputs are constructed with status proposal and cannot be converted to a command here vs convert with a lab-issued authorization",
-  "check: Control outputs are constructed with status proposal and cannot be converted to a command here vs convert with a well-formed external authorization",
-  "check: Control outputs are constructed with status proposal and cannot be converted to a command here vs convert a raw dict posing as a proposal",
-  "check: Control outputs are constructed with status proposal and cannot be converted to a command here vs proposal with a nonfinite value",
+  "check: Control outputs built by this section are constructed with status proposal and cannot be converted to a command here vs proposal at the conjugate point L = pi",
+  "check: Control outputs built by this section are constructed with status proposal and cannot be converted to a command here vs construct a control output with status 'command'",
+  "check: Control outputs built by this section are constructed with status proposal and cannot be converted to a command here vs convert a proposal without authorization",
+  "check: Control outputs built by this section are constructed with status proposal and cannot be converted to a command here vs convert with a lab-issued authorization",
+  "check: Control outputs built by this section are constructed with status proposal and cannot be converted to a command here vs convert with a well-formed external authorization",
+  "check: Control outputs built by this section are constructed with status proposal and cannot be converted to a command here vs convert a raw dict posing as a proposal",
+  "check: Control outputs built by this section are constructed with status proposal and cannot be converted to a command here vs proposal with a nonfinite value",
   "check: A frozen control proposal's status can be forced in memory, and the forced object is refused vs object.__setattr__ changed status to 'command'",
   "check: A frozen control proposal's status can be forced in memory, and the forced object is refused vs record() of a proposal whose status was forced to 'command'",
   "check: A frozen control proposal's status can be forced in memory, and the forced object is refused vs convert a status-forced proposal without authorization",
@@ -296,6 +379,9 @@
   "check: Jacobi heading proposal cancels a lateral offset to second order vs corrected residual order - 2",
   "check: Jacobi heading proposal cancels a lateral offset to second order vs uncorrected residual order - 1",
   "check: Jacobi heading proposal cancels a lateral offset to second order vs sphere proposal relative error against -cot(L) d",
+  "check: Control-like outputs named in the package are all inventoried (keyword scan) vs modules naming a control-like output (stop request, abort, setpoint, command conversion, gain change) outside the inventory",
+  "check: Control-like outputs named in the package are all inventoried (keyword scan) vs inventoried modules missing from the package",
+  "check: Control-like outputs named in the package are all inventoried (keyword scan) vs forged module returning a setpoint found outside the inventory",
   "pytest: tests/test_lab_implementation_targets.py::test_t154_control_outputs_are_proposals"
  ],
  "tests_skipped": [],
@@ -303,6 +389,8 @@
  "uncertainty": "Orders from three offsets (least squares); RK4 error at 200 steps is far below the residuals.",
  "unresolved_assumptions": [
   "The proposal is a kinematic heading correction on an ideal surface, not a validated controller",
-  "Actuator dynamics, limits and latency are not modelled"
+  "Actuator dynamics, limits and latency are not modelled",
+  "Scope: only control outputs built in this section are ControlProposals; the T114 servo-axis abort (a stop request to the bench's independent safety function, declared in ciw.lab.lyapunov_research) is not, and the T149, T151 and T153 command paths are refused rather than proposed",
+  "The inventory is checked against a keyword scan of code and non-docstring strings; a control output named with other words is not found"
  ]
 }

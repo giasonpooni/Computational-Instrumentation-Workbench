@@ -80,7 +80,7 @@
      },
      {
       "comparison": "abs_le",
-      "observed": -0.021593848897801138,
+      "observed": 0.006764851696603014,
       "passed": true,
       "reference": "drift order 1 for euler on cylinder-polar",
       "reference_kind": "analytic",
@@ -136,7 +136,7 @@
      },
      {
       "comparison": "abs_le",
-      "observed": 0.011015558892886634,
+      "observed": 0.005891479050336379,
       "passed": true,
       "reference": "drift order 2 for midpoint on cylinder-polar",
       "reference_kind": "analytic",
@@ -192,7 +192,7 @@
      },
      {
       "comparison": "abs_le",
-      "observed": -0.04195155008468632,
+      "observed": -0.0010641937394169076,
       "passed": true,
       "reference": "drift order 4 for rk4 on cylinder-polar",
       "reference_kind": "analytic",
@@ -214,7 +214,7 @@
      ]
     }
    },
-   "claim": "Unit-speed drift max|g(v,v) - 1| scales like h^p for Euler, midpoint and RK4 on every curved chart",
+   "claim": "Unit-speed drift max|g(v,v) - 1| scales like h^p for Euler, midpoint and RK4 on every chart with nonzero Christoffel symbols",
    "domain": "numerical",
    "evidence_status": "numerically_verified",
    "regression_tolerance": {
@@ -229,7 +229,7 @@
    "unit": null,
    "value": {
     "euler": {
-     "cylinder-polar": 0.9784061511021989,
+     "cylinder-polar": 1.006764851696603,
      "gaussian-bump": 1.0026927194942863,
      "hyperbolic-plane": 1.0129999457858216,
      "plane-polar": 0.9784061511020454,
@@ -238,7 +238,7 @@
      "torus": 1.0029522639732351
     },
     "midpoint": {
-     "cylinder-polar": 2.0110155588928866,
+     "cylinder-polar": 2.0058914790503364,
      "gaussian-bump": 2.004401614951156,
      "hyperbolic-plane": 2.02570423720593,
      "plane-polar": 2.0110155588941163,
@@ -247,7 +247,7 @@
      "torus": 2.0017823670391697
     },
     "rk4": {
-     "cylinder-polar": 3.9580484499153137,
+     "cylinder-polar": 3.998935806260583,
      "gaussian-bump": 3.9649488290229997,
      "hyperbolic-plane": 3.9968380983190426,
      "plane-polar": 3.9580484471077177,
@@ -555,24 +555,24 @@
  ],
  "generated_artifacts": [
   {
-   "bytes": 20589,
+   "bytes": 20602,
    "path": "artifacts/T004/speed-drift.json",
-   "sha256": "2ac83bae7822448c2012b5785b572fe8122e85dd97b431a03bebc79f48d02a4e"
+   "sha256": "565b1529f922f59b33714b3ce6ae20f12108874a319675c8edc81837e6e499bf"
   },
   {
-   "bytes": 4245,
+   "bytes": 4243,
    "path": "artifacts/T004/drift-euler.svg",
-   "sha256": "fc017b90f1b6daafbd7147750036b09da92103a91476f9a0374bc03341f1adf0"
+   "sha256": "e7ddb64204c9874ad715e92e7ee06713610159a0978bf33aef800a12199b1519"
   },
   {
    "bytes": 4482,
    "path": "artifacts/T004/drift-midpoint.svg",
-   "sha256": "4027cd215d21ea47958da6b9f2b6e7e0833f5a3a2431a061046f448233144625"
+   "sha256": "77e1dfd4465eca0d3c2a8eea702d0e893089d0a86bac7a360fc4ff972dbf9a1d"
   },
   {
    "bytes": 4960,
    "path": "artifacts/T004/drift-rk4.svg",
-   "sha256": "c3cc59e5d294f5ed85658cc9028e29a9549638a0954fa3aaa1f66d6d9b2d6514"
+   "sha256": "f7bc8cc6ccb4ede2597ebf16355f326519fa04b445045caea033cbe8d7eefdbc"
   },
   {
    "bytes": 6114,
@@ -588,7 +588,7 @@
  ],
  "mathematical_model": "g(v, v) is a first integral of the geodesic flow; for a p-th order method its global defect is O(h^p). A renormalizing step would force g(v, v) = 1 whatever the initial speed.",
  "number": 4,
- "numerical_result": "Drift orders: euler sphere 1.02, saddle 1, torus 1, gaussian-bump 1, hyperbolic-plane 1.01, plane-polar 0.978, cylinder-polar 0.978; midpoint sphere 1.98, saddle 2.01, torus 2, gaussian-bump 2, hyperbolic-plane 2.03, plane-polar 2.01, cylinder-polar 2.01; rk4 sphere 3.91, saddle 4.02, torus 4, gaussian-bump 3.96, hyperbolic-plane 4, plane-polar 3.96, cylinder-polar 3.96; speed-1.3 starts keep |g - 1.69| <= 2.14e-08 (RK4, adaptive); renormalized Euler endpoint error 0.0139 at N = 128 (order 1.01) with speed drift 4.44e-16.",
+ "numerical_result": "Drift orders: euler sphere 1.02, saddle 1, torus 1, gaussian-bump 1, hyperbolic-plane 1.01, plane-polar 0.978, cylinder-polar 1.01; midpoint sphere 1.98, saddle 2.01, torus 2, gaussian-bump 2, hyperbolic-plane 2.03, plane-polar 2.01, cylinder-polar 2.01; rk4 sphere 3.91, saddle 4.02, torus 4, gaussian-bump 3.96, hyperbolic-plane 4, plane-polar 3.96, cylinder-polar 4; speed-1.3 starts keep |g - 1.69| <= 2.14e-08 (RK4, adaptive); renormalized Euler endpoint error 0.0139 at N = 128 (order 1.01) with speed drift 4.44e-16.",
  "observation_model": "max over nodes of |g(v, v) - 1| (or |g - 1.69|) evaluated with the exact metric.",
  "physical_validation_status": {
   "statement": "Physical validation requires acquired hardware evidence; none was acquired for this task.",
@@ -606,39 +606,39 @@
   },
   "scipy": "1.16.2",
   "sources": {
-   "src/ciw/lab/geodesic_jacobi.py": "7f7307ebfb5c0a38ca1e7b9365fd7df627d9ae001791d99b823122873040d3c1",
-   "src/ciw/lab/geodesic_jacobi_common.py": "8616e9157492f0cd2aeebd695b3501215420c73af2cfbcb8c1b8cd5ab8d23a52"
+   "src/ciw/lab/geodesic_jacobi.py": "70e9794df40fbf882cd117859a112b1301552d2c4faca7979f06e7c287828798",
+   "src/ciw/lab/geodesic_jacobi_common.py": "7cb215a28e357a37f1c42cef6bdcb40e22abf7804ae9d58c4818fa40aa52da53"
   },
   "sympy": "1.14.0"
  },
  "recommended_next_task": "T005: verify the Jacobi separation law on constant-curvature paths",
- "report_id": "sha256:9bc03c016d01054982e32d300ba6423510d5f5d2541cd27fea51b25049ae8d04",
+ "report_id": "sha256:2d58959c07c6f315f2a1c8475562bb6993f2201620584712846480c34caf7bfc",
  "schema": "ciw.lab-task-report.v1",
  "section": "geodesic-jacobi",
  "state": "completed",
  "task_id": "T004",
  "tests_passed": [
-  "check: Unit-speed drift max|g(v,v) - 1| scales like h^p for Euler, midpoint and RK4 on every curved chart vs drift order 1 for euler on sphere",
-  "check: Unit-speed drift max|g(v,v) - 1| scales like h^p for Euler, midpoint and RK4 on every curved chart vs drift order 1 for euler on saddle",
-  "check: Unit-speed drift max|g(v,v) - 1| scales like h^p for Euler, midpoint and RK4 on every curved chart vs drift order 1 for euler on torus",
-  "check: Unit-speed drift max|g(v,v) - 1| scales like h^p for Euler, midpoint and RK4 on every curved chart vs drift order 1 for euler on gaussian-bump",
-  "check: Unit-speed drift max|g(v,v) - 1| scales like h^p for Euler, midpoint and RK4 on every curved chart vs drift order 1 for euler on hyperbolic-plane",
-  "check: Unit-speed drift max|g(v,v) - 1| scales like h^p for Euler, midpoint and RK4 on every curved chart vs drift order 1 for euler on plane-polar",
-  "check: Unit-speed drift max|g(v,v) - 1| scales like h^p for Euler, midpoint and RK4 on every curved chart vs drift order 1 for euler on cylinder-polar",
-  "check: Unit-speed drift max|g(v,v) - 1| scales like h^p for Euler, midpoint and RK4 on every curved chart vs drift order 2 for midpoint on sphere",
-  "check: Unit-speed drift max|g(v,v) - 1| scales like h^p for Euler, midpoint and RK4 on every curved chart vs drift order 2 for midpoint on saddle",
-  "check: Unit-speed drift max|g(v,v) - 1| scales like h^p for Euler, midpoint and RK4 on every curved chart vs drift order 2 for midpoint on torus",
-  "check: Unit-speed drift max|g(v,v) - 1| scales like h^p for Euler, midpoint and RK4 on every curved chart vs drift order 2 for midpoint on gaussian-bump",
-  "check: Unit-speed drift max|g(v,v) - 1| scales like h^p for Euler, midpoint and RK4 on every curved chart vs drift order 2 for midpoint on hyperbolic-plane",
-  "check: Unit-speed drift max|g(v,v) - 1| scales like h^p for Euler, midpoint and RK4 on every curved chart vs drift order 2 for midpoint on plane-polar",
-  "check: Unit-speed drift max|g(v,v) - 1| scales like h^p for Euler, midpoint and RK4 on every curved chart vs drift order 2 for midpoint on cylinder-polar",
-  "check: Unit-speed drift max|g(v,v) - 1| scales like h^p for Euler, midpoint and RK4 on every curved chart vs drift order 4 for rk4 on sphere",
-  "check: Unit-speed drift max|g(v,v) - 1| scales like h^p for Euler, midpoint and RK4 on every curved chart vs drift order 4 for rk4 on saddle",
-  "check: Unit-speed drift max|g(v,v) - 1| scales like h^p for Euler, midpoint and RK4 on every curved chart vs drift order 4 for rk4 on torus",
-  "check: Unit-speed drift max|g(v,v) - 1| scales like h^p for Euler, midpoint and RK4 on every curved chart vs drift order 4 for rk4 on gaussian-bump",
-  "check: Unit-speed drift max|g(v,v) - 1| scales like h^p for Euler, midpoint and RK4 on every curved chart vs drift order 4 for rk4 on hyperbolic-plane",
-  "check: Unit-speed drift max|g(v,v) - 1| scales like h^p for Euler, midpoint and RK4 on every curved chart vs drift order 4 for rk4 on plane-polar",
-  "check: Unit-speed drift max|g(v,v) - 1| scales like h^p for Euler, midpoint and RK4 on every curved chart vs drift order 4 for rk4 on cylinder-polar",
+  "check: Unit-speed drift max|g(v,v) - 1| scales like h^p for Euler, midpoint and RK4 on every chart with nonzero Christoffel symbols vs drift order 1 for euler on sphere",
+  "check: Unit-speed drift max|g(v,v) - 1| scales like h^p for Euler, midpoint and RK4 on every chart with nonzero Christoffel symbols vs drift order 1 for euler on saddle",
+  "check: Unit-speed drift max|g(v,v) - 1| scales like h^p for Euler, midpoint and RK4 on every chart with nonzero Christoffel symbols vs drift order 1 for euler on torus",
+  "check: Unit-speed drift max|g(v,v) - 1| scales like h^p for Euler, midpoint and RK4 on every chart with nonzero Christoffel symbols vs drift order 1 for euler on gaussian-bump",
+  "check: Unit-speed drift max|g(v,v) - 1| scales like h^p for Euler, midpoint and RK4 on every chart with nonzero Christoffel symbols vs drift order 1 for euler on hyperbolic-plane",
+  "check: Unit-speed drift max|g(v,v) - 1| scales like h^p for Euler, midpoint and RK4 on every chart with nonzero Christoffel symbols vs drift order 1 for euler on plane-polar",
+  "check: Unit-speed drift max|g(v,v) - 1| scales like h^p for Euler, midpoint and RK4 on every chart with nonzero Christoffel symbols vs drift order 1 for euler on cylinder-polar",
+  "check: Unit-speed drift max|g(v,v) - 1| scales like h^p for Euler, midpoint and RK4 on every chart with nonzero Christoffel symbols vs drift order 2 for midpoint on sphere",
+  "check: Unit-speed drift max|g(v,v) - 1| scales like h^p for Euler, midpoint and RK4 on every chart with nonzero Christoffel symbols vs drift order 2 for midpoint on saddle",
+  "check: Unit-speed drift max|g(v,v) - 1| scales like h^p for Euler, midpoint and RK4 on every chart with nonzero Christoffel symbols vs drift order 2 for midpoint on torus",
+  "check: Unit-speed drift max|g(v,v) - 1| scales like h^p for Euler, midpoint and RK4 on every chart with nonzero Christoffel symbols vs drift order 2 for midpoint on gaussian-bump",
+  "check: Unit-speed drift max|g(v,v) - 1| scales like h^p for Euler, midpoint and RK4 on every chart with nonzero Christoffel symbols vs drift order 2 for midpoint on hyperbolic-plane",
+  "check: Unit-speed drift max|g(v,v) - 1| scales like h^p for Euler, midpoint and RK4 on every chart with nonzero Christoffel symbols vs drift order 2 for midpoint on plane-polar",
+  "check: Unit-speed drift max|g(v,v) - 1| scales like h^p for Euler, midpoint and RK4 on every chart with nonzero Christoffel symbols vs drift order 2 for midpoint on cylinder-polar",
+  "check: Unit-speed drift max|g(v,v) - 1| scales like h^p for Euler, midpoint and RK4 on every chart with nonzero Christoffel symbols vs drift order 4 for rk4 on sphere",
+  "check: Unit-speed drift max|g(v,v) - 1| scales like h^p for Euler, midpoint and RK4 on every chart with nonzero Christoffel symbols vs drift order 4 for rk4 on saddle",
+  "check: Unit-speed drift max|g(v,v) - 1| scales like h^p for Euler, midpoint and RK4 on every chart with nonzero Christoffel symbols vs drift order 4 for rk4 on torus",
+  "check: Unit-speed drift max|g(v,v) - 1| scales like h^p for Euler, midpoint and RK4 on every chart with nonzero Christoffel symbols vs drift order 4 for rk4 on gaussian-bump",
+  "check: Unit-speed drift max|g(v,v) - 1| scales like h^p for Euler, midpoint and RK4 on every chart with nonzero Christoffel symbols vs drift order 4 for rk4 on hyperbolic-plane",
+  "check: Unit-speed drift max|g(v,v) - 1| scales like h^p for Euler, midpoint and RK4 on every chart with nonzero Christoffel symbols vs drift order 4 for rk4 on plane-polar",
+  "check: Unit-speed drift max|g(v,v) - 1| scales like h^p for Euler, midpoint and RK4 on every chart with nonzero Christoffel symbols vs drift order 4 for rk4 on cylinder-polar",
   "check: A non-unit initial speed stays non-unit: g(v,v) remains 1.69 to integrator accuracy vs rk4 |g - 1.69| on sphere",
   "check: A non-unit initial speed stays non-unit: g(v,v) remains 1.69 to integrator accuracy vs adaptive |g - 1.69| on sphere",
   "check: A non-unit initial speed stays non-unit: g(v,v) remains 1.69 to integrator accuracy vs rk4 |g - 1.69| on torus",

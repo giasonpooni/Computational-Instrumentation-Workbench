@@ -6,36 +6,34 @@
 <text x="180.48" y="378" text-anchor="middle">1e-1</text>
 <line x1="376.48" y1="40" x2="376.48" y2="362" stroke="#e5e7eb"/>
 <text x="376.48" y="378" text-anchor="middle">1e0</text>
-<line x1="78" y1="359.31" x2="470" y2="359.31" stroke="#e5e7eb"/>
-<text x="72" y="363.31" text-anchor="end">1e-10</text>
-<line x1="78" y1="313.03" x2="470" y2="313.03" stroke="#e5e7eb"/>
-<text x="72" y="317.03" text-anchor="end">1e-9</text>
-<line x1="78" y1="266.75" x2="470" y2="266.75" stroke="#e5e7eb"/>
-<text x="72" y="270.75" text-anchor="end">1e-8</text>
-<line x1="78" y1="220.46" x2="470" y2="220.46" stroke="#e5e7eb"/>
-<text x="72" y="224.46" text-anchor="end">1e-7</text>
-<line x1="78" y1="174.18" x2="470" y2="174.18" stroke="#e5e7eb"/>
-<text x="72" y="178.18" text-anchor="end">1e-6</text>
-<line x1="78" y1="127.90" x2="470" y2="127.90" stroke="#e5e7eb"/>
-<text x="72" y="131.90" text-anchor="end">1e-5</text>
-<line x1="78" y1="81.62" x2="470" y2="81.62" stroke="#e5e7eb"/>
-<text x="72" y="85.62" text-anchor="end">1e-4</text>
+<line x1="78" y1="334.30" x2="470" y2="334.30" stroke="#e5e7eb"/>
+<text x="72" y="338.30" text-anchor="end">1e-9</text>
+<line x1="78" y1="285.03" x2="470" y2="285.03" stroke="#e5e7eb"/>
+<text x="72" y="289.03" text-anchor="end">1e-8</text>
+<line x1="78" y1="235.77" x2="470" y2="235.77" stroke="#e5e7eb"/>
+<text x="72" y="239.77" text-anchor="end">1e-7</text>
+<line x1="78" y1="186.50" x2="470" y2="186.50" stroke="#e5e7eb"/>
+<text x="72" y="190.50" text-anchor="end">1e-6</text>
+<line x1="78" y1="137.24" x2="470" y2="137.24" stroke="#e5e7eb"/>
+<text x="72" y="141.24" text-anchor="end">1e-5</text>
+<line x1="78" y1="87.97" x2="470" y2="87.97" stroke="#e5e7eb"/>
+<text x="72" y="91.97" text-anchor="end">1e-4</text>
 <text x="274.00" y="406" text-anchor="middle">perturbation scale</text>
 <text x="16" y="201.00" text-anchor="middle" transform="rotate(-90 16 201.00)">metres</text>
-<path d="M78.00,144.42 L180.48,120.22 L274.00,98.14 L376.48,73.96 L470.00,51.93" fill="none" stroke="#1f5fa8" stroke-width="1.8"/>
-<circle cx="78.00" cy="144.42" r="2.6" fill="#1f5fa8"/>
-<circle cx="180.48" cy="120.22" r="2.6" fill="#1f5fa8"/>
-<circle cx="274.00" cy="98.14" r="2.6" fill="#1f5fa8"/>
-<circle cx="376.48" cy="73.96" r="2.6" fill="#1f5fa8"/>
+<path d="M78.00,150.27 L180.48,124.51 L274.00,101.02 L376.48,75.31 L470.00,51.93" fill="none" stroke="#1f5fa8" stroke-width="1.8"/>
+<circle cx="78.00" cy="150.27" r="2.6" fill="#1f5fa8"/>
+<circle cx="180.48" cy="124.51" r="2.6" fill="#1f5fa8"/>
+<circle cx="274.00" cy="101.02" r="2.6" fill="#1f5fa8"/>
+<circle cx="376.48" cy="75.31" r="2.6" fill="#1f5fa8"/>
 <circle cx="470.00" cy="51.93" r="2.6" fill="#1f5fa8"/>
 <line x1="482" y1="52" x2="502" y2="52" stroke="#1f5fa8" stroke-width="2"/>
 <text x="508" y="56">direct chord error</text>
-<path d="M78.00,350.07 L180.48,301.68 L274.00,257.52 L376.48,209.14 L470.00,165.05" fill="none" stroke="#c2410c" stroke-width="1.8"/>
+<path d="M78.00,350.07 L180.48,298.56 L274.00,251.56 L376.48,200.07 L470.00,153.14" fill="none" stroke="#c2410c" stroke-width="1.8"/>
 <circle cx="78.00" cy="350.07" r="2.6" fill="#c2410c"/>
-<circle cx="180.48" cy="301.68" r="2.6" fill="#c2410c"/>
-<circle cx="274.00" cy="257.52" r="2.6" fill="#c2410c"/>
-<circle cx="376.48" cy="209.14" r="2.6" fill="#c2410c"/>
-<circle cx="470.00" cy="165.05" r="2.6" fill="#c2410c"/>
+<circle cx="180.48" cy="298.56" r="2.6" fill="#c2410c"/>
+<circle cx="274.00" cy="251.56" r="2.6" fill="#c2410c"/>
+<circle cx="376.48" cy="200.07" r="2.6" fill="#c2410c"/>
+<circle cx="470.00" cy="153.14" r="2.6" fill="#c2410c"/>
 <line x1="482" y1="70" x2="502" y2="70" stroke="#c2410c" stroke-width="2"/>
 <text x="508" y="74">first-order residual</text>
 </svg>

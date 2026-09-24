@@ -8,18 +8,19 @@
    "hardware_measured": 0,
    "independently_verified": 0,
    "not_established": 1,
-   "numerically_verified": 1,
+   "numerically_verified": 3,
    "provider_backed": 0,
    "synthetic": 0
   },
   "primary": "numerically_verified"
  },
- "expected_invariant": "Aggregates are exact functions of retained reports and never change a label.",
- "experiment": "Build the ledger and verify each contribution names an existing source file in the package.",
+ "expected_invariant": "Every retained task is attributed; every ledger textbook entry is used by a retained task; every curated contribution names a present source file.",
+ "experiment": "Match each ledger entry's pattern against each retained report's text, collect the package files each report names, and write the per-task ledger as JSON and Markdown.",
  "failure_modes_checked": [
-  "missing reports",
-  "report identity mismatch (validate_report)",
-  "aggregate differs from its re-read bytes"
+  "task with no textbook match and no present source file",
+  "ledger entry that no retained task uses",
+  "curated contribution naming a missing file",
+  "report identity mismatch (validate_report)"
  ],
  "findings": [
   {
@@ -27,31 +28,86 @@
    "basis": {
     "checks": [
      {
-      "observed": 0.0,
-      "passed": true,
-      "reference": "attribution-ledger.json recomputed from a fresh read of the retained reports",
-      "reference_kind": "exact_arithmetic",
-      "tolerance": 0.0
-     },
-     {
       "comparison": "abs_le",
       "observed": 0.0,
       "passed": true,
-      "reference": "contribution files missing",
+      "reference": "retained tasks with no textbook match and no present package source file",
       "reference_kind": "exact_arithmetic",
       "tolerance": 0.0
      }
     ]
    },
-   "claim": "Implementation contributions each name a present source file",
+   "claim": "Every retained task is attributed to a textbook result or a present implementation source file",
    "domain": "provenance",
    "evidence_status": "numerically_verified",
    "regression_tolerance": {
     "abs": 0,
     "rel": 0
    },
-   "uncertainty": null,
-   "unit": null,
+   "uncertainty": {
+    "basis": "integer count over retained report files; no rounding, sampling or tolerance",
+    "kind": "exact",
+    "value": 0
+   },
+   "unit": "tasks",
+   "value": 0
+  },
+  {
+   "assigned_by": "ciw.lab.evidence",
+   "basis": {
+    "checks": [
+     {
+      "comparison": "abs_le",
+      "observed": 0.0,
+      "passed": true,
+      "reference": "ledger textbook results no retained report names",
+      "reference_kind": "exact_arithmetic",
+      "tolerance": 0.0
+     }
+    ]
+   },
+   "claim": "Every textbook result in the ledger is named by a retained task",
+   "domain": "provenance",
+   "evidence_status": "numerically_verified",
+   "regression_tolerance": {
+    "abs": 0,
+    "rel": 0
+   },
+   "uncertainty": {
+    "basis": "integer count over retained report files; no rounding, sampling or tolerance",
+    "kind": "exact",
+    "value": 0
+   },
+   "unit": "results",
+   "value": 0
+  },
+  {
+   "assigned_by": "ciw.lab.evidence",
+   "basis": {
+    "checks": [
+     {
+      "comparison": "abs_le",
+      "observed": 0.0,
+      "passed": true,
+      "reference": "curated contribution files missing from the package",
+      "reference_kind": "exact_arithmetic",
+      "tolerance": 0.0
+     }
+    ]
+   },
+   "claim": "Curated implementation contributions each name a present source file",
+   "domain": "provenance",
+   "evidence_status": "numerically_verified",
+   "regression_tolerance": {
+    "abs": 0,
+    "rel": 0
+   },
+   "uncertainty": {
+    "basis": "integer count over retained report files; no rounding, sampling or tolerance",
+    "kind": "exact",
+    "value": 0
+   },
+   "unit": "files",
    "value": 0
   },
   {
@@ -68,18 +124,25 @@
  ],
  "generated_artifacts": [
   {
-   "bytes": 3126,
+   "bytes": 69423,
    "path": "artifacts/T156/attribution-ledger.json",
-   "sha256": "29a5d91ef3a93526fa271c11ce78a4ad0bc8a1ed592a54e4238ee378bc7008b6"
+   "sha256": "e18c80442b997d631a0ee474dc1ebf66fe2c6a1e9bbc999009fa746efac478d7"
+  },
+  {
+   "bytes": 12209,
+   "path": "artifacts/T156/ATTRIBUTION.md",
+   "sha256": "73802a3ac7ea46801cf831b1f4312ba3869e079dd15b782d0b53fa3ea98153e5"
   }
  ],
  "hypothesis": "Every result used by the lab can be attributed either to established literature or to a named implementation artifact in this repository.",
  "input_data": [
-  "Retained reports T001-T154 in the same output directory"
+  "Retained reports of T001-T155 in the same output directory (report text and changed files)",
+  "The textbook ledger and curated contribution descriptions in src/ciw/lab/research_portfolio.py",
+  "Package source files named by the reports"
  ],
- "mathematical_model": "A two-column ledger: textbook results with references; implementation contributions with their files.",
+ "mathematical_model": "Per retained task: textbook results whose names its report text uses (pattern per ledger entry) and the package source files its report names as changed files; a task with neither is unattributed.",
  "number": 156,
- "numerical_result": "13 textbook results; 9 contributions, 0 without a source file.",
+ "numerical_result": "155 reports: 123 use at least one of 30 textbook results, 32 rest on implementation sources only, 0 unattributed; 0 ledger textbook results unused; 59 implementation files, 0 curated ones missing.",
  "observation_model": "No physical observation; reads retained computational records only.",
  "physical_validation_status": {
   "statement": "Physical validation requires acquired hardware evidence; none was acquired for this task.",
@@ -93,25 +156,27 @@
   "python": "3.12.3",
   "scipy": "1.16.2",
   "sources": {
-   "src/ciw/lab/research_portfolio.py": "6cd37207af02c6d64dc88b22c7ff2148e85f1eeebaa5445cd894879bc3043ba3"
+   "src/ciw/lab/research_portfolio.py": "0fd0ed475a38bf81fd2145f64cf1335856a471c58d406347c3b66b0f66672702"
   },
   "sympy": "1.14.0"
  },
- "recommended_next_task": "Add per-finding provenance tags so the ledger is derived from findings rather than curated.",
- "report_id": "sha256:15f60981c64818abf818f7e07b4a9252dec2136362f01c908c0a47d1f27eff19",
+ "recommended_next_task": "Record per-finding provenance tags (textbook result or contribution) so attribution is declared by each task rather than inferred from its wording.",
+ "report_id": "sha256:f4deaf462656a7d8eeac559eb0a315e9cf1bda512515640d6df91950dbbd8250",
  "schema": "ciw.lab-task-report.v1",
  "section": "research-portfolio",
  "state": "completed",
  "task_id": "T156",
  "tests_passed": [
-  "check: Implementation contributions each name a present source file vs attribution-ledger.json recomputed from a fresh read of the retained reports",
-  "check: Implementation contributions each name a present source file vs contribution files missing",
+  "check: Every retained task is attributed to a textbook result or a present implementation source file vs retained tasks with no textbook match and no present package source file",
+  "check: Every textbook result in the ledger is named by a retained task vs ledger textbook results no retained report names",
+  "check: Curated implementation contributions each name a present source file vs curated contribution files missing from the package",
   "pytest: tests/test_lab_research_portfolio.py::test_textbook_and_contribution_ledger"
  ],
  "tests_skipped": [],
  "title": "Separate textbook results from implementation contributions.",
- "uncertainty": "Curated attribution; references identify standard sources, not exhaustive priority.",
+ "uncertainty": "Exact counts of name matches; references identify standard sources, not priority.",
  "unresolved_assumptions": [
-  "Novelty of contributions relative to published literature is not established by this ledger."
+  "Novelty of contributions relative to published literature is not established by this ledger.",
+  "Textbook attribution matches names in report text; a method a report uses without naming it is not attributed, and a name used in another sense can be attributed wrongly."
  ]
 }

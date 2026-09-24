@@ -10,19 +10,20 @@
    "hardware_measured": 0,
    "independently_verified": 0,
    "not_established": 1,
-   "numerically_verified": 4,
+   "numerically_verified": 5,
    "provider_backed": 0,
    "synthetic": 0
   },
   "primary": "numerically_verified"
  },
  "expected_invariant": "Direct error - J delta = O(|delta|^2); exact closed forms on the rectified rig.",
- "experiment": "Central-difference Jacobian, step-halving convergence, comparison with analytic derivatives, direct recomputation over five perturbation scales, and a counterexample search for uniform focal scaling.",
+ "experiment": "Central-difference Jacobian over 12 parameters, step-halving convergence, comparison with analytic focal, horizontal principal-point and baseline derivatives, direct recomputation over five perturbation scales, a counterexample search for uniform focal scaling, and the exact baseline scale law.",
  "failure_modes_checked": [
   "nonlinearity at large perturbations (residual slope)",
   "finite-difference step size",
   "rotation about the camera centre versus about the world origin",
-  "uniform-scaling assumption for focal errors"
+  "uniform-scaling assumption for focal errors",
+  "baseline error as a uniform chord scale (rectified rig)"
  ],
  "findings": [
   {
@@ -33,13 +34,13 @@
       "comparison": "abs_le",
       "observed": 1.0553356164047979e-08,
       "passed": true,
-      "reference": "max |numeric - analytic| / max |analytic| per column",
+      "reference": "max |numeric - analytic| / max |analytic| per column (focal, right cx, right center x)",
       "reference_kind": "analytic",
       "tolerance": 1e-06
      }
     ]
    },
-   "claim": "The finite-difference chord Jacobian matches the analytic focal-length and principal-point derivatives on a rectified rig",
+   "claim": "The finite-difference chord Jacobian matches the analytic focal-length, right-camera horizontal principal-point and baseline derivatives on a rectified rig",
    "domain": "numerical",
    "evidence_status": "numerically_verified",
    "regression_tolerance": {
@@ -60,7 +61,7 @@
     "checks": [
      {
       "comparison": "abs_le",
-      "observed": 0.0011997829899611243,
+      "observed": 0.0029348391438816642,
       "passed": true,
       "reference": "relative first-order residual at the declared perturbation",
       "reference_kind": "analytic",
@@ -68,7 +69,7 @@
      },
      {
       "comparison": "abs_le",
-      "observed": -0.0009719935760250653,
+      "observed": -0.0011370816548510465,
       "passed": true,
       "reference": "log-log slope of the residual against scale minus 2",
       "reference_kind": "analytic",
@@ -78,11 +79,17 @@
     "generator": {
      "direction": {
       "focal_px": 2.0,
+      "left_cx_px": -0.3,
+      "left_cy_px": 0.2,
       "right_cx_px": 0.5,
       "right_cy_px": -0.4,
+      "right_focal_px": 1.0,
       "right_rx_rad": 0.0002,
       "right_ry_rad": -0.0001,
-      "right_rz_rad": 0.0003
+      "right_rz_rad": 0.0003,
+      "right_tx_m": 0.0001,
+      "right_ty_m": -5e-05,
+      "right_tz_m": 0.0001
      },
      "name": "declared calibration perturbation direction",
      "seed": null
@@ -104,9 +111,9 @@
    },
    "unit": null,
    "value": {
-    "max_direct_error_m_at_declared": 0.0001463830573799757,
-    "relative_residual_at_declared": 0.0011997829899611243,
-    "residual_slope": 1.999028006423975
+    "max_direct_error_m_at_declared": 0.00018075864469929703,
+    "relative_residual_at_declared": 0.0029348391438816642,
+    "residual_slope": 1.998862918345149
    }
   },
   {
@@ -139,7 +146,7 @@
      }
     ]
    },
-   "claim": "Chord sensitivity to each calibration parameter (m per px, m per mrad); disparity-changing errors dominate",
+   "claim": "Chord sensitivity to 12 declared calibration parameters of the pinhole rig (per-camera focal length and principal point, right-camera rotation and center; m per px, mrad or mm); disparity-changing errors dominate their like-unit counterparts",
    "domain": "numerical",
    "evidence_status": "numerically_verified",
    "regression_tolerance": {
@@ -159,6 +166,18 @@
      -3.110312259274606e-05,
      -4.963770775801013e-05
     ],
+    "left_cx_px": [
+     2.37541399814023e-05,
+     6.664992555777127e-05,
+     0.00010426133463525833,
+     0.00015421169757834363
+    ],
+    "left_cy_px": [
+     8.132432297025538e-07,
+     1.9800800304947686e-06,
+     2.507624358161209e-06,
+     2.086716500981911e-06
+    ],
     "right_cx_px": [
      -2.0586845578089707e-05,
      -5.878458168503964e-05,
@@ -170,6 +189,12 @@
      1.938530891365531e-06,
      2.505406646036157e-06,
      2.1558002813448773e-06
+    ],
+    "right_focal_px": [
+     -9.992616423551426e-06,
+     -2.6617153459432275e-05,
+     -3.7595301234649714e-05,
+     -4.175338575856946e-05
     ],
     "right_rx_rad": [
      -4.518285155741264e-06,
@@ -188,6 +213,24 @@
      -3.732792384220085e-05,
      -4.4048799607843137e-05,
      -2.5160335065388395e-05
+    ],
+    "right_tx_m": [
+     7.49824277754968e-05,
+     0.00022452649219018017,
+     0.00037281687577384037,
+     0.0005911479451087276
+    ],
+    "right_ty_m": [
+     -7.681365439549115e-07,
+     -2.592002376622382e-06,
+     -4.680092702269434e-06,
+     -7.895968878735005e-06
+    ],
+    "right_tz_m": [
+     -2.603784322700864e-05,
+     -6.682470563013077e-05,
+     -8.633882803144033e-05,
+     -6.64049818605017e-05
     ]
    }
   },
@@ -252,6 +295,40 @@
   {
    "assigned_by": "ciw.lab.evidence",
    "basis": {
+    "checks": [
+     {
+      "comparison": "abs_le",
+      "observed": 2.1510571102112408e-16,
+      "passed": true,
+      "reference": "chords under a 1 mm baseline error against c (b + db)/b over all 24 pairs (m)",
+      "reference_kind": "analytic",
+      "tolerance": 1e-12
+     }
+    ]
+   },
+   "claim": "A baseline error rescales every chord by b_believed / b on the rectified rig",
+   "domain": "numerical",
+   "evidence_status": "numerically_verified",
+   "regression_tolerance": {
+    "abs": 1e-12,
+    "rel": 1e-06
+   },
+   "uncertainty": {
+    "basis": "rectified-rig triangulation rounding relative to the chord (a few ulp of 0.6 m coordinates over a 0.02-0.12 m chord)",
+    "kind": "roundoff",
+    "value": 1e-14
+   },
+   "unit": null,
+   "value": {
+    "baseline_error_m": 0.001,
+    "min_relative_change": 0.004999999999993454,
+    "model_gap_m": 2.1510571102112408e-16,
+    "predicted_scale": 1.005
+   }
+  },
+  {
+   "assigned_by": "ciw.lab.evidence",
+   "basis": {
     "notes": "No calibration procedure was run; real calibration uncertainty is unknown."
    },
    "claim": "The declared perturbation magnitudes bound the calibration error of a real stereo rig",
@@ -264,14 +341,14 @@
  ],
  "generated_artifacts": [
   {
-   "bytes": 2754,
+   "bytes": 4205,
    "path": "artifacts/T049/calibration-jacobian.json",
-   "sha256": "f5f99aaf98342f100b90a185ce1a85f17afc6e0b4014d15b885fe4e06b1d5416"
+   "sha256": "f4c5acbbb196d4194a4f5662d01cc7e049a4047b33215cbcf267cc3f3f52d246"
   },
   {
-   "bytes": 2709,
+   "bytes": 2590,
    "path": "artifacts/T049/linearization-residual.svg",
-   "sha256": "4bf4b4e0136bb6c5637ebf1d1d940b7d4e3337f7835962c901a4d3a82a154784"
+   "sha256": "08a40b18aa8eb387f7747cdc3344c543f27893656b1c3dfb1cf7c6c617ec8a2f"
   }
  ],
  "hypothesis": "Chord errors caused by small calibration errors are linear in the errors, with a Jacobian that matches closed forms where they exist; errors that change horizontal disparity (right-camera yaw, horizontal principal point) dominate, while vertical principal-point and pitch errors barely move chords.",
@@ -279,14 +356,14 @@
   "Stereo rig {'focal_px': 2400.0, 'principal_point_px': (1024.0, 768.0), 'image_size_px': (2048, 1536), 'baseline_m': 0.2, 'convergence_distance_m': 0.6}",
   "Cylinder {'radius_m': 0.1, 'axis': 'world +y', 'front_point_m': (0.1, 0.0, 0.6), 'chart_origin_direction': 'toward the cameras (world -z)'}",
   "Markers at s = [0.0, 0.015, 0.03, 0.045, 0.06, 0.075, 0.09, 0.105, 0.12] m along helices alpha = [0.0, 45.0, 90.0] deg (27/27 visible in both images)",
-  "Declared direction {'focal_px': 2.0, 'right_cx_px': 0.5, 'right_cy_px': -0.4, 'right_rx_rad': 0.0002, 'right_ry_rad': -0.0001, 'right_rz_rad': 0.0003}",
+  "Declared direction {'focal_px': 2.0, 'right_cx_px': 0.5, 'right_cy_px': -0.4, 'right_rx_rad': 0.0002, 'right_ry_rad': -0.0001, 'right_rz_rad': 0.0003, 'right_focal_px': 1.0, 'left_cx_px': -0.3, 'left_cy_px': 0.2, 'right_tx_m': 0.0001, 'right_ty_m': -5e-05, 'right_tz_m': 0.0001}",
   "Scales [0.03, 0.1, 0.3, 1.0, 3.0]",
-  "Finite-difference steps [0.01, 0.001, 0.001, 1e-07, 1e-07, 1e-07]",
+  "Finite-difference steps [0.01, 0.001, 0.001, 1e-07, 1e-07, 1e-07, 0.01, 0.001, 0.001, 1e-07, 1e-07, 1e-07]",
   "Rectified rig markers visible: True"
  ],
- "mathematical_model": "Pixels from the true rig are triangulated with a believed rig (focal f + df on both cameras, right principal point + (dcx, dcy), right rotation exp([w]) about its centre). Rectified rig: Z_b = Z f_b/f and X_b = X, so c_b^2 = dX^2 + dY^2 + (dZ f_b/f)^2 and dZ/dcx = -Z^2/(b f).",
+ "mathematical_model": "Pixels from the true rig are triangulated with a believed rig: focal f + df on both cameras plus an extra right-camera focal error, left and right principal points + (dcx, dcy), right rotation exp([w]) about its centre and right centre shift (dtx, dty, dtz), dtx changing the baseline. Chords are invariant under a rigid motion of the whole believed rig, so left-camera pose errors reduce to right-camera ones. Rectified rig: Z_b = Z f_b/f and X_b = X, so c_b^2 = dX^2 + dY^2 + (dZ f_b/f)^2; dZ/dcx = -Z^2/(b f); a believed baseline b' scales X, Y, Z and every chord by b'/b.",
  "number": 49,
- "numerical_result": "analytic gap 1.1e-08; relative first-order residual 1.20e-03 at the declared perturbation (direct error 1.46e-04 m); residual slope 1.999; ruling change 1.6e-15 vs circumferential 1.82e-04 for df = 5 px; 0.12 m chord ratios cx/cy 68 and yaw/pitch 60.",
+ "numerical_result": "analytic gap 1.1e-08; relative first-order residual 2.93e-03 at the declared perturbation (direct error 1.81e-04 m); residual slope 1.999; ruling change 1.6e-15 vs circumferential 1.82e-04 for df = 5 px; 0.12 m chord ratios cx/cy 68 and yaw/pitch 60; 0.12 m chord sensitivity 5.91e-04 m per mm of baseline; baseline scale law gap 2.2e-16 m.",
  "observation_model": "Noise-free synthetic pixels; only the calibration used for triangulation is wrong.",
  "physical_validation_status": {
   "statement": "Physical validation requires acquired hardware evidence; none was acquired for this task.",
@@ -300,27 +377,28 @@
   "python": "3.12.3",
   "scipy": "1.16.2",
   "sources": {
-   "src/ciw/lab/observation.py": "9ebedc1a1693aaa28965ba0c97837ad2d2c45bf0fd360857cf7b32c0993ed5fc",
-   "src/ciw/lab/observation_camera.py": "dbf305a988b5ad39796c8220477dd065671a490a26a9ff03738510296087ab68"
+   "src/ciw/lab/observation.py": "6e5bf960e17dffb62bdaf29d28be9a0f165fd68f8498d173b66eab08fa22ad70",
+   "src/ciw/lab/observation_camera.py": "130cf51175050a5eb947b8d434553bdfa19bd102a33108f414d7a5fa9c651bce"
   },
   "sympy": "1.14.0"
  },
  "recommended_next_task": "T050: add perspective and lens-distortion perturbations",
- "report_id": "sha256:39d013e7e64221b8dce149e877522cad58c229db460c6b65f66c20d781fbc4d4",
+ "report_id": "sha256:e0f2a6c91c49e6ccf1846d6d5ae58a202ede09efb6e465bfbd33fac3b3c4902e",
  "schema": "ciw.lab-task-report.v1",
  "section": "observation",
  "state": "completed",
  "task_id": "T049",
  "tests_passed": [
-  "check: The finite-difference chord Jacobian matches the analytic focal-length and principal-point derivatives on a rectified rig vs max |numeric - analytic| / max |analytic| per column",
+  "check: The finite-difference chord Jacobian matches the analytic focal-length, right-camera horizontal principal-point and baseline derivatives on a rectified rig vs max |numeric - analytic| / max |analytic| per column (focal, right cx, right center x)",
   "check: First-order calibration-error prediction agrees with direct recomputation with a second-order residual vs relative first-order residual at the declared perturbation",
   "check: First-order calibration-error prediction agrees with direct recomputation with a second-order residual vs log-log slope of the residual against scale minus 2",
-  "check: Chord sensitivity to each calibration parameter (m per px, m per mrad); disparity-changing errors dominate vs Jacobian change when finite-difference steps are halved (relative)",
-  "check: Chord sensitivity to each calibration parameter (m per px, m per mrad); disparity-changing errors dominate vs 0.12 m chord: |d/d cx| over |d/d cy| (both m per px)",
-  "check: Chord sensitivity to each calibration parameter (m per px, m per mrad); disparity-changing errors dominate vs 0.12 m chord: |d/d yaw| over |d/d pitch| (both m per mrad)",
+  "check: Chord sensitivity to 12 declared calibration parameters of the pinhole rig (per-camera focal length and principal point, right-camera rotation and center; m per px, mrad or mm); disparity-changing errors dominate their like-unit counterparts vs Jacobian change when finite-difference steps are halved (relative)",
+  "check: Chord sensitivity to 12 declared calibration parameters of the pinhole rig (per-camera focal length and principal point, right-camera rotation and center; m per px, mrad or mm); disparity-changing errors dominate their like-unit counterparts vs 0.12 m chord: |d/d cx| over |d/d cy| (both m per px)",
+  "check: Chord sensitivity to 12 declared calibration parameters of the pinhole rig (per-camera focal length and principal point, right-camera rotation and center; m per px, mrad or mm); disparity-changing errors dominate their like-unit counterparts vs 0.12 m chord: |d/d yaw| over |d/d pitch| (both m per mrad)",
   "check: A common focal-length error leaves same-depth chords unchanged and scales only the depth component vs relative change of the ruling chord under a 5 px focal error",
   "check: A common focal-length error leaves same-depth chords unchanged and scales only the depth component vs relative change of the circumferential chord (resolved)",
   "check: A common focal-length error leaves same-depth chords unchanged and scales only the depth component vs chords against sqrt(dX^2 + dY^2 + (dZ f_b/f)^2) (m)",
+  "check: A baseline error rescales every chord by b_believed / b on the rectified rig vs chords under a 1 mm baseline error against c (b + db)/b over all 24 pairs (m)",
   "pytest: tests/test_lab_observation.py::test_t049_calibration_perturbations"
  ],
  "tests_skipped": [],
@@ -328,6 +406,7 @@
  "uncertainty": "Finite-difference truncation below 1e-5 relative (step halving); no stochastic component.",
  "unresolved_assumptions": [
   "Calibration errors are static and small",
-  "Distortion is absent (see T050)"
+  "Distortion is absent (see T050)",
+  "Aspect ratio and skew of either camera are not perturbed; left-camera pose errors are not listed separately because a rigid motion of the whole believed rig, which leaves chords unchanged, turns them into right-camera pose errors"
  ]
 }

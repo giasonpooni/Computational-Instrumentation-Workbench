@@ -8,18 +8,19 @@
    "hardware_measured": 0,
    "independently_verified": 0,
    "not_established": 0,
-   "numerically_verified": 2,
+   "numerically_verified": 4,
    "provider_backed": 0,
    "synthetic": 0
   },
   "primary": "numerically_verified"
  },
- "expected_invariant": "Aggregates are exact functions of retained reports and never change a label.",
- "experiment": "Resolve every registered node id against test function definitions; count passed/failed outcomes from the JUnit record when supplied.",
+ "expected_invariant": "No completed or partial task lacks a registered test; every registered node resolves; no registered node failed in the JUnit record.",
+ "experiment": "Resolve every registered node id against the test functions under tests/, analyze each node's source for its task and a label assertion (the analysis is checked on probe cases first), and fold the JUnit outcomes the reports recorded.",
  "failure_modes_checked": [
-  "missing reports",
-  "report identity mismatch (validate_report)",
-  "aggregate differs from its re-read bytes"
+  "registered node ids that do not resolve",
+  "tests registered for a task they never run",
+  "tests asserting values only",
+  "registered tests failing or not run"
  ],
  "findings": [
   {
@@ -27,17 +28,10 @@
    "basis": {
     "checks": [
      {
-      "observed": 0.0,
-      "passed": true,
-      "reference": "regression-coverage.json recomputed from a fresh read of the retained reports",
-      "reference_kind": "exact_arithmetic",
-      "tolerance": 0.0
-     },
-     {
       "comparison": "abs_le",
       "observed": 0.0,
       "passed": true,
-      "reference": "tasks without regression tests",
+      "reference": "completed or partial tasks with no registered regression test",
       "reference_kind": "exact_arithmetic",
       "tolerance": 0.0
      }
@@ -50,8 +44,12 @@
     "abs": 0,
     "rel": 0
    },
-   "uncertainty": null,
-   "unit": null,
+   "uncertainty": {
+    "basis": "integer count over retained report files; no rounding, sampling or tolerance",
+    "kind": "exact",
+    "value": 0
+   },
+   "unit": "tasks",
    "value": 0
   },
   {
@@ -75,25 +73,89 @@
     "abs": 0,
     "rel": 0
    },
-   "uncertainty": null,
-   "unit": null,
+   "uncertainty": {
+    "basis": "integer count over retained report files; no rounding, sampling or tolerance",
+    "kind": "exact",
+    "value": 0
+   },
+   "unit": "node ids",
+   "value": 0
+  },
+  {
+   "assigned_by": "ciw.lab.evidence",
+   "basis": {
+    "checks": [
+     {
+      "comparison": "abs_le",
+      "observed": 0.0,
+      "passed": true,
+      "reference": "tie-analysis probe cases classified wrongly",
+      "reference_kind": "exact_arithmetic",
+      "tolerance": 0.0
+     }
+    ]
+   },
+   "claim": "Tasks without a registered test that both names the task and asserts an evidence label",
+   "domain": "computational_pipeline",
+   "evidence_status": "numerically_verified",
+   "regression_tolerance": {
+    "abs": 0,
+    "rel": 0
+   },
+   "uncertainty": {
+    "basis": "integer count from a static source analysis; see the unresolved assumptions for what it cannot see",
+    "kind": "exact",
+    "value": 0
+   },
+   "unit": "tasks",
+   "value": 2
+  },
+  {
+   "assigned_by": "ciw.lab.evidence",
+   "basis": {
+    "checks": [
+     {
+      "comparison": "abs_le",
+      "observed": 0.0,
+      "passed": true,
+      "reference": "registered nodes recorded as failed",
+      "reference_kind": "exact_arithmetic",
+      "tolerance": 0.0
+     }
+    ]
+   },
+   "claim": "Registered regression tests failing in the JUnit record of this run",
+   "domain": "computational_pipeline",
+   "evidence_status": "numerically_verified",
+   "regression_tolerance": {
+    "abs": 0,
+    "rel": 0
+   },
+   "uncertainty": {
+    "basis": "integer count over retained report files; no rounding, sampling or tolerance",
+    "kind": "exact",
+    "value": 0
+   },
+   "unit": "node ids",
    "value": 0
   }
  ],
  "generated_artifacts": [
   {
-   "bytes": 85713,
+   "bytes": 115617,
    "path": "artifacts/T168/regression-coverage.json",
-   "sha256": "ed92d20d9c06a580756b69da4d6f805389f595f86eb5a2e20049fefa4b415232"
+   "sha256": "c95588cd182caa93adc1a1a1ee0c47f4c9600a87ab3599394dc6229bcb1fcdfa"
   }
  ],
- "hypothesis": "Every completed or partial experiment is backed by at least one existing pytest regression test, and the whole queue is guarded by a tolerance-aware comparison with retained reports.",
+ "hypothesis": "Every completed or partial experiment is backed by at least one registered pytest regression test that runs the task and asserts its evidence labels, and those tests pass.",
  "input_data": [
-  "Retained reports T001-T154 in the same output directory"
+  "Retained reports of T001-T167 in the same output directory (this section's T155-T167 included)",
+  "Registered regression node ids of T001-T168",
+  "tests/ of the repository (CIW_LAB_REPOSITORY_ROOT in the clean room)"
  ],
- "mathematical_model": "Coverage = tasks whose registered regression_tests all resolve to test functions in tests/.",
+ "mathematical_model": "Per task: registered node ids resolved against test functions (AST); a task is tied when one of its nodes names the task (id in node id, test name or source, or the task function) and asserts an evidence label; JUnit outcomes per node as recorded in the reports.",
  "number": 168,
- "numerical_result": "154 reports; 0 completed/partial tasks without regression tests; 0 dangling node ids; 0 failed test records.",
+ "numerical_result": "168 tasks, 420 registered nodes; 0 completed/partial tasks without regression tests; 0 dangling node ids; 2 tasks without a tied test; JUnit: 419 passed, 0 failed, 0 skipped or not run.",
  "observation_model": "No physical observation; reads retained computational records only.",
  "physical_validation_status": {
   "statement": "Physical validation requires acquired hardware evidence; none was acquired for this task.",
@@ -107,24 +169,29 @@
   "python": "3.12.3",
   "scipy": "1.16.2",
   "sources": {
-   "src/ciw/lab/research_portfolio.py": "6cd37207af02c6d64dc88b22c7ff2148e85f1eeebaa5445cd894879bc3043ba3"
+   "src/ciw/lab/research_portfolio.py": "0fd0ed475a38bf81fd2145f64cf1335856a471c58d406347c3b66b0f66672702"
   },
   "sympy": "1.14.0"
  },
- "recommended_next_task": "Run scripts/check_lab.py in CI so ciw lab verify guards every retained finding.",
- "report_id": "sha256:3646875c96d13d8f845c56d28d5daa31dd4c5ebc245ab0924bc8ce9eb1e0fb83",
+ "recommended_next_task": "Mark each regression test with the task identities it guards (a pytest marker), so the tie between tests and tasks is declared rather than inferred from source text.",
+ "report_id": "sha256:541d2b83849e36ab018105fbf0fc39f3b790fad79d8a0386a64f5d4c71c7c2df",
  "schema": "ciw.lab-task-report.v1",
  "section": "research-portfolio",
- "state": "completed",
+ "state": "partial",
  "task_id": "T168",
  "tests_passed": [
-  "check: Completed or partial tasks lacking a regression test vs regression-coverage.json recomputed from a fresh read of the retained reports",
-  "check: Completed or partial tasks lacking a regression test vs tasks without regression tests",
+  "check: Completed or partial tasks lacking a regression test vs completed or partial tasks with no registered regression test",
   "check: Registered regression node ids that do not resolve to a test function vs dangling node ids",
+  "check: Tasks without a registered test that both names the task and asserts an evidence label vs tie-analysis probe cases classified wrongly",
+  "check: Registered regression tests failing in the JUnit record of this run vs registered nodes recorded as failed",
   "pytest: tests/test_lab_research_portfolio.py::test_regression_coverage_is_checked"
  ],
  "tests_skipped": [],
  "title": "Convert successful experiments into permanent regression tests.",
- "uncertainty": "Static resolution of node ids; pass/fail only where a JUnit record was supplied.",
- "unresolved_assumptions": []
+ "uncertainty": "Exact counts; ties are inferred statically from source text.",
+ "unresolved_assumptions": [
+  "Tasks without a registered test that names the task and asserts a label: T016, T135",
+  "The tie analysis reads source text: a task id computed at run time (for example from a range) is not seen, and mentioning a label is taken as asserting it.",
+  "The tolerance-aware comparison with retained reports (ciw lab verify, run by scripts/check_lab.py in CI) is outside this report."
+ ]
 }

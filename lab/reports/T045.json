@@ -309,14 +309,14 @@
   "python": "3.12.3",
   "scipy": "1.16.2",
   "sources": {
-   "src/ciw/lab/observation.py": "9ebedc1a1693aaa28965ba0c97837ad2d2c45bf0fd360857cf7b32c0993ed5fc",
-   "src/ciw/lab/observation_chord.py": "9b6fe24560daf8b06617824d20854f695e1f73774215a03acc41a28855ba164a",
+   "src/ciw/lab/observation.py": "6e5bf960e17dffb62bdaf29d28be9a0f165fd68f8498d173b66eab08fa22ad70",
+   "src/ciw/lab/observation_chord.py": "cfbaaaf604b32b686178ea036d27c153d8eebc7d290444c60d7699c1fc60faf5",
    "src/ciw/lab/observation_modes.py": "bfd6aa4471cc876a7ac2fb8790a4a5c4f478c547350b059311f5e6d53702c83e"
   },
   "sympy": "1.14.0"
  },
  "recommended_next_task": "T058: track exact frame and clock bases and apply declared mappings",
- "report_id": "sha256:57bd1d99bf9769d76f9f43f1ceb79710064dd936918020484991f25b6d0217b0",
+ "report_id": "sha256:cda93682b8f68b0787214bcde837a301b69952ea2cdd597de0db050fae92ec79",
  "schema": "ciw.lab-task-report.v1",
  "section": "observation",
  "state": "completed",

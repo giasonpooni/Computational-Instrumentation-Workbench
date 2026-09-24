@@ -473,9 +473,9 @@
  ],
  "generated_artifacts": [
   {
-   "bytes": 10628,
+   "bytes": 10823,
    "path": "artifacts/T128/protocol-domed-coupon.json",
-   "sha256": "b7a464ac98c95eca03461086967315eafeacd9560e603d12d3b1cf81f5564d3e"
+   "sha256": "10d7497aafd05157f1fa594f165214afb83fb7f770751bcfad08c9477edb0ab8"
   },
   {
    "bytes": 1565,
@@ -510,15 +510,15 @@
   "python": "3.12.3",
   "scipy": "1.16.2",
   "sources": {
-   "src/ciw/lab/manufacturing.py": "088763a0bcc42bf085c1e228797a5dc0d702b994f2a49e053cbe2b0a5622e25d",
+   "src/ciw/lab/manufacturing.py": "f4cd90e1df33b910b78daf4b0556a8861e044d83701474f841e85fd9d96f9063",
    "src/ciw/lab/manufacturing_geometry.py": "1db6df2ddf778668da2ffd53a66bcddbff4fc933d6f299e8f283cedc60a9332f",
-   "src/ciw/lab/manufacturing_metrology.py": "afbb6fccf146ca4f47850805c118d2f1bf6186872f381b298ab924a9214257ec",
-   "src/ciw/lab/manufacturing_records.py": "66970104ea454e836c5cbafc3013c90e721c3e96ad7f16780c32250112cac921"
+   "src/ciw/lab/manufacturing_metrology.py": "aef4708b0f296fc66087a6382881a0564c5edcb6d7961b5e472aa711e29feb5d",
+   "src/ciw/lab/manufacturing_records.py": "015ea7fccc586f4b95f64e7ffbc1f6c34eec20b8245778ede3c2324006537087"
   },
   "sympy": "1.14.0"
  },
  "recommended_next_task": "T138: compare predicted and measured separation once MFG-COUPON-01 has been executed and retained (T139).",
- "report_id": "sha256:9aa91cae77ac62533552998dfa7d91da23403f3be345d57115edde1b6d18f59e",
+ "report_id": "sha256:0bde9ff0b202a6da90502a11e774efb0845efe582b1a5e39995088b225d2a02e",
  "schema": "ciw.lab-task-report.v1",
  "section": "manufacturing",
  "state": "completed",
@@ -556,7 +556,7 @@
  "title": "Design a curved coupon experiment.",
  "uncertainty": "Solver error ~1e-6 (Richardson); geometry, start-pose and instrument terms are budgeted in T138 and T140.",
  "unresolved_assumptions": [
-  "The formed coupon will not be an exact Gaussian; T129 scanning identifies the as-built surface.",
+  "The formed coupon will not be an exact Gaussian; the T129 scan protocol (MFG-SCAN-01) fits the as-built dome and tests the Gaussian model by its residual, and a refuted model needs a prediction on the scanned surface.",
   "The tapes are assumed to follow geodesics; their realized start pose is measured and conditioned on (T138), while in-plane tape bending along the route is not modelled.",
   "Geometry independence (sympy) covers six points; elsewhere the geometry is checked against ciw finite differences only."
  ]

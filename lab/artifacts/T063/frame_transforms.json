@@ -40,6 +40,10 @@
   1.0,
   0.2
  ],
+ "mean_max_abs_z": 1.7035969695753024,
+ "mean_velocity_max_abs_z": 0.8220051113711001,
+ "mean_z_critical": 4.003167571450172,
+ "means_tested": 16,
  "moments_tested": 40,
  "per_map": {
   "composite": {
@@ -263,6 +267,7 @@
    ]
   }
  },
+ "relative_asymmetry": 1.2176752799798933e-16,
  "rotated_only": {
   "gate_99": 9.21034037197618,
   "mean_d2": 14.49496148224193,

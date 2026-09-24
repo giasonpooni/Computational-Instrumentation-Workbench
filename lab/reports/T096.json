@@ -16,7 +16,7 @@
   "primary": "numerically_verified"
  },
  "expected_invariant": "All valid accepted, all single-field mutations refused, identity invariant under member order.",
- "experiment": "Seal records with the lab's own canonical encoder (checked against json.dumps), re-validate them with members reordered, mutate each non-identity field and the identity itself; build valid ESM responses and apply every boundary mutation.",
+ "experiment": "Seal records with the lab-written canonical encoder (checked byte for byte against the json.dumps call exchange._identity uses), re-validate them with members reordered, mutate each non-identity field and the identity itself; build valid ESM responses and apply every boundary mutation.",
  "failure_modes_checked": [
   "member-order dependence",
   "identity forgery",
@@ -68,7 +68,7 @@
      "seed": 9601
     }
    },
-   "claim": "exchange._identity accepts every synthetic result and verification record sealed by an independently written canonical encoder, in any member order, and refuses every single-field mutation and a forged identity",
+   "claim": "exchange._identity accepts every synthetic result and verification record sealed by a lab-written canonical encoder that agrees byte for byte with json.dumps, in any member order, and refuses every single-field mutation and a forged identity",
    "domain": "computational_pipeline",
    "evidence_status": "numerically_verified",
    "regression_tolerance": {
@@ -257,22 +257,22 @@
   "python": "3.12.3",
   "scipy": "1.16.2",
   "sources": {
-   "src/ciw/lab/exchange_provenance_bundles.py": "a505b35560263c1b473912f79e61b15b7e474f8eb1807e691847e4c69791c2d3",
-   "src/ciw/lab/exchange_provenance_bundles_fixtures.py": "f30205e8305a225f24d94b06cba8b519ecea4680ca723aaca3591ff707d04e1c"
+   "src/ciw/lab/exchange_provenance_bundles.py": "3acc6fd6976bb5e6dd8ad3bfc3d09a1d9594ca0a06f4db823581e5b651d4835e",
+   "src/ciw/lab/exchange_provenance_bundles_fixtures.py": "7d6da1148d3744ae1e754b53f697b5b4919aff2666788ae6aec0e48e6e2380c9"
   },
   "sympy": "1.14.0"
  },
  "recommended_next_task": "T097: exact SCR/SET/PPDA integrations when the pinned checkouts are bound.",
- "report_id": "sha256:91b2e9683aa27cd41a1ff382df68cce483523f55505cb7592920947e207a6715",
+ "report_id": "sha256:5954ef6d8afa517abe5485b48d10285181637c841dbb9e33aba07b409b1488fd",
  "schema": "ciw.lab-task-report.v1",
  "section": "exchange-provenance",
  "state": "completed",
  "task_id": "T096",
  "tests_passed": [
-  "check: exchange._identity accepts every synthetic result and verification record sealed by an independently written canonical encoder, in any member order, and refuses every single-field mutation and a forged identity vs records whose lab canonical text differs from json.dumps canonical text",
-  "check: exchange._identity accepts every synthetic result and verification record sealed by an independently written canonical encoder, in any member order, and refuses every single-field mutation and a forged identity vs valid records not accepted",
-  "check: exchange._identity accepts every synthetic result and verification record sealed by an independently written canonical encoder, in any member order, and refuses every single-field mutation and a forged identity vs member-reordered records not accepted",
-  "check: exchange._identity accepts every synthetic result and verification record sealed by an independently written canonical encoder, in any member order, and refuses every single-field mutation and a forged identity vs mutations not refused",
+  "check: exchange._identity accepts every synthetic result and verification record sealed by a lab-written canonical encoder that agrees byte for byte with json.dumps, in any member order, and refuses every single-field mutation and a forged identity vs records whose lab canonical text differs from json.dumps canonical text",
+  "check: exchange._identity accepts every synthetic result and verification record sealed by a lab-written canonical encoder that agrees byte for byte with json.dumps, in any member order, and refuses every single-field mutation and a forged identity vs valid records not accepted",
+  "check: exchange._identity accepts every synthetic result and verification record sealed by a lab-written canonical encoder that agrees byte for byte with json.dumps, in any member order, and refuses every single-field mutation and a forged identity vs member-reordered records not accepted",
+  "check: exchange._identity accepts every synthetic result and verification record sealed by a lab-written canonical encoder that agrees byte for byte with json.dumps, in any member order, and refuses every single-field mutation and a forged identity vs mutations not refused",
   "check: candidate_evidence.validate_response accepts valid synthetic ESM responses and refuses every boundary mutation vs valid synthetic responses refused",
   "check: candidate_evidence.validate_response accepts valid synthetic ESM responses and refuses every boundary mutation vs boundary mutations accepted",
   "check: Observation-batch identities are caller-declared: mutated batches pass exchange._identity vs mutated batches accepted",
@@ -283,7 +283,7 @@
  "title": "Add provider-free conformance tests.",
  "uncertainty": "Exact.",
  "unresolved_assumptions": [
-  "Acceptance of valid records is agreement between the lab's canonical encoder and exchange._identity (both CIW-side code written to the same producer specification); producer-sealed artifacts are accepted only in T097's PPDA/SCR/SET roundtrip, when those checkouts are bound.",
+  "Acceptance of valid records follows from the lab encoder's byte-for-byte agreement with the json.dumps call exchange._identity uses (both CIW-side code, same origin), so it is not independent evidence; producer-sealed artifacts are tested only in T097's PPDA/SCR/SET roundtrip, when those checkouts are bound.",
   "JSON escaping (for example \\u00e9 for é) is resolved by the JSON parser before _identity sees a record, so it is not an identity property and is not tested here.",
   "The bundle stubs contain only the fields validate_response reads; full native bundles need providers.",
   "Mutations are single-field; combined mutations that restore consistency are not explored."

@@ -14,12 +14,11 @@
   },
   "primary": "numerically_verified"
  },
- "expected_invariant": "Aggregates are exact functions of retained reports and never change a label.",
- "experiment": "Scan retained reports for counterexample findings; write JSON and Markdown catalogues.",
+ "expected_invariant": "The catalogue holds exactly the retained findings that carry a counterexample, with their retained labels.",
+ "experiment": "Collect counterexample findings from the retained reports, recount counterexample keys in the raw report text, and write JSON and Markdown catalogues.",
  "failure_modes_checked": [
-  "missing reports",
-  "report identity mismatch (validate_report)",
-  "aggregate differs from its re-read bytes"
+  "counterexample findings dropped by the traversal (raw-text recount)",
+  "report identity mismatch (validate_report)"
  ],
  "findings": [
   {
@@ -27,53 +26,50 @@
    "basis": {
     "checks": [
      {
-      "observed": 0.0,
-      "passed": true,
-      "reference": "counterexamples.json recomputed from a fresh read of the retained reports",
-      "reference_kind": "exact_arithmetic",
-      "tolerance": 0.0
-     },
-     {
       "comparison": "abs_le",
       "observed": 0.0,
       "passed": true,
-      "reference": "catalogue size minus raw-text key count",
+      "reference": "catalogue size minus the raw-text count of counterexample keys",
       "reference_kind": "exact_arithmetic",
       "tolerance": 0.0
      }
     ]
    },
-   "claim": "Counterexample catalogue reproduces from retained reports",
+   "claim": "Counterexample catalogue lists every retained counterexample finding",
    "domain": "computational_pipeline",
    "evidence_status": "numerically_verified",
    "regression_tolerance": {
     "abs": 0,
     "rel": 0
    },
-   "uncertainty": null,
+   "uncertainty": {
+    "basis": "integer count over retained report files; no rounding, sampling or tolerance",
+    "kind": "exact",
+    "value": 0
+   },
    "unit": "counterexamples",
-   "value": 193
+   "value": 211
   }
  ],
  "generated_artifacts": [
   {
-   "bytes": 120454,
+   "bytes": 134359,
    "path": "artifacts/T157/counterexamples.json",
-   "sha256": "e298dbfa9a9fa38618e036445bc2260b773183ec27dd296b24043e6af50ed33d"
+   "sha256": "e88b7de63023591ec466299fb04302bcf79a5d6613ff224e0b39449a4471e159"
   },
   {
-   "bytes": 78600,
+   "bytes": 84460,
    "path": "artifacts/T157/COUNTEREXAMPLES.md",
-   "sha256": "7ef3f0a7e847113f5c9b0b2efd05bc731f93c01840bf35a12def7cbe129edfe3"
+   "sha256": "fbe257abcefb7249fb3e261c3c566d9cb0156e8df27e89778df7c11617738762"
   }
  ],
  "hypothesis": "Every counterexample recorded by a queue task can be collected with its witness and evidence status.",
  "input_data": [
-  "Retained reports T001-T154 in the same output directory"
+  "Retained reports of T001-T156 in the same output directory (findings with a counterexample)"
  ],
- "mathematical_model": "Catalogue = all findings carrying a counterexample statement, keyed by task and claim.",
+ "mathematical_model": "Catalogue = all retained findings carrying a counterexample statement, keyed by task and claim.",
  "number": 157,
- "numerical_result": "193 counterexamples from 111 tasks; labels {'numerically_verified': 189, 'independently_verified': 4}.",
+ "numerical_result": "211 counterexamples from 111 tasks; labels {'analytic': 2, 'independently_verified': 4, 'numerically_verified': 205}.",
  "observation_model": "No physical observation; reads retained computational records only.",
  "physical_validation_status": {
   "statement": "Physical validation requires acquired hardware evidence; none was acquired for this task.",
@@ -87,23 +83,25 @@
   "python": "3.12.3",
   "scipy": "1.16.2",
   "sources": {
-   "src/ciw/lab/research_portfolio.py": "6cd37207af02c6d64dc88b22c7ff2148e85f1eeebaa5445cd894879bc3043ba3"
+   "src/ciw/lab/research_portfolio.py": "0fd0ed475a38bf81fd2145f64cf1335856a471c58d406347c3b66b0f66672702"
   },
   "sympy": "1.14.0"
  },
  "recommended_next_task": "Turn each catalogued counterexample into a named regression fixture (T168).",
- "report_id": "sha256:f4f6dc21bf2faff1babb8b73333155b8f35f29367be6ab8050f85f3b988d7861",
+ "report_id": "sha256:5108fbb8f8726b7f4fd7bde2a1ff585caea46294c1b5782c2cc7871580654708",
  "schema": "ciw.lab-task-report.v1",
  "section": "research-portfolio",
  "state": "completed",
  "task_id": "T157",
  "tests_passed": [
-  "check: Counterexample catalogue reproduces from retained reports vs counterexamples.json recomputed from a fresh read of the retained reports",
-  "check: Counterexample catalogue reproduces from retained reports vs catalogue size minus raw-text key count",
-  "pytest: tests/test_lab_research_portfolio.py::test_catalogue_tasks_aggregate_retained_reports"
+  "check: Counterexample catalogue lists every retained counterexample finding vs catalogue size minus the raw-text count of counterexample keys",
+  "pytest: tests/test_lab_research_portfolio.py::test_counterexample_catalogue"
  ],
  "tests_skipped": [],
  "title": "Maintain a counterexample catalogue.",
- "uncertainty": "Exact aggregation; each counterexample carries its own uncertainty in its source report.",
- "unresolved_assumptions": []
+ "uncertainty": "Exact count; each counterexample carries its own uncertainty in its source report.",
+ "unresolved_assumptions": [
+  "Whether each catalogued counterexample is genuine is not re-judged here; each rests on its source finding's checks.",
+  "Counterexamples recorded by T158 and later tasks run after this catalogue and are not in it."
+ ]
 }

@@ -1,6 +1,2008 @@
 {
  "level": 18.33374557872416,
- "rows": [
+ "runtime": [
+  {
+   "code_with_level": "CERTIFIED_WITH_MARGIN",
+   "code_without_level": "CERTIFIED_WITH_MARGIN",
+   "exact_exceeds_level": false,
+   "radius": 0.6006908401058091,
+   "x": [
+    0.0059951289630242495,
+    0.012283707000158071
+   ]
+  },
+  {
+   "code_with_level": "OUTSIDE_LEVEL_SET",
+   "code_without_level": "CERTIFIED_WITH_MARGIN",
+   "exact_exceeds_level": true,
+   "radius": 33629.6699667062,
+   "x": [
+    338.46060930970725,
+    -430.2173818156844
+   ]
+  },
+  {
+   "code_with_level": "CERTIFIED_WITH_MARGIN",
+   "code_without_level": "CERTIFIED_WITH_MARGIN",
+   "exact_exceeds_level": false,
+   "radius": 0.0002587497175282647,
+   "x": [
+    2.5903720855005216e-06,
+    2.176652994237539e-06
+   ]
+  },
+  {
+   "code_with_level": "OUTSIDE_LEVEL_SET",
+   "code_without_level": "CERTIFIED_WITH_MARGIN",
+   "exact_exceeds_level": true,
+   "radius": 27299.089168996295,
+   "x": [
+    271.6877406670208,
+    855.7456928180951
+   ]
+  },
+  {
+   "code_with_level": "OUTSIDE_LEVEL_SET",
+   "code_without_level": "CERTIFIED_WITH_MARGIN",
+   "exact_exceeds_level": true,
+   "radius": 1.7241035281922086,
+   "x": [
+    -0.017296485800156317,
+    -0.00013865777596016668
+   ]
+  },
+  {
+   "code_with_level": "CERTIFIED_WITH_MARGIN",
+   "code_without_level": "CERTIFIED_WITH_MARGIN",
+   "exact_exceeds_level": false,
+   "radius": 4.1912615802995335e-05,
+   "x": [
+    4.2394844138144164e-07,
+    -1.4008679295934364e-06
+   ]
+  },
+  {
+   "code_with_level": "OUTSIDE_LEVEL_SET",
+   "code_without_level": "CERTIFIED_WITH_MARGIN",
+   "exact_exceeds_level": true,
+   "radius": 1.8934897961436576,
+   "x": [
+    0.018959507191801696,
+    0.0145203185504193
+   ]
+  },
+  {
+   "code_with_level": "OUTSIDE_LEVEL_SET",
+   "code_without_level": "CERTIFIED_WITH_MARGIN",
+   "exact_exceeds_level": true,
+   "radius": 12379.467345423165,
+   "x": [
+    -124.36450450096162,
+    67.42502145360915
+   ]
+  },
+  {
+   "code_with_level": "CERTIFIED_WITH_MARGIN",
+   "code_without_level": "CERTIFIED_WITH_MARGIN",
+   "exact_exceeds_level": false,
+   "radius": 1.1536894189950853e-08,
+   "x": [
+    -1.1613317121848413e-10,
+    1.5640328771703452e-10
+   ]
+  },
+  {
+   "code_with_level": "CERTIFIED_WITH_MARGIN",
+   "code_without_level": "CERTIFIED_WITH_MARGIN",
+   "exact_exceeds_level": false,
+   "radius": 3.9464733637338264e-06,
+   "x": [
+    4.133604152501395e-08,
+    -7.676020083267911e-07
+   ]
+  },
+  {
+   "code_with_level": "OUTSIDE_LEVEL_SET",
+   "code_without_level": "CERTIFIED_WITH_MARGIN",
+   "exact_exceeds_level": true,
+   "radius": 33268.55685456271,
+   "x": [
+    -335.9108755666067,
+    865.2002598734739
+   ]
+  },
+  {
+   "code_with_level": "CERTIFIED_WITH_MARGIN",
+   "code_without_level": "CERTIFIED_WITH_MARGIN",
+   "exact_exceeds_level": false,
+   "radius": 0.0047102302536699316,
+   "x": [
+    -4.7248656338510124e-05,
+    -2.419712140185527e-06
+   ]
+  },
+  {
+   "code_with_level": "CERTIFIED_WITH_MARGIN",
+   "code_without_level": "CERTIFIED_WITH_MARGIN",
+   "exact_exceeds_level": false,
+   "radius": 0.0003610935745265576,
+   "x": [
+    3.600344818675846e-06,
+    8.7487896462669e-06
+   ]
+  },
+  {
+   "code_with_level": "OUTSIDE_LEVEL_SET",
+   "code_without_level": "CERTIFIED_WITH_MARGIN",
+   "exact_exceeds_level": true,
+   "radius": 600498.851882865,
+   "x": [
+    6031.579681358379,
+    -2851.1619544099926
+   ]
+  },
+  {
+   "code_with_level": "CERTIFIED_WITH_MARGIN",
+   "code_without_level": "CERTIFIED_WITH_MARGIN",
+   "exact_exceeds_level": false,
+   "radius": 5.171776905798103e-06,
+   "x": [
+    5.194680442797389e-08,
+    -2.456346480936442e-08
+   ]
+  },
+  {
+   "code_with_level": "OUTSIDE_LEVEL_SET",
+   "code_without_level": "CERTIFIED_WITH_MARGIN",
+   "exact_exceeds_level": true,
+   "radius": 6673.554922058114,
+   "x": [
+    66.68051499488969,
+    106.86682647933684
+   ]
+  },
+  {
+   "code_with_level": "CERTIFIED_WITH_MARGIN",
+   "code_without_level": "CERTIFIED_WITH_MARGIN",
+   "exact_exceeds_level": false,
+   "radius": 0.014195458722696425,
+   "x": [
+    0.00013745659324484948,
+    0.0018500766034834696
+   ]
+  },
+  {
+   "code_with_level": "OUTSIDE_LEVEL_SET",
+   "code_without_level": "CERTIFIED_WITH_MARGIN",
+   "exact_exceeds_level": true,
+   "radius": 1.1646342285051565,
+   "x": [
+    -0.011306626193348485,
+    -0.14143637599214892
+   ]
+  },
+  {
+   "code_with_level": "CERTIFIED_WITH_MARGIN",
+   "code_without_level": "CERTIFIED_WITH_MARGIN",
+   "exact_exceeds_level": false,
+   "radius": 0.5082169090152353,
+   "x": [
+    -0.005113706102331619,
+    0.006032974864079989
+   ]
+  },
+  {
+   "code_with_level": "OUTSIDE_LEVEL_SET",
+   "code_without_level": "CERTIFIED_WITH_MARGIN",
+   "exact_exceeds_level": true,
+   "radius": 4.7572501544945585,
+   "x": [
+    0.04757936504509914,
+    0.05811343878805798
+   ]
+  },
+  {
+   "code_with_level": "CERTIFIED_WITH_MARGIN",
+   "code_without_level": "CERTIFIED_WITH_MARGIN",
+   "exact_exceeds_level": false,
+   "radius": 0.13163087842376545,
+   "x": [
+    -0.0013279768200851552,
+    0.002977938912118648
+   ]
+  },
+  {
+   "code_with_level": "CERTIFIED_WITH_MARGIN",
+   "code_without_level": "CERTIFIED_WITH_MARGIN",
+   "exact_exceeds_level": false,
+   "radius": 2.1571074401876855e-07,
+   "x": [
+    -2.171497106141562e-09,
+    2.964846164937857e-09
+   ]
+  },
+  {
+   "code_with_level": "OUTSIDE_LEVEL_SET",
+   "code_without_level": "CERTIFIED_WITH_MARGIN",
+   "exact_exceeds_level": true,
+   "radius": 501.44735642149055,
+   "x": [
+    5.081739312806118,
+    -20.71161742084256
+   ]
+  },
+  {
+   "code_with_level": "OUTSIDE_LEVEL_SET",
+   "code_without_level": "CERTIFIED_WITH_MARGIN",
+   "exact_exceeds_level": true,
+   "radius": 1530960.8037265847,
+   "x": [
+    -15184.971990884007,
+    -67737.7071659963
+   ]
+  },
+  {
+   "code_with_level": "CERTIFIED_WITH_MARGIN",
+   "code_without_level": "CERTIFIED_WITH_MARGIN",
+   "exact_exceeds_level": false,
+   "radius": 4.854441839456865e-06,
+   "x": [
+    -4.871763454036971e-08,
+    6.405567313309524e-09
+   ]
+  },
+  {
+   "code_with_level": "CERTIFIED_WITH_MARGIN",
+   "code_without_level": "CERTIFIED_WITH_MARGIN",
+   "exact_exceeds_level": false,
+   "radius": 0.0004701753972008298,
+   "x": [
+    4.742175326705877e-06,
+    -1.0126531026730842e-05
+   ]
+  },
+  {
+   "code_with_level": "CERTIFIED_WITH_MARGIN",
+   "code_without_level": "CERTIFIED_WITH_MARGIN",
+   "exact_exceeds_level": false,
+   "radius": 1.81992723106442e-05,
+   "x": [
+    1.8299523354438533e-07,
+    -1.6509863671639756e-07
+   ]
+  },
+  {
+   "code_with_level": "OUTSIDE_LEVEL_SET",
+   "code_without_level": "CERTIFIED_WITH_MARGIN",
+   "exact_exceeds_level": true,
+   "radius": 1980.886441719581,
+   "x": [
+    -19.673046934230833,
+    -77.93511419975391
+   ]
+  },
+  {
+   "code_with_level": "OUTSIDE_LEVEL_SET",
+   "code_without_level": "CERTIFIED_WITH_MARGIN",
+   "exact_exceeds_level": true,
+   "radius": 1414678.468261299,
+   "x": [
+    14218.856059549524,
+    -10486.556776432775
+   ]
+  },
+  {
+   "code_with_level": "OUTSIDE_LEVEL_SET",
+   "code_without_level": "CERTIFIED_WITH_MARGIN",
+   "exact_exceeds_level": true,
+   "radius": 5566938.955168452,
+   "x": [
+    -55730.76337083338,
+    -47019.048563252
+   ]
+  },
+  {
+   "code_with_level": "CERTIFIED_WITH_MARGIN",
+   "code_without_level": "CERTIFIED_WITH_MARGIN",
+   "exact_exceeds_level": false,
+   "radius": 0.01878966216048974,
+   "x": [
+    -0.0001886973179648702,
+    7.670019815578805e-05
+   ]
+  },
+  {
+   "code_with_level": "OUTSIDE_LEVEL_SET",
+   "code_without_level": "CERTIFIED_WITH_MARGIN",
+   "exact_exceeds_level": true,
+   "radius": 300401.135529074,
+   "x": [
+    -3012.4652087189725,
+    -503.72650942230564
+   ]
+  },
+  {
+   "code_with_level": "OUTSIDE_LEVEL_SET",
+   "code_without_level": "CERTIFIED_WITH_MARGIN",
+   "exact_exceeds_level": true,
+   "radius": 97497571.00209966,
+   "x": [
+    -973271.9601727254,
+    -1912641.4427389854
+   ]
+  },
+  {
+   "code_with_level": "OUTSIDE_LEVEL_SET",
+   "code_without_level": "CERTIFIED_WITH_MARGIN",
+   "exact_exceeds_level": true,
+   "radius": 777908.9779134413,
+   "x": [
+    7781.490555945729,
+    9000.568995662597
+   ]
+  },
+  {
+   "code_with_level": "CERTIFIED_WITH_MARGIN",
+   "code_without_level": "CERTIFIED_WITH_MARGIN",
+   "exact_exceeds_level": false,
+   "radius": 0.5994540178683827,
+   "x": [
+    0.006026351452526835,
+    -0.00495304971698048
+   ]
+  },
+  {
+   "code_with_level": "OUTSIDE_LEVEL_SET",
+   "code_without_level": "CERTIFIED_WITH_MARGIN",
+   "exact_exceeds_level": true,
+   "radius": 58291792.993452325,
+   "x": [
+    -482119.17879186675,
+    -31927416.372170676
+   ]
+  },
+  {
+   "code_with_level": "OUTSIDE_LEVEL_SET",
+   "code_without_level": "CERTIFIED_WITH_MARGIN",
+   "exact_exceeds_level": true,
+   "radius": 656346.5313998433,
+   "x": [
+    6618.658101155049,
+    -13635.268462229616
+   ]
+  },
+  {
+   "code_with_level": "CERTIFIED_WITH_MARGIN",
+   "code_without_level": "CERTIFIED_WITH_MARGIN",
+   "exact_exceeds_level": false,
+   "radius": 2.393823055605754e-08,
+   "x": [
+    -2.406667560432672e-10,
+    2.0345091018301278e-10
+   ]
+  },
+  {
+   "code_with_level": "OUTSIDE_LEVEL_SET",
+   "code_without_level": "CERTIFIED_WITH_MARGIN",
+   "exact_exceeds_level": true,
+   "radius": 4210064.342627993,
+   "x": [
+    -42050.44742808876,
+    -73468.45695055039
+   ]
+  },
+  {
+   "code_with_level": "OUTSIDE_LEVEL_SET",
+   "code_without_level": "CERTIFIED_WITH_MARGIN",
+   "exact_exceeds_level": true,
+   "radius": 14.49590631216673,
+   "x": [
+    -0.14303366010741558,
+    -0.9224764941343193
+   ]
+  },
+  {
+   "code_with_level": "OUTSIDE_LEVEL_SET",
+   "code_without_level": "CERTIFIED_WITH_MARGIN",
+   "exact_exceeds_level": true,
+   "radius": 2951686.3830819465,
+   "x": [
+    29653.347381917367,
+    -16322.777030587922
+   ]
+  },
+  {
+   "code_with_level": "CERTIFIED_WITH_MARGIN",
+   "code_without_level": "CERTIFIED_WITH_MARGIN",
+   "exact_exceeds_level": false,
+   "radius": 4.8829373911190945e-08,
+   "x": [
+    4.894293171684749e-10,
+    1.7645346000574214e-10
+   ]
+  },
+  {
+   "code_with_level": "OUTSIDE_LEVEL_SET",
+   "code_without_level": "CERTIFIED_WITH_MARGIN",
+   "exact_exceeds_level": true,
+   "radius": 95847.00098653544,
+   "x": [
+    -960.8897208218915,
+    -270.8107210745264
+   ]
+  },
+  {
+   "code_with_level": "OUTSIDE_LEVEL_SET",
+   "code_without_level": "CERTIFIED_WITH_MARGIN",
+   "exact_exceeds_level": true,
+   "radius": 3216933.6289789663,
+   "x": [
+    32163.339529026645,
+    43471.9515567323
+   ]
+  },
+  {
+   "code_with_level": "OUTSIDE_LEVEL_SET",
+   "code_without_level": "CERTIFIED_WITH_MARGIN",
+   "exact_exceeds_level": true,
+   "radius": 7847959.910081444,
+   "x": [
+    78589.68823359035,
+    56990.316172157225
+   ]
+  },
+  {
+   "code_with_level": "OUTSIDE_LEVEL_SET",
+   "code_without_level": "CERTIFIED_WITH_MARGIN",
+   "exact_exceeds_level": true,
+   "radius": 1262.7046144275268,
+   "x": [
+    -12.614316640057345,
+    -21.126214916972426
+   ]
+  },
+  {
+   "code_with_level": "CERTIFIED_WITH_MARGIN",
+   "code_without_level": "CERTIFIED_WITH_MARGIN",
+   "exact_exceeds_level": false,
+   "radius": 0.006057907087974329,
+   "x": [
+    6.07934811063656e-05,
+    -7.2979514981263e-06
+   ]
+  },
+  {
+   "code_with_level": "CERTIFIED_WITH_MARGIN",
+   "code_without_level": "CERTIFIED_WITH_MARGIN",
+   "exact_exceeds_level": false,
+   "radius": 0.7230556990493691,
+   "x": [
+    0.007245523114928259,
+    0.003344904378229835
+   ]
+  },
+  {
+   "code_with_level": "OUTSIDE_LEVEL_SET",
+   "code_without_level": "CERTIFIED_WITH_MARGIN",
+   "exact_exceeds_level": true,
+   "radius": 67196125.27707389,
+   "x": [
+    -672491.2894056418,
+    -650573.6948243391
+   ]
+  },
+  {
+   "code_with_level": "CERTIFIED_WITH_MARGIN",
+   "code_without_level": "CERTIFIED_WITH_MARGIN",
+   "exact_exceeds_level": false,
+   "radius": 2.119507331318256e-07,
+   "x": [
+    2.1229538441760678e-09,
+    1.3522863654354694e-09
+   ]
+  },
+  {
+   "code_with_level": "CERTIFIED_WITH_MARGIN",
+   "code_without_level": "CERTIFIED_WITH_MARGIN",
+   "exact_exceeds_level": false,
+   "radius": 0.032215154943280484,
+   "x": [
+    -0.00032506318002810706,
+    0.00075160112530238
+   ]
+  },
+  {
+   "code_with_level": "CERTIFIED_WITH_MARGIN",
+   "code_without_level": "CERTIFIED_WITH_MARGIN",
+   "exact_exceeds_level": false,
+   "radius": 0.003034102401532207,
+   "x": [
+    -3.055557283001157e-05,
+    4.6602384255648336e-05
+   ]
+  },
+  {
+   "code_with_level": "OUTSIDE_LEVEL_SET",
+   "code_without_level": "CERTIFIED_WITH_MARGIN",
+   "exact_exceeds_level": true,
+   "radius": 19598.63578453031,
+   "x": [
+    -196.94974446587455,
+    131.2390922357367
+   ]
+  },
+  {
+   "code_with_level": "OUTSIDE_LEVEL_SET",
+   "code_without_level": "CERTIFIED_WITH_MARGIN",
+   "exact_exceeds_level": true,
+   "radius": 1509.9012194626494,
+   "x": [
+    15.176758142869819,
+    -11.522158870044166
+   ]
+  },
+  {
+   "code_with_level": "OUTSIDE_LEVEL_SET",
+   "code_without_level": "CERTIFIED_WITH_MARGIN",
+   "exact_exceeds_level": true,
+   "radius": 32353605.420584425,
+   "x": [
+    325840.5303579369,
+    -503666.9666149647
+   ]
+  },
+  {
+   "code_with_level": "CERTIFIED_WITH_MARGIN",
+   "code_without_level": "CERTIFIED_WITH_MARGIN",
+   "exact_exceeds_level": false,
+   "radius": 0.0007383611490812918,
+   "x": [
+    7.434284317882069e-06,
+    -1.0720140038066813e-05
+   ]
+  },
+  {
+   "code_with_level": "CERTIFIED_WITH_MARGIN",
+   "code_without_level": "CERTIFIED_WITH_MARGIN",
+   "exact_exceeds_level": false,
+   "radius": 0.00044278298741077756,
+   "x": [
+    -4.448363276876125e-06,
+    2.472355969662314e-06
+   ]
+  },
+  {
+   "code_with_level": "CERTIFIED_WITH_MARGIN",
+   "code_without_level": "CERTIFIED_WITH_MARGIN",
+   "exact_exceeds_level": false,
+   "radius": 8.210699561571829e-05,
+   "x": [
+    -8.219174161570508e-07,
+    -7.162423676100762e-07
+   ]
+  },
+  {
+   "code_with_level": "CERTIFIED_WITH_MARGIN",
+   "code_without_level": "CERTIFIED_WITH_MARGIN",
+   "exact_exceeds_level": false,
+   "radius": 0.02273225439982218,
+   "x": [
+    0.00022808602136189558,
+    -1.1037825986915298e-05
+   ]
+  },
+  {
+   "code_with_level": "CERTIFIED_WITH_MARGIN",
+   "code_without_level": "CERTIFIED_WITH_MARGIN",
+   "exact_exceeds_level": false,
+   "radius": 0.8516399352870441,
+   "x": [
+    -0.008591819883420363,
+    0.019238284366944445
+   ]
+  },
+  {
+   "code_with_level": "OUTSIDE_LEVEL_SET",
+   "code_without_level": "CERTIFIED_WITH_MARGIN",
+   "exact_exceeds_level": true,
+   "radius": 63394177.68972928,
+   "x": [
+    637303.5124807495,
+    -522835.69664071687
+   ]
+  },
+  {
+   "code_with_level": "CERTIFIED_WITH_MARGIN",
+   "code_without_level": "CERTIFIED_WITH_MARGIN",
+   "exact_exceeds_level": false,
+   "radius": 2.4036257769724558e-08,
+   "x": [
+    2.4361574558939173e-10,
+    -1.0047554095399494e-09
+   ]
+  },
+  {
+   "code_with_level": "CERTIFIED_WITH_MARGIN",
+   "code_without_level": "CERTIFIED_WITH_MARGIN",
+   "exact_exceeds_level": false,
+   "radius": 8.010282966247613e-06,
+   "x": [
+    -8.009716432274379e-08,
+    -1.046116969865379e-07
+   ]
+  },
+  {
+   "code_with_level": "OUTSIDE_LEVEL_SET",
+   "code_without_level": "CERTIFIED_WITH_MARGIN",
+   "exact_exceeds_level": true,
+   "radius": 4.041669330866621,
+   "x": [
+    -0.041192499394864204,
+    0.26502776393986516
+   ]
+  },
+  {
+   "code_with_level": "CERTIFIED_WITH_MARGIN",
+   "code_without_level": "CERTIFIED_WITH_MARGIN",
+   "exact_exceeds_level": false,
+   "radius": 0.0033933997973290527,
+   "x": [
+    -3.377997633465344e-05,
+    -0.00010330150824073547
+   ]
+  },
+  {
+   "code_with_level": "CERTIFIED_WITH_MARGIN",
+   "code_without_level": "CERTIFIED_WITH_MARGIN",
+   "exact_exceeds_level": false,
+   "radius": 1.547148287841778e-08,
+   "x": [
+    1.5604671221573393e-10,
+    -3.339474324313961e-10
+   ]
+  },
+  {
+   "code_with_level": "CERTIFIED_WITH_MARGIN",
+   "code_without_level": "CERTIFIED_WITH_MARGIN",
+   "exact_exceeds_level": false,
+   "radius": 0.027955823126395465,
+   "x": [
+    0.00028039587141339903,
+    2.666905773211429e-05
+   ]
+  },
+  {
+   "code_with_level": "CERTIFIED_WITH_MARGIN",
+   "code_without_level": "CERTIFIED_WITH_MARGIN",
+   "exact_exceeds_level": false,
+   "radius": 8.028266402760388e-08,
+   "x": [
+    8.069243851827539e-10,
+    -5.981975054783244e-10
+   ]
+  },
+  {
+   "code_with_level": "CERTIFIED_WITH_MARGIN",
+   "code_without_level": "CERTIFIED_WITH_MARGIN",
+   "exact_exceeds_level": false,
+   "radius": 0.03777675400398287,
+   "x": [
+    0.0003791582787386641,
+    -6.688066164442676e-05
+   ]
+  },
+  {
+   "code_with_level": "OUTSIDE_LEVEL_SET",
+   "code_without_level": "CERTIFIED_WITH_MARGIN",
+   "exact_exceeds_level": true,
+   "radius": 5981939.305528356,
+   "x": [
+    60150.827013305956,
+    -55035.664866352985
+   ]
+  },
+  {
+   "code_with_level": "OUTSIDE_LEVEL_SET",
+   "code_without_level": "CERTIFIED_WITH_MARGIN",
+   "exact_exceeds_level": true,
+   "radius": 121016.3177025034,
+   "x": [
+    -1214.742437681719,
+    263.66585945273386
+   ]
+  },
+  {
+   "code_with_level": "OUTSIDE_LEVEL_SET",
+   "code_without_level": "CERTIFIED_WITH_MARGIN",
+   "exact_exceeds_level": true,
+   "radius": 159178.61310113245,
+   "x": [
+    -1603.378305587426,
+    2580.6980126423664
+   ]
+  },
+  {
+   "code_with_level": "CERTIFIED_WITH_MARGIN",
+   "code_without_level": "CERTIFIED_WITH_MARGIN",
+   "exact_exceeds_level": false,
+   "radius": 1.9191515550432867e-06,
+   "x": [
+    -1.9389683191823963e-08,
+    5.4858615551466605e-08
+   ]
+  },
+  {
+   "code_with_level": "CERTIFIED_WITH_MARGIN",
+   "code_without_level": "CERTIFIED_WITH_MARGIN",
+   "exact_exceeds_level": false,
+   "radius": 0.06913888730059219,
+   "x": [
+    -0.0006935777678091586,
+    -1.9368141486185074e-05
+   ]
+  },
+  {
+   "code_with_level": "OUTSIDE_LEVEL_SET",
+   "code_without_level": "CERTIFIED_WITH_MARGIN",
+   "exact_exceeds_level": true,
+   "radius": 5983727.8957326,
+   "x": [
+    60213.31617287834,
+    -72931.44792224333
+   ]
+  },
+  {
+   "code_with_level": "CERTIFIED_WITH_MARGIN",
+   "code_without_level": "CERTIFIED_WITH_MARGIN",
+   "exact_exceeds_level": false,
+   "radius": 1.7057915424630396e-05,
+   "x": [
+    -1.7020032994134846e-07,
+    -3.6607813115956703e-07
+   ]
+  },
+  {
+   "code_with_level": "OUTSIDE_LEVEL_SET",
+   "code_without_level": "CERTIFIED_WITH_MARGIN",
+   "exact_exceeds_level": true,
+   "radius": 9176621.45915652,
+   "x": [
+    92070.7764522686,
+    -3008.088610862437
+   ]
+  },
+  {
+   "code_with_level": "OUTSIDE_LEVEL_SET",
+   "code_without_level": "CERTIFIED_WITH_MARGIN",
+   "exact_exceeds_level": true,
+   "radius": 1.6168529143807693,
+   "x": [
+    0.015544924969888506,
+    0.24944685859500457
+   ]
+  },
+  {
+   "code_with_level": "CERTIFIED_WITH_MARGIN",
+   "code_without_level": "CERTIFIED_WITH_MARGIN",
+   "exact_exceeds_level": false,
+   "radius": 8.019274277287079e-08,
+   "x": [
+    8.09490140004127e-10,
+    -1.999167884203303e-09
+   ]
+  },
+  {
+   "code_with_level": "CERTIFIED_WITH_MARGIN",
+   "code_without_level": "CERTIFIED_WITH_MARGIN",
+   "exact_exceeds_level": false,
+   "radius": 6.900582759329901e-06,
+   "x": [
+    -6.923811759565202e-08,
+    3.5611932658065757e-09
+   ]
+  },
+  {
+   "code_with_level": "OUTSIDE_LEVEL_SET",
+   "code_without_level": "CERTIFIED_WITH_MARGIN",
+   "exact_exceeds_level": true,
+   "radius": 4510.179157346989,
+   "x": [
+    45.412281612496564,
+    -65.87048826743401
+   ]
+  },
+  {
+   "code_with_level": "CERTIFIED_WITH_MARGIN",
+   "code_without_level": "CERTIFIED_WITH_MARGIN",
+   "exact_exceeds_level": false,
+   "radius": 3.3964922590828356e-06,
+   "x": [
+    -3.3945915130012074e-08,
+    -5.08660903725142e-08
+   ]
+  },
+  {
+   "code_with_level": "CERTIFIED_WITH_MARGIN",
+   "code_without_level": "CERTIFIED_WITH_MARGIN",
+   "exact_exceeds_level": false,
+   "radius": 0.001071792827551126,
+   "x": [
+    -1.0763633503301382e-05,
+    4.387957554031854e-06
+   ]
+  },
+  {
+   "code_with_level": "OUTSIDE_LEVEL_SET",
+   "code_without_level": "CERTIFIED_WITH_MARGIN",
+   "exact_exceeds_level": true,
+   "radius": 47.68614857331077,
+   "x": [
+    -0.4784719998806115,
+    0.026711229550753578
+   ]
+  },
+  {
+   "code_with_level": "OUTSIDE_LEVEL_SET",
+   "code_without_level": "CERTIFIED_WITH_MARGIN",
+   "exact_exceeds_level": true,
+   "radius": 64.70919407945625,
+   "x": [
+    0.6502447110666453,
+    -0.4220871136975182
+   ]
+  },
+  {
+   "code_with_level": "OUTSIDE_LEVEL_SET",
+   "code_without_level": "CERTIFIED_WITH_MARGIN",
+   "exact_exceeds_level": true,
+   "radius": 1076420.4230132957,
+   "x": [
+    -10768.4594860867,
+    -12087.658784085266
+   ]
+  },
+  {
+   "code_with_level": "CERTIFIED_WITH_MARGIN",
+   "code_without_level": "CERTIFIED_WITH_MARGIN",
+   "exact_exceeds_level": false,
+   "radius": 0.0021321049891754244,
+   "x": [
+    -2.144434468109725e-05,
+    2.168846977971673e-05
+   ]
+  },
+  {
+   "code_with_level": "OUTSIDE_LEVEL_SET",
+   "code_without_level": "CERTIFIED_WITH_MARGIN",
+   "exact_exceeds_level": true,
+   "radius": 2117373.49560241,
+   "x": [
+    -21285.031155885285,
+    17067.592167050352
+   ]
+  },
+  {
+   "code_with_level": "CERTIFIED_WITH_MARGIN",
+   "code_without_level": "CERTIFIED_WITH_MARGIN",
+   "exact_exceeds_level": false,
+   "radius": 2.769724588294873e-07,
+   "x": [
+    -2.7761354965858965e-09,
+    -1.012917740587874e-09
+   ]
+  },
+  {
+   "code_with_level": "CERTIFIED_WITH_MARGIN",
+   "code_without_level": "CERTIFIED_WITH_MARGIN",
+   "exact_exceeds_level": false,
+   "radius": 1.1384741441585891e-08,
+   "x": [
+    1.1417276912731711e-10,
+    1.7119527516522813e-11
+   ]
+  },
+  {
+   "code_with_level": "CERTIFIED_WITH_MARGIN",
+   "code_without_level": "CERTIFIED_WITH_MARGIN",
+   "exact_exceeds_level": false,
+   "radius": 0.003980335522887062,
+   "x": [
+    3.995090845569726e-05,
+    -7.452407510736592e-06
+   ]
+  },
+  {
+   "code_with_level": "CERTIFIED_WITH_MARGIN",
+   "code_without_level": "CERTIFIED_WITH_MARGIN",
+   "exact_exceeds_level": false,
+   "radius": 3.008633565921051e-08,
+   "x": [
+    -3.0180815331672376e-10,
+    -1.1494890216399589e-11
+   ]
+  },
+  {
+   "code_with_level": "CERTIFIED_WITH_MARGIN",
+   "code_without_level": "CERTIFIED_WITH_MARGIN",
+   "exact_exceeds_level": false,
+   "radius": 4.316633259926834e-08,
+   "x": [
+    -4.380559933179859e-10,
+    2.0333150020662192e-09
+   ]
+  },
+  {
+   "code_with_level": "CERTIFIED_WITH_MARGIN",
+   "code_without_level": "CERTIFIED_WITH_MARGIN",
+   "exact_exceeds_level": false,
+   "radius": 7.10272865186901e-08,
+   "x": [
+    -7.032802566401571e-10,
+    -3.6019038340260184e-09
+   ]
+  },
+  {
+   "code_with_level": "CERTIFIED_WITH_MARGIN",
+   "code_without_level": "CERTIFIED_WITH_MARGIN",
+   "exact_exceeds_level": false,
+   "radius": 0.0008513621912922683,
+   "x": [
+    -8.521420206031162e-06,
+    -7.816270771151751e-06
+   ]
+  },
+  {
+   "code_with_level": "CERTIFIED_WITH_MARGIN",
+   "code_without_level": "CERTIFIED_WITH_MARGIN",
+   "exact_exceeds_level": false,
+   "radius": 0.0001885486805098543,
+   "x": [
+    -1.893984180486677e-06,
+    9.543815462764562e-07
+   ]
+  },
+  {
+   "code_with_level": "OUTSIDE_LEVEL_SET",
+   "code_without_level": "CERTIFIED_WITH_MARGIN",
+   "exact_exceeds_level": true,
+   "radius": 174.89810544870065,
+   "x": [
+    -1.7490493747689555,
+    -2.2087573468655313
+   ]
+  },
+  {
+   "code_with_level": "CERTIFIED_WITH_MARGIN",
+   "code_without_level": "CERTIFIED_WITH_MARGIN",
+   "exact_exceeds_level": false,
+   "radius": 2.254940133466118e-08,
+   "x": [
+    -2.2585917097449764e-10,
+    -1.4446835270945309e-10
+   ]
+  },
+  {
+   "code_with_level": "OUTSIDE_LEVEL_SET",
+   "code_without_level": "CERTIFIED_WITH_MARGIN",
+   "exact_exceeds_level": true,
+   "radius": 170.5120865728256,
+   "x": [
+    -1.6785701896549141,
+    -12.303630887848424
+   ]
+  },
+  {
+   "code_with_level": "CERTIFIED_WITH_MARGIN",
+   "code_without_level": "CERTIFIED_WITH_MARGIN",
+   "exact_exceeds_level": false,
+   "radius": 1.8890423063419974e-06,
+   "x": [
+    -1.881258850576477e-08,
+    -5.4453700941998486e-08
+   ]
+  },
+  {
+   "code_with_level": "OUTSIDE_LEVEL_SET",
+   "code_without_level": "CERTIFIED_WITH_MARGIN",
+   "exact_exceeds_level": true,
+   "radius": 118.43420395792656,
+   "x": [
+    -1.1918769357123464,
+    1.4805734218575048
+   ]
+  },
+  {
+   "code_with_level": "CERTIFIED_WITH_MARGIN",
+   "code_without_level": "CERTIFIED_WITH_MARGIN",
+   "exact_exceeds_level": false,
+   "radius": 0.0013631683167053131,
+   "x": [
+    1.3728313833964641e-05,
+    -2.103357087286017e-05
+   ]
+  },
+  {
+   "code_with_level": "OUTSIDE_LEVEL_SET",
+   "code_without_level": "CERTIFIED_WITH_MARGIN",
+   "exact_exceeds_level": true,
+   "radius": 1.0619880554811836,
+   "x": [
+    -0.010655178291571182,
+    0.0003686085763036943
+   ]
+  },
+  {
+   "code_with_level": "OUTSIDE_LEVEL_SET",
+   "code_without_level": "CERTIFIED_WITH_MARGIN",
+   "exact_exceeds_level": true,
+   "radius": 2450.202857036001,
+   "x": [
+    24.56990816395322,
+    4.534630149835511
+   ]
+  },
+  {
+   "code_with_level": "CERTIFIED_WITH_MARGIN",
+   "code_without_level": "CERTIFIED_WITH_MARGIN",
+   "exact_exceeds_level": false,
+   "radius": 0.000316990724774718,
+   "x": [
+    3.17175704090475e-06,
+    3.325028294700225e-06
+   ]
+  },
+  {
+   "code_with_level": "CERTIFIED_WITH_MARGIN",
+   "code_without_level": "CERTIFIED_WITH_MARGIN",
+   "exact_exceeds_level": false,
+   "radius": 0.20277823160215452,
+   "x": [
+    0.0020397747790936753,
+    -0.002169666738098211
+   ]
+  },
+  {
+   "code_with_level": "OUTSIDE_LEVEL_SET",
+   "code_without_level": "CERTIFIED_WITH_MARGIN",
+   "exact_exceeds_level": true,
+   "radius": 28351.504070229115,
+   "x": [
+    284.31667485452385,
+    46.04535650279231
+   ]
+  },
+  {
+   "code_with_level": "OUTSIDE_LEVEL_SET",
+   "code_without_level": "CERTIFIED_WITH_MARGIN",
+   "exact_exceeds_level": true,
+   "radius": 3.7809698034312853,
+   "x": [
+    -0.03786410243628064,
+    -0.026917599673018176
+   ]
+  },
+  {
+   "code_with_level": "CERTIFIED_WITH_MARGIN",
+   "code_without_level": "CERTIFIED_WITH_MARGIN",
+   "exact_exceeds_level": false,
+   "radius": 4.675868462497641e-06,
+   "x": [
+    4.687120256052261e-08,
+    1.5401504373171987e-08
+   ]
+  },
+  {
+   "code_with_level": "OUTSIDE_LEVEL_SET",
+   "code_without_level": "CERTIFIED_WITH_MARGIN",
+   "exact_exceeds_level": true,
+   "radius": 588.7460190656,
+   "x": [
+    5.965864500510785,
+    -24.08032564097841
+   ]
+  },
+  {
+   "code_with_level": "OUTSIDE_LEVEL_SET",
+   "code_without_level": "CERTIFIED_WITH_MARGIN",
+   "exact_exceeds_level": true,
+   "radius": 705.9914398010762,
+   "x": [
+    -7.087112260437854,
+    1.7306570660670892
+   ]
+  },
+  {
+   "code_with_level": "CERTIFIED_WITH_MARGIN",
+   "code_without_level": "CERTIFIED_WITH_MARGIN",
+   "exact_exceeds_level": false,
+   "radius": 0.03614106563560806,
+   "x": [
+    -0.00036245045960428443,
+    -5.158438722098363e-05
+   ]
+  },
+  {
+   "code_with_level": "OUTSIDE_LEVEL_SET",
+   "code_without_level": "CERTIFIED_WITH_MARGIN",
+   "exact_exceeds_level": true,
+   "radius": 5.212297529082249,
+   "x": [
+    0.05320287567680702,
+    -0.3756707267130045
+   ]
+  },
+  {
+   "code_with_level": "OUTSIDE_LEVEL_SET",
+   "code_without_level": "CERTIFIED_WITH_MARGIN",
+   "exact_exceeds_level": true,
+   "radius": 3.2266032817774364,
+   "x": [
+    -0.03220355228287956,
+    -0.06567304095055691
+   ]
+  },
+  {
+   "code_with_level": "OUTSIDE_LEVEL_SET",
+   "code_without_level": "CERTIFIED_WITH_MARGIN",
+   "exact_exceeds_level": true,
+   "radius": 53281.89855843182,
+   "x": [
+    534.3421263106799,
+    79.94543337967464
+   ]
+  },
+  {
+   "code_with_level": "CERTIFIED_WITH_MARGIN",
+   "code_without_level": "CERTIFIED_WITH_MARGIN",
+   "exact_exceeds_level": false,
+   "radius": 0.0007926265986549192,
+   "x": [
+    8.000337163831205e-06,
+    -1.9483183145704714e-05
+   ]
+  },
+  {
+   "code_with_level": "OUTSIDE_LEVEL_SET",
+   "code_without_level": "CERTIFIED_WITH_MARGIN",
+   "exact_exceeds_level": true,
+   "radius": 28826.15436484192,
+   "x": [
+    -290.92904679252604,
+    697.8447003457838
+   ]
+  },
+  {
+   "code_with_level": "CERTIFIED_WITH_MARGIN",
+   "code_without_level": "CERTIFIED_WITH_MARGIN",
+   "exact_exceeds_level": false,
+   "radius": 3.0202133263266946e-08,
+   "x": [
+    3.0185319996380695e-10,
+    4.5196269732418196e-10
+   ]
+  },
+  {
+   "code_with_level": "CERTIFIED_WITH_MARGIN",
+   "code_without_level": "CERTIFIED_WITH_MARGIN",
+   "exact_exceeds_level": false,
+   "radius": 1.489201598301433e-07,
+   "x": [
+    -1.4931581428317391e-09,
+    -3.4267677000168624e-10
+   ]
+  },
+  {
+   "code_with_level": "OUTSIDE_LEVEL_SET",
+   "code_without_level": "CERTIFIED_WITH_MARGIN",
+   "exact_exceeds_level": true,
+   "radius": 33817.02630663902,
+   "x": [
+    345.7937790772479,
+    -2702.762358572913
+   ]
+  },
+  {
+   "code_with_level": "CERTIFIED_WITH_MARGIN",
+   "code_without_level": "CERTIFIED_WITH_MARGIN",
+   "exact_exceeds_level": false,
+   "radius": 1.8530717434555917e-06,
+   "x": [
+    -1.872381808677499e-08,
+    5.368840871666618e-08
+   ]
+  },
+  {
+   "code_with_level": "CERTIFIED_WITH_MARGIN",
+   "code_without_level": "CERTIFIED_WITH_MARGIN",
+   "exact_exceeds_level": false,
+   "radius": 5.413112902905941e-07,
+   "x": [
+    5.398914568348282e-09,
+    1.246346127153077e-08
+   ]
+  },
+  {
+   "code_with_level": "CERTIFIED_WITH_MARGIN",
+   "code_without_level": "CERTIFIED_WITH_MARGIN",
+   "exact_exceeds_level": false,
+   "radius": 0.006546125010454247,
+   "x": [
+    6.559452560735934e-05,
+    3.116070347915576e-05
+   ]
+  },
+  {
+   "code_with_level": "OUTSIDE_LEVEL_SET",
+   "code_without_level": "CERTIFIED_WITH_MARGIN",
+   "exact_exceeds_level": true,
+   "radius": 844451.9445323441,
+   "x": [
+    -8515.592390832317,
+    17568.30904285149
+   ]
+  },
+  {
+   "code_with_level": "CERTIFIED_WITH_MARGIN",
+   "code_without_level": "CERTIFIED_WITH_MARGIN",
+   "exact_exceeds_level": false,
+   "radius": 0.002341402766106795,
+   "x": [
+    -2.351702242704791e-05,
+    1.0842722051681043e-05
+   ]
+  },
+  {
+   "code_with_level": "OUTSIDE_LEVEL_SET",
+   "code_without_level": "CERTIFIED_WITH_MARGIN",
+   "exact_exceeds_level": true,
+   "radius": 147845.67660573716,
+   "x": [
+    1487.0261177796854,
+    -1511.8739600528859
+   ]
+  },
+  {
+   "code_with_level": "OUTSIDE_LEVEL_SET",
+   "code_without_level": "CERTIFIED_WITH_MARGIN",
+   "exact_exceeds_level": true,
+   "radius": 1.9323689561894877,
+   "x": [
+    -0.019380089277848296,
+    -0.002438897717596035
+   ]
+  },
+  {
+   "code_with_level": "CERTIFIED_WITH_MARGIN",
+   "code_without_level": "CERTIFIED_WITH_MARGIN",
+   "exact_exceeds_level": false,
+   "radius": 0.0075077869787762794,
+   "x": [
+    7.594796225164556e-05,
+    -0.00025351901725151625
+   ]
+  },
+  {
+   "code_with_level": "OUTSIDE_LEVEL_SET",
+   "code_without_level": "CERTIFIED_WITH_MARGIN",
+   "exact_exceeds_level": true,
+   "radius": 198323.4085214999,
+   "x": [
+    -1980.6795354919934,
+    -3535.0773564913216
+   ]
+  },
+  {
+   "code_with_level": "OUTSIDE_LEVEL_SET",
+   "code_without_level": "CERTIFIED_WITH_MARGIN",
+   "exact_exceeds_level": true,
+   "radius": 563.1277207569657,
+   "x": [
+    -5.654788695033458,
+    2.105008930262552
+   ]
+  },
+  {
+   "code_with_level": "CERTIFIED_WITH_MARGIN",
+   "code_without_level": "CERTIFIED_WITH_MARGIN",
+   "exact_exceeds_level": false,
+   "radius": 0.0032617555020899047,
+   "x": [
+    -3.232007291518719e-05,
+    -0.000156454624140713
+   ]
+  },
+  {
+   "code_with_level": "CERTIFIED_WITH_MARGIN",
+   "code_without_level": "CERTIFIED_WITH_MARGIN",
+   "exact_exceeds_level": false,
+   "radius": 1.7507292522308205e-05,
+   "x": [
+    1.7405515304678688e-07,
+    6.188288019134859e-07
+   ]
+  },
+  {
+   "code_with_level": "CERTIFIED_WITH_MARGIN",
+   "code_without_level": "CERTIFIED_WITH_MARGIN",
+   "exact_exceeds_level": false,
+   "radius": 2.3786454967346286e-06,
+   "x": [
+    -2.35056301754659e-08,
+    -1.3821142182534976e-07
+   ]
+  },
+  {
+   "code_with_level": "CERTIFIED_WITH_MARGIN",
+   "code_without_level": "CERTIFIED_WITH_MARGIN",
+   "exact_exceeds_level": false,
+   "radius": 3.831079828161754e-06,
+   "x": [
+    3.8387830916145374e-08,
+    1.8618745021560434e-08
+   ]
+  },
+  {
+   "code_with_level": "OUTSIDE_LEVEL_SET",
+   "code_without_level": "CERTIFIED_WITH_MARGIN",
+   "exact_exceeds_level": true,
+   "radius": 3147.6864949323167,
+   "x": [
+    -31.869143937381434,
+    117.61624856614199
+   ]
+  },
+  {
+   "code_with_level": "CERTIFIED_WITH_MARGIN",
+   "code_without_level": "CERTIFIED_WITH_MARGIN",
+   "exact_exceeds_level": false,
+   "radius": 1.4419406234610951e-08,
+   "x": [
+    -1.4469607578475503e-10,
+    1.4052963335119702e-11
+   ]
+  },
+  {
+   "code_with_level": "CERTIFIED_WITH_MARGIN",
+   "code_without_level": "CERTIFIED_WITH_MARGIN",
+   "exact_exceeds_level": false,
+   "radius": 0.00263912426940167,
+   "x": [
+    2.6404566133983968e-05,
+    2.8499619212299968e-05
+   ]
+  },
+  {
+   "code_with_level": "OUTSIDE_LEVEL_SET",
+   "code_without_level": "CERTIFIED_WITH_MARGIN",
+   "exact_exceeds_level": true,
+   "radius": 28282.402052066194,
+   "x": [
+    -283.88018858246795,
+    56.02917185708367
+   ]
+  },
+  {
+   "code_with_level": "OUTSIDE_LEVEL_SET",
+   "code_without_level": "CERTIFIED_WITH_MARGIN",
+   "exact_exceeds_level": true,
+   "radius": 3991566.539240632,
+   "x": [
+    40033.774003951825,
+    4399.719243364463
+   ]
+  },
+  {
+   "code_with_level": "OUTSIDE_LEVEL_SET",
+   "code_without_level": "CERTIFIED_WITH_MARGIN",
+   "exact_exceeds_level": true,
+   "radius": 13.859483480387079,
+   "x": [
+    -0.13847886052771308,
+    -0.22259595270024723
+   ]
+  },
+  {
+   "code_with_level": "CERTIFIED_WITH_MARGIN",
+   "code_without_level": "CERTIFIED_WITH_MARGIN",
+   "exact_exceeds_level": false,
+   "radius": 1.8079390418648077e-06,
+   "x": [
+    -1.8110728219684432e-08,
+    -1.0769006300152907e-08
+   ]
+  },
+  {
+   "code_with_level": "OUTSIDE_LEVEL_SET",
+   "code_without_level": "CERTIFIED_WITH_MARGIN",
+   "exact_exceeds_level": true,
+   "radius": 18.07203091689789,
+   "x": [
+    0.18147730746528196,
+    -0.06853667709510425
+   ]
+  },
+  {
+   "code_with_level": "CERTIFIED_WITH_MARGIN",
+   "code_without_level": "CERTIFIED_WITH_MARGIN",
+   "exact_exceeds_level": false,
+   "radius": 3.9424653395419713e-05,
+   "x": [
+    -3.946415695462408e-07,
+    -3.485941440144017e-07
+   ]
+  },
+  {
+   "code_with_level": "CERTIFIED_WITH_MARGIN",
+   "code_without_level": "CERTIFIED_WITH_MARGIN",
+   "exact_exceeds_level": false,
+   "radius": 6.293307384521518e-05,
+   "x": [
+    6.187178755972169e-07,
+    4.84200000430686e-06
+   ]
+  },
+  {
+   "code_with_level": "OUTSIDE_LEVEL_SET",
+   "code_without_level": "CERTIFIED_WITH_MARGIN",
+   "exact_exceeds_level": true,
+   "radius": 92933410.13771781,
+   "x": [
+    -922193.924131573,
+    -3949726.189641527
+   ]
+  },
+  {
+   "code_with_level": "CERTIFIED_WITH_MARGIN",
+   "code_without_level": "CERTIFIED_WITH_MARGIN",
+   "exact_exceeds_level": false,
+   "radius": 1.387634043196869e-06,
+   "x": [
+    1.39030338425295e-08,
+    7.221588764769078e-09
+   ]
+  },
+  {
+   "code_with_level": "OUTSIDE_LEVEL_SET",
+   "code_without_level": "CERTIFIED_WITH_MARGIN",
+   "exact_exceeds_level": true,
+   "radius": 36.58199414497867,
+   "x": [
+    -0.3544062593772255,
+    -4.705131075454247
+   ]
+  },
+  {
+   "code_with_level": "CERTIFIED_WITH_MARGIN",
+   "code_without_level": "CERTIFIED_WITH_MARGIN",
+   "exact_exceeds_level": false,
+   "radius": 1.2547481895304006e-05,
+   "x": [
+    -1.25227379813251e-07,
+    -2.5712681119969654e-07
+   ]
+  },
+  {
+   "code_with_level": "CERTIFIED_WITH_MARGIN",
+   "code_without_level": "CERTIFIED_WITH_MARGIN",
+   "exact_exceeds_level": false,
+   "radius": 2.730826034977278e-06,
+   "x": [
+    2.740110521967039e-08,
+    -1.7746940079678208e-09
+   ]
+  },
+  {
+   "code_with_level": "CERTIFIED_WITH_MARGIN",
+   "code_without_level": "CERTIFIED_WITH_MARGIN",
+   "exact_exceeds_level": false,
+   "radius": 1.535760001084414e-07,
+   "x": [
+    1.5363593719905795e-09,
+    1.7276228339488125e-09
+   ]
+  },
+  {
+   "code_with_level": "CERTIFIED_WITH_MARGIN",
+   "code_without_level": "CERTIFIED_WITH_MARGIN",
+   "exact_exceeds_level": false,
+   "radius": 0.4158680907102415,
+   "x": [
+    0.004157950415473384,
+    0.00560227740586026
+   ]
+  },
+  {
+   "code_with_level": "OUTSIDE_LEVEL_SET",
+   "code_without_level": "CERTIFIED_WITH_MARGIN",
+   "exact_exceeds_level": true,
+   "radius": 243709.6249504117,
+   "x": [
+    -2449.6581134869552,
+    1865.0003410914449
+   ]
+  },
+  {
+   "code_with_level": "CERTIFIED_WITH_MARGIN",
+   "code_without_level": "CERTIFIED_WITH_MARGIN",
+   "exact_exceeds_level": false,
+   "radius": 5.696698055323273e-07,
+   "x": [
+    5.709587252279314e-09,
+    2.2007876139936815e-09
+   ]
+  },
+  {
+   "code_with_level": "CERTIFIED_WITH_MARGIN",
+   "code_without_level": "CERTIFIED_WITH_MARGIN",
+   "exact_exceeds_level": false,
+   "radius": 0.06477122572518988,
+   "x": [
+    -0.0006336686851201129,
+    -0.0061260238785941674
+   ]
+  },
+  {
+   "code_with_level": "CERTIFIED_WITH_MARGIN",
+   "code_without_level": "CERTIFIED_WITH_MARGIN",
+   "exact_exceeds_level": false,
+   "radius": 0.018340423304092454,
+   "x": [
+    -0.0001839658314946882,
+    -1.2705004693688786e-05
+   ]
+  },
+  {
+   "code_with_level": "OUTSIDE_LEVEL_SET",
+   "code_without_level": "CERTIFIED_WITH_MARGIN",
+   "exact_exceeds_level": true,
+   "radius": 5.0491645871666755,
+   "x": [
+    0.05088667895867817,
+    -0.09291255911997437
+   ]
+  },
+  {
+   "code_with_level": "CERTIFIED_WITH_MARGIN",
+   "code_without_level": "CERTIFIED_WITH_MARGIN",
+   "exact_exceeds_level": false,
+   "radius": 0.10699370158499943,
+   "x": [
+    0.0010747495520530871,
+    -0.0005378262613481374
+   ]
+  },
+  {
+   "code_with_level": "OUTSIDE_LEVEL_SET",
+   "code_without_level": "CERTIFIED_WITH_MARGIN",
+   "exact_exceeds_level": true,
+   "radius": 19404433.353853967,
+   "x": [
+    -194138.2397217504,
+    -211141.17569549268
+   ]
+  },
+  {
+   "code_with_level": "CERTIFIED_WITH_MARGIN",
+   "code_without_level": "CERTIFIED_WITH_MARGIN",
+   "exact_exceeds_level": false,
+   "radius": 1.1155331112661791e-07,
+   "x": [
+    -1.1205963849829631e-09,
+    5.7898231188896e-10
+   ]
+  },
+  {
+   "code_with_level": "OUTSIDE_LEVEL_SET",
+   "code_without_level": "CERTIFIED_WITH_MARGIN",
+   "exact_exceeds_level": true,
+   "radius": 634.0223897274182,
+   "x": [
+    6.195978194077848,
+    62.422821733598795
+   ]
+  },
+  {
+   "code_with_level": "CERTIFIED_WITH_MARGIN",
+   "code_without_level": "CERTIFIED_WITH_MARGIN",
+   "exact_exceeds_level": false,
+   "radius": 2.5724450337250306e-05,
+   "x": [
+    -2.58009994530134e-07,
+    -2.6641035294770018e-08
+   ]
+  },
+  {
+   "code_with_level": "OUTSIDE_LEVEL_SET",
+   "code_without_level": "CERTIFIED_WITH_MARGIN",
+   "exact_exceeds_level": true,
+   "radius": 227228.7736341637,
+   "x": [
+    -2243.343867505444,
+    -13997.201191830805
+   ]
+  },
+  {
+   "code_with_level": "OUTSIDE_LEVEL_SET",
+   "code_without_level": "CERTIFIED_WITH_MARGIN",
+   "exact_exceeds_level": true,
+   "radius": 268102.8764838434,
+   "x": [
+    -2700.262956673546,
+    4229.354905134733
+   ]
+  },
+  {
+   "code_with_level": "CERTIFIED_WITH_MARGIN",
+   "code_without_level": "CERTIFIED_WITH_MARGIN",
+   "exact_exceeds_level": false,
+   "radius": 8.363874259043202e-06,
+   "x": [
+    -8.395988733475567e-08,
+    2.007752510270908e-08
+   ]
+  },
+  {
+   "code_with_level": "CERTIFIED_WITH_MARGIN",
+   "code_without_level": "CERTIFIED_WITH_MARGIN",
+   "exact_exceeds_level": false,
+   "radius": 0.060876140174734326,
+   "x": [
+    0.0006105479960752995,
+    7.293797278438311e-05
+   ]
+  },
+  {
+   "code_with_level": "CERTIFIED_WITH_MARGIN",
+   "code_without_level": "CERTIFIED_WITH_MARGIN",
+   "exact_exceeds_level": false,
+   "radius": 2.9226206229161523e-05,
+   "x": [
+    -2.924134954723037e-07,
+    -3.1408227226306413e-07
+   ]
+  },
+  {
+   "code_with_level": "OUTSIDE_LEVEL_SET",
+   "code_without_level": "CERTIFIED_WITH_MARGIN",
+   "exact_exceeds_level": true,
+   "radius": 5.6307120716180785,
+   "x": [
+    0.057526770507860446,
+    -0.4286004879897862
+   ]
+  },
+  {
+   "code_with_level": "CERTIFIED_WITH_MARGIN",
+   "code_without_level": "CERTIFIED_WITH_MARGIN",
+   "exact_exceeds_level": false,
+   "radius": 0.027299228556153365,
+   "x": [
+    0.0002739661831223851,
+    -3.594516264970508e-05
+   ]
+  },
+  {
+   "code_with_level": "CERTIFIED_WITH_MARGIN",
+   "code_without_level": "CERTIFIED_WITH_MARGIN",
+   "exact_exceeds_level": false,
+   "radius": 0.005554130588439002,
+   "x": [
+    -5.563448156098986e-05,
+    -3.430657798817682e-05
+   ]
+  },
+  {
+   "code_with_level": "OUTSIDE_LEVEL_SET",
+   "code_without_level": "CERTIFIED_WITH_MARGIN",
+   "exact_exceeds_level": true,
+   "radius": 1475467.5374136,
+   "x": [
+    -14806.087714373774,
+    1455.3782571462484
+   ]
+  },
+  {
+   "code_with_level": "CERTIFIED_WITH_MARGIN",
+   "code_without_level": "CERTIFIED_WITH_MARGIN",
+   "exact_exceeds_level": false,
+   "radius": 0.06613591577795942,
+   "x": [
+    -0.0006581117498293339,
+    -0.0021079749166044433
+   ]
+  },
+  {
+   "code_with_level": "OUTSIDE_LEVEL_SET",
+   "code_without_level": "CERTIFIED_WITH_MARGIN",
+   "exact_exceeds_level": true,
+   "radius": 210.1420968918751,
+   "x": [
+    2.1051484705968115,
+    1.2181194012490062
+   ]
+  },
+  {
+   "code_with_level": "CERTIFIED_WITH_MARGIN",
+   "code_without_level": "CERTIFIED_WITH_MARGIN",
+   "exact_exceeds_level": false,
+   "radius": 7.540589266831548e-06,
+   "x": [
+    -7.575028531750669e-08,
+    3.99897612643162e-08
+   ]
+  },
+  {
+   "code_with_level": "OUTSIDE_LEVEL_SET",
+   "code_without_level": "CERTIFIED_WITH_MARGIN",
+   "exact_exceeds_level": true,
+   "radius": 1677759.7602681243,
+   "x": [
+    16797.37650737234,
+    13665.153765783243
+   ]
+  },
+  {
+   "code_with_level": "OUTSIDE_LEVEL_SET",
+   "code_without_level": "CERTIFIED_WITH_MARGIN",
+   "exact_exceeds_level": true,
+   "radius": 2729.6663197037124,
+   "x": [
+    27.50415432018822,
+    -47.77332936637967
+   ]
+  },
+  {
+   "code_with_level": "CERTIFIED_WITH_MARGIN",
+   "code_without_level": "CERTIFIED_WITH_MARGIN",
+   "exact_exceeds_level": false,
+   "radius": 0.0006615922666959321,
+   "x": [
+    -6.622813966627442e-06,
+    -5.7465350100452905e-06
+   ]
+  },
+  {
+   "code_with_level": "CERTIFIED_WITH_MARGIN",
+   "code_without_level": "CERTIFIED_WITH_MARGIN",
+   "exact_exceeds_level": false,
+   "radius": 0.027043201271684216,
+   "x": [
+    0.00027055834855039293,
+    0.000296043306482004
+   ]
+  },
+  {
+   "code_with_level": "CERTIFIED_WITH_MARGIN",
+   "code_without_level": "CERTIFIED_WITH_MARGIN",
+   "exact_exceeds_level": false,
+   "radius": 8.568989241412942e-06,
+   "x": [
+    -8.620796872112239e-08,
+    9.622642576173493e-08
+   ]
+  },
+  {
+   "code_with_level": "CERTIFIED_WITH_MARGIN",
+   "code_without_level": "CERTIFIED_WITH_MARGIN",
+   "exact_exceeds_level": false,
+   "radius": 2.5996787379700173e-08,
+   "x": [
+    2.6695705012287987e-10,
+    -2.570259572960485e-09
+   ]
+  },
+  {
+   "code_with_level": "CERTIFIED_WITH_MARGIN",
+   "code_without_level": "CERTIFIED_WITH_MARGIN",
+   "exact_exceeds_level": false,
+   "radius": 0.0013079152492535243,
+   "x": [
+    -1.3162805114226807e-05,
+    1.6528384855717e-05
+   ]
+  },
+  {
+   "code_with_level": "OUTSIDE_LEVEL_SET",
+   "code_without_level": "CERTIFIED_WITH_MARGIN",
+   "exact_exceeds_level": true,
+   "radius": 531687.5357476178,
+   "x": [
+    5326.797418516594,
+    2887.942899378184
+   ]
+  },
+  {
+   "code_with_level": "OUTSIDE_LEVEL_SET",
+   "code_without_level": "CERTIFIED_WITH_MARGIN",
+   "exact_exceeds_level": true,
+   "radius": 36555.94750958266,
+   "x": [
+    366.05761268074497,
+    271.24633010821725
+   ]
+  },
+  {
+   "code_with_level": "CERTIFIED_WITH_MARGIN",
+   "code_without_level": "CERTIFIED_WITH_MARGIN",
+   "exact_exceeds_level": false,
+   "radius": 0.1851118899099918,
+   "x": [
+    0.0018785808233019409,
+    -0.008739563104094487
+   ]
+  },
+  {
+   "code_with_level": "CERTIFIED_WITH_MARGIN",
+   "code_without_level": "CERTIFIED_WITH_MARGIN",
+   "exact_exceeds_level": false,
+   "radius": 1.0743894497663472e-05,
+   "x": [
+    1.0947195841665012e-07,
+    -6.920665560133493e-07
+   ]
+  },
+  {
+   "code_with_level": "CERTIFIED_WITH_MARGIN",
+   "code_without_level": "CERTIFIED_WITH_MARGIN",
+   "exact_exceeds_level": false,
+   "radius": 0.005274408747185744,
+   "x": [
+    -5.354223912681815e-05,
+    0.0002555600928059648
+   ]
+  },
+  {
+   "code_with_level": "CERTIFIED_WITH_MARGIN",
+   "code_without_level": "CERTIFIED_WITH_MARGIN",
+   "exact_exceeds_level": false,
+   "radius": 0.023984050237695047,
+   "x": [
+    -0.00024124799681630166,
+    0.000252227076144248
+   ]
+  },
+  {
+   "code_with_level": "OUTSIDE_LEVEL_SET",
+   "code_without_level": "CERTIFIED_WITH_MARGIN",
+   "exact_exceeds_level": true,
+   "radius": 16.538425379338573,
+   "x": [
+    0.16572805563575158,
+    0.07592142597362125
+   ]
+  },
+  {
+   "code_with_level": "OUTSIDE_LEVEL_SET",
+   "code_without_level": "CERTIFIED_WITH_MARGIN",
+   "exact_exceeds_level": true,
+   "radius": 5634.80704358749,
+   "x": [
+    56.597845566763986,
+    -26.856158403263294
+   ]
+  },
+  {
+   "code_with_level": "CERTIFIED_WITH_MARGIN",
+   "code_without_level": "CERTIFIED_WITH_MARGIN",
+   "exact_exceeds_level": false,
+   "radius": 2.1497537052748837e-08,
+   "x": [
+    2.1555053930382365e-10,
+    4.787434414762958e-11
+   ]
+  },
+  {
+   "code_with_level": "CERTIFIED_WITH_MARGIN",
+   "code_without_level": "CERTIFIED_WITH_MARGIN",
+   "exact_exceeds_level": false,
+   "radius": 5.205668580132797e-06,
+   "x": [
+    -5.234232726175816e-08,
+    4.677763456141671e-08
+   ]
+  },
+  {
+   "code_with_level": "CERTIFIED_WITH_MARGIN",
+   "code_without_level": "CERTIFIED_WITH_MARGIN",
+   "exact_exceeds_level": false,
+   "radius": 5.780561709117525e-06,
+   "x": [
+    -5.7994226808763697e-08,
+    6.065311551344054e-10
+   ]
+  },
+  {
+   "code_with_level": "OUTSIDE_LEVEL_SET",
+   "code_without_level": "CERTIFIED_WITH_MARGIN",
+   "exact_exceeds_level": true,
+   "radius": 16490345.292463697,
+   "x": [
+    164619.54054381824,
+    321838.3897823935
+   ]
+  },
+  {
+   "code_with_level": "CERTIFIED_WITH_MARGIN",
+   "code_without_level": "CERTIFIED_WITH_MARGIN",
+   "exact_exceeds_level": false,
+   "radius": 0.015205603398019959,
+   "x": [
+    -0.00015182746716393123,
+    -0.0002838048136086366
+   ]
+  },
+  {
+   "code_with_level": "OUTSIDE_LEVEL_SET",
+   "code_without_level": "CERTIFIED_WITH_MARGIN",
+   "exact_exceeds_level": true,
+   "radius": 34568.394191170584,
+   "x": [
+    -349.6544018681043,
+    1152.5902604488904
+   ]
+  },
+  {
+   "code_with_level": "OUTSIDE_LEVEL_SET",
+   "code_without_level": "CERTIFIED_WITH_MARGIN",
+   "exact_exceeds_level": true,
+   "radius": 5836667.671385046,
+   "x": [
+    -58486.352493278,
+    -27449.50581473875
+   ]
+  },
+  {
+   "code_with_level": "CERTIFIED_WITH_MARGIN",
+   "code_without_level": "CERTIFIED_WITH_MARGIN",
+   "exact_exceeds_level": false,
+   "radius": 0.0014907848938057167,
+   "x": [
+    1.4944599909806847e-05,
+    4.562750741824369e-06
+   ]
+  },
+  {
+   "code_with_level": "CERTIFIED_WITH_MARGIN",
+   "code_without_level": "CERTIFIED_WITH_MARGIN",
+   "exact_exceeds_level": false,
+   "radius": 0.047047369920779895,
+   "x": [
+    0.0004714404641967918,
+    0.00022043035517957526
+   ]
+  },
+  {
+   "code_with_level": "OUTSIDE_LEVEL_SET",
+   "code_without_level": "CERTIFIED_WITH_MARGIN",
+   "exact_exceeds_level": true,
+   "radius": 1002537.5776650314,
+   "x": [
+    -10053.327672646452,
+    -1784.8186656462792
+   ]
+  },
+  {
+   "code_with_level": "OUTSIDE_LEVEL_SET",
+   "code_without_level": "CERTIFIED_WITH_MARGIN",
+   "exact_exceeds_level": true,
+   "radius": 1829.628000574547,
+   "x": [
+    -18.383274907793954,
+    11.075025459252224
+   ]
+  },
+  {
+   "code_with_level": "CERTIFIED_WITH_MARGIN",
+   "code_without_level": "CERTIFIED_WITH_MARGIN",
+   "exact_exceeds_level": false,
+   "radius": 4.664219657016078e-05,
+   "x": [
+    4.6256615498123554e-07,
+    2.086016916704941e-06
+   ]
+  }
+ ],
+ "transcription": [
   {
    "code_with_level": "CERTIFIED_WITH_MARGIN",
    "code_without_level": "CERTIFIED_WITH_MARGIN",

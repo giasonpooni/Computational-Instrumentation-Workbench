@@ -99,6 +99,32 @@
  },
  "runs": 400,
  "seed": 672026,
+ "session_gate": {
+  "0.9": {
+   "decision_mismatches": 0,
+   "max_relative_final_state_difference": 5.479357980515638e-16,
+   "p": 0.9,
+   "rejections_retained_with_gate_disposition": 534,
+   "run_gated_rejections_same_runs": 534,
+   "runs": 40,
+   "session_rate": 0.1335,
+   "session_rejections": 534,
+   "trials": 4000,
+   "unexpected_codes": 0
+  },
+  "0.99": {
+   "decision_mismatches": 0,
+   "max_relative_final_state_difference": 7.201338694084583e-16,
+   "p": 0.99,
+   "rejections_retained_with_gate_disposition": 42,
+   "run_gated_rejections_same_runs": 42,
+   "runs": 40,
+   "session_rate": 0.0105,
+   "session_rejections": 42,
+   "trials": 4000,
+   "unexpected_codes": 0
+  }
+ },
  "ticks": 100,
  "trials": 40000
 }

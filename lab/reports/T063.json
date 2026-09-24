@@ -11,7 +11,7 @@
    "hardware_measured": 0,
    "independently_verified": 0,
    "not_established": 1,
-   "numerically_verified": 6,
+   "numerically_verified": 7,
    "provider_backed": 0,
    "synthetic": 0
   },
@@ -56,9 +56,9 @@
     "rel": 1e-06
    },
    "uncertainty": {
-    "basis": "each standardized covariance entry has unit sampling standard deviation",
+    "basis": "null sampling spread of the reported max |z| over 40 standardized covariance entries: half-width of the central 95% interval of the maximum of that many independent |N(0, 1)| (dependence among the moments changes it)",
     "kind": "monte_carlo_95ci",
-    "value": 1.96
+    "value": 0.8558272228477434
    },
    "unit": null,
    "value": {
@@ -92,6 +92,14 @@
       "reference": "J^-1 (J P J^T) J^-T against P",
       "reference_kind": "invariant",
       "tolerance": 1e-12
+     },
+     {
+      "comparison": "abs_le",
+      "observed": 1.2176752799798933e-16,
+      "passed": true,
+      "reference": "max |P' - P'^T| relative to max |P'| over the transforms and the API output",
+      "reference_kind": "invariant",
+      "tolerance": 1e-14
      }
     ],
     "generator": {
@@ -100,7 +108,7 @@
      "seed": 632026
     }
    },
-   "claim": "Roundoff sanity: the sample covariance of transformed samples equals J S J^T and J^-1 (J P J^T) J^-T returns P to roundoff (algebraic identities that check the arithmetic, not the propagation law)",
+   "claim": "Roundoff sanity: the sample covariance of transformed samples equals J S J^T, J^-1 (J P J^T) J^-T returns P, and every transformed covariance (J P J^T and the FrameTransform output) is symmetric, to roundoff (algebraic identities that check the arithmetic, not the propagation law)",
    "domain": "numerical",
    "evidence_status": "numerically_verified",
    "regression_tolerance": {
@@ -114,8 +122,49 @@
    },
    "unit": null,
    "value": {
+    "relative_asymmetry": 1.2176752799798933e-16,
     "relative_roundtrip_error": 3.0839528461809903e-16,
     "relative_transport_error": 2.2770527735624006e-14
+   }
+  },
+  {
+   "assigned_by": "ciw.lab.evidence",
+   "basis": {
+    "checks": [
+     {
+      "comparison": "le",
+      "observed": 1.7035969695753024,
+      "passed": true,
+      "reference": "sample means of J x + b against means built from the declared rotation, translation and scale (max |z|)",
+      "reference_kind": "analytic",
+      "tolerance": 4.003167571450172
+     }
+    ],
+    "generator": {
+     "bit_generator": "PCG64",
+     "name": "ciw.lab.sensor_fusion_bench",
+     "samples": 100000,
+     "seed": 632026
+    }
+   },
+   "claim": "Transformed sample means match the declared maps: rotation and unit change act on the whole state, and the translation moves positions only, so the transformed velocities average to J_v mu_v",
+   "domain": "numerical",
+   "evidence_status": "numerically_verified",
+   "regression_tolerance": {
+    "abs": 1e-09,
+    "rel": 1e-06
+   },
+   "uncertainty": {
+    "basis": "null sampling spread of the reported max |z| over 16 standardized transformed means: half-width of the central 95% interval of the maximum of that many independent |N(0, 1)| (dependence among the moments changes it)",
+    "kind": "monte_carlo_95ci",
+    "value": 0.9472345429870945
+   },
+   "unit": null,
+   "value": {
+    "max_abs_z": 1.7035969695753024,
+    "means_tested": 16,
+    "velocity_max_abs_z": 0.8220051113711001,
+    "z_critical": 4.003167571450172
    }
   },
   {
@@ -318,9 +367,9 @@
  ],
  "generated_artifacts": [
   {
-   "bytes": 5352,
+   "bytes": 5546,
    "path": "artifacts/T063/frame_transforms.json",
-   "sha256": "67c7e39de3082228b3255f2e4455492770a18e315939c026cad314edc968069c"
+   "sha256": "1e2b21edbcc8150d4b867425cf75fbe9c322fd2044f7d2e2cb5553801effc227"
   },
   {
    "bytes": 2169,
@@ -350,22 +399,24 @@
   "scipy": "1.16.2",
   "sources": {
    "src/ciw/lab/sensor_fusion_bench.py": "f373849a4c6836fa20685c59ce7a6fe6bf732f6df9d6a49646cdc017262dd656",
-   "src/ciw/lab/sensor_fusion_common.py": "6787aa47d199d50d0b4de4d7e53714ce7b8b5aad37d647cfc1a954414e90209f",
-   "src/ciw/lab/sensor_fusion_geometry.py": "f32baa091afd99ee4652c64a1d319755f676357fc0bfa06823999a276d7dfd07",
-   "src/ciw/lab/sensor_fusion_objects.py": "a795ffc235e0a4118cb7b9ac7800191a90984372d79e59f1a934442d98d7a1f1"
+   "src/ciw/lab/sensor_fusion_common.py": "db3b0430ad5c13920239cef354da61b64ab1b01f84b2d3d5aff2f78840a5867a",
+   "src/ciw/lab/sensor_fusion_geometry.py": "7469c225fd283954f2ea6bda4d86d3e9c098949f0abb74051f233a969c0a46d0",
+   "src/ciw/lab/sensor_fusion_objects.py": "93fc55ddca91f1adfb886d21805ea8f82586548ee84e1f6cc7daed4df1f53bb9"
   },
   "sympy": "1.14.0"
  },
  "recommended_next_task": "T064: propagate covariance through the Jacobi transfer matrix, where the map is only first-order.",
- "report_id": "sha256:6bf922a3bca9c43a68452d9017105e39356b14ac4cf7526d154f86510a343439",
+ "report_id": "sha256:a7f0765bef0a5996535637be4804ded779244153130f505c94a12a866c76a844",
  "schema": "ciw.lab-task-report.v1",
  "section": "sensor-fusion",
  "state": "completed",
  "task_id": "T063",
  "tests_passed": [
   "check: Monte Carlo covariances of rotated, translated, metre-to-millimetre and composite-transformed states match P' = J P J^T within a Bonferroni-corrected 99.9% sampling bound vs Gaussian sampling law Var(S_ij) = (P'_ij^2 + P'_ii P'_jj)/N",
-  "check: Roundoff sanity: the sample covariance of transformed samples equals J S J^T and J^-1 (J P J^T) J^-T returns P to roundoff (algebraic identities that check the arithmetic, not the propagation law) vs sample covariance of J x + b against J S J^T",
-  "check: Roundoff sanity: the sample covariance of transformed samples equals J S J^T and J^-1 (J P J^T) J^-T returns P to roundoff (algebraic identities that check the arithmetic, not the propagation law) vs J^-1 (J P J^T) J^-T against P",
+  "check: Roundoff sanity: the sample covariance of transformed samples equals J S J^T, J^-1 (J P J^T) J^-T returns P, and every transformed covariance (J P J^T and the FrameTransform output) is symmetric, to roundoff (algebraic identities that check the arithmetic, not the propagation law) vs sample covariance of J x + b against J S J^T",
+  "check: Roundoff sanity: the sample covariance of transformed samples equals J S J^T, J^-1 (J P J^T) J^-T returns P, and every transformed covariance (J P J^T and the FrameTransform output) is symmetric, to roundoff (algebraic identities that check the arithmetic, not the propagation law) vs J^-1 (J P J^T) J^-T against P",
+  "check: Roundoff sanity: the sample covariance of transformed samples equals J S J^T, J^-1 (J P J^T) J^-T returns P, and every transformed covariance (J P J^T and the FrameTransform output) is symmetric, to roundoff (algebraic identities that check the arithmetic, not the propagation law) vs max |P' - P'^T| relative to max |P'| over the transforms and the API output",
+  "check: Transformed sample means match the declared maps: rotation and unit change act on the whole state, and the translation moves positions only, so the transformed velocities average to J_v mu_v vs sample means of J x + b against means built from the declared rotation, translation and scale (max |z|)",
   "check: Mahalanobis distance is invariant under every transform, including the metre-to-millimetre unit change, when the covariance is transformed with the vector vs max relative change of d^2 over all samples and transforms",
   "check: FrameTransform.apply moves a typed position observation to value R z + t and covariance R Sigma R^T, matching J P J^T to roundoff vs API output against J P J^T and J mu + b",
   "check: Rotating a position measurement by 35 degrees without rotating its covariance inflates the mean Mahalanobis distance to tr(P^-1 R P R^T) and multiplies the 99% gate rejection rate vs mean d^2 against tr(P^-1 R P R^T) (z)",

@@ -16,8 +16,8 @@
   },
   "primary": "analytic"
  },
- "expected_invariant": "Exact accumulation: one result per dataset and equal to math.fsum; every error within its bound; the earlier O(n u^2) Neumaier bound fails where the second-order term grows like n^2.",
- "experiment": "Sum each permutation with five algorithms; compare with exact rationals and math.fsum; test the earlier Neumaier bound on absorbed tiny terms; retain the policy.",
+ "expected_invariant": "Exact accumulation: one result per dataset and equal to math.fsum; the fixed pairwise tree gives the same bits in two implementations for every order but different bits across orders; every error within its bound; the earlier O(n u^2) Neumaier bound fails where the second-order term grows like n^2.",
+ "experiment": "Sum each permutation with five algorithms; compare with exact rationals and math.fsum; walk the pairwise tree a second way (NumPy level-wise additions) on every order; test the earlier Neumaier bound on absorbed tiny terms; retain the policy.",
  "failure_modes_checked": [
   "order dependence",
   "catastrophic cancellation",
@@ -83,8 +83,8 @@
       "comparison": "abs_le",
       "observed": 0.0,
       "passed": true,
-      "reference": "replay of the same order differs",
-      "reference_kind": "exact_arithmetic",
+      "reference": "orders on which recursive Python and NumPy level-wise implementations of the same tree differ in any bit (uniform, every sampled order)",
+      "reference_kind": "cross_implementation",
       "tolerance": 0.0
      },
      {
@@ -116,8 +116,13 @@
     "kind": "roundoff",
     "value": 0.0
    },
-   "unit": "distinct results",
-   "value": 4
+   "unit": null,
+   "value": {
+    "distinct_results": 4,
+    "first_order_sum_hex": "0x1.37ba78f5c1348p+4",
+    "orders": 25,
+    "tree_mismatches": 0
+   }
   },
   {
    "assigned_by": "ciw.lab.evidence",
@@ -446,7 +451,7 @@
  ],
  "mathematical_model": "Rigorous bounds (u = 2^-53, S = sum|x|, s = exact sum): sequential gamma_{n-1} S; pairwise gamma_{ceil(log2 n)} S; Neumaier u|s| + gamma_{n-1}^2 S (its compensation terms are those of Sum2); exact rounding u|s|. Kahan: 2u S + O(n u^2) S, checked with a declared allowance 4 n u^2 S. Exact sums by integer accumulation at scale 2^1074.",
  "number": 148,
- "numerical_result": "Distinct results across 25 orders: exact 1, pairwise (uniform) 4; exact vs math.fsum mismatches 0; Kahan on [1, 1e100, 1, -1e100] = 0.0, Neumaier = 2.0; worst error/bound exact 0.411, kahan 0.35, neumaier 0.411, pairwise 0.216, sequential 0.35; Neumaier error is 12.3 times the earlier bound 2u|S| + 4n u^2 S at n = 1002 and 0.0578 of the rigorous one.",
+ "numerical_result": "Distinct results across 25 orders: exact 1, pairwise (uniform) 4; recursive/level-wise pairwise tree mismatches 0 of 25 orders; exact vs math.fsum mismatches 0; Kahan on [1, 1e100, 1, -1e100] = 0.0, Neumaier = 2.0; worst error/bound exact 0.411, kahan 0.35, neumaier 0.411, pairwise 0.216, sequential 0.35; Neumaier error is 12.3 times the earlier bound 2u|S| + 4n u^2 S at n = 1002 and 0.0578 of the rigorous one.",
  "observation_model": "Exact rational errors of each floating-point result; count of distinct bit patterns across orders.",
  "physical_validation_status": {
   "statement": "Physical validation requires acquired hardware evidence; none was acquired for this task.",
@@ -460,13 +465,13 @@
   "python": "3.12.3",
   "scipy": "1.16.2",
   "sources": {
-   "src/ciw/lab/implementation_targets.py": "4e27c12d31365590b7fb82d98b8d02e1668c7b8e73b03f71ef270eca9fcf6eea",
-   "src/ciw/lab/implementation_targets_kernels.py": "7da2c27fa79171f72aa553b7bfcb62041c5a13dd146735979820f410a3a7c3cd"
+   "src/ciw/lab/implementation_targets.py": "1df8bd67d28b18d70bcb5f74e4a14616ceb17868c7a9aa75595f15254426ee7e",
+   "src/ciw/lab/implementation_targets_kernels.py": "daf3fe697f5b8f7627119fe299a270fe6de19d2394eade688624d28526b04785"
   },
   "sympy": "1.14.0"
  },
  "recommended_next_task": "T147 (use the policy to set GPU comparison tolerances), then T155 (formal specification of the policy)",
- "report_id": "sha256:3b95ad4aa494d23ade8f451eca6deac2acc805aacd28b14f4fafd8fe392aade8",
+ "report_id": "sha256:b8dd951394eb2859bc893bb615e13c78296c432f35b0be97a1a68288b01a497c",
  "schema": "ciw.lab-task-report.v1",
  "section": "implementation-targets",
  "state": "completed",
@@ -474,7 +479,7 @@
  "tests_passed": [
   "check: Correctly rounded exact accumulation is permutation-invariant vs distinct results across permutations minus one",
   "independent: Correctly rounded exact accumulation is permutation-invariant vs cpython.math.fsum",
-  "check: Fixed-order pairwise summation is reproducible for one order but not permutation-invariant vs replay of the same order differs",
+  "check: Fixed-order pairwise summation is reproducible for one order but not permutation-invariant vs orders on which recursive Python and NumPy level-wise implementations of the same tree differ in any bit (uniform, every sampled order)",
   "check: Fixed-order pairwise summation is reproducible for one order but not permutation-invariant vs distinct pairwise results across permutations (uniform)",
   "check: Kahan summation loses the sum [1, 1e100, 1, -1e100] that Neumaier summation keeps vs Kahan error",
   "check: Kahan summation loses the sum [1, 1e100, 1, -1e100] that Neumaier summation keeps vs Neumaier error",
@@ -494,6 +499,7 @@
  "uncertainty": "Exact arithmetic; permutation counts are samples (25 orders), so invariance of non-exact algorithms is only refuted, never proven, and the exact algorithm's invariance is a theorem sampled here. The Kahan allowance constant is declared, not proven.",
  "unresolved_assumptions": [
   "The Kahan second-order constant (4) is a policy allowance without proof",
-  "Parallel (multi-thread) reductions are not exercised"
+  "Parallel (multi-thread) reductions are not exercised",
+  "Fixed-tree reproducibility was shown between two implementations on one platform; on other platforms it rests on IEEE-754 round-to-nearest addition and on the regression gate, which compares the retained first-order sum bits exactly"
  ]
 }

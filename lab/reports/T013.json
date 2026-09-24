@@ -10,14 +10,14 @@
    "hardware_measured": 0,
    "independently_verified": 0,
    "not_established": 1,
-   "numerically_verified": 6,
+   "numerically_verified": 5,
    "provider_backed": 0,
    "synthetic": 0
   },
   "primary": "numerically_verified"
  },
  "expected_invariant": "Cylinder K = 0 from the embedding and j_head = s; exponent of L - j_head(L) in R + 1 equal to -1 up to the K L^2/20 correction, chord-deficit exponent -2.",
- "experiment": "Integrate both flat surfaces on identical grids and compare Jacobi columns bit for bit; integrate the cylinder again with K from its second fundamental form; integrate the torus equator for each R, compare with cancellation-free closed forms and fit log-log exponents in R and in R + 1.",
+ "experiment": "Integrate both flat surfaces on identical grids (their literal K = 0 makes equal Jacobi columns a pipeline consistency fact, recorded as context, not a finding); integrate the cylinder again with K from its second fundamental form; integrate the torus equator for each R, compare with cancellation-free closed forms and fit log-log exponents in R and in R + 1.",
  "failure_modes_checked": [
   "cylinder flatness tested with K recomputed from its second fundamental form, not the closed-form K = 0 that both core classes return",
   "numerical deviation compared with its closed form, not only with K L^3/6",
@@ -25,41 +25,6 @@
   "exponent offset attributed quantitatively (R + 1 versus K L^2/20)"
  ],
  "findings": [
-  {
-   "assigned_by": "ciw.lab.evidence",
-   "basis": {
-    "checks": [
-     {
-      "comparison": "abs_le",
-      "observed": 0.0,
-      "passed": true,
-      "reference": "max |Jacobi(cylinder) - Jacobi(plane)|",
-      "reference_kind": "exact_arithmetic",
-      "tolerance": 0.0
-     }
-    ],
-    "generator": {
-     "deterministic": true,
-     "name": "ciw.lab.geodesic_jacobi_limits:plane-cylinder",
-     "seed": null,
-     "steps": 60
-    }
-   },
-   "claim": "Plane and cylinder runs give bitwise identical Jacobi columns (both supply K = 0 to the same Jacobi arithmetic)",
-   "domain": "computational_pipeline",
-   "evidence_status": "numerically_verified",
-   "regression_tolerance": {
-    "abs": 0.0,
-    "rel": 0.0
-   },
-   "uncertainty": {
-    "basis": "bitwise comparison; both core classes return a closed-form K = 0, so this is a pipeline consistency check, not evidence of flatness",
-    "kind": "roundoff",
-    "value": 0.0
-   },
-   "unit": null,
-   "value": 0.0
-  },
   {
    "assigned_by": "ciw.lab.evidence",
    "basis": {
@@ -113,6 +78,7 @@
    "value": {
     "helix_chart_error": 1.3322676295501878e-15,
     "j_head_minus_s_max": 2.6645352591003757e-15,
+    "literal_K_plane_cylinder_jacobi_difference": 0.0,
     "second_form_max_abs_curvature": 0.0
    }
   },
@@ -377,7 +343,7 @@
  ],
  "mathematical_model": "Cylinder: the second fundamental form has only the phi-phi entry, so K = 0 and j_head = s exactly, but a helix of angle alpha has chord sqrt((2R sin(L cos(alpha)/(2R)))^2 + (L sin(alpha))^2). Torus(R, 1) outer equator: K = 1/(R + 1), j_head = sin(wL)/w, w = sqrt(K), L - j_head = K L^3/6 - K^2 L^5/120 + ...; the equator is a circle of radius R + 1 with chord deficit 2 (R + 1)(x - sin x), x = L/(2 (R + 1)), = L^3/(24 (R + 1)^2) + ...",
  "number": 13,
- "numerical_result": "Plane/cylinder Jacobi difference 0; second-form cylinder max |K| 0, max |j_head - s| 2.7e-15; chords 3 (plane) versus 2.5382081 (cylinder); torus deviation exponent -0.98472 in R (closed form -0.98472), -0.99749 in R + 1; chord-deficit exponent -1.9744 in R, -1.99997 in R + 1; max relative error versus closed form 1.8e-09 (deviation), 5.1e-09 (chord deficit).",
+ "numerical_result": "Plane/cylinder Jacobi difference with the literal K = 0 0 (pipeline consistency only); second-form cylinder max |K| 0, max |j_head - s| 2.7e-15; chords 3 (plane) versus 2.5382081 (cylinder); torus deviation exponent -0.98472 in R (closed form -0.98472), -0.99749 in R + 1; chord-deficit exponent -1.9744 in R, -1.99997 in R + 1; max relative error versus closed form 1.8e-09 (deviation), 5.1e-09 (chord deficit).",
  "observation_model": "Jacobi columns at every node; embedded chord |X(L) - X(0)|; no renormalization.",
  "physical_validation_status": {
   "statement": "Physical validation requires acquired hardware evidence; none was acquired for this task.",
@@ -391,19 +357,18 @@
   "python": "3.12.3",
   "scipy": "1.16.2",
   "sources": {
-   "src/ciw/lab/geodesic_jacobi_limits.py": "29c8472e91cdf4deb2e1f526ab40e57f703f41e20ef14edd8fb1cc2fc6ede661",
-   "src/ciw/lab/geodesic_jacobi_limits_core.py": "8aa707ec2a190208bf07cd3b1f94a40f191a7a9c4be277714ed8b627e2c5fcb9"
+   "src/ciw/lab/geodesic_jacobi_limits.py": "07d850980ac10ad34ca0d1b8c29942c90fe635e15135a5db1f74e90674e3bb18",
+   "src/ciw/lab/geodesic_jacobi_limits_core.py": "0e0b8f85ed4e83c3fcdc866e8a7e580a17432e174b8db8d8277230e226473d7f"
   },
   "sympy": "1.14.0"
  },
  "recommended_next_task": "T046 (chord versus geodesic distance) and T018 (resolvability of weak curvature)",
- "report_id": "sha256:c4df3021c1be36ac593316ada6ec085be8343bb3deddb0cb7ea0a6fbe5d4727d",
+ "report_id": "sha256:21d6fea668ab7e49fc422ecd9cafbddf6a1791855302c1963bc179982b863faa",
  "schema": "ciw.lab-task-report.v1",
  "section": "geodesic-jacobi",
  "state": "completed",
  "task_id": "T013",
  "tests_passed": [
-  "check: Plane and cylinder runs give bitwise identical Jacobi columns (both supply K = 0 to the same Jacobi arithmetic) vs max |Jacobi(cylinder) - Jacobi(plane)|",
   "check: The cylinder is intrinsically flat: K from its second fundamental form vanishes along the helix and the Jacobi field integrated with that K is j_head(s) = s vs max |K| from the second fundamental form along the path",
   "check: The cylinder is intrinsically flat: K from its second fundamental form vanishes along the helix and the Jacobi field integrated with that K is j_head(s) = s vs max |j_head(s) - s| with the second-form K",
   "check: The cylinder is intrinsically flat: K from its second fundamental form vanishes along the helix and the Jacobi field integrated with that K is j_head(s) = s vs max chart distance to the exact helix (straight line in (phi, z))",

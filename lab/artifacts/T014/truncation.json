@@ -8,15 +8,17 @@
   "midpoint": 0.0,
   "rk4": 0.0
  },
+ "non_dyadic_differing_final_components": 6,
  "non_dyadic_witness": {
   "L1": 1.13,
   "L2": 3.0,
   "N1": 113,
   "N2": 300,
-  "differing_final_components": 6,
+  "differs": true,
   "h_direct": 0.01,
   "h_first": 0.009999999999999998,
   "h_rest": 0.01,
-  "max_abs_difference": 4.440892098500626e-16
+  "max_abs_difference": 4.440892098500626e-16,
+  "step_mismatch": true
  }
 }

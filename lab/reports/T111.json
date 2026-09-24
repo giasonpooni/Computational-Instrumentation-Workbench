@@ -9,7 +9,7 @@
   "counts": {
    "analytic": 0,
    "hardware_measured": 0,
-   "independently_verified": 4,
+   "independently_verified": 5,
    "not_established": 0,
    "numerically_verified": 3,
    "provider_backed": 0,
@@ -17,14 +17,17 @@
   },
   "primary": "numerically_verified"
  },
- "expected_invariant": "PLSR P equals the independent P to solver accuracy in each convention; solve_lyapunov returns P exactly for the numpy-stable plants and otherwise raises ValueError; the verdict certifies every numpy-stable plant with its own P and no numpy-unstable plant with P = I; sampled scalar decrease never contradicts the matrix route and cannot stand in for it.",
- "experiment": "Phase 1: PLSR solves, P = I verdicts, scalar and thin-cone verdicts; phase 2: verdicts with PLSR's P. Compare routes case by case.",
+ "expected_invariant": "PLSR P equals the independent P to solver accuracy in each convention; solve_lyapunov returns P exactly for the numpy-stable plants and otherwise raises ValueError; the verdict certifies every numpy-stable plant with its own P and no numpy-unstable plant with P = I; NOT_CERTIFIED only where the exact x^T M x is positive and PLSR's max eig(M) exceeds the resolution; sampled scalar decrease never contradicts the matrix route and cannot stand in for it.",
+ "experiment": "Phase 1: PLSR solves, P = I verdicts, scalar-gate, thin-cone and n = 1 verdicts; phase 2: verdicts with PLSR's P. Compare routes case by case and per sample with exact rationals.",
  "failure_modes_checked": [
   "solver disagreement",
   "solver returns P for an unstable plant",
   "solver refuses a stable plant",
   "solver refusal other than ValueError",
   "verdict certifies an unstable plant",
+  "NOT_CERTIFIED where the exact x^T M x is not positive",
+  "NOT_CERTIFIED without max eig(M) > res",
+  "matrix route calls an exactly negative definite form indefinite",
   "scalar route claims definiteness",
   "scalar sign not followed for n = 1"
  ],
@@ -37,16 +40,16 @@
       "implementation": "scipy.linalg.solve_continuous_lyapunov@1.16.2",
       "revision": "1.16.2"
      },
-     "comparison": "abs_le",
-     "observed": 1.7301902624474186e-14,
+     "comparison": "le",
+     "observed": 0.5122244566489742,
      "passed": true,
      "producer": {
       "implementation": "Parameterized-Lyapunov-Stability-Runtime@19ea69670601",
       "revision": "19ea6967060166ba09db6cd4563bd87bd6b3d196"
      },
-     "reference": "relative Frobenius difference from the independent solution",
-     "reference_kind": "exact_arithmetic",
-     "tolerance": 1e-09
+     "reference": "max over solves of the relative Frobenius difference divided by n^2 u cond(P) (forward-error bound of a backward-stable solve)",
+     "reference_kind": "analytic",
+     "tolerance": 10.0
     },
     "provider": {
      "executed": true,
@@ -57,7 +60,7 @@
      "runtime_digest": "a6fee6b3b4eb7852b31f5a285fe8c50b535f25762e1daf82e36720ef8dd1b7c7"
     }
    },
-   "claim": "PLSR continuous-time Lyapunov solutions agree with the independent solver on the route family",
+   "claim": "PLSR continuous-time Lyapunov solutions agree with the reference solver (SciPy's Bartels-Stewart when installed) to within 10 n^2 u cond(P) on the route family",
    "domain": "numerical",
    "evidence_status": "independently_verified",
    "regression_tolerance": {
@@ -83,16 +86,16 @@
       "implementation": "scipy.linalg.solve_discrete_lyapunov@1.16.2",
       "revision": "1.16.2"
      },
-     "comparison": "abs_le",
-     "observed": 4.496319237175107e-16,
+     "comparison": "le",
+     "observed": 0.24565439291994148,
      "passed": true,
      "producer": {
       "implementation": "Parameterized-Lyapunov-Stability-Runtime@19ea69670601",
       "revision": "19ea6967060166ba09db6cd4563bd87bd6b3d196"
      },
-     "reference": "relative Frobenius difference from the independent solution",
-     "reference_kind": "exact_arithmetic",
-     "tolerance": 1e-09
+     "reference": "max over solves of the relative Frobenius difference divided by n^2 u cond(P) (forward-error bound of a backward-stable solve)",
+     "reference_kind": "analytic",
+     "tolerance": 10.0
     },
     "provider": {
      "executed": true,
@@ -103,7 +106,7 @@
      "runtime_digest": "a6fee6b3b4eb7852b31f5a285fe8c50b535f25762e1daf82e36720ef8dd1b7c7"
     }
    },
-   "claim": "PLSR discrete-time Lyapunov solutions agree with the independent solver on the route family",
+   "claim": "PLSR discrete-time Lyapunov solutions agree with the reference solver (SciPy's Bartels-Stewart when installed) to within 10 n^2 u cond(P) on the route family",
    "domain": "numerical",
    "evidence_status": "independently_verified",
    "regression_tolerance": {
@@ -119,6 +122,122 @@
    "value": {
     "max_relative_difference": 4.496319237175107e-16,
     "solves": 15
+   }
+  },
+  {
+   "assigned_by": "ciw.lab.evidence",
+   "basis": {
+    "checks": [
+     {
+      "comparison": "abs_le",
+      "observed": 0.0,
+      "passed": true,
+      "reference": "NOT_CERTIFIED samples whose PLSR max eig(M) does not exceed the resolution",
+      "reference_kind": "invariant",
+      "tolerance": 0.0
+     },
+     {
+      "comparison": "abs_le",
+      "observed": 0.0,
+      "passed": true,
+      "reference": "samples where PLSR's eigenvalue route (max eig(M) > res) meets an exactly negative definite form",
+      "reference_kind": "exact_arithmetic",
+      "tolerance": 0.0
+     },
+     {
+      "comparison": "abs_le",
+      "observed": 0.0,
+      "passed": true,
+      "reference": "certifying verdicts at samples whose exact x^T M x is positive",
+      "reference_kind": "exact_arithmetic",
+      "tolerance": 0.0
+     },
+     {
+      "comparison": "abs_le",
+      "observed": 0.0,
+      "passed": true,
+      "reference": "route-family samples whose NOT_CERTIFIED decision differs from the exact sign of x^T M x",
+      "reference_kind": "exact_arithmetic",
+      "tolerance": 0.0
+     },
+     {
+      "comparison": "abs_le",
+      "observed": 0.0,
+      "passed": true,
+      "reference": "route-family samples whose eigenvalue-route decision differs from the exact class",
+      "reference_kind": "exact_arithmetic",
+      "tolerance": 0.0
+     }
+    ],
+    "independent_check": {
+     "checker": {
+      "implementation": "ciw.lab.lyapunov_reference",
+      "revision": "0.1.0"
+     },
+     "comparison": "abs_le",
+     "observed": 0.0,
+     "passed": true,
+     "producer": {
+      "implementation": "Parameterized-Lyapunov-Stability-Runtime@19ea69670601",
+      "revision": "19ea6967060166ba09db6cd4563bd87bd6b3d196"
+     },
+     "reference": "NOT_CERTIFIED samples whose exact x^T M x (rationals) is not positive",
+     "reference_kind": "exact_arithmetic",
+     "tolerance": 0.0
+    },
+    "provider": {
+     "executed": true,
+     "package_version": "0.1.0rc1",
+     "repository": "https://github.com/giasonpooni/Parameterized-Lyapunov-Stability-Runtime",
+     "revision": "19ea6967060166ba09db6cd4563bd87bd6b3d196",
+     "role": "plsr-python",
+     "runtime_digest": "a6fee6b3b4eb7852b31f5a285fe8c50b535f25762e1daf82e36720ef8dd1b7c7"
+    }
+   },
+   "claim": "PLSR's scalar NOT_CERTIFIED gate fires only where the exact x^T M x is positive and its eigenvalue route finds max eig(M) above the resolution, on the route family and on T107's near-threshold forms",
+   "domain": "numerical",
+   "evidence_status": "independently_verified",
+   "regression_tolerance": {
+    "abs": 0.05,
+    "rel": 0.0
+   },
+   "uncertainty": {
+    "basis": "counts are exact (abs 0.05 admits no integer change); near-threshold agreement shares move with last-bit rounding by a few of the 408 samples",
+    "kind": "reference_error",
+    "value": 0.05
+   },
+   "unit": null,
+   "value": {
+    "agreement": {
+     "near threshold": {
+      "eigen_vs_exact_class": 0.8431372549019608,
+      "scalar_vs_eigen": 0.7352941176470589,
+      "scalar_vs_exact_sample_sign": 0.9607843137254902
+     },
+     "route family": {
+      "eigen_vs_exact_class": 1.0,
+      "scalar_vs_eigen": 0.5675,
+      "scalar_vs_exact_sample_sign": 1.0
+     }
+    },
+    "not_certified_share": {
+     "near threshold": 0.08823529411764706,
+     "route family": 0.1475
+    },
+    "route_disagreements": {
+     "route_eigen_vs_exact_class": 0,
+     "route_scalar_vs_exact_sign": 0
+    },
+    "samples": {
+     "near threshold": 408,
+     "route family": 400
+    },
+    "violations": {
+     "certified_where_exact_x_M_x_positive": 0,
+     "eigen_route_on_exactly_negative_definite_form": 0,
+     "not_certified_without_eigen_route": 0,
+     "not_certified_without_exact_increase": 0
+    }
    }
   },
   {
@@ -520,22 +639,23 @@
  ],
  "generated_artifacts": [
   {
-   "bytes": 5360,
+   "bytes": 215822,
    "path": "artifacts/T111/routes.json",
-   "sha256": "061ed630cd66bf2d92f409989b5afc2371caf82f86e67e1a726688ed0f766d93"
+   "sha256": "3d6c2d5aa49560c71c4543ba6732c1c1db5eb08fce41b444ed8418aa30005d53"
   }
  ],
- "hypothesis": "The PLSR matrix route (Lyapunov solve, then the sign of max eig of the decrease form beyond the resolution) agrees with independent references -- numpy eigenvalues and SciPy's Bartels-Stewart Lyapunov solvers -- while the scalar quadratic route (the sign of x^T M x at sampled states) cannot certify definiteness and misses thin positive cones.",
+ "hypothesis": "The PLSR matrix route (Lyapunov solve, then the sign of max eig of the decrease form beyond the resolution) agrees with independent references -- numpy eigenvalues and SciPy's Bartels-Stewart Lyapunov solvers; PLSR's scalar gate (NOT_CERTIFIED when x^T M x > res |x|^2) fires only where the exact x^T M x is positive and the matrix route finds max eig(M) > res, on margin-separated plants and on near-threshold forms alike; and the scalar quadratic route (the sign of x^T M x at sampled states) cannot certify definiteness and misses thin positive cones.",
  "input_data": [
   "30 continuous plants n = 2..5 (PCG64 seed 111) with |spectral abscissa| > 0.05",
   "20 discrete plants n = 2..4 with |spectral radius - 1| > 0.05",
   "Thin-cone plant A = diag(-0.5, 5e-7), P = I (decrease form diag(-1, 1e-6)) with 64 random unit states (seed 1111)",
-  "Scalar plants a in [-1.0, -1e-10, -1e-300, -5e-324, 0.0, 5e-324, 1e-300, 1.0], p = 1"
+  "Scalar plants a in [-1.0, -1e-10, -1e-300, -5e-324, 0.0, 5e-324, 1e-300, 1.0], p = 1",
+  "Scalar-gate samples: every route plant with P = I at its own state and seven more (seed 1112), and each of T107's 102 near-threshold forms (seeds 107, 1071) at the computed top eigenvector of its decrease matrix and three seeded states"
  ],
- "mathematical_model": "Rayleigh: x^T M x <= max eig(M) |x|^2 for every x, with equality only on the top eigenvector, so sampled negativity never implies negative definiteness. An unstable A has v*(A + A^T)v = 2 Re(lambda)|v|^2 > 0 for an eigenvector v, so P = I can never certify it. For n = 1 the decrease form is 2 a p (continuous), so the verdict must follow sign(a) whenever 2|a|p exceeds the resolution.",
+ "mathematical_model": "Rayleigh: x^T M x <= max eig(M) |x|^2 for every x, with equality only on the top eigenvector, so sampled negativity never implies negative definiteness. An unstable A has v*(A + A^T)v = 2 Re(lambda)|v|^2 > 0 for an eigenvector v, so P = I can never certify it. If the resolution bounds the error of the computed x^T M x (|x^T E x| <= ||E||_2 |x|^2), then x^T M x > res |x|^2 in float64 implies an exactly positive x^T M x and, by Rayleigh, max eig(M) > res. For n = 1 the decrease form is 2 a p (continuous), so the verdict must follow sign(a) whenever 2|a|p exceeds the resolution.",
  "number": 111,
- "numerical_result": "Solver agreement: max relative difference 1.73e-14 over 15 continuous and 4.50e-16 over 15 discrete PLSR solves (scipy.linalg.solve_continuous_lyapunov@1.16.2; scipy.linalg.solve_discrete_lyapunov@1.16.2). solve_lyapunov: 0 disagreements with numpy stability over 50 plants, 20 refusals (20 of them numpy-unstable plants). Verdicts: 0 stable plants not certified with their own P, 0 unstable plants certified with P = I. Thin cone: 64/64 sampled scalar decreases negative; PLSR codes {'DECREASE_NOT_DEFINITE': 64}. Scalar plants: {'-1': 'CERTIFIED_WITH_MARGIN', '-1e-10': 'CERTIFIED_WITH_MARGIN', '-1e-300': 'CERTIFIED_WITH_MARGIN', '-4.94066e-324': 'CERTIFIED_WITH_MARGIN', '0': 'NUMERICAL_INCONCLUSIVE', '4.94066e-324': 'NOT_CERTIFIED', '1e-300': 'NOT_CERTIFIED', '1': 'NOT_CERTIFIED'}. Conclusion: the matrix routes agree with each other on margin-separated plants; sampled scalar decrease cannot stand in for them.",
- "observation_model": "PLSR solve_lyapunov outcome (P or refusal) and verdicts with the returned P and with P = I; SciPy (or the CIW Kronecker solve when SciPy is absent) Lyapunov P per time convention; numpy eigenvalues; PLSR verdicts at 64 sampled states.",
+ "numerical_result": "Solver agreement: max relative difference 1.73e-14 over 15 continuous and 4.50e-16 over 15 discrete PLSR solves (scipy.linalg.solve_continuous_lyapunov@1.16.2; scipy.linalg.solve_discrete_lyapunov@1.16.2). solve_lyapunov: 0 disagreements with numpy stability over 50 plants, 20 refusals (20 of them numpy-unstable plants). Verdicts: 0 stable plants not certified with their own P, 0 unstable plants certified with P = I. Thin cone: 64/64 sampled scalar decreases negative; PLSR codes {'DECREASE_NOT_DEFINITE': 64}. Scalar plants: {'-1': 'CERTIFIED_WITH_MARGIN', '-1e-10': 'CERTIFIED_WITH_MARGIN', '-1e-300': 'CERTIFIED_WITH_MARGIN', '-4.94066e-324': 'CERTIFIED_WITH_MARGIN', '0': 'NUMERICAL_INCONCLUSIVE', '4.94066e-324': 'NOT_CERTIFIED', '1e-300': 'NOT_CERTIFIED', '1': 'NOT_CERTIFIED'}. Scalar gate over 808 samples: violations {'not_certified_without_exact_increase': 0, 'not_certified_without_eigen_route': 0, 'eigen_route_on_exactly_negative_definite_form': 0, 'certified_where_exact_x_M_x_positive': 0}; agreement shares (scalar vs exact sample sign, eigenvalue route vs exact class, scalar vs eigenvalue route) {'route family': {'scalar_vs_exact_sample_sign': 1.0, 'eigen_vs_exact_class': 1.0, 'scalar_vs_eigen': 0.5675}, 'near threshold': {'scalar_vs_exact_sample_sign': 0.9607843137254902, 'eigen_vs_exact_class': 0.8431372549019608, 'scalar_vs_eigen': 0.7352941176470589}}; NOT_CERTIFIED shares {'route family': 0.1475, 'near threshold': 0.08823529411764706}. Conclusion: the matrix routes agree with each other on margin-separated plants; the scalar gate is sound against exact x^T M x and implies the eigenvalue route; sampled scalar decrease cannot stand in for them.",
+ "observation_model": "PLSR solve_lyapunov outcome (P or refusal) and verdicts with the returned P and with P = I; SciPy (or the CIW Kronecker solve when SciPy is absent) Lyapunov P per time convention; numpy eigenvalues; PLSR verdicts at 64 sampled states; per scalar-gate sample PLSR's code, max eig(M) and resolution against the exact x^T M x and exact class in rationals.",
  "physical_validation_status": {
   "statement": "Physical validation requires acquired hardware evidence; none was acquired for this task.",
   "status": "not_established"
@@ -565,21 +685,27 @@
   },
   "scipy": "1.16.2",
   "sources": {
-   "src/ciw/lab/lyapunov.py": "58d6c7473f0a42002b57888de0ccfbbf73b571bbbabbf9ee81e0a05c734f2320",
+   "src/ciw/lab/lyapunov.py": "cbcb4d58d7313d7c537957a1b7dd35039a21bae80125bf59147eeed2c1232bbb",
    "src/ciw/lab/lyapunov_provider.py": "da3465b48b5f5efc47bfe6ab8379cf2cf2bc23e4835dc7ff047252e77fa6ef17",
-   "src/ciw/lab/lyapunov_reference.py": "fa37ef453c23ad2bed2eab41132e72670e166b93eebd5fc9d67a4a89a7c92cca"
+   "src/ciw/lab/lyapunov_reference.py": "bdf0bb5074ae2caca6c8a5d8e63a15e346b007098e6def6b058d077719bc1336"
   },
   "sympy": "1.14.0"
  },
  "recommended_next_task": "T112: a separate disturbance-aware (ISS) research branch; T113: connect filtered residuals.",
- "report_id": "sha256:2b611de00ecb9016ce0b9782f1167a63cdee834e369b197268632024b6f05723",
+ "report_id": "sha256:1ed8fd5f826c360c0688c2f96d6e1a655d9cd8d0cf4da80b62c7289d9fae6dc8",
  "schema": "ciw.lab-task-report.v1",
  "section": "lyapunov",
  "state": "completed",
  "task_id": "T111",
  "tests_passed": [
-  "independent: PLSR continuous-time Lyapunov solutions agree with the independent solver on the route family vs scipy.linalg.solve_continuous_lyapunov@1.16.2",
-  "independent: PLSR discrete-time Lyapunov solutions agree with the independent solver on the route family vs scipy.linalg.solve_discrete_lyapunov@1.16.2",
+  "independent: PLSR continuous-time Lyapunov solutions agree with the reference solver (SciPy's Bartels-Stewart when installed) to within 10 n^2 u cond(P) on the route family vs scipy.linalg.solve_continuous_lyapunov@1.16.2",
+  "independent: PLSR discrete-time Lyapunov solutions agree with the reference solver (SciPy's Bartels-Stewart when installed) to within 10 n^2 u cond(P) on the route family vs scipy.linalg.solve_discrete_lyapunov@1.16.2",
+  "check: PLSR's scalar NOT_CERTIFIED gate fires only where the exact x^T M x is positive and its eigenvalue route finds max eig(M) above the resolution, on the route family and on T107's near-threshold forms vs NOT_CERTIFIED samples whose PLSR max eig(M) does not exceed the resolution",
+  "check: PLSR's scalar NOT_CERTIFIED gate fires only where the exact x^T M x is positive and its eigenvalue route finds max eig(M) above the resolution, on the route family and on T107's near-threshold forms vs samples where PLSR's eigenvalue route (max eig(M) > res) meets an exactly negative definite form",
+  "check: PLSR's scalar NOT_CERTIFIED gate fires only where the exact x^T M x is positive and its eigenvalue route finds max eig(M) above the resolution, on the route family and on T107's near-threshold forms vs certifying verdicts at samples whose exact x^T M x is positive",
+  "check: PLSR's scalar NOT_CERTIFIED gate fires only where the exact x^T M x is positive and its eigenvalue route finds max eig(M) above the resolution, on the route family and on T107's near-threshold forms vs route-family samples whose NOT_CERTIFIED decision differs from the exact sign of x^T M x",
+  "check: PLSR's scalar NOT_CERTIFIED gate fires only where the exact x^T M x is positive and its eigenvalue route finds max eig(M) above the resolution, on the route family and on T107's near-threshold forms vs route-family samples whose eigenvalue-route decision differs from the exact class",
+  "independent: PLSR's scalar NOT_CERTIFIED gate fires only where the exact x^T M x is positive and its eigenvalue route finds max eig(M) above the resolution, on the route family and on T107's near-threshold forms vs ciw.lab.lyapunov_reference",
   "check: PLSR's solve_lyapunov returns a P exactly for the plants numpy's eigenvalues call stable and raises ValueError for the others vs solve_lyapunov for continuous plant 2 (numpy: unstable)",
   "check: PLSR's solve_lyapunov returns a P exactly for the plants numpy's eigenvalues call stable and raises ValueError for the others vs solve_lyapunov for continuous plant 3 (numpy: unstable)",
   "check: PLSR's solve_lyapunov returns a P exactly for the plants numpy's eigenvalues call stable and raises ValueError for the others vs solve_lyapunov for continuous plant 5 (numpy: unstable)",
@@ -615,7 +741,7 @@
  "title": "Compare scalar quadratic and matrix-eigenvalue routes.",
  "uncertainty": "Solver differences are at rounding level; route agreement holds only with the stated stability margins. The subnormal scalar entries are reported, not asserted.",
  "unresolved_assumptions": [
-  "Plants with margins below 0.05 are excluded, so the comparison says nothing about near-marginal plants (T107 covers those).",
-  "The independent solver is SciPy when installed, otherwise the CIW Kronecker solve (same Lyapunov equation, different code)."
+  "Route plants with margins below 0.05 are excluded from the solver and verdict comparisons; near-marginal forms enter only through T107's near-threshold family in the scalar-gate comparison.",
+  "The independent solver is SciPy when installed. Without SciPy the CIW Kronecker solve stands in, but it solves the same Kronecker system with numpy.linalg.solve as PLSR's solve_lyapunov, so agreement with it is then recorded as an ordinary check, not an independent one."
  ]
 }

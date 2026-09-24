@@ -225,7 +225,7 @@
       "comparison": "abs_le",
       "observed": 0.0,
       "passed": true,
-      "reference": "property violations in the re-derived rule",
+      "reference": "code-property violations of the transcribed order (passing code regained, non-certifying code changed)",
       "reference_kind": "invariant",
       "tolerance": 0.0
      }
@@ -235,7 +235,7 @@
      "seed": 108
     }
    },
-   "claim": "The documented rule re-derived in CIW is monotone on the same margin grids",
+   "claim": "The CIW transcription of the documented decision order never regains a passing code and never changes a non-certifying code as the required margin grows on the same margin grids",
    "domain": "numerical",
    "evidence_status": "numerically_verified",
    "regression_tolerance": {
@@ -249,8 +249,6 @@
    },
    "unit": null,
    "value": {
-    "inequality_changed": 0,
-    "meets_regained": 0,
     "noncertifying_code_changed": 0,
     "passing_regained": 0
    }
@@ -302,14 +300,14 @@
   },
   "scipy": "1.16.2",
   "sources": {
-   "src/ciw/lab/lyapunov.py": "58d6c7473f0a42002b57888de0ccfbbf73b571bbbabbf9ee81e0a05c734f2320",
+   "src/ciw/lab/lyapunov.py": "cbcb4d58d7313d7c537957a1b7dd35039a21bae80125bf59147eeed2c1232bbb",
    "src/ciw/lab/lyapunov_provider.py": "da3465b48b5f5efc47bfe6ab8379cf2cf2bc23e4835dc7ff047252e77fa6ef17",
-   "src/ciw/lab/lyapunov_reference.py": "fa37ef453c23ad2bed2eab41132e72670e166b93eebd5fc9d67a4a89a7c92cca"
+   "src/ciw/lab/lyapunov_reference.py": "bdf0bb5074ae2caca6c8a5d8e63a15e346b007098e6def6b058d077719bc1336"
   },
   "sympy": "1.14.0"
  },
  "recommended_next_task": "T109: adversarial eigenvalue cases; extend the property test to affine plants with parameter-dependent P.",
- "report_id": "sha256:44934c28791e4fe0f620519bf9175f2f8beef2d571ef8749db16596156f4bd07",
+ "report_id": "sha256:e0d956378f0e256c3bb7bffc40272c7471426dc88506e05e2ecfd688340ef2fd",
  "schema": "ciw.lab-task-report.v1",
  "section": "lyapunov",
  "state": "completed",
@@ -324,7 +322,7 @@
   "check: Negative and non-finite required margins are refused vs required_margin = -1",
   "check: Negative and non-finite required margins are refused vs required_margin = nan",
   "check: Negative and non-finite required margins are refused vs required_margin = inf",
-  "check: The documented rule re-derived in CIW is monotone on the same margin grids vs property violations in the re-derived rule",
+  "check: The CIW transcription of the documented decision order never regains a passing code and never changes a non-certifying code as the required margin grows on the same margin grids vs code-property violations of the transcribed order (passing code regained, non-certifying code changed)",
   "pytest: tests/test_lab_lyapunov.py::test_t108_margin_monotonicity",
   "pytest: tests/test_lab_lyapunov.py::test_documented_rule_is_monotone",
   "pytest: tests/test_lab_lyapunov.py::test_provider_tasks_are_partial_without_the_provider"

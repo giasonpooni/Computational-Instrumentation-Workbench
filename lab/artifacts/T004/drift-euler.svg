@@ -54,11 +54,11 @@
 <circle cx="118.67" cy="208.53" r="2.6" fill="#0f766e"/>
 <line x1="482" y1="142" x2="502" y2="142" stroke="#0f766e" stroke-width="2"/>
 <text x="508" y="146">plane-polar</text>
-<path d="M412.67,129.47 L314.67,155.39 L216.67,181.83 L118.67,208.53" fill="none" stroke="#a16207" stroke-width="1.8"/>
-<circle cx="412.67" cy="129.47" r="2.6" fill="#a16207"/>
-<circle cx="314.67" cy="155.39" r="2.6" fill="#a16207"/>
-<circle cx="216.67" cy="181.83" r="2.6" fill="#a16207"/>
-<circle cx="118.67" cy="208.53" r="2.6" fill="#a16207"/>
+<path d="M444.22,77.96 L346.22,105.22 L248.22,132.32 L150.22,159.34" fill="none" stroke="#a16207" stroke-width="1.8"/>
+<circle cx="444.22" cy="77.96" r="2.6" fill="#a16207"/>
+<circle cx="346.22" cy="105.22" r="2.6" fill="#a16207"/>
+<circle cx="248.22" cy="132.32" r="2.6" fill="#a16207"/>
+<circle cx="150.22" cy="159.34" r="2.6" fill="#a16207"/>
 <line x1="482" y1="160" x2="502" y2="160" stroke="#a16207" stroke-width="2"/>
 <text x="508" y="164">cylinder-polar</text>
 </svg>

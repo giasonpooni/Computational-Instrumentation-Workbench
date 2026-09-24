@@ -148,12 +148,20 @@
   }
  ],
  "ranking": [
-  "fan+15deg",
-  "fan+20deg",
-  "fan+25deg",
-  "fan+10deg",
-  "fan+5deg",
-  "fan+0deg"
+  [
+   "fan+15deg",
+   "fan+20deg",
+   "fan+25deg"
+  ],
+  [
+   "fan+10deg"
+  ],
+  [
+   "fan+5deg"
+  ],
+  [
+   "fan+0deg"
+  ]
  ],
  "routes": [
   {

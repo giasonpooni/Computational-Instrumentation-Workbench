@@ -269,13 +269,13 @@
   "python": "3.12.3",
   "scipy": "1.16.2",
   "sources": {
-   "src/ciw/lab/observation.py": "9ebedc1a1693aaa28965ba0c97837ad2d2c45bf0fd360857cf7b32c0993ed5fc",
+   "src/ciw/lab/observation.py": "6e5bf960e17dffb62bdaf29d28be9a0f165fd68f8498d173b66eab08fa22ad70",
    "src/ciw/lab/observation_modes.py": "bfd6aa4471cc876a7ac2fb8790a4a5c4f478c547350b059311f5e6d53702c83e"
   },
   "sympy": "1.14.0"
  },
  "recommended_next_task": "T059: retain observations without admitting them as state",
- "report_id": "sha256:b3c02be99f2eb4d10adce07bd59bbbbad73e3336b2f77963fc02c21319a091db",
+ "report_id": "sha256:df161006f07b13adb493803c91fb49dbbeb0b8a32659cd0be5420fe7e8ec3cdd",
  "schema": "ciw.lab-task-report.v1",
  "section": "observation",
  "state": "completed",

@@ -11,14 +11,14 @@
    "hardware_measured": 0,
    "independently_verified": 0,
    "not_established": 1,
-   "numerically_verified": 9,
+   "numerically_verified": 11,
    "provider_backed": 0,
    "synthetic": 0
   },
   "primary": "numerically_verified"
  },
  "expected_invariant": "MC/linear variance ratio near 1 in the linear regime; ratio > 1 once second-order terms matter; exponents -2, -1, 0.",
- "experiment": "For each observable and sigma: FD Jacobian, predicted variance, 4000 seeded samples, ratio, bias and normal sign flips; corridor-leaving fractions for all six strips; gradient norms of one declared geodesic across levels split into marker-face and interior parts; total error versus level at fixed sigma.",
+ "experiment": "For each observable and sigma: FD Jacobian, predicted variance, 4000 seeded samples, ratio, bias and normal sign flips; corridor-leaving fractions for all six strips; per-vertex linearized normal and curvature standard deviations (G.vertex_uncertainty) against whole-mesh Monte Carlo at every vertex; gradient norms of one declared geodesic across levels split into marker-face and interior parts; total error versus level at fixed sigma.",
  "failure_modes_checked": [
   "strip validity under noise, for all six declared strips",
   "finite-difference step size",
@@ -153,7 +153,7 @@
       "comparison": "le",
       "observed": 0.0,
       "passed": true,
-      "reference": "declared strip's left fraction at sigma = 1e-3",
+      "reference": "declared strip's largest left fraction for sigma <= 1e-3",
       "reference_kind": "self_convergence",
       "tolerance": 0.0
      },
@@ -173,7 +173,7 @@
      "seed": 20260968
     }
    },
-   "claim": "The noise level at which a fixed face corridor fails depends on the strip, and the declared strip is the most robust of the six",
+   "claim": "The noise level at which a fixed face corridor fails depends on the strip, and the declared strip, which has the largest vertex margin of the six, stays in its corridor for sigma <= 1e-3",
    "counterexample": {
     "statement": "The fixed-corridor marker distance is valid for sigma <= 1e-3 on icosphere-3 whichever declared geodesic carries the markers",
     "witness": {
@@ -275,6 +275,95 @@
       "start_index": 5,
       "vertex_margin": 0.05280540132339888
      }
+    ]
+   }
+  },
+  {
+   "assigned_by": "ciw.lab.evidence",
+   "basis": {
+    "checks": [
+     {
+      "comparison": "signed_ge",
+      "observed": 10.783554735795716,
+      "passed": true,
+      "reference": "smallest z over sigma >= 3e-3 of (declared - witness strip) left fraction, binomial standard error of the difference",
+      "reference_kind": "self_convergence",
+      "tolerance": 3.0
+     },
+     {
+      "comparison": "signed_ge",
+      "observed": 0.002110044918730611,
+      "passed": true,
+      "reference": "declared strip margin minus the witness strip margin",
+      "reference_kind": "exact_arithmetic",
+      "tolerance": 0.0
+     }
+    ],
+    "generator": {
+     "level": 3,
+     "name": "ciw.lab.surfaces_discrete_mesh_studies.corridor_study",
+     "samples": 4000,
+     "seed": 20260968
+    }
+   },
+   "claim": "A strip with a smaller vertex margin than the declared strip leaves its face corridor less often at every tested sigma >= 3e-3",
+   "counterexample": {
+    "statement": "The strip with the largest vertex margin leaves its fixed face corridor least often at every tested noise level",
+    "witness": {
+     "declared_left_fraction": [
+      0.02825,
+      0.41075
+     ],
+     "declared_start_index": 5,
+     "more_robust_start_index": 1,
+     "sigmas": [
+      0.003,
+      0.01
+     ],
+     "witness_left_fraction": [
+      0.0,
+      0.26025
+     ]
+    }
+   },
+   "domain": "numerical",
+   "evidence_status": "numerically_verified",
+   "regression_tolerance": {
+    "abs": 1e-09,
+    "rel": 1e-06
+   },
+   "uncertainty": {
+    "basis": "95% half-width of a sample fraction from 4000 seeded samples (floored at p = 1/(4N))",
+    "kind": "monte_carlo_95ci",
+    "value": 0.00513467046410965
+   },
+   "unit": null,
+   "value": {
+    "declared": {
+     "left_fraction": [
+      0.0,
+      0.0,
+      0.02825,
+      0.41075
+     ],
+     "start_index": 5,
+     "vertex_margin": 0.05280540132339888
+    },
+    "more_robust": {
+     "left_fraction": [
+      0.0,
+      0.0,
+      0.0,
+      0.26025
+     ],
+     "start_index": 1,
+     "vertex_margin": 0.05069535640466827
+    },
+    "sigmas": [
+     0.0001,
+     0.001,
+     0.003,
+     0.01
     ]
    }
   },
@@ -679,6 +768,115 @@
   {
    "assigned_by": "ciw.lab.evidence",
    "basis": {
+    "checks": [
+     {
+      "comparison": "le",
+      "observed": 2.9886996985935155,
+      "passed": true,
+      "reference": "max over vertices of |z| of MC / linear curvature (isotropic covariance; z = (ratio - 1) / sqrt(2 / (N - 1)), 5 bounds all vertices jointly)",
+      "reference_kind": "self_convergence",
+      "tolerance": 5.0
+     },
+     {
+      "comparison": "le",
+      "observed": 2.345861002315565,
+      "passed": true,
+      "reference": "max over vertices of |z| of MC / linear normal (isotropic covariance; z = (ratio - 1) / sqrt(2 / (N - 1)), 5 bounds all vertices jointly)",
+      "reference_kind": "self_convergence",
+      "tolerance": 5.0
+     },
+     {
+      "comparison": "le",
+      "observed": 3.111811895434523,
+      "passed": true,
+      "reference": "max over vertices of |z| of MC / linear curvature (normal-dominant covariance; z = (ratio - 1) / sqrt(2 / (N - 1)), 5 bounds all vertices jointly)",
+      "reference_kind": "self_convergence",
+      "tolerance": 5.0
+     },
+     {
+      "comparison": "le",
+      "observed": 2.3673634011779985,
+      "passed": true,
+      "reference": "max over vertices of |z| of MC / linear normal (normal-dominant covariance; z = (ratio - 1) / sqrt(2 / (N - 1)), 5 bounds all vertices jointly)",
+      "reference_kind": "self_convergence",
+      "tolerance": 5.0
+     },
+     {
+      "comparison": "le",
+      "observed": 1.3169465518103607e-12,
+      "passed": true,
+      "reference": "per-vertex field (G.vertex_uncertainty) against the two-vertex propagation Jacobians at vertex 0 and the far valence-6 vertex, max relative difference",
+      "reference_kind": "cross_implementation",
+      "tolerance": 1e-06
+     }
+    ],
+    "generator": {
+     "level": 3,
+     "name": "ciw.lab.surfaces_discrete_mesh_studies.vertex_field_study",
+     "normal_sigma": 0.0003,
+     "samples": 2000,
+     "seed": 20260998,
+     "sigma": 0.0001,
+     "tangential_sigma": 0.0001
+    }
+   },
+   "claim": "Linearized per-vertex standard deviations of vertex normals and angle-defect curvature match Monte Carlo at every vertex of icosphere-3 under isotropic and normal-dominant vertex covariances",
+   "domain": "numerical",
+   "evidence_status": "numerically_verified",
+   "regression_tolerance": {
+    "abs": 1e-09,
+    "rel": 1e-06
+   },
+   "uncertainty": {
+    "basis": "relative 95% half-width of a Gaussian sample variance from 2000 seeded samples",
+    "kind": "monte_carlo_95ci",
+    "value": 0.06199614311294243
+   },
+   "unit": null,
+   "value": {
+    "models": {
+     "isotropic": {
+      "covariance": "isotropic",
+      "curvature_sd_range": [
+       0.016392771747504045,
+       0.026137946137612042
+      ],
+      "max_abs_z_curvature": 2.9886996985935155,
+      "max_abs_z_normal": 2.345861002315565,
+      "median_curvature_ratio": 1.0007552803141362,
+      "median_normal_ratio": 1.0026929381304872,
+      "normal_sd_range": [
+       0.0005057135486218205,
+       0.0006483600246192639
+      ],
+      "valence5_curvature_sd": 0.02613794613560638,
+      "valence6_curvature_sd_median": 0.020065445845427823
+     },
+     "normal-dominant": {
+      "covariance": "normal-dominant",
+      "curvature_sd_range": [
+       0.04917827435930792,
+       0.07841383833077328
+      ],
+      "max_abs_z_curvature": 3.111811895434523,
+      "max_abs_z_normal": 2.3673634011779985,
+      "median_curvature_ratio": 1.005440753440468,
+      "median_normal_ratio": 0.9997877851200574,
+      "normal_sd_range": [
+       0.0014994524251796398,
+       0.0019285581385388051
+      ],
+      "valence5_curvature_sd": 0.07841383832475629,
+      "valence6_curvature_sd_median": 0.06019571975599089
+     }
+    },
+    "two_vertex_cross_check_max_rel": 1.3169465518103607e-12,
+    "vertices": 642
+   }
+  },
+  {
+   "assigned_by": "ciw.lab.evidence",
+   "basis": {
     "notes": "No scanned surface, device or calibration was acquired; the computation is synthetic."
    },
    "claim": "Isotropic Gaussian vertex noise of the tested sigma describes the error of a real scanner",
@@ -691,9 +889,9 @@
  ],
  "generated_artifacts": [
   {
-   "bytes": 12401,
+   "bytes": 147218,
    "path": "artifacts/T043/vertex-uncertainty.json",
-   "sha256": "544ccbe4214906b8952a8364ff7657c9d4cfe605bb15cc048ceac545c5134fd5"
+   "sha256": "95c1d5fb21d2b7b4e6b686bb141a26756dd69ba6f922d7ddf4d325c028f59609"
   },
   {
    "bytes": 3655,
@@ -701,17 +899,18 @@
    "sha256": "f064dad4509a90d9d311774f2412a6591d087f07d27d72fcd8186293169d4f95"
   }
  ],
- "hypothesis": "Gaussian vertex noise propagates to geodesic length and normals nearly linearly, while angle-defect curvature needs sigma << h^2 / R for linearization and becomes noisier as the mesh is refined; the fixed-corridor distance stays meaningful only below a strip-dependent noise level.",
+ "hypothesis": "Gaussian vertex noise propagates to geodesic length and normals nearly linearly, while angle-defect curvature needs sigma << h^2 / R for linearization and becomes noisier as the mesh is refined; linearized per-vertex normal and curvature standard deviations under a declared vertex covariance match Monte Carlo at every vertex in the linear regime; the fixed-corridor distance stays meaningful only below a strip-dependent noise level that the vertex margin alone does not order.",
  "input_data": [
   "icosphere levels 2-5 (level 3 for Monte Carlo)",
   "sigma = 1e-4, 1e-3, 3e-3, 1e-2 (normalized units, R = 1)",
-  "markers on declared geodesic 5 of six (length 1), chosen because it has the largest vertex margin on icosphere-3, i.e. the best case for a fixed corridor; all six strips are reported for corridor validity",
-  "valence-5 vertex 0 and the valence-6 vertex farthest from valence-5 vertices"
+  "markers on declared geodesic 5 of six (length 1), chosen because it has the largest vertex margin on icosphere-3 (a larger margin does not make it the most robust strip at sigma >= 3e-3); all six strips are reported for corridor validity",
+  "two-vertex study: valence-5 vertex 0 and the valence-6 vertex farthest from valence-5 vertices",
+  "per-vertex field: all 642 vertices, isotropic sigma = 0.0001 and normal-dominant covariance (sigma_n = 0.0003, sigma_t = 0.0001)"
  ],
- "mathematical_model": "Linearization Var[f] = sigma^2 |grad f|^2 with a central finite-difference Jacobian (step 1e-6) over the vertices that affect f; seeded Monte Carlo with the same isotropic noise. Marker distance = planar distance after unfolding a fixed face strip with barycentric markers.",
+ "mathematical_model": "Linearization Var[f] = sigma^2 |grad f|^2 (or sum_j J_j C_j J_j^T for a declared per-vertex covariance C_j) with a central finite-difference Jacobian (step 1e-6) over the vertices that affect f; seeded Monte Carlo with the same noise. Marker distance = planar distance after unfolding a fixed face strip with barycentric markers.",
  "number": 43,
- "numerical_result": "Icosphere-3 (h=0.1507), 4000 samples per sigma, declared strip 5 (largest margin of six): fixed-corridor distance variance ratio within 0.025 of 1 (sigma<=1e-2), but the segment leaves the corridor in 0.000@0.0001, 0.000@0.001, 0.031@0.003, 0.395@0.01 of samples; over all six strips the left fraction at sigma=1e-3 ranges 0.000-0.371 (smallest margin 0.0027). Normal ratio within 0.023, 0 sign flips (min n.n0 0.9817); curvature ratio within 0.021 for sigma<=1e-3 but >= 1.39 at sigma=1e-2 (sigma/h^2=0.44). Sensitivity slopes (declared geodesic 5 at every level): marker distance: -0.05, marker-face part: -0.07, interior part: 0.39, normal v5: -1.00, K v5: -2.01, normal v6: -0.96, K v6: -1.93. Total curvature RMS error at sigma=0.001: 0.048@L2, 0.164@L3, 0.681@L4, 3.640@L5.",
- "observation_model": "Synthetic isotropic Gaussian displacement of every vertex; no scanner model beyond that.",
+ "numerical_result": "Icosphere-3 (h=0.1507), 4000 samples per sigma, declared strip 5 (largest margin of six): fixed-corridor distance variance ratio within 0.025 of 1 (sigma<=1e-2), but the segment leaves the corridor in 0.000@0.0001, 0.000@0.001, 0.031@0.003, 0.395@0.01 of samples; over all six strips the left fraction at sigma=1e-3 ranges 0.000-0.371 (smallest margin 0.0027); strip 1 (margin 0.0507) leaves less often than the declared strip at sigma >= 3e-3 (0.000 vs 0.028, 0.260 vs 0.411). Per-vertex field over all 642 vertices (2000 samples): isotropic sigma=0.0001 gives curvature SD 0.0164-0.0261 and normal SD 5.06e-04-6.48e-04 rad, max |z| 2.99 and 2.35; normal-dominant (sigma_n=0.0003, sigma_t=0.0001) max |z| 3.11 and 2.37; two-vertex cross-check 1.3e-12. Normal ratio within 0.023, 0 sign flips (min n.n0 0.9817); curvature ratio within 0.021 for sigma<=1e-3 but >= 1.39 at sigma=1e-2 (sigma/h^2=0.44). Sensitivity slopes (declared geodesic 5 at every level): marker distance: -0.05, marker-face part: -0.07, interior part: 0.39, normal v5: -1.00, K v5: -2.01, normal v6: -0.96, K v6: -1.93. Total curvature RMS error at sigma=0.001: 0.048@L2, 0.164@L3, 0.681@L4, 3.640@L5.",
+ "observation_model": "Synthetic Gaussian displacement of every vertex (isotropic, or the declared normal-dominant covariance); no scanner model beyond that.",
  "physical_validation_status": {
   "statement": "Physical validation requires acquired hardware evidence; none was acquired for this task.",
   "status": "not_established"
@@ -724,14 +923,14 @@
   "python": "3.12.3",
   "scipy": "1.16.2",
   "sources": {
-   "src/ciw/lab/surfaces_discrete_mesh.py": "60ba6ad84646cb8fff5dfa94cc609eb405b633ef3e75a535333dadd77e5bf592",
-   "src/ciw/lab/surfaces_discrete_mesh_geometry.py": "8788d479e31b40eaaa93aca1ff5aa293aa03fa681dfef7d9d5fe225f83994e7d",
-   "src/ciw/lab/surfaces_discrete_mesh_studies.py": "afac8f09b471f4d995289ed69e37f5a240b7d79c65392e35015a830f67d757b1"
+   "src/ciw/lab/surfaces_discrete_mesh.py": "cc005d2dfb3102b2594e085f9cdcba74ca0e6325edf9865010189ac5f6398500",
+   "src/ciw/lab/surfaces_discrete_mesh_geometry.py": "b14d56fae8413d78853e96be27a1f11eac369afa0b7a3dbb53bc821511ba4d97",
+   "src/ciw/lab/surfaces_discrete_mesh_studies.py": "618ea9848e8b750e333f81a395a7544c8b5127e53f4aae27d59b4f27e9967dfa"
   },
   "sympy": "1.14.0"
  },
  "recommended_next_task": "T044: separate geometry uncertainty from sensor noise for a marker-distance observation.",
- "report_id": "sha256:430e1974748238991a976fb73789d9b10bf8010702d9c7d8d07b5cf803c9a810",
+ "report_id": "sha256:32b6b6a9b161ba3eeaade33a43a3edaa04b2f1d690559e13611908db62c94909",
  "schema": "ciw.lab-task-report.v1",
  "section": "surfaces-discrete",
  "state": "completed",
@@ -740,9 +939,11 @@
   "check: Linearized vertex-noise propagation matches Monte Carlo for the marker distance along a fixed face corridor vs max |MC / linear variance - 1| for sigma <= 1e-2",
   "check: The declared marker segment stays in its face corridor for sigma <= 1e-3 but leaves it in over 10% of samples at sigma = 1e-2 vs largest left fraction for sigma <= 1e-3",
   "check: The declared marker segment stays in its face corridor for sigma <= 1e-3 but leaves it in over 10% of samples at sigma = 1e-2 vs left fraction at sigma = 1e-2",
-  "check: The noise level at which a fixed face corridor fails depends on the strip, and the declared strip is the most robust of the six vs largest left fraction over the six strips at sigma = 1e-3",
-  "check: The noise level at which a fixed face corridor fails depends on the strip, and the declared strip is the most robust of the six vs declared strip's left fraction at sigma = 1e-3",
-  "check: The noise level at which a fixed face corridor fails depends on the strip, and the declared strip is the most robust of the six vs declared strip margin minus the largest other margin",
+  "check: The noise level at which a fixed face corridor fails depends on the strip, and the declared strip, which has the largest vertex margin of the six, stays in its corridor for sigma <= 1e-3 vs largest left fraction over the six strips at sigma = 1e-3",
+  "check: The noise level at which a fixed face corridor fails depends on the strip, and the declared strip, which has the largest vertex margin of the six, stays in its corridor for sigma <= 1e-3 vs declared strip's largest left fraction for sigma <= 1e-3",
+  "check: The noise level at which a fixed face corridor fails depends on the strip, and the declared strip, which has the largest vertex margin of the six, stays in its corridor for sigma <= 1e-3 vs declared strip margin minus the largest other margin",
+  "check: A strip with a smaller vertex margin than the declared strip leaves its face corridor less often at every tested sigma >= 3e-3 vs smallest z over sigma >= 3e-3 of (declared - witness strip) left fraction, binomial standard error of the difference",
+  "check: A strip with a smaller vertex margin than the declared strip leaves its face corridor less often at every tested sigma >= 3e-3 vs declared strip margin minus the witness strip margin",
   "check: Linearized vertex-noise propagation matches Monte Carlo for vertex normals at every tested sigma, with no normal sign flips vs max |MC / linear mean-square angle - 1|",
   "check: Linearized vertex-noise propagation matches Monte Carlo for vertex normals at every tested sigma, with no normal sign flips vs samples with n . n0 < 0 over all sigma",
   "check: Linearized propagation matches Monte Carlo for angle-defect curvature when sigma <= 1e-3 vs max |MC / linear variance - 1| for sigma <= 1e-3",
@@ -754,8 +955,14 @@
   "check: The marker-distance sensitivity is carried by the marker-face vertices at order h^0 while the interior-strip part decreases under refinement vs interior part slope - 0.5",
   "check: The marker-distance sensitivity is carried by the marker-face vertices at order h^0 while the interior-strip part decreases under refinement vs smallest marker-face / interior ratio over levels",
   "check: Under fixed vertex noise the curvature error grows as the mesh is refined vs finest minus coarsest total RMS error",
+  "check: Linearized per-vertex standard deviations of vertex normals and angle-defect curvature match Monte Carlo at every vertex of icosphere-3 under isotropic and normal-dominant vertex covariances vs max over vertices of |z| of MC / linear curvature (isotropic covariance; z = (ratio - 1) / sqrt(2 / (N - 1)), 5 bounds all vertices jointly)",
+  "check: Linearized per-vertex standard deviations of vertex normals and angle-defect curvature match Monte Carlo at every vertex of icosphere-3 under isotropic and normal-dominant vertex covariances vs max over vertices of |z| of MC / linear normal (isotropic covariance; z = (ratio - 1) / sqrt(2 / (N - 1)), 5 bounds all vertices jointly)",
+  "check: Linearized per-vertex standard deviations of vertex normals and angle-defect curvature match Monte Carlo at every vertex of icosphere-3 under isotropic and normal-dominant vertex covariances vs max over vertices of |z| of MC / linear curvature (normal-dominant covariance; z = (ratio - 1) / sqrt(2 / (N - 1)), 5 bounds all vertices jointly)",
+  "check: Linearized per-vertex standard deviations of vertex normals and angle-defect curvature match Monte Carlo at every vertex of icosphere-3 under isotropic and normal-dominant vertex covariances vs max over vertices of |z| of MC / linear normal (normal-dominant covariance; z = (ratio - 1) / sqrt(2 / (N - 1)), 5 bounds all vertices jointly)",
+  "check: Linearized per-vertex standard deviations of vertex normals and angle-defect curvature match Monte Carlo at every vertex of icosphere-3 under isotropic and normal-dominant vertex covariances vs per-vertex field (G.vertex_uncertainty) against the two-vertex propagation Jacobians at vertex 0 and the far valence-6 vertex, max relative difference",
   "pytest: tests/test_lab_surfaces_discrete_mesh.py::test_linearization_matches_monte_carlo_and_breaks",
   "pytest: tests/test_lab_surfaces_discrete_mesh.py::test_corridor_threshold_depends_on_the_strip",
+  "pytest: tests/test_lab_surfaces_discrete_mesh.py::test_per_vertex_uncertainty_matches_monte_carlo",
   "pytest: tests/test_lab_surfaces_discrete_mesh.py::test_uncertainty_task_report"
  ],
  "tests_skipped": [],
@@ -764,6 +971,8 @@
  "unresolved_assumptions": [
   "Noise is isotropic and independent per vertex; real scanners have correlated, anisotropic errors.",
   "Markers are attached barycentrically to faces, so tangential vertex noise drags them; this dominates the marker-distance gain (see T044).",
-  "The corridor threshold depends on the strip: roughly where sigma reaches the smallest distance between the unfolded segment and a strip vertex (edge margin times h), although strips with equal margins differ because other near-vertex crossings matter. Past it the perturbed geodesic can switch corridors, its distance is a minimum over corridors, and re-tracing per sample is not done."
+  "The corridor threshold depends on the strip: roughly where sigma reaches the smallest distance between the unfolded segment and a strip vertex (edge margin times h), but the margin does not order the strips: strips with equal margins differ, and a smaller-margin strip leaves less often than the declared strip at sigma >= 3e-3, because other near-vertex crossings matter. Past it the perturbed geodesic can switch corridors, its distance is a minimum over corridors, and re-tracing per sample is not done.",
+  "Normals are always derived from the noisy vertices; an input uncertainty model for independently measured normals (for example scanner-reported normals) is not implemented and is deferred.",
+  "The per-vertex field is checked at sigma where linearization holds (sigma R / h^2 about 0.01); at larger sigma the curvature SD is underestimated as in the two-vertex study."
  ]
 }

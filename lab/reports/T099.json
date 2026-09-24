@@ -249,7 +249,7 @@
   {
    "bytes": 1231,
    "path": "artifacts/T099/cargo-build.json",
-   "sha256": "3ead025fc141d18164ff40c947c52a0af9c80cfedf41d3c89e07f78f20f24e62"
+   "sha256": "c4404819668428843a9ee073710102d6039c9a052eb02ffada6834d53bfabed9"
   },
   {
    "bytes": 1890,
@@ -279,9 +279,9 @@
    "python": "3.12.3",
    "scipy": "1.16.2",
    "sources": {
-    "src/ciw/lab/exchange_provenance_bundles.py": "a505b35560263c1b473912f79e61b15b7e474f8eb1807e691847e4c69791c2d3",
-    "src/ciw/lab/exchange_provenance_bundles_fixtures.py": "f30205e8305a225f24d94b06cba8b519ecea4680ca723aaca3591ff707d04e1c",
-    "src/ciw/lab/exchange_provenance_bundles_providers.py": "c9a30c9dc0751a22ff578a8c9a01abf06df582a1f1e835c1f1c0c33ed176f94b"
+    "src/ciw/lab/exchange_provenance_bundles.py": "3acc6fd6976bb5e6dd8ad3bfc3d09a1d9594ca0a06f4db823581e5b651d4835e",
+    "src/ciw/lab/exchange_provenance_bundles_fixtures.py": "7d6da1148d3744ae1e754b53f697b5b4919aff2666788ae6aec0e48e6e2380c9",
+    "src/ciw/lab/exchange_provenance_bundles_providers.py": "5e149f2463bd1f30bcfb61d719d84fcc19f84cd0ec201b5c95512c7a17f150b7"
    },
    "sympy": "1.14.0"
   },
@@ -298,7 +298,7 @@
   }
  },
  "recommended_next_task": "Run the SP1 proved-heat gate (scripts/check_proved_heat.py) on a provisioned machine; then T100.",
- "report_id": "sha256:e298a463597d2315ef336413a8a8730ccf99a91d8b60a939a6172f5ecba650a7",
+ "report_id": "sha256:e7679af0a39299134d0a126540129c99fa869082ebf7237827ddee4f0536905d",
  "schema": "ciw.lab-task-report.v1",
  "section": "exchange-provenance",
  "state": "partial",

@@ -8,6 +8,8 @@
   "vertices": 642
  },
  "steiner_nested": {
+  "edges_checked": 115740,
+  "edges_outside_faces": 0,
   "gap_to_traced": {
    "1": [
     0.03597828935818703,
@@ -41,7 +43,6 @@
    7
   ],
   "level": 2,
-  "max_chord_excess": 5.551115123125783e-17,
   "max_increase_with_k": 0.0,
   "min_gap": 0.0017535599433380344,
   "traced_lengths": [

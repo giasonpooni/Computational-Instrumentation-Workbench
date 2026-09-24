@@ -2,6 +2,7 @@
  "changed_files": [
   "src/ciw/lab/implementation_targets.py",
   "src/ciw/lab/implementation_targets_authority.py",
+  "src/ciw/lab/implementation_targets_architecture.py",
   "docs/lab/IMPLEMENTATION_TARGETS.md"
  ],
  "evidence_status": {
@@ -10,18 +11,24 @@
    "hardware_measured": 0,
    "independently_verified": 0,
    "not_established": 2,
-   "numerically_verified": 3,
+   "numerically_verified": 4,
    "provider_backed": 0,
    "synthetic": 0
   },
   "primary": "numerically_verified"
  },
- "expected_invariant": "Zero accepted writes; each route stops at its expected check; mutation of the frozen object does not open the gate.",
- "experiment": "Attempt random writes on the default policy, try each enabling route, then bypass the frozen dataclass.",
+ "expected_invariant": "Every default write refused; each route stops at its expected check, including offset, fractional-second and malformed timestamps; mutation of the frozen object does not open the gate; no device path and no undeclared network path in the package; every forged write path flagged.",
+ "experiment": "Attempt a write per channel on the default policy, try each enabling route, bypass the frozen dataclass, then scan the package for device and network write paths and replay forged ones.",
  "failure_modes_checked": [
   "missing, wrong-type, self-issued, expired, out-of-scope, unsigned and unanchored authorizations",
+  "expiry with a non-Z UTC offset",
+  "fractional-second expiry",
+  "malformed or offset-less timestamps",
   "lab issuing authority",
-  "frozen-object mutation"
+  "frozen-object mutation",
+  "device, serial or fieldbus library import",
+  "device node opened as a file",
+  "undeclared socket or connection"
  ],
  "findings": [
   {
@@ -29,27 +36,43 @@
    "basis": {
     "checks": [
      {
-      "comparison": "abs_le",
-      "observed": 0.0,
+      "expected_refusal": "writes_disabled_by_default",
+      "observed_refusal": "writes_disabled_by_default",
       "passed": true,
-      "reference": "accepted writes",
-      "reference_kind": "exact_arithmetic",
-      "tolerance": 0.0
+      "reference": "write to spindle_speed on the default policy",
+      "reference_kind": "refusal"
      },
      {
       "expected_refusal": "writes_disabled_by_default",
       "observed_refusal": "writes_disabled_by_default",
       "passed": true,
-      "reference": "default write",
+      "reference": "write to feed_override on the default policy",
+      "reference_kind": "refusal"
+     },
+     {
+      "expected_refusal": "writes_disabled_by_default",
+      "observed_refusal": "writes_disabled_by_default",
+      "passed": true,
+      "reference": "write to axis_x_setpoint on the default policy",
+      "reference_kind": "refusal"
+     },
+     {
+      "expected_refusal": "writes_disabled_by_default",
+      "observed_refusal": "writes_disabled_by_default",
+      "passed": true,
+      "reference": "write to coolant on the default policy",
+      "reference_kind": "refusal"
+     },
+     {
+      "expected_refusal": "writes_disabled_by_default",
+      "observed_refusal": "writes_disabled_by_default",
+      "passed": true,
+      "reference": "write to laser_power on the default policy",
       "reference_kind": "refusal"
      }
-    ],
-    "generator": {
-     "name": "PCG64 write attempts over five channels",
-     "seed": 153
-    }
+    ]
    },
-   "claim": "Default policy refuses every write attempt",
+   "claim": "Default policy refuses writes on every declared channel",
    "domain": "computational_pipeline",
    "evidence_status": "numerically_verified",
    "regression_tolerance": {
@@ -61,11 +84,8 @@
     "kind": "roundoff",
     "value": 0.0
    },
-   "unit": null,
-   "value": {
-    "accepted": 0,
-    "attempts": 1000
-   }
+   "unit": "refused channels",
+   "value": 5
   },
   {
    "assigned_by": "ciw.lab.evidence",
@@ -97,6 +117,34 @@
       "observed_refusal": "authorization_expired",
       "passed": true,
       "reference": "enable with an expired record",
+      "reference_kind": "refusal"
+     },
+     {
+      "expected_refusal": "authorization_expired",
+      "observed_refusal": "authorization_expired",
+      "passed": true,
+      "reference": "enable with an expiry written with a +02:00 offset, one hour before the instant",
+      "reference_kind": "refusal"
+     },
+     {
+      "expected_refusal": "no_trust_anchor",
+      "observed_refusal": "no_trust_anchor",
+      "passed": true,
+      "reference": "enable with an expiry half a second after the instant (fractional seconds; passes the window and stops at the trust anchor)",
+      "reference_kind": "refusal"
+     },
+     {
+      "expected_refusal": "malformed_timestamp",
+      "observed_refusal": "malformed_timestamp",
+      "passed": true,
+      "reference": "enable with the expiry 'tomorrow'",
+      "reference_kind": "refusal"
+     },
+     {
+      "expected_refusal": "malformed_timestamp",
+      "observed_refusal": "malformed_timestamp",
+      "passed": true,
+      "reference": "enable with an expiry without a UTC offset",
       "reference_kind": "refusal"
      },
      {
@@ -142,7 +190,7 @@
     "value": 0.0
    },
    "unit": "refused routes",
-   "value": 8
+   "value": 12
   },
   {
    "assigned_by": "ciw.lab.evidence",
@@ -199,6 +247,99 @@
   },
   {
    "assigned_by": "ciw.lab.evidence",
+   "basis": {
+    "checks": [
+     {
+      "comparison": "abs_le",
+      "observed": 0.0,
+      "passed": true,
+      "reference": "modules importing a device, serial, fieldbus or instrument library or naming a device node",
+      "reference_kind": "exact_arithmetic",
+      "tolerance": 0.0
+     },
+     {
+      "comparison": "abs_le",
+      "observed": 0.0,
+      "passed": true,
+      "reference": "modules outside the declared servers importing a network library or opening a connection",
+      "reference_kind": "exact_arithmetic",
+      "tolerance": 0.0
+     },
+     {
+      "comparison": "abs_le",
+      "observed": 0.0,
+      "passed": true,
+      "reference": "modules that failed to parse",
+      "reference_kind": "exact_arithmetic",
+      "tolerance": 0.0
+     },
+     {
+      "comparison": "ge",
+      "observed": 1.0,
+      "passed": true,
+      "reference": "forged module with a serial port flagged as a device path",
+      "reference_kind": "exact_arithmetic",
+      "tolerance": 1.0
+     },
+     {
+      "comparison": "ge",
+      "observed": 1.0,
+      "passed": true,
+      "reference": "forged module with a Windows COM device opened as a file flagged as a device path",
+      "reference_kind": "exact_arithmetic",
+      "tolerance": 1.0
+     },
+     {
+      "comparison": "ge",
+      "observed": 1.0,
+      "passed": true,
+      "reference": "forged module with a Modbus fieldbus client flagged as a device path",
+      "reference_kind": "exact_arithmetic",
+      "tolerance": 1.0
+     },
+     {
+      "comparison": "ge",
+      "observed": 1.0,
+      "passed": true,
+      "reference": "forged module with a raw socket to a PLC flagged as a undeclared network path",
+      "reference_kind": "exact_arithmetic",
+      "tolerance": 1.0
+     },
+     {
+      "comparison": "ge",
+      "observed": 1.0,
+      "passed": true,
+      "reference": "forged module with a asyncio stream to a PLC flagged as a undeclared network path",
+      "reference_kind": "exact_arithmetic",
+      "tolerance": 1.0
+     }
+    ]
+   },
+   "claim": "No ciw module imports a device, serial or fieldbus library or names a device node, and network libraries appear only in the declared workbench servers (source scan)",
+   "domain": "computational_pipeline",
+   "evidence_status": "numerically_verified",
+   "regression_tolerance": {
+    "abs": 0,
+    "rel": 0
+   },
+   "uncertainty": {
+    "basis": "exact integer, byte, digest or refusal-code comparison; no rounding enters the value",
+    "kind": "roundoff",
+    "value": 0.0
+   },
+   "unit": null,
+   "value": {
+    "declared_network": [
+     "ciw.cli",
+     "ciw.lab.mcp_server",
+     "ciw.server"
+    ],
+    "device_paths": [],
+    "undeclared_network": []
+   }
+  },
+  {
+   "assigned_by": "ciw.lab.evidence",
    "basis": {},
    "claim": "The lab holds actuator write authority",
    "domain": "actuator_authority",
@@ -220,21 +361,28 @@
  ],
  "generated_artifacts": [
   {
-   "bytes": 1630,
+   "bytes": 3213,
    "path": "artifacts/T153/write-policy.json",
-   "sha256": "f7784cbaed2dd8eba0cef9f5f7d1d782917c92561cc695cf438f17dc8aae5b3e"
+   "sha256": "15dd2a3027af628d84563d3c592b705dbf06c7a699402458753896273f3a8d52"
+  },
+  {
+   "bytes": 1621,
+   "path": "artifacts/T153/write-path-scan.json",
+   "sha256": "781c13ec54b2c4aa2a4f24eb1b9e9b34254eb694b9263820b1fbf86e2ccccc00"
   }
  ],
- "hypothesis": "A deny-by-default write policy refuses every write; enabling needs an externally issued, signed, in-scope, unexpired authorization verified against a trust anchor the lab does not hold, so no route opens it here.",
+ "hypothesis": "A deny-by-default write policy refuses every write; enabling needs an externally issued, signed, in-scope, unexpired authorization verified against a trust anchor the lab does not hold, so no route opens it here; and a source scan finds no device, serial or fieldbus write path in the package and network paths only in the declared workbench servers, so no other code path reaches a machine that the scan can see.",
  "input_data": [
-  "1000 PCG64(153) write attempts on five channels",
-  "eight enabling routes",
-  "fixed instant 2026-09-23T00:00:00Z"
+  "one write per declared channel (five)",
+  "twelve enabling routes",
+  "fixed instant 2026-09-23T00:00:00Z",
+  "141 parsed modules of the installed ciw package (source text only; package digest in write-path-scan.json)",
+  "5 forged write-path modules"
  ],
- "mathematical_model": "Gate(channel) = refuse unless enabled and verify(authorization, channel, now) passes; verify checks type, issuer, validity window, scope, signature, trust anchor in that order; the lab build has no trust anchor and no actuator transport.",
+ "mathematical_model": "Gate(channel) = refuse unless enabled and verify(authorization, channel, now) passes; verify checks type, issuer, timestamp form (ISO-8601 with a UTC offset, parsed to instants), validity window, scope, signature and trust anchor in that order; the lab build has no trust anchor. Write paths: a module is a device path if it imports a device, serial, fieldbus, industrial-protocol or instrument library or names a device node (/dev/..., \\\\.\\..., COMn), and a network path if it imports a network library or calls a connection or server constructor; network paths are allowed only in declared modules.",
  "number": 153,
- "numerical_result": "0/1000 writes accepted; 8/8 enabling routes refused with their expected codes; in-memory mutation succeeded but writes stayed refused.",
- "observation_model": "Refusal codes raised by the policy; no actuator exists.",
+ "numerical_result": "5/5 default writes refused; 12/12 enabling routes refused with their expected codes; in-memory mutation succeeded but writes stayed refused; device paths 0, undeclared network paths 0, declared network modules ciw.cli, ciw.lab.mcp_server, ciw.server; 5/5 forged write paths flagged.",
+ "observation_model": "Refusal codes raised by the policy; source-scan hits per module; no actuator exists.",
  "physical_validation_status": {
   "statement": "Physical validation requires acquired hardware evidence; none was acquired for this task.",
   "status": "not_established"
@@ -247,24 +395,32 @@
   "python": "3.12.3",
   "scipy": "1.16.2",
   "sources": {
-   "src/ciw/lab/implementation_targets.py": "4e27c12d31365590b7fb82d98b8d02e1668c7b8e73b03f71ef270eca9fcf6eea",
-   "src/ciw/lab/implementation_targets_authority.py": "d6bed9b77e929252173070b28d8ce0f30b6b3bc1ff544100379515e999ec017a"
+   "src/ciw/lab/implementation_targets.py": "1df8bd67d28b18d70bcb5f74e4a14616ceb17868c7a9aa75595f15254426ee7e",
+   "src/ciw/lab/implementation_targets_architecture.py": "3c0ba23187cae208b492ff7adbceba135e2d7e071c6a4c978bbe5e3b2ac0ad62",
+   "src/ciw/lab/implementation_targets_authority.py": "d1e8750a38aab38f856203f46b2be0ac975963403c1789a04d4763415eff778f"
   },
   "sympy": "1.14.0"
  },
  "recommended_next_task": "T154 (treat control outputs as proposals behind the same authorization)",
- "report_id": "sha256:9d2a51b212eae05f664e89c49d418eafdaa444651bb1684c8f25fe65dcedf21f",
+ "report_id": "sha256:d82506032d44f1433f6734a3b3ab86774b4692932a7283c92f66a0471e9b049f",
  "schema": "ciw.lab-task-report.v1",
  "section": "implementation-targets",
  "state": "completed",
  "task_id": "T153",
  "tests_passed": [
-  "check: Default policy refuses every write attempt vs accepted writes",
-  "check: Default policy refuses every write attempt vs default write",
+  "check: Default policy refuses writes on every declared channel vs write to spindle_speed on the default policy",
+  "check: Default policy refuses writes on every declared channel vs write to feed_override on the default policy",
+  "check: Default policy refuses writes on every declared channel vs write to axis_x_setpoint on the default policy",
+  "check: Default policy refuses writes on every declared channel vs write to coolant on the default policy",
+  "check: Default policy refuses writes on every declared channel vs write to laser_power on the default policy",
   "check: Enabling writes is refused on every route, including a well-formed external record vs enable without a record",
   "check: Enabling writes is refused on every route, including a well-formed external record vs enable with a plain dict",
   "check: Enabling writes is refused on every route, including a well-formed external record vs enable with a lab-issued record",
   "check: Enabling writes is refused on every route, including a well-formed external record vs enable with an expired record",
+  "check: Enabling writes is refused on every route, including a well-formed external record vs enable with an expiry written with a +02:00 offset, one hour before the instant",
+  "check: Enabling writes is refused on every route, including a well-formed external record vs enable with an expiry half a second after the instant (fractional seconds; passes the window and stops at the trust anchor)",
+  "check: Enabling writes is refused on every route, including a well-formed external record vs enable with the expiry 'tomorrow'",
+  "check: Enabling writes is refused on every route, including a well-formed external record vs enable with an expiry without a UTC offset",
   "check: Enabling writes is refused on every route, including a well-formed external record vs enable for a channel outside scope",
   "check: Enabling writes is refused on every route, including a well-formed external record vs enable with an unsigned record",
   "check: Enabling writes is refused on every route, including a well-formed external record vs enable with a well-formed external record",
@@ -272,13 +428,23 @@
   "check: A frozen in-process policy object can be mutated vs object.__setattr__ changed enabled to True",
   "check: A frozen in-process policy object can be mutated vs write after forcing enabled=True in memory",
   "check: A frozen in-process policy object can be mutated vs write after also forcing an external record in memory",
+  "check: No ciw module imports a device, serial or fieldbus library or names a device node, and network libraries appear only in the declared workbench servers (source scan) vs modules importing a device, serial, fieldbus or instrument library or naming a device node",
+  "check: No ciw module imports a device, serial or fieldbus library or names a device node, and network libraries appear only in the declared workbench servers (source scan) vs modules outside the declared servers importing a network library or opening a connection",
+  "check: No ciw module imports a device, serial or fieldbus library or names a device node, and network libraries appear only in the declared workbench servers (source scan) vs modules that failed to parse",
+  "check: No ciw module imports a device, serial or fieldbus library or names a device node, and network libraries appear only in the declared workbench servers (source scan) vs forged module with a serial port flagged as a device path",
+  "check: No ciw module imports a device, serial or fieldbus library or names a device node, and network libraries appear only in the declared workbench servers (source scan) vs forged module with a Windows COM device opened as a file flagged as a device path",
+  "check: No ciw module imports a device, serial or fieldbus library or names a device node, and network libraries appear only in the declared workbench servers (source scan) vs forged module with a Modbus fieldbus client flagged as a device path",
+  "check: No ciw module imports a device, serial or fieldbus library or names a device node, and network libraries appear only in the declared workbench servers (source scan) vs forged module with a raw socket to a PLC flagged as a undeclared network path",
+  "check: No ciw module imports a device, serial or fieldbus library or names a device node, and network libraries appear only in the declared workbench servers (source scan) vs forged module with a asyncio stream to a PLC flagged as a undeclared network path",
   "pytest: tests/test_lab_implementation_targets.py::test_t153_writes_disabled_by_default"
  ],
  "tests_skipped": [],
  "title": "Keep actuator writes disabled by default.",
- "uncertainty": "Exhaustive over the declared routes; software refusals inside one process can be bypassed by code with the same privileges (the counterexample shows the mutation itself succeeds).",
+ "uncertainty": "Exhaustive over the declared routes; software refusals inside one process can be bypassed by code with the same privileges (the counterexample shows the mutation itself succeeds). The scan is static: dynamic imports, exec, third-party libraries and spawned providers that open devices are not seen, and the library lists are denylists.",
  "unresolved_assumptions": [
   "Real enforcement belongs in hardware interlocks and a separate controller process",
-  "Authorization record format and signature scheme are placeholders"
+  "Authorization record format and signature scheme are placeholders",
+  "No module routes writes through ActuatorWritePolicy because the package has no write path to route; a future transport would be flagged by the scan, but routing it through the policy is not enforced",
+  "The declared servers (ciw.server, ciw.cli, ciw.lab.mcp_server) talk to the workbench's own clients; that they cannot reach a machine is judged from the absence of device libraries, not proven"
  ]
 }

@@ -11,7 +11,7 @@
    "hardware_measured": 0,
    "independently_verified": 0,
    "not_established": 1,
-   "numerically_verified": 8,
+   "numerically_verified": 7,
    "provider_backed": 0,
    "synthetic": 0
   },
@@ -25,7 +25,7 @@
   "valence-5 versus valence-6 vertices",
   "Voronoi versus barycentric area",
   "mirror-plane versus generic valence-6 vertices",
-  "Gauss-Bonnet exactness"
+  "Gauss-Bonnet sum (implementation sanity check only; an identity for every closed mesh)"
  ],
  "findings": [
   {
@@ -473,36 +473,6 @@
     "checks": [
      {
       "comparison": "abs_le",
-      "observed": 3.963052108701959e-11,
-      "passed": true,
-      "reference": "max |sum of defects - 2 pi chi|",
-      "reference_kind": "invariant",
-      "tolerance": 1e-09
-     }
-    ],
-    "derivation": "Discrete Gauss-Bonnet: sum of angle defects = 2 pi chi for a closed mesh"
-   },
-   "claim": "Discrete Gauss-Bonnet holds: angle defects sum to 4 pi on icospheres and 0 on tori",
-   "domain": "numerical",
-   "evidence_status": "numerically_verified",
-   "regression_tolerance": {
-    "abs": 1e-09,
-    "rel": 0.0
-   },
-   "uncertainty": {
-    "basis": "accumulated rounding of the angle sum",
-    "kind": "roundoff",
-    "value": 3.963052108701959e-11
-   },
-   "unit": null,
-   "value": 3.963052108701959e-11
-  },
-  {
-   "assigned_by": "ciw.lab.evidence",
-   "basis": {
-    "checks": [
-     {
-      "comparison": "abs_le",
       "observed": -0.06657904687627236,
       "passed": true,
       "reference": "fitted order - 2",
@@ -583,7 +553,7 @@
  ],
  "mathematical_model": "Smooth: j'' + K j = 0, j_head(s) = sin(s) for K = 1. Mesh: curvature is concentrated at vertices (cone points); two geodesics are rotated relative to each other only when a vertex lies between them, so the finite-difference field depends on delta/h. For vertices on a sphere the angle defect tends to K times the circumcentric (Voronoi) cell area, so defect/(A/3) tends to K Voronoi/(A/3): 3K / (4 cos^2(pi/n)) at regular valence-n stars, and a value other than K wherever the star stays irregular.",
  "number": 40,
- "numerical_result": "FD Jacobi (delta=0.1): mean error 2.16e-01, 8.07e-02, 2.40e-02, 6.25e-03, 3.21e-03, 1.17e-03 (levels 2-7, order 1.53, pairwise 1.43, 1.75, 1.95, 0.96, 1.45); delta=1e-05: 30/30 pairs on levels 2-6 share face sequences and give j = L = 2.0 (deviation 5.0e-10), error 1.0907; at level 7 (about 0.37 vertices expected in each pair's wedge) 4/6 pairs straddle a vertex. Valence-5 angle-defect curvature 1.1459056 vs predicted limit 1.1458980 (order 2.00); Voronoi valence-5 error 1.6e-05. Valence-6 max error on base-edge arcs 1.93e-03, 2.43e-03, 2.56e-03, 2.59e-03, on face medians 2.70e-03, 2.14e-03, 1.99e-03, 1.96e-03, off the mirror planes 1.09e-03, 5.39e-04, 4.33e-04, 4.65e-04 (levels 4-7); torus order 1.93; Gauss-Bonnet residual 4.0e-11.",
+ "numerical_result": "FD Jacobi (delta=0.1): mean error 2.16e-01, 8.07e-02, 2.40e-02, 6.25e-03, 3.21e-03, 1.17e-03 (levels 2-7, order 1.53, pairwise 1.43, 1.75, 1.95, 0.96, 1.45); delta=1e-05: 30/30 pairs on levels 2-6 share face sequences and give j = L = 2.0 (deviation 5.0e-10), error 1.0907; at level 7 (about 0.37 vertices expected in each pair's wedge) 4/6 pairs straddle a vertex. Valence-5 angle-defect curvature 1.1459056 vs predicted limit 1.1458980 (order 2.00); Voronoi valence-5 error 1.6e-05. Valence-6 max error on base-edge arcs 1.93e-03, 2.43e-03, 2.56e-03, 2.59e-03, on face medians 2.70e-03, 2.14e-03, 1.99e-03, 1.96e-03, off the mirror planes 1.09e-03, 5.39e-04, 4.33e-04, 4.65e-04 (levels 4-7); torus order 1.93. Implementation sanity check (not a finding: discrete Gauss-Bonnet holds for any closed mesh whose triangle angles sum to pi): residual 4.0e-11.",
  "observation_model": "Central difference |X+(L) - X-(L)| / (2 sin delta), exact for the smooth unit sphere; vertex curvature estimates against K = 1 or the torus closed form.",
  "physical_validation_status": {
   "statement": "Physical validation requires acquired hardware evidence; none was acquired for this task.",
@@ -597,14 +567,14 @@
   "python": "3.12.3",
   "scipy": "1.16.2",
   "sources": {
-   "src/ciw/lab/surfaces_discrete_mesh.py": "60ba6ad84646cb8fff5dfa94cc609eb405b633ef3e75a535333dadd77e5bf592",
-   "src/ciw/lab/surfaces_discrete_mesh_geometry.py": "8788d479e31b40eaaa93aca1ff5aa293aa03fa681dfef7d9d5fe225f83994e7d",
-   "src/ciw/lab/surfaces_discrete_mesh_studies.py": "afac8f09b471f4d995289ed69e37f5a240b7d79c65392e35015a830f67d757b1"
+   "src/ciw/lab/surfaces_discrete_mesh.py": "cc005d2dfb3102b2594e085f9cdcba74ca0e6325edf9865010189ac5f6398500",
+   "src/ciw/lab/surfaces_discrete_mesh_geometry.py": "b14d56fae8413d78853e96be27a1f11eac369afa0b7a3dbb53bc821511ba4d97",
+   "src/ciw/lab/surfaces_discrete_mesh_studies.py": "618ea9848e8b750e333f81a395a7544c8b5127e53f4aae27d59b4f27e9967dfa"
   },
   "sympy": "1.14.0"
  },
  "recommended_next_task": "T041: quantify how mesh quality (jitter, slivers, anisotropy) changes geodesic and curvature errors.",
- "report_id": "sha256:fa79b72df7ce8404ed1c3169d2f25b7465f599eae737cffab29c1b4e82400560",
+ "report_id": "sha256:c3b92a553066079d377db16954af41ae21b0d74d22791905ca8a205580fad988",
  "schema": "ciw.lab-task-report.v1",
  "section": "surfaces-discrete",
  "state": "completed",
@@ -625,7 +595,6 @@
   "check: Barycentric angle-defect curvature does not converge pointwise at valence-6 icosphere vertices on the icosahedral mirror planes vs smallest base-edge valence-6 max error over levels 4-7",
   "check: Barycentric angle-defect curvature does not converge pointwise at valence-6 icosphere vertices on the icosahedral mirror planes vs finest minus level-4 base-edge max error",
   "check: Barycentric angle-defect curvature does not converge pointwise at valence-6 icosphere vertices on the icosahedral mirror planes vs finest mixed-Voronoi max error on the same mirror-plane vertices",
-  "check: Discrete Gauss-Bonnet holds: angle defects sum to 4 pi on icospheres and 0 on tori vs max |sum of defects - 2 pi chi|",
   "check: Angle-defect curvature on regular torus grids converges at second order to the sign-changing K vs fitted order - 2",
   "pytest: tests/test_lab_surfaces_discrete_mesh.py::test_flat_jacobi_counterexample_and_valence_limit",
   "pytest: tests/test_lab_surfaces_discrete_mesh.py::test_jacobi_task_report"

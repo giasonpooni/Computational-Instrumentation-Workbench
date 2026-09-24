@@ -9,16 +9,16 @@
   "counts": {
    "analytic": 0,
    "hardware_measured": 0,
-   "independently_verified": 2,
+   "independently_verified": 1,
    "not_established": 0,
-   "numerically_verified": 2,
+   "numerically_verified": 3,
    "provider_backed": 0,
    "synthetic": 0
   },
   "primary": "numerically_verified"
  },
  "expected_invariant": "Canonical form, det G (squared area) and the automorphism group are invariant under SL(2,Z).",
- "experiment": "Transform each lattice by every enumerated matrix and every random word, reduce exactly, compare with the canonical form; count closed-domain reduced bases; exercise refusals; optionally compare float folds with the pinned FTR provider.",
+ "experiment": "Transform each lattice by every enumerated matrix and every random word, reduce exactly, compare with the canonical form; recompute every canonical form with a second (vector-form) reduction; count closed-domain reduced bases; exercise refusals; optionally compare float folds with the pinned FTR provider.",
  "failure_modes_checked": [
   "non-unimodular basis change (det 2) refused",
   "orientation reversal (det -1) refused",
@@ -38,28 +38,20 @@
       "reference": "exact reduction failures (inverse, area, canonical form, reducer, automorphism)",
       "reference_kind": "exact_arithmetic",
       "tolerance": 0.0
+     },
+     {
+      "comparison": "abs_le",
+      "observed": 0.0,
+      "passed": true,
+      "reference": "second ciw reduction (vector-form Lagrange on the basis vectors) of all 3048 bases and words: canonical form, equality with canonical(G) and lat.gauss_reduce, boundary rule, det 1 (mismatching cases)",
+      "reference_kind": "cross_implementation",
+      "tolerance": 0.0
      }
-    ],
-    "independent_check": {
-     "checker": {
-      "implementation": "sympy",
-      "revision": "1.14.0"
-     },
-     "comparison": "abs_le",
-     "observed": 0.0,
-     "passed": true,
-     "producer": {
-      "implementation": "ciw.lab.flat_torus_topology",
-      "revision": "ciw 0.1.0"
-     },
-     "reference": "sympy vector-form Lagrange reduction of all 3048 bases and words: canonical form, equality with canonical(G) and ciw's form, boundary rule, det 1",
-     "reference_kind": "exact_arithmetic",
-     "tolerance": 0.0
-    }
+    ]
    },
    "claim": "Every enumerated SL(2,Z) basis and every random word reduces exactly to the same canonical Gram form",
    "domain": "mathematical",
-   "evidence_status": "independently_verified",
+   "evidence_status": "numerically_verified",
    "regression_tolerance": {
     "abs": 0,
     "rel": 0
@@ -147,11 +139,12 @@
       "comparison": "abs_le",
       "observed": 0.0,
       "passed": true,
-      "reference": "det of the det-2 image over det G (index-2 sublattice has 4x squared area)",
+      "reference": "canonical form of the det-2 image equals canonical(G) (0 = different lattice)",
       "reference_kind": "exact_arithmetic",
       "tolerance": 0.0
      }
-    ]
+    ],
+    "derivation": "det(M^T G M) = det(M)^2 det G, so a det-2 image has 4 times the squared area of G and spans an index-2 sublattice"
    },
    "claim": "Integer matrices with det != 1 are refused as SL(2,Z) basis changes",
    "counterexample": {
@@ -315,37 +308,34 @@
    "source_tree": "1f082c6b443f2e301ac5889122912f26968ae756"
   },
   "python": "3.12.3",
-  "requirement_probes": {
-   "module:sympy": true
-  },
   "scipy": "1.16.2",
   "sources": {
-   "src/ciw/lab/flat_torus_topology.py": "4d8cf2437759501a1b9fa5ee0d8abfac43345ebee378c6ad08233e9155d4b184",
+   "src/ciw/lab/flat_torus_topology.py": "1221001d96bf1f9aa2f9fea169a2b10bfb37230da11bfb6f1608ba9355c86b9a",
    "src/ciw/lab/flat_torus_topology_lattice.py": "15a33fcd29591e43dec16fa3b9ad26d6b6b86846872e9e6bf815508fb0dade63",
    "src/ciw/lab/flat_torus_topology_provider.py": "30fa38e51a20bc8d01beea0e5c44da69f22d7059c04c92c1fea520e5cf6f8806"
   },
   "sympy": "1.14.0"
  },
  "recommended_next_task": "T026: test modular-reduction invariance of length spectrum, area and systole",
- "report_id": "sha256:7962325e01bdf135320ceaf258860c017e671405ca501a0b563e93f453f9540c",
+ "report_id": "sha256:22cc2c1239b4e219a2e01040525b5cce7fa9e0fab21a47ae149bccbf3437df0a",
  "schema": "ciw.lab-task-report.v1",
  "section": "flat-torus-topology",
  "state": "completed",
  "task_id": "T019",
  "tests_passed": [
   "check: Every enumerated SL(2,Z) basis and every random word reduces exactly to the same canonical Gram form vs exact reduction failures (inverse, area, canonical form, reducer, automorphism)",
-  "independent: Every enumerated SL(2,Z) basis and every random word reduces exactly to the same canonical Gram form vs sympy",
+  "check: Every enumerated SL(2,Z) basis and every random word reduces exactly to the same canonical Gram form vs second ciw reduction (vector-form Lagrange on the basis vectors) of all 3048 bases and words: canonical form, equality with canonical(G) and lat.gauss_reduce, boundary rule, det 1 (mismatching cases)",
   "check: Number of reduced bases equals the predicted stabilizer count (2 generic, 4 boundary or square, 12 hexagonal) vs count mismatches against prediction",
   "check: Integer matrices with det != 1 are refused as SL(2,Z) basis changes vs lat.transform with det 2",
   "check: Integer matrices with det != 1 are refused as SL(2,Z) basis changes vs lat.transform with det -1",
   "check: Integer matrices with det != 1 are refused as SL(2,Z) basis changes vs lat.transform with a non-integer entry",
-  "check: Integer matrices with det != 1 are refused as SL(2,Z) basis changes vs det of the det-2 image over det G (index-2 sublattice has 4x squared area)",
+  "check: Integer matrices with det != 1 are refused as SL(2,Z) basis changes vs canonical form of the det-2 image equals canonical(G) (0 = different lattice)",
   "check: Float Gauss reduction agrees with the pinned FTR fold_to_fundamental_domain on reduced tau and the reducing SL(2,Z) matrix (up to -I) vs matrix mismatches up to -I",
   "check: Float Gauss reduction agrees with the pinned FTR fold_to_fundamental_domain on reduced tau and the reducing SL(2,Z) matrix (up to -I) vs reduction recovers the declared reduced tau",
   "independent: Float Gauss reduction agrees with the pinned FTR fold_to_fundamental_domain on reduced tau and the reducing SL(2,Z) matrix (up to -I) vs Flat-Torus-Geodesic-Reference@dc918562cd9e",
   "pytest: tests/test_lab_flat_torus_topology.py::test_t019_reduction_and_refusals",
   "pytest: tests/test_lab_flat_torus_topology.py::test_gauss_reduction_is_exact",
-  "pytest: tests/test_lab_flat_torus_topology.py::test_sympy_reduction_check_detects_a_wrong_boundary_rule",
+  "pytest: tests/test_lab_flat_torus_topology.py::test_vector_reduction_check_detects_a_wrong_boundary_rule",
   "pytest: tests/test_lab_flat_torus_topology.py::test_ftr_refusal_makes_task_partial",
   "pytest: tests/test_lab_flat_torus_topology.py::test_provider_output_is_refused_when_unreadable_or_incomplete",
   "pytest: tests/test_lab_flat_torus_topology.py::test_ftr_provider_agreement",

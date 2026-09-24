@@ -1,9 +1,35 @@
 {
- "accepted": 0,
  "default_policy": {
   "authorization": null,
   "enabled": false
  },
+ "default_writes": [
+  {
+   "expected_refusal": "writes_disabled_by_default",
+   "observed_refusal": "writes_disabled_by_default",
+   "reference": "write to spindle_speed on the default policy"
+  },
+  {
+   "expected_refusal": "writes_disabled_by_default",
+   "observed_refusal": "writes_disabled_by_default",
+   "reference": "write to feed_override on the default policy"
+  },
+  {
+   "expected_refusal": "writes_disabled_by_default",
+   "observed_refusal": "writes_disabled_by_default",
+   "reference": "write to axis_x_setpoint on the default policy"
+  },
+  {
+   "expected_refusal": "writes_disabled_by_default",
+   "observed_refusal": "writes_disabled_by_default",
+   "reference": "write to coolant on the default policy"
+  },
+  {
+   "expected_refusal": "writes_disabled_by_default",
+   "observed_refusal": "writes_disabled_by_default",
+   "reference": "write to laser_power on the default policy"
+  }
+ ],
  "enable_routes": [
   {
    "expected_refusal": "authorization_missing",
@@ -26,6 +52,26 @@
    "reference": "enable with an expired record"
   },
   {
+   "expected_refusal": "authorization_expired",
+   "observed_refusal": "authorization_expired",
+   "reference": "enable with an expiry written with a +02:00 offset, one hour before the instant"
+  },
+  {
+   "expected_refusal": "no_trust_anchor",
+   "observed_refusal": "no_trust_anchor",
+   "reference": "enable with an expiry half a second after the instant (fractional seconds; passes the window and stops at the trust anchor)"
+  },
+  {
+   "expected_refusal": "malformed_timestamp",
+   "observed_refusal": "malformed_timestamp",
+   "reference": "enable with the expiry 'tomorrow'"
+  },
+  {
+   "expected_refusal": "malformed_timestamp",
+   "observed_refusal": "malformed_timestamp",
+   "reference": "enable with an expiry without a UTC offset"
+  },
+  {
    "expected_refusal": "out_of_scope",
    "observed_refusal": "out_of_scope",
    "reference": "enable for a channel outside scope"
@@ -46,14 +92,11 @@
    "reference": "lab issues an authorization record"
   }
  ],
- "random_attempts": 1000,
- "refusal_codes": {
-  "writes_disabled_by_default": 1000
- },
  "verification_order": [
   "authorization_missing",
   "authorization_wrong_type",
   "self_issued_authority",
+  "malformed_timestamp",
   "authorization_expired",
   "out_of_scope",
   "unsigned_authorization",

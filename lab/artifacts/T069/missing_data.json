@@ -302,15 +302,24 @@
  ],
  "refusals": {
   "absent_value": "missing_reading",
+  "expired_calibration": "calibration_expired",
   "fractional_tick": "malformed_tick",
   "hold_last": "gap_strategy_refused",
   "nan_reading": "nonfinite_observation",
+  "reading_into_lost_track": "track_lost_requires_reacquisition",
+  "reading_older_than_clock": "out_of_order",
   "zero_fill": "zero_fill_refused"
  },
+ "refused_reading_dispositions": [
+  "refused:out_of_order",
+  "refused:calibration_expired",
+  "refused:track_lost_requires_reacquisition"
+ ],
  "runs": 400,
  "seed": 692026,
- "state_unchanged_by_refusals": true,
+ "session_refusals_changing_state": 0,
  "ticks": 100,
+ "track_status_after_gap": "lost",
  "z_critical": 3.89059188641312,
  "zero_fill": {
   "grand_mean_nees": 2305.6002151702023,

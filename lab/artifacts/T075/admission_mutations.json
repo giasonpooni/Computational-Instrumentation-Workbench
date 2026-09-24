@@ -41,14 +41,28 @@
   "innovation",
   "calibration"
  ],
- "killed": 14,
+ "inheritance": {
+  "calibrations_carried_by_prediction_after_revocation": [
+   "cam-cal"
+  ],
+  "codes": {
+   "update_after_outlier": "inconsistent_innovation",
+   "update_after_reinitialization": "none"
+  },
+  "innovations_carried_after_admission": 1,
+  "innovations_carried_before_admission": 10,
+  "update_after_outlier_innovations": 12,
+  "update_after_outlier_max_nis": 200.9420026895398,
+  "update_after_outlier_own_nis": 14.484112173837133
+ },
+ "killed": 16,
  "mutations": {
   "construct_admitted_directly": "admission_requires_gate",
   "mutate_admitted": "admitted_state_immutable",
   "mutate_candidate": "frozen_instance",
   "mutate_observation": "frozen_instance"
  },
- "refused_as_expected": 14,
+ "refused_as_expected": 16,
  "rows": {
   "calibration": {
    "check": "calibration",
@@ -96,6 +110,20 @@
    "check": "integrity",
    "expected": "digest_mismatch",
    "full_gate": "digest_mismatch",
+   "killed": true,
+   "without_this_check": "admitted"
+  },
+  "prediction_after_inconsistent_update": {
+   "check": "innovation",
+   "expected": "inconsistent_innovation",
+   "full_gate": "inconsistent_innovation",
+   "killed": true,
+   "without_this_check": "admitted"
+  },
+  "prediction_after_revocation": {
+   "check": "calibration",
+   "expected": "calibration_revoked",
+   "full_gate": "calibration_revoked",
    "killed": true,
    "without_this_check": "admitted"
   },
@@ -149,8 +177,8 @@
    "without_this_check": "admitted"
   }
  },
- "scenarios": 14,
- "sole_guard": 12,
+ "scenarios": 16,
+ "sole_guard": 14,
  "type_relations_true": 0,
  "uncovered_checks": []
 }

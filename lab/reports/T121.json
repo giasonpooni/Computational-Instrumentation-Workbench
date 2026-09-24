@@ -11,20 +11,20 @@
    "hardware_measured": 0,
    "independently_verified": 0,
    "not_established": 1,
-   "numerically_verified": 10,
+   "numerically_verified": 9,
    "provider_backed": 0,
    "synthetic": 0
   },
   "primary": "numerically_verified"
  },
- "expected_invariant": "Every error within its order-specific bound; guarded decisions cannot contradict (if |S_i - s| <= b and |S_j - s| <= b, then S_i - T > b and T - S_j > b would need S_i - S_j > 2b, which the triangle inequality excludes); max of NaN-free, zero-free data order-invariant.",
- "experiment": "Emulate the orders in float32 and float64; search seeds for a sign flip among the sequential and two tree orders; test a pass/fail tolerance across atomic orders; test the guarded sign decision; compare max reductions, including signed zeros.",
+ "expected_invariant": "Every error within its order-specific bound; guarded decisions cannot contradict (if |S_i - s| <= b and |S_j - s| <= b, then S_i - T > b and T - S_j > b would need S_i - S_j > 2b, which the triangle inequality excludes); the maximum of NaN-free, zero-free data is its largest element in every order (by definition, so not re-checked); a comparison-select maximum returns its first operand for equal signed zeros.",
+ "experiment": "Emulate the orders in float32 and float64; search seeds for a sign flip among the sequential and two tree orders; test a pass/fail tolerance across atomic orders; test the guarded sign decision; evaluate a comparison-select maximum on signed zeros in both operand orders and retain numpy.max's implementation-specific result with the machine architecture.",
  "failure_modes_checked": [
   "error exceeds its order-specific bound",
   "no sign counterexample in 399 seeds (would raise)",
   "atomic-order pass/fail flip",
   "guarded sign test deciding wrongly",
-  "max reduction order dependence (including signed zeros)"
+  "comparison-select maximum order dependence on signed zeros"
  ],
  "findings": [
   {
@@ -469,63 +469,29 @@
    "basis": {
     "checks": [
      {
-      "comparison": "abs_le",
-      "observed": 0.0,
-      "passed": true,
-      "reference": "distinct maxima minus one",
-      "reference_kind": "exact_arithmetic",
-      "tolerance": 0.0
-     }
-    ],
-    "generator": {
-     "bit_generator": "PCG64",
-     "cancellation_seed": 201,
-     "n": 16384,
-     "name": "seeded reduction datasets",
-     "native_float64_seed": 1,
-     "seed": 20260923
-    }
-   },
-   "claim": "Max reductions of this NaN-free, zero-free positive data are bitwise order-invariant over 8 permutations",
-   "domain": "numerical",
-   "evidence_status": "numerically_verified",
-   "regression_tolerance": {
-    "abs": 0.0,
-    "rel": 0.0
-   },
-   "uncertainty": {
-    "basis": "integer counts, refusal codes or exact comparisons",
-    "kind": "exact",
-    "value": 0.0
-   },
-   "unit": "distinct results",
-   "value": 1
-  },
-  {
-   "assigned_by": "ciw.lab.evidence",
-   "basis": {
-    "checks": [
-     {
       "comparison": "ge",
       "observed": 2.0,
       "passed": true,
-      "reference": "distinct sign bits of max over the two operand orders",
+      "reference": "distinct sign bits of select_max over (+0, -0) and (-0, +0)",
       "reference_kind": "exact_arithmetic",
       "tolerance": 2.0
      }
+    ],
+    "notes": [
+     "Evaluated with CPython binary64 comparisons, which treat -0.0 and +0.0 as equal on every IEEE platform. IEEE 754-2019 maximum orders -0 below +0 and returns +0 in either order. numpy.max's signed-zero result is implementation-specific (x86 maxsd returns its second operand, aarch64 fmax returns +0), so this build's result is retained in reductions.json with platform.machine() and the numpy version and is not a finding."
     ]
    },
-   "claim": "The IEEE maximum of +0.0 and -0.0 depends on operand order (numpy max)",
+   "claim": "A comparison-select maximum (a if a >= b else b, the rule numpy documents for np.maximum) returns its first operand for +0.0 and -0.0, so the sign of the result depends on operand order",
    "counterexample": {
-    "statement": "Max reductions are bitwise order-invariant for all IEEE inputs",
+    "statement": "A max reduction built from a comparison select is bitwise order-invariant for every IEEE input",
     "witness": {
      "orders": [
-      "[0.0, -0.0]",
-      "[-0.0, 0.0]"
+      "(+0.0, -0.0)",
+      "(-0.0, +0.0)"
      ],
      "signbits": [
-      true,
-      false
+      false,
+      true
      ]
     }
    },
@@ -542,8 +508,8 @@
    },
    "unit": null,
    "value": [
-    true,
-    false
+    false,
+    true
    ]
   },
   {
@@ -563,9 +529,9 @@
  ],
  "generated_artifacts": [
   {
-   "bytes": 10770,
+   "bytes": 11112,
    "path": "artifacts/T121/reductions.json",
-   "sha256": "3daa32c2356da117fccf6d32c9a4bf1798e60af164b263da7bcd8fbfffd5f802"
+   "sha256": "2b290e9434a983976bc432760e154be892d586bcd9fa32d57b066d525b11823a"
   },
   {
    "bytes": 5714,
@@ -593,14 +559,14 @@
   "python": "3.12.3",
   "scipy": "1.16.2",
   "sources": {
-   "src/ciw/lab/energy_gpu.py": "fca900557e7fac2261a168afe0ee81efc48508a874a5045bf4f6b74937165bb1",
-   "src/ciw/lab/energy_gpu_kernels.py": "03f3d92f8407f476cb74536911d476929843ee74232a7d7017c00f43c785a2b4",
-   "src/ciw/lab/energy_gpu_telemetry.py": "21cac5f654ce4a120887ff40da62fda47bd38a3c383bbad6cc3cb13b4168fa2d"
+   "src/ciw/lab/energy_gpu.py": "a66107417b5bfa398077a919b2f5351ca222e9961fa8dfb3256b78efc17fd930",
+   "src/ciw/lab/energy_gpu_kernels.py": "366c477ff1af7f59b626f4e64bf994ae4cbce5754c0e9c5be1c2acb515f99f4b",
+   "src/ciw/lab/energy_gpu_telemetry.py": "df82c8748d3aa75384e3928bffcf516cd6f72cccde99edf8d21f089cc768bafa"
   },
   "sympy": "1.14.0"
  },
  "recommended_next_task": "T148: adopt a deterministic reduction policy (fixed tree or compensated) and T147 to compare against RTX 2080 outputs",
- "report_id": "sha256:3dcc7e46790be192d799c87c52e510fa8b0b3c350222c370044242b7503d7153",
+ "report_id": "sha256:4784a47e099163813fe871cb9b60da7e579ccd55e6087b43a94c7a125e1f773f",
  "schema": "ciw.lab-task-report.v1",
  "section": "energy-gpu",
  "state": "partial",
@@ -614,8 +580,7 @@
   "check: Atomic completion order alone changes a float32 pass/fail test |S - 0.25| <= 0.01 on identical inputs vs distinct pass/fail outcomes over 8 atomic completion orders",
   "check: Emulated atomicAdd completion orders of identical float32 block partials give distinct sums vs distinct float32 results over 8 completion orders",
   "check: The bound-guarded sign test (decide only when |S| exceeds the order's own a priori bound) cannot contradict across orders but leaves both cancellation sums undecided in every emulated order vs orders whose guarded sign test decides",
-  "check: Max reductions of this NaN-free, zero-free positive data are bitwise order-invariant over 8 permutations vs distinct maxima minus one",
-  "check: The IEEE maximum of +0.0 and -0.0 depends on operand order (numpy max) vs distinct sign bits of max over the two operand orders",
+  "check: A comparison-select maximum (a if a >= b else b, the rule numpy documents for np.maximum) returns its first operand for +0.0 and -0.0, so the sign of the result depends on operand order vs distinct sign bits of select_max over (+0, -0) and (-0, +0)",
   "pytest: tests/test_lab_energy_gpu.py::test_reduction_orders_bound_and_sign_counterexample",
   "pytest: tests/test_lab_energy_gpu.py::test_every_numerical_finding_declares_uncertainty_and_tolerance"
  ],

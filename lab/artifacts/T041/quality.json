@@ -1,4 +1,148 @@
 {
+ "discordant_pairs": {
+  "geodesic_mean": 20,
+  "voronoi_curvature_rms": 18
+ },
+ "fold_rates": {
+  "fold_cosine": -0.9,
+  "level": 3,
+  "rows": [
+   {
+    "accepted_inverted_seeds": [],
+    "amplitude": 0.1,
+    "clean_accepted": 60,
+    "clean_refused": 0,
+    "inverted_accepted": 0,
+    "inverted_refused": 0,
+    "meshes": 60,
+    "refused_with_centre": 0
+   },
+   {
+    "accepted_inverted_seeds": [
+     20261978
+    ],
+    "amplitude": 0.15,
+    "clean_accepted": 58,
+    "clean_refused": 0,
+    "inverted_accepted": 1,
+    "inverted_refused": 1,
+    "meshes": 60,
+    "refused_with_centre": 2
+   },
+   {
+    "accepted_inverted_seeds": [
+     20261940,
+     20261943,
+     20261944,
+     20261947,
+     20261956,
+     20261982,
+     20261990
+    ],
+    "amplitude": 0.2,
+    "clean_accepted": 21,
+    "clean_refused": 0,
+    "inverted_accepted": 7,
+    "inverted_refused": 32,
+    "meshes": 60,
+    "refused_with_centre": 39
+   },
+   {
+    "accepted_inverted_seeds": [],
+    "amplitude": 0.3,
+    "clean_accepted": 0,
+    "clean_refused": 0,
+    "inverted_accepted": 0,
+    "inverted_refused": 60,
+    "meshes": 60,
+    "refused_with_centre": 60
+   }
+  ],
+  "seeds": [
+   20261939,
+   20261940,
+   20261941,
+   20261942,
+   20261943,
+   20261944,
+   20261945,
+   20261946,
+   20261947,
+   20261948,
+   20261949,
+   20261950,
+   20261951,
+   20261952,
+   20261953,
+   20261954,
+   20261955,
+   20261956,
+   20261957,
+   20261958,
+   20261959,
+   20261960,
+   20261961,
+   20261962,
+   20261963,
+   20261964,
+   20261965,
+   20261966,
+   20261967,
+   20261968,
+   20261969,
+   20261970,
+   20261971,
+   20261972,
+   20261973,
+   20261974,
+   20261975,
+   20261976,
+   20261977,
+   20261978,
+   20261979,
+   20261980,
+   20261981,
+   20261982,
+   20261983,
+   20261984,
+   20261985,
+   20261986,
+   20261987,
+   20261988,
+   20261989,
+   20261990,
+   20261991,
+   20261992,
+   20261993,
+   20261994,
+   20261995,
+   20261996,
+   20261997,
+   20261998
+  ],
+  "witness": {
+   "amplitude": 0.2,
+   "corner_angles_deg": [
+    3.703377055892289,
+    4.2836560428112485,
+    172.01296690129647
+   ],
+   "face": 854,
+   "inverted_faces": 1,
+   "issues_with_centre": [
+    "inverted_face"
+   ],
+   "min_adjacent_normal_dot": -0.4446610616335468,
+   "neighbour_normal_dots": [
+    -0.2626436088226101,
+    -0.4205922591995491,
+    -0.44466106163354685
+   ],
+   "normal_radial": -0.3410445645964844,
+   "seed": 20261944,
+   "unguarded_curvature_rms": 0.4299628905239436
+  }
+ },
  "permutation_p_radius_ratio": {
   "geodesic_mean": 0.0004997501249375312,
   "voronoi_curvature_rms": 0.0004997501249375312
@@ -81,6 +225,7 @@
     "mesh": "icosphere-3",
     "min_angle_deg": 54.0995585363326,
     "seed": 0,
+    "structural_issues": [],
     "trace_statuses": [
      "completed",
      "completed",
@@ -105,6 +250,7 @@
     "mesh": "icosphere-3-jitter0.05-s20260939",
     "min_angle_deg": 40.899799628611895,
     "seed": 1,
+    "structural_issues": [],
     "trace_statuses": [
      "completed",
      "completed",
@@ -129,6 +275,7 @@
     "mesh": "icosphere-3-jitter0.05-s20260940",
     "min_angle_deg": 40.44653928212341,
     "seed": 2,
+    "structural_issues": [],
     "trace_statuses": [
      "completed",
      "completed",
@@ -153,6 +300,7 @@
     "mesh": "icosphere-3-jitter0.05-s20260941",
     "min_angle_deg": 38.99859545558357,
     "seed": 3,
+    "structural_issues": [],
     "trace_statuses": [
      "completed",
      "completed",
@@ -177,6 +325,7 @@
     "mesh": "icosphere-3-jitter0.1-s20260939",
     "min_angle_deg": 25.03599490224248,
     "seed": 1,
+    "structural_issues": [],
     "trace_statuses": [
      "completed",
      "completed",
@@ -201,6 +350,7 @@
     "mesh": "icosphere-3-jitter0.1-s20260940",
     "min_angle_deg": 26.986655969143225,
     "seed": 2,
+    "structural_issues": [],
     "trace_statuses": [
      "completed",
      "completed",
@@ -225,6 +375,7 @@
     "mesh": "icosphere-3-jitter0.1-s20260941",
     "min_angle_deg": 23.837348040799444,
     "seed": 3,
+    "structural_issues": [],
     "trace_statuses": [
      "completed",
      "completed",
@@ -249,6 +400,7 @@
     "mesh": "icosphere-3-jitter0.15-s20260939",
     "min_angle_deg": 6.451889920604318,
     "seed": 1,
+    "structural_issues": [],
     "trace_statuses": [
      "completed",
      "completed",
@@ -273,6 +425,7 @@
     "mesh": "icosphere-3-jitter0.15-s20260940",
     "min_angle_deg": 11.71686990020696,
     "seed": 2,
+    "structural_issues": [],
     "trace_statuses": [
      "completed",
      "completed",
@@ -297,6 +450,7 @@
     "mesh": "icosphere-3-jitter0.15-s20260941",
     "min_angle_deg": 10.844897002786865,
     "seed": 3,
+    "structural_issues": [],
     "trace_statuses": [
      "completed",
      "completed",
@@ -317,12 +471,16 @@
     "geodesic_mean": 0.012426648502844433,
     "inverted_faces": 2,
     "issues": [
-     "folded_face"
+     "folded_face",
+     "inverted_face"
     ],
     "max_radius_ratio": 47.66153874937935,
     "mesh": "icosphere-3-jitter0.2-s20260939",
     "min_angle_deg": 1.878616825638005,
     "seed": 1,
+    "structural_issues": [
+     "folded_face"
+    ],
     "trace_statuses": [
      "completed",
      "completed",
@@ -343,12 +501,16 @@
     "geodesic_mean": 0.025077964076234718,
     "inverted_faces": 3,
     "issues": [
-     "folded_face"
+     "folded_face",
+     "inverted_face"
     ],
     "max_radius_ratio": 207.59142381548835,
     "mesh": "icosphere-3-jitter0.2-s20260940",
     "min_angle_deg": 1.7104221766212169,
     "seed": 2,
+    "structural_issues": [
+     "folded_face"
+    ],
     "trace_statuses": [
      "completed",
      "completed",
@@ -369,12 +531,16 @@
     "geodesic_mean": 0.024050015757288223,
     "inverted_faces": 2,
     "issues": [
-     "folded_face"
+     "folded_face",
+     "inverted_face"
     ],
     "max_radius_ratio": 943.4485033613128,
     "mesh": "icosphere-3-jitter0.2-s20260941",
     "min_angle_deg": 0.3316480901515501,
     "seed": 3,
+    "structural_issues": [
+     "folded_face"
+    ],
     "trace_statuses": [
      "completed",
      "completed",
@@ -395,12 +561,16 @@
     "geodesic_mean": 0.0734821394085891,
     "inverted_faces": 28,
     "issues": [
-     "folded_face"
+     "folded_face",
+     "inverted_face"
     ],
     "max_radius_ratio": 197.32408078868824,
     "mesh": "icosphere-3-jitter0.3-s20260939",
     "min_angle_deg": 1.1624710529123128,
     "seed": 1,
+    "structural_issues": [
+     "folded_face"
+    ],
     "trace_statuses": [
      "completed",
      "completed",
@@ -421,12 +591,16 @@
     "geodesic_mean": 0.17985135598163768,
     "inverted_faces": 47,
     "issues": [
-     "folded_face"
+     "folded_face",
+     "inverted_face"
     ],
     "max_radius_ratio": 1321.4616038636373,
     "mesh": "icosphere-3-jitter0.3-s20260940",
     "min_angle_deg": 0.19482584522893,
     "seed": 2,
+    "structural_issues": [
+     "folded_face"
+    ],
     "trace_statuses": [
      "completed",
      "completed",
@@ -447,12 +621,16 @@
     "geodesic_mean": 0.05043449370307679,
     "inverted_faces": 50,
     "issues": [
-     "folded_face"
+     "folded_face",
+     "inverted_face"
     ],
     "max_radius_ratio": 468.8030320865666,
     "mesh": "icosphere-3-jitter0.3-s20260941",
     "min_angle_deg": 1.0936713514881842,
     "seed": 3,
+    "structural_issues": [
+     "folded_face"
+    ],
     "trace_statuses": [
      "completed",
      "completed",
@@ -479,6 +657,7 @@
     "min_angle_deg": 10.814533544494136,
     "n_lat": 20,
     "n_lon": 32,
+    "structural_issues": [],
     "trace_statuses": [
      "completed",
      "completed",
@@ -504,6 +683,7 @@
     "min_angle_deg": 5.518830794453714,
     "n_lat": 10,
     "n_lon": 64,
+    "structural_issues": [],
     "trace_statuses": [
      "completed",
      "completed",
@@ -529,6 +709,7 @@
     "min_angle_deg": 11.115740571525883,
     "n_lat": 40,
     "n_lon": 16,
+    "structural_issues": [],
     "trace_statuses": [
      "completed",
      "completed",
@@ -554,6 +735,7 @@
     "min_angle_deg": 10.168974304409714,
     "n_lat": 20,
     "n_lon": 32,
+    "structural_issues": [],
     "trace_statuses": [
      "completed",
      "completed",
@@ -579,6 +761,7 @@
     "min_angle_deg": 9.250125955408276,
     "n_lat": 20,
     "n_lon": 32,
+    "structural_issues": [],
     "trace_statuses": [
      "completed",
      "completed",
@@ -647,6 +830,16 @@
    "curvature_rms": -0.021428571428571425,
    "geodesic_mean": -0.7035714285714285,
    "voronoi_curvature_rms": -0.6607142857142856
+  }
+ },
+ "spearman_within_family": {
+  "jitter": {
+   "geodesic_mean": 0.8545454545454544,
+   "voronoi_curvature_rms": 0.9151515151515152
+  },
+  "latitude_longitude": {
+   "geodesic_mean": -0.3,
+   "voronoi_curvature_rms": 0.0
   }
  }
 }

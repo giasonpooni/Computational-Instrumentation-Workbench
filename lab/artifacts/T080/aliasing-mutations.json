@@ -65,6 +65,28 @@
    "task": "T080"
   },
   {
+   "description": "R1 and R2 exchange executions consistently: result execution_ids, execution result_ids and result created_at swapped between the two pairs; all four records resealed",
+   "error": null,
+   "killed": false,
+   "kind": "workspace",
+   "message_matches_pin": true,
+   "name": "alias.swap-pairing",
+   "observed": "accepted",
+   "observed_outcome": "accepted",
+   "outcome_matches_prediction": true,
+   "pinned_message": "accepted",
+   "post_reopen": {
+    "execution:E1": "result:R2",
+    "execution:E2": "result:R1",
+    "result:R1": "execution:E2",
+    "result:R2": "execution:E1"
+   },
+   "predicted_outcome": "accepted",
+   "recompute": "local",
+   "target": "oscillator executions and results",
+   "task": "T080"
+  },
+  {
    "description": "selection revision 1000 with execution and result claiming revision 999; resealed",
    "error": null,
    "killed": false,

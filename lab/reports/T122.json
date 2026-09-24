@@ -380,9 +380,9 @@
     "rel": 0.001
    },
    "uncertainty": {
-    "basis": "geometric growth amplifies roundoff; the final KL is reproducible to about 1e-3 relative",
+    "basis": "relative: geometric growth amplifies roundoff, so the final KL is reproducible to about 1e-3 relative",
     "kind": "roundoff",
-    "value": null
+    "value": 0.001
    },
    "unit": null,
    "value": {
@@ -534,14 +534,14 @@
   "python": "3.12.3",
   "scipy": "1.16.2",
   "sources": {
-   "src/ciw/lab/energy_gpu.py": "fca900557e7fac2261a168afe0ee81efc48508a874a5045bf4f6b74937165bb1",
-   "src/ciw/lab/energy_gpu_kernels.py": "03f3d92f8407f476cb74536911d476929843ee74232a7d7017c00f43c785a2b4",
-   "src/ciw/lab/energy_gpu_telemetry.py": "21cac5f654ce4a120887ff40da62fda47bd38a3c383bbad6cc3cb13b4168fa2d"
+   "src/ciw/lab/energy_gpu.py": "a66107417b5bfa398077a919b2f5351ca222e9961fa8dfb3256b78efc17fd930",
+   "src/ciw/lab/energy_gpu_kernels.py": "366c477ff1af7f59b626f4e64bf994ae4cbce5754c0e9c5be1c2acb515f99f4b",
+   "src/ciw/lab/energy_gpu_telemetry.py": "df82c8748d3aa75384e3928bffcf516cd6f72cccde99edf8d21f089cc768bafa"
   },
   "sympy": "1.14.0"
  },
  "recommended_next_task": "T123: keep these nats separate from the joules of T116/T119",
- "report_id": "sha256:bc6befd35e868805e91e0dbe10675ea24b092a3975fa49d2ac81942c737a01f1",
+ "report_id": "sha256:4599ebf43fd9922c4c191350ccdf2c2aa788a4a08639ff407fc433685cba94b2",
  "schema": "ciw.lab-task-report.v1",
  "section": "energy-gpu",
  "state": "completed",

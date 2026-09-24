@@ -24,7 +24,7 @@
  "log": [
   "refused:read_only_session",
   "recorded",
-  "recorded",
+  "refused:read_only_session",
   "refused:read_only_session"
  ],
  "matches_ciw": true,

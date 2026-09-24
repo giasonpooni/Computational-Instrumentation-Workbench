@@ -1,5 +1,12 @@
 {
  "independent_solver": "scipy.linalg.solve_continuous_lyapunov@1.16.2",
+ "numpy_abscissa_nonnegative_on_exactly_hurwitz_jordan": [
+  "Jordan n=5, lambda=2^-12",
+  "Jordan n=6, lambda=2^-10",
+  "Jordan n=6, lambda=2^-12",
+  "Jordan n=8, lambda=2^-8",
+  "Jordan n=8, lambda=2^-10"
+ ],
  "refused_with_certificate": [
   {
    "certificate": "scipy.linalg.solve_continuous_lyapunov@1.16.2",

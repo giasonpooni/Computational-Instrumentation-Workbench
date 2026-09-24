@@ -9,22 +9,24 @@
    "analytic": 0,
    "hardware_measured": 0,
    "independently_verified": 0,
-   "not_established": 1,
-   "numerically_verified": 4,
+   "not_established": 2,
+   "numerically_verified": 6,
    "provider_backed": 0,
    "synthetic": 0
   },
   "primary": "numerically_verified"
  },
- "expected_invariant": "Implemented displacement equals f(k1 r^3 + k2 r^5); first-order bias law with slopes 2 (radius) and 1 (k1); zero bias after correct undistortion inside the fold radius.",
- "experiment": "Implementation consistency scan of the displacement; chord bias against the pixel-Jacobian prediction and log-log slopes across image radius and k1; correction with the generating model; fold counterexample with converged undistortion.",
+ "expected_invariant": "Implemented displacement equals f(k1 r^3 + k2 r^5); first-order bias law with slopes 2 (radius) and 1 (k1); zero bias after correct undistortion inside the fold radius; marker centre offset equal to the dual-conic closed form, zero for fronto-parallel markers and weak perspective, chord bias J_pix delta with slope 2 in marker radius.",
+ "experiment": "Implementation consistency scan of the displacement; chord bias against the pixel-Jacobian prediction and log-log slopes across image radius and k1; correction with the generating model; fold counterexample with converged undistortion; perspective: conic centres of projected circular-marker rims against the closed form and the projected centres, fronto-parallel and weak-perspective controls, and chord bias against J_pix delta over three marker radii.",
  "failure_modes_checked": [
   "sign of k1 (odd symmetry)",
   "markers leaving the image at large shifts",
   "tangential terms",
   "non-invertible distortion inside the image",
   "undistorted versus distorted radius when locating the fold",
-  "fixed-point undistortion stopped before convergence"
+  "fixed-point undistortion stopped before convergence",
+  "circular markers treated as points under perspective",
+  "fronto-parallel markers and affine projection (perspective controls)"
  ],
  "findings": [
   {
@@ -149,7 +151,7 @@
     "rel": 1e-06
    },
    "uncertainty": {
-    "basis": "radius slope: largest departure of a pairwise slope from the fitted one (r^4 and perspective terms); first order: the O(k1 r^2) residual itself",
+    "basis": "radius slope: largest departure of a pairwise slope from the fitted one (higher-order terms of f k1 ((r + dr)^3 - r^3) and the changing pixel Jacobian of the shifted markers); first order: the O(k1 r^2) residual itself",
     "kind": "truncation_bound",
     "value": {
      "first_order_relative_residual": 0.0030165229150497593,
@@ -302,10 +304,170 @@
   {
    "assigned_by": "ciw.lab.evidence",
    "basis": {
+    "checks": [
+     {
+      "comparison": "abs_le",
+      "observed": 2.2737367544323206e-13,
+      "passed": true,
+      "reference": "dual-conic closed form against the centre of the conic through 64 projected rim points, 27 markers, both cameras, 3 radii (px)",
+      "reference_kind": "analytic",
+      "tolerance": 1e-09
+     },
+     {
+      "comparison": "abs_le",
+      "observed": 2.2737367544323206e-13,
+      "passed": true,
+      "reference": "fronto-parallel discs: conic centre minus projected marker centre (px)",
+      "reference_kind": "invariant",
+      "tolerance": 1e-09
+     },
+     {
+      "comparison": "abs_le",
+      "observed": 2.2737367544323206e-13,
+      "passed": true,
+      "reference": "weak-perspective projection: conic centre minus projected marker centre (px)",
+      "reference_kind": "invariant",
+      "tolerance": 1e-09
+     },
+     {
+      "comparison": "abs_le",
+      "observed": 4.1175863624509645e-05,
+      "passed": true,
+      "reference": "log-log slope of the largest offset against marker radius minus 2",
+      "reference_kind": "analytic",
+      "tolerance": 0.001
+     },
+     {
+      "comparison": "ge",
+      "observed": 0.17827846601409686,
+      "passed": true,
+      "reference": "largest offset at rho = 8 mm (px, resolved)",
+      "reference_kind": "analytic",
+      "tolerance": 0.05
+     }
+    ]
+   },
+   "claim": "Under full perspective the image-ellipse centre of a tilted circular marker is displaced from the projected marker centre by rho^2 (X t_z - Z t_xy) / (Z (Z^2 - rho^2 t_z)); the displacement vanishes for fronto-parallel markers and under a weak-perspective (affine) projection",
+   "counterexample": {
+    "statement": "The centre of a circular marker's image ellipse is the projection of the marker's centre",
+    "witness": {
+     "camera": "left",
+     "marker": 10,
+     "marker_radius_m": 0.008,
+     "offset_px": [
+      -0.1782213150095231,
+      -0.004513792265470329
+     ]
+    }
+   },
+   "domain": "numerical",
+   "evidence_status": "numerically_verified",
+   "regression_tolerance": {
+    "abs": 1e-09,
+    "rel": 1e-06
+   },
+   "uncertainty": {
+    "basis": "closed form and conic fit in double precision at pixel coordinates near 1e3 px (a few ulp); the slope departs from 2 by rho^2 t_z / Z^2 < 1e-3",
+    "kind": "roundoff",
+    "value": 1e-12
+   },
+   "unit": null,
+   "value": {
+    "closed_form_gap_px": 2.2737367544323206e-13,
+    "fronto_parallel_offset_px": 2.2737367544323206e-13,
+    "marker_radii_m": [
+     0.002,
+     0.004,
+     0.008
+    ],
+    "max_offset_px": [
+     0.011141768114797014,
+     0.04456758124446721,
+     0.17827846601409686
+    ],
+    "offset_radius_slope": 2.0000411758636245,
+    "weak_perspective_offset_px": 2.2737367544323206e-13
+   }
+  },
+  {
+   "assigned_by": "ciw.lab.evidence",
+   "basis": {
+    "checks": [
+     {
+      "comparison": "abs_le",
+      "observed": 0.0003846412357328385,
+      "passed": true,
+      "reference": "max |direct - J_pix delta_pix| / max |direct| over the 24 pairs and 3 radii",
+      "reference_kind": "analytic",
+      "tolerance": 0.01
+     },
+     {
+      "comparison": "abs_le",
+      "observed": 6.436942080290109e-05,
+      "passed": true,
+      "reference": "log-log slope of the largest |chord bias| against marker radius minus 2",
+      "reference_kind": "analytic",
+      "tolerance": 0.001
+     },
+     {
+      "comparison": "ge",
+      "observed": 7.998177597701162e-05,
+      "passed": true,
+      "reference": "largest |chord bias| at rho = 8 mm (m, resolved)",
+      "reference_kind": "analytic",
+      "tolerance": 1e-05
+     }
+    ]
+   },
+   "claim": "Perspective displacement of circular-marker image centres biases stereo chords as J_pix delta_pix to first order, growing as the square of the marker radius",
+   "domain": "numerical",
+   "evidence_status": "numerically_verified",
+   "regression_tolerance": {
+    "abs": 1e-12,
+    "rel": 1e-06
+   },
+   "uncertainty": {
+    "basis": "the first-order law omits O(delta^2) terms; the recorded residual is that truncation",
+    "kind": "truncation_bound",
+    "value": {
+     "first_order_relative_residual": 0.0003846412357328385
+    }
+   },
+   "unit": "m",
+   "value": {
+    "bias_radius_slope": 2.000064369420803,
+    "first_order_relative_residual": 0.0003846412357328385,
+    "marker_radii_m": [
+     0.002,
+     0.004,
+     0.008
+    ],
+    "max_abs_chord_bias_m": [
+     4.99841494527864e-06,
+     1.9994016584257146e-05,
+     7.998177597701162e-05
+    ]
+   }
+  },
+  {
+   "assigned_by": "ciw.lab.evidence",
+   "basis": {
     "notes": "No lens was measured; higher-order, decentring and temperature effects of real optics are unknown."
    },
    "claim": "A two-term radial plus tangential Brown-Conrady model describes a real lens to the required accuracy",
    "domain": "calibration",
+   "evidence_status": "not_established",
+   "uncertainty": null,
+   "unit": null,
+   "value": null
+  },
+  {
+   "assigned_by": "ciw.lab.evidence",
+   "basis": {
+    "notes": "No markers were imaged; marker flatness, printing, blur, lens distortion across the marker and the detector algorithm are not modelled."
+   },
+   "claim": "Real circular markers and their detector show only the modelled perspective centre bias",
+   "domain": "sensor_performance",
    "evidence_status": "not_established",
    "uncertainty": null,
    "unit": null,
@@ -319,6 +481,16 @@
    "sha256": "1980ffae15c73ac15a852d221d481d93db114f90b1c5fa055e4f34db08febb53"
   },
   {
+   "bytes": 3674,
+   "path": "artifacts/T050/perspective-markers.json",
+   "sha256": "a203a5ef4cb1ca855bfae22f4921f6b70a116c88c8f791f7c6905b202418eb11"
+  },
+  {
+   "bytes": 1939,
+   "path": "artifacts/T050/marker-perspective-bias.svg",
+   "sha256": "a3a0650241b46d688892ad60ea033dd12326d39426a859a036949cd822f636b0"
+  },
+  {
    "bytes": 4481,
    "path": "artifacts/T050/radial-displacement.svg",
    "sha256": "a055517ec6befc0d7cf379b8f8e4070d4afdf5157d887ac70a3b455b5acc7008"
@@ -329,7 +501,7 @@
    "sha256": "d20f003cdfd2a695d94900e62740203dd88bd3afd05ce7bb54ef88edb0287cc1"
   }
  ],
- "hypothesis": "Uncorrected radial distortion displaces pixels by f(k1 r^3 + k2 r^5), producing chord biases that are first order and linear in k1, grow as r^2 with image radius for chords of fixed image extent and vanish when the generating model is inverted; strong barrel distortion makes the model non-invertible inside the image.",
+ "hypothesis": "Uncorrected radial distortion displaces pixels by f(k1 r^3 + k2 r^5), producing chord biases that are first order and linear in k1, grow as r^2 with image radius for chords of fixed image extent and vanish when the generating model is inverted; strong barrel distortion makes the model non-invertible inside the image. Perspective displaces the image centre of a tilted circular marker from its projected centre by O(f rho^2 / Z^2), which biases chords as J_pix delta_pix and vanishes for fronto-parallel markers or an affine projection.",
  "input_data": [
   "Stereo rig {'focal_px': 2400.0, 'principal_point_px': (1024.0, 768.0), 'image_size_px': (2048, 1536), 'baseline_m': 0.2, 'convergence_distance_m': 0.6}",
   "Cylinder {'radius_m': 0.1, 'axis': 'world +y', 'front_point_m': (0.1, 0.0, 0.6), 'chart_origin_direction': 'toward the cameras (world -z)'}",
@@ -337,12 +509,13 @@
   "Radial k1 in [-0.1, -0.01, 0.01, 0.1] (k2 = p1 = p2 = 0) for the bias law",
   "Brown-Conrady model (k1, k2, p1, p2) = [0.05, 0.01, 0.0005, -0.0005] for the correction",
   "Displacement scan: 12 radii in [0.02, 0.4], k1 in {1e-3, 1e-2, 1e-1} and (k1, k2) = (0.05, 0.02)",
-  "Fold at k1 = -0.6, point at undistorted radius 0.85 on the image diagonal"
+  "Fold at k1 = -0.6, point at undistorted radius 0.85 on the image diagonal",
+  "Circular markers of radius [0.002, 0.004, 0.008] m in the cylinder's tangent plane at the 27 T048 marker positions, 64 rim points each, distortion-free cameras"
  ],
- "mathematical_model": "x_d = x (1 + k1 r^2 + k2 r^4) + [2 p1 x y + p2 (r^2 + 2x^2), p1 (r^2 + 2y^2) + 2 p2 x y]; chord bias ~ J_pix delta_pix with J_pix = d chord / d pixels; only displacement differences (between endpoints, and between cameras through disparity) matter, and for radii differing by dr they are f k1 ((r + dr)^3 - r^3) ~ 3 f k1 r^2 dr (slope 2 in r, 1 in k1). r (1 + k1 r^2) peaks at r = 1/sqrt(-3 k1) with distorted radius (2/3)/sqrt(-3 k1); the fold enters an image of corner radius rho when k1 < -4/(27 rho^2).",
+ "mathematical_model": "x_d = x (1 + k1 r^2 + k2 r^4) + [2 p1 x y + p2 (r^2 + 2x^2), p1 (r^2 + 2y^2) + 2 p2 x y]; chord bias ~ J_pix delta_pix with J_pix = d chord / d pixels; only displacement differences (between endpoints, and between cameras through disparity) matter, and for radii differing by dr they are f k1 ((r + dr)^3 - r^3) ~ 3 f k1 r^2 dr (slope 2 in r, 1 in k1). r (1 + k1 r^2) peaks at r = 1/sqrt(-3 k1) with distorted radius (2/3)/sqrt(-3 k1); the fold enters an image of corner radius rho when k1 < -4/(27 rho^2). Circular marker (centre C = (X, Y, Z), unit normal n, radius rho, camera coordinates): the dual image conic is H diag(rho^2, rho^2, -1) H^T with H = [e1 e2 C], so the ellipse centre (pole of the line at infinity) is Z C - rho^2 t with t = e_z - n_z n, i.e. x_e = (Z X - rho^2 t_x)/(Z^2 - rho^2 t_z); its offset from X/Z is rho^2 (X t_z - Z t_x)/(Z (Z^2 - rho^2 t_z)), zero when t = 0 and under any affine projection (affine maps preserve ellipse centres).",
  "number": 50,
- "numerical_result": "formula consistency 9.8e-11; first-order residual 0.30%; bias at k1 = 0.01 grows from 5.91e-06 to 2.18e-04 m, radius slope 2.037 (pairwise 1.996-2.182), k1 slope within 8.0e-05 of 1; corrected error 5.7e-16 m; fold at distorted r = 0.497 < corner 0.533 (1.05% of the image has no preimage); two preimages 514.7 px apart.",
- "observation_model": "Noise-free synthetic pixels from distorted cameras triangulated as if undistorted (uncorrected) or after fixed-point undistortion with the true model.",
+ "numerical_result": "formula consistency 9.8e-11; first-order residual 0.30%; bias at k1 = 0.01 grows from 5.91e-06 to 2.18e-04 m, radius slope 2.037 (pairwise 1.996-2.182), k1 slope within 8.0e-05 of 1; corrected error 5.7e-16 m; fold at distorted r = 0.497 < corner 0.533 (1.05% of the image has no preimage); two preimages 514.7 px apart; circular-marker centre offset up to 0.178 px at rho = 8 mm (closed-form gap 2.3e-13 px, slope 2.0000), chord bias up to 80.0 um (0 deg), 39.9 um (45 deg) and 12.1 um (90 deg) with first-order residual 3.8e-04.",
+ "observation_model": "Noise-free synthetic pixels from distorted cameras triangulated as if undistorted (uncorrected) or after fixed-point undistortion with the true model; circular markers located as the centre of the conic through their projected rim points.",
  "physical_validation_status": {
   "statement": "Physical validation requires acquired hardware evidence; none was acquired for this task.",
   "status": "not_established"
@@ -355,13 +528,13 @@
   "python": "3.12.3",
   "scipy": "1.16.2",
   "sources": {
-   "src/ciw/lab/observation.py": "9ebedc1a1693aaa28965ba0c97837ad2d2c45bf0fd360857cf7b32c0993ed5fc",
-   "src/ciw/lab/observation_camera.py": "dbf305a988b5ad39796c8220477dd065671a490a26a9ff03738510296087ab68"
+   "src/ciw/lab/observation.py": "6e5bf960e17dffb62bdaf29d28be9a0f165fd68f8498d173b66eab08fa22ad70",
+   "src/ciw/lab/observation_camera.py": "130cf51175050a5eb947b8d434553bdfa19bd102a33108f414d7a5fa9c651bce"
   },
   "sympy": "1.14.0"
  },
  "recommended_next_task": "T051: add quantization and pixel noise",
- "report_id": "sha256:de16adc0d1954ba186574cadb1f377cb590c0321846d0b72bb10cd82453aeaa7",
+ "report_id": "sha256:d914aeb1669d31fd55f0f5d1eb7f25bf95798ec2b934ce0e039c0cf4d8971ab4",
  "schema": "ciw.lab-task-report.v1",
  "section": "observation",
  "state": "completed",
@@ -379,13 +552,23 @@
   "check: Strong barrel distortion (k1 = -0.6) folds inside the image, so the radial model is not invertible there vs |r_d(r_other) - r_d(r_true)| (two radii, one distorted radius)",
   "check: Strong barrel distortion (k1 = -0.6) folds inside the image, so the radial model is not invertible there vs non-injectivity gap |r_other - r_true| f (px)",
   "check: Strong barrel distortion (k1 = -0.6) folds inside the image, so the radial model is not invertible there vs converged fixed-point undistortion (400 iterations) against the monotone-branch preimage r_other",
-  "pytest: tests/test_lab_observation.py::test_t050_lens_distortion"
+  "check: Under full perspective the image-ellipse centre of a tilted circular marker is displaced from the projected marker centre by rho^2 (X t_z - Z t_xy) / (Z (Z^2 - rho^2 t_z)); the displacement vanishes for fronto-parallel markers and under a weak-perspective (affine) projection vs dual-conic closed form against the centre of the conic through 64 projected rim points, 27 markers, both cameras, 3 radii (px)",
+  "check: Under full perspective the image-ellipse centre of a tilted circular marker is displaced from the projected marker centre by rho^2 (X t_z - Z t_xy) / (Z (Z^2 - rho^2 t_z)); the displacement vanishes for fronto-parallel markers and under a weak-perspective (affine) projection vs fronto-parallel discs: conic centre minus projected marker centre (px)",
+  "check: Under full perspective the image-ellipse centre of a tilted circular marker is displaced from the projected marker centre by rho^2 (X t_z - Z t_xy) / (Z (Z^2 - rho^2 t_z)); the displacement vanishes for fronto-parallel markers and under a weak-perspective (affine) projection vs weak-perspective projection: conic centre minus projected marker centre (px)",
+  "check: Under full perspective the image-ellipse centre of a tilted circular marker is displaced from the projected marker centre by rho^2 (X t_z - Z t_xy) / (Z (Z^2 - rho^2 t_z)); the displacement vanishes for fronto-parallel markers and under a weak-perspective (affine) projection vs log-log slope of the largest offset against marker radius minus 2",
+  "check: Under full perspective the image-ellipse centre of a tilted circular marker is displaced from the projected marker centre by rho^2 (X t_z - Z t_xy) / (Z (Z^2 - rho^2 t_z)); the displacement vanishes for fronto-parallel markers and under a weak-perspective (affine) projection vs largest offset at rho = 8 mm (px, resolved)",
+  "check: Perspective displacement of circular-marker image centres biases stereo chords as J_pix delta_pix to first order, growing as the square of the marker radius vs max |direct - J_pix delta_pix| / max |direct| over the 24 pairs and 3 radii",
+  "check: Perspective displacement of circular-marker image centres biases stereo chords as J_pix delta_pix to first order, growing as the square of the marker radius vs log-log slope of the largest |chord bias| against marker radius minus 2",
+  "check: Perspective displacement of circular-marker image centres biases stereo chords as J_pix delta_pix to first order, growing as the square of the marker radius vs largest |chord bias| at rho = 8 mm (m, resolved)",
+  "pytest: tests/test_lab_observation.py::test_t050_lens_distortion",
+  "pytest: tests/test_lab_observation.py::test_t050_perspective_markers"
  ],
  "tests_skipped": [],
  "title": "Add perspective and lens-distortion perturbations.",
- "uncertainty": "Deterministic; the first-order residual is O(k1 r^2) and bounded by the stated tolerance; the radius slope departs from 2 by the r^4 and perspective terms (pairwise slopes up to 2.18 at the largest radius).",
+ "uncertainty": "Deterministic; the first-order residual is O(k1 r^2) and bounded by the stated tolerance; the distortion radius slope departs from 2 through the higher-order terms of f k1 ((r + dr)^3 - r^3) and the changing pixel Jacobian and displacement directions of the shifted markers, which are not separated (pairwise slopes up to 2.18 at the largest radius); marker-centre offsets are exact to rounding (closed form against conic fit), and the marker chord bias carries its first-order residual.",
  "unresolved_assumptions": [
   "Both cameras share one distortion model",
-  "Principal point equals distortion centre"
+  "Principal point equals distortion centre",
+  "Circular markers are flat discs in the tangent plane and the detector returns the exact ellipse centre; perspective and distortion are studied separately"
  ]
 }

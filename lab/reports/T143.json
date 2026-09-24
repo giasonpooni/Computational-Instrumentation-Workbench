@@ -17,14 +17,16 @@
   "primary": "analytic"
  },
  "expected_invariant": "Every entry validates; every mutated entry is refused with its specific code.",
- "experiment": "Validate the inventory and 10 mutated entries; probe Python bindings for the artifact.",
+ "experiment": "Validate the inventory and 12 mutated entries; probe Python packages for the artifact.",
  "failure_modes_checked": [
   "in-process binding",
   "write-capable direction",
   "enabled write path",
   "entry without identity pins",
   "floating identity pins ('latest', 'nightly build', '>=1.0', '2024.x', 'HEAD')",
-  "EtherCAT master in place of a passive tap"
+  "EtherCAT master in place of a passive tap",
+  "native preference without the pure-Python alternatives it passes over",
+  "unknown native necessity"
  ],
  "findings": [
   {
@@ -32,7 +34,7 @@
    "basis": {
     "derivation": "docs/lab/IMPLEMENTATION_TARGETS.md#industrial-interfaces"
    },
-   "claim": "Industrial interfaces that need C/C++ libraries behind a pinned subprocess boundary",
+   "claim": "Industrial interfaces assigned to C/C++ libraries behind a pinned subprocess boundary (required, or preferred over existing pure-Python stacks)",
    "domain": "computational_pipeline",
    "evidence_status": "analytic",
    "regression_tolerance": {
@@ -45,13 +47,17 @@
     "value": 0.0
    },
    "unit": null,
-   "value": [
-    "OPC UA client (read-only subscriptions)",
-    "EtherCAT passive monitoring (network TAP capture)",
-    "Vendor camera SDKs (GenICam GenTL)",
-    "Point cloud processing (PCL / Open3D)",
-    "CAD kernel (OpenCASCADE)"
-   ]
+   "value": {
+    "preferred": [
+     "OPC UA client (read-only subscriptions)"
+    ],
+    "required": [
+     "EtherCAT passive monitoring (network TAP capture)",
+     "Vendor camera SDKs (GenICam GenTL)",
+     "Point cloud processing (PCL / Open3D)",
+     "CAD kernel (OpenCASCADE)"
+    ]
+   }
   },
   {
    "assigned_by": "ciw.lab.evidence",
@@ -121,6 +127,20 @@
       "reference_kind": "refusal"
      },
      {
+      "expected_refusal": "incomplete_entry",
+      "observed_refusal": "incomplete_entry",
+      "passed": true,
+      "reference": "inventory entry 'OPC UA client (read-only subscriptions)' with pure_python_alternatives=[]",
+      "reference_kind": "refusal"
+     },
+     {
+      "expected_refusal": "incomplete_entry",
+      "observed_refusal": "incomplete_entry",
+      "passed": true,
+      "reference": "inventory entry 'OPC UA client (read-only subscriptions)' with native_necessity='optional'",
+      "reference_kind": "refusal"
+     },
+     {
       "expected_refusal": "write_capable_direction",
       "observed_refusal": "write_capable_direction",
       "passed": true,
@@ -129,7 +149,7 @@
      }
     ]
    },
-   "claim": "Inventory validator refuses in-process bindings, write-capable directions or bus roles and unpinned entries",
+   "claim": "Inventory validator refuses in-process bindings, write-capable directions or bus roles, unpinned entries and unexplained native preferences",
    "domain": "computational_pipeline",
    "evidence_status": "numerically_verified",
    "regression_tolerance": {
@@ -142,7 +162,7 @@
     "value": 0.0
    },
    "unit": "refused mutations",
-   "value": 10
+   "value": 12
   },
   {
    "assigned_by": "ciw.lab.evidence",
@@ -167,19 +187,19 @@
  ],
  "generated_artifacts": [
   {
-   "bytes": 3674,
+   "bytes": 4200,
    "path": "artifacts/T143/interface-inventory.json",
-   "sha256": "82ea591b9f7d7c3c58c3f41535108509edcd90580dd7fbfa0586a89848f0175c"
+   "sha256": "4cd0cea0782a75b4c9ce0b7faa2f2e0f6c41af09f13a9c9661696d96b99a5f11"
   }
  ],
- "hypothesis": "OPC UA, EtherCAT monitoring, vendor camera SDKs, PCL/Open3D and OpenCASCADE need C/C++ libraries, and each can sit behind a pinned subprocess boundary that exchanges retained bytes, leaving evidence code in Python.",
+ "hypothesis": "EtherCAT monitoring, vendor camera SDKs, PCL/Open3D and OpenCASCADE need C/C++ libraries; OPC UA does not (pure-Python stacks such as asyncua exist) but is assigned certified C/C++ stacks for certification and vendor support. Each interface can sit behind a pinned subprocess boundary that exchanges retained bytes, leaving evidence code in Python.",
  "input_data": [
   "Declared inventory in ciw.lab.implementation_targets_architecture.INTERFACES",
-  "Python binding availability probe (artifact only)"
+  "Python package availability probe (artifact only): bindings to the C/C++ libraries and the pure-Python OPC UA stacks"
  ],
- "mathematical_model": "Design inventory: interface -> (native libraries, reason, boundary, direction, write path, fieldbus role, identity pins); validation rules: boundary = pinned_subprocess, direction in {read_only, geometry_exchange}, write path absent or disabled, fieldbus role passive_tap (a master originates output process data), identity pins concrete: refused are blank pins, the whole-pin labels current, main, master, trunk, head, dev, develop and x, the words latest, nightly, snapshot, stable, any, unknown, tbd, n/a and na anywhere, HEAD anywhere, the characters * ? < > = ~ ^ and N.x wildcards.",
+ "mathematical_model": "Design inventory: interface -> (native libraries, necessity required or preferred with the pure-Python alternatives passed over, reason, boundary, direction, write path, fieldbus role, identity pins); validation rules: boundary = pinned_subprocess, direction in {read_only, geometry_exchange}, write path absent or disabled, fieldbus role passive_tap (a master originates output process data), identity pins concrete: refused are blank pins, the whole-pin labels current, main, master, trunk, head, dev, develop and x, the words latest, nightly, snapshot, stable, any, unknown, tbd, n/a and na anywhere, HEAD anywhere, the characters * ? < > = ~ ^ and N.x wildcards.",
  "number": 143,
- "numerical_result": "5 interfaces inventoried; 10/10 mutations refused.",
+ "numerical_result": "5 interfaces inventoried (4 requiring C/C++, 1 preferring it over pure-Python stacks); 12/12 mutations refused.",
  "observation_model": "No library was linked or executed; availability is probed with importlib only.",
  "physical_validation_status": {
   "statement": "Physical validation requires acquired hardware evidence; none was acquired for this task.",
@@ -204,28 +224,30 @@
   },
   "scipy": "1.16.2",
   "sources": {
-   "src/ciw/lab/implementation_targets.py": "4e27c12d31365590b7fb82d98b8d02e1668c7b8e73b03f71ef270eca9fcf6eea",
-   "src/ciw/lab/implementation_targets_architecture.py": "ca8740919708c84da241982b390b513ef15b3a465d0295386fb7525927e7e701"
+   "src/ciw/lab/implementation_targets.py": "1df8bd67d28b18d70bcb5f74e4a14616ceb17868c7a9aa75595f15254426ee7e",
+   "src/ciw/lab/implementation_targets_architecture.py": "3c0ba23187cae208b492ff7adbceba135e2d7e071c6a4c978bbe5e3b2ac0ad62"
   },
   "sympy": "1.14.0"
  },
  "recommended_next_task": "T144 (verify the Python orchestration boundary in the package source)",
- "report_id": "sha256:dcb8a151fb926b8a6dbb860563e03940ba6919cd18799547dbf5391f95d0fde6",
+ "report_id": "sha256:3c7ded184eeb600c143423085f26ca4348b37de4fb6046854c2ed9065626af74",
  "schema": "ciw.lab-task-report.v1",
  "section": "implementation-targets",
  "state": "completed",
  "task_id": "T143",
  "tests_passed": [
-  "check: Inventory validator refuses in-process bindings, write-capable directions or bus roles and unpinned entries vs inventory entry 'OPC UA client (read-only subscriptions)' with boundary='in_process_binding'",
-  "check: Inventory validator refuses in-process bindings, write-capable directions or bus roles and unpinned entries vs inventory entry 'OPC UA client (read-only subscriptions)' with direction='read_write'",
-  "check: Inventory validator refuses in-process bindings, write-capable directions or bus roles and unpinned entries vs inventory entry 'OPC UA client (read-only subscriptions)' with write_path='enabled'",
-  "check: Inventory validator refuses in-process bindings, write-capable directions or bus roles and unpinned entries vs inventory entry 'OPC UA client (read-only subscriptions)' with identity=[]",
-  "check: Inventory validator refuses in-process bindings, write-capable directions or bus roles and unpinned entries vs inventory entry 'OPC UA client (read-only subscriptions)' with identity=['latest']",
-  "check: Inventory validator refuses in-process bindings, write-capable directions or bus roles and unpinned entries vs inventory entry 'OPC UA client (read-only subscriptions)' with identity=['library version', 'nightly build']",
-  "check: Inventory validator refuses in-process bindings, write-capable directions or bus roles and unpinned entries vs inventory entry 'OPC UA client (read-only subscriptions)' with identity=['SDK version >=1.0']",
-  "check: Inventory validator refuses in-process bindings, write-capable directions or bus roles and unpinned entries vs inventory entry 'OPC UA client (read-only subscriptions)' with identity=['2024.x']",
-  "check: Inventory validator refuses in-process bindings, write-capable directions or bus roles and unpinned entries vs inventory entry 'OPC UA client (read-only subscriptions)' with identity=['HEAD']",
-  "check: Inventory validator refuses in-process bindings, write-capable directions or bus roles and unpinned entries vs inventory entry 'EtherCAT passive monitoring (network TAP capture)' with fieldbus_role='master'",
+  "check: Inventory validator refuses in-process bindings, write-capable directions or bus roles, unpinned entries and unexplained native preferences vs inventory entry 'OPC UA client (read-only subscriptions)' with boundary='in_process_binding'",
+  "check: Inventory validator refuses in-process bindings, write-capable directions or bus roles, unpinned entries and unexplained native preferences vs inventory entry 'OPC UA client (read-only subscriptions)' with direction='read_write'",
+  "check: Inventory validator refuses in-process bindings, write-capable directions or bus roles, unpinned entries and unexplained native preferences vs inventory entry 'OPC UA client (read-only subscriptions)' with write_path='enabled'",
+  "check: Inventory validator refuses in-process bindings, write-capable directions or bus roles, unpinned entries and unexplained native preferences vs inventory entry 'OPC UA client (read-only subscriptions)' with identity=[]",
+  "check: Inventory validator refuses in-process bindings, write-capable directions or bus roles, unpinned entries and unexplained native preferences vs inventory entry 'OPC UA client (read-only subscriptions)' with identity=['latest']",
+  "check: Inventory validator refuses in-process bindings, write-capable directions or bus roles, unpinned entries and unexplained native preferences vs inventory entry 'OPC UA client (read-only subscriptions)' with identity=['library version', 'nightly build']",
+  "check: Inventory validator refuses in-process bindings, write-capable directions or bus roles, unpinned entries and unexplained native preferences vs inventory entry 'OPC UA client (read-only subscriptions)' with identity=['SDK version >=1.0']",
+  "check: Inventory validator refuses in-process bindings, write-capable directions or bus roles, unpinned entries and unexplained native preferences vs inventory entry 'OPC UA client (read-only subscriptions)' with identity=['2024.x']",
+  "check: Inventory validator refuses in-process bindings, write-capable directions or bus roles, unpinned entries and unexplained native preferences vs inventory entry 'OPC UA client (read-only subscriptions)' with identity=['HEAD']",
+  "check: Inventory validator refuses in-process bindings, write-capable directions or bus roles, unpinned entries and unexplained native preferences vs inventory entry 'OPC UA client (read-only subscriptions)' with pure_python_alternatives=[]",
+  "check: Inventory validator refuses in-process bindings, write-capable directions or bus roles, unpinned entries and unexplained native preferences vs inventory entry 'OPC UA client (read-only subscriptions)' with native_necessity='optional'",
+  "check: Inventory validator refuses in-process bindings, write-capable directions or bus roles, unpinned entries and unexplained native preferences vs inventory entry 'EtherCAT passive monitoring (network TAP capture)' with fieldbus_role='master'",
   "pytest: tests/test_lab_implementation_targets.py::test_t143_interface_inventory"
  ],
  "tests_skipped": [],
@@ -233,6 +255,7 @@
  "uncertainty": "Analytic design record; library capabilities are stated from vendor documentation, not tested.",
  "unresolved_assumptions": [
   "Vendor SDK licensing and platform support were not checked",
+  "The OPC UA choice of C/C++ is a preference (certification, vendor support); the pure-Python stacks were not evaluated against a server here",
   "A passive TAP is assumed to be electrically unable to inject frames; that is a hardware property not verified here",
   "No provider executable exists yet for any entry"
  ]

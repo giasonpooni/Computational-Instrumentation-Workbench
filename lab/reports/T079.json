@@ -37,14 +37,6 @@
       "comparison": "abs_le",
       "observed": 0.0,
       "passed": true,
-      "reference": "labels shared by the variants (observed 1, predicted 1)",
-      "reference_kind": "exact_arithmetic",
-      "tolerance": 0.0
-     },
-     {
-      "comparison": "abs_le",
-      "observed": 0.0,
-      "passed": true,
       "reference": "variants retained byte-exactly (live, bundle, reopen) (observed 8, predicted 8)",
       "reference_kind": "exact_arithmetic",
       "tolerance": 0.0
@@ -62,14 +54,6 @@
       "observed": 0.0,
       "passed": true,
       "reference": "variants whose bundle artifact_ref is not their evidence_id",
-      "reference_kind": "exact_arithmetic",
-      "tolerance": 0.0
-     },
-     {
-      "comparison": "abs_le",
-      "observed": 0.0,
-      "passed": true,
-      "reference": "distinct input_sha256 (observed 8, predicted 8)",
       "reference_kind": "exact_arithmetic",
       "tolerance": 0.0
      },
@@ -111,6 +95,7 @@
     "distinct_input_sha256": 8,
     "distinct_source_id": 8,
     "exactly_retained": 8,
+    "harness_preconditions": "distinct input bytes under one label, asserted before any check",
     "labels": 1,
     "variants": 8
    }
@@ -313,7 +298,7 @@
  ],
  "mathematical_model": "Byte-level identities are functions of the bytes b (sha256(b)); content-level identities are functions of canon(parse(b)) with CIW's canonical JSON, which prints 1 and 1.0 differently. For variants with canon(parse(b_i)) equal and b_i distinct, byte-level identities are pairwise distinct and content-level identities coincide.",
  "number": 79,
- "numerical_result": "8 variants under 1 label: byte-level distinct counts {'input_sha256': 8, 'evidence_id': 8, 'source_id': 8}; content-level distinct counts {'experiment_digest': 1, 'log_digest': 1, 'numerical_result_id': 1}; consistent int-for-float rewrite refused unsealed (Retained log digest differs), distinct evidence when resealed; partial rewrite and BOM refused",
+ "numerical_result": "8 distinct input byte strings under 1 label (harness precondition): CIW byte-level distinct counts {'evidence_id': 8, 'source_id': 8}; content-level distinct counts {'experiment_digest': 1, 'log_digest': 1, 'numerical_result_id': 1}; consistent int-for-float rewrite refused unsealed (Retained log digest differs), distinct evidence when resealed; partial rewrite and BOM refused",
  "observation_model": "No physical observation. The observed objects are CIW records (sessions, executions, results, bundles, receipts, saved workspace JSON) produced offline by the unmodified CIW code; the energy logs are synthetic fixtures and no hardware was sampled.",
  "physical_validation_status": {
   "statement": "Physical validation requires acquired hardware evidence; none was acquired for this task.",
@@ -327,23 +312,21 @@
   "python": "3.12.3",
   "scipy": "1.16.2",
   "sources": {
-   "src/ciw/lab/exchange_provenance.py": "5cc267c7777c9b434b8747b0cc841ac85313e1cfb6ff4c429ee93aa5ddbb645b",
-   "src/ciw/lab/exchange_provenance_common.py": "22028c4008079fba23c5e807de0104ba1a0014027e1d40a9209881cdf232f486"
+   "src/ciw/lab/exchange_provenance.py": "f55593eb90af9ed82e40f0f04987c7f0a06cf1c40e7079b0a371e0506607618b",
+   "src/ciw/lab/exchange_provenance_common.py": "f8e765184af4e893a0c4c6d9e5cb2988b79e6f3dfc3d941444f335ecc894d775"
   },
   "sympy": "1.14.0"
  },
  "recommended_next_task": "T080 (operation/execution/result identity separation)",
- "report_id": "sha256:f2bad39f4656da60281aa1941995ac8c8828ef3c531c2d8d746fcccd4f584959",
+ "report_id": "sha256:d141cf266c0dbf7c14bd1b525cbe584281da9ea32dcbc33cdb07eadc83e54eb3",
  "schema": "ciw.lab-task-report.v1",
  "section": "exchange-provenance",
  "state": "completed",
  "task_id": "T079",
  "tests_passed": [
-  "check: Whitespace, key-order and float-spelling variants under one label retain distinct exact bytes and distinct evidence and source identities while their parsed content is canonically equal vs labels shared by the variants (observed 1, predicted 1)",
   "check: Whitespace, key-order and float-spelling variants under one label retain distinct exact bytes and distinct evidence and source identities while their parsed content is canonically equal vs variants retained byte-exactly (live, bundle, reopen) (observed 8, predicted 8)",
   "check: Whitespace, key-order and float-spelling variants under one label retain distinct exact bytes and distinct evidence and source identities while their parsed content is canonically equal vs variants canonically equal to baseline (CIW canonical JSON) (observed 8, predicted 8)",
   "check: Whitespace, key-order and float-spelling variants under one label retain distinct exact bytes and distinct evidence and source identities while their parsed content is canonically equal vs variants whose bundle artifact_ref is not their evidence_id",
-  "check: Whitespace, key-order and float-spelling variants under one label retain distinct exact bytes and distinct evidence and source identities while their parsed content is canonically equal vs distinct input_sha256 (observed 8, predicted 8)",
   "check: Whitespace, key-order and float-spelling variants under one label retain distinct exact bytes and distinct evidence and source identities while their parsed content is canonically equal vs distinct evidence_id (observed 8, predicted 8)",
   "check: Whitespace, key-order and float-spelling variants under one label retain distinct exact bytes and distinct evidence and source identities while their parsed content is canonically equal vs distinct source_id (observed 8, predicted 8)",
   "check: Content-level identities coincide across the byte variants: one experiment_digest, log_digest and numerical_result_id vs distinct experiment_digest (observed 1, predicted 1)",

@@ -8,18 +8,19 @@
    "hardware_measured": 0,
    "independently_verified": 0,
    "not_established": 1,
-   "numerically_verified": 1,
+   "numerically_verified": 2,
    "provider_backed": 0,
    "synthetic": 0
   },
   "primary": "numerically_verified"
  },
- "expected_invariant": "Aggregates are exact functions of retained reports and never change a label.",
- "experiment": "Generate the draft from retained reports of sections exchange-provenance, implementation-targets, lyapunov.",
+ "expected_invariant": "Every results row restates its source finding's task, claim, value headline, unit, label and report identity, and its value cell states no number that the source finding's value does not hold.",
+ "experiment": "Generate the draft from retained reports of sections exchange-provenance, implementation-targets, lyapunov and parse its results table back against the source findings.",
  "failure_modes_checked": [
-  "missing reports",
-  "report identity mismatch (validate_report)",
-  "aggregate differs from its re-read bytes"
+  "claims or units containing '|' breaking table rows",
+  "labels dropped from rows",
+  "values cut inside a number",
+  "rows out of order or missing"
  ],
  "findings": [
   {
@@ -30,22 +31,55 @@
       "comparison": "abs_le",
       "observed": 0.0,
       "passed": true,
-      "reference": "cited (task, claim, label) triples absent from the retained reports",
+      "reference": "results rows that do not parse back to their source finding",
       "reference_kind": "exact_arithmetic",
       "tolerance": 0.0
      }
     ]
    },
-   "claim": "Draft cites only retained findings with their retained labels",
+   "claim": "Draft results table restates every retained finding of its sections with its retained label",
    "domain": "provenance",
    "evidence_status": "numerically_verified",
    "regression_tolerance": {
     "abs": 0,
     "rel": 0
    },
-   "uncertainty": null,
+   "uncertainty": {
+    "basis": "integer count over retained report files; no rounding, sampling or tolerance",
+    "kind": "exact",
+    "value": 0
+   },
    "unit": "findings",
-   "value": 308
+   "value": 329
+  },
+  {
+   "assigned_by": "ciw.lab.evidence",
+   "basis": {
+    "checks": [
+     {
+      "comparison": "abs_le",
+      "observed": 0.0,
+      "passed": true,
+      "reference": "T155 cases where the label function departs from the stated rules",
+      "reference_kind": "exact_arithmetic",
+      "tolerance": 0.0
+     }
+    ]
+   },
+   "claim": "Draft methods state the evidence-label rules that T155 found the label function to follow",
+   "domain": "provenance",
+   "evidence_status": "numerically_verified",
+   "regression_tolerance": {
+    "abs": 0,
+    "rel": 0
+   },
+   "uncertainty": {
+    "basis": "integer count over retained report files; no rounding, sampling or tolerance",
+    "kind": "exact",
+    "value": 0
+   },
+   "unit": "rules",
+   "value": 9
   },
   {
    "assigned_by": "ciw.lab.evidence",
@@ -61,18 +95,20 @@
  ],
  "generated_artifacts": [
   {
-   "bytes": 104015,
+   "bytes": 138077,
    "path": "artifacts/T162/evidence-provenance-note-draft.md",
-   "sha256": "7b462c2758f174f70adcf966112582789093a85cd33c97ede5da09ca1083e79b"
+   "sha256": "930859faeafac616dbd845e6e512d89cfaf19ca39c7a65b14b10ee60851ac926"
   }
  ],
- "hypothesis": "A evidence provenance note draft can be assembled entirely from retained findings, with every number traceable to a report identity and every limitation drawn from not_established findings.",
+ "hypothesis": "An evidence provenance note draft can be assembled entirely from retained findings, with every number traceable to a report identity and every limitation drawn from not_established findings.",
  "input_data": [
-  "Retained reports T001-T154 in the same output directory"
+  "Retained reports of sections exchange-provenance, implementation-targets, lyapunov",
+  "docs/lab/SPECIFICATIONS.md (evidence-label rules)",
+  "ciw.lab.evidence constants"
  ],
- "mathematical_model": "Draft = generated Markdown: abstract, methods (task hypotheses and models), results (findings tables), limitations (not_established findings and blocked tasks).",
+ "mathematical_model": "Draft = generated Markdown: abstract, methods (task hypotheses and models; the evidence-label rules of the specification), results (one row per finding), limitations (not_established findings and unfinished tasks).",
  "number": 162,
- "numerical_result": "Draft cites 308 findings from 51 reports.",
+ "numerical_result": "Draft cites 329 findings from 51 reports; 0 results rows differ from their source.",
  "observation_model": "No physical observation; reads retained computational records only.",
  "physical_validation_status": {
   "statement": "Physical validation requires acquired hardware evidence; none was acquired for this task.",
@@ -86,18 +122,19 @@
   "python": "3.12.3",
   "scipy": "1.16.2",
   "sources": {
-   "src/ciw/lab/research_portfolio.py": "6cd37207af02c6d64dc88b22c7ff2148e85f1eeebaa5445cd894879bc3043ba3"
+   "src/ciw/lab/research_portfolio.py": "0fd0ed475a38bf81fd2145f64cf1335856a471c58d406347c3b66b0f66672702"
   },
   "sympy": "1.14.0"
  },
  "recommended_next_task": "Human authorship pass, related-work section and external review; physical experiments from the manufacturing protocols.",
- "report_id": "sha256:005a325bca6f3293b6745337bdc43fb679b21574cd9d7d72e2e638d5e0e778a1",
+ "report_id": "sha256:d1b72a6e7a25724307c333109dff8befb69f89178b4cac5a85f8db49900498bf",
  "schema": "ciw.lab-task-report.v1",
  "section": "research-portfolio",
  "state": "partial",
  "task_id": "T162",
  "tests_passed": [
-  "check: Draft cites only retained findings with their retained labels vs cited (task, claim, label) triples absent from the retained reports",
+  "check: Draft results table restates every retained finding of its sections with its retained label vs results rows that do not parse back to their source finding",
+  "check: Draft methods state the evidence-label rules that T155 found the label function to follow vs T155 cases where the label function departs from the stated rules",
   "pytest: tests/test_lab_research_portfolio.py::test_paper_drafts_trace_to_reports"
  ],
  "tests_skipped": [],

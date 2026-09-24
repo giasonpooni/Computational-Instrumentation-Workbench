@@ -1,0 +1,115 @@
+{
+ "atlas": {
+  "charts": {
+   "monge": {
+    "height": 0.5,
+    "name": "gaussian-bump",
+    "sigma": 1.0
+   },
+   "polar": {
+    "base": {
+     "height": 0.5,
+     "name": "gaussian-bump",
+     "sigma": 1.0
+    },
+    "chart": "polar",
+    "name": "gaussian-bump∘polar"
+   }
+  },
+  "regularity": "lambda_min / lambda_max of g",
+  "threshold": 0.25
+ },
+ "length": 3.0,
+ "reference_steps": 800,
+ "runs": [
+  {
+   "atlas_error": 6.113825611796751e-11,
+   "delta": 0.0,
+   "min_active_regularity": 0.25517703850822054,
+   "monge_error": 6.11382561174201e-11,
+   "polar_error": 6.113830760553317e-11,
+   "polar_failure": null,
+   "switch_path": [
+    "polar->monge"
+   ],
+   "switches": 1
+  },
+  {
+   "atlas_error": 4.051070348765646e-09,
+   "delta": 0.1,
+   "min_active_regularity": 0.2503791374513639,
+   "monge_error": 6.025390737984269e-11,
+   "polar_error": 4.819101697311129e-06,
+   "polar_failure": null,
+   "switch_path": [
+    "polar->monge"
+   ],
+   "switches": 1
+  },
+  {
+   "atlas_error": 4.253856690920007e-10,
+   "delta": 0.01,
+   "min_active_regularity": 0.2552661676194477,
+   "monge_error": 6.113112364617437e-11,
+   "polar_error": 0.5459462607842678,
+   "polar_failure": null,
+   "switch_path": [
+    "polar->monge"
+   ],
+   "switches": 1
+  },
+  {
+   "atlas_error": 7.011487336549427e-11,
+   "delta": 0.001,
+   "min_active_regularity": 0.2551779298061999,
+   "monge_error": 6.113662322095301e-11,
+   "polar_error": null,
+   "polar_failure": "ValueError: math domain error",
+   "switch_path": [
+    "polar->monge"
+   ],
+   "switches": 1
+  },
+  {
+   "atlas_error": 6.123464018035419e-11,
+   "delta": 0.0001,
+   "min_active_regularity": 0.2551770474212007,
+   "monge_error": 6.113910503041176e-11,
+   "polar_error": null,
+   "polar_failure": "FloatingPointError: rk4 produced a nonfinite state at step 106",
+   "switch_path": [
+    "polar->monge"
+   ],
+   "switches": 1
+  },
+  {
+   "atlas_error": 6.113585652045322e-11,
+   "delta": 1e-06,
+   "min_active_regularity": 0.2551770385091115,
+   "monge_error": 6.113544554953719e-11,
+   "polar_error": 0.01365119573882101,
+   "polar_failure": null,
+   "switch_path": [
+    "polar->monge"
+   ],
+   "switches": 1
+  },
+  {
+   "atlas_error": 6.11381467689253e-11,
+   "delta": 1e-08,
+   "min_active_regularity": 0.2551770385082205,
+   "monge_error": 6.11382561174201e-11,
+   "polar_error": 4.422289219347218e-06,
+   "polar_failure": null,
+   "switch_path": [
+    "polar->monge"
+   ],
+   "switches": 1
+  }
+ ],
+ "start": [
+  -1.5,
+  "delta"
+ ],
+ "steps": 200
+}

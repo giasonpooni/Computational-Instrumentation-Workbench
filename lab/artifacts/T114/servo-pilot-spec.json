@@ -89,7 +89,8 @@
    ],
    "produced_by_scan_without_level": [
     "CERTIFIED_WITH_MARGIN"
-   ]
+   ],
+   "scan_evaluated_by": "pinned PLSR runtime"
   },
   "state_dependence": "For a fixed declared model the sign of the decrease form does not depend on the state, so without a level set every state receives the same code (CERTIFIED_WITH_MARGIN here). The verdict carries information about the physical axis only through the level set, i.e. through the estimated state leaving {V <= c}; model validity is judged by the host's residual monitor (MODEL_MISMATCH), not by the kernel."
  },

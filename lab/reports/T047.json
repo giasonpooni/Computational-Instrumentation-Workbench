@@ -35,15 +35,15 @@
       "revision": "1.14.0"
      },
      "comparison": "abs_le",
-     "observed": 1.3877787807814457e-17,
+     "observed": 0.0,
      "passed": true,
      "producer": {
       "implementation": "ciw.lab.observation",
       "revision": "0.1.0"
      },
-     "reference": "sympy series of sqrt((2R sin(s cos(a)/2R))^2 + (s sin(a))^2) against the closed-form c3 and c5 (symbolic residual zero; 30-digit evaluation at 7 angles)",
-     "reference_kind": "high_precision",
-     "tolerance": 1e-14
+     "reference": "sympy series of the exact helix chord sqrt((2R sin(s cos(a)/2R))^2 + (s sin(a))^2) (expression written in ciw.lab.observation_chord.sympy_cylinder_series) against the closed-form c3 and c5 at kappa = cos^2(a)/R, tau = sin(a)cos(a)/R: residuals not simplifying to 0 in R and a",
+     "reference_kind": "exact_arithmetic",
+     "tolerance": 0.0
     }
    },
    "claim": "The exact helix chord expands as s - cos^4(alpha) s^3/(24 R^2) + (kappa^4/1920 + kappa^2 tau^2/720) s^5 with kappa = cos^2(alpha)/R, tau = sin(alpha)cos(alpha)/R",
@@ -181,9 +181,9 @@
     "checks": [
      {
       "comparison": "abs_le",
-      "observed": 0.0,
+      "observed": 2.7755575615628914e-16,
       "passed": true,
-      "reference": "max (s - c)/R along integrated rulings",
+      "reference": "max |s - c|/R over s > 0 along integrated rulings",
       "reference_kind": "invariant",
       "tolerance": 1e-15
      },
@@ -226,13 +226,13 @@
     "kind": "truncation_bound",
     "value": {
      "circumferential_coefficient_R1": 2.229050277691158e-13,
-     "ruling_max_deficit_over_R": 1e-15
+     "ruling_max_abs_deficit_over_R": 1e-15
     }
    },
    "unit": null,
    "value": {
     "circumferential_coefficient_R1": 0.04166666666657247,
-    "ruling_max_deficit_over_R": 0.0
+    "ruling_max_abs_deficit_over_R": 2.7755575615628914e-16
    }
   },
   {
@@ -292,14 +292,14 @@
  ],
  "generated_artifacts": [
   {
-   "bytes": 1763,
+   "bytes": 290,
    "path": "artifacts/T047/sympy-cylinder-series.json",
-   "sha256": "cc06f0beb510abc4e115b277266e8000b218d286d5cc0c8de6a412c8c23a2180"
+   "sha256": "051cbc4fc647462f5a9bb75c694ea1da8a67499205e88bf2abf2ee21eb516815"
   },
   {
-   "bytes": 7866,
+   "bytes": 7959,
    "path": "artifacts/T047/coefficient-fits.json",
-   "sha256": "6ca8b61473ad549528929c26a931f5ee67c5cc11ef9983859d6dfb5a6bae76f9"
+   "sha256": "85cb9078501357445ec91b777d0d578b6e39ba264fdabe9f216decd7531bf545"
   },
   {
    "bytes": 3109,
@@ -315,7 +315,7 @@
  ],
  "mathematical_model": "Helix X(s) = (R cos(s cos(a)/R), R sin(s cos(a)/R), s sin(a)); kappa = cos^2(a)/R, tau = sin(a) cos(a)/R; c^2 = (2R sin(s cos(a)/2R))^2 + (s sin(a))^2 = s^2 - cos^4(a) s^4/(12R^2) + cos^6(a) s^6/(360 R^4) + O(s^8).",
  "number": 47,
- "numerical_result": "max normalized fit error 6.7e-12; integrated chord error 6.0e-15 R; circumferential coefficient 0.041666666667 (1/24 = 0.041666666667); ruling deficit 0.0e+00 R; the sympy series comparison, when sympy is available, is recorded on the derivation finding (independent_check).",
+ "numerical_result": "max normalized fit error 6.7e-12; integrated chord error 6.0e-15 R; circumferential coefficient 0.041666666667 (1/24 = 0.041666666667); ruling max |s - c| over s > 0 2.8e-16 R; the sympy series comparison (symbolic residuals), when sympy is available, is recorded on the derivation finding (independent_check).",
  "observation_model": "Noise-free chords of embedded points; no instrument.",
  "physical_validation_status": {
   "statement": "Physical validation requires acquired hardware evidence; none was acquired for this task.",
@@ -332,13 +332,13 @@
   },
   "scipy": "1.16.2",
   "sources": {
-   "src/ciw/lab/observation.py": "9ebedc1a1693aaa28965ba0c97837ad2d2c45bf0fd360857cf7b32c0993ed5fc",
-   "src/ciw/lab/observation_chord.py": "9b6fe24560daf8b06617824d20854f695e1f73774215a03acc41a28855ba164a"
+   "src/ciw/lab/observation.py": "6e5bf960e17dffb62bdaf29d28be9a0f165fd68f8498d173b66eab08fa22ad70",
+   "src/ciw/lab/observation_chord.py": "cfbaaaf604b32b686178ea036d27c153d8eebc7d290444c60d7699c1fc60faf5"
   },
   "sympy": "1.14.0"
  },
  "recommended_next_task": "T048: generate synthetic stereo-camera measurements of markers on the cylinder",
- "report_id": "sha256:2957ee22f42ad56f5068842d65a627ab21d223df565fb36d40223374b8bf7df2",
+ "report_id": "sha256:7dada81991e7c79bd041a2ce4cb00859648b551724503e969cd2768779842551",
  "schema": "ciw.lab-task-report.v1",
  "section": "observation",
  "state": "completed",
@@ -348,7 +348,7 @@
   "check: Small-s fits of exact helix chords recover cos^4(alpha)/(24 R^2) at every angle and radius vs |fitted - cos^4(alpha)/(24R^2)| * 24 R^2",
   "check: Geodesics integrated on ciw.lab.surfaces.Cylinder reproduce the exact helix chord and coefficient vs |c_integrated - c_exact| / R",
   "check: Geodesics integrated on ciw.lab.surfaces.Cylinder reproduce the exact helix chord and coefficient vs fitted coefficient from integrated chords, normalized",
-  "check: Axial rulings (alpha = 90 deg) have zero chord correction; circumferential paths have the largest coefficient 1/(24 R^2) vs max (s - c)/R along integrated rulings",
+  "check: Axial rulings (alpha = 90 deg) have zero chord correction; circumferential paths have the largest coefficient 1/(24 R^2) vs max |s - c|/R over s > 0 along integrated rulings",
   "check: Axial rulings (alpha = 90 deg) have zero chord correction; circumferential paths have the largest coefficient 1/(24 R^2) vs largest coefficient over angles minus circumferential coefficient",
   "check: Axial rulings (alpha = 90 deg) have zero chord correction; circumferential paths have the largest coefficient 1/(24 R^2) vs circumferential coefficient relative to 1/24",
   "check: Zero Gaussian curvature does not make chord and geodesic distance equal vs s - c on the circumferential geodesic of Cylinder(1) at s = 0.1",
@@ -360,6 +360,7 @@
  "uncertainty": "Fit truncation, estimated by adding an s^6 term, is 5.3e-12 normalized for exact-chord fits and 6.7e-10 for integrated-geodesic fits (checked below 1e-9 and 1e-8); the cylinder metric is constant, so RK4 integrates helices up to rounding.",
  "unresolved_assumptions": [
   "The part is an exact circular cylinder with a known axis",
-  "Markers lie exactly on one geodesic"
+  "Markers lie exactly on one geodesic",
+  "The sympy reference's chord expression is written in ciw.lab.observation_chord; sympy's independence covers its series expansion and simplification"
  ]
 }

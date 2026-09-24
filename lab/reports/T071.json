@@ -45,7 +45,7 @@
       "passed": true,
       "reference": "late grand NIS against the exact prediction (run-level z)",
       "reference_kind": "analytic",
-      "tolerance": 3.5879146722879613
+      "tolerance": 3.662259930887615
      }
     ],
     "generator": {
@@ -89,9 +89,25 @@
       "comparison": "ge",
       "observed": 0.95,
       "passed": true,
-      "reference": "fraction of ticks 1-20 inside the 99% interval",
+      "reference": "fraction of ticks 1-20 inside the per-tick 99% interval",
       "reference_kind": "analytic",
       "tolerance": 0.9
+     },
+     {
+      "comparison": "abs_le",
+      "observed": 1.0194627783564252,
+      "passed": true,
+      "reference": "early grand NIS against the exact prediction (run-level z)",
+      "reference_kind": "analytic",
+      "tolerance": 3.662259930887615
+     },
+     {
+      "comparison": "ge",
+      "observed": 0.9075659368445169,
+      "passed": true,
+      "reference": "early grand-mean z against the nominal dof, as a fraction of the family bound",
+      "reference_kind": "analytic",
+      "tolerance": 0.75
      }
     ],
     "generator": {
@@ -100,10 +116,12 @@
      "seed": 712026
     }
    },
-   "claim": "Near the rotation centre (ticks 1-20) the same mismatch goes undetected by the per-tick NIS test at this sample size; its predicted inflation there is only about 2%",
+   "claim": "Near the rotation centre (ticks 1-20) the same mismatch goes undetected by the per-tick NIS test at this sample size, where its predicted inflation is only about 2%; the run-level grand-mean NIS there agrees with the exact prediction and comes close to the family bound against the nominal value, so a pooled test nearly flags what the per-tick test misses",
    "counterexample": {
     "statement": "A passing NIS test shows that the sensor frames agree",
     "witness": {
+     "early_grand_nis": 4.1307324105019,
+     "early_z_vs_nominal": 3.323742365144154,
      "fraction_inside": 0.95,
      "rotation_deg": 2.0,
      "ticks": "1-20"
@@ -123,7 +141,11 @@
    "unit": null,
    "value": {
     "early_fraction_inside": 0.95,
-    "early_predicted_nis": 4.090633987763374
+    "early_grand_nis": 4.1307324105019,
+    "early_predicted_nis": 4.090633987763374,
+    "early_z_vs_nominal": 3.323742365144154,
+    "early_z_vs_predicted": 1.0194627783564252,
+    "z_critical": 3.662259930887615
    }
   },
   {
@@ -212,7 +234,7 @@
       "passed": true,
       "reference": "late grand NIS against 4 (run-level z)",
       "reference_kind": "analytic",
-      "tolerance": 3.5879146722879613
+      "tolerance": 3.662259930887615
      }
     ],
     "generator": {
@@ -326,9 +348,9 @@
  ],
  "generated_artifacts": [
   {
-   "bytes": 31173,
+   "bytes": 31705,
    "path": "artifacts/T071/frame_mismatch.json",
-   "sha256": "5dd0ff49abd3faee8c1d9e15635487330b291bd59ff0e52e1d1427c3a0dd1611"
+   "sha256": "d5f34d17db651c45c3e530db95c9f2a375d5f1eedb502fd4ddfc371b76fd26b7"
   },
   {
    "bytes": 6821,
@@ -344,7 +366,7 @@
  ],
  "mathematical_model": "Tracker readings R(theta)^T p + v with theta = 2 deg about the world origin; filter assumes p + v. The bias (R^T - I) p grows with |p|. Expected NIS/NEES per tick from the exact joint moments of [x; x_hat] (mismatch_moments).",
  "number": 71,
- "numerical_result": "mixed: late ANIS 7.45 (predicted 7.47), early inside 0.95; transformed late inside 0.96; rotated alone late ANIS 1.99, final ANEES 343.3 (predicted 338.3); API: frame_mismatch.",
+ "numerical_result": "mixed: late ANIS 7.45 (predicted 7.47), early per-tick inside 0.95 (early grand NIS 4.131, predicted 4.091, z 3.32 against 4 with bound 3.66); transformed late inside 0.96; rotated alone late ANIS 1.99, final ANEES 343.3 (predicted 338.3); API: frame_mismatch.",
  "observation_model": "Stacked 4-vector (camera, tracker) or tracker alone; FrameTransform rotates value and covariance by R(theta).",
  "physical_validation_status": {
   "statement": "Physical validation requires acquired hardware evidence; none was acquired for this task.",
@@ -359,14 +381,14 @@
   "scipy": "1.16.2",
   "sources": {
    "src/ciw/lab/sensor_fusion_bench.py": "f373849a4c6836fa20685c59ce7a6fe6bf732f6df9d6a49646cdc017262dd656",
-   "src/ciw/lab/sensor_fusion_common.py": "6787aa47d199d50d0b4de4d7e53714ce7b8b5aad37d647cfc1a954414e90209f",
-   "src/ciw/lab/sensor_fusion_objects.py": "a795ffc235e0a4118cb7b9ac7800191a90984372d79e59f1a934442d98d7a1f1",
-   "src/ciw/lab/sensor_fusion_robustness.py": "9c94ececd04bce6abe83323c53b0ffee060b99e4b9f9fb8e3b58ec22c24516ec"
+   "src/ciw/lab/sensor_fusion_common.py": "db3b0430ad5c13920239cef354da61b64ab1b01f84b2d3d5aff2f78840a5867a",
+   "src/ciw/lab/sensor_fusion_objects.py": "93fc55ddca91f1adfb886d21805ea8f82586548ee84e1f6cc7daed4df1f53bb9",
+   "src/ciw/lab/sensor_fusion_robustness.py": "d8944a1e077dab7955d5162b6dd233a7f0b721c99e76176eb1b987b7d8b765c5"
   },
   "sympy": "1.14.0"
  },
  "recommended_next_task": "T072: calibration expiry, the temporal validity of the declared transform and noise.",
- "report_id": "sha256:ef3b37b040ea8526de62b418716664ea2f389c0ecabcf9aecf2ca0772adb905f",
+ "report_id": "sha256:d17d748fb00401aed16bbf58e88f48e511925a972afa1c6f8456fb291714b988",
  "schema": "ciw.lab-task-report.v1",
  "section": "sensor-fusion",
  "state": "completed",
@@ -374,7 +396,9 @@
  "tests_passed": [
   "check: Fusing a tracker expressed in a frame rotated by 2 degrees with a world-frame camera inflates NIS as the target moves away from the rotation centre, matching the exact mismatched-filter moments within sampling error vs fraction of ticks 51-100 above the 99% upper bound",
   "check: Fusing a tracker expressed in a frame rotated by 2 degrees with a world-frame camera inflates NIS as the target moves away from the rotation centre, matching the exact mismatched-filter moments within sampling error vs late grand NIS against the exact prediction (run-level z)",
-  "check: Near the rotation centre (ticks 1-20) the same mismatch goes undetected by the per-tick NIS test at this sample size; its predicted inflation there is only about 2% vs fraction of ticks 1-20 inside the 99% interval",
+  "check: Near the rotation centre (ticks 1-20) the same mismatch goes undetected by the per-tick NIS test at this sample size, where its predicted inflation is only about 2%; the run-level grand-mean NIS there agrees with the exact prediction and comes close to the family bound against the nominal value, so a pooled test nearly flags what the per-tick test misses vs fraction of ticks 1-20 inside the per-tick 99% interval",
+  "check: Near the rotation centre (ticks 1-20) the same mismatch goes undetected by the per-tick NIS test at this sample size, where its predicted inflation is only about 2%; the run-level grand-mean NIS there agrees with the exact prediction and comes close to the family bound against the nominal value, so a pooled test nearly flags what the per-tick test misses vs early grand NIS against the exact prediction (run-level z)",
+  "check: Near the rotation centre (ticks 1-20) the same mismatch goes undetected by the per-tick NIS test at this sample size, where its predicted inflation is only about 2%; the run-level grand-mean NIS there agrees with the exact prediction and comes close to the family bound against the nominal value, so a pooled test nearly flags what the per-tick test misses vs early grand-mean z against the nominal dof, as a fraction of the family bound",
   "check: A rotated sensor fused alone keeps NIS consistent (its readings form a rotated constant-velocity path) while NEES grows: the estimate is confidently in the wrong frame vs fraction of ticks 51-100 inside the 99% NIS interval",
   "check: A rotated sensor fused alone keeps NIS consistent (its readings form a rotated constant-velocity path) while NEES grows: the estimate is confidently in the wrong frame vs final ANEES",
   "check: A rotated sensor fused alone keeps NIS consistent (its readings form a rotated constant-velocity path) while NEES grows: the estimate is confidently in the wrong frame vs final ANEES against the exact prediction, relative",

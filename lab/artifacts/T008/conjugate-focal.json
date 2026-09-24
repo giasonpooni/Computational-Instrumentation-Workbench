@@ -328,18 +328,43 @@
   "max_error": 3.303739504190162e-10
  },
  "sturm": {
-  "bounds": {
-   "gaussian-bump": 6.283185307179586,
-   "torus": 5.441398092702654
+  "bump_global_bound_not_exercised": {
+   "bound": 6.283185307179586,
+   "first_conjugate_points": [
+    18.726029681583313,
+    22.817665022922984,
+    18.499088336011233,
+    20.865096574238
+   ],
+   "first_positive_curvature_s": {
+    "[-10.0, 0.0]": 9.040000000000001,
+    "[-10.0, 0.2]": 9.06,
+    "[-8.0, 0.0]": 7.04,
+    "[-8.0, 0.2]": 7.0600000000000005
+   }
   },
-  "k_max": {
-   "gaussian-bump": 0.25,
-   "torus": 0.3333333333333333
-  },
-  "k_max_bump_grid": 0.25,
   "paths": [
    {
+    "comparison": {
+     "control_gap": -2.977931252123111,
+     "coordinate_range": [
+      -0.8293304522253746,
+      11.005051682701646
+     ],
+     "endpoint_path_gap": 3.1747049433761276e-10,
+     "envelope_steps": 1200,
+     "first_positive_curvature_s": 0.0,
+     "lower_gap": 7.995188738840753e-08,
+     "upper_gap": 8.412552528203054e-08,
+     "zero_bracket": [
+      null,
+      null
+     ]
+    },
     "conjugate": [],
+    "control_conjugate": [
+     8.90609501831593
+    ],
     "count_change": 0,
     "focal": [
      2.9098952658326325
@@ -356,7 +381,27 @@
     ]
    },
    {
+    "comparison": {
+     "control_gap": -4.326149798982731,
+     "coordinate_range": [
+      -14.347074701497707,
+      -2.4246882979724016
+     ],
+     "endpoint_path_gap": 3.2741453992457537e-10,
+     "envelope_steps": 1200,
+     "first_positive_curvature_s": 2.32,
+     "lower_gap": 1.423779182191387e-07,
+     "upper_gap": 1.3051887319537325e-07,
+     "zero_bracket": [
+      null,
+      null
+     ]
+    },
     "conjugate": [],
+    "control_conjugate": [
+     5.610088278150463,
+     11.928660655343835
+    ],
     "focal": [],
     "heading": -1.7185202212408828,
     "length": 12.0,
@@ -369,7 +414,27 @@
     ]
    },
    {
+    "comparison": {
+     "control_gap": -4.748868154852415,
+     "coordinate_range": [
+      -8.48001383356191,
+      1.6533443017480733
+     ],
+     "endpoint_path_gap": 8.715694832517329e-11,
+     "envelope_steps": 1200,
+     "first_positive_curvature_s": 0.1,
+     "lower_gap": 5.904612564860967e-08,
+     "upper_gap": 4.959860338410449e-08,
+     "zero_bracket": [
+      null,
+      null
+     ]
+    },
     "conjugate": [],
+    "control_conjugate": [
+     4.508346670790753,
+     11.198226651368463
+    ],
     "count_change": 0,
     "focal": [
      3.3680335976274445
@@ -386,8 +451,27 @@
     ]
    },
    {
+    "comparison": {
+     "control_gap": -1.1069098484396953,
+     "coordinate_range": [
+      -1.6682647840913554,
+      1.6682654151603464
+     ],
+     "endpoint_path_gap": 7.395101475626831e-10,
+     "envelope_steps": 1200,
+     "first_positive_curvature_s": 0.0,
+     "lower_gap": 3.4895220227260104e-08,
+     "upper_gap": 3.72491958527954e-08,
+     "zero_bracket": [
+      7.769878900440796,
+      7.8002153988653165
+     ]
+    },
     "conjugate": [
      7.785018442790264
+    ],
+    "control_conjugate": [
+     6.585406319761305
     ],
     "count_change": 0,
     "focal": [
@@ -406,7 +490,26 @@
     ]
    },
    {
+    "comparison": {
+     "control_gap": -3.093391270340466,
+     "coordinate_range": [
+      2.6148678827636793,
+      11.471593670958276
+     ],
+     "endpoint_path_gap": 3.058113762222092e-09,
+     "envelope_steps": 1200,
+     "first_positive_curvature_s": 3.4,
+     "lower_gap": 1.4499035579790265e-07,
+     "upper_gap": 1.5643285983940602e-07,
+     "zero_bracket": [
+      null,
+      null
+     ]
+    },
     "conjugate": [],
+    "control_conjugate": [
+     6.659610011952887
+    ],
     "focal": [],
     "heading": 2.473402073486949,
     "length": 12.0,
@@ -419,8 +522,28 @@
     ]
    },
    {
+    "comparison": {
+     "control_gap": -4.071567336238415,
+     "coordinate_range": [
+      -2.153619092945868,
+      2.153620639903794
+     ],
+     "endpoint_path_gap": 4.85139040051763e-10,
+     "envelope_steps": 1200,
+     "first_positive_curvature_s": 0.0,
+     "lower_gap": 1.285936322148462e-07,
+     "upper_gap": 1.3515113932160983e-07,
+     "zero_bracket": [
+      10.791359900975275,
+      10.83641374348535
+     ]
+    },
     "conjugate": [
      10.81370613927163
+    ],
+    "control_conjugate": [
+     5.363517282028331,
+     9.7817342046112
     ],
     "count_change": 0,
     "focal": [
@@ -439,7 +562,24 @@
     ]
    },
    {
+    "comparison": {
+     "control_gap": -0.007410577198654789,
+     "coordinate_range": [
+      0.4868034259589968,
+      10.415164017894675
+     ],
+     "endpoint_path_gap": 4.798792474502989e-10,
+     "envelope_steps": 1000,
+     "first_positive_curvature_s": 0.0,
+     "lower_gap": 6.362136326792944e-08,
+     "upper_gap": 6.701355134003384e-08,
+     "zero_bracket": [
+      null,
+      null
+     ]
+    },
     "conjugate": [],
+    "control_conjugate": [],
     "focal": [],
     "heading": 1.055105772188977,
     "length": 10.0,
@@ -452,7 +592,24 @@
     ]
    },
    {
+    "comparison": {
+     "control_gap": -0.007018971752552061,
+     "coordinate_range": [
+      0.7394226699527137,
+      10.480487031158209
+     ],
+     "endpoint_path_gap": 3.2360603086090123e-10,
+     "envelope_steps": 1000,
+     "first_positive_curvature_s": 0.0,
+     "lower_gap": 1.3758798288188157e-07,
+     "upper_gap": 1.4324059686987578e-07,
+     "zero_bracket": [
+      null,
+      null
+     ]
+    },
     "conjugate": [],
+    "control_conjugate": [],
     "focal": [],
     "heading": -2.6597614983096953,
     "length": 10.0,
@@ -465,7 +622,24 @@
     ]
    },
    {
+    "comparison": {
+     "control_gap": -0.034892299665910675,
+     "coordinate_range": [
+      0.48840006267526376,
+      9.137966125524544
+     ],
+     "endpoint_path_gap": 1.1200338434491641e-09,
+     "envelope_steps": 1000,
+     "first_positive_curvature_s": 0.0,
+     "lower_gap": 8.637730096461294e-08,
+     "upper_gap": 9.222038845069225e-08,
+     "zero_bracket": [
+      null,
+      null
+     ]
+    },
     "conjugate": [],
+    "control_conjugate": [],
     "count_change": 0,
     "focal": [
      9.406157566798049
@@ -482,7 +656,24 @@
     ]
    },
    {
+    "comparison": {
+     "control_gap": -0.00323060846611678,
+     "coordinate_range": [
+      1.1127316795771858,
+      11.080383157798494
+     ],
+     "endpoint_path_gap": 6.783089645523432e-10,
+     "envelope_steps": 1000,
+     "first_positive_curvature_s": null,
+     "lower_gap": 3.427582189602374e-08,
+     "upper_gap": 3.498021623055125e-08,
+     "zero_bracket": [
+      null,
+      null
+     ]
+    },
     "conjugate": [],
+    "control_conjugate": [],
     "focal": [],
     "heading": 0.5058338015470452,
     "length": 10.0,
@@ -495,8 +686,27 @@
     ]
    },
    {
+    "comparison": {
+     "control_gap": -2.561283805697316,
+     "coordinate_range": [
+      0.00450428457484235,
+      21.890991423228126
+     ],
+     "endpoint_path_gap": 1.929084447738205e-09,
+     "envelope_steps": 3000,
+     "first_positive_curvature_s": 7.04,
+     "lower_gap": -5.463074437273008e-11,
+     "upper_gap": 5.551115123125783e-17,
+     "zero_bracket": [
+      18.418574465886664,
+      19.05367909278297
+     ]
+    },
     "conjugate": [
      18.726029681583313
+    ],
+    "control_conjugate": [
+     11.277528675061339
     ],
     "count_change": 0,
     "focal": [
@@ -514,8 +724,27 @@
     ]
    },
    {
+    "comparison": {
+     "control_gap": -2.7526786986363385,
+     "coordinate_range": [
+      0.20002923825637503,
+      21.8877864832249
+     ],
+     "endpoint_path_gap": 3.0914577564544743e-09,
+     "envelope_steps": 3000,
+     "first_positive_curvature_s": 7.0600000000000005,
+     "lower_gap": -5.259370716714784e-11,
+     "upper_gap": 5.551115123125783e-17,
+     "zero_bracket": [
+      22.17022506239461,
+      23.53197769605823
+     ]
+    },
     "conjugate": [
      22.817665022922984
+    ],
+    "control_conjugate": [
+     11.863327000684691
     ],
     "count_change": 0,
     "focal": [
@@ -533,8 +762,27 @@
     ]
    },
    {
+    "comparison": {
+     "control_gap": -2.3911442132814607,
+     "coordinate_range": [
+      0.004504284574886925,
+      19.89099142322847
+     ],
+     "endpoint_path_gap": 2.8890099201817065e-09,
+     "envelope_steps": 3000,
+     "first_positive_curvature_s": 9.040000000000001,
+     "lower_gap": -6.039613253960852e-13,
+     "upper_gap": 0.0,
+     "zero_bracket": [
+      18.3059244214671,
+      18.702346837317354
+     ]
+    },
     "conjugate": [
      18.499088336011233
+    ],
+    "control_conjugate": [
+     13.049716168078751
     ],
     "count_change": 0,
     "focal": [
@@ -552,8 +800,27 @@
     ]
    },
    {
+    "comparison": {
+     "control_gap": -2.5712391151423133,
+     "coordinate_range": [
+      0.20002923825637417,
+      19.88787837566099
+     ],
+     "endpoint_path_gap": 1.5655317042728711e-09,
+     "envelope_steps": 3000,
+     "first_positive_curvature_s": 9.06,
+     "lower_gap": -5.81312775693732e-13,
+     "upper_gap": 0.0,
+     "zero_bracket": [
+      20.514985657330744,
+      21.241819000342804
+     ]
+    },
     "conjugate": [
      20.865096574238
+    ],
+    "control_conjugate": [
+     13.54708075157714
     ],
     "count_change": 0,
     "focal": [
@@ -574,6 +841,66 @@
   "rtol": [
    1e-09,
    1e-10
-  ]
+  ],
+  "torus_bound": 5.441398092702654,
+  "torus_k_max": 0.3333333333333333,
+  "two_sided": {
+   "angle_allowance": 1e-07,
+   "bump_rho_star": 1.4379375254394158,
+   "bump_unimodality_violations": 0,
+   "control_scale": 2.0,
+   "envelope_step": 0.01,
+   "path_allowance": 1e-06,
+   "summary": {
+    "control_gap": -0.00323060846611678,
+    "endpoint_path_gap": 3.0914577564544743e-09,
+    "lower_gap": -5.463074437273008e-11,
+    "upper_gap": 0.0
+   },
+   "zero_brackets": {
+    "gaussian-bump declared chord 10": {
+     "bracket": [
+      18.418574465886664,
+      19.05367909278297
+     ],
+     "conjugate": 18.726029681583313
+    },
+    "gaussian-bump declared chord 11": {
+     "bracket": [
+      22.17022506239461,
+      23.53197769605823
+     ],
+     "conjugate": 22.817665022922984
+    },
+    "gaussian-bump declared chord 12": {
+     "bracket": [
+      18.3059244214671,
+      18.702346837317354
+     ],
+     "conjugate": 18.499088336011233
+    },
+    "gaussian-bump declared chord 13": {
+     "bracket": [
+      20.514985657330744,
+      21.241819000342804
+     ],
+     "conjugate": 20.865096574238
+    },
+    "torus seeded 3": {
+     "bracket": [
+      7.769878900440796,
+      7.8002153988653165
+     ],
+     "conjugate": 7.785018442790264
+    },
+    "torus seeded 5": {
+     "bracket": [
+      10.791359900975275,
+      10.83641374348535
+     ],
+     "conjugate": 10.81370613927163
+    }
+   }
+  }
  }
 }

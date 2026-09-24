@@ -24,7 +24,7 @@
   "sign convention of the Riemann tensor (sphere K = +1, hyperbolic plane K = -1)",
   "chart singularities excluded from the sampling boxes",
   "intrinsic versus extrinsic curvature (cylinder, polar charts, Theorema Egregium)",
-  "hand table transcription errors (every row evaluated against the implementation)"
+  "transcription errors in hand_geometry, the Python transcription of the doc's hand table (every row evaluated against the implementation)"
  ],
  "findings": [
   {
@@ -157,7 +157,7 @@
       "comparison": "abs_le",
       "observed": 2.220446049250313e-16,
       "passed": true,
-      "reference": "hand-derived metric (doc table) against ciw.lab.surfaces, all charts",
+      "reference": "hand-derived metric (hand_geometry, the Python transcription of the doc table) against ciw.lab.surfaces, all charts",
       "reference_kind": "analytic",
       "tolerance": 1e-12
      },
@@ -165,7 +165,7 @@
       "comparison": "abs_le",
       "observed": 2.863761754778721e-16,
       "passed": true,
-      "reference": "hand-derived christoffel (doc table) against ciw.lab.surfaces, all charts",
+      "reference": "hand-derived christoffel (hand_geometry, the Python transcription of the doc table) against ciw.lab.surfaces, all charts",
       "reference_kind": "analytic",
       "tolerance": 1e-12
      },
@@ -173,7 +173,7 @@
       "comparison": "abs_le",
       "observed": 3.230228932514562e-16,
       "passed": true,
-      "reference": "hand-derived acceleration (doc table) against ciw.lab.surfaces, all charts",
+      "reference": "hand-derived acceleration (hand_geometry, the Python transcription of the doc table) against ciw.lab.surfaces, all charts",
       "reference_kind": "analytic",
       "tolerance": 1e-12
      },
@@ -181,7 +181,7 @@
       "comparison": "abs_le",
       "observed": 1.3877787807814457e-17,
       "passed": true,
-      "reference": "hand-derived curvature (doc table) against ciw.lab.surfaces, all charts",
+      "reference": "hand-derived curvature (hand_geometry, the Python transcription of the doc table) against ciw.lab.surfaces, all charts",
       "reference_kind": "analytic",
       "tolerance": 1e-12
      }
@@ -204,7 +204,7 @@
      "seed": 20260923
     }
    },
-   "claim": "The hand-derived metrics, Christoffel symbols, geodesic equations and curvatures of the section doc match ciw.lab.surfaces on nine charts",
+   "claim": "The hand-derived metrics, Christoffel symbols, geodesic equations and curvatures of the section doc, as transcribed in hand_geometry, match ciw.lab.surfaces on nine charts",
    "domain": "mathematical",
    "evidence_status": "numerically_verified",
    "regression_tolerance": {
@@ -721,13 +721,13 @@
   },
   "scipy": "1.16.2",
   "sources": {
-   "src/ciw/lab/geodesic_jacobi.py": "7f7307ebfb5c0a38ca1e7b9365fd7df627d9ae001791d99b823122873040d3c1",
-   "src/ciw/lab/geodesic_jacobi_common.py": "8616e9157492f0cd2aeebd695b3501215420c73af2cfbcb8c1b8cd5ab8d23a52"
+   "src/ciw/lab/geodesic_jacobi.py": "70e9794df40fbf882cd117859a112b1301552d2c4faca7979f06e7c287828798",
+   "src/ciw/lab/geodesic_jacobi_common.py": "7cb215a28e357a37f1c42cef6bdcb40e22abf7804ae9d58c4818fa40aa52da53"
   },
   "sympy": "1.14.0"
  },
  "recommended_next_task": "T002: build high-precision reference solutions on the same equations",
- "report_id": "sha256:1eab2f596a90b1d65a342edf761c83a50de695e52c2e77979fe6dde4371d3cbb",
+ "report_id": "sha256:6e89fe0f06a5c2909a7f2084766740a93db2f1e53a7675bb20f24c9ad0febf67",
  "schema": "ciw.lab-task-report.v1",
  "section": "geodesic-jacobi",
  "state": "completed",
@@ -735,10 +735,10 @@
  "tests_passed": [
   "independent: Sympy-derived metrics, Christoffel symbols and geodesic equations match ciw.lab.surfaces on nine charts vs sympy",
   "independent: Intrinsic Brioschi curvature from sympy matches the ciw Gaussian curvature on nine charts vs sympy",
-  "check: The hand-derived metrics, Christoffel symbols, geodesic equations and curvatures of the section doc match ciw.lab.surfaces on nine charts vs hand-derived metric (doc table) against ciw.lab.surfaces, all charts",
-  "check: The hand-derived metrics, Christoffel symbols, geodesic equations and curvatures of the section doc match ciw.lab.surfaces on nine charts vs hand-derived christoffel (doc table) against ciw.lab.surfaces, all charts",
-  "check: The hand-derived metrics, Christoffel symbols, geodesic equations and curvatures of the section doc match ciw.lab.surfaces on nine charts vs hand-derived acceleration (doc table) against ciw.lab.surfaces, all charts",
-  "check: The hand-derived metrics, Christoffel symbols, geodesic equations and curvatures of the section doc match ciw.lab.surfaces on nine charts vs hand-derived curvature (doc table) against ciw.lab.surfaces, all charts",
+  "check: The hand-derived metrics, Christoffel symbols, geodesic equations and curvatures of the section doc, as transcribed in hand_geometry, match ciw.lab.surfaces on nine charts vs hand-derived metric (hand_geometry, the Python transcription of the doc table) against ciw.lab.surfaces, all charts",
+  "check: The hand-derived metrics, Christoffel symbols, geodesic equations and curvatures of the section doc, as transcribed in hand_geometry, match ciw.lab.surfaces on nine charts vs hand-derived christoffel (hand_geometry, the Python transcription of the doc table) against ciw.lab.surfaces, all charts",
+  "check: The hand-derived metrics, Christoffel symbols, geodesic equations and curvatures of the section doc, as transcribed in hand_geometry, match ciw.lab.surfaces on nine charts vs hand-derived acceleration (hand_geometry, the Python transcription of the doc table) against ciw.lab.surfaces, all charts",
+  "check: The hand-derived metrics, Christoffel symbols, geodesic equations and curvatures of the section doc, as transcribed in hand_geometry, match ciw.lab.surfaces on nine charts vs hand-derived curvature (hand_geometry, the Python transcription of the doc table) against ciw.lab.surfaces, all charts",
   "check: ciw.lab.surfaces Christoffel symbols are symmetric and metric-compatible and its exact metric derivatives match finite differences vs Gamma^k_ij - Gamma^k_ji",
   "check: ciw.lab.surfaces Christoffel symbols are symmetric and metric-compatible and its exact metric derivatives match finite differences vs nabla g = 0 residual",
   "check: ciw.lab.surfaces Christoffel symbols are symmetric and metric-compatible and its exact metric derivatives match finite differences vs central differences of g with step 1e-5",
@@ -763,6 +763,7 @@
  "unresolved_assumptions": [
   "sympy simplification is trusted to be correct; it is an independent implementation, not a proof checker",
   "Only 8 sample points per chart are compared",
-  "The hand table covers the unit-radius polar cylinder only"
+  "The hand table covers the unit-radius polar cylinder only",
+  "The Markdown table in docs/lab/GEODESIC_JACOBI.md is not parsed: what is checked is its Python transcription hand_geometry, and the correspondence between the two rests on review"
  ]
 }

@@ -36,14 +36,14 @@
    ]
   },
   "cylinder-polar": {
-   "heading": 1.2,
+   "heading": 2.2,
    "key": "cylinder-polar",
-   "length": 2.0,
-   "note": "helix seen in a polar chart of the (phi, z) development",
+   "length": 2.5,
+   "note": "helix seen in a polar chart of the (phi, z) development, passing r = 1.62",
    "surface": "cylinder-polar",
    "u0": [
-    1.5,
-    0.4
+    2.0,
+    -0.6
    ]
   },
   "gaussian-bump": {
@@ -167,21 +167,21 @@
   },
   "cylinder-polar": {
    "ciw_vs_reference": {
-    "matrix": 2.220446049250313e-14,
-    "max": 2.9041737216383977e-14,
-    "position": 2.9041737216383977e-14
+    "matrix": 1.9984014443252818e-14,
+    "max": 2.5084292464429545e-14,
+    "position": 2.5084292464429545e-14
    },
    "ciw_vs_scipy": {
-    "matrix": 2.2648549702353193e-14,
-    "max": 3.0123700476684845e-14,
-    "position": 3.0123700476684845e-14
+    "matrix": 1.9539925233402755e-14,
+    "max": 3.6145576863234696e-14,
+    "position": 3.6145576863234696e-14
    },
    "reference_error_estimate": 0.0,
    "reference_kind": "closed_form",
    "reference_matrix": [
     [
      1.0,
-     2.0
+     2.5
     ],
     [
      0.0,
@@ -189,16 +189,16 @@
     ]
    ],
    "reference_position": [
-    0.2450816212042345,
-    0.9695024491706579,
-    2.5832747195459858
+    -0.006876043086901477,
+    0.9999763597363025,
+    1.369649060813692
    ],
-   "richardson_error_estimate": 3.0348760541680046e-12,
-   "scipy_nfev": 242,
+   "richardson_error_estimate": 1.6165587387225362e-12,
+   "scipy_nfev": 338,
    "scipy_vs_reference": {
     "matrix": 4.440892098500626e-16,
-    "max": 3.341752861827898e-15,
-    "position": 3.341752861827898e-15
+    "max": 1.1322642052544914e-14,
+    "position": 1.1322642052544914e-14
    }
   },
   "gaussian-bump": {

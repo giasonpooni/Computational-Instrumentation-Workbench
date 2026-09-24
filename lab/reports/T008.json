@@ -11,19 +11,19 @@
    "hardware_measured": 0,
    "independently_verified": 1,
    "not_established": 0,
-   "numerically_verified": 5,
+   "numerically_verified": 6,
    "provider_backed": 0,
    "synthetic": 0
   },
   "primary": "numerically_verified"
  },
- "expected_invariant": "Locations to RK4 + Hermite accuracy (order 4), zero counts exact, Sturm bounds respected.",
- "experiment": "Locate zeros at 40..320 steps, compare with pi multiples, check absence on K < 0, check the Sturm bound on every seeded or declared variable-curvature geodesic that reaches a conjugate point, and compare with CSG when bound.",
+ "expected_invariant": "Locations to RK4 + Hermite accuracy (order 4), zero counts exact, Sturm bounds respected, and both bounds violated by the column integrated with 2K.",
+ "experiment": "Locate zeros at 40..320 steps, compare with pi multiples, check absence on K < 0, check the global Sturm bound on the seeded torus geodesics, bracket the heading column between the upper- and lower-envelope comparison solutions on every seeded and declared geodesic, repeat both with the column integrated with 2K (which must be rejected), and compare with CSG when bound.",
  "failure_modes_checked": [
   "trivial zero of j_head at s = 0 excluded (also from the Sturm lower bounds)",
   "zero counts, not only locations",
   "negative curvature (no zeros) and Sturm lower bounds",
-  "vacuous Sturm bound (each surface must have a geodesic that reaches a conjugate point)",
+  "vacuous Sturm bound: the torus bound must be reached by at least one geodesic and must reject a column integrated with 2K; the two-sided envelope comparison must reject the same control on every path",
   "focal/conjugate relation on variable curvature (counterexample)"
  ],
  "findings": [
@@ -265,15 +265,7 @@
       "comparison": "ge",
       "observed": 2.0,
       "passed": true,
-      "reference": "torus geodesics that reach a conjugate point",
-      "reference_kind": "invariant",
-      "tolerance": 1.0
-     },
-     {
-      "comparison": "ge",
-      "observed": 4.0,
-      "passed": true,
-      "reference": "gaussian-bump geodesics that reach a conjugate point",
+      "reference": "seeded torus geodesics that reach a conjugate point",
       "reference_kind": "invariant",
       "tolerance": 1.0
      },
@@ -281,25 +273,111 @@
       "comparison": "signed_ge",
       "observed": 2.34362035008761,
       "passed": true,
-      "reference": "first conjugate point minus pi/sqrt(K_max) on torus",
-      "reference_kind": "invariant",
-      "tolerance": 0.0
-     },
-     {
-      "comparison": "signed_ge",
-      "observed": 12.215903028831647,
-      "passed": true,
-      "reference": "first conjugate point minus pi/sqrt(K_max) on gaussian-bump",
+      "reference": "first conjugate point minus pi/sqrt(K_max) on the torus",
       "reference_kind": "invariant",
       "tolerance": 0.0
      },
      {
       "comparison": "signed_le",
+      "observed": -0.9330514219119008,
+      "passed": true,
+      "reference": "negative control: first zero of the column integrated with 2K minus pi/sqrt(K_max) (must be negative on some geodesic)",
+      "reference_kind": "invariant",
+      "tolerance": 0.0
+     }
+    ],
+    "generator": {
+     "control_scale": 2.0,
+     "count": 6,
+     "length": 12.0,
+     "name": "seeded torus geodesics",
+     "rtol": 1e-09,
+     "seed": 20260931
+    }
+   },
+   "claim": "Sturm comparison bound holds on every seeded torus geodesic that reaches a conjugate point (none occurs before pi/sqrt(max K)) and rejects a heading column integrated with 2K",
+   "domain": "numerical",
+   "evidence_status": "numerically_verified",
+   "regression_tolerance": {
+    "abs": 1e-06,
+    "rel": 1e-06
+   },
+   "uncertainty": {
+    "basis": "largest change of a zero location between adaptive rtol 1e-9 and 1e-10",
+    "kind": "truncation_bound",
+    "value": 3.0363290548507393e-08
+   },
+   "unit": null,
+   "value": {
+    "bound": 5.441398092702654,
+    "control_margin": -0.9330514219119008,
+    "first_conjugate_points": [
+     7.785018442790264,
+     10.81370613927163
+    ],
+    "margin": 2.34362035008761,
+    "paths_with_conjugate_point": 2
+   }
+  },
+  {
+   "assigned_by": "ciw.lab.evidence",
+   "basis": {
+    "checks": [
+     {
+      "comparison": "signed_ge",
+      "observed": -5.463074437273008e-11,
+      "passed": true,
+      "reference": "smallest Pruefer angle minus the lower-envelope angle for s > 0, all paths",
+      "reference_kind": "invariant",
+      "tolerance": -1e-07
+     },
+     {
+      "comparison": "signed_ge",
       "observed": 0.0,
       "passed": true,
-      "reference": "grid maximum of the bump curvature minus h^2/sigma^4",
+      "reference": "smallest upper-envelope angle minus the Pruefer angle for s > 0, all paths",
+      "reference_kind": "invariant",
+      "tolerance": -1e-07
+     },
+     {
+      "comparison": "signed_le",
+      "observed": -0.00323060846611678,
+      "passed": true,
+      "reference": "negative control: largest envelope gap of the column integrated with 2K over all paths (negative means rejected)",
+      "reference_kind": "invariant",
+      "tolerance": -1e-07
+     },
+     {
+      "comparison": "ge",
+      "observed": 4.0,
+      "passed": true,
+      "reference": "declared bump chords that reach a conjugate point",
+      "reference_kind": "invariant",
+      "tolerance": 1.0
+     },
+     {
+      "comparison": "le",
+      "observed": 3.0914577564544743e-09,
+      "passed": true,
+      "reference": "coordinate gap between the fixed-step envelope path and the adaptive path at s = L",
+      "reference_kind": "self_convergence",
+      "tolerance": 1e-06
+     },
+     {
+      "comparison": "abs_le",
+      "observed": 0.0,
+      "passed": true,
+      "reference": "bump curvature at the summit minus h^2/sigma^4",
       "reference_kind": "analytic",
-      "tolerance": 1e-12
+      "tolerance": 1e-15
+     },
+     {
+      "comparison": "abs_le",
+      "observed": 0.0,
+      "passed": true,
+      "reference": "grid violations of K(rho) decreasing up to rho* and increasing beyond",
+      "reference_kind": "exact_arithmetic",
+      "tolerance": 0.0
      },
      {
       "comparison": "abs_le",
@@ -331,12 +409,16 @@
       ]
      ],
      "chord_length": 30.0,
+     "control_scale": 2.0,
+     "envelope_step": 0.01,
      "name": "seeded geodesics and declared bump chords",
+     "path_allowance": 1e-06,
+     "rtol": 1e-09,
      "seed": 20260931,
      "torus": 6
     }
    },
-   "claim": "Sturm comparison bound holds on every seeded torus geodesic and declared bump chord that reaches a conjugate point: none occurs before pi/sqrt(max K)",
+   "claim": "Two-sided Sturm comparison with piecewise-constant curvature envelopes brackets the heading column on every seeded torus and bump geodesic and declared bump chord, and rejects the column integrated with 2K",
    "domain": "numerical",
    "evidence_status": "numerically_verified",
    "regression_tolerance": {
@@ -344,35 +426,59 @@
     "rel": 1e-06
    },
    "uncertainty": {
-    "basis": "largest change of a zero location between adaptive rtol 1e-9 and 1e-10",
+    "basis": "largest change of a zero location between adaptive rtol 1e-9 and 1e-10, and the fixed-step path error covered by the coordinate allowance",
     "kind": "truncation_bound",
     "value": 3.0363290548507393e-08
    },
    "unit": null,
    "value": {
-    "bounds": {
-     "gaussian-bump": 6.283185307179586,
-     "torus": 5.441398092702654
-    },
-    "first_conjugate_points": {
-     "gaussian-bump": [
-      18.726029681583313,
-      22.817665022922984,
-      18.499088336011233,
-      20.865096574238
-     ],
-     "torus": [
-      7.785018442790264,
-      10.81370613927163
-     ]
-    },
-    "margins": {
-     "gaussian-bump": 12.215903028831647,
-     "torus": 2.34362035008761
-    },
-    "paths_with_conjugate_point": {
-     "gaussian-bump": 4,
-     "torus": 2
+    "chords_with_conjugate_point": 4,
+    "largest_control_gap": -0.00323060846611678,
+    "smallest_gap_above_lower_envelope": -5.463074437273008e-11,
+    "smallest_gap_below_upper_envelope": 0.0,
+    "zero_brackets": {
+     "gaussian-bump declared chord 10": {
+      "bracket": [
+       18.418574465886664,
+       19.05367909278297
+      ],
+      "conjugate": 18.726029681583313
+     },
+     "gaussian-bump declared chord 11": {
+      "bracket": [
+       22.17022506239461,
+       23.53197769605823
+      ],
+      "conjugate": 22.817665022922984
+     },
+     "gaussian-bump declared chord 12": {
+      "bracket": [
+       18.3059244214671,
+       18.702346837317354
+      ],
+      "conjugate": 18.499088336011233
+     },
+     "gaussian-bump declared chord 13": {
+      "bracket": [
+       20.514985657330744,
+       21.241819000342804
+      ],
+      "conjugate": 20.865096574238
+     },
+     "torus seeded 3": {
+      "bracket": [
+       7.769878900440796,
+       7.8002153988653165
+      ],
+      "conjugate": 7.785018442790264
+     },
+     "torus seeded 5": {
+      "bracket": [
+       10.791359900975275,
+       10.83641374348535
+      ],
+      "conjugate": 10.81370613927163
+     }
     }
    }
   },
@@ -445,8 +551,8 @@
       "comparison": "abs_le",
       "observed": 1.7763568394002505e-15,
       "passed": true,
-      "reference": "CSG focus_events on its RK4 trace (same method and grid, different origin; not a same-origin comparison)",
-      "reference_kind": "cross_implementation",
+      "reference": "CSG focus_events on its own RK4 trace: same method and grid, different origin, so the ciw zeros are reproduced to Hermite root-finding accuracy",
+      "reference_kind": "high_precision",
       "tolerance": 1e-08
      }
     ],
@@ -508,9 +614,9 @@
  ],
  "generated_artifacts": [
   {
-   "bytes": 11489,
+   "bytes": 19712,
    "path": "artifacts/T008/conjugate-focal.json",
-   "sha256": "b27f0c17dde57893d8414bb7613016f1b3f02dae3b98fbe275ccae21e15596f7"
+   "sha256": "26b0f4783e97435db5cd2b1f18a3e4d80cf1c79855a267f084f3c5f1b0656280"
   },
   {
    "bytes": 2061,
@@ -523,14 +629,15 @@
    "sha256": "83d291c6ca653606c43428eb973b4044ffc8c1e2f9abbf264fd3fd82a0e60dfa"
   }
  ],
- "hypothesis": "Zeros of the heading column are conjugate points and zeros of the lateral column are focal points; on constant K > 0 they sit at multiples of pi/sqrt(K) and half-way between, none exist where K <= 0, and on variable curvature none occurs before pi/sqrt(max K).",
+ "hypothesis": "Zeros of the heading column are conjugate points and zeros of the lateral column are focal points; on constant K > 0 they sit at multiples of pi/sqrt(K) and half-way between, none exist where K <= 0, and on variable curvature none occurs before pi/sqrt(max K) and each lies between the first zeros of the comparison equations for the upper and lower curvature envelopes along the geodesic.",
  "input_data": [
-  "Sphere great circles (R = 1, L = 7; R = 2, L = 14); torus outer equator (L = 11.5, K = 1/3); inner equator and hyperbolic plane; 6 torus and 4 bump seeded geodesics (seed 20260931); 4 bump chords from [[-8.0, 0.0], [-8.0, 0.2], [-10.0, 0.0], [-10.0, 0.2]] heading 0, L = 30.0"
+  "Sphere great circles (R = 1, L = 7; R = 2, L = 14); torus outer equator (L = 11.5, K = 1/3); inner equator and hyperbolic plane; 6 torus and 4 bump seeded geodesics (seed 20260931); 4 bump chords from [[-8.0, 0.0], [-8.0, 0.2], [-10.0, 0.0], [-10.0, 0.2]] heading 0, L = 30.0",
+  "Curvature envelopes on fixed-step RK4 copies of those geodesics (step <= 0.01, coordinate allowance 1e-06); negative control integrated with 2.0 K"
  ],
- "mathematical_model": "j_head = sn_K, j_lat = cn_K on constant K; Sturm comparison: K <= K_max gives no conjugate point before pi/sqrt(K_max), and K <= 0 gives j_head >= s, j_lat >= 1.",
+ "mathematical_model": "j_head = sn_K, j_lat = cn_K on constant K; Sturm comparison: K <= K_max gives no conjugate point before pi/sqrt(K_max), and K <= 0 gives j_head >= s, j_lat >= 1; the Pruefer angle theta = atan2(j, j') obeys theta' = cos^2 theta + K sin^2 theta, which increases with K, so K_lo(s) <= K(s) <= K_hi(s) gives theta_lo <= theta <= theta_hi.",
  "number": 8,
- "numerical_result": "Sphere location error 1.2e-08 (order 4); outer equator 1.68e-08 (order 4); Sturm margins torus 2.34, gaussian-bump 12.2 with 2 of 6 seeded torus geodesics, 0 of 4 seeded bump geodesics and 4 of 4 bump chords reaching a conjugate point (the bump bound 2 pi is far from tight on the chords); witness focal 3.4653 vs conjugate/2 3.8925.",
- "observation_model": "Cubic-Hermite zeros of sampled columns (ciw.lab.jacobi.Transfer.conjugate_points/focal_points).",
+ "numerical_result": "Sphere location error 1.2e-08 (order 4); outer equator 1.68e-08 (order 4); torus Sturm margin 2.34 with 2 of 6 seeded torus geodesics reaching a conjugate point, 2K-control margin -0.933; envelope brackets hold to -5.46e-11 rad and reject the 2K control by at least 0.00323 rad; 4 of 4 bump chords and 0 of 4 seeded bump geodesics reach a conjugate point; witness focal 3.4653 vs conjugate/2 3.8925.",
+ "observation_model": "Cubic-Hermite zeros of sampled columns (ciw.lab.jacobi.Transfer.conjugate_points/focal_points); unwrapped Pruefer angle of the adaptive heading column against the exact piecewise-constant envelope solutions at the same arclengths.",
  "physical_validation_status": {
   "statement": "Physical validation requires acquired hardware evidence; none was acquired for this task.",
   "status": "not_established"
@@ -544,8 +651,8 @@
    "python": "3.12.3",
    "scipy": "1.16.2",
    "sources": {
-    "src/ciw/lab/geodesic_jacobi.py": "7f7307ebfb5c0a38ca1e7b9365fd7df627d9ae001791d99b823122873040d3c1",
-    "src/ciw/lab/geodesic_jacobi_common.py": "8616e9157492f0cd2aeebd695b3501215420c73af2cfbcb8c1b8cd5ab8d23a52"
+    "src/ciw/lab/geodesic_jacobi.py": "70e9794df40fbf882cd117859a112b1301552d2c4faca7979f06e7c287828798",
+    "src/ciw/lab/geodesic_jacobi_common.py": "7cb215a28e357a37f1c42cef6bdcb40e22abf7804ae9d58c4818fa40aa52da53"
    },
    "sympy": "1.14.0"
   },
@@ -565,7 +672,7 @@
   }
  },
  "recommended_next_task": "T009: compare lateral and heading columns separately; T010: near-focus counterexamples",
- "report_id": "sha256:100e9c385322a4bdf0064523d2ad561fcd5acd3e281fe0769887212b850ce8e1",
+ "report_id": "sha256:466ee619217ebab32046596372690eecf68d3f7c6a8960ed5b17b75222f3e26a",
  "schema": "ciw.lab-task-report.v1",
  "section": "geodesic-jacobi",
  "state": "completed",
@@ -584,17 +691,23 @@
   "check: No conjugate or focal point occurs on the torus inner equator or the hyperbolic plane (K < 0) vs zeros found on hyperbolic-long",
   "check: No conjugate or focal point occurs on the torus inner equator or the hyperbolic plane (K < 0) vs Sturm comparison: largest s - j_head for s > 0 on hyperbolic-long",
   "check: No conjugate or focal point occurs on the torus inner equator or the hyperbolic plane (K < 0) vs Sturm comparison: largest 1 - j_lat for s > 0 on hyperbolic-long",
-  "check: Sturm comparison bound holds on every seeded torus geodesic and declared bump chord that reaches a conjugate point: none occurs before pi/sqrt(max K) vs torus geodesics that reach a conjugate point",
-  "check: Sturm comparison bound holds on every seeded torus geodesic and declared bump chord that reaches a conjugate point: none occurs before pi/sqrt(max K) vs gaussian-bump geodesics that reach a conjugate point",
-  "check: Sturm comparison bound holds on every seeded torus geodesic and declared bump chord that reaches a conjugate point: none occurs before pi/sqrt(max K) vs first conjugate point minus pi/sqrt(K_max) on torus",
-  "check: Sturm comparison bound holds on every seeded torus geodesic and declared bump chord that reaches a conjugate point: none occurs before pi/sqrt(max K) vs first conjugate point minus pi/sqrt(K_max) on gaussian-bump",
-  "check: Sturm comparison bound holds on every seeded torus geodesic and declared bump chord that reaches a conjugate point: none occurs before pi/sqrt(max K) vs grid maximum of the bump curvature minus h^2/sigma^4",
-  "check: Sturm comparison bound holds on every seeded torus geodesic and declared bump chord that reaches a conjugate point: none occurs before pi/sqrt(max K) vs zero-count changes between rtol 1e-9 and 1e-10",
+  "check: Sturm comparison bound holds on every seeded torus geodesic that reaches a conjugate point (none occurs before pi/sqrt(max K)) and rejects a heading column integrated with 2K vs seeded torus geodesics that reach a conjugate point",
+  "check: Sturm comparison bound holds on every seeded torus geodesic that reaches a conjugate point (none occurs before pi/sqrt(max K)) and rejects a heading column integrated with 2K vs first conjugate point minus pi/sqrt(K_max) on the torus",
+  "check: Sturm comparison bound holds on every seeded torus geodesic that reaches a conjugate point (none occurs before pi/sqrt(max K)) and rejects a heading column integrated with 2K vs negative control: first zero of the column integrated with 2K minus pi/sqrt(K_max) (must be negative on some geodesic)",
+  "check: Two-sided Sturm comparison with piecewise-constant curvature envelopes brackets the heading column on every seeded torus and bump geodesic and declared bump chord, and rejects the column integrated with 2K vs smallest Pruefer angle minus the lower-envelope angle for s > 0, all paths",
+  "check: Two-sided Sturm comparison with piecewise-constant curvature envelopes brackets the heading column on every seeded torus and bump geodesic and declared bump chord, and rejects the column integrated with 2K vs smallest upper-envelope angle minus the Pruefer angle for s > 0, all paths",
+  "check: Two-sided Sturm comparison with piecewise-constant curvature envelopes brackets the heading column on every seeded torus and bump geodesic and declared bump chord, and rejects the column integrated with 2K vs negative control: largest envelope gap of the column integrated with 2K over all paths (negative means rejected)",
+  "check: Two-sided Sturm comparison with piecewise-constant curvature envelopes brackets the heading column on every seeded torus and bump geodesic and declared bump chord, and rejects the column integrated with 2K vs declared bump chords that reach a conjugate point",
+  "check: Two-sided Sturm comparison with piecewise-constant curvature envelopes brackets the heading column on every seeded torus and bump geodesic and declared bump chord, and rejects the column integrated with 2K vs coordinate gap between the fixed-step envelope path and the adaptive path at s = L",
+  "check: Two-sided Sturm comparison with piecewise-constant curvature envelopes brackets the heading column on every seeded torus and bump geodesic and declared bump chord, and rejects the column integrated with 2K vs bump curvature at the summit minus h^2/sigma^4",
+  "check: Two-sided Sturm comparison with piecewise-constant curvature envelopes brackets the heading column on every seeded torus and bump geodesic and declared bump chord, and rejects the column integrated with 2K vs grid violations of K(rho) decreasing up to rho* and increasing beyond",
+  "check: Two-sided Sturm comparison with piecewise-constant curvature envelopes brackets the heading column on every seeded torus and bump geodesic and declared bump chord, and rejects the column integrated with 2K vs zero-count changes between rtol 1e-9 and 1e-10",
   "check: On variable curvature the first focal point is not half the first conjugate distance vs |first focal - first conjugate / 2|",
   "check: ciw conjugate and focal points match the pinned CSG provider's focus events on constant-curvature paths vs zero-count mismatches against CSG (closed form and RK4 trace)",
-  "check: ciw conjugate and focal points match the pinned CSG provider's focus events on constant-curvature paths vs CSG focus_events on its RK4 trace (same method and grid, different origin; not a same-origin comparison)",
+  "check: ciw conjugate and focal points match the pinned CSG provider's focus events on constant-curvature paths vs CSG focus_events on its own RK4 trace: same method and grid, different origin, so the ciw zeros are reproduced to Hermite root-finding accuracy",
   "independent: ciw conjugate and focal points match the pinned CSG provider's focus events on constant-curvature paths vs Curved-Surface-Geodesic-Sensitivity-Runtime@bbc535af29c30997e56fd120320c570830676462",
   "pytest: tests/test_lab_geodesic_jacobi.py::test_t008_conjugate_and_focal_points",
+  "pytest: tests/test_lab_geodesic_jacobi.py::test_t008_envelope_comparison_rejects_wrong_curvature",
   "pytest: tests/test_lab_geodesic_jacobi.py::test_t008_missing_witness_is_recorded_not_raised",
   "pytest: tests/test_lab_geodesic_jacobi.py::test_csg_checkout_refusals",
   "pytest: tests/test_lab_geodesic_jacobi.py::test_csg_execution_refusals_are_expected_from_their_stage",
@@ -603,8 +716,9 @@
  ],
  "tests_skipped": [],
  "title": "Locate conjugate and focal points numerically.",
- "uncertainty": "Location error below 1e-7 at the finest fixed steps; adaptive zero locations move by at most 3.04e-08 between rtol 1e-9 and 1e-10.",
+ "uncertainty": "Location error below 1e-7 at the finest fixed steps; adaptive zero locations move by at most 3.04e-08 between rtol 1e-9 and 1e-10; the envelopes are widened by 1e-06 in the curvature coordinate for the error of the fixed-step path.",
  "unresolved_assumptions": [
-  "The bump Sturm bound is exercised only on chords through the summit region, where the first conjugate point lies far beyond 2 pi"
+  "The global bound pi/sqrt(max K) = 6.283 is not exercised on the gaussian bump and is not claimed there: K > 0 only for rho < sigma, the declared chords first meet K > 0 at s = 7.04, 7.06, 9.04, 9.06, beyond the bound, so it would hold whatever the Jacobi integration did; the bump is covered by the two-sided envelope comparison instead",
+  "The envelope comparison assumes K(rho) on the bump decreases up to its flank minimum and increases beyond (checked on a grid, not proved)"
  ]
 }

@@ -3,10 +3,10 @@
  "board": "revC",
  "compatibility_matrix_sha256": "8c04099c441d7c37aca8f8b0e6b9b88d2da49496b998d93dcc2f8a4e43d1b58d",
  "from_bitstream": "2.1.0",
- "from_identity_sha256": "3eba9d925d63c92c740c7275f3211af80ad8557f507180e7b9abf80734006408",
+ "from_identity_sha256": "e398a132df44815f78f92e6422bfc1351e9859614f070db21d45daaf179e587d",
  "host": "2.0",
  "reason": "Regression in telemetry timestamp field (synthetic scenario)",
  "schema": "ciw.fpga-rollback.v1",
  "to_bitstream": "2.0.0",
- "to_identity_sha256": "548d2e9e1c012547da07da610f444c324fa1f64d56c6f80c056520ea53b66a82"
+ "to_identity_sha256": "edb11eedd3f3d426ae54339a39125b33c165c72017f3f348eb6d37ed3577755a"
 }

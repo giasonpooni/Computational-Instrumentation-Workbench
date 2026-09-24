@@ -44,6 +44,14 @@
   }
  ],
  "equator_chord_ratio_s_star_over_half": 0.000157109845297,
+ "grid_halving": {
+  "equator_chord_ratio_relative": 9.51017196904e-06,
+  "equator_smallest_chord_at_s_star": {
+   "absolute": 1.29392486332e-11,
+   "relative": 0.000152184133146
+  },
+  "inversion_signed_max_abs": 5.4908060737e-11
+ },
  "inversion": {
   "equator": {
    "j_after": -1.22474487124,
@@ -64,6 +72,50 @@
    "signed_before": 0.0198291383569
   }
  },
+ "recovery_equator_eps_0.04": [
+  {
+   "distance": 0.0136034952318,
+   "offset_steps": 1,
+   "relative_error": 0.0802852370506
+  },
+  {
+   "distance": 0.0272069904635,
+   "offset_steps": 2,
+   "relative_error": 0.0402736751608
+  },
+  {
+   "distance": 0.054413980927,
+   "offset_steps": 4,
+   "relative_error": 0.0202657591903
+  },
+  {
+   "distance": 0.108827961854,
+   "offset_steps": 8,
+   "relative_error": 0.0102582165967
+  }
+ ],
+ "recovery_generic_eps_0.01": [
+  {
+   "distance": 0.0151285014728,
+   "offset_steps": 1,
+   "relative_error": 0.905211041812
+  },
+  {
+   "distance": 0.0302570029457,
+   "offset_steps": 2,
+   "relative_error": 0.451262244495
+  },
+  {
+   "distance": 0.0605140058914,
+   "offset_steps": 4,
+   "relative_error": 0.22425612926
+  },
+  {
+   "distance": 0.121028011783,
+   "offset_steps": 8,
+   "relative_error": 0.110689888381
+  }
+ ],
  "sphere": {
   "closed_form_max_error": 3.65478038458e-11,
   "max_deviation_from_uniform": 7.65601466668e-08,

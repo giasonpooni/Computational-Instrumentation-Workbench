@@ -1,14 +1,42 @@
 {
- "cases": 1152,
- "label_counts": {
-  "analytic": 4,
-  "hardware_measured": 48,
-  "independently_verified": 112,
-  "not_established": 804,
-  "numerically_verified": 32,
-  "provider_backed": 16,
-  "refused": 128,
-  "synthetic": 8
+ "cases": 9216,
+ "grammar": {
+  "acquisition": 2,
+  "checks": 4,
+  "derivation": 2,
+  "generator": 2,
+  "independent_check": 8,
+  "provider": 3
  },
+ "label_counts": {
+  "analytic": 8,
+  "hardware_measured": 72,
+  "independently_verified": 336,
+  "not_established": 5744,
+  "numerically_verified": 48,
+  "provider_backed": 16,
+  "refused": 2976,
+  "synthetic": 16
+ },
+ "rule_branches": {
+  "1 authority domain": 3840,
+  "2 failed check": 1680,
+  "3 acquisition": 72,
+  "3 acquisition with I": 144,
+  "3 no acquisition": 216,
+  "4 C": 48,
+  "4 D": 8,
+  "4 G": 16,
+  "4 I": 192,
+  "4 P": 16,
+  "4 acquisition refused": 288,
+  "4 no basis": 8,
+  "5 ciw inside another family": 672,
+  "5 cross_implementation is not I": 672,
+  "5 same origin": 672,
+  "5 unknown family": 672
+ },
+ "unexercised_branches": [],
+ "violation_count": 0,
  "violations": []
 }

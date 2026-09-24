@@ -41,12 +41,12 @@
       "tolerance": 1e-09
      },
      {
-      "comparison": "le",
-      "observed": 0.0,
+      "comparison": "signed_le",
+      "observed": -3.182094197509745e-09,
       "passed": true,
-      "reference": "circumferential gap minus 2-term series beyond the alternating-series bound (mm)",
+      "reference": "max over circumferential pairs of |gap - 2-term series| minus the alternating-series bound (signed margin, mm)",
       "reference_kind": "analytic",
-      "tolerance": 1e-12
+      "tolerance": 0.0
      },
      {
       "comparison": "abs_le",
@@ -292,14 +292,14 @@
  ],
  "generated_artifacts": [
   {
-   "bytes": 11577,
+   "bytes": 11734,
    "path": "artifacts/T127/protocol-rolled-cylinder.json",
-   "sha256": "50d777eaeaed9f6713346ba4c8f84396e5d0e9c285d904195c3b436a95c7179f"
+   "sha256": "ac5f0a7f8bb8f2ec64df6abd0bc8ca6288ff2a7b3d4835f4143d9ee91734a6e3"
   },
   {
-   "bytes": 2667,
+   "bytes": 3124,
    "path": "artifacts/T127/cylinder-pairs.json",
-   "sha256": "70b2141f65562923f5b10d90aedb387dbb5a1543657800ae4bfd0ec38948b5a9"
+   "sha256": "51df6b7649a874fd813191892897e2d3b2eb38a53589d8eb8b73d695d04ba0a7"
   },
   {
    "bytes": 2466,
@@ -329,22 +329,22 @@
   "python": "3.12.3",
   "scipy": "1.16.2",
   "sources": {
-   "src/ciw/lab/manufacturing.py": "088763a0bcc42bf085c1e228797a5dc0d702b994f2a49e053cbe2b0a5622e25d",
+   "src/ciw/lab/manufacturing.py": "f4cd90e1df33b910b78daf4b0556a8861e044d83701474f841e85fd9d96f9063",
    "src/ciw/lab/manufacturing_geometry.py": "1db6df2ddf778668da2ffd53a66bcddbff4fc933d6f299e8f283cedc60a9332f",
-   "src/ciw/lab/manufacturing_metrology.py": "afbb6fccf146ca4f47850805c118d2f1bf6186872f381b298ab924a9214257ec",
-   "src/ciw/lab/manufacturing_records.py": "66970104ea454e836c5cbafc3013c90e721c3e96ad7f16780c32250112cac921"
+   "src/ciw/lab/manufacturing_metrology.py": "aef4708b0f296fc66087a6382881a0564c5edcb6d7961b5e472aa711e29feb5d",
+   "src/ciw/lab/manufacturing_records.py": "015ea7fccc586f4b95f64e7ffbc1f6c34eec20b8245778ede3c2324006537087"
   },
   "sympy": "1.14.0"
  },
- "recommended_next_task": "Execute MFG-CYLINDER-01 and compare measured gaps in T138; budget the radius term with T140.",
- "report_id": "sha256:7cb6f15d966fa9d9e15ae6073080ab5befa732722aa2766693d0c89da5c876e4",
+ "recommended_next_task": "Execute MFG-CYLINDER-01, retain it through a T139 measurement record and compare the measured chord-geodesic gaps with the T138 pair comparator (compare_pair_distances, E_n per pair); the radius term is budgeted in T140.",
+ "report_id": "sha256:d1b3794ee21a852bf401ea438c47bb72ab9c6492dbf9c380cdb3eb6e8217cb26",
  "schema": "ciw.lab-task-report.v1",
  "section": "manufacturing",
  "state": "completed",
  "task_id": "T127",
  "tests_passed": [
   "check: Rolled-cylinder chord-geodesic gaps for the protocol marker pairs vs RK4 geodesic closure onto the target marker (mm)",
-  "check: Rolled-cylinder chord-geodesic gaps for the protocol marker pairs vs circumferential gap minus 2-term series beyond the alternating-series bound (mm)",
+  "check: Rolled-cylinder chord-geodesic gaps for the protocol marker pairs vs max over circumferential pairs of |gap - 2-term series| minus the alternating-series bound (signed margin, mm)",
   "check: Rolled-cylinder chord-geodesic gaps for the protocol marker pairs vs axial (ruling) pairs have zero gap (mm)",
   "check: Rolled-cylinder Jacobi transfer equals the flat-plate transfer (K = 0) vs max |Phi_cylinder(300) - [[1, 300], [0, 1]]|",
   "check: A marker chord differs from the surface distance on a developable (intrinsically flat) part vs gap at 90 deg exceeds k u_pair (camera) by the ratio",

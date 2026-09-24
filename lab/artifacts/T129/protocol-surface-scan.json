@@ -1,0 +1,332 @@
+{
+ "acceptance_criteria": [
+  {
+   "id": "H1",
+   "statement": "The formed coupon is a Gaussian dome of revolution within the scanner noise",
+   "status": "hypothesis",
+   "test": "chi2 / dof of the global fit residual <= 1.086"
+  },
+  {
+   "id": "H2",
+   "statement": "The fitted height and width lie within the declared forming tolerances (10 +/- 0.2 mm, 20 +/- 0.5 mm)",
+   "status": "hypothesis",
+   "test": "|fitted - nominal| + 2 u <= tolerance, u from D1"
+  },
+  {
+   "id": "H3",
+   "statement": "The crest curvature of the local-window fit equals h / sigma^2 of the fitted dome",
+   "status": "hypothesis",
+   "test": "E_n <= 1 with U from the T129 sampling design and the fit covariance"
+  }
+ ],
+ "calibration_artifacts": [
+  {
+   "id": "SB-1000",
+   "kind": "carbon scale bar",
+   "nominal_mm": 1000.0,
+   "use": "photogrammetry scale"
+  },
+  {
+   "id": "GS-25.4",
+   "kind": "ceramic gauge sphere",
+   "nominal_diameter_mm": 25.4,
+   "use": "probe and tracker SMR check"
+  },
+  {
+   "id": "SG-200",
+   "kind": "step gauge",
+   "steps_mm": [
+    10.0,
+    20.0,
+    30.0,
+    40.0,
+    50.0,
+    60.0,
+    70.0,
+    80.0,
+    90.0,
+    100.0,
+    110.0,
+    120.0,
+    130.0,
+    140.0,
+    150.0,
+    160.0,
+    170.0,
+    180.0,
+    190.0,
+    200.0
+   ],
+   "use": "scale error"
+  }
+ ],
+ "datum_frames": [
+  {
+   "constrains": "z translation, rotations about x and y",
+   "feature": "specimen back face (or mandrel axis for the cylinder)",
+   "id": "A",
+   "points": 3,
+   "role": "primary"
+  },
+  {
+   "constrains": "y translation, rotation about z",
+   "feature": "long reference edge (or axial scribe line)",
+   "id": "B",
+   "points": 2,
+   "role": "secondary"
+  },
+  {
+   "constrains": "x translation",
+   "feature": "end stop (or circumferential scribe)",
+   "id": "C",
+   "points": 1,
+   "role": "tertiary"
+  },
+  {
+   "definition": "z normal of A; x = B direction projected into A; origin on A, B plane and C plane (ciw.lab.manufacturing_metrology.datum_frame_321)",
+   "feature": "3-2-1 construction",
+   "id": "PART",
+   "role": "datum reference frame"
+  }
+ ],
+ "environment": {
+  "soak_time_h": 4,
+  "temperature_C": "20 +/- 1 (declared)",
+  "thermal_expansion_note": "aluminium 23e-6/K: 1 K over 300 mm is 7 um; log part temperature"
+ },
+ "fixtures": [
+  {
+   "clamping": "normal to A, over the rests, torque declared per specimen",
+   "contacts": "three spherical rests on A, two on B, one on C",
+   "id": "FX-321",
+   "kind": "3-2-1 kinematic nest"
+  }
+ ],
+ "frame_chain": [
+  {
+   "child": "WORLD",
+   "parent": "INSTRUMENT",
+   "source": "instrument registration to the reference network"
+  },
+  {
+   "child": "FIXTURE",
+   "parent": "WORLD",
+   "source": "fixture datum targets measured by the tracker"
+  },
+  {
+   "child": "PART",
+   "parent": "FIXTURE",
+   "source": "3-2-1 datum frame from probed A/B/C features"
+  },
+  {
+   "child": "CAD",
+   "parent": "PART",
+   "source": "nominal model placement in the datum frame (declared)"
+  }
+ ],
+ "hardware_measured": {
+  "records": [],
+  "status": "not_acquired"
+ },
+ "instruments": [
+  {
+   "declared_standard_uncertainty_mm": 0.01,
+   "id": "scanner",
+   "kind": "laser line scanner",
+   "native_point_spacing_mm": 0.05,
+   "status": "declared_not_verified"
+  },
+  {
+   "declared_standard_uncertainty_mm": 0.002,
+   "id": "cmm",
+   "kind": "bridge CMM with touch-trigger probe",
+   "status": "declared_not_verified"
+  }
+ ],
+ "markers": [
+  {
+   "id": "RT1",
+   "kind": "sphere-mounted registration target",
+   "u_mm": [
+    -50.0,
+    -80.0
+   ]
+  },
+  {
+   "id": "RT2",
+   "kind": "sphere-mounted registration target",
+   "u_mm": [
+    -50.0,
+    80.0
+   ]
+  },
+  {
+   "id": "RT3",
+   "kind": "sphere-mounted registration target",
+   "u_mm": [
+    40.0,
+    -80.0
+   ]
+  },
+  {
+   "id": "RT4",
+   "kind": "sphere-mounted registration target",
+   "u_mm": [
+    40.0,
+    80.0
+   ]
+  },
+  {
+   "id": "RT5",
+   "kind": "sphere-mounted registration target",
+   "u_mm": [
+    130.0,
+    -80.0
+   ]
+  },
+  {
+   "id": "RT6",
+   "kind": "sphere-mounted registration target",
+   "u_mm": [
+    130.0,
+    80.0
+   ]
+  }
+ ],
+ "paths": [
+  {
+   "direction": "+x",
+   "id": "RASTER-X",
+   "kind": "scan pass"
+  },
+  {
+   "direction": "+y",
+   "id": "RASTER-Y",
+   "kind": "scan pass"
+  }
+ ],
+ "predicted_quantities": [
+  {
+   "evidence_status": "numerically_verified",
+   "finding_claim": "The as-built dome fit (height, width, centre, base plane) recovers a perturbed dome and has its linearized covariance on synthetic scans",
+   "id": "D1",
+   "quantity": "scan-derived standard uncertainty of the fitted dome height, width and centre (4 mm grid)",
+   "unit": "mm",
+   "value": {
+    "height_mm": 0.00160846738944,
+    "sigma_mm": 0.002570018582,
+    "x0_mm": 0.00524320947104,
+    "y0_mm": 0.00544650462913
+   }
+  },
+  {
+   "evidence_status": "numerically_verified",
+   "finding_claim": "The fit residual flags an elliptical as-built dome inside the declared width tolerance (chi2 model test)",
+   "id": "D2",
+   "quantity": "chi2 / dof threshold of the Gaussian model test (99.9%, independent point noise)",
+   "unit": "1",
+   "value": 1.08580023777
+  },
+  {
+   "evidence_status": "numerically_verified",
+   "finding_claim": "Sampling design resolving profile curvature to tolerance at k = 2",
+   "id": "C1",
+   "quantity": "crest curvature window and maximum spacing for 5% at k = 2",
+   "unit": "mm",
+   "value": {
+    "spacing_mm": 0.645705488081,
+    "window_mm": 13.6626010213
+   }
+  }
+ ],
+ "procedure": [
+  "Soak specimen and fixture; log temperatures.",
+  "Verify instruments on GS-25.4 and SB-1000 before and after; retain both checks.",
+  "Locate the specimen in FX-321; probe datums A, B, C and build the PART frame.",
+  "Measure the six registration targets with the CMM in the PART frame.",
+  "Set the scanner to the declared 100 mm standoff; scan both raster passes at the native spacing, rejecting points with incidence above 30 deg.",
+  "Register each pass to the targets (Kabsch) and retain the transform and its residual.",
+  "Fit the as-built dome on the 4 mm grid; fit the crest curvature in the T129 windows at full density.",
+  "Report the fitted parameters with their covariance and the chi2 / dof model test (H1) before any tape is laid.",
+  "Repeat the full acquisition three times, removing and re-seating the specimen in FX-321 between repeats (repeatability replicates); the crossed Gage R&R and type-1 studies follow the separate T131 procedure (gage-rr-procedure.json). Retain every raw file through the T139 retention record."
+ ],
+ "production_acceptance": "outside_system",
+ "protocol_id": "MFG-SCAN-01",
+ "purpose": "Identify the as-built dome (height, width, centre) with its covariance and test the Gaussian model before the coupon separations of MFG-COUPON-01 are predicted and compared.",
+ "required_raw_data": [
+  "raw camera images (lossless) with exposure metadata and SHA-256 digests",
+  "tracker/CMM native point files with instrument serial and firmware",
+  "calibration certificates of scale bars, gauge sphere and step gauge (digest and validity window)",
+  "frame-chain transforms with covariances as computed at the time of measurement",
+  "environment log: air and part temperature, humidity, time-stamped with an explicit UTC offset",
+  "operator, fixture and specimen identities; clock source and synchronization method"
+ ],
+ "scan_plan": {
+  "filtering": "reject points above the incidence limit or flagged by the scanner; no smoothing before either fit; reject fit residuals beyond 5 sigma and report their count",
+  "instrument_setup": {
+   "coupon_max_slope_deg": 16.870731456123785,
+   "max_incidence_deg": 30.0,
+   "passes": "two orthogonal raster passes over x in [-60, 140], y in [-100, 100] mm",
+   "scanner": "laser line scanner (declared 0.01 mm point noise, 0.05 mm native spacing)",
+   "standoff_mm": 100.0,
+   "status": "declared_not_verified"
+  },
+  "retained_raw_data": [
+   "native point clouds of both passes with scanner settings and SHA-256 digests",
+   "target coordinates from the CMM and the scanner",
+   "registration transforms and residuals",
+   "fit parameters, covariance, residual map and outlier count"
+  ],
+  "sampling": {
+   "crest_windows": {
+    "max_spacing_mm": 0.6457054880813021,
+    "window_mm": 13.662601021279466
+   },
+   "global_fit_grid_mm": 4.0
+  },
+  "surface_fit": {
+   "consumers": [
+    "MFG-COUPON-01 (T128): the as-built coupon under the tapes",
+    "T138 scan-conditioned U_p",
+    "T140 scan-conditioned geometry terms"
+   ],
+   "covariance": "sigma^2 (J^T J)^-1 plus the declared scanner scale term on height and width and the target registration term on the centre",
+   "method": "Gauss-Newton least squares from the nominal dome",
+   "model": "z = z0 + a_x x + a_y y + h exp(-((x - x0)^2 + (y - y0)^2) / (2 sigma^2))",
+   "model_test": "chi2 / dof against the 99.9% threshold (H1)",
+   "parameters": [
+    "height_mm",
+    "sigma_mm",
+    "x0_mm",
+    "y0_mm",
+    "z0_mm",
+    "tilt_x",
+    "tilt_y"
+   ]
+  },
+  "targets": "six sphere-mounted targets off the dome, measured by the CMM in the PART frame and by the scanner"
+ },
+ "schema": "ciw.lab-measurement-protocol.v1",
+ "specimen": {
+  "chart_extent_mm": {
+   "x": [
+    -60.0,
+    140.0
+   ],
+   "y": [
+    -100.0,
+    100.0
+   ]
+  },
+  "declared_height_tolerance_mm": 0.2,
+  "declared_sigma_tolerance_mm": 0.5,
+  "kind": "domed coupon",
+  "surface_model": {
+   "height": 10.0,
+   "name": "gaussian-bump",
+   "sigma": 20.0
+  }
+ },
+ "task_id": "T129",
+ "title": "Surface metrology: as-built scan of the domed coupon"
+}

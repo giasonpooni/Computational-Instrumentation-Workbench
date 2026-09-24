@@ -7,19 +7,19 @@
    "analytic": 0,
    "hardware_measured": 0,
    "independently_verified": 0,
-   "not_established": 0,
-   "numerically_verified": 1,
+   "not_established": 1,
+   "numerically_verified": 2,
    "provider_backed": 0,
    "synthetic": 0
   },
   "primary": "numerically_verified"
  },
- "expected_invariant": "Aggregates are exact functions of retained reports and never change a label.",
- "experiment": "Aggregate states, labels, providers and report identities into JSON and Markdown.",
+ "expected_invariant": "State and label totals agree with a raw-text recount of the report files; every report whose provider probe succeeded contributes a runtime identity; the digest depends only on reproducible content.",
+ "experiment": "Aggregate queue coverage, states, labels, runtimes and report content into JSON and Markdown and recount states and labels from the raw report text.",
  "failure_modes_checked": [
-  "missing reports",
-  "report identity mismatch (validate_report)",
-  "aggregate differs from its re-read bytes"
+  "runtime identities nested below the top level missed",
+  "totals disagreeing with the report text",
+  "digest over run-specific bytes (timing artifacts, wheel digests)"
  ],
  "findings": [
   {
@@ -27,45 +27,99 @@
    "basis": {
     "checks": [
      {
+      "comparison": "abs_le",
       "observed": 0.0,
       "passed": true,
-      "reference": "release-report.json recomputed from a fresh read of the retained reports",
+      "reference": "absolute state-count differences from the raw-text recount",
+      "reference_kind": "exact_arithmetic",
+      "tolerance": 0.0
+     },
+     {
+      "comparison": "abs_le",
+      "observed": 0.0,
+      "passed": true,
+      "reference": "absolute label-count differences from the raw-text recount",
       "reference_kind": "exact_arithmetic",
       "tolerance": 0.0
      }
     ]
    },
-   "claim": "Release report reproduces from retained reports",
+   "claim": "Release state and label totals match a raw-text recount of the retained report files",
    "domain": "provenance",
    "evidence_status": "numerically_verified",
    "regression_tolerance": {
     "abs": 0,
     "rel": 0
    },
-   "uncertainty": null,
+   "uncertainty": {
+    "basis": "integer count over retained report files; no rounding, sampling or tolerance",
+    "kind": "exact",
+    "value": 0
+   },
    "unit": "reports",
-   "value": 154
+   "value": 164
+  },
+  {
+   "assigned_by": "ciw.lab.evidence",
+   "basis": {
+    "checks": [
+     {
+      "comparison": "abs_le",
+      "observed": 0.0,
+      "passed": true,
+      "reference": "reports with a successful provider probe and no runtime identity",
+      "reference_kind": "exact_arithmetic",
+      "tolerance": 0.0
+     }
+    ]
+   },
+   "claim": "Every report whose provider probe succeeded contributes a runtime identity to the release inventory",
+   "domain": "provenance",
+   "evidence_status": "numerically_verified",
+   "regression_tolerance": {
+    "abs": 0,
+    "rel": 0
+   },
+   "uncertainty": {
+    "basis": "integer count over retained report files; no rounding, sampling or tolerance",
+    "kind": "exact",
+    "value": 0
+   },
+   "unit": "runtimes",
+   "value": 8
+  },
+  {
+   "assigned_by": "ciw.lab.evidence",
+   "basis": {},
+   "claim": "The release digest is signed by a project key",
+   "domain": "provenance",
+   "evidence_status": "not_established",
+   "expected_not_established": true,
+   "uncertainty": null,
+   "unit": null,
+   "value": null
   }
  ],
  "generated_artifacts": [
   {
-   "bytes": 2093,
+   "bytes": 4299,
    "path": "artifacts/T165/release-report.json",
-   "sha256": "0194e64c1076db55daf8698e2df71c48fee30ee6ba5769d64ce70f2f58c7f6bf"
+   "sha256": "df996fed1ab01ec20828a8ad02404e5c8b582ca7d1f932f3fcdd924a99344fbd"
   },
   {
-   "bytes": 517,
+   "bytes": 2553,
    "path": "artifacts/T165/RELEASE.md",
-   "sha256": "19aefa4fdaecdda752744a54ee2732c5b4bb25643ab74d41a8be34934c9120c7"
+   "sha256": "7e40891c01a8d73898141937dfeb00ab60153633eac7566a542f2d346fd2a695"
   }
  ],
  "hypothesis": "A release report can be generated entirely from machine-readable queue metadata and retained reports.",
  "input_data": [
-  "Retained reports T001-T154 in the same output directory"
+  "Retained reports of T001-T164 in the same output directory",
+  "Packaged queue definition (src/ciw/lab/queue.json)"
  ],
- "mathematical_model": "Release digest = SHA-256 over sorted (task_id, report_id); totals over states and labels.",
+ "mathematical_model": "Totals over states and labels; queue coverage per section; runtime inventory = revision- or tree-bearing entries anywhere in each provider/runtime identity; release digest = SHA-256 over (task, state, headline label, claims with labels).",
  "number": 165,
- "numerical_result": "154 reports; states {'blocked': 2, 'completed': 142, 'partial': 10}; labels {'analytic': 9, 'synthetic': 0, 'numerically_verified': 693, 'provider_backed': 3, 'hardware_measured': 0, 'independently_verified': 55, 'not_established': 168}.",
+ "numerical_result": "164 of 168 queue tasks reported; states {'blocked': 2, 'completed': 146, 'partial': 16}; labels {'analytic': 11, 'numerically_verified': 756, 'provider_backed': 3, 'independently_verified': 57, 'not_established': 175}; runtimes csg, ftr, plsr, ppda, rust, scr, scr-exchange, set.",
  "observation_model": "No physical observation; reads retained computational records only.",
  "physical_validation_status": {
   "statement": "Physical validation requires acquired hardware evidence; none was acquired for this task.",
@@ -79,22 +133,28 @@
   "python": "3.12.3",
   "scipy": "1.16.2",
   "sources": {
-   "src/ciw/lab/research_portfolio.py": "6cd37207af02c6d64dc88b22c7ff2148e85f1eeebaa5445cd894879bc3043ba3"
+   "src/ciw/lab/research_portfolio.py": "0fd0ed475a38bf81fd2145f64cf1335856a471c58d406347c3b66b0f66672702"
   },
   "sympy": "1.14.0"
  },
  "recommended_next_task": "Sign the release digest with a project key once key custody is defined.",
- "report_id": "sha256:ca487254d8e59c658305d0c0192840e1dd774b8a57024549d3b45701a6ff16f5",
+ "report_id": "sha256:0981f4f6047b80ea6cc3f67c711ca54a106a20bc7dab18f84197e0b0b0f80e85",
  "schema": "ciw.lab-task-report.v1",
  "section": "research-portfolio",
  "state": "completed",
  "task_id": "T165",
  "tests_passed": [
-  "check: Release report reproduces from retained reports vs release-report.json recomputed from a fresh read of the retained reports",
-  "pytest: tests/test_lab_research_portfolio.py::test_catalogue_tasks_aggregate_retained_reports"
+  "check: Release state and label totals match a raw-text recount of the retained report files vs absolute state-count differences from the raw-text recount",
+  "check: Release state and label totals match a raw-text recount of the retained report files vs absolute label-count differences from the raw-text recount",
+  "check: Every report whose provider probe succeeded contributes a runtime identity to the release inventory vs reports with a successful provider probe and no runtime identity",
+  "pytest: tests/test_lab_research_portfolio.py::test_release_report_inventories_nested_runtimes"
  ],
  "tests_skipped": [],
  "title": "Generate a release report from machine-readable metadata.",
- "uncertainty": "Exact aggregation.",
- "unresolved_assumptions": []
+ "uncertainty": "Exact counts.",
+ "unresolved_assumptions": [
+  "The release digest is unsigned.",
+  "The digest covers task states, headline labels, claims and their labels, not finding values or artifact bytes; values are compared within tolerance by ciw lab verify.",
+  "T165-T168 run after this report and are listed as not reported."
+ ]
 }

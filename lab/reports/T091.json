@@ -15,12 +15,13 @@
   },
   "primary": "numerically_verified"
  },
- "expected_invariant": "Zero execution-path calls, zero bindings, identical retained content, answered read requests.",
- "experiment": "Build a session (stats, selection update, spectrum, statistics.v1 operation, energy source, execute, replay), save, reopen under the guard, issue read requests, compare digests, run a guard sensitivity control and a binding-free replay control after the guard.",
+ "expected_invariant": "Zero execution-path calls, zero bindings, no binding path in the saved bytes, identical retained content, answered read requests, provider-kind replay refused.",
+ "experiment": "Build a session (stats, selection update, spectrum, statistics.v1 operation, energy source, execute, replay), add a provider-kind numerical-heat bundle and a synthetic trusted binding, save, reopen under the guard, issue read requests, compare digests, run a guard sensitivity control, then after the guard a binding-free replay control and a replay of the provider-kind bundle.",
  "failure_modes_checked": [
   "execution entry point reached during reopen",
   "retained content drift across reopen",
   "binding restored from saved data",
+  "binding path written into the saved workspace",
   "saved workspace rewritten by reopen",
   "guard insensitivity (control replay must be intercepted)"
  ],
@@ -29,6 +30,22 @@
    "assigned_by": "ciw.lab.evidence",
    "basis": {
     "checks": [
+     {
+      "comparison": "ge",
+      "observed": 1.0,
+      "passed": true,
+      "reference": "trusted provider bindings held by the saving session",
+      "reference_kind": "invariant",
+      "tolerance": 1.0
+     },
+     {
+      "comparison": "ge",
+      "observed": 1.0,
+      "passed": true,
+      "reference": "provider-kind bundles in the saved workspace",
+      "reference_kind": "invariant",
+      "tolerance": 1.0
+     },
      {
       "comparison": "abs_le",
       "observed": 0.0,
@@ -65,6 +82,14 @@
       "comparison": "abs_le",
       "observed": 0.0,
       "passed": true,
+      "reference": "synthetic binding paths present in the saved workspace bytes",
+      "reference_kind": "exact_arithmetic",
+      "tolerance": 0.0
+     },
+     {
+      "comparison": "abs_le",
+      "observed": 0.0,
+      "passed": true,
       "reference": "read requests not answered",
       "reference_kind": "exact_arithmetic",
       "tolerance": 0.0
@@ -76,10 +101,17 @@
       "reference": "saved workspace bytes changed by reopen",
       "reference_kind": "exact_arithmetic",
       "tolerance": 0.0
+     },
+     {
+      "expected_refusal": "operation_unavailable: No trusted repositories bound for this workbench workflow",
+      "observed_refusal": "operation_unavailable: No trusted repositories bound for this workbench workflow",
+      "passed": true,
+      "reference": "bundle.replay of the provider-kind bundle after reopen",
+      "reference_kind": "refusal"
      }
     ]
    },
-   "claim": "A saved workspace with oscillator results and an energy-accuracy original and replay reopens with no provider binding and reaches no execution path",
+   "claim": "A saved workspace from a session holding a trusted provider binding, with oscillator results, an energy-accuracy original and replay and a provider-kind numerical-heat bundle, reopens with no provider binding and reaches no execution path",
    "domain": "computational_pipeline",
    "evidence_status": "numerically_verified",
    "regression_tolerance": {
@@ -96,12 +128,18 @@
     "available_operations": [
      "ciw.energy-accuracy.v1"
     ],
-    "bundles": 2,
+    "bindings_before_save": [
+     "numerical-heat"
+    ],
+    "bundles": 3,
     "execution_path_calls": 0,
     "executions": 1,
     "provider_bindings": [],
-    "read_requests": 10,
-    "read_requests_answered": 10,
+    "provider_kind_bundles": [
+     "numerical-heat"
+    ],
+    "read_requests": 11,
+    "read_requests_answered": 11,
     "results": 3,
     "workspace_version": 3
    }
@@ -202,20 +240,21 @@
  ],
  "generated_artifacts": [
   {
-   "bytes": 2133,
+   "bytes": 5301,
    "path": "artifacts/T091/reopen.json",
-   "sha256": "25affa98d2d5df397cf740ae49e3b99d467a518fc1f46806661b77dec5c4207e"
+   "sha256": "800e9a76134a254632cb97416a72c70e4b1d1d69c039953aad430bbe07526da0"
   }
  ],
- "hypothesis": "A CIW workspace saved with retained oscillator results and an energy-accuracy original and replay can be reopened with no provider binding and without reaching any execution entry point.",
+ "hypothesis": "A CIW workspace saved by a session that held a trusted provider binding, with retained oscillator results, an energy-accuracy original and replay and a provider-kind bundle, can be reopened with no provider binding and without reaching any execution entry point, and the binding is not recovered.",
  "input_data": [
   "ciw.instruments.make_demo_run (synthetic analytic oscillator)",
-  "examples/energy-accuracy/baseline.json bytes (synthetic_fixture origin), embedded"
+  "examples/energy-accuracy/baseline.json bytes (synthetic_fixture origin), embedded",
+  "a provider-kind numerical-heat bundle (fabricated_heat_catalog: values equal to the integer reference, fabricated runtime identity) and a synthetic trusted numerical-heat binding naming no checkout"
  ],
- "mathematical_model": "Reopen = validate(saved JSON) then construct; the guard replaces 22 execution entry points (workflow steps, sessions, provider adapters, subprocesses, recording operations) with a refusing recorder.",
+ "mathematical_model": "Reopen = validate(saved JSON) then construct; the guard replaces 73 execution entry points (session analyses, recording operations, the workbench, every workbench workflow's session/step/adapter entry points, provider adapters, subprocesses) with a refusing recorder.",
  "number": 91,
- "numerical_result": "2 bundles, 3 results and 1 execution reopened with 0 execution-path calls and bindings []; the energy analysis was recomputed 7 times for validation.",
- "observation_model": "Protocol v1 requests against the reopened Session; digests of selection, results, executions and the retained catalog; guard attempt and recomputation counters.",
+ "numerical_result": "3 bundles (numerical-heat from a provider kind), 3 results and 1 execution reopened with 0 execution-path calls; bindings before save ['numerical-heat'], after reopen []; provider-kind replay: operation_unavailable: No trusted repositories bound for this workbench workflow; the energy analysis was recomputed 7 times for validation.",
+ "observation_model": "Protocol v1 requests against the reopened Session; digests of selection, results, executions and the retained catalog; guard attempt and recomputation counters; the saved bytes.",
  "physical_validation_status": {
   "statement": "Physical validation requires acquired hardware evidence; none was acquired for this task.",
   "status": "not_established"
@@ -228,24 +267,28 @@
   "python": "3.12.3",
   "scipy": "1.16.2",
   "sources": {
-   "src/ciw/lab/exchange_provenance_bundles.py": "a505b35560263c1b473912f79e61b15b7e474f8eb1807e691847e4c69791c2d3",
-   "src/ciw/lab/exchange_provenance_bundles_fixtures.py": "f30205e8305a225f24d94b06cba8b519ecea4680ca723aaca3591ff707d04e1c"
+   "src/ciw/lab/exchange_provenance_bundles.py": "3acc6fd6976bb5e6dd8ad3bfc3d09a1d9594ca0a06f4db823581e5b651d4835e",
+   "src/ciw/lab/exchange_provenance_bundles_fixtures.py": "7d6da1148d3744ae1e754b53f697b5b4919aff2666788ae6aec0e48e6e2380c9"
   },
   "sympy": "1.14.0"
  },
  "recommended_next_task": "T092: refuse replay of provider kinds without a binding in the reopened session.",
- "report_id": "sha256:32c92bd0d670fc35f68ef5ee9f2ab41f728fc6e23374dd74fed969ae07bebc7c",
+ "report_id": "sha256:55d52fc40e350b9ea151a7e05ad84f3161105c62021468c94d1ed9b724e56509",
  "schema": "ciw.lab-task-report.v1",
  "section": "exchange-provenance",
  "state": "completed",
  "task_id": "T091",
  "tests_passed": [
-  "check: A saved workspace with oscillator results and an energy-accuracy original and replay reopens with no provider binding and reaches no execution path vs execution entry points reached while reopening and reading",
-  "check: A saved workspace with oscillator results and an energy-accuracy original and replay reopens with no provider binding and reaches no execution path vs selection/results/executions/catalog digest mismatches after reopen",
-  "check: A saved workspace with oscillator results and an energy-accuracy original and replay reopens with no provider binding and reaches no execution path vs provider bindings present after reopen",
-  "check: A saved workspace with oscillator results and an energy-accuracy original and replay reopens with no provider binding and reaches no execution path vs binding-like keys in the saved workspace",
-  "check: A saved workspace with oscillator results and an energy-accuracy original and replay reopens with no provider binding and reaches no execution path vs read requests not answered",
-  "check: A saved workspace with oscillator results and an energy-accuracy original and replay reopens with no provider binding and reaches no execution path vs saved workspace bytes changed by reopen",
+  "check: A saved workspace from a session holding a trusted provider binding, with oscillator results, an energy-accuracy original and replay and a provider-kind numerical-heat bundle, reopens with no provider binding and reaches no execution path vs trusted provider bindings held by the saving session",
+  "check: A saved workspace from a session holding a trusted provider binding, with oscillator results, an energy-accuracy original and replay and a provider-kind numerical-heat bundle, reopens with no provider binding and reaches no execution path vs provider-kind bundles in the saved workspace",
+  "check: A saved workspace from a session holding a trusted provider binding, with oscillator results, an energy-accuracy original and replay and a provider-kind numerical-heat bundle, reopens with no provider binding and reaches no execution path vs execution entry points reached while reopening and reading",
+  "check: A saved workspace from a session holding a trusted provider binding, with oscillator results, an energy-accuracy original and replay and a provider-kind numerical-heat bundle, reopens with no provider binding and reaches no execution path vs selection/results/executions/catalog digest mismatches after reopen",
+  "check: A saved workspace from a session holding a trusted provider binding, with oscillator results, an energy-accuracy original and replay and a provider-kind numerical-heat bundle, reopens with no provider binding and reaches no execution path vs provider bindings present after reopen",
+  "check: A saved workspace from a session holding a trusted provider binding, with oscillator results, an energy-accuracy original and replay and a provider-kind numerical-heat bundle, reopens with no provider binding and reaches no execution path vs binding-like keys in the saved workspace",
+  "check: A saved workspace from a session holding a trusted provider binding, with oscillator results, an energy-accuracy original and replay and a provider-kind numerical-heat bundle, reopens with no provider binding and reaches no execution path vs synthetic binding paths present in the saved workspace bytes",
+  "check: A saved workspace from a session holding a trusted provider binding, with oscillator results, an energy-accuracy original and replay and a provider-kind numerical-heat bundle, reopens with no provider binding and reaches no execution path vs read requests not answered",
+  "check: A saved workspace from a session holding a trusted provider binding, with oscillator results, an energy-accuracy original and replay and a provider-kind numerical-heat bundle, reopens with no provider binding and reaches no execution path vs saved workspace bytes changed by reopen",
+  "check: A saved workspace from a session holding a trusted provider binding, with oscillator results, an energy-accuracy original and replay and a provider-kind numerical-heat bundle, reopens with no provider binding and reaches no execution path vs bundle.replay of the provider-kind bundle after reopen",
   "check: The execution guard intercepts a replay attempted while it is active vs Workbench.replay inside execution_guard",
   "check: Reopening recomputes the retained energy analysis to validate content vs ciw.energy_records.analyze calls during reopen and reads",
   "check: After reopen the binding-free energy-accuracy workflow still replays with a numerical match vs replay numerical_match is false",
@@ -256,7 +299,8 @@
  "title": "Test save/reopen without provider access.",
  "uncertainty": "Exact: counts and digest equalities; no floating-point tolerance is involved.",
  "unresolved_assumptions": [
-  "The guard covers the execution entry points listed in reopen.json; a new entry point added to CIW must be added to EXECUTION_PATHS.",
-  "Validation recomputation (energy analysis) is counted separately from execution because it creates no occurrence and no result; the counterexample finding records it."
+  "The provider-kind bundle is fabricated (no provider ran here) and the binding names no checkout: the task tests that save/reopen carry neither execution nor binding, not provider output. A bundle produced by the real SCR is reopened under the same guard in T094 (golden) and T097 (live, when SCR is bound).",
+  "The guard covers the entry points listed in reopen.json: EXECUTION_PATHS plus the entry points of every workbench workflow kind, discovered from ciw.workbench._workflow. Entry points reached through a name imported into another module, or code paths outside these, are not intercepted.",
+  "Validation recomputation is counted only for the energy analysis (ciw.energy_records.analyze), separately from execution because it creates no occurrence and no result; in-process validation recomputation of other kinds is not counted."
  ]
 }

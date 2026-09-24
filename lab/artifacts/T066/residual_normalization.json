@@ -1,4 +1,11 @@
 {
+ "api": {
+  "max_ratio_to_raw_R_nis": 0.6921504913952975,
+  "max_relative_difference_from_schedule_nis": 2.7422508708241367e-14,
+  "ratio_bound": 0.695782646607976,
+  "readings": 300,
+  "runs": 3
+ },
  "identity_error": 1.0408340855860843e-17,
  "posterior_vs_innovation_nis": 3.930189507173054e-14,
  "q": 0.5,

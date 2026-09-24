@@ -15,7 +15,7 @@
   },
   "primary": "numerically_verified"
  },
- "expected_invariant": "Each request refused with its expected text; all digests equal; re-saving reproduces the workspace content except its saved_at timestamp.",
+ "expected_invariant": "Each non-recording request refused with its expected text; all digests equal; re-saving reproduces the workspace content except its saved_at timestamp; a refused recording operation adds an execution record.",
  "experiment": "Send 16 refused requests (unbound execution, forged bindings, malformed sources, stale revision, unknown identities, out-of-range analysis, save redirection, unsupported version), then compare; reopen a corrupted copy; finally send one refused recording operation separately.",
  "failure_modes_checked": [
   "reservation or pending counters leaked by a refusal",
@@ -168,7 +168,7 @@
      }
     ]
    },
-   "claim": "Refused requests leave the in-memory session state and the session directory unchanged, and a re-save reproduces the saved workspace content",
+   "claim": "Each of the 16 exercised non-recording request classes is refused and leaves the in-memory session state and the session directory unchanged, and a re-save reproduces the saved workspace content (a refused recording operation is the exception: it is retained as an execution record)",
    "domain": "computational_pipeline",
    "evidence_status": "numerically_verified",
    "regression_tolerance": {
@@ -286,10 +286,10 @@
   {
    "bytes": 3784,
    "path": "artifacts/T093/unchanged.json",
-   "sha256": "e24f30a0aa769e4cd4a38575e9b811ca922bbe87c7cea08b4d782922c8ec8cf5"
+   "sha256": "d166f878bf3e04094b42e9d5e42292f39f6a5ca6ef2a16ec345fc57d7488d3fc"
   }
  ],
- "hypothesis": "A request that CIW refuses changes neither the session state a save would write nor the session directory.",
+ "hypothesis": "A refused request other than a recording operation changes neither the session state a save would write nor the session directory; a refused recording operation is retained by design as an execution record.",
  "input_data": [
   "energy-accuracy session (synthetic baseline) with oscillator results and one unbound numerical-heat source"
  ],
@@ -309,37 +309,37 @@
   "python": "3.12.3",
   "scipy": "1.16.2",
   "sources": {
-   "src/ciw/lab/exchange_provenance_bundles.py": "a505b35560263c1b473912f79e61b15b7e474f8eb1807e691847e4c69791c2d3",
-   "src/ciw/lab/exchange_provenance_bundles_fixtures.py": "f30205e8305a225f24d94b06cba8b519ecea4680ca723aaca3591ff707d04e1c"
+   "src/ciw/lab/exchange_provenance_bundles.py": "3acc6fd6976bb5e6dd8ad3bfc3d09a1d9594ca0a06f4db823581e5b651d4835e",
+   "src/ciw/lab/exchange_provenance_bundles_fixtures.py": "7d6da1148d3744ae1e754b53f697b5b4919aff2666788ae6aec0e48e6e2380c9"
   },
   "sympy": "1.14.0"
  },
  "recommended_next_task": "T094: reopen golden retained bundles with the current code.",
- "report_id": "sha256:8f5748936b2a38cf29f5f655823923f66c5503494070196cc416103b5f805f2d",
+ "report_id": "sha256:20a31df636e9b7270667469fd1b09b70d6730f355db3241fcf6d1ff059665428",
  "schema": "ciw.lab-task-report.v1",
  "section": "exchange-provenance",
  "state": "completed",
  "task_id": "T093",
  "tests_passed": [
-  "check: Refused requests leave the in-memory session state and the session directory unchanged, and a re-save reproduces the saved workspace content vs execute unbound numerical-heat",
-  "check: Refused requests leave the in-memory session state and the session directory unchanged, and a re-save reproduces the saved workspace content vs replay an unknown bundle",
-  "check: Refused requests leave the in-memory session state and the session directory unchanged, and a re-save reproduces the saved workspace content vs client binding request",
-  "check: Refused requests leave the in-memory session state and the session directory unchanged, and a re-save reproduces the saved workspace content vs replay with client-supplied repositories",
-  "check: Refused requests leave the in-memory session state and the session directory unchanged, and a re-save reproduces the saved workspace content vs malformed source JSON",
-  "check: Refused requests leave the in-memory session state and the session directory unchanged, and a re-save reproduces the saved workspace content vs non-canonical base64 source",
-  "check: Refused requests leave the in-memory session state and the session directory unchanged, and a re-save reproduces the saved workspace content vs unknown source kind",
-  "check: Refused requests leave the in-memory session state and the session directory unchanged, and a re-save reproduces the saved workspace content vs stale selection revision",
-  "check: Refused requests leave the in-memory session state and the session directory unchanged, and a re-save reproduces the saved workspace content vs unknown selection channel",
-  "check: Refused requests leave the in-memory session state and the session directory unchanged, and a re-save reproduces the saved workspace content vs unknown result",
-  "check: Refused requests leave the in-memory session state and the session directory unchanged, and a re-save reproduces the saved workspace content vs unknown bundle read",
-  "check: Refused requests leave the in-memory session state and the session directory unchanged, and a re-save reproduces the saved workspace content vs energy execute with an upstream bundle",
-  "check: Refused requests leave the in-memory session state and the session directory unchanged, and a re-save reproduces the saved workspace content vs ESM candidate inspection of a non-telemetry bundle",
-  "check: Refused requests leave the in-memory session state and the session directory unchanged, and a re-save reproduces the saved workspace content vs analysis outside the recording",
-  "check: Refused requests leave the in-memory session state and the session directory unchanged, and a re-save reproduces the saved workspace content vs workspace save to a client path",
-  "check: Refused requests leave the in-memory session state and the session directory unchanged, and a re-save reproduces the saved workspace content vs unsupported protocol version",
-  "check: Refused requests leave the in-memory session state and the session directory unchanged, and a re-save reproduces the saved workspace content vs in-memory state parts changed",
-  "check: Refused requests leave the in-memory session state and the session directory unchanged, and a re-save reproduces the saved workspace content vs session directory listing changed",
-  "check: Refused requests leave the in-memory session state and the session directory unchanged, and a re-save reproduces the saved workspace content vs re-saved content differs apart from saved_at",
+  "check: Each of the 16 exercised non-recording request classes is refused and leaves the in-memory session state and the session directory unchanged, and a re-save reproduces the saved workspace content (a refused recording operation is the exception: it is retained as an execution record) vs execute unbound numerical-heat",
+  "check: Each of the 16 exercised non-recording request classes is refused and leaves the in-memory session state and the session directory unchanged, and a re-save reproduces the saved workspace content (a refused recording operation is the exception: it is retained as an execution record) vs replay an unknown bundle",
+  "check: Each of the 16 exercised non-recording request classes is refused and leaves the in-memory session state and the session directory unchanged, and a re-save reproduces the saved workspace content (a refused recording operation is the exception: it is retained as an execution record) vs client binding request",
+  "check: Each of the 16 exercised non-recording request classes is refused and leaves the in-memory session state and the session directory unchanged, and a re-save reproduces the saved workspace content (a refused recording operation is the exception: it is retained as an execution record) vs replay with client-supplied repositories",
+  "check: Each of the 16 exercised non-recording request classes is refused and leaves the in-memory session state and the session directory unchanged, and a re-save reproduces the saved workspace content (a refused recording operation is the exception: it is retained as an execution record) vs malformed source JSON",
+  "check: Each of the 16 exercised non-recording request classes is refused and leaves the in-memory session state and the session directory unchanged, and a re-save reproduces the saved workspace content (a refused recording operation is the exception: it is retained as an execution record) vs non-canonical base64 source",
+  "check: Each of the 16 exercised non-recording request classes is refused and leaves the in-memory session state and the session directory unchanged, and a re-save reproduces the saved workspace content (a refused recording operation is the exception: it is retained as an execution record) vs unknown source kind",
+  "check: Each of the 16 exercised non-recording request classes is refused and leaves the in-memory session state and the session directory unchanged, and a re-save reproduces the saved workspace content (a refused recording operation is the exception: it is retained as an execution record) vs stale selection revision",
+  "check: Each of the 16 exercised non-recording request classes is refused and leaves the in-memory session state and the session directory unchanged, and a re-save reproduces the saved workspace content (a refused recording operation is the exception: it is retained as an execution record) vs unknown selection channel",
+  "check: Each of the 16 exercised non-recording request classes is refused and leaves the in-memory session state and the session directory unchanged, and a re-save reproduces the saved workspace content (a refused recording operation is the exception: it is retained as an execution record) vs unknown result",
+  "check: Each of the 16 exercised non-recording request classes is refused and leaves the in-memory session state and the session directory unchanged, and a re-save reproduces the saved workspace content (a refused recording operation is the exception: it is retained as an execution record) vs unknown bundle read",
+  "check: Each of the 16 exercised non-recording request classes is refused and leaves the in-memory session state and the session directory unchanged, and a re-save reproduces the saved workspace content (a refused recording operation is the exception: it is retained as an execution record) vs energy execute with an upstream bundle",
+  "check: Each of the 16 exercised non-recording request classes is refused and leaves the in-memory session state and the session directory unchanged, and a re-save reproduces the saved workspace content (a refused recording operation is the exception: it is retained as an execution record) vs ESM candidate inspection of a non-telemetry bundle",
+  "check: Each of the 16 exercised non-recording request classes is refused and leaves the in-memory session state and the session directory unchanged, and a re-save reproduces the saved workspace content (a refused recording operation is the exception: it is retained as an execution record) vs analysis outside the recording",
+  "check: Each of the 16 exercised non-recording request classes is refused and leaves the in-memory session state and the session directory unchanged, and a re-save reproduces the saved workspace content (a refused recording operation is the exception: it is retained as an execution record) vs workspace save to a client path",
+  "check: Each of the 16 exercised non-recording request classes is refused and leaves the in-memory session state and the session directory unchanged, and a re-save reproduces the saved workspace content (a refused recording operation is the exception: it is retained as an execution record) vs unsupported protocol version",
+  "check: Each of the 16 exercised non-recording request classes is refused and leaves the in-memory session state and the session directory unchanged, and a re-save reproduces the saved workspace content (a refused recording operation is the exception: it is retained as an execution record) vs in-memory state parts changed",
+  "check: Each of the 16 exercised non-recording request classes is refused and leaves the in-memory session state and the session directory unchanged, and a re-save reproduces the saved workspace content (a refused recording operation is the exception: it is retained as an execution record) vs session directory listing changed",
+  "check: Each of the 16 exercised non-recording request classes is refused and leaves the in-memory session state and the session directory unchanged, and a re-save reproduces the saved workspace content (a refused recording operation is the exception: it is retained as an execution record) vs re-saved content differs apart from saved_at",
   "check: A refused reopen of a corrupted workspace creates no output directory vs Session.from_workspace on a result bound to another run",
   "check: A refused reopen of a corrupted workspace creates no output directory vs refused reopen created its output directory",
   "check: A refused recording operation is retained as a refused execution record vs operation.execute of an unregistered recording operation",
@@ -350,7 +350,7 @@
  "title": "Test unchanged workspace after refusal.",
  "uncertainty": "Exact digest and string equality.",
  "unresolved_assumptions": [
-  "Refused recording operations are retained by design as auditable execution records; this is a documented exception, not a leak.",
+  "The unchanged-state result covers the exercised non-recording request classes only. Refused recording operations are retained by design as auditable execution records (the counterexample finding); this is a documented exception, not a leak.",
   "The saved workspace file is not rewritten by requests (no request can target it); the evidence is the state digests and the re-save comparison."
  ]
 }

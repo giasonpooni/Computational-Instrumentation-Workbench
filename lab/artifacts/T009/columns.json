@@ -58,14 +58,6 @@
   ],
   [
    "saddle",
-   "plane-polar"
-  ],
-  [
-   "saddle",
-   "cylinder-polar"
-  ],
-  [
-   "saddle",
    "bump-radial"
   ],
   [
@@ -86,14 +78,6 @@
   ],
   [
    "torus",
-   "plane-polar"
-  ],
-  [
-   "torus",
-   "cylinder-polar"
-  ],
-  [
-   "torus",
    "sphere-great-circle"
   ],
   [
@@ -103,14 +87,6 @@
   [
    "gaussian-bump",
    "hyperbolic-plane"
-  ],
-  [
-   "gaussian-bump",
-   "plane-polar"
-  ],
-  [
-   "gaussian-bump",
-   "cylinder-polar"
   ],
   [
    "gaussian-bump",
@@ -131,22 +107,6 @@
   [
    "hyperbolic-plane",
    "torus-inner-to-outer"
-  ],
-  [
-   "plane-polar",
-   "bump-radial"
-  ],
-  [
-   "plane-polar",
-   "torus-outer-to-inner"
-  ],
-  [
-   "cylinder-polar",
-   "bump-radial"
-  ],
-  [
-   "cylinder-polar",
-   "torus-outer-to-inner"
   ],
   [
    "sphere-great-circle",
@@ -184,7 +144,7 @@
   }
  },
  "fd_eps": 0.001,
- "kendall_tau": 0.23333333333333334,
+ "kendall_tau": 0.26373626373626374,
  "kernel_experiment": {
   "amplitude": 0.001,
   "length": 3.0,
@@ -246,8 +206,6 @@
   "torus-outer-equator",
   "plane",
   "cylinder",
-  "plane-polar",
-  "cylinder-polar",
   "torus-inner-to-outer",
   "saddle",
   "hyperbolic-plane",
@@ -381,18 +339,6 @@
    "max_abs_j_head": 3.0000000000000027,
    "max_abs_j_lat": 1.0
   },
-  "cylinder-polar": {
-   "determinant_end": 1.0,
-   "j_head_end": 2.000000000000004,
-   "j_head_rate_end": 1.0,
-   "j_lat_end": 1.0,
-   "j_lat_rate_end": 0.0,
-   "k_max": 0.0,
-   "k_min": 0.0,
-   "length": 2.0,
-   "max_abs_j_head": 2.000000000000004,
-   "max_abs_j_lat": 1.0
-  },
   "gaussian-bump": {
    "determinant_end": 0.9999999999996513,
    "j_head_end": 2.327813238157718,
@@ -430,18 +376,6 @@
    "max_abs_j_lat": 2.3524096139143134
   },
   "plane": {
-   "determinant_end": 1.0,
-   "j_head_end": 2.000000000000004,
-   "j_head_rate_end": 1.0,
-   "j_lat_end": 1.0,
-   "j_lat_rate_end": 0.0,
-   "k_max": 0.0,
-   "k_min": 0.0,
-   "length": 2.0,
-   "max_abs_j_head": 2.000000000000004,
-   "max_abs_j_lat": 1.0
-  },
-  "plane-polar": {
    "determinant_end": 1.0,
    "j_head_end": 2.000000000000004,
    "j_head_rate_end": 1.0,

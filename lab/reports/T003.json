@@ -81,7 +81,7 @@
      },
      {
       "comparison": "abs_le",
-      "observed": 0.007103482489008384,
+      "observed": 0.006749611976476277,
       "passed": true,
       "reference": "nominal order 1 on cylinder-polar (steps (64, 128, 256, 512))",
       "reference_kind": "analytic",
@@ -103,7 +103,7 @@
      ]
     }
    },
-   "claim": "Explicit Euler global endpoint error converges at order 1 on every curved chart",
+   "claim": "Explicit Euler global endpoint error converges at order 1 on every chart with nonzero Christoffel symbols",
    "domain": "numerical",
    "evidence_status": "numerically_verified",
    "regression_tolerance": {
@@ -117,7 +117,7 @@
    },
    "unit": null,
    "value": {
-    "cylinder-polar": 1.0071034824890084,
+    "cylinder-polar": 1.0067496119764763,
     "gaussian-bump": 1.0027342687578236,
     "hyperbolic-plane": 1.007283300174659,
     "plane-polar": 1.0071050564304065,
@@ -180,7 +180,7 @@
      },
      {
       "comparison": "abs_le",
-      "observed": 0.007631061026072139,
+      "observed": -0.004031818233981355,
       "passed": true,
       "reference": "nominal order 2 on cylinder-polar (steps (32, 64, 128, 256))",
       "reference_kind": "analytic",
@@ -202,7 +202,7 @@
      ]
     }
    },
-   "claim": "Explicit midpoint global endpoint error converges at order 2 on every curved chart",
+   "claim": "Explicit midpoint global endpoint error converges at order 2 on every chart with nonzero Christoffel symbols",
    "domain": "numerical",
    "evidence_status": "numerically_verified",
    "regression_tolerance": {
@@ -216,7 +216,7 @@
    },
    "unit": null,
    "value": {
-    "cylinder-polar": 2.007631061026072,
+    "cylinder-polar": 1.9959681817660186,
     "gaussian-bump": 1.9815812770314443,
     "hyperbolic-plane": 2.0034284091119954,
     "plane-polar": 2.007631064911508,
@@ -279,7 +279,7 @@
      },
      {
       "comparison": "abs_le",
-      "observed": -0.04711996639946214,
+      "observed": 0.008735600037563351,
       "passed": true,
       "reference": "nominal order 4 on cylinder-polar (steps (24, 48, 96, 192))",
       "reference_kind": "analytic",
@@ -301,7 +301,7 @@
      ]
     }
    },
-   "claim": "Classical RK4 global endpoint error converges at order 4 on every curved chart",
+   "claim": "Classical RK4 global endpoint error converges at order 4 on every chart with nonzero Christoffel symbols",
    "domain": "numerical",
    "evidence_status": "numerically_verified",
    "regression_tolerance": {
@@ -315,7 +315,7 @@
    },
    "unit": null,
    "value": {
-    "cylinder-polar": 3.952880033600538,
+    "cylinder-polar": 4.008735600037563,
     "gaussian-bump": 3.888017719262526,
     "hyperbolic-plane": 3.965312718796343,
     "plane-polar": 3.9528800226496705,
@@ -330,7 +330,7 @@
     "checks": [
      {
       "comparison": "signed_ge",
-      "observed": 5.394386914005626,
+      "observed": 5.29791743787106,
       "passed": true,
       "reference": "median effective order over seven charts, at least half-way from 4 to 5 (rtol 1e-8..1e-12)",
       "reference_kind": "analytic",
@@ -338,7 +338,7 @@
      },
      {
       "comparison": "signed_le",
-      "observed": 5.394386914005626,
+      "observed": 5.29791743787106,
       "passed": true,
       "reference": "median effective order over seven charts, at most 6",
       "reference_kind": "analytic",
@@ -386,10 +386,10 @@
    "uncertainty": {
     "basis": "median absolute deviation of the seven per-chart effective orders; the controller's start-step ramp biases loose tolerances upward",
     "kind": "fit",
-    "value": 0.20346352279437063
+    "value": 0.1223518306844813
    },
    "unit": null,
-   "value": 5.394386914005626
+   "value": 5.29791743787106
   },
   {
    "assigned_by": "ciw.lab.evidence",
@@ -453,7 +453,7 @@
    "uncertainty": {
     "basis": "median absolute deviation of the seven per-chart tolerance exponents",
     "kind": "fit",
-    "value": 0.02053382637409451
+    "value": 0.037638591596527826
    },
    "unit": null,
    "value": 0.9710731803196047
@@ -464,7 +464,7 @@
     "checks": [
      {
       "comparison": "signed_le",
-      "observed": 4.195900523492557,
+      "observed": 4.189750093080622,
       "passed": true,
       "reference": "variant median effective order below the acceptance threshold",
       "reference_kind": "analytic",
@@ -472,7 +472,7 @@
      },
      {
       "comparison": "signed_le",
-      "observed": 0.7686254902067906,
+      "observed": 0.7826906298237313,
       "passed": true,
       "reference": "variant median tolerance exponent below the acceptance threshold",
       "reference_kind": "analytic",
@@ -515,8 +515,8 @@
    "counterexample": {
     "statement": "An effective order near 5 is observed whatever solution a DP5(4) pair advances",
     "witness": {
-     "median_effective_order": 4.195900523492557,
-     "median_tolerance_exponent": 0.7686254902067906,
+     "median_effective_order": 4.189750093080622,
+     "median_tolerance_exponent": 0.7826906298237313,
      "variant": "advance with y4"
     }
    },
@@ -529,12 +529,12 @@
    "uncertainty": {
     "basis": "median absolute deviation over the seven charts",
     "kind": "fit",
-    "value": 0.043291010115125594
+    "value": 0.03714057970319118
    },
    "unit": null,
    "value": {
-    "median_effective_order": 4.195900523492557,
-    "median_tolerance_exponent": 0.7686254902067906
+    "median_effective_order": 4.189750093080622,
+    "median_tolerance_exponent": 0.7826906298237313
    }
   },
   {
@@ -608,9 +608,9 @@
  ],
  "generated_artifacts": [
   {
-   "bytes": 37210,
+   "bytes": 37225,
    "path": "artifacts/T003/orders.json",
-   "sha256": "597f9146477fcea8b2e4ac68ae0fb49610f419befec3ae5596004152f74fcd71"
+   "sha256": "e37e19a77b2f89ea3e16ec0c7a4d2cfa5436f3e1e2d2beb9a7e7b244d86f7756"
   },
   {
    "bytes": 2956,
@@ -643,14 +643,14 @@
    "sha256": "7271d6407da46f58cff57e86c7a22f2085ef1b2480e39d01652ea0b7b0d8a5c8"
   },
   {
-   "bytes": 3080,
+   "bytes": 3207,
    "path": "artifacts/T003/orders-cylinder-polar.svg",
-   "sha256": "f8c37ac6eab0b0884d37f405e6313fe2a499c0bb27c428f77d013bce13a31c3d"
+   "sha256": "cfe319c96dade1554b56f550798886c40ab5548afdae303de5c5930253be297d"
   },
   {
    "bytes": 5130,
    "path": "artifacts/T003/adaptive.svg",
-   "sha256": "6cefb661339e6dc11347846f56060105fa3911312672f7f1d74807c9331c7b11"
+   "sha256": "1f26133c6135b8de9d558a212e66a0655d2a5e7e1ff9d7f9379613215b0e91e7"
   }
  ],
  "hypothesis": "On charts with nonzero Christoffel symbols the global endpoint error of Euler, midpoint and RK4 scales like h^1, h^2 and h^4, and the Dormand-Prince error scales like (evaluations)^-5 and like the requested tolerance, which distinguishes it from a pair advancing with y4 ((evaluations)^-4, tol^0.8).",
@@ -661,7 +661,7 @@
  ],
  "mathematical_model": "Global error e(h) = C h^p + O(h^(p+1)) for a p-th order one-step method on a smooth ODE; for DP5(4) with per-step error control and local extrapolation, h ~ tol^(1/5) and e ~ h^5 ~ tol; advancing with y4 gives e ~ h^4 ~ tol^(4/5).",
  "number": 3,
- "numerical_result": "Fitted orders: euler sphere 1.001, saddle 1.002, torus 1.008, gaussian-bump 1.003, hyperbolic-plane 1.007, plane-polar 1.007, cylinder-polar 1.007; midpoint sphere 2.039, saddle 2.002, torus 1.989, gaussian-bump 1.982, hyperbolic-plane 2.003, plane-polar 2.008, cylinder-polar 2.008; rk4 sphere 4.017, saddle 4.016, torus 4.023, gaussian-bump 3.888, hyperbolic-plane 3.965, plane-polar 3.953, cylinder-polar 3.953; adaptive effective orders sphere 5.42, saddle 5.86, torus 4.61, gaussian-bump 5.19, hyperbolic-plane 4.76, plane-polar 5.39, cylinder-polar 5.39 (median 5.39), tolerance-exponent median 0.971; y4 variant medians 4.2 and 0.769.",
+ "numerical_result": "Fitted orders: euler sphere 1.001, saddle 1.002, torus 1.008, gaussian-bump 1.003, hyperbolic-plane 1.007, plane-polar 1.007, cylinder-polar 1.007; midpoint sphere 2.039, saddle 2.002, torus 1.989, gaussian-bump 1.982, hyperbolic-plane 2.003, plane-polar 2.008, cylinder-polar 1.996; rk4 sphere 4.017, saddle 4.016, torus 4.023, gaussian-bump 3.888, hyperbolic-plane 3.965, plane-polar 3.953, cylinder-polar 4.009; adaptive effective orders sphere 5.42, saddle 5.86, torus 4.61, gaussian-bump 5.19, hyperbolic-plane 4.76, plane-polar 5.39, cylinder-polar 5.3 (median 5.3), tolerance-exponent median 0.971; y4 variant medians 4.19 and 0.783.",
  "observation_model": "Euclidean distance of the embedded end point (chart distance on the hyperbolic plane).",
  "physical_validation_status": {
   "statement": "Physical validation requires acquired hardware evidence; none was acquired for this task.",
@@ -679,39 +679,39 @@
   },
   "scipy": "1.16.2",
   "sources": {
-   "src/ciw/lab/geodesic_jacobi.py": "7f7307ebfb5c0a38ca1e7b9365fd7df627d9ae001791d99b823122873040d3c1",
-   "src/ciw/lab/geodesic_jacobi_common.py": "8616e9157492f0cd2aeebd695b3501215420c73af2cfbcb8c1b8cd5ab8d23a52"
+   "src/ciw/lab/geodesic_jacobi.py": "70e9794df40fbf882cd117859a112b1301552d2c4faca7979f06e7c287828798",
+   "src/ciw/lab/geodesic_jacobi_common.py": "7cb215a28e357a37f1c42cef6bdcb40e22abf7804ae9d58c4818fa40aa52da53"
   },
   "sympy": "1.14.0"
  },
  "recommended_next_task": "T004: measure unit-speed drift of the same integrations without renormalization",
- "report_id": "sha256:2d7c8c621fc0644e5741d549f7e801ea08eca7e2cc16c647cd5b695f94a469ad",
+ "report_id": "sha256:51f1f6e5cc6868e2ab7a0d496c3380a441af70bd4c29f33314dda1074e5e1722",
  "schema": "ciw.lab-task-report.v1",
  "section": "geodesic-jacobi",
  "state": "completed",
  "task_id": "T003",
  "tests_passed": [
-  "check: Explicit Euler global endpoint error converges at order 1 on every curved chart vs nominal order 1 on sphere (steps (64, 128, 256, 512))",
-  "check: Explicit Euler global endpoint error converges at order 1 on every curved chart vs nominal order 1 on saddle (steps (64, 128, 256, 512))",
-  "check: Explicit Euler global endpoint error converges at order 1 on every curved chart vs nominal order 1 on torus (steps (64, 128, 256, 512))",
-  "check: Explicit Euler global endpoint error converges at order 1 on every curved chart vs nominal order 1 on gaussian-bump (steps (64, 128, 256, 512))",
-  "check: Explicit Euler global endpoint error converges at order 1 on every curved chart vs nominal order 1 on hyperbolic-plane (steps (64, 128, 256, 512))",
-  "check: Explicit Euler global endpoint error converges at order 1 on every curved chart vs nominal order 1 on plane-polar (steps (64, 128, 256, 512))",
-  "check: Explicit Euler global endpoint error converges at order 1 on every curved chart vs nominal order 1 on cylinder-polar (steps (64, 128, 256, 512))",
-  "check: Explicit midpoint global endpoint error converges at order 2 on every curved chart vs nominal order 2 on sphere (steps (32, 64, 128, 256))",
-  "check: Explicit midpoint global endpoint error converges at order 2 on every curved chart vs nominal order 2 on saddle (steps (32, 64, 128, 256))",
-  "check: Explicit midpoint global endpoint error converges at order 2 on every curved chart vs nominal order 2 on torus (steps (32, 64, 128, 256))",
-  "check: Explicit midpoint global endpoint error converges at order 2 on every curved chart vs nominal order 2 on gaussian-bump (steps (32, 64, 128, 256))",
-  "check: Explicit midpoint global endpoint error converges at order 2 on every curved chart vs nominal order 2 on hyperbolic-plane (steps (32, 64, 128, 256))",
-  "check: Explicit midpoint global endpoint error converges at order 2 on every curved chart vs nominal order 2 on plane-polar (steps (32, 64, 128, 256))",
-  "check: Explicit midpoint global endpoint error converges at order 2 on every curved chart vs nominal order 2 on cylinder-polar (steps (32, 64, 128, 256))",
-  "check: Classical RK4 global endpoint error converges at order 4 on every curved chart vs nominal order 4 on sphere (steps (24, 48, 96, 192))",
-  "check: Classical RK4 global endpoint error converges at order 4 on every curved chart vs nominal order 4 on saddle (steps (24, 48, 96, 192))",
-  "check: Classical RK4 global endpoint error converges at order 4 on every curved chart vs nominal order 4 on torus (steps (24, 48, 96, 192))",
-  "check: Classical RK4 global endpoint error converges at order 4 on every curved chart vs nominal order 4 on gaussian-bump (steps (24, 48, 96, 192))",
-  "check: Classical RK4 global endpoint error converges at order 4 on every curved chart vs nominal order 4 on hyperbolic-plane (steps (24, 48, 96, 192))",
-  "check: Classical RK4 global endpoint error converges at order 4 on every curved chart vs nominal order 4 on plane-polar (steps (24, 48, 96, 192))",
-  "check: Classical RK4 global endpoint error converges at order 4 on every curved chart vs nominal order 4 on cylinder-polar (steps (24, 48, 96, 192))",
+  "check: Explicit Euler global endpoint error converges at order 1 on every chart with nonzero Christoffel symbols vs nominal order 1 on sphere (steps (64, 128, 256, 512))",
+  "check: Explicit Euler global endpoint error converges at order 1 on every chart with nonzero Christoffel symbols vs nominal order 1 on saddle (steps (64, 128, 256, 512))",
+  "check: Explicit Euler global endpoint error converges at order 1 on every chart with nonzero Christoffel symbols vs nominal order 1 on torus (steps (64, 128, 256, 512))",
+  "check: Explicit Euler global endpoint error converges at order 1 on every chart with nonzero Christoffel symbols vs nominal order 1 on gaussian-bump (steps (64, 128, 256, 512))",
+  "check: Explicit Euler global endpoint error converges at order 1 on every chart with nonzero Christoffel symbols vs nominal order 1 on hyperbolic-plane (steps (64, 128, 256, 512))",
+  "check: Explicit Euler global endpoint error converges at order 1 on every chart with nonzero Christoffel symbols vs nominal order 1 on plane-polar (steps (64, 128, 256, 512))",
+  "check: Explicit Euler global endpoint error converges at order 1 on every chart with nonzero Christoffel symbols vs nominal order 1 on cylinder-polar (steps (64, 128, 256, 512))",
+  "check: Explicit midpoint global endpoint error converges at order 2 on every chart with nonzero Christoffel symbols vs nominal order 2 on sphere (steps (32, 64, 128, 256))",
+  "check: Explicit midpoint global endpoint error converges at order 2 on every chart with nonzero Christoffel symbols vs nominal order 2 on saddle (steps (32, 64, 128, 256))",
+  "check: Explicit midpoint global endpoint error converges at order 2 on every chart with nonzero Christoffel symbols vs nominal order 2 on torus (steps (32, 64, 128, 256))",
+  "check: Explicit midpoint global endpoint error converges at order 2 on every chart with nonzero Christoffel symbols vs nominal order 2 on gaussian-bump (steps (32, 64, 128, 256))",
+  "check: Explicit midpoint global endpoint error converges at order 2 on every chart with nonzero Christoffel symbols vs nominal order 2 on hyperbolic-plane (steps (32, 64, 128, 256))",
+  "check: Explicit midpoint global endpoint error converges at order 2 on every chart with nonzero Christoffel symbols vs nominal order 2 on plane-polar (steps (32, 64, 128, 256))",
+  "check: Explicit midpoint global endpoint error converges at order 2 on every chart with nonzero Christoffel symbols vs nominal order 2 on cylinder-polar (steps (32, 64, 128, 256))",
+  "check: Classical RK4 global endpoint error converges at order 4 on every chart with nonzero Christoffel symbols vs nominal order 4 on sphere (steps (24, 48, 96, 192))",
+  "check: Classical RK4 global endpoint error converges at order 4 on every chart with nonzero Christoffel symbols vs nominal order 4 on saddle (steps (24, 48, 96, 192))",
+  "check: Classical RK4 global endpoint error converges at order 4 on every chart with nonzero Christoffel symbols vs nominal order 4 on torus (steps (24, 48, 96, 192))",
+  "check: Classical RK4 global endpoint error converges at order 4 on every chart with nonzero Christoffel symbols vs nominal order 4 on gaussian-bump (steps (24, 48, 96, 192))",
+  "check: Classical RK4 global endpoint error converges at order 4 on every chart with nonzero Christoffel symbols vs nominal order 4 on hyperbolic-plane (steps (24, 48, 96, 192))",
+  "check: Classical RK4 global endpoint error converges at order 4 on every chart with nonzero Christoffel symbols vs nominal order 4 on plane-polar (steps (24, 48, 96, 192))",
+  "check: Classical RK4 global endpoint error converges at order 4 on every chart with nonzero Christoffel symbols vs nominal order 4 on cylinder-polar (steps (24, 48, 96, 192))",
   "check: Adaptive Dormand-Prince error falls with function evaluations at a median effective order near 5 vs median effective order over seven charts, at least half-way from 4 to 5 (rtol 1e-8..1e-12)",
   "check: Adaptive Dormand-Prince error falls with function evaluations at a median effective order near 5 vs median effective order over seven charts, at most 6",
   "check: Adaptive Dormand-Prince endpoint error is proportional to the requested tolerance (median over charts) vs median exponent of error ~ rtol^q, at least half-way from 0.8 to 1",
@@ -730,6 +730,7 @@
  "uncertainty": "Fixed-step slopes are least-squares fits over four points; the pre-asymptotic bias is the retained spread of pairwise slopes. Adaptive slopes depend on accept/reject decisions, so only their medians over seven charts are claimed.",
  "unresolved_assumptions": [
   "The adaptive effective order depends on the step-size controller and its start step; the retained numbers are for integrators.integrate_adaptive only",
-  "The half-way thresholds separate order 5 from order 4; they do not certify the exact order of the pair"
+  "The half-way thresholds separate order 5 from order 4; they do not certify the exact order of the pair",
+  "plane-polar and cylinder-polar carry the same flat metric (unit cylinder); they count as two charts because their declared paths differ (start, heading, length), so each contributes its own data point"
  ]
 }

@@ -17,10 +17,12 @@
   "primary": "numerically_verified"
  },
  "expected_invariant": "C2 = 0 for isotropic/symmetric configurations; eps_max -> 0 at first-order zeros only when the remainder does not vanish there.",
- "experiment": "Tabulate C2, C3 and eps_max over s for five configurations; probe the predicted boundary at 0.9 s* on the generic torus path with new integrations at eps_max/2 and 2 eps_max.",
+ "experiment": "Tabulate C2, C3 and eps_max over s for five configurations (the torus ones also on a grid with half the steps); compare the collapse of eps_max next to each first-order zero with its linear law; probe the predicted boundary at 0.9 s* on the generic torus path with new integrations at eps_max/2 and 2 eps_max and compare them with the fitted C2/C3 remainder model.",
  "failure_modes_checked": [
   "fitted C2 compared with its analytic zero on isotropic surfaces",
-  "predicted boundary probed by new integrations on both sides",
+  "predicted boundary probed by new integrations on both sides and compared with the full C2/C3 model at the fit-residual level, not only with the linear values",
+  "collapse at first-order zeros checked through the linear law next to the zero (eps_max at the zero is zero by construction of the grid)",
+  "grid dependence of C2 and of the probes measured on a grid with half the steps",
   "exact first-order zeros handled (eps_max = 0 when j = 0)",
   "chord versus intrinsic distance difference is O(eps^3) and cannot change C2"
  ],
@@ -38,12 +40,12 @@
       "tolerance": 0.1
      },
      {
-      "comparison": "le",
-      "observed": 8.585102871929361e-13,
+      "comparison": "abs_le",
+      "observed": -0.00020516228376743495,
       "passed": true,
-      "reference": "eps_max at s*",
-      "reference_kind": "invariant",
-      "tolerance": 1e-06
+      "reference": "eps_max / |s - s*| at 0.99 s* and 1.01 s* against tau |j'(s*)| / |C2(s*)|, relative",
+      "reference_kind": "analytic",
+      "tolerance": 0.01
      },
      {
       "comparison": "ge",
@@ -68,7 +70,7 @@
      "tau": 0.01
     }
    },
-   "claim": "On a generic torus geodesic C2(s*) != 0 and the validity domain shrinks to zero at the conjugate point",
+   "claim": "On a generic torus geodesic C2(s*) != 0 and the validity domain shrinks to zero linearly at the conjugate point",
    "domain": "numerical",
    "evidence_status": "numerically_verified",
    "regression_tolerance": {
@@ -76,13 +78,15 @@
     "rel": 0.001
    },
    "uncertainty": {
-    "basis": "largest residual of the C2 eps^2 + C3 eps^3 model at s*, relative to the largest remainder",
-    "kind": "fit_residual",
-    "value": 0.00012508770066092895
+    "basis": "largest change of the fitted C2 over the tabulated nodes when the grid is halved (the two-term fit residual at s* is 0.00013 relative)",
+    "kind": "truncation_bound",
+    "value": 5.768952684448436e-07
    },
    "unit": null,
    "value": {
     "C2_at_s_star": 1.5193096777532757,
+    "collapse_slope": 0.007384139832327847,
+    "collapse_slope_predicted": 0.007385655090193269,
     "eps_max_at_s_star": 8.585102871929361e-13,
     "eps_max_by_fraction": {
      "0.25": 0.5015440055495881,
@@ -102,22 +106,31 @@
    "basis": {
     "checks": [
      {
-      "comparison": "abs_le",
-      "observed": -0.0023718742569261986,
+      "comparison": "signed_le",
+      "observed": -0.005011859371284631,
       "passed": true,
-      "reference": "relative error at eps_max / 2 divided by tau/2, minus 1",
+      "reference": "relative error at eps_max / 2 minus tau",
       "reference_kind": "invariant",
-      "tolerance": 0.05
+      "tolerance": 0.0
+     },
+     {
+      "comparison": "signed_ge",
+      "observed": 0.010107674259287365,
+      "passed": true,
+      "reference": "relative error at 2 eps_max minus tau",
+      "reference_kind": "invariant",
+      "tolerance": 0.0
      },
      {
       "comparison": "abs_le",
-      "observed": 0.005383712964368126,
+      "observed": 0.0003057632894836182,
       "passed": true,
-      "reference": "relative error at 2 eps_max divided by 2 tau, minus 1",
-      "reference_kind": "invariant",
-      "tolerance": 0.05
+      "reference": "max relative gap of the probes to |C2 eps + C3 eps^2| / |j|",
+      "reference_kind": "analytic",
+      "tolerance": 0.001
      }
     ],
+    "derivation": "docs/lab/GEODESIC_JACOBI_LIMITS.md#t017-validity-domains-of-the-first-order-approximation",
     "generator": {
      "deterministic": true,
      "name": "ciw.lab.geodesic_jacobi_limits:validity-probe",
@@ -126,7 +139,7 @@
      "tau": 0.01
     }
    },
-   "claim": "The predicted validity boundary holds: new integrations at eps_max/2 and 2 eps_max give the predicted relative errors tau/2 and 2 tau",
+   "claim": "The predicted validity boundary holds: new integrations at eps_max/2 and 2 eps_max fall on either side of tau and match the C2/C3 remainder model",
    "domain": "numerical",
    "evidence_status": "numerically_verified",
    "regression_tolerance": {
@@ -134,25 +147,33 @@
     "rel": 0.001
    },
    "uncertainty": {
-    "basis": "grid-halving separation change relative to eps j at the smaller probe",
+    "basis": "largest change of the probe relative errors when the probes and the base path are integrated with half the steps (the two-term fit residual at 0.9 s* is 0.0001)",
     "kind": "truncation_bound",
-    "value": 9.431510248995778e-09
+    "value": 4.104648679108258e-09
    },
    "unit": null,
    "value": {
     "double": {
      "eps": 0.0082412918164584,
      "j": 0.665874702922783,
-     "relative_error": 0.020107674259287365
+     "model_relative_error": 0.020107072762936197,
+     "relative_error": 0.020107674259287365,
+     "relative_error_half_grid": 0.020107678305265816
     },
     "half": {
      "eps": 0.0020603229541146,
      "j": 0.665874702922783,
-     "relative_error": 0.004988140628715369
+     "model_relative_error": 0.004986615904632978,
+     "relative_error": 0.004988140628715369,
+     "relative_error_half_grid": 0.004988144733364048
     },
-    "relative_gap_to_prediction": {
+    "relative_gap_to_linear_prediction": {
      "double": 0.005383712964368126,
      "half": -0.0023718742569261986
+    },
+    "relative_gap_to_remainder_model": {
+     "double": 2.9914665265362572e-05,
+     "half": 0.0003057632894836182
     },
     "s": 5.446260530225366
    }
@@ -317,12 +338,12 @@
       "tolerance": 0.01
      },
      {
-      "comparison": "le",
-      "observed": 2.2203837231591348e-18,
+      "comparison": "abs_le",
+      "observed": 0.0006941595022180724,
       "passed": true,
-      "reference": "eps_max at s0",
-      "reference_kind": "invariant",
-      "tolerance": 1e-06
+      "reference": "eps_max / |s - s0| at 0.99 s0 and 1.01 s0 against 2 sqrt(2 tau + tau^2) |j'(s0)| (along-track eps^2/2), relative",
+      "reference_kind": "analytic",
+      "tolerance": 0.01
      }
     ],
     "derivation": "docs/lab/GEODESIC_JACOBI_LIMITS.md#t017-validity-domains-of-the-first-order-approximation",
@@ -339,7 +360,7 @@
      "tau": 0.01
     }
    },
-   "claim": "Sphere lateral+heading perturbation: C2(s0) = 1/2 at the first-order zero s0 = 3pi/4, eps_max -> 0",
+   "claim": "Sphere lateral+heading perturbation: C2(s0) = 1/2 at the first-order zero s0 = 3pi/4, and eps_max shrinks to zero linearly there",
    "domain": "numerical",
    "evidence_status": "numerically_verified",
    "regression_tolerance": {
@@ -354,6 +375,8 @@
    "unit": null,
    "value": {
     "C2_at_s0": 0.5000140349820008,
+    "collapse_slope": 0.40127711021012086,
+    "collapse_slope_predicted": 0.40099875311526834,
     "eps_max_at_0.9_s0": 0.1008281905308577,
     "eps_max_at_s0": 2.2203837231591348e-18
    }
@@ -399,7 +422,7 @@
     "rel": 0.001
    },
    "uncertainty": {
-    "basis": "the fitted C2 is not exactly zero because eps^5 terms leak into the two-term fit; RK4 chord errors contribute at most 5.2e-07",
+    "basis": "the fitted C2 is not exactly zero because eps^5 terms leak into the two-term fit; halving the grid changes it by at most 1.9e-12 over the tabulated nodes",
     "kind": "model_truncation",
     "value": 5.117970796264466e-06
    },
@@ -423,9 +446,9 @@
  ],
  "generated_artifacts": [
   {
-   "bytes": 13398,
+   "bytes": 15555,
    "path": "artifacts/T017/validity-domains.json",
-   "sha256": "2425a32b0a3bcc79d5f6cda04037d9246fe56d253e5def5a0d60c8d8ff557add"
+   "sha256": "59b123cc8476521376bcce9ba809754a8091dc0137cc948da99cc26c6fbe1751"
   },
   {
    "bytes": 4864,
@@ -439,9 +462,9 @@
   "Closed forms: unit sphere (pure heading; lateral = heading), HyperbolicPlane(1) (pure heading)",
   "Numerical: Torus(2, 1) generic and outer-equator families from T010 (RK4 chords at grid nodes)"
  ],
- "mathematical_model": "Unsigned separation d at matched arclength. Unit sphere, pure heading: d = 2 arcsin(|sin s| sin(eps/2)), so C2 = 0, C3 = -|sin s| cos^2 s / 24 and eps_max = sqrt(24 tau)/|cos s| (no collapse at s = pi). Hyperbolic plane: d = 2 asinh(sinh s sin(eps/2)), C2 = 0, eps_max = sqrt(24 tau)/cosh s. Generic paths: C2(s*) != 0 so eps_max ~ tau |j'(s*)| |s - s*| / |C2(s*)| -> 0; symmetric paths: C2 = 0 and eps_max ~ sqrt(|s - s*|).",
+ "mathematical_model": "Unsigned separation d at matched arclength. Unit sphere, pure heading: d = 2 arcsin(|sin s| sin(eps/2)), so C2 = 0, C3 = -|sin s| cos^2 s / 24 and eps_max = sqrt(24 tau)/|cos s| (no collapse at s = pi). Hyperbolic plane: d = 2 asinh(sinh s sin(eps/2)), C2 = 0, eps_max = sqrt(24 tau)/cosh s. Generic paths: a normal eps^2 term C2(s*) != 0, so eps_max ~ tau |j'(s*)| |s - s*| / |C2(s*)| -> 0; symmetric paths: C2 = 0 and eps_max ~ sqrt(|s - s*|). Sphere lateral+heading: the eps^2/2 offset at s0 = 3pi/4 is along-track, orthogonal to eps j N, so d = sqrt((eps j)^2 + eps^4/4) near s0 and eps_max = 2 |j| sqrt(2 tau + tau^2) ~ 2 sqrt(2 tau) |j'(s0)| |s - s0|.",
  "number": 17,
- "numerical_result": "Generic torus: C2(s*) = 1.519, eps_max(s*) = 8.6e-13, eps_max(s*/2) = 0.0406; boundary probe relative errors 0.00499 (eps_max/2) and 0.0201 (2 eps_max) against tau = 0.01; sphere pure heading eps_max near pi = 0.4899 (C3 relative error 8.3e-05); hyperbolic eps_max within 0.0035 (relative) of sqrt(24 tau)/cosh s; sphere lateral+heading C2(s0) = 0.5; equator max |C2| = 5.1e-06; hyperbolic eps_max = 0.475, 0.4345, 0.3175, 0.2084, 0.1304, 0.08016.",
+ "numerical_result": "Generic torus: C2(s*) = 1.519, eps_max(s*/2) = 0.0406, eps_max / |s - s*| next to s* = 0.007384 against tau |j'(s*)| / |C2(s*)| = 0.007386; boundary probe relative errors 0.00499 (eps_max/2) and 0.0201 (2 eps_max) against tau = 0.01, within 0.00031 (relative) of the C2/C3 model and -0.0024, 0.0054 of the linear values tau/2, 2 tau; sphere pure heading eps_max near pi = 0.4899 (C3 relative error 8.3e-05); hyperbolic eps_max within 0.0035 (relative) of sqrt(24 tau)/cosh s; sphere lateral+heading C2(s0) = 0.5, eps_max / |s - s0| next to s0 = 0.4013 against 0.401; equator max |C2| = 5.1e-06; hyperbolic eps_max = 0.475, 0.4345, 0.3175, 0.2084, 0.1304, 0.08016.",
  "observation_model": "Great-circle or hyperbolic distance (closed form) or embedded chord (torus) versus eps |j(s)|; C2 and C3 by least squares over eps; eps_max from the fitted quadratic.",
  "physical_validation_status": {
   "statement": "Physical validation requires acquired hardware evidence; none was acquired for this task.",
@@ -455,38 +478,39 @@
   "python": "3.12.3",
   "scipy": "1.16.2",
   "sources": {
-   "src/ciw/lab/geodesic_jacobi_limits.py": "29c8472e91cdf4deb2e1f526ab40e57f703f41e20ef14edd8fb1cc2fc6ede661",
-   "src/ciw/lab/geodesic_jacobi_limits_core.py": "8aa707ec2a190208bf07cd3b1f94a40f191a7a9c4be277714ed8b627e2c5fcb9"
+   "src/ciw/lab/geodesic_jacobi_limits.py": "07d850980ac10ad34ca0d1b8c29942c90fe635e15135a5db1f74e90674e3bb18",
+   "src/ciw/lab/geodesic_jacobi_limits_core.py": "0e0b8f85ed4e83c3fcdc866e8a7e580a17432e174b8db8d8277230e226473d7f"
   },
   "sympy": "1.14.0"
  },
  "recommended_next_task": "T018 (curvature signal versus integrator error) and a sampled survey of C2(s*) over random torus geodesics",
- "report_id": "sha256:d9112a850399e18df6ec6d69faf74980df431c32e00851b1dc56fde669a0b9ff",
+ "report_id": "sha256:13faf54511fe8a876f0c91ff3c2982e6f326d49e31c88efdabb003073882d9c4",
  "schema": "ciw.lab-task-report.v1",
  "section": "geodesic-jacobi",
  "state": "completed",
  "task_id": "T017",
  "tests_passed": [
-  "check: On a generic torus geodesic C2(s*) != 0 and the validity domain shrinks to zero at the conjugate point vs |C2(s*)|",
-  "check: On a generic torus geodesic C2(s*) != 0 and the validity domain shrinks to zero at the conjugate point vs eps_max at s*",
-  "check: On a generic torus geodesic C2(s*) != 0 and the validity domain shrinks to zero at the conjugate point vs eps_max at s*/2",
-  "check: The predicted validity boundary holds: new integrations at eps_max/2 and 2 eps_max give the predicted relative errors tau/2 and 2 tau vs relative error at eps_max / 2 divided by tau/2, minus 1",
-  "check: The predicted validity boundary holds: new integrations at eps_max/2 and 2 eps_max give the predicted relative errors tau/2 and 2 tau vs relative error at 2 eps_max divided by 2 tau, minus 1",
+  "check: On a generic torus geodesic C2(s*) != 0 and the validity domain shrinks to zero linearly at the conjugate point vs |C2(s*)|",
+  "check: On a generic torus geodesic C2(s*) != 0 and the validity domain shrinks to zero linearly at the conjugate point vs eps_max / |s - s*| at 0.99 s* and 1.01 s* against tau |j'(s*)| / |C2(s*)|, relative",
+  "check: On a generic torus geodesic C2(s*) != 0 and the validity domain shrinks to zero linearly at the conjugate point vs eps_max at s*/2",
+  "check: The predicted validity boundary holds: new integrations at eps_max/2 and 2 eps_max fall on either side of tau and match the C2/C3 remainder model vs relative error at eps_max / 2 minus tau",
+  "check: The predicted validity boundary holds: new integrations at eps_max/2 and 2 eps_max fall on either side of tau and match the C2/C3 remainder model vs relative error at 2 eps_max minus tau",
+  "check: The predicted validity boundary holds: new integrations at eps_max/2 and 2 eps_max fall on either side of tau and match the C2/C3 remainder model vs max relative gap of the probes to |C2 eps + C3 eps^2| / |j|",
   "check: Unit sphere, pure heading: C2 = 0, C3 = -|sin s| cos^2 s / 24, and the domain does not shrink at s = pi vs max |C2| / |j|",
   "check: Unit sphere, pure heading: C2 = 0, C3 = -|sin s| cos^2 s / 24, and the domain does not shrink at s = pi vs max |C3 / C3_analytic - 1|",
   "check: Unit sphere, pure heading: C2 = 0, C3 = -|sin s| cos^2 s / 24, and the domain does not shrink at s = pi vs max |eps_max / (sqrt(24 tau)/|cos s|) - 1|",
   "check: Unit sphere, pure heading: C2 = 0, C3 = -|sin s| cos^2 s / 24, and the domain does not shrink at s = pi vs min eps_max at s = 0.999 pi and 1.001 pi",
   "check: Hyperbolic plane, pure heading: C2 = 0 and eps_max = sqrt(24 tau)/cosh(s) shrinks exponentially vs max |C2| / (|C3| eps_min): quadratic term negligible",
   "check: Hyperbolic plane, pure heading: C2 = 0 and eps_max = sqrt(24 tau)/cosh(s) shrinks exponentially vs max |eps_max / (sqrt(24 tau)/cosh s) - 1|",
-  "check: Sphere lateral+heading perturbation: C2(s0) = 1/2 at the first-order zero s0 = 3pi/4, eps_max -> 0 vs |C2(s0)| - 1/2",
-  "check: Sphere lateral+heading perturbation: C2(s0) = 1/2 at the first-order zero s0 = 3pi/4, eps_max -> 0 vs eps_max at s0",
+  "check: Sphere lateral+heading perturbation: C2(s0) = 1/2 at the first-order zero s0 = 3pi/4, and eps_max shrinks to zero linearly there vs |C2(s0)| - 1/2",
+  "check: Sphere lateral+heading perturbation: C2(s0) = 1/2 at the first-order zero s0 = 3pi/4, and eps_max shrinks to zero linearly there vs eps_max / |s - s0| at 0.99 s0 and 1.01 s0 against 2 sqrt(2 tau + tau^2) |j'(s0)| (along-track eps^2/2), relative",
   "check: Torus outer equator: C2 vanishes along the whole path (reflection symmetry); the remainder is cubic vs max |C2| over the tabulated nodes",
   "check: Torus outer equator: C2 vanishes along the whole path (reflection symmetry); the remainder is cubic vs remainder exponent at s* minus 3 (reflection symmetry)",
   "pytest: tests/test_lab_geodesic_jacobi_limits.py::test_t017_validity_domains"
  ],
  "tests_skipped": [],
  "title": "Derive validity domains for the first-order approximation.",
- "uncertainty": "C2 and C3 absorb higher-order terms from eps up to 0.04 (on the hyperbolic plane the fitted C3 differs from its closed form by up to 0.77 percent at s = 2.5, and the fitted C2 is not exactly zero); eps_max beyond the fitted eps range is an extrapolation of the quadratic model; halving the torus grid changes the smallest chord at s* by 1.3e-11, so the 400-step chords carry RK4 errors of about 8.6e-13.",
+ "uncertainty": "C2 and C3 absorb higher-order terms from eps up to 0.04 (on the hyperbolic plane the fitted C3 differs from its closed form by up to 0.77 percent at s = 2.5, and the fitted C2 is not exactly zero); eps_max beyond the fitted eps range is an extrapolation of the quadratic model; halving the torus grids changes the fitted C2 by at most 5.8e-07 (generic) and 1.9e-12 (equator) over the tabulated nodes and the probe relative errors by 4.1e-09; the finer-grid values are accurate to about a sixteenth of these changes. At a first-order zero eps_max itself is set by the numerical |j| there (about 1e-10 on the torus, where the grid node is placed on the located zero), so the collapse is checked through its linear law next to the zero, not by the value at the zero.",
  "unresolved_assumptions": [
   "The quadratic remainder model is extrapolated to eps_max up to the cap",
   "Heading perturbations (plus one lateral case on the sphere) only",

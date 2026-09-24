@@ -9,24 +9,27 @@
   "counts": {
    "analytic": 0,
    "hardware_measured": 0,
-   "independently_verified": 0,
+   "independently_verified": 1,
    "not_established": 0,
-   "numerically_verified": 9,
+   "numerically_verified": 10,
    "provider_backed": 0,
    "synthetic": 0
   },
   "primary": "numerically_verified"
  },
- "expected_invariant": "State scaling never changes the code; levels are decided exactly; overflow returns NUMERICAL_OVERFLOW; certificates only for exactly negative definite forms.",
+ "expected_invariant": "State scaling never changes the code; reported values are exact to rounding or flagged, and flagged exactly when not representable; levels are decided exactly; overflow returns NUMERICAL_OVERFLOW; the resolution covers the rounding of the formed decrease matrix.",
  "experiment": "One PLSR subprocess evaluates every case; CIW predicts the level decisions from the documented rule and from exact exponents and recomputes where the decrease form overflows.",
  "failure_modes_checked": [
   "state scaling changes the code",
   "non-finite state accepted",
+  "reported V or x^T M x wrong without a flag",
+  "value_out_of_range missing for an unrepresentable value",
+  "value_out_of_range set for a representable value",
   "level gate misses an exceedance",
   "level gate reports a spurious exceedance",
   "overflow not reported as NUMERICAL_OVERFLOW",
   "overflow while forming A(theta) raises",
-  "false certificate from subnormal arithmetic"
+  "resolution below the rounding error of the formed decrease matrix (subnormal witness)"
  ],
  "findings": [
   {
@@ -378,27 +381,70 @@
    "basis": {
     "checks": [
      {
-      "comparison": "ge",
-      "observed": 1.0,
+      "comparison": "le",
+      "observed": 0.499999999999999,
       "passed": true,
-      "reference": "negated exact determinant of the declared 2x2 decrease form, units (2^-1074)^2 (at least 1 means indefinite)",
+      "reference": "max over unflagged states of |reported - exact| / (4u |exact| + 2^-1074) for V and x^T M x",
       "reference_kind": "exact_arithmetic",
       "tolerance": 1.0
+     }
+    ],
+    "independent_check": {
+     "checker": {
+      "implementation": "ciw.lab.lyapunov_reference",
+      "revision": "0.1.0"
      },
-     {
-      "comparison": "abs_le",
-      "observed": 0.0,
-      "passed": true,
-      "reference": "PLSR resolution of the witness (underflows to zero)",
-      "reference_kind": "invariant",
-      "tolerance": 0.0
+     "comparison": "abs_le",
+     "observed": 0.0,
+     "passed": true,
+     "producer": {
+      "implementation": "Parameterized-Lyapunov-Stability-Runtime@19ea69670601",
+      "revision": "19ea6967060166ba09db6cd4563bd87bd6b3d196"
      },
+     "reference": "states whose exact V or x^T M x (rationals) is not representable in binary64 but value_out_of_range is not set",
+     "reference_kind": "exact_arithmetic",
+     "tolerance": 0.0
+    },
+    "provider": {
+     "executed": true,
+     "package_version": "0.1.0rc1",
+     "repository": "https://github.com/giasonpooni/Parameterized-Lyapunov-Stability-Runtime",
+     "revision": "19ea6967060166ba09db6cd4563bd87bd6b3d196",
+     "role": "plsr-python",
+     "runtime_digest": "a6fee6b3b4eb7852b31f5a285fe8c50b535f25762e1daf82e36720ef8dd1b7c7"
+    }
+   },
+   "claim": "PLSR's reported V and x^T M x equal the exact values to within one rounding unless value_out_of_range is set, and the flag is set for every state whose exact V or x^T M x is not representable",
+   "domain": "numerical",
+   "evidence_status": "independently_verified",
+   "regression_tolerance": {
+    "abs": 0.0,
+    "rel": 0.0
+   },
+   "uncertainty": {
+    "basis": "largest relative error of an unflagged reported value (single-component states: IEEE-deterministic)",
+    "kind": "roundoff",
+    "value": 2.2204460492503086e-16
+   },
+   "unit": null,
+   "value": {
+    "flagged": 22,
+    "missed_flags": 0,
+    "states": 37,
+    "unflagged_compared": 15,
+    "unrepresentable": 20
+   }
+  },
+  {
+   "assigned_by": "ciw.lab.evidence",
+   "basis": {
+    "checks": [
      {
       "comparison": "ge",
-      "observed": 1.0,
+      "observed": 2.0,
       "passed": true,
-      "reference": "PLSR code on the witness is certifying (1 if so)",
-      "reference_kind": "invariant",
+      "reference": "states with representable exact V and x^T M x (rationals) and value_out_of_range set",
+      "reference_kind": "exact_arithmetic",
       "tolerance": 1.0
      }
     ],
@@ -411,9 +457,88 @@
      "runtime_digest": "a6fee6b3b4eb7852b31f5a285fe8c50b535f25762e1daf82e36720ef8dd1b7c7"
     }
    },
-   "claim": "A subnormal plant whose declared decrease form is exactly indefinite drives the PLSR resolution to zero; PLSR's code on it is recorded",
+   "claim": "PLSR sets value_out_of_range and reports V = 0 for states whose exact V and x^T M x are representable binary64 subnormals, because s^2 underflows before the product is formed",
    "counterexample": {
-    "statement": "No binary64 input near the representable limits yields a false certificate",
+    "statement": "value_out_of_range is set exactly when V or x^T M x is not representable in binary64",
+    "witness": {
+     "code": "CERTIFIED_WITH_MARGIN",
+     "decrease": -0.0,
+     "error_units": null,
+     "exact_representable": true,
+     "flag": true,
+     "value": 0.0,
+     "x_hex": [
+      "0x1.8000000000000p-538",
+      "0x0.0p+0"
+     ]
+    }
+   },
+   "domain": "numerical",
+   "evidence_status": "numerically_verified",
+   "regression_tolerance": {
+    "abs": 0.0,
+    "rel": 0.0
+   },
+   "uncertainty": {
+    "basis": "single-component states: s^2 = 2^(2e) and the reported product are IEEE-deterministic; representability of the exact rationals is exact",
+    "kind": "roundoff",
+    "value": 0.0
+   },
+   "unit": null,
+   "value": {
+    "representable_but_flagged": 2,
+    "states": 37
+   }
+  },
+  {
+   "assigned_by": "ciw.lab.evidence",
+   "basis": {
+    "checks": [
+     {
+      "comparison": "ge",
+      "observed": 1.0,
+      "passed": true,
+      "reference": "negated exact determinant of the declared 2x2 decrease form, units (2^-1074)^2 (at least 1 means indefinite)",
+      "reference_kind": "exact_arithmetic",
+      "tolerance": 1.0
+     },
+     {
+      "comparison": "ge",
+      "observed": 8.0,
+      "passed": true,
+      "reference": "determinant of PLSR's formed binary64 decrease matrix, units (2^-1074)^2, or 0 unless its (1, 1) entry is negative (at least 1 means negative definite)",
+      "reference_kind": "invariant",
+      "tolerance": 1.0
+     },
+     {
+      "comparison": "ge",
+      "observed": 1.0,
+      "passed": true,
+      "reference": "largest entry of PLSR's formed matrix minus the exact form, units of 2^-1074 (a lower bound on the formation error the resolution must cover)",
+      "reference_kind": "exact_arithmetic",
+      "tolerance": 1.0
+     },
+     {
+      "comparison": "abs_le",
+      "observed": 0.0,
+      "passed": true,
+      "reference": "PLSR resolution of the witness (underflows to zero)",
+      "reference_kind": "invariant",
+      "tolerance": 0.0
+     }
+    ],
+    "provider": {
+     "executed": true,
+     "package_version": "0.1.0rc1",
+     "repository": "https://github.com/giasonpooni/Parameterized-Lyapunov-Stability-Runtime",
+     "revision": "19ea6967060166ba09db6cd4563bd87bd6b3d196",
+     "role": "plsr-python",
+     "runtime_digest": "a6fee6b3b4eb7852b31f5a285fe8c50b535f25762e1daf82e36720ef8dd1b7c7"
+    }
+   },
+   "claim": "PLSR's resolution of a subnormal plant is zero while forming its decrease matrix rounds an exactly indefinite declared form to a negative definite one",
+   "counterexample": {
+    "statement": "Near the representable limits the float64 resolution still bounds the rounding error of the decrease form",
     "witness": {
      "A_hex": [
       [
@@ -435,17 +560,6 @@
        "0x1.0000000000000p+0"
       ]
      ],
-     "binary64_form_units_of_2^-1074": [
-      [
-       -4.0,
-       4.0
-      ],
-      [
-       4.0,
-       -6.0
-      ]
-     ],
-     "code": "CERTIFIED_WITH_MARGIN",
      "exact_form_units_of_2^-1074": [
       [
        -4.0,
@@ -456,7 +570,17 @@
        -6.0
       ]
      ],
-     "plsr_details": "V=1.000e+00, decrease=-1.976e-323, max eig(M)=-4.941e-324 at infx resolution",
+     "plsr_form_units_of_2^-1074": [
+      [
+       -4.0,
+       4.0
+      ],
+      [
+       4.0,
+       -6.0
+      ]
+     ],
+     "resolution": 0.0,
      "x": [
       1.0,
       0.0
@@ -470,16 +594,25 @@
     "rel": 0.0
    },
    "uncertainty": {
-    "basis": "the exact class and the zero resolution are exact; whether PLSR certifies depends on LAPACK's subnormal handling",
-    "kind": "reference_error",
+    "basis": "IEEE-deterministic where subnormals are kept (no flush to zero): exact products with 1 and 0 and one halving rounded to even; PLSR's code on the witness depends on LAPACK's subnormal eigenvalue and is retained as an artifact",
+    "kind": "roundoff",
     "value": 0.0
    },
    "unit": null,
    "value": {
-    "certified": true,
-    "code": "CERTIFIED_WITH_MARGIN",
     "exact_class": "has_positive_eigenvalue",
     "exact_det_units2": -1.0,
+    "formation_error_units": 1.0,
+    "plsr_form_units": [
+     [
+      -4.0,
+      4.0
+     ],
+     [
+      4.0,
+      -6.0
+     ]
+    ],
     "resolution": 0.0
    }
   },
@@ -527,22 +660,23 @@
  ],
  "generated_artifacts": [
   {
-   "bytes": 15681,
+   "bytes": 24635,
    "path": "artifacts/T103/near-limits.json",
-   "sha256": "356a3a2a9337a1844cff492069a23324673b6cfe61f9d2b35e9e37002d151e57"
+   "sha256": "ee075c023c78efdd3c35670d9013f60377c106707b6bbea33ca8bf5017c1cbf6"
   }
  ],
- "hypothesis": "States anywhere in binary64 are classified with the code unchanged through PLSR's power-of-two state scaling (components more than about 2^1022 below the largest one become subnormal in the scaled state and vanish beyond about 2^1075, which a code decided relative to |x|^2 does not see); matrices whose arithmetic leaves binary64 return NUMERICAL_OVERFLOW or an input refusal; no near-limit input yields a false certificate or a missed level-set exceedance.",
+ "hypothesis": "States anywhere in binary64 are classified with the code unchanged through PLSR's power-of-two state scaling (components more than about 2^1022 below the largest one become subnormal in the scaled state and vanish beyond about 2^1075, which a code decided relative to |x|^2 does not see); the reported unscaled V and x^T M x equal the exact values to within rounding or are flagged value_out_of_range, and the flag is set exactly when the exact value is not representable; matrices whose arithmetic leaves binary64 return NUMERICAL_OVERFLOW or an input refusal; near the limits the resolution still covers the rounding of the decrease form and no level-set exceedance is missed.",
  "input_data": [
   "A = [[-1, 2], [0, -3]], P = I with ten states from 2^-1074 to 1.797e308 (mixed scales included) and non-finite states",
+  "The same plant at 27 single-component states m 2^e (m in {1, 1.5, 1.9}, e in {-540..-536, -530, 510, 511, 512}) where s^2 underflows or overflows",
   "Level scan: A = -I, P = 2^p I (p in -1060..1000), x = 2^e e1 (e in -1074..1023), level = 2^(p + 2e -+ 1)",
   "Near-limit matrices: A = -2^1000 I with P = 2^30 I; A = -2^511 I or -2^512 I with P = 2^511 I; P = 2^1022 I with x = (1.5, 1.5); affine A(theta) = -I + theta c I, theta = +-1e308",
   "The subnormal witness A = [[-2, 5], [0, -3]] 2^-1074, P = I"
  ],
- "mathematical_model": "V(x) = x^T P x and x^T M x are homogeneous of degree two in x, so PLSR evaluates at x / 2^e with the unit state in [1, 2). The level gate decides V > level as scaled_value > level / s^2 and treats an infinite s^2 as 'exceeded' and a zero s^2 as 'not exceeded'. Exact truth: V = 2^(p + 2e) for P = 2^p I and x = 2^e e1.",
+ "mathematical_model": "V(x) = x^T P x and x^T M x are homogeneous of degree two in x, so PLSR evaluates at x / 2^e with the unit state in [1, 2), and reports V = s^2 * scaled_value (s = 2^e), flagging value_out_of_range when that product is infinite or zero while scaled_value is not. The level gate decides V > level as scaled_value > level / s^2 and treats an infinite s^2 as 'exceeded' and a zero s^2 as 'not exceeded'. Exact truth: V = 2^(p + 2e) for P = 2^p I and x = 2^e e1; V and x^T M x of every declared state in rationals.",
  "number": 103,
- "numerical_result": "10 states from 2^-1074 to 1.797e308: 0 code changes (all CERTIFIED_WITH_MARGIN). Level scan (68 cases): 5 missed exceedances (certified with V > level, s^2 underflowed), 9 spurious exceedances (s^2 overflowed), 0 disagreements with the documented rule. Near-limit matrices: {'A=-2^1000 I, P=2^30 I': 'NUMERICAL_OVERFLOW', 'A=-2^511 I, P=2^511 I': 'CERTIFIED_WITH_MARGIN', 'A=-2^512 I, P=2^511 I': 'NUMERICAL_OVERFLOW', 'P=2^1022 I, x=(1.5, 1.5)': 'NUMERICAL_OVERFLOW'}. theta overflow: {'theta:+1e308,c=1': 'NUMERICAL_OVERFLOW', 'theta:-1e308,c=1': 'NUMERICAL_OVERFLOW', 'theta:+1e308,c=2': 'raises ValueError'}. Subnormal witness: CERTIFIED_WITH_MARGIN. Conclusion: state scaling and matrix overflow behave as documented; the hypothesis is refuted by level-gate errors (missed, spurious), by an input error raised for an in-box theta, by a false certificate for a subnormal plant.",
- "observation_model": "PLSR code (or raised input error) per case; exact exponent arithmetic for V against the level; exact rational class of the witness's decrease form.",
+ "numerical_result": "10 states from 2^-1074 to 1.797e308: 0 code changes (all CERTIFIED_WITH_MARGIN). Reported values at 37 states: 20 exact V or x^T M x not representable, 0 of them without value_out_of_range; 2 representable subnormal values flagged and reported as 0 (s^2 underflowed); unflagged values within 0.5 roundings of the exact ones. Level scan (68 cases): 5 missed exceedances (certified with V > level, s^2 underflowed), 9 spurious exceedances (s^2 overflowed), 0 disagreements with the documented rule. Near-limit matrices: {'A=-2^1000 I, P=2^30 I': 'NUMERICAL_OVERFLOW', 'A=-2^511 I, P=2^511 I': 'CERTIFIED_WITH_MARGIN', 'A=-2^512 I, P=2^511 I': 'NUMERICAL_OVERFLOW', 'P=2^1022 I, x=(1.5, 1.5)': 'NUMERICAL_OVERFLOW'}. theta overflow: {'theta:+1e308,c=1': 'NUMERICAL_OVERFLOW', 'theta:-1e308,c=1': 'NUMERICAL_OVERFLOW', 'theta:+1e308,c=2': 'raises ValueError'}. Subnormal witness: resolution 0, formed decrease matrix off the exact form by 1 x 2^-1074 in its largest entry (its code is retained in the artifact). Conclusion: state scaling and matrix overflow behave as documented; the hypothesis is refuted by level-gate errors (missed, spurious), by an input error raised for an in-box theta, by value_out_of_range set for representable subnormal values, by a resolution of zero below the rounding error of a subnormal plant's decrease form.",
+ "observation_model": "PLSR code (or raised input error) per case; PLSR's reported V, x^T M x and value_out_of_range against exact rationals; exact exponent arithmetic for V against the level; PLSR's formed decrease matrix and resolution of the witness against its exact rational form.",
  "physical_validation_status": {
   "statement": "Physical validation requires acquired hardware evidence; none was acquired for this task.",
   "status": "not_established"
@@ -572,14 +706,14 @@
   },
   "scipy": "1.16.2",
   "sources": {
-   "src/ciw/lab/lyapunov.py": "58d6c7473f0a42002b57888de0ccfbbf73b571bbbabbf9ee81e0a05c734f2320",
+   "src/ciw/lab/lyapunov.py": "cbcb4d58d7313d7c537957a1b7dd35039a21bae80125bf59147eeed2c1232bbb",
    "src/ciw/lab/lyapunov_provider.py": "da3465b48b5f5efc47bfe6ab8379cf2cf2bc23e4835dc7ff047252e77fa6ef17",
-   "src/ciw/lab/lyapunov_reference.py": "fa37ef453c23ad2bed2eab41132e72670e166b93eebd5fc9d67a4a89a7c92cca"
+   "src/ciw/lab/lyapunov_reference.py": "bdf0bb5074ae2caca6c8a5d8e63a15e346b007098e6def6b058d077719bc1336"
   },
   "sympy": "1.14.0"
  },
  "recommended_next_task": "T104: semidefinite and skew-symmetric edge cases; propose upstream that the level gate compare exponents (log2 V = 2 e + log2 scaled_value) instead of forming s^2, and that forming A(theta) report NUMERICAL_OVERFLOW rather than raise.",
- "report_id": "sha256:84a9bbcc4902e2099739a828a0363a54c5a5a5d48065a0509d31244c3e493ef0",
+ "report_id": "sha256:de0f5f02b4fe535eadd5acf8fa984652a022ffc90fd0ed0cd4adf3c6b1f2c193",
  "schema": "ciw.lab-task-report.v1",
  "section": "lyapunov",
  "state": "completed",
@@ -594,18 +728,24 @@
   "check: The PLSR level gate reports OUTSIDE_LEVEL_SET for V below the level when s^2 overflows vs scan cases with exact V < level and code OUTSIDE_LEVEL_SET",
   "check: A finite in-box theta whose A(theta) overflows raises an input error instead of NUMERICAL_OVERFLOW vs theta = 1e308, A1 = 2I (A(theta) = inf)",
   "check: A finite in-box theta whose A(theta) overflows raises an input error instead of NUMERICAL_OVERFLOW vs theta = 1e308, A1 = I (A finite, M overflows)",
-  "check: A subnormal plant whose declared decrease form is exactly indefinite drives the PLSR resolution to zero; PLSR's code on it is recorded vs negated exact determinant of the declared 2x2 decrease form, units (2^-1074)^2 (at least 1 means indefinite)",
-  "check: A subnormal plant whose declared decrease form is exactly indefinite drives the PLSR resolution to zero; PLSR's code on it is recorded vs PLSR resolution of the witness (underflows to zero)",
-  "check: A subnormal plant whose declared decrease form is exactly indefinite drives the PLSR resolution to zero; PLSR's code on it is recorded vs PLSR code on the witness is certifying (1 if so)",
+  "check: PLSR's reported V and x^T M x equal the exact values to within one rounding unless value_out_of_range is set, and the flag is set for every state whose exact V or x^T M x is not representable vs max over unflagged states of |reported - exact| / (4u |exact| + 2^-1074) for V and x^T M x",
+  "independent: PLSR's reported V and x^T M x equal the exact values to within one rounding unless value_out_of_range is set, and the flag is set for every state whose exact V or x^T M x is not representable vs ciw.lab.lyapunov_reference",
+  "check: PLSR sets value_out_of_range and reports V = 0 for states whose exact V and x^T M x are representable binary64 subnormals, because s^2 underflows before the product is formed vs states with representable exact V and x^T M x (rationals) and value_out_of_range set",
+  "check: PLSR's resolution of a subnormal plant is zero while forming its decrease matrix rounds an exactly indefinite declared form to a negative definite one vs negated exact determinant of the declared 2x2 decrease form, units (2^-1074)^2 (at least 1 means indefinite)",
+  "check: PLSR's resolution of a subnormal plant is zero while forming its decrease matrix rounds an exactly indefinite declared form to a negative definite one vs determinant of PLSR's formed binary64 decrease matrix, units (2^-1074)^2, or 0 unless its (1, 1) entry is negative (at least 1 means negative definite)",
+  "check: PLSR's resolution of a subnormal plant is zero while forming its decrease matrix rounds an exactly indefinite declared form to a negative definite one vs largest entry of PLSR's formed matrix minus the exact form, units of 2^-1074 (a lower bound on the formation error the resolution must cover)",
+  "check: PLSR's resolution of a subnormal plant is zero while forming its decrease matrix rounds an exactly indefinite declared form to a negative definite one vs PLSR resolution of the witness (underflows to zero)",
   "check: The documented level rule, re-derived in CIW, misses exceedances when s^2 underflows and reports spurious ones when s^2 overflows vs predicted missed exceedances (exact exponent comparison)",
   "check: The documented level rule, re-derived in CIW, misses exceedances when s^2 underflows and reports spurious ones when s^2 overflows vs predicted spurious exceedances",
   "pytest: tests/test_lab_lyapunov.py::test_t103_overflow_underflow",
   "pytest: tests/test_lab_lyapunov.py::test_level_gate_prediction",
+  "pytest: tests/test_lab_lyapunov.py::test_representability_reference",
+  "pytest: tests/test_lab_lyapunov.py::test_checks_are_unconditional_and_observed_values_are_computed",
   "pytest: tests/test_lab_lyapunov.py::test_provider_tasks_are_partial_without_the_provider"
  ],
  "tests_skipped": [],
  "title": "Test overflow and underflow state evaluation.",
- "uncertainty": "The level scan and the overflow cases involve only exact powers of two, so they are platform-independent; the witness depends on LAPACK's subnormal handling.",
+ "uncertainty": "The level scan, the reported-value states and the overflow cases involve exact powers of two or single-component states, so they are platform-independent; the witness's formed matrix and zero resolution are IEEE-deterministic, while its code depends on LAPACK's subnormal handling and is retained in the artifact only.",
  "unresolved_assumptions": [
   "Near-limit inputs are synthetic binary64 numbers chosen to reach the limits, not plant data.",
   "The documented level rule is transcribed from the runtime source at the pinned commit, so agreement with it is a same-specification check; the exact exponent comparison is the independent reference.",

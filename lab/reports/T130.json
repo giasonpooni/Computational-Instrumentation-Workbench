@@ -62,9 +62,9 @@
     "rel": 1e-09
    },
    "uncertainty": {
-    "basis": "relative 95% half-width of MC covariance entries",
-    "kind": "monte_carlo_95ci",
-    "value": 0.05060698239044358
+    "basis": "linearization error of the first-order std: symmetric sigma points through the exact SE(3) chain minus first order, max over points and axes (mm)",
+    "kind": "truncation_bound",
+    "value": 4.39638568605627e-10
    },
    "unit": "mm",
    "value": {
@@ -115,6 +115,20 @@
       "reference": "relative Frobenius difference MC vs Jacobian covariance",
       "reference_kind": "analytic",
       "tolerance": 0.1
+     },
+     {
+      "expected_refusal": "datum_degenerate",
+      "observed_refusal": "datum_degenerate",
+      "passed": true,
+      "reference": "collinear primary datum points (A)",
+      "reference_kind": "refusal"
+     },
+     {
+      "expected_refusal": "datum_degenerate",
+      "observed_refusal": "datum_degenerate",
+      "passed": true,
+      "reference": "secondary datum direction (B) normal to the primary plane (A)",
+      "reference_kind": "refusal"
      }
     ]
    },
@@ -274,9 +288,9 @@
  ],
  "generated_artifacts": [
   {
-   "bytes": 4525,
+   "bytes": 4916,
    "path": "artifacts/T130/frame-chain.json",
-   "sha256": "88fe2cf210920e059d700cfbbc81714b2f18183f8c3a8c1e7addc9f506aa8e12"
+   "sha256": "dedd382300a79e2256e5df107c2ef25d3fd1043887c7d56efc01bdfe7068e7c8"
   },
   {
    "bytes": 1251,
@@ -306,15 +320,15 @@
   "python": "3.12.3",
   "scipy": "1.16.2",
   "sources": {
-   "src/ciw/lab/manufacturing.py": "088763a0bcc42bf085c1e228797a5dc0d702b994f2a49e053cbe2b0a5622e25d",
+   "src/ciw/lab/manufacturing.py": "f4cd90e1df33b910b78daf4b0556a8861e044d83701474f841e85fd9d96f9063",
    "src/ciw/lab/manufacturing_geometry.py": "1db6df2ddf778668da2ffd53a66bcddbff4fc933d6f299e8f283cedc60a9332f",
-   "src/ciw/lab/manufacturing_metrology.py": "afbb6fccf146ca4f47850805c118d2f1bf6186872f381b298ab924a9214257ec",
-   "src/ciw/lab/manufacturing_records.py": "66970104ea454e836c5cbafc3013c90e721c3e96ad7f16780c32250112cac921"
+   "src/ciw/lab/manufacturing_metrology.py": "aef4708b0f296fc66087a6382881a0564c5edcb6d7961b5e472aa711e29feb5d",
+   "src/ciw/lab/manufacturing_records.py": "015ea7fccc586f4b95f64e7ffbc1f6c34eec20b8245778ede3c2324006537087"
   },
   "sympy": "1.14.0"
  },
  "recommended_next_task": "T131: define the repeatability and Gage R&R study that measures the datum and marker repeatability.",
- "report_id": "sha256:db83fe1e3239c4e1b4e7835963ab1ab2201c512284c4694e61d33fd63879b155",
+ "report_id": "sha256:607aa11671bdb370c362ad82d596f4b78bcf2979b49acec2e733c3a92b10a14c",
  "schema": "ciw.lab-task-report.v1",
  "section": "manufacturing",
  "state": "completed",
@@ -326,6 +340,8 @@
   "check: The 3-2-1 datum frame is orthonormal, equivariant under rigid motion and has the propagated covariance vs max |frame(M points) - M frame(points)|",
   "check: The 3-2-1 datum frame is orthonormal, equivariant under rigid motion and has the propagated covariance vs noise-free recovery of the part pose",
   "check: The 3-2-1 datum frame is orthonormal, equivariant under rigid motion and has the propagated covariance vs relative Frobenius difference MC vs Jacobian covariance",
+  "check: The 3-2-1 datum frame is orthonormal, equivariant under rigid motion and has the propagated covariance vs collinear primary datum points (A)",
+  "check: The 3-2-1 datum frame is orthonormal, equivariant under rigid motion and has the propagated covariance vs secondary datum direction (B) normal to the primary plane (A)",
   "check: Gauge-sphere fit on a 75 degree cap recovers centre and radius with the linearized covariance vs max relative std difference (MC vs linearized)",
   "check: Gauge-sphere fit on a 75 degree cap recovers centre and radius with the linearized covariance vs max |MC mean - truth| in standard errors",
   "check: Step-gauge fit recovers a declared 50 ppm scale error and 1 um offset vs noise-free recovery of scale error",
@@ -336,7 +352,7 @@
  ],
  "tests_skipped": [],
  "title": "Define calibration artifacts and datum frames.",
- "uncertainty": "Monte Carlo sampling error of covariances is about sqrt(2 / N); first-order neglects O(sigma^2) terms.",
+ "uncertainty": "Monte Carlo sampling error of covariances is about sqrt(2 / N); the first-order stds neglect higher-order terms, which symmetric sigma points through the exact SE(3) chain estimate at 4.4e-10 mm.",
  "unresolved_assumptions": [
   "All link covariances are declared; real ones come from the instrument and fixture calibration records (T139).",
   "Thermal drift and probe lobing are not modelled."

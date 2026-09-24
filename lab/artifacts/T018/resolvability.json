@@ -2,6 +2,7 @@
  {
   "curvature": 0.0,
   "curvature_signal": 0.0,
+  "error_decomposition": "exact rational step matrix",
   "max_abs_path_curvature": 0.0,
   "methods": {
    "euler": {
@@ -30,14 +31,39 @@
      null
     ],
     "resolved_from_steps": null,
-    "roundoff_limited": [
+    "rounding_affected": [
      false,
      false,
      false,
      false,
      false,
      false
-    ]
+    ],
+    "rounding_errors": [
+     0.0,
+     0.0,
+     0.0,
+     0.0,
+     0.0,
+     0.0
+    ],
+    "truncation_errors": [
+     0.0,
+     0.0,
+     0.0,
+     0.0,
+     0.0,
+     0.0
+    ],
+    "truncation_ratios": [
+     null,
+     null,
+     null,
+     null,
+     null,
+     null
+    ],
+    "truncation_resolved_from_steps": null
    },
    "midpoint": {
     "computed_deviation": [
@@ -65,14 +91,39 @@
      null
     ],
     "resolved_from_steps": null,
-    "roundoff_limited": [
+    "rounding_affected": [
      false,
      false,
      false,
      false,
      false,
      false
-    ]
+    ],
+    "rounding_errors": [
+     0.0,
+     0.0,
+     0.0,
+     0.0,
+     0.0,
+     0.0
+    ],
+    "truncation_errors": [
+     0.0,
+     0.0,
+     0.0,
+     0.0,
+     0.0,
+     0.0
+    ],
+    "truncation_ratios": [
+     null,
+     null,
+     null,
+     null,
+     null,
+     null
+    ],
+    "truncation_resolved_from_steps": null
    },
    "rk4": {
     "computed_deviation": [
@@ -100,14 +151,39 @@
      null
     ],
     "resolved_from_steps": null,
-    "roundoff_limited": [
+    "rounding_affected": [
      false,
      false,
      false,
      false,
      false,
      false
-    ]
+    ],
+    "rounding_errors": [
+     0.0,
+     0.0,
+     0.0,
+     0.0,
+     0.0,
+     0.0
+    ],
+    "truncation_errors": [
+     0.0,
+     0.0,
+     0.0,
+     0.0,
+     0.0,
+     0.0
+    ],
+    "truncation_ratios": [
+     null,
+     null,
+     null,
+     null,
+     null,
+     null
+    ],
+    "truncation_resolved_from_steps": null
    }
   },
   "reference_j_head": 2.0,
@@ -120,6 +196,7 @@
  {
   "curvature": 0.0,
   "curvature_signal": 0.0,
+  "error_decomposition": "exact rational step matrix",
   "max_abs_path_curvature": 0.0,
   "methods": {
    "euler": {
@@ -148,14 +225,39 @@
      null
     ],
     "resolved_from_steps": null,
-    "roundoff_limited": [
+    "rounding_affected": [
      false,
      false,
      false,
      false,
      false,
      false
-    ]
+    ],
+    "rounding_errors": [
+     0.0,
+     0.0,
+     0.0,
+     0.0,
+     0.0,
+     0.0
+    ],
+    "truncation_errors": [
+     0.0,
+     0.0,
+     0.0,
+     0.0,
+     0.0,
+     0.0
+    ],
+    "truncation_ratios": [
+     null,
+     null,
+     null,
+     null,
+     null,
+     null
+    ],
+    "truncation_resolved_from_steps": null
    },
    "midpoint": {
     "computed_deviation": [
@@ -183,14 +285,39 @@
      null
     ],
     "resolved_from_steps": null,
-    "roundoff_limited": [
+    "rounding_affected": [
      false,
      false,
      false,
      false,
      false,
      false
-    ]
+    ],
+    "rounding_errors": [
+     0.0,
+     0.0,
+     0.0,
+     0.0,
+     0.0,
+     0.0
+    ],
+    "truncation_errors": [
+     0.0,
+     0.0,
+     0.0,
+     0.0,
+     0.0,
+     0.0
+    ],
+    "truncation_ratios": [
+     null,
+     null,
+     null,
+     null,
+     null,
+     null
+    ],
+    "truncation_resolved_from_steps": null
    },
    "rk4": {
     "computed_deviation": [
@@ -218,14 +345,39 @@
      null
     ],
     "resolved_from_steps": null,
-    "roundoff_limited": [
+    "rounding_affected": [
      false,
      false,
      false,
      false,
      false,
      false
-    ]
+    ],
+    "rounding_errors": [
+     0.0,
+     0.0,
+     0.0,
+     0.0,
+     0.0,
+     0.0
+    ],
+    "truncation_errors": [
+     0.0,
+     0.0,
+     0.0,
+     0.0,
+     0.0,
+     0.0
+    ],
+    "truncation_ratios": [
+     null,
+     null,
+     null,
+     null,
+     null,
+     null
+    ],
+    "truncation_resolved_from_steps": null
    }
   },
   "reference_j_head": 2.0,
@@ -238,6 +390,7 @@
  {
   "curvature": 1.0,
   "curvature_signal": 1.09070257317,
+  "error_decomposition": "exact rational step matrix",
   "max_abs_path_curvature": null,
   "methods": {
    "euler": {
@@ -266,14 +419,39 @@
      75.8150166031
     ],
     "resolved_from_steps": 32,
-    "roundoff_limited": [
+    "rounding_affected": [
      false,
      false,
      false,
      false,
      false,
      false
-    ]
+    ],
+    "rounding_errors": [
+     0.0,
+     0.0,
+     0.0,
+     1.79059508144e-16,
+     1.92872480596e-16,
+     6.97450327385e-17
+    ],
+    "truncation_errors": [
+     0.590702573174,
+     0.269901791924,
+     0.124883064493,
+     0.0596743078231,
+     0.0291290555681,
+     0.0143863659476
+    ],
+    "truncation_ratios": [
+     1.84644967316,
+     4.0411090471,
+     8.73379090757,
+     18.2775906913,
+     37.4438014519,
+     75.8150166031
+    ],
+    "truncation_resolved_from_steps": 32
    },
    "midpoint": {
     "computed_deviation": [
@@ -301,14 +479,39 @@
      33052.0894679
     ],
     "resolved_from_steps": 4,
-    "roundoff_limited": [
+    "rounding_affected": [
      false,
      false,
      false,
      false,
      false,
      false
-    ]
+    ],
+    "rounding_errors": [
+     0.0,
+     0.0,
+     1.28027492927e-17,
+     3.62051391221e-17,
+     1.07713150931e-16,
+     2.39609008229e-16
+    ],
+    "truncation_errors": [
+     0.00695367682568,
+     0.00516973035486,
+     0.00172639448513,
+     0.000486523229166,
+     0.000128536529144,
+     3.29995044406e-05
+    ],
+    "truncation_ratios": [
+     156.852640771,
+     210.978619446,
+     631.780617101,
+     2241.83041588,
+     8485.54555218,
+     33052.0894682
+    ],
+    "truncation_resolved_from_steps": 4
    },
    "rk4": {
     "computed_deviation": [
@@ -336,14 +539,39 @@
      2715845727.08
     ],
     "resolved_from_steps": 4,
-    "roundoff_limited": [
+    "rounding_affected": [
      false,
      false,
      false,
      false,
      false,
      false
-    ]
+    ],
+    "rounding_errors": [
+     2.46716227694e-17,
+     1.24390388475e-16,
+     1.70697406176e-16,
+     3.08115675299e-16,
+     1.07619354695e-17,
+     2.73817919547e-16
+    ],
+    "truncation_errors": [
+     1.25829187505e-05,
+     1.42517110119e-05,
+     1.29920035169e-06,
+     9.3645778601e-08,
+     6.23583741276e-09,
+     4.0160724372e-10
+    ],
+    "truncation_ratios": [
+     86681.2060698,
+     76531.3422554,
+     839518.378941,
+     11647108.8123,
+     174908757.393,
+     2715843875.4
+    ],
+    "truncation_resolved_from_steps": 4
    }
   },
   "reference_j_head": 0.909297426826,
@@ -356,6 +584,7 @@
  {
   "curvature": 0.01,
   "curvature_signal": 0.0133066920494,
+  "error_decomposition": "exact rational step matrix",
   "max_abs_path_curvature": null,
   "methods": {
    "euler": {
@@ -384,14 +613,39 @@
      43.0847414171
     ],
     "resolved_from_steps": 32,
-    "roundoff_limited": [
+    "rounding_affected": [
      false,
      false,
      false,
      false,
      false,
      false
-    ]
+    ],
+    "rounding_errors": [
+     1.06685493773e-16,
+     1.91022115355e-17,
+     5.18415302531e-17,
+     2.33044471064e-16,
+     8.280975364e-16,
+     7.54231107102e-17
+    ],
+    "truncation_errors": [
+     0.00830669204939,
+     0.00456216031111,
+     0.00238251667335,
+     0.00121650922659,
+     0.00061455304391,
+     0.000308849295869
+    ],
+    "truncation_ratios": [
+     1.60192432442,
+     2.9167524028,
+     5.5851412073,
+     10.9384226264,
+     21.6526338634,
+     43.0847414171
+    ],
+    "truncation_resolved_from_steps": 32
    },
    "midpoint": {
     "computed_deviation": [
@@ -419,14 +673,39 @@
      16679.8790519
     ],
     "resolved_from_steps": 4,
-    "roundoff_limited": [
+    "rounding_affected": [
      false,
      false,
      false,
      false,
      false,
      false
-    ]
+    ],
+    "rounding_errors": [
+     9.29068052688e-17,
+     1.57411693386e-16,
+     2.59729238245e-16,
+     2.54849128157e-16,
+     4.81741276407e-16,
+     1.00769948947e-15
+    ],
+    "truncation_errors": [
+     0.000822313143138,
+     0.000204917945593,
+     5.1139723448e-05,
+     1.27732582247e-05,
+     3.19182716861e-06,
+     7.97769098013e-07
+    ],
+    "truncation_ratios": [
+     16.1820252545,
+     64.936684832,
+     260.202659542,
+     1041.76176628,
+     4168.98890399,
+     16679.8790308
+    ],
+    "truncation_resolved_from_steps": 4
    },
    "rk4": {
     "computed_deviation": [
@@ -454,14 +733,39 @@
      135583740623.0
     ],
     "resolved_from_steps": 4,
-    "roundoff_limited": [
+    "rounding_affected": [
      false,
      false,
      false,
      false,
      false,
      false
-    ]
+    ],
+    "rounding_errors": [
+     7.66934805167e-17,
+     7.57259323357e-17,
+     2.01409094724e-16,
+     1.27628045542e-16,
+     5.13454935891e-16,
+     7.47560627201e-16
+    ],
+    "truncation_errors": [
+     1.02861141972e-07,
+     6.40616174751e-09,
+     3.99609921361e-10,
+     2.49503584936e-11,
+     1.55860044769e-12,
+     9.73961547497e-14
+    ],
+    "truncation_ratios": [
+     129365.587377,
+     2077170.78866,
+     33299203.3933,
+     533326687.583,
+     8537590290.74,
+     136624408670.0
+    ],
+    "truncation_resolved_from_steps": 4
    }
   },
   "reference_j_head": 1.98669330795,
@@ -474,6 +778,7 @@
  {
   "curvature": 0.0001,
   "curvature_signal": 0.000133330666692,
+  "error_decomposition": "exact rational step matrix",
   "max_abs_path_curvature": null,
   "methods": {
    "euler": {
@@ -502,14 +807,39 @@
      42.8919912194
     ],
     "resolved_from_steps": 32,
-    "roundoff_limited": [
+    "rounding_affected": [
      false,
      false,
      false,
      false,
      false,
      false
-    ]
+    ],
+    "rounding_errors": [
+     1.16531404751e-16,
+     1.58148826464e-17,
+     6.04980084598e-17,
+     2.16817121973e-16,
+     7.5207313255e-16,
+     3.14084274763e-16
+    ],
+    "truncation_errors": [
+     8.3330666692e-05,
+     4.58312135665e-05,
+     2.39569996943e-05,
+     1.22388371506e-05,
+     6.18450145553e-06,
+     3.10852126208e-06
+    ],
+    "truncation_ratios": [
+     1.60001920043,
+     2.90916727524,
+     5.56541588651,
+     10.8940633045,
+     21.5588382751,
+     42.8919912237
+    ],
+    "truncation_resolved_from_steps": 32
    },
    "midpoint": {
     "computed_deviation": [
@@ -537,14 +867,39 @@
      16386.9088006
     ],
     "resolved_from_steps": 4,
-    "roundoff_limited": [
+    "rounding_affected": [
      false,
      false,
      false,
      false,
      false,
      false
-    ]
+    ],
+    "rounding_errors": [
+     1.08012847839e-16,
+     2.38336596798e-16,
+     2.86878133723e-16,
+     2.6464238826e-16,
+     1.01126219721e-16,
+     1.34376578781e-15
+    ],
+    "truncation_errors": [
+     8.33222918806e-06,
+     2.08299089442e-06,
+     5.20738690899e-07,
+     1.30183497802e-07,
+     3.25457246609e-08,
+     8.13641219915e-09
+    ],
+    "truncation_ratios": [
+     16.0018002005,
+     64.0092412545,
+     256.041406222,
+     1024.17486811,
+     4096.71832725,
+     16386.911507
+    ],
+    "truncation_resolved_from_steps": 4
    },
    "rk4": {
     "computed_deviation": [
@@ -572,14 +927,39 @@
      300233970416.0
     ],
     "resolved_from_steps": 4,
-    "roundoff_limited": [
+    "rounding_affected": [
      false,
      false,
      false,
      true,
      true,
      true
-    ]
+    ],
+    "rounding_errors": [
+     2.13030607797e-16,
+     2.22804925842e-16,
+     7.65292712736e-17,
+     4.19089652284e-16,
+     1.88287790291e-16,
+     5.50908022337e-16
+    ],
+    "truncation_errors": [
+     1.04154552972e-11,
+     6.51034021319e-13,
+     4.07796780349e-14,
+     2.63953570153e-15,
+     2.55801419559e-16,
+     1.06818812487e-16
+    ],
+    "truncation_ratios": [
+     12801232.6766,
+     204798309.037,
+     3269537012.47,
+     50512924153.5,
+     521227235258.0,
+     1248194616540.0
+    ],
+    "truncation_resolved_from_steps": 4
    }
   },
   "reference_j_head": 1.99986666933,
@@ -592,6 +972,7 @@
  {
   "curvature": 1e-08,
   "curvature_signal": 1.33333333067e-08,
+  "error_decomposition": "exact rational step matrix",
   "max_abs_path_curvature": null,
   "methods": {
    "euler": {
@@ -620,14 +1001,39 @@
      42.8899571349
     ],
     "resolved_from_steps": 32,
-    "roundoff_limited": [
+    "rounding_affected": [
      false,
      false,
      false,
      false,
      false,
      false
-    ]
+    ],
+    "rounding_errors": [
+     3.03873549592e-17,
+     2.85357786208e-16,
+     2.52169070918e-16,
+     1.44595284141e-16,
+     1.17186346514e-16,
+     6.91581159084e-16
+    ],
+    "truncation_errors": [
+     8.33333330667e-09,
+     4.58333331214e-09,
+     2.39583332e-09,
+     1.22395832587e-09,
+     6.18489579389e-10,
+     3.10872393806e-10
+    ],
+    "truncation_ratios": [
+     1.60000000192,
+     2.90909091673,
+     5.56521741115,
+     10.8936170659,
+     21.5578948312,
+     42.8900525499
+    ],
+    "truncation_resolved_from_steps": 32
    },
    "midpoint": {
     "computed_deviation": [
@@ -655,14 +1061,39 @@
      16375.6323918
     ],
     "resolved_from_steps": 4,
-    "roundoff_limited": [
+    "rounding_affected": [
      false,
      false,
      false,
      false,
      false,
      false
-    ]
+    ],
+    "rounding_errors": [
+     6.0343387402e-17,
+     1.013468053e-18,
+     9.66295602127e-17,
+     6.49438492582e-17,
+     3.90079076908e-16,
+     4.15850424268e-16
+    ],
+    "truncation_errors": [
+     8.33333322292e-10,
+     2.08333329909e-10,
+     5.20833323869e-11,
+     1.3020833085e-11,
+     3.25520826975e-12,
+     8.13802067249e-13
+    ],
+    "truncation_ratios": [
+     16.00000018,
+     64.000000924,
+     256.00000414,
+     1024.00001748,
+     4096.00007182,
+     16384.0002911
+    ],
+    "truncation_resolved_from_steps": 4
    },
    "rk4": {
     "computed_deviation": [
@@ -690,14 +1121,39 @@
      15351612.3486
     ],
     "resolved_from_steps": 4,
-    "roundoff_limited": [
+    "rounding_affected": [
      true,
      true,
      true,
      true,
      true,
      true
-    ]
+    ],
+    "rounding_errors": [
+     1.95444217263e-17,
+     2.416866829e-16,
+     2.02396423434e-16,
+     2.02396041965e-16,
+     2.41693191727e-16,
+     8.68529831408e-16
+    ],
+    "truncation_errors": [
+     1.04165155185e-19,
+     6.50890638905e-21,
+     4.05390861268e-22,
+     2.39211415365e-23,
+     7.92840778868e-26,
+     1.41083201249e-24
+    ],
+    "truncation_ratios": [
+     128001857079.0,
+     2048475198400.0,
+     32890068772000.0,
+     557386999542000.0,
+     1.68171638771e+17,
+     9450688096530000.0
+    ],
+    "truncation_resolved_from_steps": 4
    }
   },
   "reference_j_head": 1.99999998667,
@@ -710,6 +1166,7 @@
  {
   "curvature": 1e-14,
   "curvature_signal": 1.33333333333e-14,
+  "error_decomposition": "exact rational step matrix",
   "max_abs_path_curvature": null,
   "methods": {
    "euler": {
@@ -738,14 +1195,39 @@
      8.51986909218
     ],
     "resolved_from_steps": null,
-    "roundoff_limited": [
-     true,
-     true,
-     true,
-     true,
+    "rounding_affected": [
+     false,
+     false,
+     false,
+     false,
      true,
      true
-    ]
+    ],
+    "rounding_errors": [
+     1.07025913276e-16,
+     1.31784197001e-16,
+     1.64730246252e-16,
+     1.18966334048e-16,
+     2.80345874198e-16,
+     1.25409687647e-15
+    ],
+    "truncation_errors": [
+     8.33333333333e-15,
+     4.58333333333e-15,
+     2.39583333333e-15,
+     1.22395833333e-15,
+     6.18489583333e-16,
+     3.10872395833e-16
+    ],
+    "truncation_ratios": [
+     1.6,
+     2.90909090909,
+     5.5652173913,
+     10.8936170213,
+     21.5578947368,
+     42.890052356
+    ],
+    "truncation_resolved_from_steps": 32
    },
    "midpoint": {
     "computed_deviation": [
@@ -773,14 +1255,39 @@
      14.8340090743
     ],
     "resolved_from_steps": 4,
-    "roundoff_limited": [
-     true,
+    "rounding_affected": [
+     false,
      true,
      true,
      true,
      true,
      true
-    ]
+    ],
+    "rounding_errors": [
+     6.55021241982e-17,
+     2.43683094231e-17,
+     2.63470900427e-16,
+     2.24408400427e-16,
+     7.40182949809e-18,
+     8.98021655448e-16
+    ],
+    "truncation_errors": [
+     8.33333333333e-16,
+     2.08333333333e-16,
+     5.20833333333e-17,
+     1.30208333333e-17,
+     3.25520833333e-18,
+     8.13802083334e-19
+    ],
+    "truncation_ratios": [
+     16.0,
+     64.0,
+     256.0,
+     1024.0,
+     4096.0,
+     16384.0
+    ],
+    "truncation_resolved_from_steps": 4
    },
    "rk4": {
     "computed_deviation": [
@@ -808,14 +1315,39 @@
      9.92857876334
     ],
     "resolved_from_steps": null,
-    "roundoff_limited": [
+    "rounding_affected": [
      true,
      true,
      true,
      true,
      true,
      true
-    ]
+    ],
+    "rounding_errors": [
+     2.11387567094e-16,
+     2.11387567094e-16,
+     2.11387567094e-16,
+     4.33432172019e-16,
+     2.32701642756e-16,
+     1.34292466738e-15
+    ],
+    "truncation_errors": [
+     7.9304376278e-31,
+     8.9070001278e-31,
+     8.96803528405e-31,
+     8.97184998132e-31,
+     8.9720883999e-31,
+     8.97210330106e-31
+    ],
+    "truncation_ratios": [
+     1.68128594651e+16,
+     1.49694994297e+16,
+     1.4867619173e+16,
+     1.48612976823e+16,
+     1.48609027676e+16,
+     1.48608780861e+16
+    ],
+    "truncation_resolved_from_steps": 4
    }
   },
   "reference_j_head": 2.0,
@@ -828,6 +1360,7 @@
  {
   "curvature": 1e-16,
   "curvature_signal": 1.33333333333e-16,
+  "error_decomposition": "exact rational step matrix",
   "max_abs_path_curvature": null,
   "methods": {
    "euler": {
@@ -856,14 +1389,39 @@
      1.0
     ],
     "resolved_from_steps": null,
-    "roundoff_limited": [
+    "rounding_affected": [
      true,
      true,
      true,
      true,
      true,
      true
-    ]
+    ],
+    "rounding_errors": [
+     5e-17,
+     8.75e-17,
+     1.09375e-16,
+     1.2109375e-16,
+     1.271484375e-16,
+     1.30224609375e-16
+    ],
+    "truncation_errors": [
+     8.33333333333e-17,
+     4.58333333333e-17,
+     2.39583333333e-17,
+     1.22395833333e-17,
+     6.18489583333e-18,
+     3.10872395833e-18
+    ],
+    "truncation_ratios": [
+     1.6,
+     2.90909090909,
+     5.5652173913,
+     10.8936170213,
+     21.5578947368,
+     42.890052356
+    ],
+    "truncation_resolved_from_steps": 32
    },
    "midpoint": {
     "computed_deviation": [
@@ -891,14 +1449,39 @@
      1.0
     ],
     "resolved_from_steps": null,
-    "roundoff_limited": [
+    "rounding_affected": [
      true,
      true,
      true,
      true,
      true,
      true
-    ]
+    ],
+    "rounding_errors": [
+     1.25e-16,
+     1.3125e-16,
+     1.328125e-16,
+     1.33203125e-16,
+     1.3330078125e-16,
+     1.33325195312e-16
+    ],
+    "truncation_errors": [
+     8.33333333333e-18,
+     2.08333333333e-18,
+     5.20833333333e-19,
+     1.30208333333e-19,
+     3.25520833333e-20,
+     8.13802083334e-21
+    ],
+    "truncation_ratios": [
+     16.0,
+     64.0,
+     256.0,
+     1024.0,
+     4096.0,
+     16384.0
+    ],
+    "truncation_resolved_from_steps": 4
    },
    "rk4": {
     "computed_deviation": [
@@ -926,14 +1509,39 @@
      1.0
     ],
     "resolved_from_steps": null,
-    "roundoff_limited": [
+    "rounding_affected": [
      true,
      true,
      true,
      true,
      true,
      true
-    ]
+    ],
+    "rounding_errors": [
+     1.33333333333e-16,
+     1.33333333333e-16,
+     1.33333333333e-16,
+     1.33333333333e-16,
+     1.33333333333e-16,
+     1.33333333333e-16
+    ],
+    "truncation_errors": [
+     1.08735510961e-32,
+     1.08833167211e-32,
+     1.08839270726e-32,
+     1.08839652196e-32,
+     1.08839676038e-32,
+     1.08839677528e-32
+    ],
+    "truncation_ratios": [
+     1.22621701186e+16,
+     1.22511672453e+16,
+     1.22504802213e+16,
+     1.22504372849e+16,
+     1.22504346014e+16,
+     1.22504344336e+16
+    ],
+    "truncation_resolved_from_steps": 4
    }
   },
   "reference_j_head": 2.0,
@@ -946,6 +1554,7 @@
  {
   "curvature": null,
   "curvature_signal": 0.249971667501,
+  "error_decomposition": "observed error; rounding from a rerun with the heading column scaled by 3",
   "max_abs_path_curvature": null,
   "methods": {
    "euler": {
@@ -974,14 +1583,39 @@
      48.126611004
     ],
     "resolved_from_steps": 32,
-    "roundoff_limited": [
+    "rounding_affected": [
      false,
      false,
      false,
      false,
      false,
      false
-    ]
+    ],
+    "rounding_errors": [
+     2.22044604925e-16,
+     2.22044604925e-16,
+     2.22044604925e-16,
+     4.4408920985e-16,
+     2.22044604925e-16,
+     1.33226762955e-15
+    ],
+    "truncation_errors": [
+     0.141761713715,
+     0.0761308103981,
+     0.0398009470765,
+     0.0203892673862,
+     0.0103227446696,
+     0.00519404259487
+    ],
+    "truncation_ratios": [
+     1.76332283908,
+     3.28344944963,
+     6.28054571216,
+     12.2599631839,
+     24.2156205063,
+     48.126611004
+    ],
+    "truncation_resolved_from_steps": 32
    },
    "midpoint": {
     "computed_deviation": [
@@ -1009,14 +1643,39 @@
      50270.5729173
     ],
     "resolved_from_steps": 4,
-    "roundoff_limited": [
+    "rounding_affected": [
      false,
      false,
      false,
      false,
      false,
      false
-    ]
+    ],
+    "rounding_errors": [
+     2.22044604925e-16,
+     0.0,
+     2.22044604925e-16,
+     4.4408920985e-16,
+     0.0,
+     2.22044604925e-16
+    ],
+    "truncation_errors": [
+     0.00616479557178,
+     0.00140486383546,
+     0.000333474002377,
+     8.11696397953e-05,
+     2.00228829703e-05,
+     4.97252473952e-06
+    ],
+    "truncation_ratios": [
+     40.5482492632,
+     177.933021829,
+     749.598666521,
+     3079.62026358,
+     12484.2994823,
+     50270.5729173
+    ],
+    "truncation_resolved_from_steps": 4
    },
    "rk4": {
     "computed_deviation": [
@@ -1044,14 +1703,39 @@
      7270458329.21
     ],
     "resolved_from_steps": 4,
-    "roundoff_limited": [
+    "rounding_affected": [
      false,
      false,
      false,
      false,
      false,
      false
-    ]
+    ],
+    "rounding_errors": [
+     2.22044604925e-16,
+     2.22044604925e-16,
+     2.22044604925e-16,
+     2.22044604925e-16,
+     4.4408920985e-16,
+     1.33226762955e-15
+    ],
+    "truncation_errors": [
+     9.47829981812e-06,
+     1.42611072529e-06,
+     1.16497713032e-07,
+     8.13234302122e-09,
+     5.3476156836e-10,
+     3.43818307158e-11
+    ],
+    "truncation_ratios": [
+     26373.0492069,
+     175282.0893,
+     2145721.67123,
+     30737964.059,
+     467445086.355,
+     7270458329.21
+    ],
+    "truncation_resolved_from_steps": 4
    }
   },
   "reference_j_head": 1.7500283325,
@@ -1072,6 +1756,7 @@
  {
   "curvature": 0.0153846153846,
   "curvature_signal": 0.0204497965412,
+  "error_decomposition": "exact rational step matrix",
   "max_abs_path_curvature": null,
   "methods": {
    "euler": {
@@ -1100,14 +1785,39 @@
      43.1902496138
     ],
     "resolved_from_steps": 32,
-    "roundoff_limited": [
+    "rounding_affected": [
      false,
      false,
      false,
      false,
      false,
      false
-    ]
+    ],
+    "rounding_errors": [
+     2.77555756156e-17,
+     1.02025753023e-16,
+     2.41437074749e-16,
+     2.47684856097e-17,
+     8.56328479392e-16,
+     8.47415092781e-16
+    ],
+    "truncation_errors": [
+     0.0127574888489,
+     0.00700120008866,
+     0.00365440408632,
+     0.00186539815334,
+     0.000942214487852,
+     0.000473481786378
+    ],
+    "truncation_ratios": [
+     1.60296409297,
+     2.92089874339,
+     5.59593193806,
+     10.9626979659,
+     21.7039716592,
+     43.1902496137
+    ],
+    "truncation_resolved_from_steps": 32
    },
    "midpoint": {
     "computed_deviation": [
@@ -1135,14 +1845,39 @@
      16843.2712288
     ],
     "resolved_from_steps": 4,
-    "roundoff_limited": [
+    "rounding_affected": [
      false,
      false,
      false,
      false,
      false,
      false
-    ]
+    ],
+    "rounding_errors": [
+     3.6884479344e-17,
+     8.16214663192e-17,
+     2.14482128302e-16,
+     4.7249822461e-16,
+     4.09180466404e-16,
+     1.03554076891e-15
+    ],
+    "truncation_errors": [
+     0.00125599533502,
+     0.000312440631597,
+     7.78984243357e-05,
+     1.94470758963e-05,
+     4.85826108369e-06,
+     1.21412261585e-06
+    ],
+    "truncation_ratios": [
+     16.2817456172,
+     65.4517833891,
+     262.518744321,
+     1051.5615124,
+     4209.28315481,
+     16843.2712431
+    ],
+    "truncation_resolved_from_steps": 4
    },
    "rk4": {
     "computed_deviation": [
@@ -1170,14 +1905,39 @@
      89763836338.0
     ],
     "resolved_from_steps": 4,
-    "roundoff_limited": [
+    "rounding_affected": [
      false,
      false,
      false,
      false,
      false,
      false
-    ]
+    ],
+    "rounding_errors": [
+     1.17533893995e-16,
+     6.08889615863e-17,
+     1.25804498879e-17,
+     3.897278655e-17,
+     3.48532289133e-16,
+     2.16478514884e-16
+    ],
+    "truncation_errors": [
+     2.41799881124e-07,
+     1.50301915967e-08,
+     9.36572831879e-10,
+     5.84440994449e-11,
+     3.64984272807e-12,
+     2.28034243168e-13
+    ],
+    "truncation_ratios": [
+     84573.2282668,
+     1360581.2281,
+     21834710.3878,
+     349903527.224,
+     5602925403.86,
+     89678621320.7
+    ],
+    "truncation_resolved_from_steps": 4
    }
   },
   "reference_j_head": 1.97955020346,
@@ -1190,6 +1950,7 @@
  {
   "curvature": null,
   "curvature_signal": 0.513920897098,
+  "error_decomposition": "observed error; rounding from a rerun with the heading column scaled by 3",
   "max_abs_path_curvature": null,
   "methods": {
    "euler": {
@@ -1218,14 +1979,39 @@
      55.6397719134
     ],
     "resolved_from_steps": 32,
-    "roundoff_limited": [
+    "rounding_affected": [
      false,
      false,
      false,
      false,
      false,
      false
-    ]
+    ],
+    "rounding_errors": [
+     0.0,
+     0.0,
+     0.0,
+     8.881784197e-16,
+     8.881784197e-16,
+     3.5527136788e-15
+    ],
+    "truncation_errors": [
+     0.272970835564,
+     0.14169730442,
+     0.0724252018932,
+     0.036628100162,
+     0.0184198639701,
+     0.00923657447586
+    ],
+    "truncation_ratios": [
+     1.88269525583,
+     3.62689254535,
+     7.09588490834,
+     14.0307822362,
+     27.9003633215,
+     55.6397719134
+    ],
+    "truncation_resolved_from_steps": 32
    },
    "midpoint": {
     "computed_deviation": [
@@ -1253,14 +2039,39 @@
      78526.9579529
     ],
     "resolved_from_steps": 4,
-    "roundoff_limited": [
+    "rounding_affected": [
      false,
      false,
      false,
      false,
      false,
      false
-    ]
+    ],
+    "rounding_errors": [
+     4.4408920985e-16,
+     4.4408920985e-16,
+     4.4408920985e-16,
+     4.4408920985e-16,
+     8.881784197e-16,
+     4.4408920985e-16
+    ],
+    "truncation_errors": [
+     0.00504993155822,
+     0.00154722756586,
+     0.000411052641982,
+     0.000104379367595,
+     2.6174049538e-05,
+     6.54451554594e-06
+    ],
+    "truncation_ratios": [
+     101.767893519,
+     332.155985608,
+     1250.25567192,
+     4923.58699752,
+     19634.7491569,
+     78526.9579529
+    ],
+    "truncation_resolved_from_steps": 4
    },
    "rk4": {
     "computed_deviation": [
@@ -1288,14 +2099,39 @@
      13844654499.8
     ],
     "resolved_from_steps": 4,
-    "roundoff_limited": [
+    "rounding_affected": [
      false,
      false,
      false,
      false,
      false,
      false
-    ]
+    ],
+    "rounding_errors": [
+     0.0,
+     4.4408920985e-16,
+     4.4408920985e-16,
+     4.4408920985e-16,
+     0.0,
+     1.33226762955e-15
+    ],
+    "truncation_errors": [
+     0.000104009454359,
+     2.18866209423e-06,
+     1.24354019082e-07,
+     8.54987192156e-09,
+     5.74655878438e-10,
+     3.71205288729e-11
+    ],
+    "truncation_ratios": [
+     4941.09790564,
+     234810.525779,
+     4132724.46593,
+     60108607.6859,
+     894310693.374,
+     13844654499.8
+    ],
+    "truncation_resolved_from_steps": 4
    }
   },
   "reference_j_head": 2.5139208971,
@@ -1316,6 +2152,7 @@
  {
   "curvature": null,
   "curvature_signal": 0.103904708271,
+  "error_decomposition": "observed error; rounding from a rerun with the heading column scaled by 3",
   "max_abs_path_curvature": null,
   "methods": {
    "euler": {
@@ -1344,14 +2181,39 @@
      43.2346132082
     ],
     "resolved_from_steps": 32,
-    "roundoff_limited": [
+    "rounding_affected": [
      false,
      false,
      false,
      false,
      false,
      false
-    ]
+    ],
+    "rounding_errors": [
+     2.22044604925e-16,
+     4.4408920985e-16,
+     0.0,
+     6.66133814775e-16,
+     8.881784197e-16,
+     4.4408920985e-16
+    ],
+    "truncation_errors": [
+     0.0675776661334,
+     0.0362995149595,
+     0.0187349701675,
+     0.00950911394526,
+     0.00478933263621,
+     0.00240327599949
+    ],
+    "truncation_ratios": [
+     1.53755988059,
+     2.86242690534,
+     5.54603008928,
+     10.9268548961,
+     21.6950285485,
+     43.2346132082
+    ],
+    "truncation_resolved_from_steps": 32
    },
    "midpoint": {
     "computed_deviation": [
@@ -1379,14 +2241,39 @@
      37680.8569033
     ],
     "resolved_from_steps": 4,
-    "roundoff_limited": [
+    "rounding_affected": [
      false,
      false,
      false,
      false,
      false,
      false
-    ]
+    ],
+    "rounding_errors": [
+     0.0,
+     2.22044604925e-16,
+     2.22044604925e-16,
+     0.0,
+     2.22044604925e-16,
+     4.4408920985e-16
+    ],
+    "truncation_errors": [
+     0.00439300498321,
+     0.000905991110107,
+     0.000200839233315,
+     4.6793300061e-05,
+     1.12555511746e-05,
+     2.75749324219e-06
+    ],
+    "truncation_ratios": [
+     23.6523083101,
+     114.686233796,
+     517.352643483,
+     2220.50396393,
+     9231.41893794,
+     37680.8569033
+    ],
+    "truncation_resolved_from_steps": 4
    },
    "rk4": {
     "computed_deviation": [
@@ -1414,14 +2301,39 @@
      11112712376.2
     ],
     "resolved_from_steps": 4,
-    "roundoff_limited": [
+    "rounding_affected": [
      false,
      false,
      false,
      false,
      false,
      false
-    ]
+    ],
+    "rounding_errors": [
+     2.22044604925e-16,
+     2.22044604925e-16,
+     2.22044604925e-16,
+     1.33226762955e-15,
+     6.66133814775e-16,
+     2.22044604925e-16
+    ],
+    "truncation_errors": [
+     8.39022308985e-06,
+     3.55980491085e-07,
+     3.66568340127e-08,
+     2.43102249442e-09,
+     1.51235246548e-10,
+     9.35007626879e-12
+    ],
+    "truncation_ratios": [
+     12384.0221122,
+     291883.153355,
+     2834524.88654,
+     42741154.6002,
+     687040294.125,
+     11112712376.2
+    ],
+    "truncation_resolved_from_steps": 4
    }
   },
   "reference_j_head": 1.89609529173,
@@ -1442,6 +2354,7 @@
  {
   "curvature": null,
   "curvature_signal": 0.00114401124293,
+  "error_decomposition": "observed error; rounding from a rerun with the heading column scaled by 3",
   "max_abs_path_curvature": null,
   "methods": {
    "euler": {
@@ -1470,14 +2383,39 @@
      49.3460711313
     ],
     "resolved_from_steps": 32,
-    "roundoff_limited": [
+    "rounding_affected": [
      false,
      false,
      false,
      false,
      false,
      false
-    ]
+    ],
+    "rounding_errors": [
+     2.22044604925e-16,
+     2.22044604925e-16,
+     4.4408920985e-16,
+     1.11022302463e-15,
+     1.55431223448e-15,
+     1.33226762955e-15
+    ],
+    "truncation_errors": [
+     0.000710043805122,
+     0.000367037481398,
+     0.000184959051968,
+     9.2666028521e-05,
+     4.63589523227e-05,
+     2.31834311568e-05
+    ],
+    "truncation_ratios": [
+     1.61118403496,
+     3.11687852308,
+     6.18521359598,
+     12.3455300847,
+     24.6772453995,
+     49.3460711313
+    ],
+    "truncation_resolved_from_steps": 32
    },
    "midpoint": {
     "computed_deviation": [
@@ -1505,14 +2443,39 @@
      989228.591569
     ],
     "resolved_from_steps": 4,
-    "roundoff_limited": [
+    "rounding_affected": [
      false,
      false,
      false,
      false,
      false,
      false
-    ]
+    ],
+    "rounding_errors": [
+     0.0,
+     0.0,
+     4.4408920985e-16,
+     1.11022302463e-15,
+     1.33226762955e-15,
+     2.6645352591e-15
+    ],
+    "truncation_errors": [
+     2.39633937342e-05,
+     2.84952625584e-06,
+     3.62861983572e-07,
+     4.90107434636e-08,
+     7.15046621913e-09,
+     1.15646803245e-09
+    ],
+    "truncation_ratios": [
+     47.7399510111,
+     401.474189117,
+     3152.74483062,
+     23342.0503768,
+     159991.14014,
+     989228.591569
+    ],
+    "truncation_resolved_from_steps": 4
    },
    "rk4": {
     "computed_deviation": [
@@ -1540,14 +2503,39 @@
      1832859696.68
     ],
     "resolved_from_steps": 4,
-    "roundoff_limited": [
+    "rounding_affected": [
      false,
      false,
      false,
      false,
      false,
      false
-    ]
+    ],
+    "rounding_errors": [
+     2.22044604925e-16,
+     2.22044604925e-16,
+     4.4408920985e-16,
+     6.66133814775e-16,
+     8.881784197e-16,
+     1.11022302463e-15
+    ],
+    "truncation_errors": [
+     7.75225764249e-07,
+     4.23939270355e-08,
+     2.5676538673e-09,
+     1.59260604704e-10,
+     9.93849447184e-12,
+     6.24167384444e-13
+    ],
+    "truncation_ratios": [
+     1475.71365103,
+     26985.262346,
+     445547.298061,
+     7183265.72387,
+     115109108.947,
+     1832859696.68
+    ],
+    "truncation_resolved_from_steps": 4
    }
   },
   "reference_j_head": 1.99885598876,
@@ -1568,6 +2556,7 @@
  {
   "curvature": -1.0,
   "curvature_signal": 1.62686040785,
+  "error_decomposition": "exact rational step matrix",
   "max_abs_path_curvature": null,
   "methods": {
    "euler": {
@@ -1596,14 +2585,39 @@
      29.2426742471
     ],
     "resolved_from_steps": 64,
-    "roundoff_limited": [
+    "rounding_affected": [
      false,
      false,
      false,
      false,
      false,
      false
-    ]
+    ],
+    "rounding_errors": [
+     0.0,
+     0.0,
+     0.0,
+     3.00603708818e-16,
+     1.96690366898e-15,
+     5.27930018476e-16
+    ],
+    "truncation_errors": [
+     1.12686040785,
+     0.696684626597,
+     0.394268865344,
+     0.210921422426,
+     0.109264347692,
+     0.0556330927226
+    ],
+    "truncation_ratios": [
+     1.44371068192,
+     2.33514612744,
+     4.12627156453,
+     7.71311130531,
+     14.8892153956,
+     29.2426742471
+    ],
+    "truncation_resolved_from_steps": 64
    },
    "midpoint": {
     "computed_deviation": [
@@ -1631,14 +2645,39 @@
      5374.14021199
     ],
     "resolved_from_steps": 8,
-    "roundoff_limited": [
+    "rounding_affected": [
      false,
      false,
      false,
      false,
      false,
      false
-    ]
+    ],
+    "rounding_errors": [
+     0.0,
+     0.0,
+     3.02317987372e-17,
+     6.37932399587e-16,
+     4.88334719059e-16,
+     3.54647809528e-16
+    ],
+    "truncation_errors": [
+     0.216704157847,
+     0.0651257519168,
+     0.0178748255854,
+     0.00468027143895,
+     0.00119717798698,
+     0.000302720127066
+    ],
+    "truncation_ratios": [
+     7.50728746513,
+     24.9802936621,
+     91.0140577358,
+     347.599584568,
+     1358.91273106,
+     5374.140212
+    ],
+    "truncation_resolved_from_steps": 8
    },
    "rk4": {
     "computed_deviation": [
@@ -1666,14 +2705,39 @@
      440786040.068
     ],
     "resolved_from_steps": 4,
-    "roundoff_limited": [
+    "rounding_affected": [
      false,
      false,
      false,
      false,
      false,
      false
-    ]
+    ],
+    "rounding_errors": [
+     1.58994902292e-16,
+     7.13783717848e-16,
+     2.45024523468e-16,
+     8.42506755383e-16,
+     1.96997169595e-16,
+     2.17508477562e-16
+    ],
+    "truncation_errors": [
+     0.00265013112558,
+     0.000200842039155,
+     1.38536356042e-05,
+     9.10047909873e-07,
+     5.83179297935e-08,
+     3.69081675879e-09
+    ],
+    "truncation_ratios": [
+     613.879212293,
+     8100.19861726,
+     117432.019603,
+     1787664.5726,
+     27896401.906,
+     440786014.091
+    ],
+    "truncation_resolved_from_steps": 4
    }
   },
   "reference_j_head": 3.62686040785,

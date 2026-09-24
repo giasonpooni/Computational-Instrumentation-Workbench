@@ -1,9 +1,23 @@
 {
- "covering_min": 0.5016141944817782,
- "jacobian_defect": 3.7175822615951626e-10,
- "metric_defect": 5.248858339920839e-16,
- "points": 256,
- "roundtrip": 6.497413668604471e-16,
- "seed": 3337,
- "used": 242
+ "graph": {
+  "covering_min": 0.9157914549554901,
+  "disc_radius": 2.0,
+  "jacobian_defect": 3.021773264554725e-10,
+  "metric_defect": 8.170400087984381e-16,
+  "monge_regularity_bound": 0.9157761915991025,
+  "points": 256,
+  "roundtrip": 6.004449063730082e-16,
+  "seed": 3661,
+  "used": 250
+ },
+ "sphere": {
+  "covering_min": 0.5016141944817785,
+  "dense_points": 4096,
+  "jacobian_defect": 3.7175822615951626e-10,
+  "metric_defect": 5.248858339920839e-16,
+  "points": 256,
+  "roundtrip": 6.497413668604471e-16,
+  "seed": 3337,
+  "used": 242
+ }
 }

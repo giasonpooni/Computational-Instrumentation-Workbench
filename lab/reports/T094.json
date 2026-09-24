@@ -299,13 +299,13 @@
   "python": "3.12.3",
   "scipy": "1.16.2",
   "sources": {
-   "src/ciw/lab/exchange_provenance_bundles.py": "a505b35560263c1b473912f79e61b15b7e474f8eb1807e691847e4c69791c2d3",
-   "src/ciw/lab/exchange_provenance_bundles_fixtures.py": "f30205e8305a225f24d94b06cba8b519ecea4680ca723aaca3591ff707d04e1c"
+   "src/ciw/lab/exchange_provenance_bundles.py": "3acc6fd6976bb5e6dd8ad3bfc3d09a1d9594ca0a06f4db823581e5b651d4835e",
+   "src/ciw/lab/exchange_provenance_bundles_fixtures.py": "7d6da1148d3744ae1e754b53f697b5b4919aff2666788ae6aec0e48e6e2380c9"
   },
   "sympy": "1.14.0"
  },
  "recommended_next_task": "T095: refuse malformed exchange fixtures with retained error text.",
- "report_id": "sha256:c6c04a854883a67e9d76926556e9b8996fc60c97a5a954a8df958bbde747fe47",
+ "report_id": "sha256:7fc546ebacefffb28b41edc85e6cf553125d575164962935e92e0b3edc70b892",
  "schema": "ciw.lab-task-report.v1",
  "section": "exchange-provenance",
  "state": "completed",

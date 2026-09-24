@@ -17,15 +17,18 @@
   },
   "primary": "numerically_verified"
  },
- "expected_invariant": "Session covariance = closed form = schedule to roundoff; ANEES inside chi2(4N)/N; refusal codes zero_fill_refused, gap_strategy_refused, nonfinite_observation, missing_reading.",
- "experiment": "Advance a FusionSession through gaps of 1, 5, 20 and 50 ticks and compare with the closed form; Monte Carlo NEES through the dropout pattern; request zero-fill, hold-last, NaN/None readings and a fractional tick through the API; zero-fill by hand outside the API as the counterexample, predicted beforehand from the exact joint moments of truth and filter.",
+ "expected_invariant": "Session covariance = closed form = schedule to roundoff; ANEES inside chi2(4N)/N; refusal codes zero_fill_refused, gap_strategy_refused, malformed_tick, out_of_order, calibration_expired, track_lost_requires_reacquisition, nonfinite_observation, missing_reading, with the session state bitwise unchanged by every session refusal.",
+ "experiment": "Advance a FusionSession through gaps of 1, 5, 20 and 50 ticks and compare with the closed form; Monte Carlo NEES through the dropout pattern; after a 50-tick gap that loses a 1 m track, request zero-fill, hold-last and a fractional tick and offer an old, an expired and a post-gap reading, comparing the state bitwise after each refusal; build NaN/None observations; zero-fill by hand outside the API as the counterexample, predicted beforehand from the exact joint moments of truth and filter.",
  "failure_modes_checked": [
   "zero-fill",
   "hold-last substitution",
   "NaN placeholder",
   "None placeholder",
   "fractional prediction tick",
-  "state mutation by a refused call",
+  "late reading after a gap",
+  "expired calibration after a gap",
+  "reading into a track lost during a gap",
+  "state mutation by a refusal raised after prediction work",
   "covariance growth mismatch"
  ],
  "findings": [
@@ -153,6 +156,14 @@
    "basis": {
     "checks": [
      {
+      "comparison": "abs_le",
+      "observed": 0.0,
+      "passed": true,
+      "reference": "track not lost after the 50-tick gap",
+      "reference_kind": "invariant",
+      "tolerance": 0.0
+     },
+     {
       "expected_refusal": "zero_fill_refused",
       "observed_refusal": "zero_fill_refused",
       "passed": true,
@@ -167,6 +178,50 @@
       "reference_kind": "refusal"
      },
      {
+      "expected_refusal": "malformed_tick",
+      "observed_refusal": "malformed_tick",
+      "passed": true,
+      "reference": "predict to tick 50.5",
+      "reference_kind": "refusal"
+     },
+     {
+      "expected_refusal": "out_of_order",
+      "observed_refusal": "out_of_order",
+      "passed": true,
+      "reference": "fuse a tick-45 reading after the gap to tick 50",
+      "reference_kind": "refusal"
+     },
+     {
+      "expected_refusal": "calibration_expired",
+      "observed_refusal": "calibration_expired",
+      "passed": true,
+      "reference": "fuse a tick-51 reading under a calibration valid until tick 40",
+      "reference_kind": "refusal"
+     },
+     {
+      "expected_refusal": "track_lost_requires_reacquisition",
+      "observed_refusal": "track_lost_requires_reacquisition",
+      "passed": true,
+      "reference": "fuse a tick-51 reading into the lost track",
+      "reference_kind": "refusal"
+     },
+     {
+      "comparison": "abs_le",
+      "observed": 0.0,
+      "passed": true,
+      "reference": "session refusals that changed the state, covariance, clock, track status or latest candidate",
+      "reference_kind": "exact_arithmetic",
+      "tolerance": 0.0
+     },
+     {
+      "comparison": "abs_le",
+      "observed": 0.0,
+      "passed": true,
+      "reference": "refused readings not retained with their refusal codes",
+      "reference_kind": "invariant",
+      "tolerance": 0.0
+     },
+     {
       "expected_refusal": "nonfinite_observation",
       "observed_refusal": "nonfinite_observation",
       "passed": true,
@@ -179,26 +234,11 @@
       "passed": true,
       "reference": "Observation with no value",
       "reference_kind": "refusal"
-     },
-     {
-      "expected_refusal": "malformed_tick",
-      "observed_refusal": "malformed_tick",
-      "passed": true,
-      "reference": "predict to tick 50.5",
-      "reference_kind": "refusal"
-     },
-     {
-      "comparison": "abs_le",
-      "observed": 0.0,
-      "passed": true,
-      "reference": "state changed by a refused call",
-      "reference_kind": "invariant",
-      "tolerance": 0.0
      }
     ],
-    "derivation": "FusionSession.handle_gap, FusionSession.predict and Observation validation"
+    "derivation": "FusionSession.handle_gap, predict and fuse, and Observation validation"
    },
-   "claim": "The session refuses requested substitution strategies (zero_fill, hold_last), NaN and absent observation values and a non-integer prediction tick, and leaves its state unchanged by the refusals",
+   "claim": "After a prediction-only gap that loses the track, the session refuses requested substitution strategies (zero_fill, hold_last), a non-integer prediction tick, a reading older than its clock, a reading under an expired calibration and a reading into the lost track (refused after its prediction was computed on copies); none of these refusals changes the state, covariance, clock, track status or latest candidate, and every refused reading is retained with its refusal. NaN and absent values are refused by the Observation type before any session call",
    "domain": "computational_pipeline",
    "evidence_status": "numerically_verified",
    "regression_tolerance": {
@@ -213,10 +253,19 @@
    "unit": null,
    "value": {
     "absent_value": "missing_reading",
+    "expired_calibration": "calibration_expired",
     "fractional_tick": "malformed_tick",
     "hold_last": "gap_strategy_refused",
     "nan_reading": "nonfinite_observation",
-    "state_unchanged": true,
+    "reading_into_lost_track": "track_lost_requires_reacquisition",
+    "reading_older_than_clock": "out_of_order",
+    "refused_reading_dispositions": [
+     "refused:out_of_order",
+     "refused:calibration_expired",
+     "refused:track_lost_requires_reacquisition"
+    ],
+    "session_refusals_changing_state": 0,
+    "track_status_after_gap": "lost",
     "zero_fill": "zero_fill_refused"
    }
   },
@@ -320,9 +369,9 @@
  ],
  "generated_artifacts": [
   {
-   "bytes": 5847,
+   "bytes": 6187,
    "path": "artifacts/T069/missing_data.json",
-   "sha256": "3563f6f5b46b7a3afe25cf960a10621957cb9d588ae726e18195f0b8aab83900"
+   "sha256": "b4eab18339d2a65084715f659d47c85cfa0b89c4cc540fce926576db2efa4239"
   },
   {
    "bytes": 3669,
@@ -353,14 +402,14 @@
   "scipy": "1.16.2",
   "sources": {
    "src/ciw/lab/sensor_fusion_bench.py": "f373849a4c6836fa20685c59ce7a6fe6bf732f6df9d6a49646cdc017262dd656",
-   "src/ciw/lab/sensor_fusion_common.py": "6787aa47d199d50d0b4de4d7e53714ce7b8b5aad37d647cfc1a954414e90209f",
-   "src/ciw/lab/sensor_fusion_objects.py": "a795ffc235e0a4118cb7b9ac7800191a90984372d79e59f1a934442d98d7a1f1",
-   "src/ciw/lab/sensor_fusion_robustness.py": "9c94ececd04bce6abe83323c53b0ffee060b99e4b9f9fb8e3b58ec22c24516ec"
+   "src/ciw/lab/sensor_fusion_common.py": "db3b0430ad5c13920239cef354da61b64ab1b01f84b2d3d5aff2f78840a5867a",
+   "src/ciw/lab/sensor_fusion_objects.py": "93fc55ddca91f1adfb886d21805ea8f82586548ee84e1f6cc7daed4df1f53bb9",
+   "src/ciw/lab/sensor_fusion_robustness.py": "d8944a1e077dab7955d5162b6dd233a7f0b721c99e76176eb1b987b7d8b765c5"
   },
   "sympy": "1.14.0"
  },
  "recommended_next_task": "T070: stale clocks, where a reading is present but refers to the wrong time.",
- "report_id": "sha256:fc2d2a8b0dffd1716bb3e808d7a8b2d6df0518b0328cfeedfadd056dc3ca304d",
+ "report_id": "sha256:4bbf4251f0f64577d7889f2060ef3d3682a7dd82a44b325d0367f16e8a683ab2",
  "schema": "ciw.lab-task-report.v1",
  "section": "sensor-fusion",
  "state": "completed",
@@ -369,12 +418,17 @@
   "check: Prediction-only steps grow the covariance exactly as F(n dt) P F(n dt)^T + Q(n dt), identically in the session API and the batch schedule vs session and schedule covariance against the closed form (relative)",
   "check: With a 30-tick gap and 20% dropout handled by prediction only, NEES stays chi-square consistent and the error covariance at the end of the gap equals the grown covariance vs fraction of ticks with ANEES in the 99% interval",
   "check: With a 30-tick gap and 20% dropout handled by prediction only, NEES stays chi-square consistent and the error covariance at the end of the gap equals the grown covariance vs gap-end error covariance against the predicted covariance (max |z|)",
-  "check: The session refuses requested substitution strategies (zero_fill, hold_last), NaN and absent observation values and a non-integer prediction tick, and leaves its state unchanged by the refusals vs handle_gap strategy zero_fill",
-  "check: The session refuses requested substitution strategies (zero_fill, hold_last), NaN and absent observation values and a non-integer prediction tick, and leaves its state unchanged by the refusals vs handle_gap strategy hold_last",
-  "check: The session refuses requested substitution strategies (zero_fill, hold_last), NaN and absent observation values and a non-integer prediction tick, and leaves its state unchanged by the refusals vs Observation with NaN values",
-  "check: The session refuses requested substitution strategies (zero_fill, hold_last), NaN and absent observation values and a non-integer prediction tick, and leaves its state unchanged by the refusals vs Observation with no value",
-  "check: The session refuses requested substitution strategies (zero_fill, hold_last), NaN and absent observation values and a non-integer prediction tick, and leaves its state unchanged by the refusals vs predict to tick 50.5",
-  "check: The session refuses requested substitution strategies (zero_fill, hold_last), NaN and absent observation values and a non-integer prediction tick, and leaves its state unchanged by the refusals vs state changed by a refused call",
+  "check: After a prediction-only gap that loses the track, the session refuses requested substitution strategies (zero_fill, hold_last), a non-integer prediction tick, a reading older than its clock, a reading under an expired calibration and a reading into the lost track (refused after its prediction was computed on copies); none of these refusals changes the state, covariance, clock, track status or latest candidate, and every refused reading is retained with its refusal. NaN and absent values are refused by the Observation type before any session call vs track not lost after the 50-tick gap",
+  "check: After a prediction-only gap that loses the track, the session refuses requested substitution strategies (zero_fill, hold_last), a non-integer prediction tick, a reading older than its clock, a reading under an expired calibration and a reading into the lost track (refused after its prediction was computed on copies); none of these refusals changes the state, covariance, clock, track status or latest candidate, and every refused reading is retained with its refusal. NaN and absent values are refused by the Observation type before any session call vs handle_gap strategy zero_fill",
+  "check: After a prediction-only gap that loses the track, the session refuses requested substitution strategies (zero_fill, hold_last), a non-integer prediction tick, a reading older than its clock, a reading under an expired calibration and a reading into the lost track (refused after its prediction was computed on copies); none of these refusals changes the state, covariance, clock, track status or latest candidate, and every refused reading is retained with its refusal. NaN and absent values are refused by the Observation type before any session call vs handle_gap strategy hold_last",
+  "check: After a prediction-only gap that loses the track, the session refuses requested substitution strategies (zero_fill, hold_last), a non-integer prediction tick, a reading older than its clock, a reading under an expired calibration and a reading into the lost track (refused after its prediction was computed on copies); none of these refusals changes the state, covariance, clock, track status or latest candidate, and every refused reading is retained with its refusal. NaN and absent values are refused by the Observation type before any session call vs predict to tick 50.5",
+  "check: After a prediction-only gap that loses the track, the session refuses requested substitution strategies (zero_fill, hold_last), a non-integer prediction tick, a reading older than its clock, a reading under an expired calibration and a reading into the lost track (refused after its prediction was computed on copies); none of these refusals changes the state, covariance, clock, track status or latest candidate, and every refused reading is retained with its refusal. NaN and absent values are refused by the Observation type before any session call vs fuse a tick-45 reading after the gap to tick 50",
+  "check: After a prediction-only gap that loses the track, the session refuses requested substitution strategies (zero_fill, hold_last), a non-integer prediction tick, a reading older than its clock, a reading under an expired calibration and a reading into the lost track (refused after its prediction was computed on copies); none of these refusals changes the state, covariance, clock, track status or latest candidate, and every refused reading is retained with its refusal. NaN and absent values are refused by the Observation type before any session call vs fuse a tick-51 reading under a calibration valid until tick 40",
+  "check: After a prediction-only gap that loses the track, the session refuses requested substitution strategies (zero_fill, hold_last), a non-integer prediction tick, a reading older than its clock, a reading under an expired calibration and a reading into the lost track (refused after its prediction was computed on copies); none of these refusals changes the state, covariance, clock, track status or latest candidate, and every refused reading is retained with its refusal. NaN and absent values are refused by the Observation type before any session call vs fuse a tick-51 reading into the lost track",
+  "check: After a prediction-only gap that loses the track, the session refuses requested substitution strategies (zero_fill, hold_last), a non-integer prediction tick, a reading older than its clock, a reading under an expired calibration and a reading into the lost track (refused after its prediction was computed on copies); none of these refusals changes the state, covariance, clock, track status or latest candidate, and every refused reading is retained with its refusal. NaN and absent values are refused by the Observation type before any session call vs session refusals that changed the state, covariance, clock, track status or latest candidate",
+  "check: After a prediction-only gap that loses the track, the session refuses requested substitution strategies (zero_fill, hold_last), a non-integer prediction tick, a reading older than its clock, a reading under an expired calibration and a reading into the lost track (refused after its prediction was computed on copies); none of these refusals changes the state, covariance, clock, track status or latest candidate, and every refused reading is retained with its refusal. NaN and absent values are refused by the Observation type before any session call vs refused readings not retained with their refusal codes",
+  "check: After a prediction-only gap that loses the track, the session refuses requested substitution strategies (zero_fill, hold_last), a non-integer prediction tick, a reading older than its clock, a reading under an expired calibration and a reading into the lost track (refused after its prediction was computed on copies); none of these refusals changes the state, covariance, clock, track status or latest candidate, and every refused reading is retained with its refusal. NaN and absent values are refused by the Observation type before any session call vs Observation with NaN values",
+  "check: After a prediction-only gap that loses the track, the session refuses requested substitution strategies (zero_fill, hold_last), a non-integer prediction tick, a reading older than its clock, a reading under an expired calibration and a reading into the lost track (refused after its prediction was computed on copies); none of these refusals changes the state, covariance, clock, track status or latest candidate, and every refused reading is retained with its refusal. NaN and absent values are refused by the Observation type before any session call vs Observation with no value",
   "check: Zero-filling missing readings by hand drags the estimate toward the origin and destroys consistency by the amount the exact joint moments predict vs grand-mean NEES of the zero-filled filter",
   "check: Zero-filling missing readings by hand drags the estimate toward the origin and destroys consistency by the amount the exact joint moments predict vs grand-mean NEES against the mismatch_moments prediction (run-level z)",
   "check: Zero-filling missing readings by hand drags the estimate toward the origin and destroys consistency by the amount the exact joint moments predict vs zero-filled RMSE relative to prediction only",

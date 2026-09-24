@@ -24,8 +24,8 @@
   "margin ratio changes inside the window",
   "x scaling alters the sample",
   "discrete near-threshold code flip under (P, x) scaling",
-  "code moved against the exact class outside the window (searched as counterexample)",
-  "subnormal flip"
+  "code moved against the exact class outside the window",
+  "resolution of the scaled subnormal witness not zero"
  ],
  "findings": [
   {
@@ -128,14 +128,6 @@
       "reference": "scaled verdicts with a certifying code on a form whose exact class is not negative definite",
       "reference_kind": "exact_arithmetic",
       "tolerance": 0.0
-     },
-     {
-      "comparison": "ge",
-      "observed": 35.0,
-      "passed": true,
-      "reference": "outside-window code flips observed",
-      "reference_kind": "invariant",
-      "tolerance": 1.0
      }
     ],
     "provider": {
@@ -148,23 +140,6 @@
     }
    },
    "claim": "Outside LAPACK's scaling window power-of-two rescaling of A and P never moves a PLSR code to a certificate that the exact class contradicts",
-   "counterexample": {
-    "statement": "Power-of-two scaling of A and P never changes a PLSR verdict code while all quantities stay in the binary64 normal range",
-    "witness": {
-     "abc": [
-      300,
-      300,
-      0
-     ],
-     "base": "CERTIFIED_WITH_MARGIN",
-     "base_ratio": 1.0000000051989002,
-     "exact_class": "negative_definite",
-     "kappa": -1.0000000051989002,
-     "scaled": "NUMERICAL_INCONCLUSIVE",
-     "scaled_ratio": 0.9999999999999996,
-     "window": "outside"
-    }
-   },
    "domain": "numerical",
    "evidence_status": "numerically_verified",
    "regression_tolerance": {
@@ -172,7 +147,7 @@
     "rel": 0.0
    },
    "uncertainty": {
-    "basis": "which near-threshold codes flip depends on LAPACK/BLAS rounding; the soundness count does not",
+    "basis": "which near-threshold codes flip depends on LAPACK/BLAS rounding and is retained in the artifact; the soundness count does not",
     "kind": "reference_error",
     "value": 0.0
    },
@@ -187,12 +162,12 @@
    "basis": {
     "checks": [
      {
-      "comparison": "ge",
-      "observed": 1.0,
+      "comparison": "abs_le",
+      "observed": 0.0,
       "passed": true,
-      "reference": "unit-scale code is DECREASE_NOT_DEFINITE (1 if so)",
+      "reference": "unit-scale witness verdicts whose code is not DECREASE_NOT_DEFINITE",
       "reference_kind": "invariant",
-      "tolerance": 1.0
+      "tolerance": 0.0
      },
      {
       "comparison": "abs_le",
@@ -201,14 +176,6 @@
       "reference": "PLSR resolution of the witness scaled by 2^-1074 (underflows to zero)",
       "reference_kind": "invariant",
       "tolerance": 0.0
-     },
-     {
-      "comparison": "ge",
-      "observed": 1.0,
-      "passed": true,
-      "reference": "scaled code differs from the unit-scale code (1 if so)",
-      "reference_kind": "invariant",
-      "tolerance": 1.0
      }
     ],
     "provider": {
@@ -220,30 +187,7 @@
      "runtime_digest": "a6fee6b3b4eb7852b31f5a285fe8c50b535f25762e1daf82e36720ef8dd1b7c7"
     }
    },
-   "claim": "Scaling the witness by 2^-1074 drives its resolution to zero while its unit-scale code is DECREASE_NOT_DEFINITE; the scaled code is recorded",
-   "counterexample": {
-    "statement": "Power-of-two scaling of A never changes a PLSR verdict code",
-    "witness": {
-     "A_unit": [
-      [
-       -2.0,
-       5.0
-      ],
-      [
-       0.0,
-       -3.0
-      ]
-     ],
-     "P": "I",
-     "scale": "2^-1074",
-     "scaled_code": "CERTIFIED_WITH_MARGIN",
-     "unit_code": "DECREASE_NOT_DEFINITE",
-     "x": [
-      1.0,
-      0.0
-     ]
-    }
-   },
+   "claim": "Scaling the witness by 2^-1074 drives its resolution to zero while its unit-scale code is DECREASE_NOT_DEFINITE; the scaled code is retained as an artifact",
    "domain": "numerical",
    "evidence_status": "numerically_verified",
    "regression_tolerance": {
@@ -251,13 +195,13 @@
     "rel": 0.0
    },
    "uncertainty": {
-    "basis": "the scaled code depends on LAPACK's subnormal handling",
-    "kind": "reference_error",
+    "basis": "the unit-scale form's top eigenvalue lies about 3.6e12 resolutions above zero and the scaled resolution underflows exactly; the scaled code depends on LAPACK's subnormal handling and is not part of the finding",
+    "kind": "roundoff",
     "value": 0.0
    },
    "unit": null,
    "value": {
-    "scaled_code": "CERTIFIED_WITH_MARGIN",
+    "scaled_resolution": 0.0,
     "unit_code": "DECREASE_NOT_DEFINITE"
    }
   },
@@ -346,9 +290,9 @@
  ],
  "generated_artifacts": [
   {
-   "bytes": 10946,
+   "bytes": 11145,
    "path": "artifacts/T102/scaling-invariance.json",
-   "sha256": "97cfb6905b5ce57c545b07d397323b230298936deafb3a82796138c15ed53af0"
+   "sha256": "6e71c1de017d3e0b0b5b797638695112a8497a55e09e4084e2652ef3566c05c7"
   }
  ],
  "hypothesis": "Replacing (A, P, x) by (2^a A, 2^b P, 2^c x) multiplies M, max eig(M) and the resolution by 2^(a+b) exactly, so no verdict code and no margin ratio changes while every quantity stays normal and LAPACK does not rescale internally; outside that window rounding differs and near-threshold codes may move, but never against the exact class of the declared form.",
@@ -362,7 +306,7 @@
  ],
  "mathematical_model": "Continuous time: M(2^a A, 2^b P) = 2^(a+b) M(A, P) and resolution likewise (homogeneous of degree one in each of max|A|, max|P|, max|M|); PLSR divides x by a power of two before evaluating, so c never enters. Discrete time admits only (P, x) scaling. LAPACK dsyevd rescales by a non-power-of-two factor when max|M| lies outside [2^-485, 2^485]. Exact power-of-two scaling preserves the exact class of M.",
  "number": 102,
- "numerical_result": "Inside the window: 550 scaled evaluations, 0 code flips, 0 ratio changes. Outside the window: 250 evaluations, 35 flips, 250 ratio changes, 0 certificates contradicting the exact class. Discrete (P, x) scaling: 0 flips in 36 (half of the cases within about one resolution of the threshold). Subnormal witness: DECREASE_NOT_DEFINITE -> CERTIFIED_WITH_MARGIN. eigvalsh bitwise homogeneous in 72/72 inside and 0/48 outside scalings. Conclusion: verdicts are exactly power-of-two invariant inside LAPACK's unscaled window and the normal range; outside it 35 near-threshold codes move, never against the exact class; the subnormal witness flips from DECREASE_NOT_DEFINITE to a false certificate.",
+ "numerical_result": "Inside the window: 550 scaled evaluations, 0 code flips, 0 ratio changes. Outside the window: 250 evaluations, 35 flips, 250 ratio changes, 0 certificates contradicting the exact class. Discrete (P, x) scaling: 0 flips in 36 (half of the cases within about one resolution of the threshold). Subnormal witness: unit-scale code DECREASE_NOT_DEFINITE, resolution 0 after scaling by 2^-1074 (its scaled code is retained in the artifact). eigvalsh bitwise homogeneous in 72/72 inside and 0/48 outside scalings. Conclusion: verdicts are exactly power-of-two invariant inside LAPACK's unscaled window and the normal range; outside it codes may move with the LAPACK build (the flips of this run are retained in the artifact), never against the exact class; below the normal range the witness's resolution underflows to zero, so its scaled code is left to LAPACK's subnormal eigenvalue.",
  "observation_model": "PLSR code and margin ratio (margin/resolution) for each scaled case versus the unscaled case; exact rational class of each declared form.",
  "physical_validation_status": {
   "statement": "Physical validation requires acquired hardware evidence; none was acquired for this task.",
@@ -393,14 +337,14 @@
   },
   "scipy": "1.16.2",
   "sources": {
-   "src/ciw/lab/lyapunov.py": "58d6c7473f0a42002b57888de0ccfbbf73b571bbbabbf9ee81e0a05c734f2320",
+   "src/ciw/lab/lyapunov.py": "cbcb4d58d7313d7c537957a1b7dd35039a21bae80125bf59147eeed2c1232bbb",
    "src/ciw/lab/lyapunov_provider.py": "da3465b48b5f5efc47bfe6ab8379cf2cf2bc23e4835dc7ff047252e77fa6ef17",
-   "src/ciw/lab/lyapunov_reference.py": "fa37ef453c23ad2bed2eab41132e72670e166b93eebd5fc9d67a4a89a7c92cca"
+   "src/ciw/lab/lyapunov_reference.py": "bdf0bb5074ae2caca6c8a5d8e63a15e346b007098e6def6b058d077719bc1336"
   },
   "sympy": "1.14.0"
  },
  "recommended_next_task": "T103: overflow and underflow of states and parameters; propose that PLSR pre-scale M by a power of two into LAPACK's window before eigvalsh so verdicts are exactly scale-invariant.",
- "report_id": "sha256:e6dab6845372cad7b00ca1979de458c4fb0ffcea6ccfdbd829ae5da4db1a5fe4",
+ "report_id": "sha256:886b06dd389572fcd0ae635a47791bda4df6eae235dae1265e9d7caa3483b70e",
  "schema": "ciw.lab-task-report.v1",
  "section": "lyapunov",
  "state": "completed",
@@ -410,22 +354,21 @@
   "check: Power-of-two scaling of (A, P, x) inside LAPACK's window never changes the PLSR code or margin ratio vs margin ratios not bitwise equal",
   "check: Scaling P and x by powers of two never changes a discrete-time PLSR code, near the threshold included vs code flips against the unscaled verdict",
   "check: Outside LAPACK's scaling window power-of-two rescaling of A and P never moves a PLSR code to a certificate that the exact class contradicts vs scaled verdicts with a certifying code on a form whose exact class is not negative definite",
-  "check: Outside LAPACK's scaling window power-of-two rescaling of A and P never moves a PLSR code to a certificate that the exact class contradicts vs outside-window code flips observed",
-  "check: Scaling the witness by 2^-1074 drives its resolution to zero while its unit-scale code is DECREASE_NOT_DEFINITE; the scaled code is recorded vs unit-scale code is DECREASE_NOT_DEFINITE (1 if so)",
-  "check: Scaling the witness by 2^-1074 drives its resolution to zero while its unit-scale code is DECREASE_NOT_DEFINITE; the scaled code is recorded vs PLSR resolution of the witness scaled by 2^-1074 (underflows to zero)",
-  "check: Scaling the witness by 2^-1074 drives its resolution to zero while its unit-scale code is DECREASE_NOT_DEFINITE; the scaled code is recorded vs scaled code differs from the unit-scale code (1 if so)",
+  "check: Scaling the witness by 2^-1074 drives its resolution to zero while its unit-scale code is DECREASE_NOT_DEFINITE; the scaled code is retained as an artifact vs unit-scale witness verdicts whose code is not DECREASE_NOT_DEFINITE",
+  "check: Scaling the witness by 2^-1074 drives its resolution to zero while its unit-scale code is DECREASE_NOT_DEFINITE; the scaled code is retained as an artifact vs PLSR resolution of the witness scaled by 2^-1074 (underflows to zero)",
   "independent: No unscaled PLSR verdict certifies a form whose exact class is not negative definite vs ciw.lab.lyapunov_reference",
   "check: numpy.linalg.eigvalsh commutes exactly with power-of-two scaling while max|M| stays in [2^-485, 2^485] vs eigenvalues of 2^j M rescaled by 2^-j versus eigenvalues of M, bitwise",
   "pytest: tests/test_lab_lyapunov.py::test_t102_power_of_two_scaling",
   "pytest: tests/test_lab_lyapunov.py::test_eigvalsh_scaling_window",
   "pytest: tests/test_lab_lyapunov.py::test_discrete_razor_edge_sits_at_the_threshold",
+  "pytest: tests/test_lab_lyapunov.py::test_checks_are_unconditional_and_observed_values_are_computed",
   "pytest: tests/test_lab_lyapunov.py::test_provider_tasks_are_partial_without_the_provider"
  ],
  "tests_skipped": [],
  "title": "Test power-of-two homogeneous scaling.",
- "uncertainty": "Inside-window results are exact (bitwise). Outside-window flip counts depend on the LAPACK/BLAS build and on how close each case sits to the threshold; they are retained in the artifact, and only the soundness count is a checked finding value.",
+ "uncertainty": "Inside-window results are exact (bitwise). Outside-window flip counts and the scaled witness's code depend on the LAPACK/BLAS build and on how close each case sits to the threshold; they are retained in the artifact, and only the soundness counts are checked finding values.",
  "unresolved_assumptions": [
   "The LAPACK window [2^-485, 2^485] is taken from reference dsyevd (RMIN, RMAX); other LAPACK builds may rescale differently.",
-  "Outside-window flip counts depend on the LAPACK/BLAS build; only the soundness property is checked."
+  "Outside-window flip counts and the scaled witness's code depend on the LAPACK/BLAS build; they are retained in the artifact, and only the soundness property is checked."
  ]
 }

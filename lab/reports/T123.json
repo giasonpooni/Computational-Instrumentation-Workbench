@@ -7,15 +7,15 @@
  ],
  "evidence_status": {
   "counts": {
-   "analytic": 0,
+   "analytic": 1,
    "hardware_measured": 0,
    "independently_verified": 0,
    "not_established": 1,
-   "numerically_verified": 4,
+   "numerically_verified": 3,
    "provider_backed": 0,
    "synthetic": 0
   },
-  "primary": "numerically_verified"
+  "primary": "analytic"
  },
  "expected_invariant": "nat + J, nat < J, nat == J, J -> nat, W + J and untyped mixing refused; same-dimension arithmetic agrees to binary64 rounding; no field or panel mixes dimensions.",
  "experiment": "Exercise the typed algebra; classify every field name by unit token (J, W or nat family); inspect experiment panels.",
@@ -25,7 +25,7 @@
   "silent conversion",
   "untyped number on either side of a quantity",
   "power added to energy",
-  "unit-dependent untyped sum"
+  "unit-dependent untyped sum (analytic: dimensional analysis, not a computed check)"
  ],
  "findings": [
   {
@@ -276,16 +276,7 @@
   {
    "assigned_by": "ciw.lab.evidence",
    "basis": {
-    "checks": [
-     {
-      "comparison": "ge",
-      "observed": 199.8,
-      "passed": true,
-      "reference": "difference between the two computed untyped sums",
-      "reference_kind": "exact_arithmetic",
-      "tolerance": 1.0
-     }
-    ]
+    "derivation": "dimensional analysis: for any F, (F + 1000 E) - (F + E) = 999 E, nonzero for every E != 0, so an untyped sum of nats and joules depends on the energy unit; the value illustrates it with the final T122 free energy and E = 0.2 J (a computed check of this identity could not fail, so none is recorded)"
    },
    "claim": "An untyped sum of free energy and physical energy changes when the energy unit changes",
    "counterexample": {
@@ -295,14 +286,14 @@
      "free_energy_nats": 8.40639441534792
     }
    },
-   "domain": "numerical",
-   "evidence_status": "numerically_verified",
+   "domain": "mathematical",
+   "evidence_status": "analytic",
    "regression_tolerance": {
     "abs": 1e-09,
     "rel": 0.0
    },
    "uncertainty": {
-    "basis": "binary64 sums",
+    "basis": "binary64 sums of the illustration",
     "kind": "roundoff",
     "value": 1e-13
    },
@@ -357,14 +348,14 @@
   "python": "3.12.3",
   "scipy": "1.16.2",
   "sources": {
-   "src/ciw/lab/energy_gpu.py": "fca900557e7fac2261a168afe0ee81efc48508a874a5045bf4f6b74937165bb1",
-   "src/ciw/lab/energy_gpu_kernels.py": "03f3d92f8407f476cb74536911d476929843ee74232a7d7017c00f43c785a2b4",
-   "src/ciw/lab/energy_gpu_telemetry.py": "21cac5f654ce4a120887ff40da62fda47bd38a3c383bbad6cc3cb13b4168fa2d"
+   "src/ciw/lab/energy_gpu.py": "a66107417b5bfa398077a919b2f5351ca222e9961fa8dfb3256b78efc17fd930",
+   "src/ciw/lab/energy_gpu_kernels.py": "366c477ff1af7f59b626f4e64bf994ae4cbce5754c0e9c5be1c2acb515f99f4b",
+   "src/ciw/lab/energy_gpu_telemetry.py": "df82c8748d3aa75384e3928bffcf516cd6f72cccde99edf8d21f089cc768bafa"
   },
   "sympy": "1.14.0"
  },
  "recommended_next_task": "T146: carry units in one canonical serialization across languages",
- "report_id": "sha256:0e82ed7172df78f76fca787628664d7c4bdf8c9f1a9452ae1add43faaea401a6",
+ "report_id": "sha256:a24e3d0e1c82615a7bd907b79fabd9fab78b0a6f4156c3245a3c7b1589300251",
  "schema": "ciw.lab-task-report.v1",
  "section": "energy-gpu",
  "state": "completed",
@@ -387,7 +378,6 @@
   "check: CIW energy records and free-energy records keep joules, watts and nats in distinct unit-bearing fields vs J/mJ or W/mW fields in variational records",
   "check: CIW energy records and free-energy records keep joules, watts and nats in distinct unit-bearing fields vs energy-named variational numbers outside the free-energy (nat) family",
   "check: CIW energy records and free-energy records keep joules, watts and nats in distinct unit-bearing fields vs experiment view panels mixing units",
-  "check: An untyped sum of free energy and physical energy changes when the energy unit changes vs difference between the two computed untyped sums",
   "pytest: tests/test_lab_energy_gpu.py::test_typed_quantities_refuse_nats_plus_joules",
   "pytest: tests/test_lab_energy_gpu.py::test_fixture_tasks_without_repository_files",
   "pytest: tests/test_lab_energy_gpu.py::test_every_numerical_finding_declares_uncertainty_and_tolerance"

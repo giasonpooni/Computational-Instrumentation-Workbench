@@ -197,37 +197,37 @@
    },
    "claim": "At required_margin 0 near-boundary spectra within two resolutions of zero receive CERTIFIED_WITH_MARGIN, and every such certificate is exactly sound",
    "counterexample": {
-    "statement": "Near-boundary spectra yield NUMERICAL_INCONCLUSIVE or MARGIN_LOW rather than CERTIFIED_WITH_MARGIN (T107 specification)",
+    "statement": "Near-boundary spectra yield NUMERICAL_INCONCLUSIVE or MARGIN_LOW rather than CERTIFIED_WITH_MARGIN (candidate hypothesis formulated for T107, not a quoted specification)",
     "witness": {
      "A_hex": [
       [
-       "-0x1.7875609decd6bp-1",
-       "0x1.28ce156988ceap-4"
+       "-0x1.e636e83aa265ap-2",
+       "-0x1.748d1cc4dece5p+4"
       ],
       [
-       "-0x1.cf4408a8d99ffp-1",
-       "-0x1.96f6b68fe9f5dp-7"
+       "0x1.7b8d5b5ad374dp+4",
+       "-0x1.9ce6d32eaa8fdp-4"
       ]
      ],
      "P_hex": [
       [
-       "0x1.7fcc240b72fe6p+2",
-       "-0x1.1e3d4143d88d0p+2"
+       "0x1.0000000000000p+0",
+       "0x0.0p+0"
       ],
       [
-       "-0x1.1e3d4143d88d0p+2",
-       "0x1.4033dbf48d019p+2"
+       "0x0.0p+0",
+       "0x1.0000000000000p+0"
       ]
      ],
-     "case": 96,
+     "case": 3,
      "code_at_required_margin_0": "CERTIFIED_WITH_MARGIN",
-     "exact_bin": "[-1, 0) res",
+     "exact_bin": "[-2, -1) res",
      "exact_class": "negative_definite",
-     "margin_ratio": 1.0012506116492788,
+     "margin_ratio": 1.8230956069042017,
      "n": 2,
      "x": [
-      -1.5629534764558126,
-      0.24078627034999178
+      0.5817207569849171,
+      -0.7165189568447908
      ]
     }
    },
@@ -383,7 +383,7 @@
    "sha256": "3092b772595956edf1329ba1d4d3cb701458c7af082e426cdcd9772d3c33a900"
   }
  ],
- "hypothesis": "PLSR never gives a certifying code to a near-boundary decrease form that is not exactly negative definite; beyond two resolutions from zero it always resolves the sign; under a declared margin of three resolutions no case within two resolutions is CERTIFIED_WITH_MARGIN. The specification's stronger statement -- that near-boundary spectra yield NUMERICAL_INCONCLUSIVE or MARGIN_LOW rather than CERTIFIED_WITH_MARGIN -- is tested at required_margin 0 as a candidate counterexample.",
+ "hypothesis": "PLSR never gives a certifying code to a near-boundary decrease form that is not exactly negative definite; beyond two resolutions from zero it always resolves the sign; under a declared margin of three resolutions no case within two resolutions is CERTIFIED_WITH_MARGIN. A stronger candidate statement formulated for this experiment (it is not quoted from the runtime's documentation) -- that near-boundary spectra yield NUMERICAL_INCONCLUSIVE or MARGIN_LOW rather than CERTIFIED_WITH_MARGIN -- is tested at required_margin 0 as a candidate counterexample.",
  "input_data": [
   "90 continuous cases (PCG64 seed 107): n in {2, 3, 4}, P = I or SPD, kappa in [-8.0, -3.0, -2.2, -1.8, -1.2, -0.8, -0.4, 0.0, 0.4, 0.8, 1.2, 1.8, 2.2, 3.0, 8.0] (target max eig = kappa * resolution)",
   "12 razor-edge cases (seed 1071) with computed |max eig| / resolution just above 1",
@@ -391,7 +391,7 @@
  ],
  "mathematical_model": "If the resolution bounds the float64 error e of max eig(M) (|e| <= res), then exact lambda < -2 res gives margin > res (certified), exact lambda >= 2 res gives max eig > res (not definite), and exact lambda >= 0 can never give margin > res. With required margin 3 res, certification needs margin > 3 res, impossible for exact lambda >= -2 res.",
  "number": 107,
- "numerical_result": "102 cases; codes by exact bin at required_margin 0: {'below -2 res': {'CERTIFIED_WITH_MARGIN': 18}, '[-2, -1) res': {'CERTIFIED_WITH_MARGIN': 16}, '[-1, 0) res': {'NUMERICAL_INCONCLUSIVE': 14, 'CERTIFIED_WITH_MARGIN': 2}, '[0, 1) res': {'NUMERICAL_INCONCLUSIVE': 16}, '[1, 2) res': {'DECREASE_NOT_DEFINITE': 18}, 'at or above 2 res': {'DECREASE_NOT_DEFINITE': 18}}. Unsound certifications: 0. Unresolved beyond two resolutions: 0. Certified within the band under the declared margin: 0. At required_margin 0, 18 of 66 band cases were CERTIFIED_WITH_MARGIN (2 within one resolution), 0 of them unsound. Exactly negative definite band cases: 32, of which 14 inconclusive (44%) and 18 certified. MARGIN_LOW rule mismatches: 0. Conclusion: every certificate is exactly sound and the sign is resolved beyond two resolutions; the declared margin of three resolutions keeps the band out of CERTIFIED_WITH_MARGIN; without a declared margin the band is not uniformly inconclusive, which refutes the specification's stronger statement (the certifications are sound).",
+ "numerical_result": "102 cases; codes by exact bin at required_margin 0: {'below -2 res': {'CERTIFIED_WITH_MARGIN': 18}, '[-2, -1) res': {'CERTIFIED_WITH_MARGIN': 16}, '[-1, 0) res': {'NUMERICAL_INCONCLUSIVE': 14, 'CERTIFIED_WITH_MARGIN': 2}, '[0, 1) res': {'NUMERICAL_INCONCLUSIVE': 16}, '[1, 2) res': {'DECREASE_NOT_DEFINITE': 18}, 'at or above 2 res': {'DECREASE_NOT_DEFINITE': 18}}. Unsound certifications: 0. Unresolved beyond two resolutions: 0. Certified within the band under the declared margin: 0. At required_margin 0, 18 of 66 band cases were CERTIFIED_WITH_MARGIN (2 within one resolution), 0 of them unsound. Exactly negative definite band cases: 32, of which 14 inconclusive (44%) and 18 certified. MARGIN_LOW rule mismatches: 0. Conclusion: every certificate is exactly sound and the sign is resolved beyond two resolutions; the declared margin of three resolutions keeps the band out of CERTIFIED_WITH_MARGIN; without a declared margin the band is not uniformly inconclusive, which refutes the stronger candidate statement (the certifications are sound).",
  "observation_model": "PLSR code and margin; exact bin of max eig(M) from Sylvester tests on M - t I at t = -2, -1, 0, 1, 2 resolutions in exact dyadic arithmetic.",
  "physical_validation_status": {
   "statement": "Physical validation requires acquired hardware evidence; none was acquired for this task.",
@@ -422,14 +422,14 @@
   },
   "scipy": "1.16.2",
   "sources": {
-   "src/ciw/lab/lyapunov.py": "58d6c7473f0a42002b57888de0ccfbbf73b571bbbabbf9ee81e0a05c734f2320",
+   "src/ciw/lab/lyapunov.py": "cbcb4d58d7313d7c537957a1b7dd35039a21bae80125bf59147eeed2c1232bbb",
    "src/ciw/lab/lyapunov_provider.py": "da3465b48b5f5efc47bfe6ab8379cf2cf2bc23e4835dc7ff047252e77fa6ef17",
-   "src/ciw/lab/lyapunov_reference.py": "fa37ef453c23ad2bed2eab41132e72670e166b93eebd5fc9d67a4a89a7c92cca"
+   "src/ciw/lab/lyapunov_reference.py": "bdf0bb5074ae2caca6c8a5d8e63a15e346b007098e6def6b058d077719bc1336"
   },
   "sympy": "1.14.0"
  },
  "recommended_next_task": "T108: required-margin monotonicity; measure how much of the [-2, 0) res band a less conservative eigensolver term (p(n) = n instead of n^2) would recover without losing soundness against exact bins.",
- "report_id": "sha256:552d1db340380ecaec7cbdd41824a0a34ecf7fc4334dc00697c7f1f4158faa24",
+ "report_id": "sha256:f9fd359c3b9987ea94bbc2286a0ce8f3126af2857121e82094ae3520df0ccb78",
  "schema": "ciw.lab-task-report.v1",
  "section": "lyapunov",
  "state": "completed",

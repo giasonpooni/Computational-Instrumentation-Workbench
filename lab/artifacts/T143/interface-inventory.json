@@ -19,7 +19,12 @@
     "Siemens/vendor OPC UA stacks"
    ],
    "name": "OPC UA client (read-only subscriptions)",
-   "why_native": "Certified and vendor-supported stacks are C/C++; security policies (X.509, SignAndEncrypt) and subscription timing are implemented there",
+   "native_necessity": "preferred",
+   "pure_python_alternatives": [
+    "asyncua (asyncio OPC UA client and server)",
+    "python-opcua (package opcua; superseded by asyncua)"
+   ],
+   "why_native": "Not required: the pure-Python stacks can subscribe read-only. C/C++ stacks are preferred for OPC Foundation certification, vendor support and a maintained security-policy implementation (X.509, SignAndEncrypt) that plant operators accept; either stack would sit behind the same pinned subprocess boundary, never inside the evidence process",
    "write_path": "absent"
   },
   {
@@ -39,6 +44,7 @@
     "TAP or probe device driver (vendor C)"
    ],
    "name": "EtherCAT passive monitoring (network TAP capture)",
+   "native_necessity": "required",
    "why_native": "Line-rate capture with hardware timestamps needs kernel capture drivers and C dissectors; a Python loop cannot keep up with cyclic frames at microsecond spacing",
    "write_path": "absent"
   },
@@ -59,6 +65,7 @@
     "GenICam reference implementation (C++)"
    ],
    "name": "Vendor camera SDKs (GenICam GenTL)",
+   "native_necessity": "required",
    "why_native": "Proprietary drivers, zero-copy buffers and hardware triggers are exposed only through C/C++ ABIs",
    "write_path": "absent"
   },
@@ -77,6 +84,7 @@
     "Open3D (C++ core with Python bindings)"
    ],
    "name": "Point cloud processing (PCL / Open3D)",
+   "native_necessity": "required",
    "why_native": "Registration, KD-tree and surface reconstruction kernels are C++ with nondeterministic threading unless pinned; bindings would put unaudited native state in the evidence process",
    "write_path": "absent"
   },
@@ -95,11 +103,12 @@
     "pythonOCC bindings"
    ],
    "name": "CAD kernel (OpenCASCADE)",
+   "native_necessity": "required",
    "why_native": "B-rep, STEP/IGES translation and tolerance handling live in the C++ kernel",
    "write_path": "absent"
   }
  ],
- "python_bindings_present_here": {
+ "python_packages_present_here": {
   "OCC": false,
   "PySpin": false,
   "asyncua": false,

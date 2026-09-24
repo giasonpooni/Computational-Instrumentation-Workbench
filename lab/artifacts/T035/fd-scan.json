@@ -168,7 +168,9 @@
    "pointwise_min_error": 1.3312505874524977e-11,
    "pointwise_min_ratio": 0.3503278818099621,
    "rounding_slope": -1.0259962196183976,
-   "truncation_slope": 1.999979579345425
+   "rounding_slope_stderr": 0.01489834752280599,
+   "truncation_slope": 1.999979579345425,
+   "truncation_slope_stderr": 5.746338038429902e-06
   },
   "hyperbolic-plane": {
    "error_at_1e-12": 7.910324109476299e-05,
@@ -285,7 +287,9 @@
    "pointwise_min_error": 7.374441180232571e-11,
    "pointwise_min_ratio": 0.6690858308713499,
    "rounding_slope": -1.0301406319444892,
-   "truncation_slope": 2.000034484701666
+   "rounding_slope_stderr": 0.02382366899610136,
+   "truncation_slope": 2.000034484701666,
+   "truncation_slope_stderr": 1.2349470214387948e-05
   },
   "plane": {
    "error_at_1e-12": 0.0,
@@ -402,7 +406,9 @@
    "pointwise_min_error": 0.0,
    "pointwise_min_ratio": 0.0,
    "rounding_slope": null,
-   "truncation_slope": null
+   "rounding_slope_stderr": null,
+   "truncation_slope": null,
+   "truncation_slope_stderr": null
   },
   "plane-polar": {
    "error_at_1e-12": 0.00011175096710761546,
@@ -519,7 +525,9 @@
    "pointwise_min_error": 1.7454554805878733e-15,
    "pointwise_min_ratio": 0.7860832651967337,
    "rounding_slope": -1.0021965679961988,
-   "truncation_slope": -1.2973013404735874
+   "rounding_slope_stderr": 0.027643925401881247,
+   "truncation_slope": -1.2973013404735874,
+   "truncation_slope_stderr": 0.11211236689112818
   },
   "saddle": {
    "error_at_1e-12": 7.691670476104093e-05,
@@ -636,7 +644,9 @@
    "pointwise_min_error": 1.319248474106066e-15,
    "pointwise_min_ratio": 0.5941366936393175,
    "rounding_slope": -1.0632719423126207,
-   "truncation_slope": -1.2203005521516002
+   "rounding_slope_stderr": 0.0547970657777608,
+   "truncation_slope": -1.2203005521516002,
+   "truncation_slope_stderr": 0.07125670492527493
   },
   "sphere": {
    "error_at_1e-12": 0.00010168994304754485,
@@ -753,7 +763,9 @@
    "pointwise_min_error": 2.9614263742271085e-11,
    "pointwise_min_ratio": 0.6502439563637614,
    "rounding_slope": -1.0132208540372218,
-   "truncation_slope": 1.9999953118927654
+   "rounding_slope_stderr": 0.03579075451682451,
+   "truncation_slope": 1.9999953118927654,
+   "truncation_slope_stderr": 1.6245151552573622e-06
   },
   "torus": {
    "error_at_1e-12": 0.00011821393489642372,
@@ -870,7 +882,9 @@
    "pointwise_min_error": 2.173329217321813e-11,
    "pointwise_min_ratio": 0.7083606254218539,
    "rounding_slope": -0.9782675452325211,
-   "truncation_slope": 1.9999934878090426
+   "rounding_slope_stderr": 0.016198482042798418,
+   "truncation_slope": 1.9999934878090426,
+   "truncation_slope_stderr": 1.3371377261053444e-06
   }
  }
 }

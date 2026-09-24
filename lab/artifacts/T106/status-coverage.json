@@ -1,4 +1,12 @@
 {
+ "affine_certificate_probe": {
+  "theta = -0.5": "CERTIFIED_WITH_MARGIN",
+  "theta = -1": "raises ValueError",
+  "theta = -1 error": {
+   "message": "P(V(theta)) must be positive definite; min eigenvalue=0.000e+00",
+   "type": "ValueError"
+  }
+ },
  "constants": {
   "DECREASE_RESOLUTION_FACTOR": 1.0,
   "HOST_OWNED_STATUSES": [
@@ -36,37 +44,39 @@
    "matrix scale k, A = -2^k I#0"
   ],
   "DECREASE_NOT_DEFINITE": [
+   "box edge theta = 1, DECREASE_NOT_DEFINITE inside#0",
    "direction phi, A = diag(-1, 1)#0",
-   "direction phi, A = diag(-1, 1)#1",
-   "direction phi, A = diag(-1, 1)#2"
+   "direction phi, A = diag(-1, 1)#1"
   ],
   "MARGIN_LOW": [
-   "required_margin (margin 2)#3",
-   "required_margin (margin 2)#4",
-   "required_margin (margin 2)#5"
+   "box edge theta = 1, MARGIN_LOW inside#0",
+   "level across V = 4, MARGIN_LOW inside#0",
+   "matrix scale across overflow, MARGIN_LOW below#0"
   ],
   "NOT_CERTIFIED": [
+   "box edge theta = 1, NOT_CERTIFIED inside#0",
    "direction phi, A = diag(-1, 1)#3",
-   "direction phi, A = diag(-1, 1)#4",
-   "stability a, A = [[a, 1], [-1, a]]#5"
+   "direction phi, A = diag(-1, 1)#4"
   ],
   "NUMERICAL_INCONCLUSIVE": [
+   "box edge theta = 1, NUMERICAL_INCONCLUSIVE inside#0",
    "indefinite P#0",
-   "indefinite P#5",
-   "stability a, A = [[a, 1], [-1, a]]#2"
+   "indefinite P#5"
   ],
   "NUMERICAL_OVERFLOW": [
-   "matrix scale k, A = -2^k I#3"
+   "box edge theta = 1, NUMERICAL_OVERFLOW inside#0",
+   "matrix scale across overflow, DECREASE_NOT_DEFINITE below#1",
+   "matrix scale across overflow, MARGIN_LOW below#1"
   ],
   "OUTSIDE_LEVEL_SET": [
+   "box edge theta = 1, OUTSIDE_LEVEL_SET inside#0",
    "level (V = 4)#2",
-   "level (V = 4)#3",
-   "level (V = 4)#4"
+   "level (V = 4)#3"
   ],
   "OUTSIDE_PARAMETER_BOX": [
-   "theta, box [-1, 1]#0",
-   "theta, box [-1, 1]#4",
-   "theta_dot, rate box [-0.2, 0.2]#0"
+   "box edge theta = 1, DECREASE_NOT_DEFINITE inside#1",
+   "box edge theta = 1, MARGIN_LOW inside#1",
+   "box edge theta = 1, NOT_CERTIFIED inside#1"
   ]
  },
  "host_owned": {
@@ -92,6 +102,18 @@
   }
  },
  "observed": {
+  "box edge theta = 1, DECREASE_NOT_DEFINITE inside#0": "DECREASE_NOT_DEFINITE",
+  "box edge theta = 1, DECREASE_NOT_DEFINITE inside#1": "OUTSIDE_PARAMETER_BOX",
+  "box edge theta = 1, MARGIN_LOW inside#0": "MARGIN_LOW",
+  "box edge theta = 1, MARGIN_LOW inside#1": "OUTSIDE_PARAMETER_BOX",
+  "box edge theta = 1, NOT_CERTIFIED inside#0": "NOT_CERTIFIED",
+  "box edge theta = 1, NOT_CERTIFIED inside#1": "OUTSIDE_PARAMETER_BOX",
+  "box edge theta = 1, NUMERICAL_INCONCLUSIVE inside#0": "NUMERICAL_INCONCLUSIVE",
+  "box edge theta = 1, NUMERICAL_INCONCLUSIVE inside#1": "OUTSIDE_PARAMETER_BOX",
+  "box edge theta = 1, NUMERICAL_OVERFLOW inside#0": "NUMERICAL_OVERFLOW",
+  "box edge theta = 1, NUMERICAL_OVERFLOW inside#1": "OUTSIDE_PARAMETER_BOX",
+  "box edge theta = 1, OUTSIDE_LEVEL_SET inside#0": "OUTSIDE_LEVEL_SET",
+  "box edge theta = 1, OUTSIDE_LEVEL_SET inside#1": "OUTSIDE_PARAMETER_BOX",
   "direction phi, A = diag(-1, 1)#0": "DECREASE_NOT_DEFINITE",
   "direction phi, A = diag(-1, 1)#1": "DECREASE_NOT_DEFINITE",
   "direction phi, A = diag(-1, 1)#2": "DECREASE_NOT_DEFINITE",
@@ -110,6 +132,24 @@
   "level (V = 4)#2": "OUTSIDE_LEVEL_SET",
   "level (V = 4)#3": "OUTSIDE_LEVEL_SET",
   "level (V = 4)#4": "OUTSIDE_LEVEL_SET",
+  "level across V = 4, DECREASE_NOT_DEFINITE inside#0": "DECREASE_NOT_DEFINITE",
+  "level across V = 4, DECREASE_NOT_DEFINITE inside#1": "OUTSIDE_LEVEL_SET",
+  "level across V = 4, MARGIN_LOW inside#0": "MARGIN_LOW",
+  "level across V = 4, MARGIN_LOW inside#1": "OUTSIDE_LEVEL_SET",
+  "level across V = 4, NOT_CERTIFIED inside#0": "NOT_CERTIFIED",
+  "level across V = 4, NOT_CERTIFIED inside#1": "OUTSIDE_LEVEL_SET",
+  "level across V = 4, NUMERICAL_INCONCLUSIVE inside#0": "NUMERICAL_INCONCLUSIVE",
+  "level across V = 4, NUMERICAL_INCONCLUSIVE inside#1": "OUTSIDE_LEVEL_SET",
+  "matrix scale across overflow, DECREASE_NOT_DEFINITE below#0": "DECREASE_NOT_DEFINITE",
+  "matrix scale across overflow, DECREASE_NOT_DEFINITE below#1": "NUMERICAL_OVERFLOW",
+  "matrix scale across overflow, MARGIN_LOW below#0": "MARGIN_LOW",
+  "matrix scale across overflow, MARGIN_LOW below#1": "NUMERICAL_OVERFLOW",
+  "matrix scale across overflow, NOT_CERTIFIED below#0": "NOT_CERTIFIED",
+  "matrix scale across overflow, NOT_CERTIFIED below#1": "NUMERICAL_OVERFLOW",
+  "matrix scale across overflow, NUMERICAL_INCONCLUSIVE below#0": "NUMERICAL_INCONCLUSIVE",
+  "matrix scale across overflow, NUMERICAL_INCONCLUSIVE below#1": "NUMERICAL_OVERFLOW",
+  "matrix scale across overflow, OUTSIDE_LEVEL_SET below#0": "OUTSIDE_LEVEL_SET",
+  "matrix scale across overflow, OUTSIDE_LEVEL_SET below#1": "NUMERICAL_OVERFLOW",
   "matrix scale k, A = -2^k I#0": "CERTIFIED_WITH_MARGIN",
   "matrix scale k, A = -2^k I#1": "CERTIFIED_WITH_MARGIN",
   "matrix scale k, A = -2^k I#2": "CERTIFIED_WITH_MARGIN",
@@ -120,6 +160,8 @@
   "required_margin (margin 2)#3": "MARGIN_LOW",
   "required_margin (margin 2)#4": "MARGIN_LOW",
   "required_margin (margin 2)#5": "MARGIN_LOW",
+  "stability a with required margin 1#0": "MARGIN_LOW",
+  "stability a with required margin 1#1": "NUMERICAL_INCONCLUSIVE",
   "stability a, A = [[a, 1], [-1, a]]#0": "CERTIFIED_WITH_MARGIN",
   "stability a, A = [[a, 1], [-1, a]]#1": "CERTIFIED_WITH_MARGIN",
   "stability a, A = [[a, 1], [-1, a]]#2": "NUMERICAL_INCONCLUSIVE",
@@ -136,9 +178,25 @@
   "theta_dot, rate box [-0.2, 0.2]#1": "CERTIFIED_WITH_MARGIN",
   "theta_dot, rate box [-0.2, 0.2]#2": "CERTIFIED_WITH_MARGIN",
   "theta_dot, rate box [-0.2, 0.2]#3": "CERTIFIED_WITH_MARGIN",
-  "theta_dot, rate box [-0.2, 0.2]#4": "OUTSIDE_PARAMETER_BOX"
+  "theta_dot, rate box [-0.2, 0.2]#4": "OUTSIDE_PARAMETER_BOX",
+  "top eigenvalue b, A = diag(-1, b)#0": "CERTIFIED_WITH_MARGIN",
+  "top eigenvalue b, A = diag(-1, b)#1": "NUMERICAL_INCONCLUSIVE",
+  "top eigenvalue b, A = diag(-1, b)#2": "NUMERICAL_INCONCLUSIVE",
+  "top eigenvalue b, A = diag(-1, b)#3": "DECREASE_NOT_DEFINITE"
  },
  "predicted": {
+  "box edge theta = 1, DECREASE_NOT_DEFINITE inside#0": "DECREASE_NOT_DEFINITE",
+  "box edge theta = 1, DECREASE_NOT_DEFINITE inside#1": "OUTSIDE_PARAMETER_BOX",
+  "box edge theta = 1, MARGIN_LOW inside#0": "MARGIN_LOW",
+  "box edge theta = 1, MARGIN_LOW inside#1": "OUTSIDE_PARAMETER_BOX",
+  "box edge theta = 1, NOT_CERTIFIED inside#0": "NOT_CERTIFIED",
+  "box edge theta = 1, NOT_CERTIFIED inside#1": "OUTSIDE_PARAMETER_BOX",
+  "box edge theta = 1, NUMERICAL_INCONCLUSIVE inside#0": "NUMERICAL_INCONCLUSIVE",
+  "box edge theta = 1, NUMERICAL_INCONCLUSIVE inside#1": "OUTSIDE_PARAMETER_BOX",
+  "box edge theta = 1, NUMERICAL_OVERFLOW inside#0": "NUMERICAL_OVERFLOW",
+  "box edge theta = 1, NUMERICAL_OVERFLOW inside#1": "OUTSIDE_PARAMETER_BOX",
+  "box edge theta = 1, OUTSIDE_LEVEL_SET inside#0": "OUTSIDE_LEVEL_SET",
+  "box edge theta = 1, OUTSIDE_LEVEL_SET inside#1": "OUTSIDE_PARAMETER_BOX",
   "direction phi, A = diag(-1, 1)#0": "DECREASE_NOT_DEFINITE",
   "direction phi, A = diag(-1, 1)#1": "DECREASE_NOT_DEFINITE",
   "direction phi, A = diag(-1, 1)#2": "DECREASE_NOT_DEFINITE",
@@ -157,6 +215,24 @@
   "level (V = 4)#2": "OUTSIDE_LEVEL_SET",
   "level (V = 4)#3": "OUTSIDE_LEVEL_SET",
   "level (V = 4)#4": "OUTSIDE_LEVEL_SET",
+  "level across V = 4, DECREASE_NOT_DEFINITE inside#0": "DECREASE_NOT_DEFINITE",
+  "level across V = 4, DECREASE_NOT_DEFINITE inside#1": "OUTSIDE_LEVEL_SET",
+  "level across V = 4, MARGIN_LOW inside#0": "MARGIN_LOW",
+  "level across V = 4, MARGIN_LOW inside#1": "OUTSIDE_LEVEL_SET",
+  "level across V = 4, NOT_CERTIFIED inside#0": "NOT_CERTIFIED",
+  "level across V = 4, NOT_CERTIFIED inside#1": "OUTSIDE_LEVEL_SET",
+  "level across V = 4, NUMERICAL_INCONCLUSIVE inside#0": "NUMERICAL_INCONCLUSIVE",
+  "level across V = 4, NUMERICAL_INCONCLUSIVE inside#1": "OUTSIDE_LEVEL_SET",
+  "matrix scale across overflow, DECREASE_NOT_DEFINITE below#0": "DECREASE_NOT_DEFINITE",
+  "matrix scale across overflow, DECREASE_NOT_DEFINITE below#1": "NUMERICAL_OVERFLOW",
+  "matrix scale across overflow, MARGIN_LOW below#0": "MARGIN_LOW",
+  "matrix scale across overflow, MARGIN_LOW below#1": "NUMERICAL_OVERFLOW",
+  "matrix scale across overflow, NOT_CERTIFIED below#0": "NOT_CERTIFIED",
+  "matrix scale across overflow, NOT_CERTIFIED below#1": "NUMERICAL_OVERFLOW",
+  "matrix scale across overflow, NUMERICAL_INCONCLUSIVE below#0": "NUMERICAL_INCONCLUSIVE",
+  "matrix scale across overflow, NUMERICAL_INCONCLUSIVE below#1": "NUMERICAL_OVERFLOW",
+  "matrix scale across overflow, OUTSIDE_LEVEL_SET below#0": "OUTSIDE_LEVEL_SET",
+  "matrix scale across overflow, OUTSIDE_LEVEL_SET below#1": "NUMERICAL_OVERFLOW",
   "matrix scale k, A = -2^k I#0": "CERTIFIED_WITH_MARGIN",
   "matrix scale k, A = -2^k I#1": "CERTIFIED_WITH_MARGIN",
   "matrix scale k, A = -2^k I#2": "CERTIFIED_WITH_MARGIN",
@@ -167,6 +243,8 @@
   "required_margin (margin 2)#3": "MARGIN_LOW",
   "required_margin (margin 2)#4": "MARGIN_LOW",
   "required_margin (margin 2)#5": "MARGIN_LOW",
+  "stability a with required margin 1#0": "MARGIN_LOW",
+  "stability a with required margin 1#1": "NUMERICAL_INCONCLUSIVE",
   "stability a, A = [[a, 1], [-1, a]]#0": "CERTIFIED_WITH_MARGIN",
   "stability a, A = [[a, 1], [-1, a]]#1": "CERTIFIED_WITH_MARGIN",
   "stability a, A = [[a, 1], [-1, a]]#2": "NUMERICAL_INCONCLUSIVE",
@@ -183,9 +261,37 @@
   "theta_dot, rate box [-0.2, 0.2]#1": "CERTIFIED_WITH_MARGIN",
   "theta_dot, rate box [-0.2, 0.2]#2": "CERTIFIED_WITH_MARGIN",
   "theta_dot, rate box [-0.2, 0.2]#3": "CERTIFIED_WITH_MARGIN",
-  "theta_dot, rate box [-0.2, 0.2]#4": "OUTSIDE_PARAMETER_BOX"
+  "theta_dot, rate box [-0.2, 0.2]#4": "OUTSIDE_PARAMETER_BOX",
+  "top eigenvalue b, A = diag(-1, b)#0": "CERTIFIED_WITH_MARGIN",
+  "top eigenvalue b, A = diag(-1, b)#1": "NUMERICAL_INCONCLUSIVE",
+  "top eigenvalue b, A = diag(-1, b)#2": "NUMERICAL_INCONCLUSIVE",
+  "top eigenvalue b, A = diag(-1, b)#3": "DECREASE_NOT_DEFINITE"
  },
- "transitions": {
+ "sequences": {
+  "box edge theta = 1, DECREASE_NOT_DEFINITE inside": [
+   "DECREASE_NOT_DEFINITE",
+   "OUTSIDE_PARAMETER_BOX"
+  ],
+  "box edge theta = 1, MARGIN_LOW inside": [
+   "MARGIN_LOW",
+   "OUTSIDE_PARAMETER_BOX"
+  ],
+  "box edge theta = 1, NOT_CERTIFIED inside": [
+   "NOT_CERTIFIED",
+   "OUTSIDE_PARAMETER_BOX"
+  ],
+  "box edge theta = 1, NUMERICAL_INCONCLUSIVE inside": [
+   "NUMERICAL_INCONCLUSIVE",
+   "OUTSIDE_PARAMETER_BOX"
+  ],
+  "box edge theta = 1, NUMERICAL_OVERFLOW inside": [
+   "NUMERICAL_OVERFLOW",
+   "OUTSIDE_PARAMETER_BOX"
+  ],
+  "box edge theta = 1, OUTSIDE_LEVEL_SET inside": [
+   "OUTSIDE_LEVEL_SET",
+   "OUTSIDE_PARAMETER_BOX"
+  ],
   "direction phi, A = diag(-1, 1)": [
    "DECREASE_NOT_DEFINITE",
    "DECREASE_NOT_DEFINITE",
@@ -200,6 +306,42 @@
    "OUTSIDE_LEVEL_SET",
    "OUTSIDE_LEVEL_SET"
   ],
+  "level across V = 4, DECREASE_NOT_DEFINITE inside": [
+   "DECREASE_NOT_DEFINITE",
+   "OUTSIDE_LEVEL_SET"
+  ],
+  "level across V = 4, MARGIN_LOW inside": [
+   "MARGIN_LOW",
+   "OUTSIDE_LEVEL_SET"
+  ],
+  "level across V = 4, NOT_CERTIFIED inside": [
+   "NOT_CERTIFIED",
+   "OUTSIDE_LEVEL_SET"
+  ],
+  "level across V = 4, NUMERICAL_INCONCLUSIVE inside": [
+   "NUMERICAL_INCONCLUSIVE",
+   "OUTSIDE_LEVEL_SET"
+  ],
+  "matrix scale across overflow, DECREASE_NOT_DEFINITE below": [
+   "DECREASE_NOT_DEFINITE",
+   "NUMERICAL_OVERFLOW"
+  ],
+  "matrix scale across overflow, MARGIN_LOW below": [
+   "MARGIN_LOW",
+   "NUMERICAL_OVERFLOW"
+  ],
+  "matrix scale across overflow, NOT_CERTIFIED below": [
+   "NOT_CERTIFIED",
+   "NUMERICAL_OVERFLOW"
+  ],
+  "matrix scale across overflow, NUMERICAL_INCONCLUSIVE below": [
+   "NUMERICAL_INCONCLUSIVE",
+   "NUMERICAL_OVERFLOW"
+  ],
+  "matrix scale across overflow, OUTSIDE_LEVEL_SET below": [
+   "OUTSIDE_LEVEL_SET",
+   "NUMERICAL_OVERFLOW"
+  ],
   "matrix scale k, A = -2^k I": [
    "CERTIFIED_WITH_MARGIN",
    "CERTIFIED_WITH_MARGIN",
@@ -213,6 +355,10 @@
    "MARGIN_LOW",
    "MARGIN_LOW",
    "MARGIN_LOW"
+  ],
+  "stability a with required margin 1": [
+   "MARGIN_LOW",
+   "NUMERICAL_INCONCLUSIVE"
   ],
   "stability a, A = [[a, 1], [-1, a]]": [
    "CERTIFIED_WITH_MARGIN",
@@ -236,6 +382,12 @@
    "CERTIFIED_WITH_MARGIN",
    "CERTIFIED_WITH_MARGIN",
    "OUTSIDE_PARAMETER_BOX"
+  ],
+  "top eigenvalue b, A = diag(-1, b)": [
+   "CERTIFIED_WITH_MARGIN",
+   "NUMERICAL_INCONCLUSIVE",
+   "NUMERICAL_INCONCLUSIVE",
+   "DECREASE_NOT_DEFINITE"
   ]
  }
 }

@@ -316,14 +316,14 @@
   "python": "3.12.3",
   "scipy": "1.16.2",
   "sources": {
-   "src/ciw/lab/lyapunov.py": "58d6c7473f0a42002b57888de0ccfbbf73b571bbbabbf9ee81e0a05c734f2320",
-   "src/ciw/lab/lyapunov_reference.py": "fa37ef453c23ad2bed2eab41132e72670e166b93eebd5fc9d67a4a89a7c92cca",
-   "src/ciw/lab/lyapunov_research.py": "528422e4137222e00fd93c63ac22a4bb326fe469030d347418427bac34907d0f"
+   "src/ciw/lab/lyapunov.py": "cbcb4d58d7313d7c537957a1b7dd35039a21bae80125bf59147eeed2c1232bbb",
+   "src/ciw/lab/lyapunov_reference.py": "bdf0bb5074ae2caca6c8a5d8e63a15e346b007098e6def6b058d077719bc1336",
+   "src/ciw/lab/lyapunov_research.py": "8e6e5b4ac0a8ba3b12d4ee13ced778fe5070b43f6766752ffc8c5b88f1a4baef"
   },
   "sympy": "1.14.0"
  },
  "recommended_next_task": "Specify a resolution-aware float64 ISS inequality (open question 1 in the retained spec) before any runtime integration; acquiring an evidenced disturbance bound is hardware-gated.",
- "report_id": "sha256:a9518b241b1cbfd76e156824a2d34e189c482a02d399a977822ea05058e780b6",
+ "report_id": "sha256:38e5cba4d24e873e992da38f0716f3aca175df3f13c067448f0af3ae6683b2f2",
  "schema": "ciw.lab-task-report.v1",
  "section": "lyapunov",
  "state": "completed",

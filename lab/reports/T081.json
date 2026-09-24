@@ -142,8 +142,8 @@
       "comparison": "le",
       "observed": 0.0,
       "passed": true,
-      "reference": "max relative difference of mean, minimum, maximum and rms from a NumPy recomputation",
-      "reference_kind": "invariant",
+      "reference": "max relative difference of mean, minimum, maximum and rms between ciw.adapters.oscillator.compute_statistics (max-normalized NumPy reductions) and ciw.lab's direct unnormalized NumPy recomputation (same implementation origin)",
+      "reference_kind": "cross_implementation",
       "tolerance": 1e-12
      },
      {
@@ -327,6 +327,14 @@
       "reference": "reopened baseline bundles (B0, B0b, B1) not reporting a gross energy different from the original bytes' value",
       "reference_kind": "exact_arithmetic",
       "tolerance": 0.0
+     },
+     {
+      "comparison": "abs_le",
+      "observed": 0.0,
+      "passed": true,
+      "reference": "original session ids and creation times kept on the forged bundles (0 = shown)",
+      "reference_kind": "exact_arithmetic",
+      "tolerance": 0.0
      }
     ]
    },
@@ -354,10 +362,10 @@
    "evidence_status": "numerically_verified",
    "regression_tolerance": {
     "abs": 0.0,
-    "rel": 0.0
+    "rel": 1e-09
    },
    "uncertainty": {
-    "basis": "exact equality of SHA-256 digests, bytes, counts, booleans or refusal strings; no rounding",
+    "basis": "the acceptance and the witness checks are exact (strings, booleans, inequality outcomes); the floats shown in the witness are compared across runs within rel 1e-9 because their last bits depend on the platform's reduction and libm paths",
     "kind": "exact",
     "value": 0.0
    },
@@ -378,6 +386,14 @@
       "reference": "oscillator-stats.resealed: accepted (1 = accepted)",
       "reference_kind": "invariant",
       "tolerance": 1.0
+     },
+     {
+      "comparison": "abs_le",
+      "observed": 0.0,
+      "passed": true,
+      "reference": "reopened mean is the interval midpoint and differs from the computed mean (0 = shown)",
+      "reference_kind": "exact_arithmetic",
+      "tolerance": 0.0
      }
     ]
    },
@@ -480,10 +496,10 @@
    "evidence_status": "numerically_verified",
    "regression_tolerance": {
     "abs": 0.0,
-    "rel": 0.0
+    "rel": 1e-09
    },
    "uncertainty": {
-    "basis": "exact equality of SHA-256 digests, bytes, counts, booleans or refusal strings; no rounding",
+    "basis": "the acceptance and the witness checks are exact (strings, booleans, inequality outcomes); the floats shown in the witness are compared across runs within rel 1e-9 because their last bits depend on the platform's reduction and libm paths",
     "kind": "exact",
     "value": 0.0
    },
@@ -504,6 +520,14 @@
       "reference": "oscillator-stats.legacy: accepted (1 = accepted)",
       "reference_kind": "invariant",
       "tolerance": 1.0
+     },
+     {
+      "comparison": "abs_le",
+      "observed": 0.0,
+      "passed": true,
+      "reference": "reopened mean is the interval midpoint and differs from the computed mean (0 = shown)",
+      "reference_kind": "exact_arithmetic",
+      "tolerance": 0.0
      }
     ]
    },
@@ -604,13 +628,13 @@
   "python": "3.12.3",
   "scipy": "1.16.2",
   "sources": {
-   "src/ciw/lab/exchange_provenance.py": "5cc267c7777c9b434b8747b0cc841ac85313e1cfb6ff4c429ee93aa5ddbb645b",
-   "src/ciw/lab/exchange_provenance_common.py": "22028c4008079fba23c5e807de0104ba1a0014027e1d40a9209881cdf232f486"
+   "src/ciw/lab/exchange_provenance.py": "f55593eb90af9ed82e40f0f04987c7f0a06cf1c40e7079b0a371e0506607618b",
+   "src/ciw/lab/exchange_provenance_common.py": "f8e765184af4e893a0c4c6d9e5cb2988b79e6f3dfc3d941444f335ecc894d775"
   },
   "sympy": "1.14.0"
  },
  "recommended_next_task": "T082 (fresh replay execution and result identities); CIW change: content-level numerical_result_id for operation results, recomputation of statistics (or at least the moment inequalities) on reopen, and keyed authentication of retained source bytes",
- "report_id": "sha256:e773cf5095eed0307722dea566da8f24639a986e0b37f8f33760f4451ce19028",
+ "report_id": "sha256:62d9838122642e703e15ad452ba2ff4517b35c574fb17f94965a561a97052766",
  "schema": "ciw.lab-task-report.v1",
  "section": "exchange-provenance",
  "state": "completed",
@@ -622,7 +646,7 @@
   "check: A resealed metadata-only log edit changes the energy numerical_result_id while every analysed number stays equal: the identity binds the whole log through data.log_digest vs metadata variant shares the baseline numerical_result_id",
   "check: A resealed metadata-only log edit changes the energy numerical_result_id while every analysed number stays equal: the identity binds the whole log through data.log_digest vs analysis data keys other than log_digest that differ from baseline",
   "check: A resealed metadata-only log edit changes the energy numerical_result_id while every analysed number stays equal: the identity binds the whole log through data.log_digest vs log_digest equal to baseline after the metadata edit",
-  "check: The computed statistics.v1 result satisfies |mean| <= rms <= max(|min|, |max|) and agrees with a direct recomputation from the retained samples vs max relative difference of mean, minimum, maximum and rms from a NumPy recomputation",
+  "check: The computed statistics.v1 result satisfies |mean| <= rms <= max(|min|, |max|) and agrees with a direct recomputation from the retained samples vs max relative difference of mean, minimum, maximum and rms between ciw.adapters.oscillator.compute_statistics (max-normalized NumPy reductions) and ciw.lab's direct unnormalized NumPy recomputation (same implementation origin)",
   "check: The computed statistics.v1 result satisfies |mean| <= rms <= max(|min|, |max|) and agrees with a direct recomputation from the retained samples vs sample count differs from the recomputation",
   "check: The computed statistics.v1 result satisfies |mean| <= rms <= max(|min|, |max|) and agrees with a direct recomputation from the retained samples vs moment inequalities violated by the computed result",
   "check: CIW refuses to analyse a resealed variant of a log beside the original in one workbench when both keep one run_id vs operation.execute on the resealed metadata variant in a workbench that already analysed baseline",
@@ -634,10 +658,13 @@
   "check: Numerical edits that leave the retained source bytes unchanged and break a seal, a digest, the statistics bounds or the recomputed analysis are refused on reopen vs harness control: the unedited saved workspace reopens",
   "check: Surviving mutant energy-source.resealed: a resealed edit of the retained source log, with every derived record rebuilt, reopens with a different gross energy vs energy-source.resealed: accepted (1 = accepted)",
   "check: Surviving mutant energy-source.resealed: a resealed edit of the retained source log, with every derived record rebuilt, reopens with a different gross energy vs reopened baseline bundles (B0, B0b, B1) not reporting a gross energy different from the original bytes' value",
+  "check: Surviving mutant energy-source.resealed: a resealed edit of the retained source log, with every derived record rebuilt, reopens with a different gross energy vs original session ids and creation times kept on the forged bundles (0 = shown)",
   "check: Surviving mutant oscillator-stats.resealed: an in-bounds statistics edit with a recomputed seal reopens vs oscillator-stats.resealed: accepted (1 = accepted)",
+  "check: Surviving mutant oscillator-stats.resealed: an in-bounds statistics edit with a recomputed seal reopens vs reopened mean is the interval midpoint and differs from the computed mean (0 = shown)",
   "check: Surviving mutant oscillator-stats.impossible-moments: resealed statistics that no sample set can have reopen vs oscillator-stats.impossible-moments: accepted (1 = accepted)",
   "check: Surviving mutant oscillator-stats.impossible-moments: resealed statistics that no sample set can have reopen vs moment inequalities violated by the reopened results (observed 2, predicted 2)",
   "check: Surviving mutant oscillator-stats.legacy: an edit to an unsealed legacy result reopens vs oscillator-stats.legacy: accepted (1 = accepted)",
+  "check: Surviving mutant oscillator-stats.legacy: an edit to an unsealed legacy result reopens vs reopened mean is the interval midpoint and differs from the computed mean (0 = shown)",
   "pytest: tests/test_lab_exchange_provenance.py::test_numerical_identity"
  ],
  "tests_skipped": [],

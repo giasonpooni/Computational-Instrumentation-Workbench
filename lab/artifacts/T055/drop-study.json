@@ -55,12 +55,15 @@
  },
  "seed": 55,
  "stationary": {
+  "complete_stream_code": "accepted",
   "exact_zero_rule_false_positives": 107,
   "fills_equal_to_genuine_readings": 26,
   "genuine_zero_readings": 107,
   "identical_stream_gap_m": 0.0,
   "neighbour_rule_flags": 0,
   "neighbour_rule_missed": 46,
+  "refilled_positions": 26,
+  "refilled_stream_code": "zero_filled_missing",
   "resolution_m": 1e-06,
   "vibration_sigma_m": 5e-07
  },

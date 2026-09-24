@@ -27,6 +27,7 @@
   "reacquisition from non-consecutive readings",
   "reacquisition moving the clock backwards",
   "redundant reacquisition",
+  "a refused reacquisition leaving a reading marked recorded",
   "unmodelled manoeuvre during the gap"
  ],
  "findings": [
@@ -128,11 +129,27 @@
       "reference": "admission of the first update after reacquisition refused",
       "reference_kind": "invariant",
       "tolerance": 0.0
+     },
+     {
+      "comparison": "abs_le",
+      "observed": 0.0,
+      "passed": true,
+      "reference": "readings of the three refused reacquisitions not marked refused",
+      "reference_kind": "exact_arithmetic",
+      "tolerance": 0.0
+     },
+     {
+      "comparison": "abs_le",
+      "observed": 0.0,
+      "passed": true,
+      "reference": "readings of a reacquisition left with disposition 'recorded'",
+      "reference_kind": "exact_arithmetic",
+      "tolerance": 0.0
      }
     ],
     "derivation": "FusionSession.fuse, reacquire and the admission gate"
    },
-   "claim": "A lost track is not admissible and cannot be updated, and the refused update leaves the state, covariance and clock unchanged; reacquisition is explicit, needs two consecutive readings no older than the session clock, and is refused while tracking",
+   "claim": "A lost track is not admissible and cannot be updated, and the refused update leaves the state, covariance and clock unchanged; reacquisition is explicit, needs two consecutive readings no older than the session clock, and is refused while tracking; both readings of a refused reacquisition are retained with its refusal code",
    "domain": "computational_pipeline",
    "evidence_status": "numerically_verified",
    "regression_tolerance": {
@@ -152,17 +169,17 @@
     "dispositions": {
      "fused": 1,
      "reacquired": 2,
-     "recorded": 3,
-     "refused:out_of_order": 1,
-     "refused:reacquisition_needs_consecutive_readings": 1,
-     "refused:reacquisition_not_needed": 1,
+     "refused:out_of_order": 2,
+     "refused:reacquisition_needs_consecutive_readings": 2,
+     "refused:reacquisition_not_needed": 2,
      "refused:track_lost_requires_reacquisition": 1
     },
     "fuse_lost": "track_lost_requires_reacquisition",
     "reacquire_gap": "reacquisition_needs_consecutive_readings",
     "reacquire_older_than_clock": "out_of_order",
     "reacquire_while_tracking": "reacquisition_not_needed",
-    "refused_fuse_left_state_unchanged": true
+    "refused_fuse_left_state_unchanged": true,
+    "refused_reacquisition_readings": 6
    }
   },
   {
@@ -319,9 +336,9 @@
  ],
  "generated_artifacts": [
   {
-   "bytes": 3270,
+   "bytes": 3335,
    "path": "artifacts/T073/track_lost.json",
-   "sha256": "ff43a87ff355bf17cbeaa9bd794d4989a81914b2f129f151c932333e8d3a0c36"
+   "sha256": "3d4a69eca627a9264be90d5f719b6da483edd6d5284c3a07ee9cfdd978d78732"
   },
   {
    "bytes": 3087,
@@ -351,29 +368,31 @@
   "python": "3.12.3",
   "scipy": "1.16.2",
   "sources": {
-   "src/ciw/lab/sensor_fusion_admission.py": "db737df809fa23fd26fb21a196b6efa2bda6326aba21a8ff0288a99a95746c2c",
+   "src/ciw/lab/sensor_fusion_admission.py": "a0d36bf665e88d2851b08c6181a8f794e39751a688a04ebd586fbc93164cc3c7",
    "src/ciw/lab/sensor_fusion_bench.py": "f373849a4c6836fa20685c59ce7a6fe6bf732f6df9d6a49646cdc017262dd656",
-   "src/ciw/lab/sensor_fusion_common.py": "6787aa47d199d50d0b4de4d7e53714ce7b8b5aad37d647cfc1a954414e90209f",
-   "src/ciw/lab/sensor_fusion_objects.py": "a795ffc235e0a4118cb7b9ac7800191a90984372d79e59f1a934442d98d7a1f1"
+   "src/ciw/lab/sensor_fusion_common.py": "db3b0430ad5c13920239cef354da61b64ab1b01f84b2d3d5aff2f78840a5867a",
+   "src/ciw/lab/sensor_fusion_objects.py": "93fc55ddca91f1adfb886d21805ea8f82586548ee84e1f6cc7daed4df1f53bb9"
   },
   "sympy": "1.14.0"
  },
  "recommended_next_task": "T074: compare the fused state with the exact batch posterior.",
- "report_id": "sha256:0f6d22593da114a7fd40728eea73aab43041a87f843dde459a9ef2d361469c02",
+ "report_id": "sha256:3240050db877f48ad91f2a884b031ce54e94a6e6ffcdd64b122b9d4c035366fc",
  "schema": "ciw.lab-task-report.v1",
  "section": "sensor-fusion",
  "state": "completed",
  "task_id": "T073",
  "tests_passed": [
   "check: The track is declared lost at exactly the tick at which the 99% position ellipse, grown in closed form from the last update, first exceeds the 1 m radius vs observed minus predicted track-lost tick",
-  "check: A lost track is not admissible and cannot be updated, and the refused update leaves the state, covariance and clock unchanged; reacquisition is explicit, needs two consecutive readings no older than the session clock, and is refused while tracking vs admit a lost-track candidate",
-  "check: A lost track is not admissible and cannot be updated, and the refused update leaves the state, covariance and clock unchanged; reacquisition is explicit, needs two consecutive readings no older than the session clock, and is refused while tracking vs fuse into a lost track",
-  "check: A lost track is not admissible and cannot be updated, and the refused update leaves the state, covariance and clock unchanged; reacquisition is explicit, needs two consecutive readings no older than the session clock, and is refused while tracking vs state, covariance, clock or status changed by the refused fuse",
-  "check: A lost track is not admissible and cannot be updated, and the refused update leaves the state, covariance and clock unchanged; reacquisition is explicit, needs two consecutive readings no older than the session clock, and is refused while tracking vs reacquire from non-consecutive readings",
-  "check: A lost track is not admissible and cannot be updated, and the refused update leaves the state, covariance and clock unchanged; reacquisition is explicit, needs two consecutive readings no older than the session clock, and is refused while tracking vs reacquire from readings older than the session clock",
-  "check: A lost track is not admissible and cannot be updated, and the refused update leaves the state, covariance and clock unchanged; reacquisition is explicit, needs two consecutive readings no older than the session clock, and is refused while tracking vs session clock after the refusals minus the lost tick",
-  "check: A lost track is not admissible and cannot be updated, and the refused update leaves the state, covariance and clock unchanged; reacquisition is explicit, needs two consecutive readings no older than the session clock, and is refused while tracking vs reacquire while tracking",
-  "check: A lost track is not admissible and cannot be updated, and the refused update leaves the state, covariance and clock unchanged; reacquisition is explicit, needs two consecutive readings no older than the session clock, and is refused while tracking vs admission of the first update after reacquisition refused",
+  "check: A lost track is not admissible and cannot be updated, and the refused update leaves the state, covariance and clock unchanged; reacquisition is explicit, needs two consecutive readings no older than the session clock, and is refused while tracking; both readings of a refused reacquisition are retained with its refusal code vs admit a lost-track candidate",
+  "check: A lost track is not admissible and cannot be updated, and the refused update leaves the state, covariance and clock unchanged; reacquisition is explicit, needs two consecutive readings no older than the session clock, and is refused while tracking; both readings of a refused reacquisition are retained with its refusal code vs fuse into a lost track",
+  "check: A lost track is not admissible and cannot be updated, and the refused update leaves the state, covariance and clock unchanged; reacquisition is explicit, needs two consecutive readings no older than the session clock, and is refused while tracking; both readings of a refused reacquisition are retained with its refusal code vs state, covariance, clock or status changed by the refused fuse",
+  "check: A lost track is not admissible and cannot be updated, and the refused update leaves the state, covariance and clock unchanged; reacquisition is explicit, needs two consecutive readings no older than the session clock, and is refused while tracking; both readings of a refused reacquisition are retained with its refusal code vs reacquire from non-consecutive readings",
+  "check: A lost track is not admissible and cannot be updated, and the refused update leaves the state, covariance and clock unchanged; reacquisition is explicit, needs two consecutive readings no older than the session clock, and is refused while tracking; both readings of a refused reacquisition are retained with its refusal code vs reacquire from readings older than the session clock",
+  "check: A lost track is not admissible and cannot be updated, and the refused update leaves the state, covariance and clock unchanged; reacquisition is explicit, needs two consecutive readings no older than the session clock, and is refused while tracking; both readings of a refused reacquisition are retained with its refusal code vs session clock after the refusals minus the lost tick",
+  "check: A lost track is not admissible and cannot be updated, and the refused update leaves the state, covariance and clock unchanged; reacquisition is explicit, needs two consecutive readings no older than the session clock, and is refused while tracking; both readings of a refused reacquisition are retained with its refusal code vs reacquire while tracking",
+  "check: A lost track is not admissible and cannot be updated, and the refused update leaves the state, covariance and clock unchanged; reacquisition is explicit, needs two consecutive readings no older than the session clock, and is refused while tracking; both readings of a refused reacquisition are retained with its refusal code vs admission of the first update after reacquisition refused",
+  "check: A lost track is not admissible and cannot be updated, and the refused update leaves the state, covariance and clock unchanged; reacquisition is explicit, needs two consecutive readings no older than the session clock, and is refused while tracking; both readings of a refused reacquisition are retained with its refusal code vs readings of the three refused reacquisitions not marked refused",
+  "check: A lost track is not admissible and cannot be updated, and the refused update leaves the state, covariance and clock unchanged; reacquisition is explicit, needs two consecutive readings no older than the session clock, and is refused while tracking; both readings of a refused reacquisition are retained with its refusal code vs readings of a reacquisition left with disposition 'recorded'",
   "check: The two-point reacquisition covariance [[R, R/dt], [R/dt, 2R/dt^2 + q dt/3 I]] is exact for the constant-velocity truth vs sample covariance of the two-point error against the formula (max |z|)",
   "check: The two-point reacquisition covariance [[R, R/dt], [R/dt, 2R/dt^2 + q dt/3 I]] is exact for the constant-velocity truth vs mean NEES against 4 (z)",
   "check: The two-point reacquisition covariance [[R, R/dt], [R/dt, 2R/dt^2 + q dt/3 I]] is exact for the constant-velocity truth vs session reacquisition covariance against the linear error map J Sigma J^T with Q(dt) from cv_model (relative)",
@@ -381,6 +400,7 @@
   "check: Under an unmodelled 0.2 rad/s turn during the gap, the expected NEES of the coasting track exceeds the 99% chi-square(4) quantile after a finite gap even though its covariance keeps growing; a radius rule protects against this only if its radius is below the ellipse radius reached by then vs Monte Carlo mean NEES of the turning truth at that gap against the expectation (z)",
   "check: Under an unmodelled 0.2 rad/s turn during the gap, the expected NEES of the coasting track exceeds the 99% chi-square(4) quantile after a finite gap even though its covariance keeps growing; a radius rule protects against this only if its radius is below the ellipse radius reached by then vs declared 1 m radius below the radius reached at inconsistency (margin, m)",
   "pytest: tests/test_lab_sensor_fusion.py::test_track_lost_prediction_refusals_and_reacquisition",
+  "pytest: tests/test_lab_sensor_fusion.py::test_refused_reacquisition_marks_both_readings",
   "pytest: tests/test_lab_sensor_fusion.py::test_section_reports_labels_and_states[T073]"
  ],
  "tests_skipped": [],

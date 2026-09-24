@@ -216,12 +216,12 @@
   {
    "bytes": 509,
    "path": "artifacts/T151/rollback-record.json",
-   "sha256": "117e8b38b4ccf1594b0109222aaa8e8b3c609835ce85e25e0a32dc661c540277"
+   "sha256": "558a7567e3effc4b1a429da004b609c5c15730dfc9fce995ec8a52518c9cfb18"
   },
   {
    "bytes": 315,
    "path": "artifacts/T151/identity-registry.json",
-   "sha256": "ada1e3b49f86204856f574631176446dd846b890c519ff6f8e9d8d1bbc659073"
+   "sha256": "c4285917d2c794cb613a87aec79494069667ba6305130e4f18980020f78ab74d"
   }
  ],
  "hypothesis": "A versioned compatibility matrix (bitstream frame format, supported boards, minimum host decoder) and a rollback record bound to retained identities let validation refuse every incompatible or unregistered rollback; 'previous version' is not a safe default.",
@@ -245,13 +245,13 @@
   "python": "3.12.3",
   "scipy": "1.16.2",
   "sources": {
-   "src/ciw/lab/implementation_targets.py": "4e27c12d31365590b7fb82d98b8d02e1668c7b8e73b03f71ef270eca9fcf6eea",
-   "src/ciw/lab/implementation_targets_fpga.py": "d546fbe93f98a17bb6a94d6e1e887da44edfb783f37684b9689d47adb1a9f477"
+   "src/ciw/lab/implementation_targets.py": "1df8bd67d28b18d70bcb5f74e4a14616ceb17868c7a9aa75595f15254426ee7e",
+   "src/ciw/lab/implementation_targets_fpga.py": "7af2bda8190c93108f5bac0d8b28ffd057267b6b428af3d8f820d0f594ea5e00"
   },
   "sympy": "1.14.0"
  },
  "recommended_next_task": "T152 (link behaviour after a rollback changes the frame format)",
- "report_id": "sha256:387f7ebef3ef30ce4116d14e9ec38611f7e6898eac53f86ed25b0856cce6f81c",
+ "report_id": "sha256:521e4d88026a4c73364fda2bc2f4a83fba00ac9dbc31e522b01f36fd2f4028e9",
  "schema": "ciw.lab-task-report.v1",
  "section": "implementation-targets",
  "state": "completed",

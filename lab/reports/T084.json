@@ -142,6 +142,14 @@
       "reference": "receipt-source.sibling-execution: accepted (1 = accepted)",
       "reference_kind": "invariant",
       "tolerance": 1.0
+     },
+     {
+      "comparison": "abs_le",
+      "observed": 0.0,
+      "passed": true,
+      "reference": "reopened receipt source and verification subject both name the sibling bundle:B0b (0 = shown)",
+      "reference_kind": "exact_arithmetic",
+      "tolerance": 0.0
      }
     ]
    },
@@ -234,13 +242,13 @@
   "python": "3.12.3",
   "scipy": "1.16.2",
   "sources": {
-   "src/ciw/lab/exchange_provenance.py": "5cc267c7777c9b434b8747b0cc841ac85313e1cfb6ff4c429ee93aa5ddbb645b",
-   "src/ciw/lab/exchange_provenance_common.py": "22028c4008079fba23c5e807de0104ba1a0014027e1d40a9209881cdf232f486"
+   "src/ciw/lab/exchange_provenance.py": "f55593eb90af9ed82e40f0f04987c7f0a06cf1c40e7079b0a371e0506607618b",
+   "src/ciw/lab/exchange_provenance_common.py": "f8e765184af4e893a0c4c6d9e5cb2988b79e6f3dfc3d941444f335ecc894d775"
   },
   "sympy": "1.14.0"
  },
  "recommended_next_task": "T085 (mutate replay receipt replayed digest)",
- "report_id": "sha256:9a24c98e919a81f9df4045173668d9ac5a9ecc4872ed64d2932c054a34be9648",
+ "report_id": "sha256:a25613e486f033020a8a58daaf6acf2c2c3a583f92fbf4afd5f4bf96ab972faf",
  "schema": "ciw.lab-task-report.v1",
  "section": "exchange-provenance",
  "state": "completed",
@@ -254,6 +262,7 @@
   "check: Replay receipt source digest forgeries that leave a digest stale or contradict a recomputed, fixed or cross-referenced value are refused with the pinned message vs harness control: the forger's recomputation of the unedited workspace reproduces every CIW digest",
   "check: Replay receipt source digest forgeries that leave a digest stale or contradict a recomputed, fixed or cross-referenced value are refused with the pinned message vs harness control: the unedited saved workspace reopens",
   "check: Surviving mutant receipt-source.sibling-execution: a receipt re-pointed, with its verification subject, at a sibling execution of the same bytes reopens vs receipt-source.sibling-execution: accepted (1 = accepted)",
+  "check: Surviving mutant receipt-source.sibling-execution: a receipt re-pointed, with its verification subject, at a sibling execution of the same bytes reopens vs reopened receipt source and verification subject both name the sibling bundle:B0b (0 = shown)",
   "pytest: tests/test_lab_exchange_provenance.py::test_receipt_digest_mutations"
  ],
  "tests_skipped": [],

@@ -11,7 +11,7 @@
    "hardware_measured": 0,
    "independently_verified": 0,
    "not_established": 1,
-   "numerically_verified": 9,
+   "numerically_verified": 10,
    "provider_backed": 0,
    "synthetic": 0
   },
@@ -159,7 +159,7 @@
       "comparison": "abs_le",
       "observed": 0.0,
       "passed": true,
-      "reference": "just-outside samples admitted after conversion",
+      "reference": "just-outside samples admitted after conversion by multiplication",
       "reference_kind": "invariant",
       "tolerance": 0.0
      },
@@ -181,7 +181,7 @@
      "runtime_digest": "a6fee6b3b4eb7852b31f5a285fe8c50b535f25762e1daf82e36720ef8dd1b7c7"
     }
    },
-   "claim": "The declared box bounds 8 and 12 N/m and their binary64 neighbours keep their SI box decision in all five unit systems and under both conversion formulas",
+   "claim": "The declared box bounds 8 and 12 N/m keep their SI box decision in all five unit systems under both conversion formulas, and their binary64 neighbours keep it when bound and sample are both multiplied",
    "domain": "numerical",
    "evidence_status": "numerically_verified",
    "regression_tolerance": {
@@ -199,6 +199,60 @@
     "just_outside_admitted": {
      "k just above 12": [],
      "k just below 8": []
+    }
+   }
+  },
+  {
+   "assigned_by": "ciw.lab.evidence",
+   "basis": {
+    "checks": [
+     {
+      "comparison": "ge",
+      "observed": 1.0,
+      "passed": true,
+      "reference": "just-outside samples converted as k / (1 / c) and not refused",
+      "reference_kind": "invariant",
+      "tolerance": 1.0
+     }
+    ],
+    "provider": {
+     "executed": true,
+     "package_version": "0.1.0rc1",
+     "repository": "https://github.com/giasonpooni/Parameterized-Lyapunov-Stability-Runtime",
+     "revision": "19ea6967060166ba09db6cd4563bd87bd6b3d196",
+     "role": "plsr-python",
+     "runtime_digest": "a6fee6b3b4eb7852b31f5a285fe8c50b535f25762e1daf82e36720ef8dd1b7c7"
+    }
+   },
+   "claim": "A binary64 neighbour just outside the declared stiffness box is admitted in some unit system when the sample is converted as k / (1 / c) and the bound as k * c",
+   "counterexample": {
+    "statement": "The declared box bounds and their binary64 neighbours keep their SI box decision under either conversion formula",
+    "witness": {
+     "cases": [
+      "um, ms, N/um|k just below 8"
+     ],
+     "k_hex": {
+      "k just above 12": "0x1.8000000000001p+3",
+      "k just below 8": "0x1.fffffffffffffp+2"
+     }
+    }
+   },
+   "domain": "numerical",
+   "evidence_status": "numerically_verified",
+   "regression_tolerance": {
+    "abs": 0.0,
+    "rel": 0.0
+   },
+   "uncertainty": {
+    "basis": "scalar IEEE quotients and products; identical on every conforming platform",
+    "kind": "roundoff",
+    "value": 0.0
+   },
+   "unit": null,
+   "value": {
+    "evaluations": 10,
+    "neighbours_admitted_by_second_formula": {
+     "um, ms, N/um|k just below 8": "CERTIFIED_WITH_MARGIN"
     }
    }
   },
@@ -474,21 +528,21 @@
  ],
  "generated_artifacts": [
   {
-   "bytes": 5042,
+   "bytes": 5641,
    "path": "artifacts/T105/unit-scales.json",
-   "sha256": "891c23aae3d0c5a7d67ccb38caef062f72bdc3b61b65e8f2fa831dc5fcc10579"
+   "sha256": "60e6249881cb67628c4787fdd5ac88c8dbab1739e12657b48dd31ab112184e3c"
   }
  ],
  "hypothesis": "The same physical parameter box and plant expressed in different units give the same PLSR verdicts: box membership is preserved by a monotone conversion and the sign of the decrease form is congruence-invariant.",
  "input_data": [
   "Unit systems (T, tau, c_theta): {'m, s, N/m': ((1.0, 1.0), 1.0, 1.0), 'mm, s, N/mm': ((1000.0, 1000.0), 1.0, 0.001), 'm, ms, N/m': ((1.0, 0.001), 0.001, 1.0), 'um, ms, N/um': ((1000000.0, 1000.0), 0.001, 1e-06), '2^-10 m, 2^-7 s, 2^10 N/m': ((1024.0, 8.0), 0.0078125, 0.0009765625)}",
-  "Samples: k = 8 and 12 (bounds), nextafter(8, 0) and nextafter(12, inf) (just outside), 8 interior k (PCG64 seed 1052), states from a normal draw",
+  "Samples: k = 8 and 12 (bounds), nextafter(8, 0) and nextafter(12, inf) (just outside), 8 interior k (PCG64 seed 1052), states from a normal draw; bounds and neighbours converted both as k * c and as k / (1 / c) against a box converted as bound * c",
   "Light-damping twin: k = 10, c = 1e-8, SI margin 5e-9",
   "Conversion scan: 2000 bounds 10^U(-3, 6) (seed 1051) with factors 1e-3 and 1e-6"
  ],
  "mathematical_model": "Mass-spring-damper m = 2 kg, c = 3 N s/m, stiffness k in [8, 12] N/m: A(k) = A0 + k A1, common P = [[6, 0.75], [0.75, 1]] (exactly negative definite decrease at both vertices, hence on the box). A unit change is x' = T x, t' = t/tau, k' = c k: A' = tau T A T^-1, P' = T^-1 P T^-1. Inertia is invariant; eigenvalues, max|A| and max|P| (hence margin and resolution) are not.",
  "number": 105,
- "numerical_result": "Interior/bound samples: 0 code mismatches across 5 unit systems; vertex check passed in 5/5. Just-outside MSD samples admitted: 0; MSD bound samples refused when converted as k/(1/c): 0. Interior margin ratio spread 7.6e+06x. Light damping codes {'m, s, N/m': 'CERTIFIED_WITH_MARGIN', 'mm, s, N/mm': 'CERTIFIED_WITH_MARGIN', 'm, ms, N/m': 'NUMERICAL_INCONCLUSIVE', 'um, ms, N/um': 'NUMERICAL_INCONCLUSIVE', '2^-10 m, 2^-7 s, 2^10 N/m': 'CERTIFIED_WITH_MARGIN'} (ratios {'m, s, N/m': 45000.0, 'mm, s, N/mm': 45000.0, 'm, ms, N/m': 0.00563, 'um, ms, N/um': 0.00563, '2^-10 m, 2^-7 s, 2^10 N/m': 2.68}; exact classes {'m, s, N/m': 'negative_definite', 'mm, s, N/mm': 'negative_definite', 'm, ms, N/m': 'negative_definite', 'um, ms, N/um': 'negative_definite', '2^-10 m, 2^-7 s, 2^10 N/m': 'negative_definite'}). Isolated box witnesses: {'collision 0.001|SI': 'OUTSIDE_PARAMETER_BOX', 'collision 0.001|x1e-3': 'CERTIFIED_WITH_MARGIN', 'formula 0.001|SI': 'CERTIFIED_WITH_MARGIN', 'formula 0.001|x1e-3': 'OUTSIDE_PARAMETER_BOX'}. Conversion scan: {'0.001': 32, '1e-06': 78} neighbour collisions and {'0.001': 282, '1e-06': 612} formula disagreements in 2000 draws. Conclusion: well-inside samples agree in every unit system; boundary decisions for the declared MSD box survive every conversion, but isolated bounds collide or depend on the conversion formula; near-threshold verdicts depend on the units because the resolution is not congruence-invariant.",
+ "numerical_result": "Interior/bound samples: 0 code mismatches across 5 unit systems; vertex check passed in 5/5. Just-outside MSD samples admitted: 0; MSD bound samples refused when converted as k/(1/c): 0; just-outside samples admitted when converted as k/(1/c): 1 (['um, ms, N/um|k just below 8']). Interior margin ratio spread 7.6e+06x. Light damping codes {'m, s, N/m': 'CERTIFIED_WITH_MARGIN', 'mm, s, N/mm': 'CERTIFIED_WITH_MARGIN', 'm, ms, N/m': 'NUMERICAL_INCONCLUSIVE', 'um, ms, N/um': 'NUMERICAL_INCONCLUSIVE', '2^-10 m, 2^-7 s, 2^10 N/m': 'CERTIFIED_WITH_MARGIN'} (ratios {'m, s, N/m': 45000.0, 'mm, s, N/mm': 45000.0, 'm, ms, N/m': 0.00563, 'um, ms, N/um': 0.00563, '2^-10 m, 2^-7 s, 2^10 N/m': 2.68}; exact classes {'m, s, N/m': 'negative_definite', 'mm, s, N/mm': 'negative_definite', 'm, ms, N/m': 'negative_definite', 'um, ms, N/um': 'negative_definite', '2^-10 m, 2^-7 s, 2^10 N/m': 'negative_definite'}). Isolated box witnesses: {'collision 0.001|SI': 'OUTSIDE_PARAMETER_BOX', 'collision 0.001|x1e-3': 'CERTIFIED_WITH_MARGIN', 'formula 0.001|SI': 'CERTIFIED_WITH_MARGIN', 'formula 0.001|x1e-3': 'OUTSIDE_PARAMETER_BOX'}. Conversion scan: {'0.001': 32, '1e-06': 78} neighbour collisions and {'0.001': 282, '1e-06': 612} formula disagreements in 2000 draws. Conclusion: well-inside samples agree in every unit system; the declared MSD bounds keep their box decision under both conversion formulas and their neighbours under multiplication, but mixing the two formulas admits a just-outside neighbour; isolated bounds collide or depend on the conversion formula; near-threshold verdicts depend on the units because the resolution is not congruence-invariant.",
  "observation_model": "PLSR code, margin ratio and check_vertices result per unit system; IEEE conversion outcomes.",
  "physical_validation_status": {
   "statement": "Physical validation requires acquired hardware evidence; none was acquired for this task.",
@@ -519,14 +573,14 @@
   },
   "scipy": "1.16.2",
   "sources": {
-   "src/ciw/lab/lyapunov.py": "58d6c7473f0a42002b57888de0ccfbbf73b571bbbabbf9ee81e0a05c734f2320",
+   "src/ciw/lab/lyapunov.py": "cbcb4d58d7313d7c537957a1b7dd35039a21bae80125bf59147eeed2c1232bbb",
    "src/ciw/lab/lyapunov_provider.py": "da3465b48b5f5efc47bfe6ab8379cf2cf2bc23e4835dc7ff047252e77fa6ef17",
-   "src/ciw/lab/lyapunov_reference.py": "fa37ef453c23ad2bed2eab41132e72670e166b93eebd5fc9d67a4a89a7c92cca"
+   "src/ciw/lab/lyapunov_reference.py": "bdf0bb5074ae2caca6c8a5d8e63a15e346b007098e6def6b058d077719bc1336"
   },
   "sympy": "1.14.0"
  },
  "recommended_next_task": "T106: drive every runtime status; propose that hosts declare boxes with an outward-rounded guard band and that PLSR document that margin ratios are unit-dependent for non-uniform unit changes.",
- "report_id": "sha256:4f21d6957a8d2b8efc7685b94cadc740a9b71ff21f5a873c3670678a84438cfb",
+ "report_id": "sha256:32417f14046e012486302ccdf932bb8264182a23b12a63495b9d78993e60fb67",
  "schema": "ciw.lab-task-report.v1",
  "section": "lyapunov",
  "state": "completed",
@@ -535,8 +589,9 @@
   "check: Interior and boundary stiffness samples give the same PLSR code in all five unit systems vs samples whose code differs between unit systems",
   "check: check_vertices passes for the converted box in every unit system vs unit systems whose vertex check fails",
   "check: Margin ratios are not invariant under non-uniform unit changes vs max/min margin ratio across unit systems",
-  "check: The declared box bounds 8 and 12 N/m and their binary64 neighbours keep their SI box decision in all five unit systems and under both conversion formulas vs just-outside samples admitted after conversion",
-  "check: The declared box bounds 8 and 12 N/m and their binary64 neighbours keep their SI box decision in all five unit systems and under both conversion formulas vs bound samples refused when converted as k / (1 / c)",
+  "check: The declared box bounds 8 and 12 N/m keep their SI box decision in all five unit systems under both conversion formulas, and their binary64 neighbours keep it when bound and sample are both multiplied vs just-outside samples admitted after conversion by multiplication",
+  "check: The declared box bounds 8 and 12 N/m keep their SI box decision in all five unit systems under both conversion formulas, and their binary64 neighbours keep it when bound and sample are both multiplied vs bound samples refused when converted as k / (1 / c)",
+  "check: A binary64 neighbour just outside the declared stiffness box is admitted in some unit system when the sample is converted as k / (1 / c) and the bound as k * c vs just-outside samples converted as k / (1 / c) and not refused",
   "check: A parameter just above the SI bound is admitted after multiplying bound and sample by 1e-3 vs SI and converted box decisions match the witness pattern (1 if so)",
   "check: A parameter exactly on the SI bound is refused when bound and sample are converted by the two mathematically equal formulas k * 0.001 and k / 1000 vs SI and converted box decisions match the witness pattern (1 if so)",
   "check: The light-damping plant's verdict depends on the unit system although its exact decrease form is negative definite in all of them vs distinct codes across unit systems",
@@ -552,7 +607,7 @@
  "title": "Test parameter-box comparisons across unit scales.",
  "uncertainty": "Box decisions and conversions are exact IEEE arithmetic (platform-independent). Margin ratios carry float64 rounding of the converted matrices (relative ~1e-15).",
  "unresolved_assumptions": [
-  "Unit conversion follows one host convention (multiply by the factor); other conventions change which boundary samples collide.",
+  "The box is converted by one host convention (multiply by the factor); samples are converted by it and by division by the reciprocal factor, and other conventions change which boundary samples collide.",
   "The stiffness box and damping are illustrative values, not identified ones."
  ]
 }

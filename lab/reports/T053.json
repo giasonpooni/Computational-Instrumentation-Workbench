@@ -576,13 +576,13 @@
   "python": "3.12.3",
   "scipy": "1.16.2",
   "sources": {
-   "src/ciw/lab/observation.py": "9ebedc1a1693aaa28965ba0c97837ad2d2c45bf0fd360857cf7b32c0993ed5fc",
+   "src/ciw/lab/observation.py": "6e5bf960e17dffb62bdaf29d28be9a0f165fd68f8498d173b66eab08fa22ad70",
    "src/ciw/lab/observation_signals.py": "19e94cb28160a07e5a285b5a4acd76e3820deb37ee5ed180f5c7bf1975a56793"
   },
   "sympy": "1.14.0"
  },
  "recommended_next_task": "T054: add asynchronous timestamps",
- "report_id": "sha256:757f3abc71ee107547dc1777f3c199596d9e5ce95b04746bae9de22c10c866b5",
+ "report_id": "sha256:aa0bc9e4a2e33df1902d356fb710cc3a6dfa9e994961f849ad6e175c7ad230fb",
  "schema": "ciw.lab-task-report.v1",
  "section": "observation",
  "state": "completed",

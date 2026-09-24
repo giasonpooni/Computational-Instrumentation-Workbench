@@ -51,7 +51,11 @@
     "abs": 1e-07,
     "rel": 0.0
    },
-   "uncertainty": null,
+   "uncertainty": {
+    "basis": "fourth-order stencil (h = 1e-3 l) in the second metric derivatives of the Brioschi curvature: h^4 truncation and eps/h rounding scaled by higher metric derivatives; the residual measures this stencil error, not a defect",
+    "kind": "truncation_bound",
+    "value": 1e-10
+   },
    "unit": "normalized residual",
    "value": 7.569957621233518e-11
   },
@@ -92,7 +96,11 @@
     "abs": 1e-13,
     "rel": 1e-09
    },
-   "uncertainty": null,
+   "uncertainty": {
+    "basis": "metric entries and eigenvalues to a few ulps; the refusal count is exact",
+    "kind": "roundoff",
+    "value": 1e-15
+   },
    "unit": null,
    "value": {
     "max_asymmetry": 0.0,
@@ -121,7 +129,11 @@
     "abs": 1e-12,
     "rel": 0.0
    },
-   "uncertainty": null,
+   "uncertainty": {
+    "basis": "algebraic identity evaluated in floating point (einsum and 2x2 products)",
+    "kind": "roundoff",
+    "value": 1e-15
+   },
    "unit": null,
    "value": 0.0
   },
@@ -146,7 +158,11 @@
     "abs": 1e-12,
     "rel": 0.0
    },
-   "uncertainty": null,
+   "uncertainty": {
+    "basis": "algebraic identity evaluated in floating point (einsum and 2x2 products)",
+    "kind": "roundoff",
+    "value": 1e-15
+   },
    "unit": null,
    "value": 1.6035737915386125e-16
   },
@@ -171,7 +187,11 @@
     "abs": 1e-08,
     "rel": 0.0
    },
-   "uncertainty": null,
+   "uncertainty": {
+    "basis": "fourth-order stencil (h = 1e-3 l) in the differences of the metric: h^4 truncation and eps/h rounding scaled by higher metric derivatives; the residual measures this stencil error, not a defect",
+    "kind": "truncation_bound",
+    "value": 1e-11
+   },
    "unit": null,
    "value": 8.102692869746462e-12
   },
@@ -196,7 +216,11 @@
     "abs": 1e-07,
     "rel": 0.0
    },
-   "uncertainty": null,
+   "uncertainty": {
+    "basis": "fourth-order stencil (h = 1e-3 l) in the differences of the exact metric derivatives: h^4 truncation and eps/h rounding scaled by higher metric derivatives; the residual measures this stencil error, not a defect",
+    "kind": "truncation_bound",
+    "value": 1e-12
+   },
    "unit": null,
    "value": 5.882921077369268e-13
   },
@@ -221,7 +245,11 @@
     "abs": 1e-14,
     "rel": 0.0
    },
-   "uncertainty": null,
+   "uncertainty": {
+    "basis": "algebraic identity evaluated in floating point (einsum and 2x2 products)",
+    "kind": "roundoff",
+    "value": 1e-15
+   },
    "unit": null,
    "value": 3.665815015959401e-16
   },
@@ -254,7 +282,11 @@
     "abs": 0,
     "rel": 0
    },
-   "uncertainty": null,
+   "uncertainty": {
+    "basis": "exact counts of identities and mutants",
+    "kind": "reference_error",
+    "value": 0
+   },
    "unit": null,
    "value": {
     "mutants": 7,
@@ -308,7 +340,11 @@
     "abs": 1e-06,
     "rel": 1e-06
    },
-   "uncertainty": null,
+   "uncertainty": {
+    "basis": "stencil error of the Brioschi curvature (h = 1e-3 l); the misscaling residual itself is exact",
+    "kind": "truncation_bound",
+    "value": 1e-10
+   },
    "unit": null,
    "value": {
     "failed": [
@@ -357,7 +393,11 @@
     "abs": 1e-06,
     "rel": 1e-06
    },
-   "uncertainty": null,
+   "uncertainty": {
+    "basis": "stencil error of the metric differences (h = 1e-3 l); the sign-flip residual itself is the defect",
+    "kind": "truncation_bound",
+    "value": 1e-11
+   },
    "unit": null,
    "value": {
     "compatibility_residual_passes": true,
@@ -396,7 +436,8 @@
  "input_data": [
   "10 surfaces (catalogue + plane-polar, gaussian-bump-shear, rotated-torus)",
   "32 seeded points per surface (PCG64 seed 3301) in declared domains (docs/lab/SURFACE_INTERFACE.md)",
-  "7 seeded defect mutants"
+  "7 seeded defect mutants",
+  "interface under test: ciw.lab.surfaces at the source digest recorded in provider_runtime_identity.sources"
  ],
  "mathematical_model": "g symmetric positive definite; Gamma^k_ij = 1/2 g^kl (d_i g_jl + d_j g_il - d_l g_ij) symmetric in ij; d_k g_ij = Gamma^l_ki g_lj + Gamma^l_kj g_il; d_l d_k g_ij symmetric in kl; Brioschi K(E, F, G and their first and second derivatives) = supplied K.",
  "number": 33,
@@ -414,13 +455,14 @@
   "python": "3.12.3",
   "scipy": "1.16.2",
   "sources": {
-   "src/ciw/lab/surfaces_discrete.py": "65515cd7d7440c047bb6cba986dbcd2b496978ebb32ed15939e371828e755eef",
+   "src/ciw/lab/surfaces.py": "e8f264c182743d0177d93b961a49d7ddf78f30d79a7a75b9fea4018b10d4eef0",
+   "src/ciw/lab/surfaces_discrete.py": "b47b6d9486e322c3e394e25b99849c0aa22039ce45b946825b0f3dbc1a3013b7",
    "src/ciw/lab/surfaces_discrete_geometry.py": "d4445a253778e1dff32b68a903a9caf560affa08ca5a7110207e54c8e1baa60e"
   },
   "sympy": "1.14.0"
  },
  "recommended_next_task": "T042: turn the conformance suite into the admission gate for invalid or incomplete surface data, reusing its refusal of the seeded defects.",
- "report_id": "sha256:f4c75df5c628ff07ce701a5d61c810bb0561182c197371169105a1eedcf08a72",
+ "report_id": "sha256:1812f90750bffda2b9ed2ea512f6738fba6f0773e077769044c223691ae8e61a",
  "schema": "ciw.lab-task-report.v1",
  "section": "surfaces-discrete",
  "state": "completed",

@@ -18,7 +18,7 @@
   "primary": "numerically_verified"
  },
  "expected_invariant": "Gap positions preserved; zero fill refused; moments within 99.9 % Monte Carlo intervals.",
- "experiment": "Retain a stream with Bernoulli drops, attempt zero fill, run a value-only detector on a signal far from zero, construct a quantized stationary-axis stream whose zero-filled version equals a complete acquired stream, then Monte Carlo the mean estimator and a sample-and-hold tracker through Bernoulli and burst channels.",
+ "experiment": "Retain a stream with Bernoulli drops, attempt zero fill, run a value-only detector on a signal far from zero, build through the record path a quantized stationary-axis stream whose zero-filled version equals the complete acquired stream and submit both to admission, then Monte Carlo the mean estimator and a sample-and-hold tracker through Bernoulli and burst channels.",
  "failure_modes_checked": [
   "zero-filled gaps",
   "value without raw reference",
@@ -193,9 +193,31 @@
       "comparison": "abs_le",
       "observed": 0.0,
       "passed": true,
-      "reference": "max |stream with those gaps zero-filled - complete acquired stream| (m)",
+      "reference": "max |values of the stream with those gaps dropped and zero-filled by om.zero_fill - values of the complete acquired stream| over all samples (m)",
       "reference_kind": "exact_arithmetic",
       "tolerance": 0.0
+     },
+     {
+      "comparison": "abs_le",
+      "observed": 0.0,
+      "passed": true,
+      "reference": "zero-filled positions in that stream minus dropped samples with a genuine 0 reading",
+      "reference_kind": "exact_arithmetic",
+      "tolerance": 0.0
+     },
+     {
+      "expected_refusal": "none",
+      "observed_refusal": "none",
+      "passed": true,
+      "reference": "admit the complete acquired stream (stationary axis)",
+      "reference_kind": "refusal"
+     },
+     {
+      "expected_refusal": "zero_filled_missing",
+      "observed_refusal": "zero_filled_missing",
+      "passed": true,
+      "reference": "admit the value-identical zero-filled stream (stationary axis)",
+      "reference_kind": "refusal"
      },
      {
       "comparison": "ge",
@@ -239,13 +261,15 @@
    },
    "unit": null,
    "value": {
+    "complete_stream_code": "accepted",
     "dropped": 46,
     "exact_zero_rule_false_positives": 107,
     "far_from_zero_mismatch": 0,
     "fills_equal_to_genuine_readings": 26,
     "genuine_zero_readings": 107,
     "identical_stream_gap_m": 0.0,
-    "neighbour_rule_missed": 46
+    "neighbour_rule_missed": 46,
+    "refilled_stream_code": "zero_filled_missing"
    }
   },
   {
@@ -365,9 +389,9 @@
  ],
  "generated_artifacts": [
   {
-   "bytes": 1902,
+   "bytes": 2017,
    "path": "artifacts/T055/drop-study.json",
-   "sha256": "4254725bc4dbc44c4ad5dd94188f3d4795acfb089828d5f00a2abef16513f2e0"
+   "sha256": "9c723b900d8a1673ffb77de06b5db82f6701226c7fed16c6b96b0e585818d17a"
   },
   {
    "bytes": 2135,
@@ -384,7 +408,7 @@
  ],
  "mathematical_model": "Mean of received samples is unbiased with variance sigma^2 E[1/N]; zero-filled mean has expectation (1 - p) mu. Hold error of a random walk: E e^2 = q E[age] + r with E[age] = p/(1 - p) (Bernoulli) or pi_B / P(bad -> good) (Gilbert-Elliott, all samples lost in the bad state).",
  "number": 55,
- "numerical_result": "46 of 200 dropped, positions exact; zero fill refused (zero_filled_missing); far-from-zero detector mismatches 0; stationary axis: 26 of 46 fills equal genuine 0-count readings (stream identical to a complete one), exact-zero rule 107 false positives, neighbour detector misses 46; zero-fill bias -0.1009 vs -0.1000; hold MSE 2.638e-05 (Bernoulli) vs 9.380e-05 (burst), ratio 3.56.",
+ "numerical_result": "46 of 200 dropped, positions exact; zero fill refused (zero_filled_missing); far-from-zero detector mismatches 0; stationary axis: 26 of 46 fills equal genuine 0-count readings (the zero-filled stream equals the complete one value for value; admission: complete accepted, zero-filled zero_filled_missing), exact-zero rule 107 false positives, neighbour detector misses 46; zero-fill bias -0.1009 vs -0.1000; hold MSE 2.638e-05 (Bernoulli) vs 9.380e-05 (burst), ratio 3.56.",
  "observation_model": "Synthetic encoder_displacement records with raw references; drops become None; a zero-filled copy fabricates values without raw references.",
  "physical_validation_status": {
   "statement": "Physical validation requires acquired hardware evidence; none was acquired for this task.",
@@ -398,14 +422,14 @@
   "python": "3.12.3",
   "scipy": "1.16.2",
   "sources": {
-   "src/ciw/lab/observation.py": "9ebedc1a1693aaa28965ba0c97837ad2d2c45bf0fd360857cf7b32c0993ed5fc",
+   "src/ciw/lab/observation.py": "6e5bf960e17dffb62bdaf29d28be9a0f165fd68f8498d173b66eab08fa22ad70",
    "src/ciw/lab/observation_modes.py": "bfd6aa4471cc876a7ac2fb8790a4a5c4f478c547350b059311f5e6d53702c83e",
    "src/ciw/lab/observation_signals.py": "19e94cb28160a07e5a285b5a4acd76e3820deb37ee5ed180f5c7bf1975a56793"
   },
   "sympy": "1.14.0"
  },
  "recommended_next_task": "T056: add stale-state observations",
- "report_id": "sha256:881341edbc6852f959fa73381b08ba5f06f70bda94ce055e7280b529bec2e01a",
+ "report_id": "sha256:93ed92f9580f752dd2d9bc1dfb4cc5446fd287f6c34e544b75297a4449bfe4ab",
  "schema": "ciw.lab-task-report.v1",
  "section": "observation",
  "state": "completed",
@@ -420,7 +444,10 @@
   "check: Zero-filling biases the mean by -p mu while explicit gaps leave it unbiased with variance sigma^2 E[1/N] vs explicit-gap variance against sigma^2 E[1/N] (|z| <= 3.2905, two-sided 99.9 %)",
   "check: Values alone recognize zero fills only in favourable signals: a neighbour-median detector finds every fill 50 sigma from zero, but on a stationary quantized encoder axis a fill equals a genuine zero-count reading vs detector flags differing from true fills (signal at 50 sigma)",
   "check: Values alone recognize zero fills only in favourable signals: a neighbour-median detector finds every fill 50 sigma from zero, but on a stationary quantized encoder axis a fill equals a genuine zero-count reading vs dropped samples whose genuine reading is 0 counts (stationary axis)",
-  "check: Values alone recognize zero fills only in favourable signals: a neighbour-median detector finds every fill 50 sigma from zero, but on a stationary quantized encoder axis a fill equals a genuine zero-count reading vs max |stream with those gaps zero-filled - complete acquired stream| (m)",
+  "check: Values alone recognize zero fills only in favourable signals: a neighbour-median detector finds every fill 50 sigma from zero, but on a stationary quantized encoder axis a fill equals a genuine zero-count reading vs max |values of the stream with those gaps dropped and zero-filled by om.zero_fill - values of the complete acquired stream| over all samples (m)",
+  "check: Values alone recognize zero fills only in favourable signals: a neighbour-median detector finds every fill 50 sigma from zero, but on a stationary quantized encoder axis a fill equals a genuine zero-count reading vs zero-filled positions in that stream minus dropped samples with a genuine 0 reading",
+  "check: Values alone recognize zero fills only in favourable signals: a neighbour-median detector finds every fill 50 sigma from zero, but on a stationary quantized encoder axis a fill equals a genuine zero-count reading vs admit the complete acquired stream (stationary axis)",
+  "check: Values alone recognize zero fills only in favourable signals: a neighbour-median detector finds every fill 50 sigma from zero, but on a stationary quantized encoder axis a fill equals a genuine zero-count reading vs admit the value-identical zero-filled stream (stationary axis)",
   "check: Values alone recognize zero fills only in favourable signals: a neighbour-median detector finds every fill 50 sigma from zero, but on a stationary quantized encoder axis a fill equals a genuine zero-count reading vs genuine zero readings an exact-zero rule would flag as fills",
   "check: Values alone recognize zero fills only in favourable signals: a neighbour-median detector finds every fill 50 sigma from zero, but on a stationary quantized encoder axis a fill equals a genuine zero-count reading vs fills the neighbour-median detector misses on the stationary axis",
   "check: Hold-estimate error follows q E[age] + r; bursts at the same drop rate raise it vs bernoulli mean age against the analytic E[age] (|z| <= 3.2905, two-sided 99.9 %)",

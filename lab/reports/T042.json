@@ -11,7 +11,7 @@
    "hardware_measured": 0,
    "independently_verified": 0,
    "not_established": 1,
-   "numerically_verified": 5,
+   "numerically_verified": 6,
    "provider_backed": 0,
    "synthetic": 0
   },
@@ -31,6 +31,7 @@
   "invalid_face_index",
   "invalid_shape",
   "invalid_strip",
+  "inverted_face",
   "mesh_too_large",
   "non_manifold_edge",
   "non_manifold_vertex",
@@ -102,6 +103,20 @@
       "observed_refusal": "folded_face",
       "passed": true,
       "reference": "validation: fold-over",
+      "reference_kind": "refusal"
+     },
+     {
+      "expected_refusal": "inverted_face",
+      "observed_refusal": "inverted_face",
+      "passed": true,
+      "reference": "validation: inward-oriented-octahedron",
+      "reference_kind": "refusal"
+     },
+     {
+      "expected_refusal": "inverted_face",
+      "observed_refusal": "inverted_face",
+      "passed": true,
+      "reference": "validation: jittered-inverted-face",
       "reference_kind": "refusal"
      },
      {
@@ -211,7 +226,7 @@
      }
     ],
     "generator": {
-     "cases": 23,
+     "cases": 25,
      "name": "ciw.lab.surfaces_discrete_mesh_studies.refusal_study"
     }
    },
@@ -239,6 +254,8 @@
     "heat-method-above-size-limit": "mesh_too_large",
     "hole-when-closed-required": "open_boundary",
     "index-out-of-range": "invalid_face_index",
+    "inward-oriented-octahedron": "inverted_face",
+    "jittered-inverted-face": "inverted_face",
     "leave-planar-patch": "boundary_reached",
     "nan-vertex": "nonfinite_vertex",
     "normal-direction": "invalid_direction",
@@ -270,6 +287,7 @@
     "generator": {
      "meshes": [
       "icosphere-2",
+      "uv-sphere-10x16-t0.1",
       "prism-cylinder-12x6",
       "plane-5x5",
       "torus-16x8"
@@ -422,6 +440,61 @@
   {
    "assigned_by": "ciw.lab.evidence",
    "basis": {
+    "checks": [
+     {
+      "comparison": "le",
+      "observed": 0.0,
+      "passed": true,
+      "reference": "issues reported by the structural and dihedral checks",
+      "reference_kind": "exact_arithmetic",
+      "tolerance": 0.0
+     },
+     {
+      "comparison": "ge",
+      "observed": 1.0,
+      "passed": true,
+      "reference": "faces whose normal points towards the sphere centre",
+      "reference_kind": "exact_arithmetic",
+      "tolerance": 1.0
+     }
+    ],
+    "generator": {
+     "jitter": 0.2,
+     "level": 3,
+     "name": "ciw.lab.surfaces_discrete_mesh_studies._jitter_unvalidated",
+     "seed": 20261940
+    }
+   },
+   "claim": "Without a declared centre the validator accepts a jittered icosphere with an inverted face",
+   "counterexample": {
+    "statement": "Structural validation, including the dihedral fold check, refuses every mesh with an inverted face",
+    "witness": {
+     "amplitude": 0.2,
+     "seed": 20261940
+    }
+   },
+   "domain": "computational_pipeline",
+   "evidence_status": "numerically_verified",
+   "regression_tolerance": {
+    "abs": 0,
+    "rel": 0
+   },
+   "uncertainty": {
+    "basis": "exact comparison of refusal codes, integer counts or ordered code lists",
+    "kind": "roundoff",
+    "value": 0.0
+   },
+   "unit": null,
+   "value": {
+    "amplitude": 0.2,
+    "inverted_faces": 1,
+    "seed": 20261940,
+    "structural_issues": []
+   }
+  },
+  {
+   "assigned_by": "ciw.lab.evidence",
+   "basis": {
     "notes": "No scanned surface, device or calibration was acquired; the computation is synthetic."
    },
    "claim": "The refusal catalogue covers every defect present in real scanned surface data",
@@ -434,12 +507,12 @@
  ],
  "generated_artifacts": [
   {
-   "bytes": 3833,
+   "bytes": 4430,
    "path": "artifacts/T042/refusal-catalogue.json",
-   "sha256": "b2e4a57fef3d722a53269a013f9b5c17acecb407c2cff349f8b051a3b7a40a54"
+   "sha256": "9d05bcd14e2451c652e9bd969d45e3ea5dd87212e7559bd11fa60ee09cc5f023"
   }
  ],
- "hypothesis": "Each declared defect class in the mesh, trace and query catalogues (MESH_CODES, TRACE_CODES, QUERY_CODES) is detected before geometry is computed and reported under a stable name, and valid meshes pass; defects outside the catalogue are not claimed.",
+ "hypothesis": "Each declared defect class in the mesh, trace and query catalogues (MESH_CODES, TRACE_CODES, QUERY_CODES) is detected before geometry is computed and reported under a stable name (inverted_face only for a mesh declared star-shaped about a centre), and valid meshes pass; defects outside the catalogue, including inverted faces of meshes without a declared centre whose bends stay below the fold threshold, are not claimed.",
  "input_data": [
   "nan-vertex (validation)",
   "index-out-of-range (validation)",
@@ -449,6 +522,8 @@
   "flipped-face (validation)",
   "bowtie-vertex (validation)",
   "fold-over (validation)",
+  "inward-oriented-octahedron (validation)",
+  "jittered-inverted-face (validation)",
   "unreferenced-vertex (validation)",
   "two-components (validation)",
   "hole-when-closed-required (validation)",
@@ -465,9 +540,9 @@
   "heat-method-above-size-limit (query)",
   "strip-faces-not-adjacent (query)"
  ],
- "mathematical_model": "Validation order: invalid_shape, empty_mesh, nonfinite_vertex, invalid_face_index, degenerate_face, non_manifold_edge, inconsistent_orientation, non_manifold_vertex, folded_face, unreferenced_vertex, disconnected_components, open_boundary. Tracing refusals: point_outside_face, invalid_direction, boundary_reached, vertex_hit, step_budget_exceeded. Query refusals: unreachable_target, boundary_vertex_curvature, mesh_too_large, invalid_strip.",
+ "mathematical_model": "Validation order: invalid_shape, empty_mesh, nonfinite_vertex, invalid_face_index, degenerate_face, non_manifold_edge, inconsistent_orientation, non_manifold_vertex, folded_face, inverted_face, unreferenced_vertex, disconnected_components, open_boundary. Tracing refusals: point_outside_face, invalid_direction, boundary_reached, vertex_hit, step_budget_exceeded. Query refusals: unreachable_target, boundary_vertex_curvature, mesh_too_large, invalid_strip.",
  "number": 42,
- "numerical_result": "23/23 defect cases refused with the expected code (21 distinct codes); 0 issues on 4 valid controls; multiple-defect report ['nonfinite_vertex', 'inconsistent_orientation', 'unreferenced_vertex']; boundary partial length 0.57 (analytic 0.57); unguarded zero-area evaluation gave 1 nonfinite curvature values.",
+ "numerical_result": "25/25 defect cases refused with the expected code (22 distinct codes); 0 issues on 5 valid controls; multiple-defect report ['nonfinite_vertex', 'inconsistent_orientation', 'unreferenced_vertex']; boundary partial length 0.57 (analytic 0.57); unguarded zero-area evaluation gave 1 nonfinite curvature values; the jittered icosphere (seed 20261940, 0.2 h) with 1 inverted face passes the structural and dihedral checks and is refused as inverted_face only when the sphere centre is declared.",
  "observation_model": "No physical observation; the refusal code (or its absence) for each constructed input.",
  "physical_validation_status": {
   "statement": "Physical validation requires acquired hardware evidence; none was acquired for this task.",
@@ -481,14 +556,14 @@
   "python": "3.12.3",
   "scipy": "1.16.2",
   "sources": {
-   "src/ciw/lab/surfaces_discrete_mesh.py": "60ba6ad84646cb8fff5dfa94cc609eb405b633ef3e75a535333dadd77e5bf592",
-   "src/ciw/lab/surfaces_discrete_mesh_geometry.py": "8788d479e31b40eaaa93aca1ff5aa293aa03fa681dfef7d9d5fe225f83994e7d",
-   "src/ciw/lab/surfaces_discrete_mesh_studies.py": "afac8f09b471f4d995289ed69e37f5a240b7d79c65392e35015a830f67d757b1"
+   "src/ciw/lab/surfaces_discrete_mesh.py": "cc005d2dfb3102b2594e085f9cdcba74ca0e6325edf9865010189ac5f6398500",
+   "src/ciw/lab/surfaces_discrete_mesh_geometry.py": "b14d56fae8413d78853e96be27a1f11eac369afa0b7a3dbb53bc821511ba4d97",
+   "src/ciw/lab/surfaces_discrete_mesh_studies.py": "618ea9848e8b750e333f81a395a7544c8b5127e53f4aae27d59b4f27e9967dfa"
   },
   "sympy": "1.14.0"
  },
  "recommended_next_task": "T043: propagate vertex noise to geodesic length, normals and curvature on validated meshes.",
- "report_id": "sha256:f9b726f71c2032c80b0d7afbcc868139b90eac3d06470cdb488be629d466c430",
+ "report_id": "sha256:530d8c99f29cfe67d4762d2da591c36310e2087b28519dc46a81d268aeffec86",
  "schema": "ciw.lab-task-report.v1",
  "section": "surfaces-discrete",
  "state": "completed",
@@ -502,6 +577,8 @@
   "check: Every declared surface-data defect is refused with its named code vs validation: flipped-face",
   "check: Every declared surface-data defect is refused with its named code vs validation: bowtie-vertex",
   "check: Every declared surface-data defect is refused with its named code vs validation: fold-over",
+  "check: Every declared surface-data defect is refused with its named code vs validation: inward-oriented-octahedron",
+  "check: Every declared surface-data defect is refused with its named code vs validation: jittered-inverted-face",
   "check: Every declared surface-data defect is refused with its named code vs validation: unreferenced-vertex",
   "check: Every declared surface-data defect is refused with its named code vs validation: two-components",
   "check: Every declared surface-data defect is refused with its named code vs validation: hole-when-closed-required",
@@ -522,15 +599,19 @@
   "check: A geodesic stopped at a boundary retains its partial length vs |partial length - distance to the boundary|",
   "check: Curvature and normals evaluated on an unvalidated zero-area face are nonfinite vs nonfinite curvature values",
   "check: Curvature and normals evaluated on an unvalidated zero-area face are nonfinite vs nonfinite normal components",
+  "check: Without a declared centre the validator accepts a jittered icosphere with an inverted face vs issues reported by the structural and dihedral checks",
+  "check: Without a declared centre the validator accepts a jittered icosphere with an inverted face vs faces whose normal points towards the sphere centre",
   "pytest: tests/test_lab_surfaces_discrete_mesh.py::test_every_defect_has_a_named_refusal",
+  "pytest: tests/test_lab_surfaces_discrete_mesh.py::test_fold_check_misses_small_bend_inversions",
   "pytest: tests/test_lab_surfaces_discrete_mesh.py::test_refusal_task_report"
  ],
  "tests_skipped": [],
  "title": "Define refusal states for invalid or incomplete surface data.",
- "uncertainty": "Exact (categorical); thresholds are declared: zero area at 2A/l_max^2 <= 1e-12, vertex hit at edge parameter <= 1e-9, fold at adjacent normal dot <= -0.9.",
+ "uncertainty": "Exact (categorical); thresholds are declared: zero area at 2A/l_max^2 <= 1e-12, vertex hit at edge parameter <= 1e-9, fold at adjacent normal dot <= -0.9, inverted face at det(p0 - c, p1 - c, p2 - c) <= 0 for a declared centre c.",
  "unresolved_assumptions": [
   "Thresholds are relative and unitless; scans with very different scales may need other thresholds.",
-  "Not detected: self-intersections between non-adjacent faces; unwelded seams (coincident duplicate vertices pass validation and surface only as boundary_reached during tracing); duplicate faces; near-degenerate slivers just above the 2A/l_max^2 = 1e-12 threshold.",
-  "False-positive risk: a legitimate sharp crease with a dihedral bend over about 154 degrees is refused as folded_face (the embedded m = n^2 lantern is refused although it does not overlap itself)."
+  "Not detected: self-intersections between non-adjacent faces; unwelded seams (coincident duplicate vertices pass validation and surface only as boundary_reached during tracing); duplicate faces; near-degenerate slivers just above the 2A/l_max^2 = 1e-12 threshold; inverted faces whose bend to every neighbour stays below about 154 degrees when no centre is declared (a jittered icosphere is recorded; T041 measures how often this happens).",
+  "The declared-centre test assumes the surface is star-shaped about that centre; it would refuse valid surfaces that are not (a torus about its own centre), so it is applied only on request.",
+  "False-positive risk: a legitimate sharp crease with a dihedral bend over about 154 degrees is refused as folded_face (the embedded m = n^2 lantern is refused although it does not overlap itself and no face points inward)."
  ]
 }

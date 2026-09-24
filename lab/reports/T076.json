@@ -211,7 +211,7 @@
     "log": [
      "refused:read_only_session",
      "recorded",
-     "recorded",
+     "refused:read_only_session",
      "refused:read_only_session"
     ],
     "no_state": true,
@@ -331,12 +331,8 @@
   {
    "assigned_by": "ciw.lab.evidence",
    "basis": {
-    "generator": {
-     "bit_generator": "PCG64",
-     "name": "ciw.lab.sensor_fusion_bench",
-     "seed": 762026
-    },
-    "notes": "synthetic draws only; no acquisition"
+    "derivation": "default-argument and refusal audit of FusionSession against ciw.declared_workload.AUTHORITY; no synthetic draws",
+    "notes": "no acquisition"
    },
    "claim": "Synthetic fusion output is admissible as production state",
    "domain": "production_acceptance",
@@ -348,9 +344,9 @@
  ],
  "generated_artifacts": [
   {
-   "bytes": 1134,
+   "bytes": 1151,
    "path": "artifacts/T076/defaults.json",
-   "sha256": "fb63237bb964e89308e73e5c6dd134b3b9dbf6dee9f808fab34f8f969260589f"
+   "sha256": "ee5d7b32c9ff1c59d09169fca89c19e721d404ce57bf13e7b17bf51632782cf2"
   }
  ],
  "hypothesis": "The fusion API cannot estimate, fuse or admit anything unless a caller constructs a writable session, the flag cannot be flipped afterwards, and its authority record uses the CIW vocabulary (sensor_fusion and state_admission not_performed).",
@@ -375,15 +371,15 @@
   "scipy": "1.16.2",
   "sources": {
    "src/ciw/declared_workload.py": "d78641236802b296afff11be406791473a40276eb7de37a019bbf192daa03db6",
-   "src/ciw/lab/sensor_fusion_admission.py": "db737df809fa23fd26fb21a196b6efa2bda6326aba21a8ff0288a99a95746c2c",
+   "src/ciw/lab/sensor_fusion_admission.py": "a0d36bf665e88d2851b08c6181a8f794e39751a688a04ebd586fbc93164cc3c7",
    "src/ciw/lab/sensor_fusion_bench.py": "f373849a4c6836fa20685c59ce7a6fe6bf732f6df9d6a49646cdc017262dd656",
-   "src/ciw/lab/sensor_fusion_common.py": "6787aa47d199d50d0b4de4d7e53714ce7b8b5aad37d647cfc1a954414e90209f",
-   "src/ciw/lab/sensor_fusion_objects.py": "a795ffc235e0a4118cb7b9ac7800191a90984372d79e59f1a934442d98d7a1f1"
+   "src/ciw/lab/sensor_fusion_common.py": "db3b0430ad5c13920239cef354da61b64ab1b01f84b2d3d5aff2f78840a5867a",
+   "src/ciw/lab/sensor_fusion_objects.py": "93fc55ddca91f1adfb886d21805ea8f82586548ee84e1f6cc7daed4df1f53bb9"
   },
   "sympy": "1.14.0"
  },
  "recommended_next_task": "T113: connect filtered residuals to the Lyapunov runtime without putting sensors inside the kernel.",
- "report_id": "sha256:a7bb5f730b520425304d5c66443a3d4f6da25f17ac35420216aa1fa3cf704074",
+ "report_id": "sha256:9e921bfc04f3171b4211e88ddcef0c18f895d5ecff8c92ab52aac36ace2f6064",
  "schema": "ciw.lab-task-report.v1",
  "section": "sensor-fusion",
  "state": "completed",

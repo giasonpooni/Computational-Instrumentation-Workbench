@@ -97,7 +97,11 @@
     "abs": 0.2,
     "rel": 0.0
    },
-   "uncertainty": null,
+   "uncertainty": {
+    "basis": "largest standard error of the least-squares slope over the rounding window (13 steps of the median error curve)",
+    "kind": "fit",
+    "value": 0.036
+   },
    "unit": null,
    "value": {
     "gaussian-bump": -1.026,
@@ -144,7 +148,11 @@
     "abs": 0.75,
     "rel": 0.0
    },
-   "uncertainty": null,
+   "uncertainty": {
+    "basis": "h_opt is located on a grid of 4 steps per decade and the flat V-bottom of the median curve can move it by one grid step (0.25 decade)",
+    "kind": "reference_error",
+    "value": 0.25
+   },
    "unit": "log10(relative step)",
    "value": {
     "gaussian-bump": -4.75,
@@ -245,19 +253,23 @@
    "counterexample": {
     "statement": "Decreasing the finite-difference step always improves agreement with the analytic derivative",
     "witness": {
-     "error_at_1e-12": 0.000102,
-     "error_at_h_opt": 1.97e-11,
-     "h_opt": 5.623413251903491e-06,
+     "log10_error_at_1e-12": -3.993,
+     "log10_error_at_h_opt": -10.7,
+     "log10_h_opt": -5.25,
      "surface": "sphere"
     }
    },
    "domain": "numerical",
    "evidence_status": "numerically_verified",
    "regression_tolerance": {
-    "abs": 1.0,
+    "abs": 0.5,
     "rel": 0.0
    },
-   "uncertainty": null,
+   "uncertainty": {
+    "basis": "h_opt on a grid of 4 steps per decade and rounding-branch scatter of tens of percent (about 0.1 decade) in E(1e-12)",
+    "kind": "reference_error",
+    "value": 0.25
+   },
    "unit": "log10 error ratio",
    "value": 6.71
   },
@@ -297,7 +309,11 @@
     "abs": 1e-13,
     "rel": 0.0
    },
-   "uncertainty": null,
+   "uncertainty": {
+    "basis": "rounding of the difference quotient at h = 1e-2 (eps |g| / h ~ 2e-14 normalized, times a few ulps of g); the plane value is exact",
+    "kind": "roundoff",
+    "value": 1e-13
+   },
    "unit": null,
    "value": {
     "plane_max_error": 0.0,
@@ -317,9 +333,9 @@
  ],
  "generated_artifacts": [
   {
-   "bytes": 23042,
+   "bytes": 23724,
    "path": "artifacts/T035/fd-scan.json",
-   "sha256": "a5822b62b78a9764fc23e7c79babb330c22713f3e0fb4ad358ce90c0f19573a8"
+   "sha256": "93c6be4fc700fef879234506ea612725e460f7c8362f61c8865e2ba7a4f38e0a"
   },
   {
    "bytes": 24410,
@@ -348,14 +364,15 @@
   "python": "3.12.3",
   "scipy": "1.16.2",
   "sources": {
-   "src/ciw/lab/surfaces_discrete.py": "65515cd7d7440c047bb6cba986dbcd2b496978ebb32ed15939e371828e755eef",
+   "src/ciw/lab/surfaces.py": "e8f264c182743d0177d93b961a49d7ddf78f30d79a7a75b9fea4018b10d4eef0",
+   "src/ciw/lab/surfaces_discrete.py": "b47b6d9486e322c3e394e25b99849c0aa22039ce45b946825b0f3dbc1a3013b7",
    "src/ciw/lab/surfaces_discrete_ad.py": "a76cc131eeadc83d5c64a788dd8c0a1453a0c0ffc89a5f49e79cbb1bf35559c0",
    "src/ciw/lab/surfaces_discrete_geometry.py": "d4445a253778e1dff32b68a903a9caf560affa08ca5a7110207e54c8e1baa60e"
   },
   "sympy": "1.14.0"
  },
  "recommended_next_task": "T043: propagate vertex and normal uncertainty through difference-based metric derivatives, where noise replaces eps in the step-size law.",
- "report_id": "sha256:1a9b800121df28a6f38b4dcb41274336c8a191b920c044f5bd2ee0c60db64af6",
+ "report_id": "sha256:404808e4632410dd921e952efb71117f047ce7a6e6e73f37d4866865ef1878c7",
  "schema": "ciw.lab-task-report.v1",
  "section": "surfaces-discrete",
  "state": "completed",

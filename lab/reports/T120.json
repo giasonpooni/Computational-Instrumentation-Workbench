@@ -17,10 +17,10 @@
   },
   "primary": "numerically_verified"
  },
- "expected_invariant": "float64 order near 4; float32 minimum inside the grid, above float32 roundoff and followed by a roundoff plateau; counted operations per step equal.",
- "experiment": "Vectorized RK4 in float32 and float64 across the step grid; smallest grid N per accuracy target; operation counts derived from the kernel source and checked by running one step of the same code on counting scalars.",
+ "expected_invariant": "float64 order near 4; float32 minimum inside the grid, above float32 roundoff and followed by a roundoff plateau; counted operations per step equal in both precisions, with no result promoted out of the declared precision.",
+ "experiment": "Vectorized RK4 in float32 and float64 across the step grid; smallest grid N per accuracy target; operation counts derived from the kernel source and checked by running one step of the same code on a counting view of a real float32 and a real float64 array (every ufunc call counted and its result dtype recorded).",
  "failure_modes_checked": [
-  "dtype promotion to float64 (asserted)",
+  "dtype promotion to float64 (asserted per integration and per ufunc result)",
   "roundoff floor mistaken for convergence (minimum must lie inside the grid)",
   "target unreachable at any N (counterexample)"
  ],
@@ -143,12 +143,12 @@
    "evidence_status": "numerically_verified",
    "regression_tolerance": {
     "abs": 1e-12,
-    "rel": 1.0
+    "rel": 0.5
    },
    "uncertainty": {
-    "basis": "float32 sin/cos implementations differ by platform; plateau errors vary by tens of percent (regression tolerance rel 1.0)",
+    "basis": "relative, declared allowance: float32 sin/cos implementations differ by platform, so float32 errors near and above the crossover vary by tens of percent (regression tolerance rel 0.5)",
     "kind": "roundoff",
-    "value": null
+    "value": 0.3
    },
    "unit": "normalized length",
    "value": {
@@ -201,12 +201,12 @@
    "evidence_status": "numerically_verified",
    "regression_tolerance": {
     "abs": 0.0,
-    "rel": 1.0
+    "rel": 0.0
    },
    "uncertainty": {
-    "basis": "the true minimal N lies within a factor 2 below the tabulated grid value",
+    "basis": "one grid level: the true minimal N lies in (N/2, N] of the tabulated power of two; every tabulated error clears its target by a factor of at least 1.4, so the table is compared exactly",
     "kind": "grid_resolution",
-    "value": 2.0
+    "value": 1
    },
    "unit": null,
    "value": {
@@ -282,12 +282,12 @@
    "evidence_status": "numerically_verified",
    "regression_tolerance": {
     "abs": 0.0,
-    "rel": 1.0
+    "rel": 0.5
    },
    "uncertainty": {
-    "basis": "float32 sin/cos implementations differ by platform; plateau errors vary by tens of percent (regression tolerance rel 1.0)",
+    "basis": "relative, declared allowance: float32 sin/cos implementations differ by platform, so float32 errors near and above the crossover vary by tens of percent (regression tolerance rel 0.5)",
     "kind": "roundoff",
-    "value": null
+    "value": 0.3
    },
    "unit": null,
    "value": {
@@ -303,7 +303,7 @@
       "comparison": "abs_le",
       "observed": 0.0,
       "passed": true,
-      "reference": "instrumented flops minus the count derived from the source: 4 x (6 mul + 1 div) + 3 x 4 x 2 stage + 4 x 5 + 4 x 2 combine",
+      "reference": "float32 instrumented flops minus the count derived from the source: 4 x (6 mul + 1 div) + 3 x 4 x 2 stage + 4 x 5 + 4 x 2 combine",
       "reference_kind": "exact_arithmetic",
       "tolerance": 0.0
      },
@@ -311,7 +311,39 @@
       "comparison": "abs_le",
       "observed": 0.0,
       "passed": true,
-      "reference": "instrumented sin/cos calls minus 4 x 2",
+      "reference": "float32 instrumented sin/cos calls minus 4 x 2",
+      "reference_kind": "exact_arithmetic",
+      "tolerance": 0.0
+     },
+     {
+      "comparison": "le",
+      "observed": 0.0,
+      "passed": true,
+      "reference": "float32 ufunc results outside float32 (promotion) or uncounted ufunc calls",
+      "reference_kind": "exact_arithmetic",
+      "tolerance": 0.0
+     },
+     {
+      "comparison": "abs_le",
+      "observed": 0.0,
+      "passed": true,
+      "reference": "float64 instrumented flops minus the count derived from the source: 4 x (6 mul + 1 div) + 3 x 4 x 2 stage + 4 x 5 + 4 x 2 combine",
+      "reference_kind": "exact_arithmetic",
+      "tolerance": 0.0
+     },
+     {
+      "comparison": "abs_le",
+      "observed": 0.0,
+      "passed": true,
+      "reference": "float64 instrumented sin/cos calls minus 4 x 2",
+      "reference_kind": "exact_arithmetic",
+      "tolerance": 0.0
+     },
+     {
+      "comparison": "le",
+      "observed": 0.0,
+      "passed": true,
+      "reference": "float64 ufunc results outside float64 (promotion) or uncounted ufunc calls",
       "reference_kind": "exact_arithmetic",
       "tolerance": 0.0
      }
@@ -341,7 +373,7 @@
      "seed": null
     }
    },
-   "claim": "Per RK4 step the kernel performs the same counted arithmetic in both precisions (the float32 and float64 transcendental implementations differ)",
+   "claim": "Per RK4 step the kernel performs the same counted arithmetic in float32 and float64, every ufunc result staying in the declared precision (the float32 and float64 transcendental implementations differ)",
    "domain": "numerical",
    "evidence_status": "numerically_verified",
    "regression_tolerance": {
@@ -357,14 +389,30 @@
    "value": {
     "flops_per_step": 80,
     "instrumented": {
-     "flops": 80,
-     "transcendentals": 8
+     "float32": {
+      "final_dtype": "float32",
+      "flops": 80,
+      "other_ufunc_calls": 0,
+      "result_dtypes": [
+       "float32"
+      ],
+      "results_outside_dtype": 0,
+      "state_bytes": 16,
+      "transcendentals": 8
+     },
+     "float64": {
+      "final_dtype": "float64",
+      "flops": 80,
+      "other_ufunc_calls": 0,
+      "result_dtypes": [
+       "float64"
+      ],
+      "results_outside_dtype": 0,
+      "state_bytes": 32,
+      "transcendentals": 8
+     }
     },
     "rhs_evaluations_per_step": 4,
-    "state_bytes": {
-     "float32": 16,
-     "float64": 32
-    },
     "state_values": 4,
     "transcendentals_per_step": 8
    }
@@ -373,7 +421,7 @@
    "assigned_by": "ciw.lab.evidence",
    "basis": {
     "notes": [
-     "no energy counter is available; operation counts are only a proxy"
+     "no capture path measures a float32 workload: the T115 RAPL capture brackets the float64 generic integrator and T116 measures the Gaussian VI kernel; Deferred research question: a dtype-parameterized capture of energy_gpu_kernels.rk4_batch (a RAPL bracket with the dtype named in the declared workload, or an NVML capture of a float32 and a float64 GPU kernel) gated like T115/T116, so energy per accepted trajectory can be compared across precisions; no existing capture path measures a float32 RK4 workload"
     ]
    },
    "claim": "float32 lowers the energy per accepted trajectory relative to float64 on real CPU or GPU hardware",
@@ -416,14 +464,14 @@
   "python": "3.12.3",
   "scipy": "1.16.2",
   "sources": {
-   "src/ciw/lab/energy_gpu.py": "fca900557e7fac2261a168afe0ee81efc48508a874a5045bf4f6b74937165bb1",
-   "src/ciw/lab/energy_gpu_kernels.py": "03f3d92f8407f476cb74536911d476929843ee74232a7d7017c00f43c785a2b4",
-   "src/ciw/lab/energy_gpu_telemetry.py": "21cac5f654ce4a120887ff40da62fda47bd38a3c383bbad6cc3cb13b4168fa2d"
+   "src/ciw/lab/energy_gpu.py": "a66107417b5bfa398077a919b2f5351ca222e9961fa8dfb3256b78efc17fd930",
+   "src/ciw/lab/energy_gpu_kernels.py": "366c477ff1af7f59b626f4e64bf994ae4cbce5754c0e9c5be1c2acb515f99f4b",
+   "src/ciw/lab/energy_gpu_telemetry.py": "df82c8748d3aa75384e3928bffcf516cd6f72cccde99edf8d21f089cc768bafa"
   },
   "sympy": "1.14.0"
  },
- "recommended_next_task": "T115/T116 energy measurement of both precisions on hardware; T148 for deterministic reduction policies",
- "report_id": "sha256:a619044e6d206bbf97174f8f3f1623fd0bd26e29aca608f3365596ec8b9fbb8a",
+ "recommended_next_task": "Deferred research question: a dtype-parameterized capture of energy_gpu_kernels.rk4_batch (a RAPL bracket with the dtype named in the declared workload, or an NVML capture of a float32 and a float64 GPU kernel) gated like T115/T116, so energy per accepted trajectory can be compared across precisions; no existing capture path measures a float32 RK4 workload; T148 for deterministic reduction policies",
+ "report_id": "sha256:9f3f2127a08541f99e55b377d29b4f38025d5e3d31473b0805b03fb24c94d0bf",
  "schema": "ciw.lab-task-report.v1",
  "section": "energy-gpu",
  "state": "partial",
@@ -436,8 +484,12 @@
   "check: float32 RK4 endpoint error stops improving: its minimum is a truncation/roundoff crossover inside the step grid, followed by a roundoff-dominated plateau above it vs float32 minimum above the unit roundoff 2^-24 = 6.0e-8",
   "check: Smallest grid N (>= 16) meeting each accuracy target, by precision (None: not reached for N <= 2048; 16 is censored at the grid minimum) vs float64 reaches all five targets",
   "check: Lowering precision to float32 cannot reach a 1e-7 endpoint accuracy at any step count up to 2048, while float64 reaches it vs grid points where float32 meets 1e-7",
-  "check: Per RK4 step the kernel performs the same counted arithmetic in both precisions (the float32 and float64 transcendental implementations differ) vs instrumented flops minus the count derived from the source: 4 x (6 mul + 1 div) + 3 x 4 x 2 stage + 4 x 5 + 4 x 2 combine",
-  "check: Per RK4 step the kernel performs the same counted arithmetic in both precisions (the float32 and float64 transcendental implementations differ) vs instrumented sin/cos calls minus 4 x 2",
+  "check: Per RK4 step the kernel performs the same counted arithmetic in float32 and float64, every ufunc result staying in the declared precision (the float32 and float64 transcendental implementations differ) vs float32 instrumented flops minus the count derived from the source: 4 x (6 mul + 1 div) + 3 x 4 x 2 stage + 4 x 5 + 4 x 2 combine",
+  "check: Per RK4 step the kernel performs the same counted arithmetic in float32 and float64, every ufunc result staying in the declared precision (the float32 and float64 transcendental implementations differ) vs float32 instrumented sin/cos calls minus 4 x 2",
+  "check: Per RK4 step the kernel performs the same counted arithmetic in float32 and float64, every ufunc result staying in the declared precision (the float32 and float64 transcendental implementations differ) vs float32 ufunc results outside float32 (promotion) or uncounted ufunc calls",
+  "check: Per RK4 step the kernel performs the same counted arithmetic in float32 and float64, every ufunc result staying in the declared precision (the float32 and float64 transcendental implementations differ) vs float64 instrumented flops minus the count derived from the source: 4 x (6 mul + 1 div) + 3 x 4 x 2 stage + 4 x 5 + 4 x 2 combine",
+  "check: Per RK4 step the kernel performs the same counted arithmetic in float32 and float64, every ufunc result staying in the declared precision (the float32 and float64 transcendental implementations differ) vs float64 instrumented sin/cos calls minus 4 x 2",
+  "check: Per RK4 step the kernel performs the same counted arithmetic in float32 and float64, every ufunc result staying in the declared precision (the float32 and float64 transcendental implementations differ) vs float64 ufunc results outside float64 (promotion) or uncounted ufunc calls",
   "pytest: tests/test_lab_energy_gpu.py::test_precision_study_float32_floor_and_counterexample",
   "pytest: tests/test_lab_energy_gpu.py::test_every_numerical_finding_declares_uncertainty_and_tolerance"
  ],
@@ -445,6 +497,7 @@
  "title": "Compare precision versus energy cost.",
  "uncertainty": "float32 errors depend on the platform's float32 sin/cos and vary by tens of percent; float64 order fit is stable to about 0.05.",
  "unresolved_assumptions": [
-  "Energy cost was not measured; operation counts do not capture memory traffic, vector width, transcendental cost or GPU float32 throughput"
+  "Energy cost was not measured; operation counts do not capture memory traffic, vector width, transcendental cost or GPU float32 throughput",
+  "Deferred research question: a dtype-parameterized capture of energy_gpu_kernels.rk4_batch (a RAPL bracket with the dtype named in the declared workload, or an NVML capture of a float32 and a float64 GPU kernel) gated like T115/T116, so energy per accepted trajectory can be compared across precisions; no existing capture path measures a float32 RK4 workload"
  ]
 }

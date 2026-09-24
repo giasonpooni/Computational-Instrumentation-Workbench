@@ -1,5 +1,17 @@
 [
  {
+  "assumption": "2 numerical findings declare no per-finding uncertainty: T099 (1), T139 (1)",
+  "tasks": [
+   "T159"
+  ]
+ },
+ {
+  "assumption": "41 figure tasks (77 figures) were not re-executed within the section's time budget: T001, T002, T003, T004, T005, T006, T007, T008, T009, T010, T011, T012, T014, T015, T016, T017, T018, T025, T036, T039, T040, T041, T043, T044, T046, T047, T051, T064, T067, T068, T097, T101, T107, T109, T126, T128, T133, T134, T135, T136, T137",
+  "tasks": [
+   "T158"
+  ]
+ },
+ {
   "assumption": "A caller who builds an Observation with value (0, 0) is indistinguishable from a genuine reading at the origin: the API refuses requested substitutes, not zero-filling done before an Observation is constructed.",
   "tasks": [
    "T069"
@@ -18,6 +30,12 @@
   ]
  },
  {
+  "assumption": "A fabricated receipt needs a sibling of the same source bytes, configuration and runtime; one was retained here (B0b), which any user can create by executing a source twice.",
+  "tasks": [
+   "T083"
+  ]
+ },
+ {
   "assumption": "A finite family cannot prove the property; the proof is the decision-order argument (analytic finding).",
   "tasks": [
    "T108"
@@ -30,7 +48,7 @@
   ]
  },
  {
-  "assumption": "A metric blow-up at finite distance with bounded K is left unclassified; the cube-root chart of the plane is such a case although it is removable.",
+  "assumption": "A metric blow-up at finite distance with bounded K is left unclassified, so the removable coordinate singularity of the plane in the cube-root chart is missed (counted as misclassified); telling it apart from a genuine singularity would need a removability test, for example regularity of the metric in radial arclength coordinates.",
   "tasks": [
    "T037"
   ]
@@ -42,9 +60,15 @@
   ]
  },
  {
-  "assumption": "A registered reader that parses separations from raw photogrammetry files does not exist yet.",
+  "assumption": "A registered reader that parses separations or marker coordinates from raw photogrammetry files does not exist yet.",
   "tasks": [
    "T138"
+  ]
+ },
+ {
+  "assumption": "A transition is judged at the resolution of the path's steps: 'direct' means consecutive steps whose transcribed gate vectors differ by one crossing. Rounding at the crossing itself is not probed (T107 covers the resolution threshold).",
+  "tasks": [
+   "T106"
   ]
  },
  {
@@ -60,7 +84,7 @@
   ]
  },
  {
-  "assumption": "Acceptance of valid records is agreement between the lab's canonical encoder and exchange._identity (both CIW-side code written to the same producer specification); producer-sealed artifacts are accepted only in T097's PPDA/SCR/SET roundtrip, when those checkouts are bound.",
+  "assumption": "Acceptance of valid records follows from the lab encoder's byte-for-byte agreement with the json.dumps call exchange._identity uses (both CIW-side code, same origin), so it is not independent evidence; producer-sealed artifacts are tested only in T097's PPDA/SCR/SET roundtrip, when those checkouts are bound.",
   "tasks": [
    "T096"
   ]
@@ -84,6 +108,12 @@
   ]
  },
  {
+  "assumption": "After an inconsistent innovation the only recovery is explicit: re-initialization, or reacquisition once the track is declared lost.",
+  "tasks": [
+   "T075"
+  ]
+ },
+ {
   "assumption": "All data are synthetic; the EKF, noise levels and thresholds are illustrative, not tuned to a sensor.",
   "tasks": [
    "T113"
@@ -102,15 +132,28 @@
   ]
  },
  {
+  "assumption": "An atlas needs an embedding and a closed-form inverse for each chart; atlases are built here for the sphere (rotated polar charts) and for graph surfaces (Monge chart and its polar ChartMap); intrinsic charts such as the hyperbolic plane are not covered.",
+  "tasks": [
+   "T036"
+  ]
+ },
+ {
   "assumption": "An operator log is an unauthenticated record; the gate binds it to this host's NVML identity but cannot prove the capture genuine",
   "tasks": [
-   "T116"
+   "T116",
+   "T119"
   ]
  },
  {
   "assumption": "Angle recognition assumes corner angles are multiples of pi/24, true for every declared polygon.",
   "tasks": [
    "T029"
+  ]
+ },
+ {
+  "assumption": "Aspect ratio and skew of either camera are not perturbed; left-camera pose errors are not listed separately because a rigid motion of the whole believed rig, which leaves chords unchanged, turns them into right-camera pose errors",
+  "tasks": [
+   "T049"
   ]
  },
  {
@@ -180,9 +223,15 @@
   ]
  },
  {
-  "assumption": "CERTIFICATE_NOT_POSITIVE is reached only when a P accepted by quadratic() evaluates V < 0, which depends on eigvalsh rounding; min eig P <= 0 cannot follow a passed construction check. Its reachability is therefore recorded, not required.",
+  "assumption": "Both sympy references are curve models written in ciw.lab.observation_chord; sympy's independence covers their series expansion, simplification and exact arithmetic, and the explicit-curve route is evaluated at three rational curves, not symbolically",
   "tasks": [
-   "T106"
+   "T046"
+  ]
+ },
+ {
+  "assumption": "Byte identity is established on one platform; Windows and other BLAS builds are not compared.",
+  "tasks": [
+   "T158"
   ]
  },
  {
@@ -234,6 +283,12 @@
   ]
  },
  {
+  "assumption": "Circular markers are flat discs in the tangent plane and the detector returns the exact ellipse centre; perspective and distortion are studied separately",
+  "tasks": [
+   "T050"
+  ]
+ },
+ {
   "assumption": "Clock offset is constant (no drift)",
   "tasks": [
    "T054"
@@ -258,6 +313,12 @@
   ]
  },
  {
+  "assumption": "Components are listed per finding and not combined: the findings of one task measure different quantities in different units, so a root-sum-square across them has no meaning, and no finding declares separate components of one quantity.",
+  "tasks": [
+   "T159"
+  ]
+ },
+ {
   "assumption": "Conformance on sampled points is evidence, not proof, of correctness on the whole domain.",
   "tasks": [
    "T033"
@@ -267,6 +328,12 @@
   "assumption": "Content identities establish consistency, not authorship.",
   "tasks": [
    "T077"
+  ]
+ },
+ {
+  "assumption": "Counterexamples recorded by T158 and later tasks run after this catalogue and are not in it.",
+  "tasks": [
+   "T157"
   ]
  },
  {
@@ -285,6 +352,24 @@
   "assumption": "Declared domains avoid coordinate singularities; behaviour near them is T037's subject.",
   "tasks": [
    "T033"
+  ]
+ },
+ {
+  "assumption": "Deferred research question: a dtype-parameterized capture of energy_gpu_kernels.rk4_batch (a RAPL bracket with the dtype named in the declared workload, or an NVML capture of a float32 and a float64 GPU kernel) gated like T115/T116, so energy per accepted trajectory can be compared across precisions; no existing capture path measures a float32 RK4 workload",
+  "tasks": [
+   "T120"
+  ]
+ },
+ {
+  "assumption": "Deferred research question: ingest `nsys stats --report cuda_gpu_kern_sum` output (its raw bytes retained as an artifact, bound through the acquisition gate to the same device UUID and capture session) so T118 can report RTX 2080 kernel-only duration; until then that claim stays not_established on every host",
+  "tasks": [
+   "T118"
+  ]
+ },
+ {
+  "assumption": "Deferred research question: write a CUDA/PTX RK4 kernel of this sphere geodesic (for example through the ciw.energy_cuda JIT path) and a Julia kernel, both with the operation order of ciw.lab.integrators.step_rk4, then compare their endpoints and ulp distances with the Python kernel on the RTX 2080 host",
+  "tasks": [
+   "T117"
   ]
  },
  {
@@ -336,12 +421,6 @@
   ]
  },
  {
-  "assumption": "ESM candidate_id and candidate execution identities were not exercised: they need an operator-bound ESM adapter and a telemetry or calibrated bundle.",
-  "tasks": [
-   "T077"
-  ]
- },
- {
   "assumption": "Edge transitions are straight 3D chords.",
   "tasks": [
    "T135"
@@ -372,7 +451,7 @@
   ]
  },
  {
-  "assumption": "Engine and interpreter digests depend on the toolchain; they are retained as provenance in the artifact and the basis notes, not compared as regression values.",
+  "assumption": "Engine and interpreter digests depend on the toolchain and the host's Python build; they are retained as provenance in provider-identities.json (engine, interpreters) and provider_runtime_identity, not compared as regression values. A PLSR install commit is recorded only when the installer wrote one (direct_url.json).",
   "tasks": [
    "T098"
   ]
@@ -426,7 +505,7 @@
   ]
  },
  {
-  "assumption": "False-positive risk: a legitimate sharp crease with a dihedral bend over about 154 degrees is refused as folded_face (the embedded m = n^2 lantern is refused although it does not overlap itself).",
+  "assumption": "False-positive risk: a legitimate sharp crease with a dihedral bend over about 154 degrees is refused as folded_face (the embedded m = n^2 lantern is refused although it does not overlap itself and no face points inward).",
   "tasks": [
    "T042"
   ]
@@ -438,15 +517,39 @@
   ]
  },
  {
+  "assumption": "Features of one specimen stand in for parts, so the between-part variance is a spread of measurands, not of a process; the procedure reports %GRR against the declared tolerance (P/T) for that reason.",
+  "tasks": [
+   "T131"
+  ]
+ },
+ {
   "assumption": "Fibre bandwidth, tension and resin are not modelled; the fibre is a curve.",
   "tasks": [
    "T133"
   ]
  },
  {
+  "assumption": "Figures are linked, not checked for legibility by this task.",
+  "tasks": [
+   "T163"
+  ]
+ },
+ {
+  "assumption": "Findings of T160-T168 run after this table; the section's regression test asserts that each numerical one declares an uncertainty.",
+  "tasks": [
+   "T159"
+  ]
+ },
+ {
   "assumption": "First-order Jacobi tightening does not guarantee complete coverage where rows cross beyond a focal point.",
   "tasks": [
    "T135"
+  ]
+ },
+ {
+  "assumption": "Fixed-tree reproducibility was shown between two implementations on one platform; on other platforms it rests on IEEE-754 round-to-nearest addition and on the regression gate, which compares the retained first-order sum bits exactly",
+  "tasks": [
+   "T148"
   ]
  },
  {
@@ -540,12 +643,6 @@
   ]
  },
  {
-  "assumption": "How installation_sha256 is computed for a vendor toolchain (which files) is not specified here",
-  "tasks": [
-   "T150"
-  ]
- },
- {
   "assumption": "Hyperbolic-plane isometries (Mobius maps) are not tested, only basis changes",
   "tasks": [
    "T012"
@@ -555,6 +652,12 @@
   "assumption": "Idle subtraction and first-attainment accounting are intentionally not applied",
   "tasks": [
    "T119"
+  ]
+ },
+ {
+  "assumption": "If the model test rejects the Gaussian dome, the scan-derived covariance does not apply and the prediction must be re-integrated on a surface fitted to the scan (not implemented).",
+  "tasks": [
+   "T129"
   ]
  },
  {
@@ -606,12 +709,6 @@
   ]
  },
  {
-  "assumption": "Julia and GPU implementations were not run (toolchain/hardware unavailable)",
-  "tasks": [
-   "T117"
-  ]
- },
- {
   "assumption": "Julia, C++ and GPU-host encoders were not run",
   "tasks": [
    "T146"
@@ -630,7 +727,7 @@
   ]
  },
  {
-  "assumption": "Lock-out recovery (covariance inflation or reacquisition) is not implemented in the gated filter; T073 handles reacquisition explicitly in the session API.",
+  "assumption": "Lock-out recovery (covariance inflation or automatic reacquisition) is implemented neither in run_gated nor in the session gate; T073's explicit reacquisition is the only recovery path in the fusion API.",
   "tasks": [
    "T068"
   ]
@@ -666,7 +763,7 @@
   ]
  },
  {
-  "assumption": "Marker centres are detected without bias; occlusion is not modelled",
+  "assumption": "Marker centres are detected without bias (the perspective bias of circular markers is quantified in T050); occlusion is not modelled",
   "tasks": [
    "T048"
   ]
@@ -711,6 +808,12 @@
   "assumption": "Media-type-specific readers (images, point clouds) are not defined; digests cover bytes, not content semantics.",
   "tasks": [
    "T139"
+  ]
+ },
+ {
+  "assumption": "Meshes that pass only the structural and dihedral checks may still contain inverted faces; the valid set here is validated with the sphere centre declared.",
+  "tasks": [
+   "T041"
   ]
  },
  {
@@ -786,9 +889,27 @@
   ]
  },
  {
+  "assumption": "No GPU kernel path exists in this task: the recommended rerun on a CUDA host needs a GPU implementation of the batched dot products first",
+  "tasks": [
+   "T147"
+  ]
+ },
+ {
   "assumption": "No Julia environment, manifest or worker exists; the pin procedure is unexecuted",
   "tasks": [
    "T145"
+  ]
+ },
+ {
+  "assumption": "No Julia or GPU implementation of this sphere RK4 kernel exists in the repository (src/ciw/energy_cuda.py is a Gaussian VI PTX kernel, not this geodesic kernel), so those comparisons cannot run on any host, whatever the tool:julia and hardware:nvidia-gpu probes report",
+  "tasks": [
+   "T117"
+  ]
+ },
+ {
+  "assumption": "No acquisition exists, so no raw measurement, calibration record or frame metadata has been retained: the task stays partial until the first protocol is executed.",
+  "tasks": [
+   "T139"
   ]
  },
  {
@@ -801,6 +922,18 @@
   "assumption": "No global registry of occurrences exists, so two workspaces can reuse an occurrence identity without detection.",
   "tasks": [
    "T082"
+  ]
+ },
+ {
+  "assumption": "No hardware log was audited: a real device's identity is bound only by T116's acquisition gate on the GPU host, outside this format audit",
+  "tasks": [
+   "T124"
+  ]
+ },
+ {
+  "assumption": "No module routes writes through ActuatorWritePolicy because the package has no write path to route; a future transport would be flagged by the scan, but routing it through the policy is not enforced",
+  "tasks": [
+   "T153"
   ]
  },
  {
@@ -876,7 +1009,13 @@
   ]
  },
  {
-  "assumption": "Not detected: self-intersections between non-adjacent faces; unwelded seams (coincident duplicate vertices pass validation and surface only as boundary_reached during tracing); duplicate faces; near-degenerate slivers just above the 2A/l_max^2 = 1e-12 threshold.",
+  "assumption": "Normals are always derived from the noisy vertices; an input uncertainty model for independently measured normals (for example scanner-reported normals) is not implemented and is deferred.",
+  "tasks": [
+   "T043"
+  ]
+ },
+ {
+  "assumption": "Not detected: self-intersections between non-adjacent faces; unwelded seams (coincident duplicate vertices pass validation and surface only as boundary_reached during tracing); duplicate faces; near-degenerate slivers just above the 2A/l_max^2 = 1e-12 threshold; inverted faces whose bend to every neighbour stays below about 154 degrees when no centre is declared (a jittered icosphere is recorded; T041 measures how often this happens).",
   "tasks": [
    "T042"
   ]
@@ -888,9 +1027,27 @@
   ]
  },
  {
+  "assumption": "Novelty of contributions relative to published literature is not established by this ledger.",
+  "tasks": [
+   "T156"
+  ]
+ },
+ {
   "assumption": "Objectives are unweighted; a decision needs weights or constraints that the workbench does not set.",
   "tasks": [
    "T025"
+  ]
+ },
+ {
+  "assumption": "On the flat Cartesian charts (plane, cylinder) RK4 integrates j'' = 0 exactly, so those scalar-equation checks test only that K = 0 is integrated; the K = 0 separation law itself is measured on neighbouring straight lines through the polar chart of the plane",
+  "tasks": [
+   "T005"
+  ]
+ },
+ {
+  "assumption": "On the plane the chord-geodesic comparison is a zero-curvature sanity check of the shooting machinery: RK4 and the Jacobi heading field are exact there, so it cannot detect curvature errors.",
+  "tasks": [
+   "T126"
   ]
  },
  {
@@ -972,6 +1129,18 @@
   ]
  },
  {
+  "assumption": "Only the equations of the 34-digit reference are independent of ciw (sympy derives them); its Gragg-Bulirsch-Stoer integrator is ciw-authored and mpmath supplies the arithmetic. The scipy DOP853 comparison integrates the ciw equations, so only its integrator is independent",
+  "tasks": [
+   "T002"
+  ]
+ },
+ {
+  "assumption": "Only the families on SPECIFICATIONS.md are stated in formal notation; the family pages it lists specify the other families as method descriptions (models, references and decision rules), not in one uniform notation.",
+  "tasks": [
+   "T155"
+  ]
+ },
+ {
   "assumption": "Only the outer equator (constant K) is fitted; inclined torus geodesics average K and are not studied",
   "tasks": [
    "T013"
@@ -990,15 +1159,15 @@
   ]
  },
  {
-  "assumption": "Only the sphere has an atlas here; other surfaces need their own charts and transitions.",
-  "tasks": [
-   "T036"
-  ]
- },
- {
   "assumption": "Optimization and exploratory roles are not demonstrated",
   "tasks": [
    "T145"
+  ]
+ },
+ {
+  "assumption": "Oscillator result and execution identities bind no content, so which execution produced a result is recorded but not verifiable; the re-pairing was tested only between occurrences of one operation with equal parameters and data.",
+  "tasks": [
+   "T080"
   ]
  },
  {
@@ -1020,15 +1189,9 @@
   ]
  },
  {
-  "assumption": "Outside-window flip counts depend on the LAPACK/BLAS build; only the soundness property is checked.",
+  "assumption": "Outside-window flip counts and the scaled witness's code depend on the LAPACK/BLAS build; they are retained in the artifact, and only the soundness property is checked.",
   "tasks": [
    "T102"
-  ]
- },
- {
-  "assumption": "PPDA/SCR/SET producer roundtrip: no ppda checkout bound (needs Provenance-Preserving-Data-Acquisition at a29845e13e55de30b24ae752b896058041d653e6); no scr-exchange checkout bound (needs Scientific-Computation-Runtime at 5f0409743e0098a0691a88302a9b3dcdcbcf25fd); no set checkout bound (needs State-Estimation-Evaluation-Testbed at 542e672be512bf43b61253f2b2a43cd967cb3062)",
-  "tasks": [
-   "T097"
   ]
  },
  {
@@ -1041,6 +1204,18 @@
   "assumption": "Parallel (multi-thread) reductions are not exercised",
   "tasks": [
    "T148"
+  ]
+ },
+ {
+  "assumption": "Partial delivery: the solver is an initial-value tracer (straightest geodesics from a point and heading) plus approximate distances. No exact two-point polyhedral geodesic (MMP, ICH or iterative edge flipping) is implemented, so no shortest path between two given points is solved exactly and the graph and heat distances are not compared with an exact polyhedral distance.",
+  "tasks": [
+   "T038"
+  ]
+ },
+ {
+  "assumption": "Partial: ESM candidate_id and candidate execution identities (they need an operator-bound ESM adapter and a telemetry or calibrated bundle) and pinned-provider runtime identities (ciw.subprocess-runtime.v1; they need a provider checkout bound to a declared-workload or telemetry workflow) are planned matrix rows that the offline path cannot exercise; their predictions are read from the code, not observed.",
+  "tasks": [
+   "T077"
   ]
  },
  {
@@ -1062,15 +1237,15 @@
   ]
  },
  {
-  "assumption": "Pins declared only in .github/workflows/exchange.yml are mirrored in EXCHANGE_WORKFLOW_PINS.",
+  "assumption": "Pinned-provider subprocess runtime identities (ciw.subprocess-runtime.v1: pinned revision, module and source_root, host-measured source_tree and python_sha256; src/ciw/declared_workload.py) were not mutated, because no provider checkout was bound to a declared-workload or telemetry workflow; only the CIW-internal oscillator provider identity and CIW's own energy analysis identity were.",
   "tasks": [
-   "T098"
+   "T090"
   ]
  },
  {
-  "assumption": "Plants with margins below 0.05 are excluded, so the comparison says nothing about near-marginal plants (T107 covers those).",
+  "assumption": "Pins declared only in .github/workflows/exchange.yml are mirrored in EXCHANGE_WORKFLOW_PINS.",
   "tasks": [
-   "T111"
+   "T098"
   ]
  },
  {
@@ -1089,6 +1264,14 @@
   "assumption": "Profiles are taken through the principal direction at the vertex; slope correction is neglected.",
   "tasks": [
    "T129"
+  ]
+ },
+ {
+  "assumption": "Prose beyond the generated structure, related work and peer review are outstanding.",
+  "tasks": [
+   "T160",
+   "T161",
+   "T162"
   ]
  },
  {
@@ -1153,7 +1336,7 @@
   ]
  },
  {
-  "assumption": "Real pixel noise and rounding errors are independent between markers and cameras (the generator draws them so; a shared grid phase would correlate them)",
+  "assumption": "Real pixel noise is independent between markers and cameras; a real rig's grid phase is neither independent per marker nor exactly shared, so its rounding correlation lies outside both modelled cases",
   "tasks": [
    "T051"
   ]
@@ -1171,12 +1354,6 @@
   ]
  },
  {
-  "assumption": "Refused recording operations are retained by design as auditable execution records; this is a documented exception, not a leak.",
-  "tasks": [
-   "T093"
-  ]
- },
- {
   "assumption": "Removable dispatches are a proxy for Python overhead; real speedups need a timed port on the target machine",
   "tasks": [
    "T142"
@@ -1189,9 +1366,21 @@
   ]
  },
  {
+  "assumption": "Reopen stability is observed as the value CIW saves again after reopening, which is the reopened session's own serialization of its restored state.",
+  "tasks": [
+   "T077"
+  ]
+ },
+ {
   "assumption": "Replay determinism is not independent verification by another party",
   "tasks": [
    "T125"
+  ]
+ },
+ {
+  "assumption": "Replay refusal is observed only for numerical-heat, the one kind with a retained bundle here (the fabricated one); every other unavailable kind is exercised through operation.execute. That their retained bundles would be refused on replay too is inferred from Workbench.replay calling Workbench._reserve(kind), which refuses any kind without a trusted binding, not observed.",
+  "tasks": [
+   "T092"
   ]
  },
  {
@@ -1207,7 +1396,7 @@
   ]
  },
  {
-  "assumption": "Retained claims containing a pipe or newline: 17; the rendering probe uses a synthetic claim.",
+  "assumption": "Retained claims containing a pipe or newline: 18; the rendering probe uses a synthetic claim.",
   "tasks": [
    "T100"
   ]
@@ -1231,21 +1420,33 @@
   ]
  },
  {
+  "assumption": "Rounding errors are independent between markers: the grid phase is drawn per marker, camera and axis (a phase shared by the markers of a camera is studied in T051)",
+  "tasks": [
+   "T048"
+  ]
+ },
+ {
+  "assumption": "Route plants with margins below 0.05 are excluded from the solver and verdict comparisons; near-marginal forms enter only through T107's near-threshold family in the scalar-gate comparison.",
+  "tasks": [
+   "T111"
+  ]
+ },
+ {
   "assumption": "Route sets are fan-search results, stable under doubling the density but not proven complete (the saddle's uniqueness is the Cartan-Hadamard theorem, not the search).",
   "tasks": [
    "T032"
   ]
  },
  {
-  "assumption": "SET exchange validator: no set checkout bound (needs State-Estimation-Evaluation-Testbed at 542e672be512bf43b61253f2b2a43cd967cb3062)",
-  "tasks": [
-   "T097"
-  ]
- },
- {
   "assumption": "Sample-held disturbances are one admissible class; inter-sample peaks are not sampled.",
   "tasks": [
    "T112"
+  ]
+ },
+ {
+  "assumption": "Scope: only control outputs built in this section are ControlProposals; the T114 servo-axis abort (a stop request to the bench's independent safety function, declared in ciw.lab.lyapunov_research) is not, and the T149, T151 and T153 command paths are refused rather than proposed",
+  "tasks": [
+   "T154"
   ]
  },
  {
@@ -1305,7 +1506,7 @@
   ]
  },
  {
-  "assumption": "Subnormal behaviour of numpy.linalg.eigvalsh (LAPACK dsyevd) may differ between BLAS builds.",
+  "assumption": "Subnormal behaviour of numpy.linalg.eigvalsh (LAPACK dsyevd) may differ between BLAS builds, so the codes below the normal range, the witness's code included, are retained in the artifact and not compared by a finding.",
   "tasks": [
    "T101"
   ]
@@ -1329,6 +1530,18 @@
   ]
  },
  {
+  "assumption": "T155 does not recompute retained values from the specification formulas; each task's own reference checks compare its results with its model.",
+  "tasks": [
+   "T155"
+  ]
+ },
+ {
+  "assumption": "T165-T168 run after this report and are listed as not reported.",
+  "tasks": [
+   "T165"
+  ]
+ },
+ {
   "assumption": "Tape or robot path-following error along the route (after the start) is not included.",
   "tasks": [
    "T136"
@@ -1338,6 +1551,24 @@
   "assumption": "Targets with irrational coordinates are only handled in float with a declared tolerance.",
   "tasks": [
    "T022"
+  ]
+ },
+ {
+  "assumption": "Textbook attribution matches names in report text; a method a report uses without naming it is not attributed, and a name used in another sense can be attributed wrongly.",
+  "tasks": [
+   "T156"
+  ]
+ },
+ {
+  "assumption": "The 34-digit reference is an extrapolated integration, not a closed form; its error estimate is empirical",
+  "tasks": [
+   "T002"
+  ]
+ },
+ {
+  "assumption": "The 8 transitions involving CERTIFICATE_NOT_POSITIVE are not exercised: QuadraticCertificate and every P(theta) of an AffineCertificate refuse min eig(P) <= 0 when built (an affine P(theta) that loses definiteness inside the box raises ValueError, probed here), so the code needs V < 0 at the scaled state for a P whose computed eigenvalues are positive, which only rounding produces. The eight exactly indefinite witnesses may reach it; their codes depend on eigvalsh and dot-product rounding and are retained in the artifact.",
+  "tasks": [
+   "T106"
   ]
  },
  {
@@ -1389,9 +1620,21 @@
   ]
  },
  {
+  "assumption": "The Markdown table in docs/lab/GEODESIC_JACOBI.md is not parsed: what is checked is its Python transcription hand_geometry, and the correspondence between the two rests on review",
+  "tasks": [
+   "T001"
+  ]
+ },
+ {
   "assumption": "The O(h^6) RK4 per-step defect is derived for smooth K(s) along the stage points; paths through curvature discontinuities were not tested",
   "tasks": [
    "T007"
+  ]
+ },
+ {
+  "assumption": "The OPC UA choice of C/C++ is a preference (certification, vendor support); the pure-Python stacks were not evaluated against a server here",
+  "tasks": [
+   "T143"
   ]
  },
  {
@@ -1413,12 +1656,6 @@
   ]
  },
  {
-  "assumption": "The Steiner graph is an approximation scheme; no exact polyhedral (MMP/ICH) distance is implemented.",
-  "tasks": [
-   "T038"
-  ]
- },
- {
   "assumption": "The a priori guard is sound but so conservative that it decides none of the cancellation signs",
   "tasks": [
    "T121"
@@ -1428,6 +1665,12 @@
   "assumption": "The adaptive effective order depends on the step-size controller and its start step; the retained numbers are for integrators.integrate_adaptive only",
   "tasks": [
    "T003"
+  ]
+ },
+ {
+  "assumption": "The apex codes that the cone and the power graph raise themselves (conical_singularity, curvature_singularity) are author labels, recorded in refusals.json but not counted as detections.",
+  "tasks": [
+   "T037"
   ]
  },
  {
@@ -1443,9 +1686,9 @@
   ]
  },
  {
-  "assumption": "The bump Sturm bound is exercised only on chords through the summit region, where the first conjugate point lies far beyond 2 pi",
+  "assumption": "The box is converted by one host convention (multiply by the factor); samples are converted by it and by division by the reciprocal factor, and other conventions change which boundary samples collide.",
   "tasks": [
-   "T008"
+   "T105"
   ]
  },
  {
@@ -1467,13 +1710,19 @@
   ]
  },
  {
-  "assumption": "The core Surface.check threshold (det g <= 1e-12 max(1, tr g)^2) is left unchanged; a condition-number threshold is proposed as a core change.",
+  "assumption": "The comparison of this run with the retained reports (ciw lab verify) runs after the queue, outside this report; the retained baseline is produced with --no-compare, so no comparison backs it.",
+  "tasks": [
+   "T164"
+  ]
+ },
+ {
+  "assumption": "The core Surface.check threshold is scale free (det(g / tr g) = det g / (tr g)^2 <= 1e-12, roughly cond g > 1e12) and is left unchanged; a tighter condition bound (1e8, as in require_regular) is proposed as a core change.",
   "tasks": [
    "T037"
   ]
  },
  {
-  "assumption": "The corridor threshold depends on the strip: roughly where sigma reaches the smallest distance between the unfolded segment and a strip vertex (edge margin times h), although strips with equal margins differ because other near-vertex crossings matter. Past it the perturbed geodesic can switch corridors, its distance is a minimum over corridors, and re-tracing per sample is not done.",
+  "assumption": "The corridor threshold depends on the strip: roughly where sigma reaches the smallest distance between the unfolded segment and a strip vertex (edge margin times h), but the margin does not order the strips: strips with equal margins differ, and a smaller-margin strip leaves less often than the declared strip at sigma >= 3e-3, because other near-vertex crossings matter. Past it the perturbed geodesic can switch corridors, its distance is a minimum over corridors, and re-tracing per sample is not done.",
   "tasks": [
    "T043"
   ]
@@ -1485,9 +1734,27 @@
   ]
  },
  {
+  "assumption": "The declared servers (ciw.server, ciw.cli, ciw.lab.mcp_server) talk to the workbench's own clients; that they cannot reach a machine is judged from the absence of device libraries, not proven",
+  "tasks": [
+   "T153"
+  ]
+ },
+ {
   "assumption": "The declared thresholds are inputs; choosing them is outside this experiment.",
   "tasks": [
    "T075"
+  ]
+ },
+ {
+  "assumption": "The declared-centre test assumes the surface is star-shaped about that centre; it would refuse valid surfaces that are not (a torus about its own centre), so it is applied only on request.",
+  "tasks": [
+   "T042"
+  ]
+ },
+ {
+  "assumption": "The digest covers task states, headline labels, claims and their labels, not finding values or artifact bytes; values are compared within tolerance by ciw lab verify.",
+  "tasks": [
+   "T165"
   ]
  },
  {
@@ -1500,6 +1767,12 @@
   "assumption": "The edge-graph floor is derived for the valence-5 source used here; other sources have other floors (1/cos(pi/6) - 1 at regular valence 6).",
   "tasks": [
    "T039"
+  ]
+ },
+ {
+  "assumption": "The envelope comparison assumes K(rho) on the bump decreases up to its flank minimum and increases beyond (checked on a grid, not proved)",
+  "tasks": [
+   "T008"
   ]
  },
  {
@@ -1539,7 +1812,7 @@
   ]
  },
  {
-  "assumption": "The fixtures' identity fields are present but mostly placeholders",
+  "assumption": "The fixtures' identity fields are present but mostly placeholders, including a compute capability given to the placeholder device",
   "tasks": [
    "T124"
   ]
@@ -1569,7 +1842,7 @@
   ]
  },
  {
-  "assumption": "The formed coupon will not be an exact Gaussian; T129 scanning identifies the as-built surface.",
+  "assumption": "The formed coupon will not be an exact Gaussian; the T129 scan protocol (MFG-SCAN-01) fits the as-built dome and tests the Gaussian model by its residual, and a refuted model needs a prediction on the scanned surface.",
   "tasks": [
    "T128"
   ]
@@ -1581,9 +1854,27 @@
   ]
  },
  {
+  "assumption": "The fusion API applies a declared integer latency; it does not estimate one, and it refuses rather than retrodicts a reading older than its clock (no out-of-sequence update), so the caller must deliver readings in the order of the ticks they refer to.",
+  "tasks": [
+   "T070"
+  ]
+ },
+ {
+  "assumption": "The fusion API is replayed on 40 of the runs (reading-by-reading agreement there); the rates over all runs come from run_gated.",
+  "tasks": [
+   "T067"
+  ]
+ },
+ {
   "assumption": "The generic torus path is one geodesic; genericity is argued, not sampled",
   "tasks": [
    "T010"
+  ]
+ },
+ {
+  "assumption": "The global bound pi/sqrt(max K) = 6.283 is not exercised on the gaussian bump and is not claimed there: K > 0 only for rho < sigma, the declared chords first meet K > 0 at s = 7.04, 7.06, 9.04, 9.06, beyond the bound, so it would hold whatever the Jacobi integration did; the bump is covered by the two-sided envelope comparison instead",
+  "tasks": [
+   "T008"
   ]
  },
  {
@@ -1599,7 +1890,7 @@
   ]
  },
  {
-  "assumption": "The guard covers the execution entry points listed in reopen.json; a new entry point added to CIW must be added to EXECUTION_PATHS.",
+  "assumption": "The guard covers the entry points listed in reopen.json: EXECUTION_PATHS plus the entry points of every workbench workflow kind, discovered from ciw.workbench._workflow. Entry points reached through a name imported into another module, or code paths outside these, are not intercepted.",
   "tasks": [
    "T091"
   ]
@@ -1629,15 +1920,34 @@
   ]
  },
  {
-  "assumption": "The independent solver is SciPy when installed, otherwise the CIW Kronecker solve (same Lyapunov equation, different code).",
+  "assumption": "The independent solver is SciPy when installed. Without SciPy the CIW Kronecker solve stands in, but it solves the same Kronecker system with numpy.linalg.solve as PLSR's solve_lyapunov, so agreement with it is then recorded as an ordinary check, not an independent one.",
   "tasks": [
+   "T109",
    "T111"
   ]
  },
  {
-  "assumption": "The independent solver is SciPy when installed, otherwise the CIW Kronecker solve.",
+  "assumption": "The innovation check applies the declared quantile to each carried innovation, so a consistent track with n innovations since its last admission is refused with probability 1 - p^n; frequent admission keeps n small.",
   "tasks": [
-   "T109"
+   "T075"
+  ]
+ },
+ {
+  "assumption": "The installed toolchain's reported version is taken as given",
+  "tasks": [
+   "T150"
+  ]
+ },
+ {
+  "assumption": "The inventory is checked against a keyword scan of code and non-docstring strings; a control output named with other words is not found",
+  "tasks": [
+   "T154"
+  ]
+ },
+ {
+  "assumption": "The lab tests' JUnit outcomes are recorded in each task's report, not by this task.",
+  "tasks": [
+   "T164"
   ]
  },
  {
@@ -1671,15 +1981,9 @@
   ]
  },
  {
-  "assumption": "The monitor scan uses CIW's transcription of the documented decision order, not the pinned runtime; T113 exercises the runtime on the analogous adapter.",
+  "assumption": "The monitor is evaluated on the declared nominal model only; the inertia interval between grid points and the other grid models are covered by the offline check, not by the monitor.",
   "tasks": [
    "T114"
-  ]
- },
- {
-  "assumption": "The mpmath reference is an extrapolated integration, not a closed form; its error estimate is empirical",
-  "tasks": [
-   "T002"
   ]
  },
  {
@@ -1689,13 +1993,25 @@
   ]
  },
  {
+  "assumption": "The only reader-visible trace of the fabricated bundle is a runtime source tree that differs from CIW's pinned tree; neither reopen nor classify_workspace compares it (reader_view in visibility-audit.json).",
+  "tasks": [
+   "T100"
+  ]
+ },
+ {
+  "assumption": "The oracle restates rules 1-5 by hand: agreement shows that the implementation and the written rules coincide on the grammar, not that the rules are the right ones or that they hold off the grammar.",
+  "tasks": [
+   "T155"
+  ]
+ },
+ {
   "assumption": "The order gain for even p is derived for smooth problems; it can fail near chart singularities",
   "tasks": [
    "T014"
   ]
  },
  {
-  "assumption": "The orientation test uses one sphere path and one torus path; saddle and bump are covered only by the basis-rotation test, and the coefficient C2 of the torus gap is measured, not derived",
+  "assumption": "The orientation test uses one sphere path and one torus path; the saddle is covered by the ambient-rotation and basis-rotation tests and the bump by the ambient-rotation test only, and the coefficient C2 of the torus gap is measured, not derived",
   "tasks": [
    "T012"
   ]
@@ -1704,6 +2020,12 @@
   "assumption": "The oscillator recording is supplied as parsed JSON, so its input bytes do not exist to retain.",
   "tasks": [
    "T078"
+  ]
+ },
+ {
+  "assumption": "The panel selection is curated to demonstrate labels, not to rank results.",
+  "tasks": [
+   "T163"
   ]
  },
  {
@@ -1719,6 +2041,12 @@
   ]
  },
  {
+  "assumption": "The per-vertex field is checked at sigma where linearization holds (sigma R / h^2 about 0.01); at larger sigma the curvature SD is underestimated as in the two-vertex study.",
+  "tasks": [
+   "T043"
+  ]
+ },
+ {
   "assumption": "The perturbation is Gaussian in (lateral, heading); real path errors may have other shapes and correlations with speed.",
   "tasks": [
    "T064"
@@ -1728,12 +2056,6 @@
   "assumption": "The physical comparison has not been performed; its outcome is unknown.",
   "tasks": [
    "T138"
-  ]
- },
- {
-  "assumption": "The physical measurement part (T116) could not run here",
-  "tasks": [
-   "T119"
   ]
  },
  {
@@ -1751,9 +2073,21 @@
   ]
  },
  {
+  "assumption": "The polar charts are excluded from the ranking: they re-express flat paths, and the Jacobi columns do not depend on the chart",
+  "tasks": [
+   "T009"
+  ]
+ },
+ {
   "assumption": "The proposal is a kinematic heading correction on an ideal surface, not a validated controller",
   "tasks": [
    "T154"
+  ]
+ },
+ {
+  "assumption": "The provider-kind bundle is fabricated (no provider ran here) and the binding names no checkout: the task tests that save/reopen carry neither execution nor binding, not provider output. A bundle produced by the real SCR is reopened under the same guard in T094 (golden) and T097 (live, when SCR is bound).",
+  "tasks": [
+   "T091"
   ]
  },
  {
@@ -1763,9 +2097,15 @@
   ]
  },
  {
-  "assumption": "The radius-ratio ranking is observed on 15 meshes from two families; it is not a general law.",
+  "assumption": "The radius-ratio association is observed on 15 pooled meshes from two families and is carried by the jitter family (within the latitude-longitude family it is not positive); it is not a general law.",
   "tasks": [
    "T041"
+  ]
+ },
+ {
+  "assumption": "The ranked units are nested, not alternatives: the fused loop contains the geodesic RHS and RK4 step, so the ranking says which enclosing unit to port, not which disjoint kernel costs most",
+  "tasks": [
+   "T142"
   ]
  },
  {
@@ -1781,7 +2121,7 @@
   ]
  },
  {
-  "assumption": "The recorded minimum det g / R^4 of the active chart restates the switch threshold and the covering bound; it is reported, not checked.",
+  "assumption": "The recorded minimum regularity of the active chart restates the switch threshold and the covering bound; it is reported, not checked.",
   "tasks": [
    "T036"
   ]
@@ -1796,6 +2136,12 @@
   "assumption": "The reference position is known exactly (a real calibration needs an independent reference instrument)",
   "tasks": [
    "T052"
+  ]
+ },
+ {
+  "assumption": "The release digest is unsigned.",
+  "tasks": [
+   "T165"
   ]
  },
  {
@@ -1832,6 +2178,12 @@
   "assumption": "The saved workspace file is not rewritten by requests (no request can target it); the evidence is the state digests and the re-save comparison.",
   "tasks": [
    "T093"
+  ]
+ },
+ {
+  "assumption": "The scan-derived geometry terms hold only if the as-built coupon passes the MFG-SCAN-01 model test.",
+  "tasks": [
+   "T140"
   ]
  },
  {
@@ -1883,6 +2235,12 @@
   ]
  },
  {
+  "assumption": "The sympy reference's chord expression is written in ciw.lab.observation_chord; sympy's independence covers its series expansion and simplification",
+  "tasks": [
+   "T047"
+  ]
+ },
+ {
   "assumption": "The tapes are assumed to follow geodesics after their measured start; in-plane tape bending is not budgeted.",
   "tasks": [
    "T138"
@@ -1892,6 +2250,12 @@
   "assumption": "The tapes are assumed to follow geodesics; their realized start pose is measured and conditioned on (T138), while in-plane tape bending along the route is not modelled.",
   "tasks": [
    "T128"
+  ]
+ },
+ {
+  "assumption": "The task has no Julia execution path; julia on PATH is recorded, never used",
+  "tasks": [
+   "T145"
   ]
  },
  {
@@ -1916,6 +2280,12 @@
   "assumption": "The turning truth adds white acceleration through the turn dynamics; other manoeuvre noise models change the random part of the expectation.",
   "tasks": [
    "T073"
+  ]
+ },
+ {
+  "assumption": "The unchanged-state result covers the exercised non-recording request classes only. Refused recording operations are retained by design as auditable execution records (the counterexample finding); this is a documented exception, not a leak.",
+  "tasks": [
+   "T093"
   ]
  },
  {
@@ -1979,6 +2349,12 @@
   ]
  },
  {
+  "assumption": "Transitions the documented order excludes (every path between the two codes passes through a third code): CERTIFIED_WITH_MARGIN <-> DECREASE_NOT_DEFINITE (differ in at least certified, not_definite); CERTIFIED_WITH_MARGIN <-> NOT_CERTIFIED (differ in at least scalar_positive, certified, not_definite); MARGIN_LOW <-> DECREASE_NOT_DEFINITE (differ in at least certified, margin_low, not_definite); MARGIN_LOW <-> NOT_CERTIFIED (differ in at least scalar_positive, certified, margin_low, not_definite).",
+  "tasks": [
+   "T106"
+  ]
+ },
+ {
   "assumption": "Truth rotation rate is constant and known",
   "tasks": [
    "T053"
@@ -2003,25 +2379,19 @@
   ]
  },
  {
-  "assumption": "Unit conversion follows one host convention (multiply by the factor); other conventions change which boundary samples collide.",
-  "tasks": [
-   "T105"
-  ]
- },
- {
   "assumption": "Use time is on the same clock as the stamps",
   "tasks": [
    "T056"
   ]
  },
  {
-  "assumption": "Validation recomputation (energy analysis) is counted separately from execution because it creates no occurrence and no result; the counterexample finding records it.",
+  "assumption": "Validation recomputation is counted only for the energy analysis (ciw.energy_records.analyze), separately from execution because it creates no occurrence and no result; in-process validation recomputation of other kinds is not counted.",
   "tasks": [
    "T091"
   ]
  },
  {
-  "assumption": "Variable-curvature paths add geodesic-position error to K(gamma(s)); its K-scaling is not separated here",
+  "assumption": "Variable-curvature paths add geodesic-position error to K(gamma(s)); its K-scaling is not separated here, and their rounding part is an estimate, not an exact split",
   "tasks": [
    "T018"
   ]
@@ -2039,6 +2409,12 @@
   ]
  },
  {
+  "assumption": "Wall-clock timing figures are recognized by a retained JSON artifact of their task that mentions wall-clock or elapsed time; a timing figure without such a note counts as a mismatch.",
+  "tasks": [
+   "T158"
+  ]
+ },
+ {
   "assumption": "Whether a reader of a forged workspace would be misled depends on how the record is displayed; not assessed.",
   "tasks": [
    "T084",
@@ -2048,6 +2424,18 @@
    "T088",
    "T089",
    "T090"
+  ]
+ },
+ {
+  "assumption": "Whether dispatch overhead dominates run time is not established: timings are machine-specific artifacts, never findings",
+  "tasks": [
+   "T142"
+  ]
+ },
+ {
+  "assumption": "Whether each catalogued counterexample is genuine is not re-judged here; each rests on its source finding's checks.",
+  "tasks": [
+   "T157"
   ]
  },
  {
@@ -2087,9 +2475,27 @@
   ]
  },
  {
+  "assumption": "installation_sha256 binds the toolchain files supplied; which files of a vendor toolchain must be supplied (executables, libraries, device databases) is not specified here, and a change outside them is not detected",
+  "tasks": [
+   "T150"
+  ]
+ },
+ {
   "assumption": "kappa must be known along the path; estimating it from data is not modelled",
   "tasks": [
    "T046"
+  ]
+ },
+ {
+  "assumption": "no operator NVML log was supplied (CIW_LAB_ENERGY_LOG); the repository fixtures are synthetic, so no physical energy per accepted result was measured",
+  "tasks": [
+   "T119"
+  ]
+ },
+ {
+  "assumption": "plane-polar and cylinder-polar carry the same flat metric (unit cylinder); they count as two charts because their declared paths differ (start, heading, length), so each contributes its own data point",
+  "tasks": [
+   "T003"
   ]
  },
  {

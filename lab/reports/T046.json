@@ -17,17 +17,28 @@
   "primary": "numerically_verified"
  },
  "expected_invariant": "Integrated chords agree with closed forms to integration accuracy; fitted coefficients agree with the derived ones.",
- "experiment": "Derive the series by hand and (when sympy is present) expand the Frenet-Serret recursion with sympy and simplify the coefficient residuals symbolically; integrate geodesics with ciw.lab.jacobi; fit polynomial models of (s - c)/s^3 and of the remainders; search for counterexamples to the O(s^5) remainder and to the constant-curvature circle formula.",
+ "experiment": "Derive the series by hand and (when sympy is present) expand the Frenet-Serret recursion with sympy and simplify the coefficient residuals symbolically, and expand three explicit polynomial space curves in exact rational arithmetic without the Frenet recursion; integrate geodesics with ciw.lab.jacobi; fit polynomial models of (s - c)/s^3 and of the remainders; search for counterexamples to the O(s^5) remainder and to the constant-curvature circle formula.",
  "failure_modes_checked": [
   "start-point versus midpoint curvature",
   "nonzero torsion with constant curvature",
   "integration drift (speed drift recorded)",
-  "sympy unavailable (analytic fallback)"
+  "sympy unavailable (analytic fallback)",
+  "an error shared by the Frenet recursion and the hand derivation (explicit-curve route)"
  ],
  "findings": [
   {
    "assigned_by": "ciw.lab.evidence",
    "basis": {
+    "checks": [
+     {
+      "comparison": "abs_le",
+      "observed": 0.0,
+      "passed": true,
+      "reference": "sympy series of the Frenet-Serret Taylor recursion written in ciw.lab.observation_chord.sympy_general_series against the closed-form c1..c5 and the constant-curvature c5: residuals not simplifying to 0 as polynomials in kappa0, kappa0', kappa0'', tau0 (shares the Frenet model)",
+      "reference_kind": "exact_arithmetic",
+      "tolerance": 0.0
+     }
+    ],
     "derivation": "docs/lab/OBSERVATION.md#chord-versus-geodesic-correction",
     "independent_check": {
      "checker": {
@@ -41,7 +52,7 @@
       "implementation": "ciw.lab.observation",
       "revision": "0.1.0"
      },
-     "reference": "sympy series of |gamma(s) - gamma(0)| from the Frenet-Serret Taylor recursion (set up in ciw.lab.observation_chord.sympy_general_series) against the closed-form c1..c5 and the constant-curvature c5: number of residuals not simplifying to 0 as polynomials in kappa0, kappa0', kappa0'', tau0",
+     "reference": "sympy exact rational series of 3 explicit polynomial space curves (curve model written in ciw.lab.observation_chord.sympy_explicit_curve_check; no Frenet recursion): chord coefficients c1..c5 in arc length against the closed form at each curve's kappa0, kappa0', kappa0'', tau0 from the cross-product formulas; nonzero rational residuals out of 15",
      "reference_kind": "exact_arithmetic",
      "tolerance": 0.0
     }
@@ -313,9 +324,9 @@
  ],
  "generated_artifacts": [
   {
-   "bytes": 544,
+   "bytes": 2033,
    "path": "artifacts/T046/sympy-series.json",
-   "sha256": "d0e28ab722fc26baeb74f98e1fd2062ed399c69ef61d7ab93188da22894d2ebd"
+   "sha256": "8b1a5f3631dd933e380ec42f4d58c09a86bcf22216ad16475f8c5ba3228ce5fe"
   },
   {
    "bytes": 4810,
@@ -343,11 +354,12 @@
   "Sphere radii 0.5, 1, 2 (RK4, 400 steps over s in [0, R])",
   "Torus major 2, minor 1, start (0, pi/4), heading 0.6 rad, 800 RK4 steps over s in [0, 0.4]",
   "Cylinder R = 1 helix at 45 deg, 160 steps over s in [0, 0.8]",
-  "Symbols kappa0, kappa0', kappa0'', tau0 for the symbolic sympy comparison"
+  "Symbols kappa0, kappa0', kappa0'', tau0 for the symbolic sympy comparison",
+  "Explicit curves (t, a2 t^2 + a3 t^3 + a4 t^4, b3 t^3 + b4 t^4) with (a2, a3, a4, b3, b4) in [['1/2', '1/3', '-1/5', '2/7', '3/11'], ['3/4', '-2/9', '1/6', '-5/8', '1/13'], ['-2/5', '1/7', '3/10', '4/9', '-1/3']] for the exact rational comparison"
  ],
  "mathematical_model": "Taylor expansion of gamma(s) - gamma(0) in the Frenet frame (T' = kappa N, N' = -kappa T + tau B, B' = -tau N): |delta|^2 = s^2 - kappa^2 s^4/12 - kappa kappa' s^5/12 + O(s^6), so c = s - kappa^2 s^3/24 - kappa kappa' s^4/24 + c5 s^5 with c5 = (3 kappa^4 + 8 kappa^2 tau^2 - 72 kappa kappa'' - 64 kappa'^2)/5760. For a geodesic k_g = 0, hence kappa = |II(T, T)|. For a circle (tau = 0) c = 2 sin(kappa s/2)/kappa exactly.",
  "number": 46,
- "numerical_result": "sphere chord error 4.8e-14 R, c3 relative error 1.2e-08; torus s^4 coefficient -4.608770e-03 vs predicted -4.608768e-03 (midpoint ratio 3.4e-07); helix s^5 gap 8.680556e-05 vs 8.680556e-05; the symbolic sympy comparison, when sympy is available, is recorded on the derivation finding (independent_check).",
+ "numerical_result": "sphere chord error 4.8e-14 R, c3 relative error 1.2e-08; torus s^4 coefficient -4.608770e-03 vs predicted -4.608768e-03 (midpoint ratio 3.4e-07); helix s^5 gap 8.680556e-05 vs 8.680556e-05; the sympy comparisons, when sympy is available, are recorded on the derivation finding (Frenet recursion as a check, explicit curves as the independent_check).",
  "observation_model": "Chords are Euclidean distances between embedded points of integrated geodesics; no instrument noise.",
  "physical_validation_status": {
   "statement": "Physical validation requires acquired hardware evidence; none was acquired for this task.",
@@ -364,18 +376,19 @@
   },
   "scipy": "1.16.2",
   "sources": {
-   "src/ciw/lab/observation.py": "9ebedc1a1693aaa28965ba0c97837ad2d2c45bf0fd360857cf7b32c0993ed5fc",
-   "src/ciw/lab/observation_chord.py": "9b6fe24560daf8b06617824d20854f695e1f73774215a03acc41a28855ba164a"
+   "src/ciw/lab/observation.py": "6e5bf960e17dffb62bdaf29d28be9a0f165fd68f8498d173b66eab08fa22ad70",
+   "src/ciw/lab/observation_chord.py": "cfbaaaf604b32b686178ea036d27c153d8eebc7d290444c60d7699c1fc60faf5"
   },
   "sympy": "1.14.0"
  },
  "recommended_next_task": "T047: validate the cylinder chord coefficient cos^4(alpha)/(24 R^2)",
- "report_id": "sha256:4f71c6c389861033d099545c118aef82af1d88ebe115e9ef2882c2884480ff5c",
+ "report_id": "sha256:d9e4af093fc9120b7978732b64bf2c252dde55aa1371679821fa61f49f721214",
  "schema": "ciw.lab-task-report.v1",
  "section": "observation",
  "state": "completed",
  "task_id": "T046",
  "tests_passed": [
+  "check: Chord expansion c = s - kappa0^2 s^3/24 - kappa0 kappa0' s^4/24 + c5 s^5 + O(s^6) with c5 = (3 kappa0^4 + 8 kappa0^2 tau0^2 - 72 kappa0 kappa0'' - 64 kappa0'^2)/5760, which is kappa^4/1920 + kappa^2 tau^2/720 for constant curvature and torsion vs sympy series of the Frenet-Serret Taylor recursion written in ciw.lab.observation_chord.sympy_general_series against the closed-form c1..c5 and the constant-curvature c5: residuals not simplifying to 0 as polynomials in kappa0, kappa0', kappa0'', tau0 (shares the Frenet model)",
   "independent: Chord expansion c = s - kappa0^2 s^3/24 - kappa0 kappa0' s^4/24 + c5 s^5 + O(s^6) with c5 = (3 kappa0^4 + 8 kappa0^2 tau0^2 - 72 kappa0 kappa0'' - 64 kappa0'^2)/5760, which is kappa^4/1920 + kappa^2 tau^2/720 for constant curvature and torsion vs sympy",
   "check: RK4 sphere geodesics reproduce the chord 2R sin(s/2R) and the s^3 coefficient kappa^2/24 vs |c_integrated - 2R sin(s/2R)| / R",
   "check: RK4 sphere geodesics reproduce the chord 2R sin(s/2R) and the s^3 coefficient kappa^2/24 vs fitted (s - c)/s^3 intercept relative to kappa^2/24",
@@ -393,6 +406,7 @@
  "uncertainty": "Fit truncation, estimated by fitting one more term: c3 4.3e-09 relative (sphere), s^4 2.2e-09 and kappa0' 1.1e-10 (torus), s^5 8.4e-13 (helix); RK4 chord error below 1e-12 R. The torus midpoint ratio is zero within its fit truncation, so only its bound is regression-tested.",
  "unresolved_assumptions": [
   "kappa must be known along the path; estimating it from data is not modelled",
-  "Markers are points on the surface; marker thickness and offsets are ignored"
+  "Markers are points on the surface; marker thickness and offsets are ignored",
+  "Both sympy references are curve models written in ciw.lab.observation_chord; sympy's independence covers their series expansion, simplification and exact arithmetic, and the explicit-curve route is evaluated at three rational curves, not symbolically"
  ]
 }

@@ -210,7 +210,7 @@
       "comparison": "abs_le",
       "observed": 0.0,
       "passed": true,
-      "reference": "provider process or adapter entry points reached",
+      "reference": "provider process, adapter or workflow entry points reached",
       "reference_kind": "exact_arithmetic",
       "tolerance": 0.0
      },
@@ -224,7 +224,7 @@
      }
     ]
    },
-   "claim": "Requests to execute or replay unbound provider workflows, or to supply or bypass a binding, are refused with a named error and reach no provider process or adapter",
+   "claim": "Requests to execute or replay unbound provider workflows, or to supply or bypass a binding, are refused with a named error and reach no provider process, adapter or workflow entry point",
    "domain": "computational_pipeline",
    "evidence_status": "numerically_verified",
    "regression_tolerance": {
@@ -264,6 +264,9 @@
      "translation-flow",
      "variational-free-energy"
     ],
+    "kinds_with_replay_refusal_observed": [
+     "numerical-heat"
+    ],
     "refused_as_expected": 25,
     "requests": 25,
     "unavailable_kinds_not_exercised": [
@@ -278,6 +281,13 @@
    "assigned_by": "ciw.lab.evidence",
    "basis": {
     "checks": [
+     {
+      "expected_refusal": "accepted",
+      "observed_refusal": "accepted",
+      "passed": true,
+      "reference": "Session.from_workspace of a workspace holding the fabricated numerical-heat bundle",
+      "reference_kind": "refusal"
+     },
      {
       "comparison": "ge",
       "observed": 3.0,
@@ -323,7 +333,6 @@
    },
    "unit": null,
    "value": {
-    "accepted_on_reopen": true,
     "mismatched_cells": 3,
     "reference_values": [
      0,
@@ -332,6 +341,7 @@
      16,
      0
     ],
+    "reopen_outcome": "accepted",
     "retained_values": [
      0,
      1,
@@ -383,9 +393,9 @@
  ],
  "generated_artifacts": [
   {
-   "bytes": 8669,
+   "bytes": 11789,
    "path": "artifacts/T092/refusals.json",
-   "sha256": "7ee737cd5e65ca351b512ab1024eba51e2907524bbcf8fd55d49127644c6b9f1"
+   "sha256": "0f8936c2fc5d6bafe40cdb4f8192b34c40aca8e2b9fb97ef9dd773b2c3c8f66d"
   },
   {
    "bytes": 14694,
@@ -402,7 +412,7 @@
  ],
  "mathematical_model": "Workbench._reserve(kind) requires kind in trusted bindings; bindings are process configuration set only by Workbench.bind_workflow, never by a protocol request or a saved workspace. Kinds that consume an upstream bundle are checked for that bundle first.",
  "number": 92,
- "numerical_result": "25/25 refused exactly as expected: 15 of 21 unavailable workflow kinds refused unbound, 2 refused at upstream selection, 4 not exercised; provider paths reached: none; the fabricated heat bundle (values [0, 1, 2, 3, 0]) reopened although the reference field is [0, 16, 24, 16, 0].",
+ "numerical_result": "25/25 refused exactly as expected: 15 of 21 unavailable workflow kinds refused unbound on execute, 2 refused at upstream selection, 4 not exercised; replay refusal observed for ['numerical-heat'] only (inferred for the rest); provider paths reached: none; the fabricated heat bundle (values [0, 1, 2, 3, 0], reference field [0, 16, 24, 16, 0]) on reopen: accepted.",
  "observation_model": "Protocol v1 error envelopes (code: message) or refused execution records; counted entry points.",
  "physical_validation_status": {
   "statement": "Physical validation requires acquired hardware evidence; none was acquired for this task.",
@@ -416,45 +426,46 @@
   "python": "3.12.3",
   "scipy": "1.16.2",
   "sources": {
-   "src/ciw/lab/exchange_provenance_bundles.py": "a505b35560263c1b473912f79e61b15b7e474f8eb1807e691847e4c69791c2d3",
-   "src/ciw/lab/exchange_provenance_bundles_fixtures.py": "f30205e8305a225f24d94b06cba8b519ecea4680ca723aaca3591ff707d04e1c"
+   "src/ciw/lab/exchange_provenance_bundles.py": "3acc6fd6976bb5e6dd8ad3bfc3d09a1d9594ca0a06f4db823581e5b651d4835e",
+   "src/ciw/lab/exchange_provenance_bundles_fixtures.py": "7d6da1148d3744ae1e754b53f697b5b4919aff2666788ae6aec0e48e6e2380c9"
   },
   "sympy": "1.14.0"
  },
  "recommended_next_task": "T093: show these refusals leave the saved workspace and in-memory state unchanged.",
- "report_id": "sha256:b2710ad17a18bf161efee7418838ccdf83936e480060ed6fac63b6b0b9ecf3e0",
+ "report_id": "sha256:fdd999f659058e92aceb273c1b7d2188f5c059284fc7cb795edb017861d92406",
  "schema": "ciw.lab-task-report.v1",
  "section": "exchange-provenance",
  "state": "completed",
  "task_id": "T092",
  "tests_passed": [
-  "check: Requests to execute or replay unbound provider workflows, or to supply or bypass a binding, are refused with a named error and reach no provider process or adapter vs execute unbound acquired-dataset",
-  "check: Requests to execute or replay unbound provider workflows, or to supply or bypass a binding, are refused with a named error and reach no provider process or adapter vs execute unbound calibrated-observable",
-  "check: Requests to execute or replay unbound provider workflows, or to supply or bypass a binding, are refused with a named error and reach no provider process or adapter vs execute unbound calibrated-window",
-  "check: Requests to execute or replay unbound provider workflows, or to supply or bypass a binding, are refused with a named error and reach no provider process or adapter vs execute unbound covariance-geometry",
-  "check: Requests to execute or replay unbound provider workflows, or to supply or bypass a binding, are refused with a named error and reach no provider process or adapter vs execute unbound curved-path-transfer",
-  "check: Requests to execute or replay unbound provider workflows, or to supply or bypass a binding, are refused with a named error and reach no provider process or adapter vs execute unbound flat-torus-reference",
-  "check: Requests to execute or replay unbound provider workflows, or to supply or bypass a binding, are refused with a named error and reach no provider process or adapter vs execute unbound geometric-circle",
-  "check: Requests to execute or replay unbound provider workflows, or to supply or bypass a binding, are refused with a named error and reach no provider process or adapter vs execute unbound measurement-chain",
-  "check: Requests to execute or replay unbound provider workflows, or to supply or bypass a binding, are refused with a named error and reach no provider process or adapter vs execute unbound mesh-path",
-  "check: Requests to execute or replay unbound provider workflows, or to supply or bypass a binding, are refused with a named error and reach no provider process or adapter vs execute unbound numerical-heat",
-  "check: Requests to execute or replay unbound provider workflows, or to supply or bypass a binding, are refused with a named error and reach no provider process or adapter vs execute unbound proved-heat",
-  "check: Requests to execute or replay unbound provider workflows, or to supply or bypass a binding, are refused with a named error and reach no provider process or adapter vs execute unbound schematic-assessment",
-  "check: Requests to execute or replay unbound provider workflows, or to supply or bypass a binding, are refused with a named error and reach no provider process or adapter vs execute unbound telemetry",
-  "check: Requests to execute or replay unbound provider workflows, or to supply or bypass a binding, are refused with a named error and reach no provider process or adapter vs execute unbound translation-flow",
-  "check: Requests to execute or replay unbound provider workflows, or to supply or bypass a binding, are refused with a named error and reach no provider process or adapter vs execute unbound variational-free-energy",
-  "check: Requests to execute or replay unbound provider workflows, or to supply or bypass a binding, are refused with a named error and reach no provider process or adapter vs execute identified-design with an upstream bundle of another kind",
-  "check: Requests to execute or replay unbound provider workflows, or to supply or bypass a binding, are refused with a named error and reach no provider process or adapter vs execute schematic-companions with an upstream bundle of another kind",
-  "check: Requests to execute or replay unbound provider workflows, or to supply or bypass a binding, are refused with a named error and reach no provider process or adapter vs replay retained numerical-heat bundle without SCR binding",
-  "check: Requests to execute or replay unbound provider workflows, or to supply or bypass a binding, are refused with a named error and reach no provider process or adapter vs replay with client-supplied repositories",
-  "check: Requests to execute or replay unbound provider workflows, or to supply or bypass a binding, are refused with a named error and reach no provider process or adapter vs execute with client-supplied repositories",
-  "check: Requests to execute or replay unbound provider workflows, or to supply or bypass a binding, are refused with a named error and reach no provider process or adapter vs client request to bind a workflow",
-  "check: Requests to execute or replay unbound provider workflows, or to supply or bypass a binding, are refused with a named error and reach no provider process or adapter vs replay an unknown bundle",
-  "check: Requests to execute or replay unbound provider workflows, or to supply or bypass a binding, are refused with a named error and reach no provider process or adapter vs unversioned operation identity",
-  "check: Requests to execute or replay unbound provider workflows, or to supply or bypass a binding, are refused with a named error and reach no provider process or adapter vs ESM candidate inspection of a non-telemetry bundle",
-  "check: Requests to execute or replay unbound provider workflows, or to supply or bypass a binding, are refused with a named error and reach no provider process or adapter vs unregistered recording operation",
-  "check: Requests to execute or replay unbound provider workflows, or to supply or bypass a binding, are refused with a named error and reach no provider process or adapter vs provider process or adapter entry points reached",
-  "check: Requests to execute or replay unbound provider workflows, or to supply or bypass a binding, are refused with a named error and reach no provider process or adapter vs execution entry points reached while reopening",
+  "check: Requests to execute or replay unbound provider workflows, or to supply or bypass a binding, are refused with a named error and reach no provider process, adapter or workflow entry point vs execute unbound acquired-dataset",
+  "check: Requests to execute or replay unbound provider workflows, or to supply or bypass a binding, are refused with a named error and reach no provider process, adapter or workflow entry point vs execute unbound calibrated-observable",
+  "check: Requests to execute or replay unbound provider workflows, or to supply or bypass a binding, are refused with a named error and reach no provider process, adapter or workflow entry point vs execute unbound calibrated-window",
+  "check: Requests to execute or replay unbound provider workflows, or to supply or bypass a binding, are refused with a named error and reach no provider process, adapter or workflow entry point vs execute unbound covariance-geometry",
+  "check: Requests to execute or replay unbound provider workflows, or to supply or bypass a binding, are refused with a named error and reach no provider process, adapter or workflow entry point vs execute unbound curved-path-transfer",
+  "check: Requests to execute or replay unbound provider workflows, or to supply or bypass a binding, are refused with a named error and reach no provider process, adapter or workflow entry point vs execute unbound flat-torus-reference",
+  "check: Requests to execute or replay unbound provider workflows, or to supply or bypass a binding, are refused with a named error and reach no provider process, adapter or workflow entry point vs execute unbound geometric-circle",
+  "check: Requests to execute or replay unbound provider workflows, or to supply or bypass a binding, are refused with a named error and reach no provider process, adapter or workflow entry point vs execute unbound measurement-chain",
+  "check: Requests to execute or replay unbound provider workflows, or to supply or bypass a binding, are refused with a named error and reach no provider process, adapter or workflow entry point vs execute unbound mesh-path",
+  "check: Requests to execute or replay unbound provider workflows, or to supply or bypass a binding, are refused with a named error and reach no provider process, adapter or workflow entry point vs execute unbound numerical-heat",
+  "check: Requests to execute or replay unbound provider workflows, or to supply or bypass a binding, are refused with a named error and reach no provider process, adapter or workflow entry point vs execute unbound proved-heat",
+  "check: Requests to execute or replay unbound provider workflows, or to supply or bypass a binding, are refused with a named error and reach no provider process, adapter or workflow entry point vs execute unbound schematic-assessment",
+  "check: Requests to execute or replay unbound provider workflows, or to supply or bypass a binding, are refused with a named error and reach no provider process, adapter or workflow entry point vs execute unbound telemetry",
+  "check: Requests to execute or replay unbound provider workflows, or to supply or bypass a binding, are refused with a named error and reach no provider process, adapter or workflow entry point vs execute unbound translation-flow",
+  "check: Requests to execute or replay unbound provider workflows, or to supply or bypass a binding, are refused with a named error and reach no provider process, adapter or workflow entry point vs execute unbound variational-free-energy",
+  "check: Requests to execute or replay unbound provider workflows, or to supply or bypass a binding, are refused with a named error and reach no provider process, adapter or workflow entry point vs execute identified-design with an upstream bundle of another kind",
+  "check: Requests to execute or replay unbound provider workflows, or to supply or bypass a binding, are refused with a named error and reach no provider process, adapter or workflow entry point vs execute schematic-companions with an upstream bundle of another kind",
+  "check: Requests to execute or replay unbound provider workflows, or to supply or bypass a binding, are refused with a named error and reach no provider process, adapter or workflow entry point vs replay retained numerical-heat bundle without SCR binding",
+  "check: Requests to execute or replay unbound provider workflows, or to supply or bypass a binding, are refused with a named error and reach no provider process, adapter or workflow entry point vs replay with client-supplied repositories",
+  "check: Requests to execute or replay unbound provider workflows, or to supply or bypass a binding, are refused with a named error and reach no provider process, adapter or workflow entry point vs execute with client-supplied repositories",
+  "check: Requests to execute or replay unbound provider workflows, or to supply or bypass a binding, are refused with a named error and reach no provider process, adapter or workflow entry point vs client request to bind a workflow",
+  "check: Requests to execute or replay unbound provider workflows, or to supply or bypass a binding, are refused with a named error and reach no provider process, adapter or workflow entry point vs replay an unknown bundle",
+  "check: Requests to execute or replay unbound provider workflows, or to supply or bypass a binding, are refused with a named error and reach no provider process, adapter or workflow entry point vs unversioned operation identity",
+  "check: Requests to execute or replay unbound provider workflows, or to supply or bypass a binding, are refused with a named error and reach no provider process, adapter or workflow entry point vs ESM candidate inspection of a non-telemetry bundle",
+  "check: Requests to execute or replay unbound provider workflows, or to supply or bypass a binding, are refused with a named error and reach no provider process, adapter or workflow entry point vs unregistered recording operation",
+  "check: Requests to execute or replay unbound provider workflows, or to supply or bypass a binding, are refused with a named error and reach no provider process, adapter or workflow entry point vs provider process, adapter or workflow entry points reached",
+  "check: Requests to execute or replay unbound provider workflows, or to supply or bypass a binding, are refused with a named error and reach no provider process, adapter or workflow entry point vs execution entry points reached while reopening",
+  "check: A retained numerical-heat bundle whose values no provider computed passes reopen validation vs Session.from_workspace of a workspace holding the fabricated numerical-heat bundle",
   "check: A retained numerical-heat bundle whose values no provider computed passes reopen validation vs cells differing from the independent integer reference",
   "check: The binding-free energy-accuracy replay succeeds in the same reopened session vs energy replay without numerical match",
   "pytest: tests/test_lab_exchange_provenance_bundles.py::test_t092_unbound_replay_and_execution_are_refused",
@@ -465,6 +476,7 @@
  "uncertainty": "Exact string and count comparisons.",
  "unresolved_assumptions": [
   "Not exercised (no example source reachable here): acquired-calibrated-window, bim-quantity, identified-stability, residual-monitor. That they are refused too is inferred from the shared code path (Workbench.execute and Workbench.replay call Workbench._reserve, which refuses any kind without a trusted binding), not observed.",
+  "Replay refusal is observed only for numerical-heat, the one kind with a retained bundle here (the fabricated one); every other unavailable kind is exercised through operation.execute. That their retained bundles would be refused on replay too is inferred from Workbench.replay calling Workbench._reserve(kind), which refuses any kind without a trusted binding, not observed.",
   "No ESM candidate adapter refusal ('No operator-bound ESM candidate adapter') is reached: that path needs a retained telemetry or calibrated-observable bundle, which needs bound providers. The ESM case here is refused for its bundle kind.",
   "The fabricated bundle's runtime identity is syntactically valid but names no real checkout."
  ]

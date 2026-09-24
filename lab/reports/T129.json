@@ -11,21 +11,24 @@
    "analytic": 0,
    "hardware_measured": 0,
    "independently_verified": 0,
-   "not_established": 1,
-   "numerically_verified": 6,
+   "not_established": 3,
+   "numerically_verified": 9,
    "provider_backed": 0,
    "synthetic": 0
   },
   "primary": "numerically_verified"
  },
- "expected_invariant": "Exact design error <= tolerance; MC mean and spread equal the exact bias and noise; registration residual has 3N - 6 degrees of freedom.",
- "experiment": "Derive the design, evaluate it exactly (discrete normal equations), verify by Monte Carlo, sweep the window at fixed spacing, compare the circle rule with the actual profile, simulate repeat-scan registration.",
+ "expected_invariant": "Exact design error <= tolerance; MC mean and spread equal the exact bias and noise; registration residual has 3N - 6 degrees of freedom; the dome fit is exact without noise, its MC spread equals the linearized covariance, and the model test flags a non-Gaussian dome.",
+ "experiment": "Derive the local-fit design, evaluate it exactly (discrete normal equations), verify by Monte Carlo, sweep the window at fixed spacing, compare the circle rule with the actual profile, simulate repeat-scan registration; fit a perturbed as-built dome without noise and on seeded synthetic scans, test an elliptical dome against the chi2 threshold, assemble the scan-derived dome covariance, and build, validate and mutate the MFG-SCAN-01 protocol.",
  "failure_modes_checked": [
   "circle-rule window on a non-circular crest",
   "window too small (noise) and too large (bias)",
   "continuum vs discrete noise formula",
   "repeat averaging",
-  "registration residual degrees of freedom"
+  "registration residual degrees of freedom",
+  "non-Gaussian (elliptical) as-built dome flagged by the residual test",
+  "false alarms of the model test",
+  "scan protocol refusal matrix"
  ],
  "findings": [
   {
@@ -258,7 +261,7 @@
     "checks": [
      {
       "comparison": "abs_le",
-      "observed": -0.024597975834473658,
+      "observed": -0.05953312881873044,
       "passed": true,
       "reference": "(mean SSR / sigma^2 (3N - 6) - 1) / (4 SE)",
       "reference_kind": "analytic",
@@ -266,7 +269,7 @@
      },
      {
       "comparison": "abs_le",
-      "observed": 0.038070871651719504,
+      "observed": 0.0348593821516052,
       "passed": true,
       "reference": "relative Frobenius difference of rotation covariance (MC vs inertia formula)",
       "reference_kind": "analytic",
@@ -294,13 +297,13 @@
    },
    "unit": null,
    "value": {
-    "lever_arm_error_mm": 0.009879207643925322,
+    "lever_arm_error_mm": 0.006689774765982837,
     "rotation_std_urad": [
-     66.18279322228858,
-     62.62786235753385,
-     45.077565409667265
+     50.893839287994325,
+     55.085539109464754,
+     38.450179476793664
     ],
-    "ssr_ratio": 0.9991018089177661
+    "ssr_ratio": 0.9978261574951414
    }
   },
   {
@@ -355,9 +358,245 @@
   },
   {
    "assigned_by": "ciw.lab.evidence",
+   "basis": {
+    "checks": [
+     {
+      "comparison": "abs_le",
+      "observed": 1.8318679906315083e-15,
+      "passed": true,
+      "reference": "noise-free recovery of a perturbed as-built dome from the nominal start (max |parameter error|)",
+      "reference_kind": "analytic",
+      "tolerance": 1e-08
+     },
+     {
+      "comparison": "abs_le",
+      "observed": 0.08148731942933052,
+      "passed": true,
+      "reference": "max over height, width and centre of |MC std / linearized std - 1| (tolerance 4 standard errors, 4 / sqrt(2 (n - 1)))",
+      "reference_kind": "analytic",
+      "tolerance": 0.2005018828468342
+     },
+     {
+      "comparison": "le",
+      "observed": 2.030339443429007,
+      "passed": true,
+      "reference": "max over height, width and centre of |MC mean - truth| in standard errors of the mean",
+      "reference_kind": "analytic",
+      "tolerance": 4.0
+     },
+     {
+      "comparison": "abs_le",
+      "observed": 0.17222840156261138,
+      "passed": true,
+      "reference": "(mean chi2 / dof of the Gaussian scans - 1) / (4 SE)",
+      "reference_kind": "analytic",
+      "tolerance": 1.0
+     }
+    ],
+    "generator": {
+     "grid_mm": 4.0,
+     "name": "synthetic coupon scans",
+     "noise_mm": 0.01,
+     "seed": 20260935,
+     "trials": 200
+    }
+   },
+   "claim": "The as-built dome fit (height, width, centre, base plane) recovers a perturbed dome and has its linearized covariance on synthetic scans",
+   "domain": "numerical",
+   "evidence_status": "numerically_verified",
+   "regression_tolerance": {
+    "abs": 1e-09,
+    "rel": 1e-06
+   },
+   "uncertainty": {
+    "basis": "max |MC std - linearized std| over height, width and centre (mm); MC sampling bounded",
+    "kind": "reference_error",
+    "value": 0.0002600864622452942
+   },
+   "unit": "mm",
+   "value": {
+    "correlation_height_sigma": -0.5945135616643445,
+    "points": 2601,
+    "scan_standard_uncertainty_mm": {
+     "height_mm": 0.0016084673894437732,
+     "sigma_mm": 0.002570018582000692,
+     "x0_mm": 0.005243209471037607,
+     "y0_mm": 0.005446504629127397
+    },
+    "white_noise_std_mm": {
+     "height_mm": 0.001595984756476097,
+     "sigma_mm": 0.0025386995710065512,
+     "x0_mm": 0.0032428304441317287,
+     "y0_mm": 0.00323688948799655
+    }
+   }
+  },
+  {
+   "assigned_by": "ciw.lab.evidence",
+   "basis": {
+    "checks": [
+     {
+      "comparison": "ge",
+      "observed": 18.401008244419614,
+      "passed": true,
+      "reference": "chi2 / dof of the elliptical dome (sigma_x 20.5, sigma_y 19.5 mm) over the 99.9% threshold",
+      "reference_kind": "analytic",
+      "tolerance": 1.0
+     },
+     {
+      "comparison": "le",
+      "observed": 0.005,
+      "passed": true,
+      "reference": "fraction of Gaussian scans the threshold flags (false alarms)",
+      "reference_kind": "analytic",
+      "tolerance": 0.02
+     }
+    ],
+    "generator": {
+     "grid_mm": 4.0,
+     "name": "synthetic coupon scans",
+     "noise_mm": 0.01,
+     "seed": 20260935,
+     "trials": 200
+    }
+   },
+   "claim": "The fit residual flags an elliptical as-built dome inside the declared width tolerance (chi2 model test)",
+   "counterexample": {
+    "statement": "A dome inside the declared forming tolerances is described by the nominal Gaussian model, so its parameters alone fix the prediction",
+    "witness": {
+     "chi2_per_dof": 19.979819127048078,
+     "sigma_x_mm": 20.5,
+     "sigma_y_mm": 19.5,
+     "threshold": 1.0858002377726916
+    }
+   },
+   "domain": "numerical",
+   "evidence_status": "numerically_verified",
+   "regression_tolerance": {
+    "abs": 1e-06,
+    "rel": 1e-06
+   },
+   "uncertainty": {
+    "basis": "95% half-width of the noise spread of the elliptical chi2 / dof (non-central chi-square)",
+    "kind": "monte_carlo_95ci",
+    "value": 0.3396984311792908
+   },
+   "unit": null,
+   "value": {
+    "elliptical_chi2_per_dof": 19.979819127048078,
+    "false_alarm_fraction": 0.005,
+    "threshold": 1.0858002377726916
+   }
+  },
+  {
+   "assigned_by": "ciw.lab.evidence",
+   "basis": {
+    "checks": [
+     {
+      "expected_refusal": "acceptance_inside_system",
+      "observed_refusal": "acceptance_inside_system",
+      "passed": true,
+      "reference": "protocol mutation acceptance_inside_system",
+      "reference_kind": "refusal"
+     },
+     {
+      "expected_refusal": "criterion_is_decision",
+      "observed_refusal": "criterion_is_decision",
+      "passed": true,
+      "reference": "protocol mutation criterion_marked_accepted",
+      "reference_kind": "refusal"
+     },
+     {
+      "expected_refusal": "measurement_without_acquisition",
+      "observed_refusal": "measurement_without_acquisition",
+      "passed": true,
+      "reference": "protocol mutation filled_slot_without_acquisition",
+      "reference_kind": "refusal"
+     },
+     {
+      "expected_refusal": "instrument_claimed_verified",
+      "observed_refusal": "instrument_claimed_verified",
+      "passed": true,
+      "reference": "protocol mutation instrument_claimed_verified",
+      "reference_kind": "refusal"
+     },
+     {
+      "expected_refusal": "missing_field",
+      "observed_refusal": "missing_field",
+      "passed": true,
+      "reference": "protocol mutation missing_markers",
+      "reference_kind": "refusal"
+     },
+     {
+      "expected_refusal": "prediction_labelled_measured",
+      "observed_refusal": "prediction_labelled_measured",
+      "passed": true,
+      "reference": "protocol mutation prediction_labelled_measured",
+      "reference_kind": "refusal"
+     },
+     {
+      "expected_refusal": "measurement_without_acquisition",
+      "observed_refusal": "measurement_without_acquisition",
+      "passed": true,
+      "reference": "protocol mutation records_in_empty_slot",
+      "reference_kind": "refusal"
+     },
+     {
+      "expected_refusal": "acquisition_malformed",
+      "observed_refusal": "acquisition_malformed",
+      "passed": true,
+      "reference": "protocol mutation slot_with_malformed_acquisition",
+      "reference_kind": "refusal"
+     },
+     {
+      "expected_refusal": "retention_record_missing",
+      "observed_refusal": "retention_record_missing",
+      "passed": true,
+      "reference": "protocol mutation slot_without_retention_record",
+      "reference_kind": "refusal"
+     }
+    ]
+   },
+   "claim": "Surface-scan protocol record validates and refuses malformed variants",
+   "domain": "computational_pipeline",
+   "evidence_status": "numerically_verified",
+   "regression_tolerance": {
+    "abs": 0,
+    "rel": 0
+   },
+   "uncertainty": {
+    "basis": "exact logic or integer count",
+    "kind": "roundoff",
+    "value": 0.0
+   },
+   "unit": "refused mutations",
+   "value": 9
+  },
+  {
+   "assigned_by": "ciw.lab.evidence",
    "basis": {},
    "claim": "A real laser line scanner achieves the declared 0.01 mm point noise on the coupon surface (finish, incidence angle, speckle)",
    "domain": "sensor_performance",
+   "evidence_status": "not_established",
+   "uncertainty": null,
+   "unit": null,
+   "value": null
+  },
+  {
+   "assigned_by": "ciw.lab.evidence",
+   "basis": {},
+   "claim": "The formed coupon passes the Gaussian model test and its fitted height and width lie within the declared forming tolerances",
+   "domain": "physical",
+   "evidence_status": "not_established",
+   "uncertainty": null,
+   "unit": null,
+   "value": null
+  },
+  {
+   "assigned_by": "ciw.lab.evidence",
+   "basis": {},
+   "claim": "The declared scanner scale (20 ppm) and target registration uncertainties hold for the scan",
+   "domain": "calibration",
    "evidence_status": "not_established",
    "uncertainty": null,
    "unit": null,
@@ -366,9 +605,19 @@
  ],
  "generated_artifacts": [
   {
-   "bytes": 4321,
+   "bytes": 9549,
+   "path": "artifacts/T129/protocol-surface-scan.json",
+   "sha256": "f3db81741d07deefc2ecca780996a9d9a12b058cc18a1f720e07cacb8d3ba4bb"
+  },
+  {
+   "bytes": 2572,
+   "path": "artifacts/T129/as-built-fit.json",
+   "sha256": "712bbeee31a80b1d7b9980416794d73a88751c3dd2fd0a9edac28004e77d5932"
+  },
+  {
+   "bytes": 4320,
    "path": "artifacts/T129/metrology-design.json",
-   "sha256": "086cd5590f48c44bf2279e4433370d9059a72897f51d3fd7f2ce0d99bd965504"
+   "sha256": "85552a9b0052a2fefe3a40fa16553eddd974cbdfdb6a9630b0a2b9d0526b8009"
   },
   {
    "bytes": 2679,
@@ -376,16 +625,17 @@
    "sha256": "bf6ce252a06d8ede2abfe12db626990e77adba46d2c901a15c20e018d7722490"
   }
  ],
- "hypothesis": "The sampling needed to resolve curvature follows from two terms of a local quadratic fit: a bias set by the quartic profile term and a noise term that grows as the window shrinks; the window must be chosen from the actual profile, not from its osculating circle.",
+ "hypothesis": "A surface metrology protocol for the coupon needs two things: the sampling that resolves curvature (a local quadratic fit whose bias is set by the quartic profile term and whose noise grows as the window shrinks, so the window must come from the actual profile, not from its osculating circle), and an identification of the as-built dome (height, width, centre) with a covariance that can replace the declared forming tolerances in T138 and T140, valid only while a residual test accepts the Gaussian model.",
  "input_data": [
-  "Declared scanner noise 0.01 mm per point, native spacing 0.05 mm",
+  "Declared scanner noise 0.01 mm per point, native spacing 0.05 mm, relative scale uncertainty 20 ppm, standoff 100 mm, incidence limit 30 deg",
   "Profiles: coupon crest (Gaussian), cylinder circumference (R = 100 mm), flat plate",
-  "Seeded synthetic noise (PCG64 seed 20260926), 4000 fits per window, 2000 registrations"
+  "Six registration targets off the dome; global fit grid 4 mm over the coupon extent",
+  "Seeded synthetic noise (PCG64 seeds 20260926 and 20260935), 4000 fits per window, 2000 registrations, 200 synthetic coupon scans"
  ],
- "mathematical_model": "Least-squares z = a + b x + c x^2 over a centred window W with spacing d: bias(2c) = (3/7) q W^2, std(2c) = sigma sqrt(720 d) W^(-5/2) (large-n); tolerance split half bias, half k = 2 noise. Registration: Kabsch; E[SSR] = sigma^2 (3N - 6); rotation covariance sigma^2 (sum |p|^2 I - p p^T)^-1.",
+ "mathematical_model": "Local fit: least-squares z = a + b x + c x^2 over a centred window W with spacing d: bias(2c) = (3/7) q W^2, std(2c) = sigma sqrt(720 d) W^(-5/2) (large-n); tolerance split half bias, half k = 2 noise. Global fit: z = z0 + a_x x + a_y y + h exp(-((x - x0)^2 + (y - y0)^2) / (2 sigma^2)) by Gauss-Newton; covariance sigma^2 (J^T J)^-1 plus declared scale and registration terms; model test chi2 / dof <= 1 + 3.09 sqrt(2 / dof). Registration: Kabsch; E[SSR] = sigma^2 (3N - 6); rotation covariance sigma^2 (sum |p|^2 I - p p^T)^-1.",
  "number": 129,
- "numerical_result": "Coupon crest at 5%: window 13.66 mm, spacing 0.646 mm; repeats at 0.05 mm native spacing: 5% -> 1, 2% -> 5, 1% -> 109; circle rule gives bias 1.96 x tolerance.",
- "observation_model": "Synthetic scans only; no scanner was used.",
+ "numerical_result": "Coupon crest at 5%: window 13.66 mm, spacing 0.646 mm; repeats at 0.05 mm native spacing: 5% -> 1, 2% -> 5, 1% -> 109; circle rule gives bias 1.96 x tolerance. As-built fit on 2601 points: scan-derived standard uncertainty height 0.0016 mm, width 0.0026 mm, centre (0.0052, 0.0054) mm (declared tolerances: 0.115 and 0.289 mm); the elliptical dome gives chi2 / dof 20.0 against a threshold of 1.086.",
+ "observation_model": "Synthetic scans only; no scanner was used. MFG-SCAN-01 specifies the scan, its registration, the fits and the retained raw data; its hardware-evidence slot is empty.",
  "physical_validation_status": {
   "statement": "Physical validation requires acquired hardware evidence; none was acquired for this task.",
   "status": "not_established"
@@ -398,15 +648,15 @@
   "python": "3.12.3",
   "scipy": "1.16.2",
   "sources": {
-   "src/ciw/lab/manufacturing.py": "088763a0bcc42bf085c1e228797a5dc0d702b994f2a49e053cbe2b0a5622e25d",
+   "src/ciw/lab/manufacturing.py": "f4cd90e1df33b910b78daf4b0556a8861e044d83701474f841e85fd9d96f9063",
    "src/ciw/lab/manufacturing_geometry.py": "1db6df2ddf778668da2ffd53a66bcddbff4fc933d6f299e8f283cedc60a9332f",
-   "src/ciw/lab/manufacturing_metrology.py": "afbb6fccf146ca4f47850805c118d2f1bf6186872f381b298ab924a9214257ec",
-   "src/ciw/lab/manufacturing_records.py": "66970104ea454e836c5cbafc3013c90e721c3e96ad7f16780c32250112cac921"
+   "src/ciw/lab/manufacturing_metrology.py": "aef4708b0f296fc66087a6382881a0564c5edcb6d7961b5e472aa711e29feb5d",
+   "src/ciw/lab/manufacturing_records.py": "015ea7fccc586f4b95f64e7ffbc1f6c34eec20b8245778ede3c2324006537087"
   },
   "sympy": "1.14.0"
  },
- "recommended_next_task": "T130: calibrate the scanner scale and frames on artifacts before executing the T128 coupon scan.",
- "report_id": "sha256:93df097d55056813c75982979b995b2a5d7eadac5ba0a969cce90dd9dde4498b",
+ "recommended_next_task": "T130: calibrate the scanner scale and frames on artifacts before executing MFG-SCAN-01 and the T128 coupon measurement.",
+ "report_id": "sha256:416115d817a9a16437e63b661bdac3fe45e225e240e4a85a4d12a6b7047cd516",
  "schema": "ciw.lab-task-report.v1",
  "section": "manufacturing",
  "state": "completed",
@@ -427,15 +677,33 @@
   "check: Repeat scans needed at the native 0.05 mm spacing versus curvature tolerance (coupon crest) vs exact |bias| + 2 std with m averaged scans minus tolerance, 5% (1/mm)",
   "check: Repeat scans needed at the native 0.05 mm spacing versus curvature tolerance (coupon crest) vs exact |bias| + 2 std with m averaged scans minus tolerance, 2% (1/mm)",
   "check: Repeat scans needed at the native 0.05 mm spacing versus curvature tolerance (coupon crest) vs exact |bias| + 2 std with m averaged scans minus tolerance, 1% (1/mm)",
+  "check: The as-built dome fit (height, width, centre, base plane) recovers a perturbed dome and has its linearized covariance on synthetic scans vs noise-free recovery of a perturbed as-built dome from the nominal start (max |parameter error|)",
+  "check: The as-built dome fit (height, width, centre, base plane) recovers a perturbed dome and has its linearized covariance on synthetic scans vs max over height, width and centre of |MC std / linearized std - 1| (tolerance 4 standard errors, 4 / sqrt(2 (n - 1)))",
+  "check: The as-built dome fit (height, width, centre, base plane) recovers a perturbed dome and has its linearized covariance on synthetic scans vs max over height, width and centre of |MC mean - truth| in standard errors of the mean",
+  "check: The as-built dome fit (height, width, centre, base plane) recovers a perturbed dome and has its linearized covariance on synthetic scans vs (mean chi2 / dof of the Gaussian scans - 1) / (4 SE)",
+  "check: The fit residual flags an elliptical as-built dome inside the declared width tolerance (chi2 model test) vs chi2 / dof of the elliptical dome (sigma_x 20.5, sigma_y 19.5 mm) over the 99.9% threshold",
+  "check: The fit residual flags an elliptical as-built dome inside the declared width tolerance (chi2 model test) vs fraction of Gaussian scans the threshold flags (false alarms)",
+  "check: Surface-scan protocol record validates and refuses malformed variants vs protocol mutation acceptance_inside_system",
+  "check: Surface-scan protocol record validates and refuses malformed variants vs protocol mutation criterion_marked_accepted",
+  "check: Surface-scan protocol record validates and refuses malformed variants vs protocol mutation filled_slot_without_acquisition",
+  "check: Surface-scan protocol record validates and refuses malformed variants vs protocol mutation instrument_claimed_verified",
+  "check: Surface-scan protocol record validates and refuses malformed variants vs protocol mutation missing_markers",
+  "check: Surface-scan protocol record validates and refuses malformed variants vs protocol mutation prediction_labelled_measured",
+  "check: Surface-scan protocol record validates and refuses malformed variants vs protocol mutation records_in_empty_slot",
+  "check: Surface-scan protocol record validates and refuses malformed variants vs protocol mutation slot_with_malformed_acquisition",
+  "check: Surface-scan protocol record validates and refuses malformed variants vs protocol mutation slot_without_retention_record",
   "pytest: tests/test_lab_manufacturing.py::test_metrology_sampling_design_and_counterexamples",
+  "pytest: tests/test_lab_manufacturing.py::test_scan_protocol_and_as_built_fit",
+  "pytest: tests/test_lab_manufacturing.py::test_protocols_refuse_filled_slots_and_decisions",
   "pytest: tests/test_lab_manufacturing.py::test_every_task_is_registered_and_reports_honestly"
  ],
  "tests_skipped": [],
  "title": "Define a surface metrology protocol.",
- "uncertainty": "Monte Carlo standard errors are stated in the checks; the design rules are exact for the declared profiles.",
+ "uncertainty": "Monte Carlo standard errors are stated in the checks; the design rules are exact for the declared profiles; the scan-derived covariance is first order and holds only under the Gaussian model and the declared scanner terms.",
  "unresolved_assumptions": [
   "Surface finish, incidence angle and scanner nonlinearity are not modelled; noise is white and Gaussian.",
   "Profiles are taken through the principal direction at the vertex; slope correction is neglected.",
-  "At 1% tolerance a quadratic fit needs about 100 repeat scans: a higher-order local fit is a deferred research question."
+  "At 1% tolerance a quadratic fit needs about 100 repeat scans: a higher-order local fit is a deferred research question.",
+  "If the model test rejects the Gaussian dome, the scan-derived covariance does not apply and the prediction must be re-integrated on a surface fitted to the scan (not implemented)."
  ]
 }

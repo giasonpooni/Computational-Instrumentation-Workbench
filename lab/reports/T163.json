@@ -14,12 +14,12 @@
   },
   "primary": "numerically_verified"
  },
- "expected_invariant": "Aggregates are exact functions of retained reports and never change a label.",
- "experiment": "Assemble a Markdown portfolio page from the selected reports and their retained figures.",
+ "expected_invariant": "Every label used by a retained finding appears on the page, and every not_established finding of a panel is shown.",
+ "experiment": "Assemble a Markdown portfolio page from the selected reports and their retained figures, then read the labels and not_established claims back from the page.",
  "failure_modes_checked": [
-  "missing reports",
-  "report identity mismatch (validate_report)",
-  "aggregate differs from its re-read bytes"
+  "label in use missing from the page",
+  "not_established findings hidden by a finding limit",
+  "curated task not retained"
  ],
  "findings": [
   {
@@ -27,41 +27,53 @@
    "basis": {
     "checks": [
      {
-      "comparison": "ge",
-      "observed": 10.0,
+      "comparison": "abs_le",
+      "observed": 0.0,
       "passed": true,
-      "reference": "panels",
+      "reference": "labels in use absent from the rendered page",
       "reference_kind": "exact_arithmetic",
-      "tolerance": 1.0
+      "tolerance": 0.0
+     },
+     {
+      "comparison": "abs_le",
+      "observed": 0.0,
+      "passed": true,
+      "reference": "not_established findings of the panels absent from the rendered page",
+      "reference_kind": "exact_arithmetic",
+      "tolerance": 0.0
      }
     ]
    },
-   "claim": "Portfolio panels assembled from retained reports",
+   "claim": "Portfolio page shows every evidence label in use and every not_established finding of its panels",
    "domain": "computational_pipeline",
    "evidence_status": "numerically_verified",
    "regression_tolerance": {
     "abs": 0,
     "rel": 0
    },
-   "uncertainty": null,
+   "uncertainty": {
+    "basis": "integer count over retained report files; no rounding, sampling or tolerance",
+    "kind": "exact",
+    "value": 0
+   },
    "unit": "panels",
-   "value": 10
+   "value": 12
   }
  ],
  "generated_artifacts": [
   {
-   "bytes": 12452,
+   "bytes": 20800,
    "path": "artifacts/T163/PORTFOLIO.md",
-   "sha256": "7278fa3935eaee4087ac72b3916af0ce397f966db1259e021bbf41aa0feb485b"
+   "sha256": "a58a7b4b42581c9f7878fae0d88059675f29344f904e58b5f8a1c52b28b86d36"
   }
  ],
  "hypothesis": "A short tour of retained experiments can show every evidence label in use and what each result does not prove.",
  "input_data": [
-  "Retained reports T001-T154 in the same output directory"
+  "Retained reports of T001-T162 in the same output directory"
  ],
- "mathematical_model": "Curated selection of task reports with their figures and not_established findings.",
+ "mathematical_model": "Curated panels plus, for every label in use that they do not show, the first retained task holding it; each panel shows its headline findings and every not_established finding.",
  "number": 163,
- "numerical_result": "10 of 10 selected reports retained; labels shown: independently_verified, not_established, numerically_verified.",
+ "numerical_result": "12 panels (10 of 10 curated retained, added T020 (analytic), T097 (provider_backed)); labels in use: analytic, numerically_verified, provider_backed, independently_verified, not_established; labels shown: analytic, numerically_verified, provider_backed, independently_verified, not_established.",
  "observation_model": "No physical observation; reads retained computational records only.",
  "physical_validation_status": {
   "statement": "Physical validation requires acquired hardware evidence; none was acquired for this task.",
@@ -75,22 +87,26 @@
   "python": "3.12.3",
   "scipy": "1.16.2",
   "sources": {
-   "src/ciw/lab/research_portfolio.py": "6cd37207af02c6d64dc88b22c7ff2148e85f1eeebaa5445cd894879bc3043ba3"
+   "src/ciw/lab/research_portfolio.py": "0fd0ed475a38bf81fd2145f64cf1335856a471c58d406347c3b66b0f66672702"
   },
   "sympy": "1.14.0"
  },
  "recommended_next_task": "Present the portfolio page with the physical flat-plate/cylinder experiments once measured.",
- "report_id": "sha256:f003ce8bb6c459f9b73c85b3c55531079a97092bbd2ce6d43db8a3702204341e",
+ "report_id": "sha256:da94fbae9dba4f0a42e72b5bcf8e93186018bd26672266c6eba1d1e899893da0",
  "schema": "ciw.lab-task-report.v1",
  "section": "research-portfolio",
  "state": "completed",
  "task_id": "T163",
  "tests_passed": [
-  "check: Portfolio panels assembled from retained reports vs panels",
-  "pytest: tests/test_lab_research_portfolio.py::test_catalogue_tasks_aggregate_retained_reports"
+  "check: Portfolio page shows every evidence label in use and every not_established finding of its panels vs labels in use absent from the rendered page",
+  "check: Portfolio page shows every evidence label in use and every not_established finding of its panels vs not_established findings of the panels absent from the rendered page",
+  "pytest: tests/test_lab_research_portfolio.py::test_portfolio_shows_every_label_in_use"
  ],
  "tests_skipped": [],
  "title": "Create a masters-portfolio demonstration.",
- "uncertainty": "Curated selection; see each source report.",
- "unresolved_assumptions": []
+ "uncertainty": "Exact reading of the rendered page; see each source report for its uncertainty.",
+ "unresolved_assumptions": [
+  "The panel selection is curated to demonstrate labels, not to rank results.",
+  "Figures are linked, not checked for legibility by this task."
+ ]
 }

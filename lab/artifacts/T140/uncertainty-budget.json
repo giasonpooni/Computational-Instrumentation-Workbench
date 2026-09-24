@@ -27,6 +27,19 @@
    "unit": "mm",
    "value": 153.407155341
   },
+  "coupon focal distance (conditioned on the start pose and the as-built scan)": {
+   "combined_standard_mm": 1.53660500359,
+   "components": {
+    "execution": 0.832476239101,
+    "geometry": 0.0564426153028,
+    "instrument": 1.29033037613,
+    "solver": 9.23539422123e-07
+   },
+   "dominant": "instrument",
+   "dominant_share": 0.705143255717,
+   "unit": "mm",
+   "value": 153.407155341
+  },
   "coupon separation at L, 2 mm lateral offset (conditioned on the measured start pose)": {
    "combined_standard_mm": 0.152600806367,
    "components": {
@@ -37,6 +50,32 @@
    },
    "dominant": "geometry",
    "dominant_share": 0.944502345609,
+   "unit": "mm",
+   "value": -1.03736170921
+  },
+  "coupon separation at L, 2 mm lateral offset (conditioned on the start pose and the as-built scan)": {
+   "combined_standard_mm": 0.0360000804735,
+   "components": {
+    "execution": 0.0221895069017,
+    "geometry": 0.00190566984483,
+    "instrument": 0.0282842712475,
+    "solver": 2.84221282657e-08
+   },
+   "dominant": "instrument",
+   "dominant_share": 0.617281190903,
+   "unit": "mm",
+   "value": -1.03736170921
+  },
+  "coupon separation at L, 2 mm lateral offset (open-loop start)": {
+   "combined_standard_mm": 0.162644732197,
+   "components": {
+    "execution": 0.0604869988033,
+    "geometry": 0.148305872734,
+    "instrument": 0.0282842712475,
+    "solver": 2.84221282657e-08
+   },
+   "dominant": "geometry",
+   "dominant_share": 0.831451065758,
    "unit": "mm",
    "value": -1.03736170921
   },

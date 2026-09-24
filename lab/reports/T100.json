@@ -9,14 +9,14 @@
    "hardware_measured": 0,
    "independently_verified": 0,
    "not_established": 2,
-   "numerically_verified": 7,
+   "numerically_verified": 8,
    "provider_backed": 0,
    "synthetic": 0
   },
   "primary": "numerically_verified"
  },
  "expected_invariant": "Zero violations; relabels refused where detectable; physical claims not established.",
- "experiment": "Audit every retained report below T100 present in the output directory; forge a relabelled physical finding; render a claim containing a pipe character; relabel the energy fixture unsealed, resealed in the same occurrence and resealed in a fresh occurrence (reading the retained bundle's classification); relabel free-energy source policies; inspect the free-energy truth panel basis.",
+ "experiment": "Audit every retained report below T100 present in the output directory; forge a relabelled physical finding; render a claim containing a pipe character; relabel the energy fixture unsealed, resealed in the same occurrence and resealed in a fresh occurrence (reading the retained bundle's classification); relabel free-energy source policies; inspect the free-energy truth panel basis; save a fabricated numerical-heat bundle and read it through bundle.get and classify_workspace.",
  "failure_modes_checked": [
   "unknown label",
   "physical finding with computational label",
@@ -24,7 +24,8 @@
   "label missing from rendered row",
   "origin relabel with and without resealing",
   "occurrence rebinding",
-  "free-energy policy relabel"
+  "free-energy policy relabel",
+  "fabricated provider-kind bundle classified as provider-backed"
  ],
  "findings": [
   {
@@ -344,6 +345,73 @@
   },
   {
    "assigned_by": "ciw.lab.evidence",
+   "basis": {
+    "checks": [
+     {
+      "expected_refusal": "accepted",
+      "observed_refusal": "accepted",
+      "passed": true,
+      "reference": "classify_workspace (Session.from_workspace validation) of the saved fabricated bundle",
+      "reference_kind": "refusal"
+     },
+     {
+      "comparison": "abs_le",
+      "observed": 0.0,
+      "passed": true,
+      "reference": "fabricated bundle numerical findings not labelled provider_backed",
+      "reference_kind": "exact_arithmetic",
+      "tolerance": 0.0
+     }
+    ]
+   },
+   "claim": "A fabricated, content-consistent numerical-heat bundle reopens and is labelled provider_backed by the workspace classifier, as a provider result is",
+   "counterexample": {
+    "statement": "CIW's retained records and their classification keep provider-backed results visibly distinct from fabricated ones",
+    "witness": {
+     "adapter_version": "fabricated-by-ciw-lab",
+     "bundle_id": "sha256:9369906b44c440bebfdc3ac93f9442288a392206b0410035773f9af33a87e62c",
+     "classified": [
+      "provider_backed"
+     ],
+     "engine_source_binding": "operator_asserted_not_attested",
+     "revision_is_ciw_pin": true,
+     "source_tree_is_ciw_pin": false,
+     "values": [
+      0,
+      1,
+      2,
+      3,
+      0
+     ]
+    }
+   },
+   "domain": "computational_pipeline",
+   "evidence_status": "numerically_verified",
+   "regression_tolerance": {
+    "abs": 0,
+    "rel": 0
+   },
+   "uncertainty": {
+    "basis": "exact counts, digests and string comparisons; no rounding is involved",
+    "kind": "roundoff",
+    "value": 0
+   },
+   "unit": null,
+   "value": {
+    "numerical_labels": [
+     "provider_backed"
+    ],
+    "reader_view": {
+     "adapter_version": "fabricated-by-ciw-lab",
+     "engine_source_binding": "operator_asserted_not_attested",
+     "revision_is_ciw_pin": true,
+     "source_tree_is_ciw_pin": false
+    },
+    "reopen": "accepted"
+   }
+  },
+  {
+   "assigned_by": "ciw.lab.evidence",
    "basis": {},
    "claim": "The relabelled energy log is a physical GPU energy measurement",
    "domain": "physical",
@@ -365,22 +433,23 @@
  ],
  "generated_artifacts": [
   {
-   "bytes": 19655,
+   "bytes": 20061,
    "path": "artifacts/T100/visibility-audit.json",
-   "sha256": "4fe1765f82e06f7a98fe4aebe414fbe4929425d4f93ab3027be03ef78b6c878a"
+   "sha256": "da04b8b62140067ca32bc57a792dd629dc06278f5d102598bc2fd5ea79c763ae"
   }
  ],
- "hypothesis": "Retained lab reports and CIW's own records keep synthetic, provider-backed and physical results visibly distinct, and relabelling is refused wherever the record can detect it.",
+ "hypothesis": "Retained lab reports keep synthetic, provider-backed and physical labels visibly distinct; CIW's own records refuse a synthetic-to-physical relabel wherever the record can detect it; and CIW's records are tested for whether they tell a provider result from a fabricated, content-consistent one (T092's counterexample, read here through the workspace classifier).",
  "input_data": [
   "retained reports ctx.output_dir/reports/T001-T099 (only those present when T100 runs)",
   "examples/energy-accuracy/baseline.json (synthetic, embedded)",
   "ciw.free_energy_profile.POLICY",
-  "ciw.free_energy_view source text"
+  "ciw.free_energy_view source text",
+  "fabricated numerical-heat catalog (values [0, 1, 2, 3, 0], fabricated runtime identity at the CIW revision pin)"
  ],
  "mathematical_model": "Allowed labels per domain: physical -> {not_established, hardware_measured, independently_verified with acquisition}; authority -> {not_established}; computational -> never hardware_measured.",
  "number": 100,
- "numerical_result": "99 of 99 earlier reports present and audited: 0 label violations, 0 rendering violations; the pipe probe kept its label column; fresh-occurrence energy relabel accepted and classified physical_domain_measurement; same-occurrence relabel: invalid_payload: Identity collision across retained workbench artifacts.",
- "observation_model": "validate_report, per-finding label/domain rules, rendered Markdown rows; CIW analysis/refusal outputs and the retained bundle of a fresh-occurrence relabel.",
+ "numerical_result": "99 of 99 earlier reports present and audited: 0 label violations, 0 rendering violations; the pipe probe kept its label column; fresh-occurrence energy relabel accepted and classified physical_domain_measurement; same-occurrence relabel: invalid_payload: Identity collision across retained workbench artifacts; fabricated heat bundle reopen accepted, classified ['provider_backed'].",
+ "observation_model": "validate_report, per-finding label/domain rules, rendered Markdown rows; CIW analysis/refusal outputs and the retained bundle of a fresh-occurrence relabel; the workbench and classify_workspace views of a fabricated provider-kind bundle.",
  "physical_validation_status": {
   "statement": "Physical validation requires acquired hardware evidence; none was acquired for this task.",
   "status": "not_established"
@@ -393,13 +462,13 @@
   "python": "3.12.3",
   "scipy": "1.16.2",
   "sources": {
-   "src/ciw/lab/exchange_provenance_bundles.py": "a505b35560263c1b473912f79e61b15b7e474f8eb1807e691847e4c69791c2d3",
-   "src/ciw/lab/exchange_provenance_bundles_fixtures.py": "f30205e8305a225f24d94b06cba8b519ecea4680ca723aaca3591ff707d04e1c"
+   "src/ciw/lab/exchange_provenance_bundles.py": "3acc6fd6976bb5e6dd8ad3bfc3d09a1d9594ca0a06f4db823581e5b651d4835e",
+   "src/ciw/lab/exchange_provenance_bundles_fixtures.py": "7d6da1148d3744ae1e754b53f697b5b4919aff2666788ae6aec0e48e6e2380c9"
   },
   "sympy": "1.14.0"
  },
- "recommended_next_task": "Authenticate energy-log origin at acquisition (outside the workbench).",
- "report_id": "sha256:581d024b2ef2f93bc1f67c36e13bd37bab50457b2b78ae4005e85070a03cf113",
+ "recommended_next_task": "Compare a retained provider runtime identity (revision and source tree) with CIW's pins when reopening or classifying; authenticate energy-log origin at acquisition (outside the workbench).",
+ "report_id": "sha256:cf233a8622b9572957439262d4acbf8d87b73456df7e0cc171bbdbcd71e0cca5",
  "schema": "ciw.lab-task-report.v1",
  "section": "exchange-provenance",
  "state": "completed",
@@ -421,6 +490,8 @@
   "check: CIW refuses free-energy sources that relabel synthetic observations as physical or claim physical validation vs physical validation claimed",
   "check: CIW refuses free-energy sources that relabel synthetic observations as physical or claim physical validation vs declared synthetic policy refused at the policy check",
   "check: CIW refuses free-energy sources that relabel synthetic observations as physical or claim physical validation vs view basis literals naming the synthetic reference",
+  "check: A fabricated, content-consistent numerical-heat bundle reopens and is labelled provider_backed by the workspace classifier, as a provider result is vs classify_workspace (Session.from_workspace validation) of the saved fabricated bundle",
+  "check: A fabricated, content-consistent numerical-heat bundle reopens and is labelled provider_backed by the workspace classifier, as a provider result is vs fabricated bundle numerical findings not labelled provider_backed",
   "pytest: tests/test_lab_exchange_provenance_bundles.py::test_t100_labels_and_origins_stay_distinct",
   "pytest: tests/test_lab_exchange_provenance_bundles.py::test_t100_flags_a_retained_report_whose_label_leaves_its_column",
   "pytest: tests/test_lab_exchange_provenance_bundles.py::test_render_markdown_pipe_probe_matches_the_renderer"
@@ -430,6 +501,7 @@
  "uncertainty": "Exact.",
  "unresolved_assumptions": [
   "The report audit covers only reports present in the output directory when T100 runs: a section-only run audits its own section, a full run T001-T099; stale reports from earlier runs in the same directory are included if present (task ids in visibility-audit.json).",
-  "Retained claims containing a pipe or newline: 17; the rendering probe uses a synthetic claim."
+  "Retained claims containing a pipe or newline: 18; the rendering probe uses a synthetic claim.",
+  "The only reader-visible trace of the fabricated bundle is a runtime source tree that differs from CIW's pinned tree; neither reopen nor classify_workspace compares it (reader_view in visibility-audit.json)."
  ]
 }

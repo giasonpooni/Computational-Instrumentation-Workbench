@@ -39,10 +39,10 @@
 <circle cx="339.33" cy="89.38" r="2.6" fill="#15803d"/>
 <line x1="482" y1="88" x2="502" y2="88" stroke="#15803d" stroke-width="2"/>
 <text x="508" y="92">rotation: torus</text>
-<path d="M78.00,350.07 L208.67,350.07 L339.33,107.17 L470.00,51.93" fill="none" stroke="#7e22ce" stroke-width="1.8"/>
+<path d="M78.00,350.07 L208.67,350.07 L339.33,350.07 L470.00,51.93" fill="none" stroke="#7e22ce" stroke-width="1.8"/>
 <circle cx="78.00" cy="350.07" r="2.6" fill="#7e22ce"/>
 <circle cx="208.67" cy="350.07" r="2.6" fill="#7e22ce"/>
-<circle cx="339.33" cy="107.17" r="2.6" fill="#7e22ce"/>
+<circle cx="339.33" cy="350.07" r="2.6" fill="#7e22ce"/>
 <circle cx="470.00" cy="51.93" r="2.6" fill="#7e22ce"/>
 <line x1="482" y1="106" x2="502" y2="106" stroke="#7e22ce" stroke-width="2"/>
 <text x="508" y="110">basis angle: torus</text>

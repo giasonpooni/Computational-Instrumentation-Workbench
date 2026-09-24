@@ -1,6 +1,7 @@
 {
  "baseline": {
   "batches": 2,
+  "fixture_sha256": "3ff4cb68be07e36d9796fb83402b0f72a46a3f1edff0d9e70addc9ab1695ef81",
   "identity_fields": {
    "clock": "synthetic monotonic",
    "compute_capability": [
@@ -25,6 +26,7 @@
   "origin": "synthetic_fixture",
   "placeholder_fields": [
    "clock",
+   "compute_capability",
    "driver_version",
    "implementation_code_sha256",
    "kernel_sha256",
@@ -35,13 +37,14 @@
    "sensor_name",
    "workload_device_uuid"
   ],
-  "placeholder_values": 10,
+  "placeholder_values": 11,
   "raw_counter_readings": 12,
   "samples": 12,
   "timestamped_samples": 12
  },
  "missing": {
   "batches": 2,
+  "fixture_sha256": "0cffbd14cfcd2d0f14cc906dca689df4de1fd8191ed6fff4cb5a6dced837dacb",
   "identity_fields": {
    "clock": "synthetic monotonic",
    "compute_capability": [
@@ -66,6 +69,7 @@
   "origin": "synthetic_fixture",
   "placeholder_fields": [
    "clock",
+   "compute_capability",
    "driver_version",
    "implementation_code_sha256",
    "kernel_sha256",
@@ -76,13 +80,14 @@
    "sensor_name",
    "workload_device_uuid"
   ],
-  "placeholder_values": 10,
+  "placeholder_values": 11,
   "raw_counter_readings": 11,
   "samples": 11,
   "timestamped_samples": 11
  },
  "reset": {
   "batches": 2,
+  "fixture_sha256": "2c8e421e1fd24ce463f765dba365eacb859797facb82d42f180deb42d80a0ddb",
   "identity_fields": {
    "clock": "synthetic monotonic",
    "compute_capability": [
@@ -107,6 +112,7 @@
   "origin": "synthetic_fixture",
   "placeholder_fields": [
    "clock",
+   "compute_capability",
    "driver_version",
    "implementation_code_sha256",
    "kernel_sha256",
@@ -117,13 +123,14 @@
    "sensor_name",
    "workload_device_uuid"
   ],
-  "placeholder_values": 10,
+  "placeholder_values": 11,
   "raw_counter_readings": 12,
   "samples": 12,
   "timestamped_samples": 12
  },
  "under-target": {
   "batches": 2,
+  "fixture_sha256": "b09bf8b979c213a7ae6617327f9a060ea2c9b2af515eb4b8662ab94dc415e955",
   "identity_fields": {
    "clock": "synthetic monotonic",
    "compute_capability": [
@@ -148,6 +155,7 @@
   "origin": "synthetic_fixture",
   "placeholder_fields": [
    "clock",
+   "compute_capability",
    "driver_version",
    "implementation_code_sha256",
    "kernel_sha256",
@@ -158,7 +166,7 @@
    "sensor_name",
    "workload_device_uuid"
   ],
-  "placeholder_values": 10,
+  "placeholder_values": 11,
   "raw_counter_readings": 12,
   "samples": 12,
   "timestamped_samples": 12

@@ -69,6 +69,28 @@
    "task": "T080"
   },
   {
+   "description": "R1 and R2 exchange executions consistently: result execution_ids, execution result_ids and result created_at swapped between the two pairs; all four records resealed",
+   "error": null,
+   "killed": false,
+   "kind": "workspace",
+   "message_matches_pin": true,
+   "name": "alias.swap-pairing",
+   "observed": "accepted",
+   "observed_outcome": "accepted",
+   "outcome_matches_prediction": true,
+   "pinned_message": "accepted",
+   "post_reopen": {
+    "execution:E1": "result:R2",
+    "execution:E2": "result:R1",
+    "result:R1": "execution:E2",
+    "result:R2": "execution:E1"
+   },
+   "predicted_outcome": "accepted",
+   "recompute": "local",
+   "target": "oscillator executions and results",
+   "task": "T080"
+  },
+  {
    "description": "selection revision 1000 with execution and result claiming revision 999; resealed",
    "error": null,
    "killed": false,
@@ -395,7 +417,7 @@
    "task": "T083"
   },
   {
-   "description": "receipt moved onto a sibling execution; replayed digest and replay_id recomputed",
+   "description": "receipt moved onto a sibling execution; replayed digest and replay_id recomputed, the verification keeps the donor's reproduction step",
    "error": "ValueError",
    "killed": true,
    "kind": "workspace",
@@ -411,6 +433,60 @@
    "task": "T083"
   },
   {
+   "description": "receipt moved from the replay B1 onto the original sibling B0b and rebuilt there (source B0, replayed B0b, verification rebuilt from B0 with B0b's own step as the reproduction, ids recomputed)",
+   "error": null,
+   "killed": false,
+   "kind": "workspace",
+   "message_matches_pin": true,
+   "name": "receipt.transplanted-full",
+   "observed": "accepted",
+   "observed_outcome": "accepted",
+   "outcome_matches_prediction": true,
+   "pinned_message": "accepted",
+   "post_reopen": {
+    "receipt_sources": {
+     "bundle:B0": [],
+     "bundle:B0b": [
+      "bundle:B0"
+     ],
+     "bundle:B1": [],
+     "bundle:Bother": []
+    }
+   },
+   "predicted_outcome": "accepted",
+   "recompute": "full",
+   "target": "energy bundle",
+   "task": "T083"
+  },
+  {
+   "description": "a new receipt written onto the never-replayed original B0b claiming it replays B0 (verification built from B0 and B0b's step, ids recomputed); B1 keeps its own receipt",
+   "error": null,
+   "killed": false,
+   "kind": "workspace",
+   "message_matches_pin": true,
+   "name": "receipt.fabricated",
+   "observed": "accepted",
+   "observed_outcome": "accepted",
+   "outcome_matches_prediction": true,
+   "pinned_message": "accepted",
+   "post_reopen": {
+    "receipt_sources": {
+     "bundle:B0": [],
+     "bundle:B0b": [
+      "bundle:B0"
+     ],
+     "bundle:B1": [
+      "bundle:B0"
+     ],
+     "bundle:Bother": []
+    }
+   },
+   "predicted_outcome": "accepted",
+   "recompute": "full",
+   "target": "energy bundle",
+   "task": "T083"
+  },
+  {
    "description": "replay_receipts removed from the replay bundle",
    "error": null,
    "killed": false,
@@ -422,8 +498,12 @@
    "outcome_matches_prediction": true,
    "pinned_message": "accepted",
    "post_reopen": {
-    "bundles_with_receipts": 0,
-    "replay_bundle_listed": true
+    "receipt_sources": {
+     "bundle:B0": [],
+     "bundle:B0b": [],
+     "bundle:B1": [],
+     "bundle:Bother": []
+    }
    },
    "predicted_outcome": "accepted",
    "recompute": "none",
@@ -677,6 +757,28 @@
    "outcome_matches_prediction": true,
    "pinned_message": "Protocol v1 saved results must remain not_verified with verification_id null",
    "predicted_outcome": "killed",
+   "recompute": "local",
+   "target": "oscillator result",
+   "task": "T086"
+  },
+  {
+   "description": "subject_ref naming the sibling result R2 injected into a sealed result; resealed",
+   "error": null,
+   "killed": false,
+   "kind": "workspace",
+   "message_matches_pin": true,
+   "name": "oscillator-subject.injected",
+   "observed": "accepted",
+   "observed_outcome": "accepted",
+   "outcome_matches_prediction": true,
+   "pinned_message": "accepted",
+   "post_reopen": {
+    "result.get": {
+     "subject_ref": "result:R2",
+     "verification_status": "not_verified"
+    }
+   },
+   "predicted_outcome": "accepted",
    "recompute": "local",
    "target": "oscillator result",
    "task": "T086"
@@ -1212,5 +1314,5 @@
   }
  ],
  "schema": "ciw.lab-mutation-matrix.v2",
- "summary": "68 rows (61 workspace mutants, 7 pure-validator rows): 52 refused; 15 surviving forgeries (revision.gap, energy-source.resealed, oscillator-stats.resealed, oscillator-stats.impossible-moments, oscillator-stats.legacy, fresh.created-at-shift, receipt.deleted, receipt-source.sibling-execution, receipt-replayed.reidentified-bundle, oscillator-method.injected, oscillator-independent.injected, oscillator-admission.injected, oscillator-runtime.both, energy-runtime.all-bundles, energy-runtime.python-version); 1 documented validator acceptance (exchange.verification-independent); kill/survive predictions matched 68/68; refusal messages matched their regression pins 52/52"
+ "summary": "72 rows (65 workspace mutants, 7 pure-validator rows): 52 refused; 19 surviving forgeries (alias.swap-pairing, revision.gap, energy-source.resealed, oscillator-stats.resealed, oscillator-stats.impossible-moments, oscillator-stats.legacy, fresh.created-at-shift, receipt.transplanted-full, receipt.fabricated, receipt.deleted, receipt-source.sibling-execution, receipt-replayed.reidentified-bundle, oscillator-subject.injected, oscillator-method.injected, oscillator-independent.injected, oscillator-admission.injected, oscillator-runtime.both, energy-runtime.all-bundles, energy-runtime.python-version); 1 documented validator acceptance (exchange.verification-independent); kill/survive predictions matched 72/72; refusal messages matched their regression pins 52/52"
 }

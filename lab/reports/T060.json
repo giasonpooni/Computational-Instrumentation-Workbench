@@ -18,12 +18,13 @@
   "primary": "numerically_verified"
  },
  "expected_invariant": "Same seed gives identical bytes; different seed changes every stream; reading counts equal duration x rate; z - h(truth) equals the retained noise; streams are independent of other sensors' settings.",
- "experiment": "Generate twice with the same seed, once with seed+1 and once with a 4 Hz tracker; compare arrays bitwise; recompute h(truth) with hypot and complex angles (positions are the same slice in both paths, so for them the check is only that noise was added once); count reading ticks; check symmetry and positive definiteness of the declared covariances.",
+ "experiment": "Generate twice with the same seed, once with seed+1 and once with a 4 Hz tracker; compare arrays bitwise; recompute the trajectory from x0 and the retained process noise by cumulative sums with the declared dt and evaluate every sensor function on it (hypot and complex angles for speed and heading rate); count reading ticks; check symmetry and positive definiteness of the declared covariances.",
  "failure_modes_checked": [
   "seed reuse and seed change",
   "sensor-rate edits leaking into other streams",
   "off-grid timestamps",
   "angle wrap in the heading-rate model",
+  "a generator transition inconsistent with the declared dt",
   "non-positive-definite declared covariance"
  ],
  "findings": [
@@ -147,11 +148,19 @@
     "checks": [
      {
       "comparison": "abs_le",
-      "observed": 2.152097944296827e-14,
+      "observed": 7.105427357601002e-14,
       "passed": true,
-      "reference": "hypot and complex-angle recomputation of h(truth)",
+      "reference": "cumulative-sum trajectory against the retained truth (max abs, m and m/s)",
       "reference_kind": "invariant",
-      "tolerance": 1e-12
+      "tolerance": 1e-10
+     },
+     {
+      "comparison": "abs_le",
+      "observed": 1.372863628334997e-12,
+      "passed": true,
+      "reference": "reading minus h(recomputed trajectory) minus retained noise (max abs over the four sensors)",
+      "reference_kind": "invariant",
+      "tolerance": 1e-10
      }
     ],
     "generator": {
@@ -160,20 +169,28 @@
      "seed": 602026
     }
    },
-   "claim": "Every raw reading equals the noise-free sensor function of the retained truth plus its retained noise draw; h(truth) is recomputed by a separate code path (hypot and complex-angle forms for speed and heading rate, positions re-read)",
+   "claim": "Every raw reading of all four sensors equals the noise-free sensor function of a trajectory recomputed from the retained initial state and process-noise draws by cumulative sums with the declared dt, plus its retained noise draw, to roundoff; the recomputed trajectory equals the retained truth to roundoff",
    "domain": "numerical",
    "evidence_status": "numerically_verified",
    "regression_tolerance": {
-    "abs": 1e-12,
+    "abs": 1e-10,
     "rel": 0.0
    },
    "uncertainty": {
     "basis": "observed floating-point residual of an exact identity",
     "kind": "roundoff",
-    "value": 2.152097944296827e-14
+    "value": 1.372863628334997e-12
    },
    "unit": "max abs difference",
-   "value": 2.152097944296827e-14
+   "value": {
+    "max_abs_residual_by_sensor": {
+     "camera": 6.922240558537851e-14,
+     "encoder": 4.6629367034256575e-15,
+     "imu": 1.372863628334997e-12,
+     "tracker": 7.287920267273762e-14
+    },
+    "max_abs_trajectory_difference": 7.105427357601002e-14
+   }
   },
   {
    "assigned_by": "ciw.lab.evidence",
@@ -290,7 +307,7 @@
  ],
  "mathematical_model": "Truth x = (px, py, vx, vy), x_{k+1} = F x_k + w_k with the exact white-noise-acceleration discretization F = [[I, dt I], [0, I]], Q = q [[dt^3/3 I, dt^2/2 I], [dt^2/2 I, dt I]] (dt = 0.05 s, q = 0.05 m^2/s^3). Sensors: camera position (10 Hz, R = [[0.04, 0.012], [0.012, 0.04]] m^2), encoder speed |v| (20 Hz, 0.01 m^2/s^2), IMU heading rate as an integrating gyro wrap(theta_k - theta_{k-1})/dt (20 Hz, 4e-4 rad^2/s^2), tracker position (2 Hz, 0.0025 I m^2).",
  "number": 60,
- "numerical_result": "0 of 5 arrays differ on regeneration; all differ under seed+1; counts camera 200, encoder 400, imu 400, tracker 40; max composition residual 2.15e-14; tracker retiming changed 0 other streams.",
+ "numerical_result": "0 of 5 arrays differ on regeneration; all differ under seed+1; counts camera 200, encoder 400, imu 400, tracker 40; max composition residual 1.37e-12 against the recomputed trajectory (trajectory difference 7.1e-14); tracker retiming changed 0 other streams.",
  "observation_model": "z = h(x) + v with v ~ N(0, R) drawn by Cholesky factors (not SVD) so draws are platform-stable; readings at every positive multiple of each sensor's period.",
  "physical_validation_status": {
   "statement": "Physical validation requires acquired hardware evidence; none was acquired for this task.",
@@ -304,15 +321,15 @@
   "python": "3.12.3",
   "scipy": "1.16.2",
   "sources": {
-   "src/ciw/lab/sensor_fusion.py": "65b367d0079a3a037969f69ceec717d0ec7279bb12bfc0d53ed5c08887b46a15",
+   "src/ciw/lab/sensor_fusion.py": "40b135c5bf93c1932bc774d41ddaef98419aceb524fba12ce16c1786e00f15d2",
    "src/ciw/lab/sensor_fusion_bench.py": "f373849a4c6836fa20685c59ce7a6fe6bf732f6df9d6a49646cdc017262dd656",
-   "src/ciw/lab/sensor_fusion_common.py": "6787aa47d199d50d0b4de4d7e53714ce7b8b5aad37d647cfc1a954414e90209f",
-   "src/ciw/lab/sensor_fusion_objects.py": "a795ffc235e0a4118cb7b9ac7800191a90984372d79e59f1a934442d98d7a1f1"
+   "src/ciw/lab/sensor_fusion_common.py": "db3b0430ad5c13920239cef354da61b64ab1b01f84b2d3d5aff2f78840a5867a",
+   "src/ciw/lab/sensor_fusion_objects.py": "93fc55ddca91f1adfb886d21805ea8f82586548ee84e1f6cc7daed4df1f53bb9"
   },
   "sympy": "1.14.0"
  },
  "recommended_next_task": "T061: verify the empirical noise covariance against the declared covariance.",
- "report_id": "sha256:4bc17c1b9ad6d5d84cdae49d0d1a0779c3206de1331efa7d91afd2fe1da36e84",
+ "report_id": "sha256:3892cf8751f30003ee72498cc2d8fe3fb7e6e0bb7655a62d96d75c776ba739b2",
  "schema": "ciw.lab-task-report.v1",
  "section": "sensor-fusion",
  "state": "completed",
@@ -322,7 +339,8 @@
   "check: Regenerating the bench with the same seed reproduces the truth and all four sensor streams bit for bit, and a different seed changes every stream vs different-seed regeneration",
   "check: Every sensor reports exactly at its declared rate on the 20 Hz base clock over 20 s (camera 10 Hz, encoder 20 Hz, IMU 20 Hz, tracker 2 Hz) vs declared rate times duration",
   "check: Every sensor reports exactly at its declared rate on the 20 Hz base clock over 20 s (camera 10 Hz, encoder 20 Hz, IMU 20 Hz, tracker 2 Hz) vs reading ticks on the declared grid",
-  "check: Every raw reading equals the noise-free sensor function of the retained truth plus its retained noise draw; h(truth) is recomputed by a separate code path (hypot and complex-angle forms for speed and heading rate, positions re-read) vs hypot and complex-angle recomputation of h(truth)",
+  "check: Every raw reading of all four sensors equals the noise-free sensor function of a trajectory recomputed from the retained initial state and process-noise draws by cumulative sums with the declared dt, plus its retained noise draw, to roundoff; the recomputed trajectory equals the retained truth to roundoff vs cumulative-sum trajectory against the retained truth (max abs, m and m/s)",
+  "check: Every raw reading of all four sensors equals the noise-free sensor function of a trajectory recomputed from the retained initial state and process-noise draws by cumulative sums with the declared dt, plus its retained noise draw, to roundoff; the recomputed trajectory equals the retained truth to roundoff vs reading minus h(recomputed trajectory) minus retained noise (max abs over the four sensors)",
   "check: Changing the tracker rate from 2 Hz to 4 Hz leaves the truth and the camera, encoder and IMU streams unchanged (independent spawned PCG64 streams) vs streams other than the tracker",
   "check: Every declared sensor covariance is symmetric positive definite vs max |R - R^T| over the declared covariances",
   "check: Every declared sensor covariance is symmetric positive definite vs smallest eigenvalue of the declared covariances",
@@ -331,7 +349,7 @@
  ],
  "tests_skipped": [],
  "title": "Build a deterministic multi-sensor synthetic bench.",
- "uncertainty": "None for the determinism and rate claims (exact). The composition residual is floating-point roundoff. Cross-platform byte identity of the digest is not claimed (libm may differ in the last bit); findings avoid digest values for that reason.",
+ "uncertainty": "None for the determinism and rate claims (exact). The composition residual is floating-point roundoff of two summation orders. Cross-platform byte identity of the digest is not claimed (libm may differ in the last bit); findings avoid digest values for that reason.",
  "unresolved_assumptions": [
   "White-noise acceleration is a modelling choice, not observed vehicle motion.",
   "The heading-rate truth of white-noise-acceleration motion is rough; the IMU stream is kept for completeness but the linear experiments use positions.",

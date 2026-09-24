@@ -138,5 +138,23 @@
    "passes_conjugate_point": false,
    "targeting_condition": 0.005786311221031578
   }
- ]
+ ],
+ "second_computation": {
+  "length_amplification": [
+   0,
+   1,
+   2
+  ],
+  "length_margin": [
+   0,
+   3
+  ],
+  "three_objective": [
+   0,
+   1,
+   2,
+   3,
+   4
+  ]
+ }
 }

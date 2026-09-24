@@ -11,19 +11,20 @@
    "hardware_measured": 0,
    "independently_verified": 0,
    "not_established": 1,
-   "numerically_verified": 4,
+   "numerically_verified": 5,
    "provider_backed": 0,
    "synthetic": 0
   },
   "primary": "numerically_verified"
  },
  "expected_invariant": "ANIS inside chi2(2N)/N intervals with S; post-fit NIS with R - H P+ H^T identical to the innovation NIS; outside above (innovation / R) and below (post-fit / R), with grand means equal to the exact traces.",
- "experiment": "One seeded Monte Carlo; four normalizations of the same residuals; per-tick ANIS against 99% intervals; grand means against the exact traces with run-level standard errors.",
+ "experiment": "One seeded Monte Carlo; four normalizations of the same residuals; per-tick ANIS against 99% intervals; grand means against the exact traces with run-level standard errors; three runs replayed through FusionSession to compare the NIS its candidates record.",
  "failure_modes_checked": [
   "raw R for innovations",
   "raw R for post-fit residuals",
   "post-fit covariance identity R - H P+ H^T = R S^-1 R",
-  "counting the post-fit test as independent evidence (it is the same statistic)"
+  "counting the post-fit test as independent evidence (it is the same statistic)",
+  "the fusion API recording a raw-R NIS for the admission gate"
  ],
  "findings": [
   {
@@ -233,6 +234,63 @@
   {
    "assigned_by": "ciw.lab.evidence",
    "basis": {
+    "checks": [
+     {
+      "comparison": "abs_le",
+      "observed": 2.7422508708241367e-14,
+      "passed": true,
+      "reference": "session NIS against the schedule's nu^T S^-1 nu (relative)",
+      "reference_kind": "cross_implementation",
+      "tolerance": 1e-09
+     },
+     {
+      "comparison": "signed_le",
+      "observed": -0.003632155212678456,
+      "passed": true,
+      "reference": "largest ratio of session NIS to raw-R NIS against max_k lambda_max(S_k^-1 R)",
+      "reference_kind": "analytic",
+      "tolerance": 1e-12
+     },
+     {
+      "comparison": "le",
+      "observed": 0.695782646607976,
+      "passed": true,
+      "reference": "bound max_k lambda_max(S_k^-1 R) below one (a raw-R session gives one)",
+      "reference_kind": "analytic",
+      "tolerance": 0.99
+     }
+    ],
+    "generator": {
+     "bit_generator": "PCG64",
+     "name": "ciw.lab.sensor_fusion_bench",
+     "runs": 3,
+     "seed": 662026
+    }
+   },
+   "claim": "The fusion API normalizes its residuals by the filter covariance: the NIS each FusionSession candidate records, which the admission gate's innovation check consumes, equals nu^T S^-1 nu from the gain schedule and stays below the raw-R value nu^T R^-1 nu by the factor lambda_max(S^-1 R)",
+   "domain": "computational_pipeline",
+   "evidence_status": "numerically_verified",
+   "regression_tolerance": {
+    "abs": 1e-09,
+    "rel": 0.0
+   },
+   "uncertainty": {
+    "basis": "largest relative difference between the session and schedule NIS",
+    "kind": "roundoff",
+    "value": 2.7422508708241367e-14
+   },
+   "unit": null,
+   "value": {
+    "max_ratio_to_raw_R_nis": 0.6921504913952975,
+    "max_relative_difference_from_schedule_nis": 2.7422508708241367e-14,
+    "ratio_bound": 0.695782646607976,
+    "readings": 300,
+    "runs": 3
+   }
+  },
+  {
+   "assigned_by": "ciw.lab.evidence",
+   "basis": {
     "generator": {
      "bit_generator": "PCG64",
      "name": "ciw.lab.sensor_fusion_bench",
@@ -250,9 +308,9 @@
  ],
  "generated_artifacts": [
   {
-   "bytes": 18250,
+   "bytes": 18450,
    "path": "artifacts/T066/residual_normalization.json",
-   "sha256": "090bcd44e1976207b67f59a2fffee20e474b67e583ac9382d080c1886cdc439f"
+   "sha256": "79384442230e5fc35986f89ace906ffffd6ea7116d221cc54fa87a516fc4f4fc"
   },
   {
    "bytes": 8481,
@@ -282,14 +340,14 @@
   "scipy": "1.16.2",
   "sources": {
    "src/ciw/lab/sensor_fusion_bench.py": "f373849a4c6836fa20685c59ce7a6fe6bf732f6df9d6a49646cdc017262dd656",
-   "src/ciw/lab/sensor_fusion_common.py": "6787aa47d199d50d0b4de4d7e53714ce7b8b5aad37d647cfc1a954414e90209f",
-   "src/ciw/lab/sensor_fusion_filtering.py": "6b886646d4fb49b584d7e02c13cd96d604e800bfd0defc717489a010de26bb58",
-   "src/ciw/lab/sensor_fusion_objects.py": "a795ffc235e0a4118cb7b9ac7800191a90984372d79e59f1a934442d98d7a1f1"
+   "src/ciw/lab/sensor_fusion_common.py": "db3b0430ad5c13920239cef354da61b64ab1b01f84b2d3d5aff2f78840a5867a",
+   "src/ciw/lab/sensor_fusion_filtering.py": "716a44ff8f4921d188d17179fa80c6b1695c68a90fb16ab85239efb4295b4f8a",
+   "src/ciw/lab/sensor_fusion_objects.py": "93fc55ddca91f1adfb886d21805ea8f82586548ee84e1f6cc7daed4df1f53bb9"
   },
   "sympy": "1.14.0"
  },
  "recommended_next_task": "T067: gate with a chi-square quantile of the correctly normalized NIS.",
- "report_id": "sha256:9927c71324a89a5696df39f51b8a338514964b302de933281034d0174a712b26",
+ "report_id": "sha256:1e16ca7f2f4a2f6501a625d7c49aa9b49bc38c0cfc51da36f6c76e909a7fe75b",
  "schema": "ciw.lab-task-report.v1",
  "section": "sensor-fusion",
  "state": "completed",
@@ -303,6 +361,9 @@
   "check: Normalizing innovations by the raw sensor covariance R inflates NIS to tr(R^-1 S) and fails the chi-square test at nearly every tick vs grand mean against the exact tr(R^-1 S) (run-level z)",
   "check: Normalizing post-fit residuals by the raw R deflates them to tr(S^-1 R) < 2, which would hide an inconsistent filter vs fraction of ticks below the 99% lower bound",
   "check: Normalizing post-fit residuals by the raw R deflates them to tr(S^-1 R) < 2, which would hide an inconsistent filter vs grand mean against the exact tr(S^-1 R) (run-level z)",
+  "check: The fusion API normalizes its residuals by the filter covariance: the NIS each FusionSession candidate records, which the admission gate's innovation check consumes, equals nu^T S^-1 nu from the gain schedule and stays below the raw-R value nu^T R^-1 nu by the factor lambda_max(S^-1 R) vs session NIS against the schedule's nu^T S^-1 nu (relative)",
+  "check: The fusion API normalizes its residuals by the filter covariance: the NIS each FusionSession candidate records, which the admission gate's innovation check consumes, equals nu^T S^-1 nu from the gain schedule and stays below the raw-R value nu^T R^-1 nu by the factor lambda_max(S^-1 R) vs largest ratio of session NIS to raw-R NIS against max_k lambda_max(S_k^-1 R)",
+  "check: The fusion API normalizes its residuals by the filter covariance: the NIS each FusionSession candidate records, which the admission gate's innovation check consumes, equals nu^T S^-1 nu from the gain schedule and stays below the raw-R value nu^T R^-1 nu by the factor lambda_max(S^-1 R) vs bound max_k lambda_max(S_k^-1 R) below one (a raw-R session gives one)",
   "pytest: tests/test_lab_sensor_fusion.py::test_residuals_need_filter_covariance",
   "pytest: tests/test_lab_sensor_fusion.py::test_section_reports_labels_and_states[T066]"
  ],

@@ -17,13 +17,14 @@
   "primary": "numerically_verified"
  },
  "expected_invariant": "Exponents 5 (error), 5/4 (RK4 and Gauss-Legendre steps), 3/2 (implicit midpoint), ~1 (DP45 steps); Gauss-Legendre/RK4 step ratio (120/720)^(1/4) = 0.639 at every k; saddle local exponents approaching sqrt(2).",
- "experiment": "Integrate the joint geodesic/Jacobi system per k (adaptive and RK4), compute the Jacobi generator's eigenvalues at the path curvature, search the minimal step counts, compare with stability limits, iterate implicit midpoint beyond its pole, and integrate the saddle ridge geodesic for c up to 16384.",
+ "experiment": "Integrate the joint geodesic/Jacobi system per k (adaptive and RK4), measure the growth and decay rates from the eigenvalues of the integrated transfer matrix, search the minimal step counts, compare with stability limits, iterate implicit midpoint beyond its pole, and integrate the saddle ridge geodesic for c up to 16384.",
  "failure_modes_checked": [
   "matrix-power step search checked against the scalar stability functions on the eigenmodes and, for RK4, against the full geodesic/Jacobi integration",
   "implicit-midpoint singular step (kh = 2) refused rather than divided by zero",
   "saddle ridge symmetry x(L) = -x0 checked (y = 0 holds by construction of the start)",
   "adaptive saddle results checked by tightening rtol",
   "exponential growth fitted from the integrated Jacobi field, not the closed form",
+  "growth and decay rates measured from the integrated transfer matrix, not from the generator at the literal K = -k^2 (which would only recompute its eigenvalues); the decay rate is claimed only where the decaying eigenvalue exceeds 100 rtol times the largest entry of Phi(L)",
   "implicit methods of order 2 and 4 both compared, so the step growth is not an order artefact"
  ],
  "findings": [
@@ -208,19 +209,19 @@
     "checks": [
      {
       "comparison": "abs_le",
-      "observed": 2.220446049250313e-16,
+      "observed": 1.6325385487903077e-11,
       "passed": true,
-      "reference": "max |eigenvalue -/+ k| / k of the Jacobi generator at the path curvature",
+      "reference": "max over k of |log(largest eigenvalue of the integrated Phi(L)) / (k L) - 1|",
       "reference_kind": "analytic",
-      "tolerance": 1e-12
+      "tolerance": 1e-08
      },
      {
       "comparison": "abs_le",
-      "observed": 4.440892098500626e-16,
+      "observed": 6.333777946565533e-11,
       "passed": true,
-      "reference": "max |lambda_max / lambda_min + 1| (eigenvalue ratio 1)",
-      "reference_kind": "invariant",
-      "tolerance": 1e-12
+      "reference": "max over resolvable k of |-log(smallest eigenvalue of the integrated Phi(L)) / (k L) - 1|",
+      "reference_kind": "analytic",
+      "tolerance": 1e-08
      },
      {
       "comparison": "ge",
@@ -243,10 +244,11 @@
     "generator": {
      "deterministic": true,
      "name": "ciw.lab.geodesic_jacobi_limits:hyperbolic-k",
+     "rtol": 1e-10,
      "seed": null
     }
    },
-   "claim": "This is intrinsic exponential instability, not stiffness: the Jacobi eigenvalues are +k and -k and accuracy, not stability, sets the step",
+   "claim": "This is intrinsic exponential instability, not stiffness: the integrated Jacobi flow grows and decays at the same rate k and accuracy, not stability, sets the step",
    "domain": "numerical",
    "evidence_status": "numerically_verified",
    "regression_tolerance": {
@@ -260,25 +262,25 @@
    },
    "unit": null,
    "value": {
-    "jacobian_eigenvalues": {
-     "1": [
-      -1.0,
-      1.0
-     ],
-     "2": [
-      -1.9999999999999996,
-      2.0000000000000004
-     ],
-     "4": [
-      -4.0,
-      4.0
-     ],
-     "8": [
-      -7.999999999999998,
-      8.000000000000002
-     ]
-    },
     "log_growth_slope_in_kL": 1.000894297561897,
+    "measured_rates": {
+     "1": {
+      "decay": 0.9999999999962932,
+      "growth": 1.0000000000033769
+     },
+     "2": {
+      "decay": 1.9999999999933311,
+      "growth": 2.000000000006135
+     },
+     "4": {
+      "decay": 3.999999999746649,
+      "growth": 4.0000000000249285
+     },
+     "8": {
+      "decay": null,
+      "growth": 8.000000000130603
+     }
+    },
     "steps_required_over_stability_limit": [
      23.0,
      27.0,
@@ -572,9 +574,9 @@
  ],
  "generated_artifacts": [
   {
-   "bytes": 6412,
+   "bytes": 6253,
    "path": "artifacts/T016/negative-curvature.json",
-   "sha256": "4ca86f2f20ad344d54af85bc5ccaeca4c8dc2cde8bb2c3dfec0bc68ed709ba60"
+   "sha256": "d4e40c55bee836cb27d28feef5fc83d2a19d710f58792edd0727a9c3751e5a93"
   },
   {
    "bytes": 3617,
@@ -595,7 +597,7 @@
  ],
  "mathematical_model": "j'' = k^2 j, j_head = sinh(kL)/k. A one-step method of order p with R(z) = e^z (1 + c z^(p+1) + ...) on the growing mode has relative error N |c| (kh)^(p+1), so N(tau) = L (L |c| k^(p+1) / tau)^(1/p) ~ k^((p+1)/p): RK4 c = -1/120 (k^(5/4)), implicit midpoint c = 1/12 (k^(3/2), pole at kh = 2 and negative factor beyond), 2-stage Gauss-Legendre (the (2, 2) Pade approximant) c = -1/720 (k^(5/4), no real pole). RK4 stability for the decaying mode needs kh <= 2.785. Saddle ridge y = 0: K = -c^2/(1 + c^2 x^2)^2 ~ -1/(4 s^2) away from the saddle point, where j'' = j/(4 s^2) has solutions |s|^((1 +/- sqrt(2))/2); matching the inbound and outbound power laws through the core of width 1/c gives j_head(L) ~ c^sqrt(2) (matched asymptotics, not a proof).",
  "number": 16,
- "numerical_result": "RK4 error exponent 4.941 (measured/predicted 0.901-1.02); required steps for k = 1, 2, 4, 8: RK4 23, 54, 127, 303 (exponent 1.24), implicit midpoint 832, 2311, 6532, 18476 (exponent 1.49), 2-stage Gauss-Legendre 15, 35, 83, 196 (exponent 1.24, 0.647 to 0.654 times the RK4 steps, predicted (120/720)^(1/4) = 0.639), DP45 81, 162, 300, 505 (exponent 0.881); accuracy/stability step ratio 23-50.5; Jacobi eigenvalues +/-k to 2.2e-16; RK4 geodesic endpoint error 2.2e-09 (k = 1) to 0.461 (k = 8); implicit midpoint at kh = 2.29 changes sign 6 times; saddle j_head(L) 3.168, 14.26, 105.8, 793.8, 5775, 4.136e+04, 2.946e+05, 2.094e+06 for c = 1, 4, 16, 64, 256, 1024, 4096, 16384 (fitted exponent 1.43 for c >= 16, local exponents 1.454, 1.431, 1.42, 1.416, 1.415 from c = 16), DP45 steps grow by 47, 52, 48, 48, 47, 46, 46 per factor 4 in c.",
+ "numerical_result": "RK4 error exponent 4.941 (measured/predicted 0.901-1.02); required steps for k = 1, 2, 4, 8: RK4 23, 54, 127, 303 (exponent 1.24), implicit midpoint 832, 2311, 6532, 18476 (exponent 1.49), 2-stage Gauss-Legendre 15, 35, 83, 196 (exponent 1.24, 0.647 to 0.654 times the RK4 steps, predicted (120/720)^(1/4) = 0.639), DP45 81, 162, 300, 505 (exponent 0.881); accuracy/stability step ratio 23-50.5; growth and decay rates of the integrated Phi(L) equal k to 1.6e-11 and 6.3e-11 relative (decay resolvable for k <= 4); RK4 geodesic endpoint error 2.2e-09 (k = 1) to 0.461 (k = 8); implicit midpoint at kh = 2.29 changes sign 6 times; saddle j_head(L) 3.168, 14.26, 105.8, 793.8, 5775, 4.136e+04, 2.946e+05, 2.094e+06 for c = 1, 4, 16, 64, 256, 1024, 4096, 16384 (fitted exponent 1.43 for c >= 16, local exponents 1.454, 1.431, 1.42, 1.416, 1.415 from c = 16), DP45 steps grow by 47, 52, 48, 48, 47, 46, 46 per factor 4 in c.",
  "observation_model": "Relative error of j_head(L); required steps by doubling and bisection on the exact step matrices of RK4, implicit midpoint and 2-stage Gauss-Legendre (matrix powers, checked against the scalar stability function on the eigenmodes, and for RK4 against the full geodesic/Jacobi integration); hyperbolic distance of the geodesic endpoint to the exact semicircle.",
  "physical_validation_status": {
   "statement": "Physical validation requires acquired hardware evidence; none was acquired for this task.",
@@ -609,13 +611,13 @@
   "python": "3.12.3",
   "scipy": "1.16.2",
   "sources": {
-   "src/ciw/lab/geodesic_jacobi_limits.py": "29c8472e91cdf4deb2e1f526ab40e57f703f41e20ef14edd8fb1cc2fc6ede661",
-   "src/ciw/lab/geodesic_jacobi_limits_core.py": "8aa707ec2a190208bf07cd3b1f94a40f191a7a9c4be277714ed8b627e2c5fcb9"
+   "src/ciw/lab/geodesic_jacobi_limits.py": "07d850980ac10ad34ca0d1b8c29942c90fe635e15135a5db1f74e90674e3bb18",
+   "src/ciw/lab/geodesic_jacobi_limits_core.py": "0e0b8f85ed4e83c3fcdc866e8a7e580a17432e174b8db8d8277230e226473d7f"
   },
   "sympy": "1.14.0"
  },
  "recommended_next_task": "T017 (validity domains, which shrink like 1/cosh(ks) on the hyperbolic plane) and T018",
- "report_id": "sha256:62484ad079cb5a8dfc8b25525d6a519ceb0e7278125df9b7e965ff8095d9191b",
+ "report_id": "sha256:59100f16fdb07d083b63578d5ebbf3edf377624d2d65aa10637fd804014cc0c2",
  "schema": "ciw.lab-task-report.v1",
  "section": "geodesic-jacobi",
  "state": "completed",
@@ -629,10 +631,10 @@
   "check: RK4 steps for relative accuracy 1e-6 grow like k^(5/4); DP45 accepted steps grow about linearly in k vs DP45 step exponent minus 1 (local-error model h ~ 1/k)",
   "check: RK4 steps for relative accuracy 1e-6 grow like k^(5/4); DP45 accepted steps grow about linearly in k vs max relative difference of j_head between matrix powers and the scalar stability function on the eigenmodes (RK4, implicit midpoint, Gauss-Legendre, at the required N)",
   "check: RK4 steps for relative accuracy 1e-6 grow like k^(5/4); DP45 accepted steps grow about linearly in k vs max |RK4 matrix-power j_head - integrated j_head| / j_head (full geodesic/Jacobi system, N = 128)",
-  "check: This is intrinsic exponential instability, not stiffness: the Jacobi eigenvalues are +k and -k and accuracy, not stability, sets the step vs max |eigenvalue -/+ k| / k of the Jacobi generator at the path curvature",
-  "check: This is intrinsic exponential instability, not stiffness: the Jacobi eigenvalues are +k and -k and accuracy, not stability, sets the step vs max |lambda_max / lambda_min + 1| (eigenvalue ratio 1)",
-  "check: This is intrinsic exponential instability, not stiffness: the Jacobi eigenvalues are +k and -k and accuracy, not stability, sets the step vs min over k of accuracy steps / RK4 stability steps",
-  "check: This is intrinsic exponential instability, not stiffness: the Jacobi eigenvalues are +k and -k and accuracy, not stability, sets the step vs slope of log(2k j_head) from the adaptive runs in kL, minus 1",
+  "check: This is intrinsic exponential instability, not stiffness: the integrated Jacobi flow grows and decays at the same rate k and accuracy, not stability, sets the step vs max over k of |log(largest eigenvalue of the integrated Phi(L)) / (k L) - 1|",
+  "check: This is intrinsic exponential instability, not stiffness: the integrated Jacobi flow grows and decays at the same rate k and accuracy, not stability, sets the step vs max over resolvable k of |-log(smallest eigenvalue of the integrated Phi(L)) / (k L) - 1|",
+  "check: This is intrinsic exponential instability, not stiffness: the integrated Jacobi flow grows and decays at the same rate k and accuracy, not stability, sets the step vs min over k of accuracy steps / RK4 stability steps",
+  "check: This is intrinsic exponential instability, not stiffness: the integrated Jacobi flow grows and decays at the same rate k and accuracy, not stability, sets the step vs slope of log(2k j_head) from the adaptive runs in kL, minus 1",
   "check: A-stable implicit methods do not remove the growth of the required steps with k (implicit midpoint ~ k^(3/2), 2-stage Gauss-Legendre ~ k^(5/4)); implicit midpoint is qualitatively wrong beyond kh = 2 vs implicit-midpoint step exponent minus 3/2",
   "check: A-stable implicit methods do not remove the growth of the required steps with k (implicit midpoint ~ k^(3/2), 2-stage Gauss-Legendre ~ k^(5/4)); implicit midpoint is qualitatively wrong beyond kh = 2 vs Gauss-Legendre step exponent minus 5/4",
   "check: A-stable implicit methods do not remove the growth of the required steps with k (implicit midpoint ~ k^(3/2), 2-stage Gauss-Legendre ~ k^(5/4)); implicit midpoint is qualitatively wrong beyond kh = 2 vs max |required / predicted - 1| over both implicit methods",

@@ -271,13 +271,13 @@
   "python": "3.12.3",
   "scipy": "1.16.2",
   "sources": {
-   "src/ciw/lab/observation.py": "9ebedc1a1693aaa28965ba0c97837ad2d2c45bf0fd360857cf7b32c0993ed5fc",
+   "src/ciw/lab/observation.py": "6e5bf960e17dffb62bdaf29d28be9a0f165fd68f8498d173b66eab08fa22ad70",
    "src/ciw/lab/observation_modes.py": "bfd6aa4471cc876a7ac2fb8790a4a5c4f478c547350b059311f5e6d53702c83e"
   },
   "sympy": "1.14.0"
  },
  "recommended_next_task": "T060: build the deterministic multi-sensor synthetic bench",
- "report_id": "sha256:25c8a7ee7b08619076bd5b7845cb634f8aa7e30c8571eac51c411576b281b986",
+ "report_id": "sha256:8b5d504ae0144da8bf3c865f6e2b016088f82e425d50da639a792fec34f88bbf",
  "schema": "ciw.lab-task-report.v1",
  "section": "observation",
  "state": "completed",

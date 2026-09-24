@@ -1,0 +1,89 @@
+{
+ "declared_network": {
+  "ciw.cli": "websocket client for the workbench server and launcher of ciw.server",
+  "ciw.lab.mcp_server": "MCP tool server for lab reports, run over stdio",
+  "ciw.server": "workbench websocket server: sends session snapshots and results to its browser clients"
+ },
+ "device_libraries": [
+  "RPi",
+  "asyncua",
+  "can",
+  "canopen",
+  "cpppo",
+  "evdev",
+  "ftd2xx",
+  "gpiozero",
+  "hid",
+  "minimalmodbus",
+  "nidaqmx",
+  "opcua",
+  "periphery",
+  "pyads",
+  "pycomm3",
+  "pyftdi",
+  "pylogix",
+  "pymodbus",
+  "pysoem",
+  "pyudev",
+  "pyvisa",
+  "serial",
+  "smbus",
+  "smbus2",
+  "snap7",
+  "spidev",
+  "umodbus",
+  "usb"
+ ],
+ "network_calls": [
+  "create_connection",
+  "create_datagram_endpoint",
+  "create_server",
+  "create_unix_connection",
+  "create_unix_server",
+  "open_connection",
+  "open_unix_connection",
+  "start_server",
+  "start_unix_server"
+ ],
+ "network_libraries": [
+  "aiohttp",
+  "ftplib",
+  "grpc",
+  "http",
+  "httpx",
+  "mcp",
+  "paho",
+  "requests",
+  "smtplib",
+  "socket",
+  "socketserver",
+  "ssl",
+  "telnetlib",
+  "urllib.request",
+  "urllib3",
+  "websocket",
+  "websockets",
+  "xmlrpc",
+  "zmq"
+ ],
+ "package_sha256": "fd3bc9aa261ee331e4c848d995f8d9373428f14e2ac7974c2f34a39151bbc35b",
+ "paths": {
+  "declared_network": {
+   "ciw.cli": [
+    "websockets.asyncio.client",
+    "websockets.exceptions"
+   ],
+   "ciw.lab.mcp_server": [
+    "mcp.server.mcpserver",
+    "mcp.server.mcpserver.exceptions",
+    "mcp.types"
+   ],
+   "ciw.server": [
+    "websockets.asyncio.server",
+    "websockets.exceptions"
+   ]
+  },
+  "device": {},
+  "undeclared_network": {}
+ }
+}

@@ -12,10 +12,9 @@
  "dispositions": {
   "fused": 1,
   "reacquired": 2,
-  "recorded": 3,
-  "refused:out_of_order": 1,
-  "refused:reacquisition_needs_consecutive_readings": 1,
-  "refused:reacquisition_not_needed": 1,
+  "refused:out_of_order": 2,
+  "refused:reacquisition_needs_consecutive_readings": 2,
+  "refused:reacquisition_not_needed": 2,
   "refused:track_lost_requires_reacquisition": 1
  },
  "formula_vs_error_map": 2.2199835526768386e-16,
@@ -24,7 +23,9 @@
  "radius_at_loss": 1.009661364098545,
  "radius_m": 1.0,
  "reacquire_covariance_error": 2.2199835526768386e-16,
+ "reacquisition_readings_left_recorded": 0,
  "refused_fuse_left_state_unchanged": true,
+ "refused_reacquisition_readings": 6,
  "seed": 732026,
  "track_probability": 0.99,
  "turn": {

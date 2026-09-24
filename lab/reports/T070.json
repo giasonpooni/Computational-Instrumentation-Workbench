@@ -11,19 +11,24 @@
    "hardware_measured": 0,
    "independently_verified": 0,
    "not_established": 1,
-   "numerically_verified": 3,
+   "numerically_verified": 5,
    "provider_backed": 0,
    "synthetic": 0
   },
   "primary": "numerically_verified"
  },
  "expected_invariant": "Naive two-sensor mean innovations nonzero and equal to the prediction; augmented mean innovations zero and tau-hat -> 0.1 s; camera-only innovations unbiased while the position error mean is -tau E[v] = (-0.1, -0.05) m.",
- "experiment": "Whiten innovations with their filter covariance, average per run after a 50-tick burn-in, and test the grand mean with run-level standard errors for the naive two-sensor, naive camera-only and offset-augmented filters.",
+ "experiment": "Whiten innovations with their filter covariance, average per run after a 50-tick burn-in, and test the grand mean with run-level standard errors for the naive two-sensor, naive camera-only and offset-augmented filters; declare latency_ticks = 1 in the camera's calibration record, replay 5 runs through FusionSession against the correctly timed filter and test that filter's position-error mean over all runs; deliver a lagged reading after a newer tracker reading, one referring to before tick 0, an old tracker reading and a backward prediction, comparing the state bitwise after each refusal.",
  "failure_modes_checked": [
   "unmodelled lag with a reference sensor",
   "unmodelled lag with no reference",
   "offset state convergence",
-  "EKF consistency"
+  "EKF consistency",
+  "declared latency applied with the wrong sign or tick",
+  "lagged reading older than the session clock",
+  "undelayed reading older than the session clock",
+  "backward prediction",
+  "state mutation by an out-of-order refusal"
  ],
  "findings": [
   {
@@ -36,7 +41,7 @@
       "passed": true,
       "reference": "largest mean-innovation z against zero",
       "reference_kind": "analytic",
-      "tolerance": 4.003167571450172
+      "tolerance": 4.030934372846465
      },
      {
       "comparison": "le",
@@ -44,7 +49,7 @@
       "passed": true,
       "reference": "mean innovations against the noise-free linear prediction (max |z|)",
       "reference_kind": "analytic",
-      "tolerance": 4.003167571450172
+      "tolerance": 4.030934372846465
      }
     ],
     "generator": {
@@ -83,7 +88,7 @@
      0.45105495271791224,
      0.08538896033924179
     ],
-    "z_critical": 4.003167571450172
+    "z_critical": 4.030934372846465
    }
   },
   {
@@ -96,7 +101,7 @@
       "passed": true,
       "reference": "largest mean-innovation z of the augmented filter",
       "reference_kind": "analytic",
-      "tolerance": 4.003167571450172
+      "tolerance": 4.030934372846465
      },
      {
       "comparison": "abs_le",
@@ -104,7 +109,7 @@
       "passed": true,
       "reference": "mean final tau estimate against 0.1 s (z)",
       "reference_kind": "analytic",
-      "tolerance": 4.003167571450172
+      "tolerance": 4.030934372846465
      },
      {
       "comparison": "abs_le",
@@ -154,7 +159,7 @@
       "passed": true,
       "reference": "largest mean-innovation z (camera only)",
       "reference_kind": "analytic",
-      "tolerance": 4.003167571450172
+      "tolerance": 4.030934372846465
      },
      {
       "comparison": "ge",
@@ -162,7 +167,7 @@
       "passed": true,
       "reference": "position error mean z against zero",
       "reference_kind": "analytic",
-      "tolerance": 4.003167571450172
+      "tolerance": 4.030934372846465
      },
      {
       "comparison": "le",
@@ -170,7 +175,7 @@
       "passed": true,
       "reference": "position error mean against the exact linear prediction (max |z|)",
       "reference_kind": "analytic",
-      "tolerance": 4.003167571450172
+      "tolerance": 4.030934372846465
      }
     ],
     "generator": {
@@ -244,6 +249,185 @@
   {
    "assigned_by": "ciw.lab.evidence",
    "basis": {
+    "checks": [
+     {
+      "comparison": "abs_le",
+      "observed": 0.0,
+      "passed": true,
+      "reference": "readings fused at a tick other than stamp minus declared latency",
+      "reference_kind": "exact_arithmetic",
+      "tolerance": 0.0
+     },
+     {
+      "comparison": "abs_le",
+      "observed": 4.1406820185214455e-16,
+      "passed": true,
+      "reference": "session mean and covariance against the correctly timed schedule (relative)",
+      "reference_kind": "cross_implementation",
+      "tolerance": 1e-09
+     },
+     {
+      "comparison": "le",
+      "observed": 1.4538945865484898,
+      "passed": true,
+      "reference": "timed filter position error mean against zero (max |z|)",
+      "reference_kind": "analytic",
+      "tolerance": 4.030934372846465
+     },
+     {
+      "comparison": "ge",
+      "observed": 1.0,
+      "passed": true,
+      "reference": "timed filter: fraction of ticks with ANEES in the 99% interval",
+      "reference_kind": "analytic",
+      "tolerance": 0.9
+     }
+    ],
+    "generator": {
+     "bit_generator": "PCG64",
+     "name": "ciw.lab.sensor_fusion_bench",
+     "runs": 200,
+     "seed": 702026,
+     "ticks": 200
+    }
+   },
+   "claim": "Declared in the camera's calibration record, the one-tick latency is applied by the fusion API: the session fuses each lagged reading at the tick it refers to, its estimates equal the correctly timed linear filter to roundoff, and that filter's position error is unbiased, so the camera-only bias of about -tau E[v] disappears",
+   "domain": "numerical",
+   "evidence_status": "numerically_verified",
+   "regression_tolerance": {
+    "abs": 1e-09,
+    "rel": 1e-06
+   },
+   "uncertainty": {
+    "basis": "largest run-level standard error of the timed filter's mean position error (m)",
+    "kind": "monte_carlo_95ci",
+    "value": 0.003255906914891655
+   },
+   "unit": null,
+   "value": {
+    "api_readings": 995,
+    "api_runs": 5,
+    "latency_ticks": 1,
+    "max_relative_difference_from_timed_filter": 4.1406820185214455e-16,
+    "readings_fused_at_another_tick": 0,
+    "timed_nees": {
+     "fraction_above": 0.0,
+     "fraction_below": 0.0,
+     "fraction_inside": 1.0,
+     "grand_mean": 3.983010121556724,
+     "interval": [
+      3.5036250326357607,
+      4.533930905960961
+     ],
+     "runs": 200,
+     "ticks": 149
+    },
+    "timed_position_error_mean": [
+     0.0023187347370621815,
+     0.002291082437203197
+    ],
+    "timed_position_error_mean_z": [
+     1.3958384571301872,
+     1.4538945865484898
+    ],
+    "undeclared_camera_only_position_error_mean": [
+     -0.09866380307289671,
+     -0.03973045449682786
+    ]
+   }
+  },
+  {
+   "assigned_by": "ciw.lab.evidence",
+   "basis": {
+    "checks": [
+     {
+      "expected_refusal": "out_of_order",
+      "observed_refusal": "out_of_order",
+      "passed": true,
+      "reference": "lagged reading after newer reference",
+      "reference_kind": "refusal"
+     },
+     {
+      "expected_refusal": "out_of_order",
+      "observed_refusal": "out_of_order",
+      "passed": true,
+      "reference": "lagged reading before tick 0",
+      "reference_kind": "refusal"
+     },
+     {
+      "expected_refusal": "out_of_order",
+      "observed_refusal": "out_of_order",
+      "passed": true,
+      "reference": "undelayed reading older than clock",
+      "reference_kind": "refusal"
+     },
+     {
+      "expected_refusal": "out_of_order",
+      "observed_refusal": "out_of_order",
+      "passed": true,
+      "reference": "prediction backwards",
+      "reference_kind": "refusal"
+     },
+     {
+      "comparison": "abs_le",
+      "observed": 0.0,
+      "passed": true,
+      "reference": "session refusals that changed the state, covariance, clock, track status or latest candidate",
+      "reference_kind": "exact_arithmetic",
+      "tolerance": 0.0
+     },
+     {
+      "comparison": "abs_le",
+      "observed": 0.0,
+      "passed": true,
+      "reference": "refused readings not retained with out_of_order",
+      "reference_kind": "invariant",
+      "tolerance": 0.0
+     },
+     {
+      "comparison": "abs_le",
+      "observed": 0.0,
+      "passed": true,
+      "reference": "tick of the lagged reading fused at the clock minus the clock",
+      "reference_kind": "exact_arithmetic",
+      "tolerance": 0.0
+     }
+    ],
+    "derivation": "FusionSession.fuse and predict with CalibrationRecord.latency_ticks"
+   },
+   "claim": "The fusion API never fuses a reading at the wrong time: a lagged reading delivered after a newer reference reading, a lagged reading that refers to a time before tick 0, an undelayed reading older than the clock and a backward prediction are refused with out_of_order, leave the state, covariance, clock, track status and latest candidate unchanged and are retained with that refusal, while a lagged reading that refers to the current tick is fused at that tick",
+   "domain": "computational_pipeline",
+   "evidence_status": "numerically_verified",
+   "regression_tolerance": {
+    "abs": 0.0,
+    "rel": 0.0
+   },
+   "uncertainty": {
+    "basis": "refusal codes, ticks and bitwise state comparison",
+    "kind": "reference_error",
+    "value": 0.0
+   },
+   "unit": null,
+   "value": {
+    "codes": {
+     "lagged_reading_after_newer_reference": "out_of_order",
+     "lagged_reading_before_tick_0": "out_of_order",
+     "prediction_backwards": "out_of_order",
+     "undelayed_reading_older_than_clock": "out_of_order"
+    },
+    "lagged_reading_at_clock_fused_at": 5,
+    "reference_tick": 5,
+    "refused_reading_dispositions": [
+     "refused:out_of_order",
+     "refused:out_of_order",
+     "refused:out_of_order"
+    ],
+    "session_refusals_changing_state": 0
+   }
+  },
+  {
+   "assigned_by": "ciw.lab.evidence",
+   "basis": {
     "generator": {
      "bit_generator": "PCG64",
      "name": "ciw.lab.sensor_fusion_bench",
@@ -261,9 +445,9 @@
  ],
  "generated_artifacts": [
   {
-   "bytes": 7883,
+   "bytes": 9032,
    "path": "artifacts/T070/stale_clock.json",
-   "sha256": "2a5b7e50f9681369d6a5ea657e75b7cd7fdc4277887b102f8989c01625fc8b5d"
+   "sha256": "8c50d20205c8ceb8133628c54b39114f73f00213610253a38eb52f2f52baa597"
   },
   {
    "bytes": 4421,
@@ -271,7 +455,7 @@
    "sha256": "9420069349d222f507c26a4e3992b4e20494d6d921c032fe193c96c6cfa5386b"
   }
  ],
- "hypothesis": "An unmodelled clock offset biases innovations only when another sensor pins the true time; a mean test then detects it, and an offset state in the filter removes it.",
+ "hypothesis": "An unmodelled clock offset biases innovations only when another sensor pins the true time; a mean test then detects it, and an offset state in the filter removes it. A declared latency is applied by the fusion API, which fuses each reading at the tick it refers to and refuses a reading that is older than its clock rather than fusing it at the wrong time.",
  "input_data": [
   "seed 702026 (PCG64)",
   "200 runs x 200 ticks",
@@ -279,7 +463,7 @@
  ],
  "mathematical_model": "Camera reports z_k = p(t_k - tau) + v = p_k - tau v_k + eta + v with tau = dt = 0.1 s; tracker (2 Hz, R = 0.0025 I) reports p_k + v. Naive filter: z = p + v. Augmented EKF: state (p, v, tau), h = p - tau v, H = [I, -tau I, -v], R + q dt^3/3 I. Expected naive innovations follow from the same linear filter run on noise-free mean readings.",
  "number": 70,
- "numerical_result": "naive two-sensor mean-innovation max |z| 20.8 against zero, 1.62 against the exact predicted bias; augmented max |z| 2.29, tau-hat 0.0985 s (run spread 0.0147, posterior std 0.0131), NEES 5.05; camera-only innovation |z| 0.54, position error mean (-0.099, -0.040) m.",
+ "numerical_result": "naive two-sensor mean-innovation max |z| 20.8 against zero, 1.62 against the exact predicted bias; augmented max |z| 2.29, tau-hat 0.0985 s (run spread 0.0147, posterior std 0.0131), NEES 5.05; camera-only innovation |z| 0.54, position error mean (-0.099, -0.040) m; with the latency declared the session matches the timed filter to 4e-16 relative and its position error mean is (0.0023, 0.0023) m; out-of-order refusals: ['out_of_order'].",
  "observation_model": "Camera and tracker positions, independent noise; tau prior N(0, 0.2^2) s.",
  "physical_validation_status": {
   "statement": "Physical validation requires acquired hardware evidence; none was acquired for this task.",
@@ -294,14 +478,14 @@
   "scipy": "1.16.2",
   "sources": {
    "src/ciw/lab/sensor_fusion_bench.py": "f373849a4c6836fa20685c59ce7a6fe6bf732f6df9d6a49646cdc017262dd656",
-   "src/ciw/lab/sensor_fusion_common.py": "6787aa47d199d50d0b4de4d7e53714ce7b8b5aad37d647cfc1a954414e90209f",
-   "src/ciw/lab/sensor_fusion_objects.py": "a795ffc235e0a4118cb7b9ac7800191a90984372d79e59f1a934442d98d7a1f1",
-   "src/ciw/lab/sensor_fusion_robustness.py": "9c94ececd04bce6abe83323c53b0ffee060b99e4b9f9fb8e3b58ec22c24516ec"
+   "src/ciw/lab/sensor_fusion_common.py": "db3b0430ad5c13920239cef354da61b64ab1b01f84b2d3d5aff2f78840a5867a",
+   "src/ciw/lab/sensor_fusion_objects.py": "93fc55ddca91f1adfb886d21805ea8f82586548ee84e1f6cc7daed4df1f53bb9",
+   "src/ciw/lab/sensor_fusion_robustness.py": "d8944a1e077dab7955d5162b6dd233a7f0b721c99e76176eb1b987b7d8b765c5"
   },
   "sympy": "1.14.0"
  },
  "recommended_next_task": "T071: frame mismatch, the spatial analogue of a stale clock.",
- "report_id": "sha256:edd0c188bfc2522dc3bd3ebbecebdbe89a84c771f2cbe1ab91c4043313f0ccd3",
+ "report_id": "sha256:de14f2f3ade561561c26414962bda495b7146477083105c39562ed4c6ced9e8a",
  "schema": "ciw.lab-task-report.v1",
  "section": "sensor-fusion",
  "state": "completed",
@@ -315,7 +499,19 @@
   "check: With the stale camera as the only position sensor the lag is invisible to the innovations: the lagged constant-velocity path is itself a constant-velocity path, so the estimate is biased by about -tau E[v] while the mean test passes vs largest mean-innovation z (camera only)",
   "check: With the stale camera as the only position sensor the lag is invisible to the innovations: the lagged constant-velocity path is itself a constant-velocity path, so the estimate is biased by about -tau E[v] while the mean test passes vs position error mean z against zero",
   "check: With the stale camera as the only position sensor the lag is invisible to the innovations: the lagged constant-velocity path is itself a constant-velocity path, so the estimate is biased by about -tau E[v] while the mean test passes vs position error mean against the exact linear prediction (max |z|)",
+  "check: Declared in the camera's calibration record, the one-tick latency is applied by the fusion API: the session fuses each lagged reading at the tick it refers to, its estimates equal the correctly timed linear filter to roundoff, and that filter's position error is unbiased, so the camera-only bias of about -tau E[v] disappears vs readings fused at a tick other than stamp minus declared latency",
+  "check: Declared in the camera's calibration record, the one-tick latency is applied by the fusion API: the session fuses each lagged reading at the tick it refers to, its estimates equal the correctly timed linear filter to roundoff, and that filter's position error is unbiased, so the camera-only bias of about -tau E[v] disappears vs session mean and covariance against the correctly timed schedule (relative)",
+  "check: Declared in the camera's calibration record, the one-tick latency is applied by the fusion API: the session fuses each lagged reading at the tick it refers to, its estimates equal the correctly timed linear filter to roundoff, and that filter's position error is unbiased, so the camera-only bias of about -tau E[v] disappears vs timed filter position error mean against zero (max |z|)",
+  "check: Declared in the camera's calibration record, the one-tick latency is applied by the fusion API: the session fuses each lagged reading at the tick it refers to, its estimates equal the correctly timed linear filter to roundoff, and that filter's position error is unbiased, so the camera-only bias of about -tau E[v] disappears vs timed filter: fraction of ticks with ANEES in the 99% interval",
+  "check: The fusion API never fuses a reading at the wrong time: a lagged reading delivered after a newer reference reading, a lagged reading that refers to a time before tick 0, an undelayed reading older than the clock and a backward prediction are refused with out_of_order, leave the state, covariance, clock, track status and latest candidate unchanged and are retained with that refusal, while a lagged reading that refers to the current tick is fused at that tick vs lagged reading after newer reference",
+  "check: The fusion API never fuses a reading at the wrong time: a lagged reading delivered after a newer reference reading, a lagged reading that refers to a time before tick 0, an undelayed reading older than the clock and a backward prediction are refused with out_of_order, leave the state, covariance, clock, track status and latest candidate unchanged and are retained with that refusal, while a lagged reading that refers to the current tick is fused at that tick vs lagged reading before tick 0",
+  "check: The fusion API never fuses a reading at the wrong time: a lagged reading delivered after a newer reference reading, a lagged reading that refers to a time before tick 0, an undelayed reading older than the clock and a backward prediction are refused with out_of_order, leave the state, covariance, clock, track status and latest candidate unchanged and are retained with that refusal, while a lagged reading that refers to the current tick is fused at that tick vs undelayed reading older than clock",
+  "check: The fusion API never fuses a reading at the wrong time: a lagged reading delivered after a newer reference reading, a lagged reading that refers to a time before tick 0, an undelayed reading older than the clock and a backward prediction are refused with out_of_order, leave the state, covariance, clock, track status and latest candidate unchanged and are retained with that refusal, while a lagged reading that refers to the current tick is fused at that tick vs prediction backwards",
+  "check: The fusion API never fuses a reading at the wrong time: a lagged reading delivered after a newer reference reading, a lagged reading that refers to a time before tick 0, an undelayed reading older than the clock and a backward prediction are refused with out_of_order, leave the state, covariance, clock, track status and latest candidate unchanged and are retained with that refusal, while a lagged reading that refers to the current tick is fused at that tick vs session refusals that changed the state, covariance, clock, track status or latest candidate",
+  "check: The fusion API never fuses a reading at the wrong time: a lagged reading delivered after a newer reference reading, a lagged reading that refers to a time before tick 0, an undelayed reading older than the clock and a backward prediction are refused with out_of_order, leave the state, covariance, clock, track status and latest candidate unchanged and are retained with that refusal, while a lagged reading that refers to the current tick is fused at that tick vs refused readings not retained with out_of_order",
+  "check: The fusion API never fuses a reading at the wrong time: a lagged reading delivered after a newer reference reading, a lagged reading that refers to a time before tick 0, an undelayed reading older than the clock and a backward prediction are refused with out_of_order, leave the state, covariance, clock, track status and latest candidate unchanged and are retained with that refusal, while a lagged reading that refers to the current tick is fused at that tick vs tick of the lagged reading fused at the clock minus the clock",
   "pytest: tests/test_lab_sensor_fusion.py::test_stale_clock_bias_detection_and_augmented_offset",
+  "pytest: tests/test_lab_sensor_fusion.py::test_out_of_order_fuse_and_predict_leave_no_side_effects_and_latency_is_applied",
   "pytest: tests/test_lab_sensor_fusion.py::test_section_reports_labels_and_states[T070]"
  ],
  "tests_skipped": [],
@@ -323,6 +519,7 @@
  "uncertainty": "Run-level z-tests with a Bonferroni family bound; the augmented filter is an EKF whose linearization and the ignored correlation of the lagged-state noise with the process noise are approximations (NEES tolerance 15%).",
  "unresolved_assumptions": [
   "The lag is constant and exactly one tick; drifting or jittering clocks need a random-walk offset state.",
-  "The offset is observable only while the velocity is nonzero."
+  "The offset is observable only while the velocity is nonzero.",
+  "The fusion API applies a declared integer latency; it does not estimate one, and it refuses rather than retrodicts a reading older than its clock (no out-of-sequence update), so the caller must deliver readings in the order of the ticks they refer to."
  ]
 }

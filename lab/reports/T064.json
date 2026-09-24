@@ -111,9 +111,9 @@
     "rel": 1e-06
    },
    "uncertainty": {
-    "basis": "each standardized covariance entry has unit sampling standard deviation",
+    "basis": "null sampling spread of the reported max |z| over 78 standardized covariance entries: half-width of the central 95% interval of the maximum of that many independent |N(0, 1)| (dependence among the moments changes it)",
     "kind": "monte_carlo_95ci",
-    "value": 1.96
+    "value": 0.8006272318775747
    },
    "unit": null,
    "value": {
@@ -480,15 +480,15 @@
    "src/ciw/lab/integrators.py": "a8cd5b2c5042c70970ae27975ef9387c4492ac981132cd9096bf8eafa8dc6084",
    "src/ciw/lab/jacobi.py": "87b7d23f17cac61b513ab96bd56fb9f58a50c19de463055c2278097c8c623e42",
    "src/ciw/lab/sensor_fusion_bench.py": "f373849a4c6836fa20685c59ce7a6fe6bf732f6df9d6a49646cdc017262dd656",
-   "src/ciw/lab/sensor_fusion_common.py": "6787aa47d199d50d0b4de4d7e53714ce7b8b5aad37d647cfc1a954414e90209f",
-   "src/ciw/lab/sensor_fusion_geometry.py": "f32baa091afd99ee4652c64a1d319755f676357fc0bfa06823999a276d7dfd07",
-   "src/ciw/lab/sensor_fusion_objects.py": "a795ffc235e0a4118cb7b9ac7800191a90984372d79e59f1a934442d98d7a1f1",
+   "src/ciw/lab/sensor_fusion_common.py": "db3b0430ad5c13920239cef354da61b64ab1b01f84b2d3d5aff2f78840a5867a",
+   "src/ciw/lab/sensor_fusion_geometry.py": "7469c225fd283954f2ea6bda4d86d3e9c098949f0abb74051f233a969c0a46d0",
+   "src/ciw/lab/sensor_fusion_objects.py": "93fc55ddca91f1adfb886d21805ea8f82586548ee84e1f6cc7daed4df1f53bb9",
    "src/ciw/lab/surfaces.py": "e8f264c182743d0177d93b961a49d7ddf78f30d79a7a75b9fea4018b10d4eef0"
   },
   "sympy": "1.14.0"
  },
  "recommended_next_task": "T065: model the correlation that a filter itself induces between successive estimates.",
- "report_id": "sha256:f816bbb8283fc56bed247bcc07d77b9b2a229a68ed8da621fa94f9b9ef62e441",
+ "report_id": "sha256:b771f793a2326a741845cdeb7a59f81249d1fe8699123b6d19002109cf7f74fc",
  "schema": "ciw.lab-task-report.v1",
  "section": "sensor-fusion",
  "state": "completed",

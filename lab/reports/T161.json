@@ -14,12 +14,13 @@
   },
   "primary": "numerically_verified"
  },
- "expected_invariant": "Aggregates are exact functions of retained reports and never change a label.",
- "experiment": "Generate the draft from retained reports of sections geodesic-jacobi, flat-torus-topology, surfaces-discrete.",
+ "expected_invariant": "Every results row restates its source finding's task, claim, value headline, unit, label and report identity, and its value cell states no number that the source finding's value does not hold.",
+ "experiment": "Generate the draft from retained reports of sections geodesic-jacobi, flat-torus-topology, surfaces-discrete and parse its results table back against the source findings.",
  "failure_modes_checked": [
-  "missing reports",
-  "report identity mismatch (validate_report)",
-  "aggregate differs from its re-read bytes"
+  "claims or units containing '|' breaking table rows",
+  "labels dropped from rows",
+  "values cut inside a number",
+  "rows out of order or missing"
  ],
  "findings": [
   {
@@ -30,22 +31,26 @@
       "comparison": "abs_le",
       "observed": 0.0,
       "passed": true,
-      "reference": "cited (task, claim, label) triples absent from the retained reports",
+      "reference": "results rows that do not parse back to their source finding",
       "reference_kind": "exact_arithmetic",
       "tolerance": 0.0
      }
     ]
    },
-   "claim": "Draft cites only retained findings with their retained labels",
+   "claim": "Draft results table restates every retained finding of its sections with its retained label",
    "domain": "provenance",
    "evidence_status": "numerically_verified",
    "regression_tolerance": {
     "abs": 0,
     "rel": 0
    },
-   "uncertainty": null,
+   "uncertainty": {
+    "basis": "integer count over retained report files; no rounding, sampling or tolerance",
+    "kind": "exact",
+    "value": 0
+   },
    "unit": "findings",
-   "value": 280
+   "value": 292
   },
   {
    "assigned_by": "ciw.lab.evidence",
@@ -61,18 +66,18 @@
  ],
  "generated_artifacts": [
   {
-   "bytes": 91017,
+   "bytes": 119918,
    "path": "artifacts/T161/geometry-methods-draft.md",
-   "sha256": "2641883cf99434a0f88db045903e6c1cde65c2f5a8b86ed438653015b2942a14"
+   "sha256": "7d0fbbc242b89c44bda0b4d7c5bbdb64cb6527496674646ecd786259693d7f4b"
   }
  ],
  "hypothesis": "A geometry methods draft can be assembled entirely from retained findings, with every number traceable to a report identity and every limitation drawn from not_established findings.",
  "input_data": [
-  "Retained reports T001-T154 in the same output directory"
+  "Retained reports of sections geodesic-jacobi, flat-torus-topology, surfaces-discrete"
  ],
- "mathematical_model": "Draft = generated Markdown: abstract, methods (task hypotheses and models), results (findings tables), limitations (not_established findings and blocked tasks).",
+ "mathematical_model": "Draft = generated Markdown: abstract, methods (task hypotheses and models), results (one row per finding), limitations (not_established findings and unfinished tasks).",
  "number": 161,
- "numerical_result": "Draft cites 280 findings from 44 reports.",
+ "numerical_result": "Draft cites 292 findings from 44 reports; 0 results rows differ from their source.",
  "observation_model": "No physical observation; reads retained computational records only.",
  "physical_validation_status": {
   "statement": "Physical validation requires acquired hardware evidence; none was acquired for this task.",
@@ -86,18 +91,18 @@
   "python": "3.12.3",
   "scipy": "1.16.2",
   "sources": {
-   "src/ciw/lab/research_portfolio.py": "6cd37207af02c6d64dc88b22c7ff2148e85f1eeebaa5445cd894879bc3043ba3"
+   "src/ciw/lab/research_portfolio.py": "0fd0ed475a38bf81fd2145f64cf1335856a471c58d406347c3b66b0f66672702"
   },
   "sympy": "1.14.0"
  },
  "recommended_next_task": "Human authorship pass, related-work section and external review; physical experiments from the manufacturing protocols.",
- "report_id": "sha256:e92c270b1e3d394a2116c38ff7f47ba96c8f8194b0a857f1cb55e5b6917e3941",
+ "report_id": "sha256:93de6056e75315aafb6ca7f4b6c8fb187f60cf15b696fa57604e1b4a1145338b",
  "schema": "ciw.lab-task-report.v1",
  "section": "research-portfolio",
  "state": "partial",
  "task_id": "T161",
  "tests_passed": [
-  "check: Draft cites only retained findings with their retained labels vs cited (task, claim, label) triples absent from the retained reports",
+  "check: Draft results table restates every retained finding of its sections with its retained label vs results rows that do not parse back to their source finding",
   "pytest: tests/test_lab_research_portfolio.py::test_paper_drafts_trace_to_reports"
  ],
  "tests_skipped": [],

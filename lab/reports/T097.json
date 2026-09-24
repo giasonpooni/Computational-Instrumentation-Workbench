@@ -9,8 +9,8 @@
    "analytic": 0,
    "hardware_measured": 0,
    "independently_verified": 1,
-   "not_established": 3,
-   "numerically_verified": 2,
+   "not_established": 1,
+   "numerically_verified": 4,
    "provider_backed": 1,
    "synthetic": 0
   },
@@ -257,36 +257,168 @@
   },
   {
    "assigned_by": "ciw.lab.evidence",
-   "basis": {},
-   "claim": "SET exchange conformance was not executed",
+   "basis": {
+    "checks": [
+     {
+      "comparison": "abs_le",
+      "observed": 0.0,
+      "passed": true,
+      "reference": "SET inspections whose status is not conformant",
+      "reference_kind": "exact_arithmetic",
+      "tolerance": 0.0
+     },
+     {
+      "comparison": "abs_le",
+      "observed": 0.0,
+      "passed": true,
+      "reference": "effective covariance rank minus 2",
+      "reference_kind": "exact_arithmetic",
+      "tolerance": 0.0
+     },
+     {
+      "expected_refusal": "covariance.matrix is not positive-semidefinite",
+      "observed_refusal": "covariance.matrix is not positive-semidefinite",
+      "passed": true,
+      "reference": "SET on the indefinite covariance [[1, 2], [2, 1]]",
+      "reference_kind": "refusal"
+     },
+     {
+      "comparison": "abs_le",
+      "observed": 0.0,
+      "passed": true,
+      "reference": "inspection input bytes changed",
+      "reference_kind": "exact_arithmetic",
+      "tolerance": 0.0
+     },
+     {
+      "comparison": "abs_le",
+      "observed": 0.0,
+      "passed": true,
+      "reference": "inspection reports that may authorize",
+      "reference_kind": "exact_arithmetic",
+      "tolerance": 0.0
+     }
+    ],
+    "notes": {
+     "provider": {
+      "executed": true,
+      "repository": "giasonpooni/State-Estimation-Evaluation-Testbed",
+      "revision": "542e672be512bf43b61253f2b2a43cd967cb3062",
+      "validator_path": "state_estimation_testbed/contracts.py",
+      "validator_sha256": "2385537daa6147ef2475d17bd75c026fe187077b90841515a9e9378e0246ae54"
+     }
+    }
+   },
+   "claim": "The pinned SET contracts validator reports the synthetic observation conformant with effective covariance rank 2 and refuses an indefinite covariance",
    "domain": "computational_pipeline",
-   "evidence_status": "not_established",
-   "expected_not_established": true,
-   "uncertainty": null,
+   "evidence_status": "numerically_verified",
+   "regression_tolerance": {
+    "abs": 0,
+    "rel": 0
+   },
+   "uncertainty": {
+    "basis": "exact counts, digests and string comparisons; no rounding is involved",
+    "kind": "roundoff",
+    "value": 0
+   },
    "unit": null,
    "value": {
-    "pytest": "CIW_SET_REPO=<set> python -m pytest -q tests/test_exchange.py",
-    "reason": "no set checkout bound (needs State-Estimation-Evaluation-Testbed at 542e672be512bf43b61253f2b2a43cd967cb3062)",
-    "required": "--provider set=<State-Estimation-Evaluation-Testbed at 542e672be512bf43b61253f2b2a43cd967cb3062>"
+    "effective_rank": 2,
+    "indefinite_covariance": "covariance.matrix is not positive-semidefinite",
+    "may_authorize": false,
+    "status": "conformant"
    }
   },
   {
    "assigned_by": "ciw.lab.evidence",
-   "basis": {},
-   "claim": "The PPDA/SCR/SET exchange producer roundtrip was not executed",
+   "basis": {
+    "checks": [
+     {
+      "comparison": "abs_le",
+      "observed": 0.0,
+      "passed": true,
+      "reference": "roundtrip inspections whose status is not conformant",
+      "reference_kind": "exact_arithmetic",
+      "tolerance": 0.0
+     },
+     {
+      "comparison": "ge",
+      "observed": 2.0,
+      "passed": true,
+      "reference": "links that matched a supplied artifact",
+      "reference_kind": "invariant",
+      "tolerance": 2.0
+     },
+     {
+      "comparison": "abs_le",
+      "observed": 0.0,
+      "passed": true,
+      "reference": "failed verification outcomes not preserved",
+      "reference_kind": "exact_arithmetic",
+      "tolerance": 0.0
+     },
+     {
+      "expected_refusal": "result_id does not match the artifact content",
+      "observed_refusal": "result_id does not match the artifact content",
+      "passed": true,
+      "reference": "inspection after changing a component of the SCR result artifact",
+      "reference_kind": "refusal"
+     },
+     {
+      "comparison": "abs_le",
+      "observed": 0.0,
+      "passed": true,
+      "reference": "inspection reports that may authorize",
+      "reference_kind": "exact_arithmetic",
+      "tolerance": 0.0
+     }
+    ],
+    "notes": {
+     "provider": {
+      "ppda": {
+       "executed": true,
+       "repository": "giasonpooni/Provenance-Preserving-Data-Acquisition",
+       "revision": "a29845e13e55de30b24ae752b896058041d653e6",
+       "source_tree": "7140bf71289161245e73801e0cd934dc93156509"
+      },
+      "scr-exchange": {
+       "executed": true,
+       "repository": "giasonpooni/Scientific-Computation-Runtime",
+       "revision": "5f0409743e0098a0691a88302a9b3dcdcbcf25fd",
+       "source_tree": "4b9ba4bf1f95562d299714d4ed4bf7b9d0c6e913"
+      },
+      "set": {
+       "executed": true,
+       "repository": "giasonpooni/State-Estimation-Evaluation-Testbed",
+       "revision": "542e672be512bf43b61253f2b2a43cd967cb3062",
+       "source_tree": "25c667fc507eb8404e1f077d46e87ed2fc6abc3d"
+      }
+     }
+    }
+   },
+   "claim": "PPDA and SCR exchange artifacts pass the pinned SET checker, link to each other, keep a failed verification failed and a changed result is refused",
    "domain": "computational_pipeline",
-   "evidence_status": "not_established",
-   "expected_not_established": true,
-   "uncertainty": null,
+   "evidence_status": "numerically_verified",
+   "regression_tolerance": {
+    "abs": 0,
+    "rel": 0
+   },
+   "uncertainty": {
+    "basis": "exact counts, digests and string comparisons; no rounding is involved",
+    "kind": "roundoff",
+    "value": 0
+   },
    "unit": null,
    "value": {
-    "pytest": "CIW_SET_REPO=<set> CIW_ACQUISITION_REPO=<ppda> CIW_RUNTIME_REPO=<scr-exchange> python -m pytest -q tests/test_exchange_integration.py",
-    "reason": "no ppda checkout bound (needs Provenance-Preserving-Data-Acquisition at a29845e13e55de30b24ae752b896058041d653e6); no scr-exchange checkout bound (needs Scientific-Computation-Runtime at 5f0409743e0098a0691a88302a9b3dcdcbcf25fd); no set checkout bound (needs State-Estimation-Evaluation-Testbed at 542e672be512bf43b61253f2b2a43cd967cb3062)",
-    "required": {
-     "ppda": "a29845e13e55de30b24ae752b896058041d653e6",
-     "scr-exchange": "5f0409743e0098a0691a88302a9b3dcdcbcf25fd",
-     "set": "542e672be512bf43b61253f2b2a43cd967cb3062"
-    }
+    "changed_result_refusal": "result_id does not match the artifact content",
+    "links": [
+     "matched_supplied_reference",
+     "matched_supplied_reference",
+     "unresolved_external_reference"
+    ],
+    "may_authorize": false,
+    "status": "conformant",
+    "verification_outcome": "failed"
    }
   },
   {
@@ -302,9 +434,9 @@
  ],
  "generated_artifacts": [
   {
-   "bytes": 4900,
+   "bytes": 6081,
    "path": "artifacts/T097/integration.json",
-   "sha256": "a3161b54da8120603e0e0c69f2106feca74f27c8646d87cf3bc853a48e8addb6"
+   "sha256": "907c8cfb9bea0303b36cf34ddd715bf201a8ac5fae497cfd8624dbbcfe89e468"
   },
   {
    "bytes": 3098,
@@ -321,7 +453,7 @@
  ],
  "mathematical_model": "u_i <- u_i + trunc((u_{i-1} - 2 u_i + u_{i+1}) / 4), fixed ends (SCR heat descriptor, ciw.declared_workload).",
  "number": 97,
- "numerical_result": "workbench [0, 0, 64, 0, 0] x2 -> [0, 16, 24, 16, 0]; API [0, 0, 1000, 0, 0] x3 -> [0, 219, 313, 219, 0]; API [0, 0, 64, 0, 0] x2 -> [0, 16, 24, 16, 0]; API [0, -3, 0] x1 -> [0, -2, 0]; API [7, -3, 5] x1 -> [7, 1, 5]; not executed here: ['SET exchange validator: no set checkout bound (needs State-Estimation-Evaluation-Testbed at 542e672be512bf43b61253f2b2a43cd967cb3062)', 'PPDA/SCR/SET producer roundtrip: no ppda checkout bound (needs Provenance-Preserving-Data-Acquisition at a29845e13e55de30b24ae752b896058041d653e6); no scr-exchange checkout bound (needs Scientific-Computation-Runtime at 5f0409743e0098a0691a88302a9b3dcdcbcf25fd); no set checkout bound (needs State-Estimation-Evaluation-Testbed at 542e672be512bf43b61253f2b2a43cd967cb3062)']",
+ "numerical_result": "workbench [0, 0, 64, 0, 0] x2 -> [0, 16, 24, 16, 0]; API [0, 0, 1000, 0, 0] x3 -> [0, 219, 313, 219, 0]; API [0, 0, 64, 0, 0] x2 -> [0, 16, 24, 16, 0]; API [0, -3, 0] x1 -> [0, -2, 0]; API [7, -3, 5] x1 -> [7, 1, 5]; not executed here: none",
  "observation_model": "Workbench bundle values, replay receipts, SCR Python API output.",
  "physical_validation_status": {
   "statement": "Physical validation requires acquired hardware evidence; none was acquired for this task.",
@@ -336,16 +468,18 @@
    "python": "3.12.3",
    "scipy": "1.16.2",
    "sources": {
-    "src/ciw/lab/exchange_provenance_bundles.py": "a505b35560263c1b473912f79e61b15b7e474f8eb1807e691847e4c69791c2d3",
-    "src/ciw/lab/exchange_provenance_bundles_fixtures.py": "f30205e8305a225f24d94b06cba8b519ecea4680ca723aaca3591ff707d04e1c",
-    "src/ciw/lab/exchange_provenance_bundles_providers.py": "c9a30c9dc0751a22ff578a8c9a01abf06df582a1f1e835c1f1c0c33ed176f94b"
+    "src/ciw/lab/exchange_provenance_bundles.py": "3acc6fd6976bb5e6dd8ad3bfc3d09a1d9594ca0a06f4db823581e5b651d4835e",
+    "src/ciw/lab/exchange_provenance_bundles_fixtures.py": "7d6da1148d3744ae1e754b53f697b5b4919aff2666788ae6aec0e48e6e2380c9",
+    "src/ciw/lab/exchange_provenance_bundles_providers.py": "5e149f2463bd1f30bcfb61d719d84fcc19f84cd0ec201b5c95512c7a17f150b7"
    },
    "sympy": "1.14.0"
   },
   "ppda": {
-   "head": null,
-   "matched": null,
-   "state": "not_bound"
+   "head": "a29845e13e55de30b24ae752b896058041d653e6",
+   "matched": [
+    ".github/workflows/exchange.yml"
+   ],
+   "state": "ready"
   },
   "requirement_probes": {
    "provider:scr": true,
@@ -358,21 +492,26 @@
    "source_tree": "4068a711534932e8d89bb0d87d373376dafdf6cd"
   },
   "scr-exchange": {
-   "head": null,
-   "matched": null,
-   "state": "not_bound"
+   "head": "5f0409743e0098a0691a88302a9b3dcdcbcf25fd",
+   "matched": [
+    ".github/workflows/exchange.yml"
+   ],
+   "state": "ready"
   },
   "set": {
-   "head": null,
-   "matched": null,
-   "state": "not_bound"
+   "head": "542e672be512bf43b61253f2b2a43cd967cb3062",
+   "matched": [
+    "ciw/exchange-runtime.json",
+    ".github/workflows/exchange.yml"
+   ],
+   "state": "ready"
   }
  },
  "recommended_next_task": "T098: record the identities of every bound provider checkout.",
- "report_id": "sha256:1a2a57e2011d7329f85843780be185731d143cca321aadf2dae56a1486378911",
+ "report_id": "sha256:97c2367f468d5d32e768370fe5ddf0b5b164fdd4438cd8d94a2b3249ad3c0a15",
  "schema": "ciw.lab-task-report.v1",
  "section": "exchange-provenance",
- "state": "partial",
+ "state": "completed",
  "task_id": "T097",
  "tests_passed": [
   "independent: SCR heat outputs from the workbench and from SCR's Python API equal an independent integer reference vs ciw.lab.exchange_provenance_bundles_fixtures.heat_reference",
@@ -384,6 +523,16 @@
   "check: The reopened SCR workspace carries no binding and refuses replay vs bundle.replay after reopen",
   "check: The reopened SCR workspace carries no binding and refuses replay vs execution entry points reached while reopening",
   "check: The reopened SCR workspace carries no binding and refuses replay vs bindings after reopen",
+  "check: The pinned SET contracts validator reports the synthetic observation conformant with effective covariance rank 2 and refuses an indefinite covariance vs SET inspections whose status is not conformant",
+  "check: The pinned SET contracts validator reports the synthetic observation conformant with effective covariance rank 2 and refuses an indefinite covariance vs effective covariance rank minus 2",
+  "check: The pinned SET contracts validator reports the synthetic observation conformant with effective covariance rank 2 and refuses an indefinite covariance vs SET on the indefinite covariance [[1, 2], [2, 1]]",
+  "check: The pinned SET contracts validator reports the synthetic observation conformant with effective covariance rank 2 and refuses an indefinite covariance vs inspection input bytes changed",
+  "check: The pinned SET contracts validator reports the synthetic observation conformant with effective covariance rank 2 and refuses an indefinite covariance vs inspection reports that may authorize",
+  "check: PPDA and SCR exchange artifacts pass the pinned SET checker, link to each other, keep a failed verification failed and a changed result is refused vs roundtrip inspections whose status is not conformant",
+  "check: PPDA and SCR exchange artifacts pass the pinned SET checker, link to each other, keep a failed verification failed and a changed result is refused vs links that matched a supplied artifact",
+  "check: PPDA and SCR exchange artifacts pass the pinned SET checker, link to each other, keep a failed verification failed and a changed result is refused vs failed verification outcomes not preserved",
+  "check: PPDA and SCR exchange artifacts pass the pinned SET checker, link to each other, keep a failed verification failed and a changed result is refused vs inspection after changing a component of the SCR result artifact",
+  "check: PPDA and SCR exchange artifacts pass the pinned SET checker, link to each other, keep a failed verification failed and a changed result is refused vs inspection reports that may authorize",
   "pytest: tests/test_lab_exchange_provenance_bundles.py::test_t097_scr_numerical_heat_integration",
   "pytest: tests/test_lab_exchange_provenance_bundles.py::test_t097_is_blocked_without_scr",
   "pytest: tests/test_lab_exchange_provenance_bundles.py::test_t097_keeps_set_results_when_the_engine_is_missing",
@@ -393,8 +542,6 @@
  "title": "Add exact SET/SCR/PPDA integration tests when checkouts are available.",
  "uncertainty": "Exact integer arithmetic and exact string comparisons; no tolerance.",
  "unresolved_assumptions": [
-  "SET exchange validator: no set checkout bound (needs State-Estimation-Evaluation-Testbed at 542e672be512bf43b61253f2b2a43cd967cb3062)",
-  "PPDA/SCR/SET producer roundtrip: no ppda checkout bound (needs Provenance-Preserving-Data-Acquisition at a29845e13e55de30b24ae752b896058041d653e6); no scr-exchange checkout bound (needs Scientific-Computation-Runtime at 5f0409743e0098a0691a88302a9b3dcdcbcf25fd); no set checkout bound (needs State-Estimation-Evaluation-Testbed at 542e672be512bf43b61253f2b2a43cd967cb3062)",
   "CIW records a bound engine as operator_asserted_not_attested; this run's engine origin is cargo_build_locked_offline_in_this_run (checked against a locked build only when an operator-bound engine and cargo are both present).",
   "The PPDA telemetry stack (ppda, stfe, gsie, set, cbsr at src/ciw/telemetry-runtimes.json pins) is a separate integration."
  ]

@@ -14,12 +14,12 @@
   },
   "primary": "numerically_verified"
  },
- "expected_invariant": "Aggregates are exact functions of retained reports and never change a label.",
- "experiment": "Collect, deduplicate and count assumptions; write JSON and Markdown ledgers.",
+ "expected_invariant": "Every stated assumption appears once per exact wording with every task stating it; citations agree with a raw-text recount of the report files.",
+ "experiment": "Collect, deduplicate and count assumptions; write JSON and Markdown ledgers; parse the Markdown back and recount assumption items from the raw report text.",
  "failure_modes_checked": [
-  "missing reports",
-  "report identity mismatch (validate_report)",
-  "aggregate differs from its re-read bytes"
+  "assumptions dropped by the traversal (raw-text recount)",
+  "ledger lines not restating their assumption",
+  "reports stating no assumption"
  ],
  "findings": [
   {
@@ -27,45 +27,58 @@
    "basis": {
     "checks": [
      {
+      "comparison": "abs_le",
       "observed": 0.0,
       "passed": true,
-      "reference": "unresolved-assumptions.json recomputed from a fresh read of the retained reports",
+      "reference": "ledger lines that do not restate their assumption and tasks",
+      "reference_kind": "exact_arithmetic",
+      "tolerance": 0.0
+     },
+     {
+      "comparison": "abs_le",
+      "observed": 0.0,
+      "passed": true,
+      "reference": "assumption statements minus a raw-text recount of the report files",
       "reference_kind": "exact_arithmetic",
       "tolerance": 0.0
      }
     ]
    },
-   "claim": "Unresolved-assumption ledger reproduces from retained reports",
+   "claim": "Unresolved-assumption ledger lists every assumption stated by the retained reports",
    "domain": "provenance",
    "evidence_status": "numerically_verified",
    "regression_tolerance": {
     "abs": 0,
     "rel": 0
    },
-   "uncertainty": null,
+   "uncertainty": {
+    "basis": "integer count over retained report files; no rounding, sampling or tolerance",
+    "kind": "exact",
+    "value": 0
+   },
    "unit": "assumptions",
-   "value": 351
+   "value": 418
   }
  ],
  "generated_artifacts": [
   {
-   "bytes": 57784,
+   "bytes": 77476,
    "path": "artifacts/T166/unresolved-assumptions.json",
-   "sha256": "a1d1078c84d511f368931606928fd3e711b7d59d9353cae2861deaaa8d3a9ae6"
+   "sha256": "0ec801664a06b9f83313e94cb16ccc3c3ff2a65c23c917bebd138a0346d50716"
   },
   {
-   "bytes": 42276,
+   "bytes": 59000,
    "path": "artifacts/T166/UNRESOLVED_ASSUMPTIONS.md",
-   "sha256": "92d55587db60da1db918d62026199b3276ab7bca4f723d38fc380573d7b28e6a"
+   "sha256": "fa0a6a7d4d7d0fb5404db3b24e09a9ac4409501ffd03e5be39fc128ab1e03ef7"
   }
  ],
  "hypothesis": "Every unresolved assumption stated by any task can be listed in one ledger with its source task.",
  "input_data": [
-  "Retained reports T001-T154 in the same output directory"
+  "Retained reports of T001-T165 in the same output directory (this section's T155-T165 included)"
  ],
- "mathematical_model": "Ledger = union over reports of unresolved_assumptions, deduplicated with task references.",
+ "mathematical_model": "Ledger = union over reports of unresolved_assumptions, deduplicated by exact wording, with task references.",
  "number": 166,
- "numerical_result": "351 distinct unresolved assumptions from 154 reports; 0 reports state none.",
+ "numerical_result": "418 distinct unresolved assumptions (439 statements) from 165 reports; 0 reports state none.",
  "observation_model": "No physical observation; reads retained computational records only.",
  "physical_validation_status": {
   "statement": "Physical validation requires acquired hardware evidence; none was acquired for this task.",
@@ -79,22 +92,26 @@
   "python": "3.12.3",
   "scipy": "1.16.2",
   "sources": {
-   "src/ciw/lab/research_portfolio.py": "6cd37207af02c6d64dc88b22c7ff2148e85f1eeebaa5445cd894879bc3043ba3"
+   "src/ciw/lab/research_portfolio.py": "0fd0ed475a38bf81fd2145f64cf1335856a471c58d406347c3b66b0f66672702"
   },
   "sympy": "1.14.0"
  },
  "recommended_next_task": "Attach each assumption to the experiment that would resolve it and track closure.",
- "report_id": "sha256:1eb8c5b953982da6d46f16a527a92e11853021bb9e4f833b7f14ecfba2c96301",
+ "report_id": "sha256:8f9de8a6696075a2f4cef318ec3e14880680118096f62d509743ee11f377734c",
  "schema": "ciw.lab-task-report.v1",
  "section": "research-portfolio",
  "state": "completed",
  "task_id": "T166",
  "tests_passed": [
-  "check: Unresolved-assumption ledger reproduces from retained reports vs unresolved-assumptions.json recomputed from a fresh read of the retained reports",
-  "pytest: tests/test_lab_research_portfolio.py::test_catalogue_tasks_aggregate_retained_reports"
+  "check: Unresolved-assumption ledger lists every assumption stated by the retained reports vs ledger lines that do not restate their assumption and tasks",
+  "check: Unresolved-assumption ledger lists every assumption stated by the retained reports vs assumption statements minus a raw-text recount of the report files",
+  "pytest: tests/test_lab_research_portfolio.py::test_unresolved_assumption_ledger"
  ],
  "tests_skipped": [],
  "title": "Record every unresolved assumption.",
- "uncertainty": "Exact aggregation; completeness depends on each task's honesty.",
- "unresolved_assumptions": []
+ "uncertainty": "Exact counts; completeness depends on what each task states.",
+ "unresolved_assumptions": [
+  "T167 and T168 run after this ledger; their assumptions are in their own reports.",
+  "Assumptions are deduplicated by exact wording; one assumption worded differently is listed twice."
+ ]
 }

@@ -35,7 +35,7 @@
       "observed": 1.018119047824677e-13,
       "passed": true,
       "reference": "max relative mean difference against the block-eliminated batch posterior",
-      "reference_kind": "analytic",
+      "reference_kind": "cross_implementation",
       "tolerance": 1e-09
      },
      {
@@ -43,7 +43,7 @@
       "observed": 3.820291279574931e-14,
       "passed": true,
       "reference": "max relative covariance difference against the block-eliminated batch posterior",
-      "reference_kind": "analytic",
+      "reference_kind": "cross_implementation",
       "tolerance": 1e-09
      },
      {
@@ -51,7 +51,7 @@
       "observed": 6.616482489215767e-14,
       "passed": true,
       "reference": "dense normal equations against the filter at K = 10 and 40",
-      "reference_kind": "analytic",
+      "reference_kind": "cross_implementation",
       "tolerance": 1e-09
      },
      {
@@ -59,7 +59,7 @@
       "observed": 9.725367176738375e-14,
       "passed": true,
       "reference": "dense normal equations against block elimination at K = 10 and 40",
-      "reference_kind": "invariant",
+      "reference_kind": "cross_implementation",
       "tolerance": 1e-09
      }
     ],
@@ -282,15 +282,15 @@
   "python": "3.12.3",
   "scipy": "1.16.2",
   "sources": {
-   "src/ciw/lab/sensor_fusion_admission.py": "db737df809fa23fd26fb21a196b6efa2bda6326aba21a8ff0288a99a95746c2c",
+   "src/ciw/lab/sensor_fusion_admission.py": "a0d36bf665e88d2851b08c6181a8f794e39751a688a04ebd586fbc93164cc3c7",
    "src/ciw/lab/sensor_fusion_bench.py": "f373849a4c6836fa20685c59ce7a6fe6bf732f6df9d6a49646cdc017262dd656",
-   "src/ciw/lab/sensor_fusion_common.py": "6787aa47d199d50d0b4de4d7e53714ce7b8b5aad37d647cfc1a954414e90209f",
-   "src/ciw/lab/sensor_fusion_objects.py": "a795ffc235e0a4118cb7b9ac7800191a90984372d79e59f1a934442d98d7a1f1"
+   "src/ciw/lab/sensor_fusion_common.py": "db3b0430ad5c13920239cef354da61b64ab1b01f84b2d3d5aff2f78840a5867a",
+   "src/ciw/lab/sensor_fusion_objects.py": "93fc55ddca91f1adfb886d21805ea8f82586548ee84e1f6cc7daed4df1f53bb9"
   },
   "sympy": "1.14.0"
  },
  "recommended_next_task": "T075: keep the fused estimate a candidate until an explicit admission gate.",
- "report_id": "sha256:d4776e6daa689952f34e3d11999b7241fe89920e1f30490acca553c0ce7ff3e2",
+ "report_id": "sha256:c642c948e72e78e5becbd3aa74adf5cec2006e775e5619dda989b05e9c234324",
  "schema": "ciw.lab-task-report.v1",
  "section": "sensor-fusion",
  "state": "completed",
@@ -308,7 +308,7 @@
  ],
  "tests_skipped": [],
  "title": "Compare fused state against analytic ground truth.",
- "uncertainty": "Floating-point agreement is limited by the conditioning of the information matrix; the rational comparison has no roundoff; NEES consistency carries Monte Carlo error.",
+ "uncertainty": "Floating-point agreement is limited by the conditioning of the information matrix; the rational comparison has no roundoff; NEES consistency carries Monte Carlo error. The filter, block elimination and dense solve are all ciw code, so their agreement is recorded as cross_implementation (same origin), not as independent verification.",
  "unresolved_assumptions": [
   "Equality with the batch posterior validates the algebra for the declared model, not the model against reality.",
   "Nonlinear sensors (encoder speed, IMU heading rate) are not fused here."

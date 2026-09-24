@@ -1,0 +1,11 @@
+{
+ "ciw_version": "0.1.0",
+ "conditions": {
+  "installed_from_wheel": true,
+  "isolated_interpreter": true,
+  "package_inside_environment": true,
+  "wheel_bytes_match": true
+ },
+ "marker": "present",
+ "python": "3.12.3"
+}

@@ -346,14 +346,14 @@
   },
   "scipy": "1.16.2",
   "sources": {
-   "src/ciw/lab/lyapunov.py": "58d6c7473f0a42002b57888de0ccfbbf73b571bbbabbf9ee81e0a05c734f2320",
+   "src/ciw/lab/lyapunov.py": "cbcb4d58d7313d7c537957a1b7dd35039a21bae80125bf59147eeed2c1232bbb",
    "src/ciw/lab/lyapunov_provider.py": "da3465b48b5f5efc47bfe6ab8379cf2cf2bc23e4835dc7ff047252e77fa6ef17",
-   "src/ciw/lab/lyapunov_reference.py": "fa37ef453c23ad2bed2eab41132e72670e166b93eebd5fc9d67a4a89a7c92cca"
+   "src/ciw/lab/lyapunov_reference.py": "bdf0bb5074ae2caca6c8a5d8e63a15e346b007098e6def6b058d077719bc1336"
   },
   "sympy": "1.14.0"
  },
  "recommended_next_task": "T111: scalar quadratic versus matrix-eigenvalue routes; add a sampled-data check that a continuous certificate is not silently reused for exp(A h).",
- "report_id": "sha256:08466cf6cf1b8196508e340b581bbf1b3249a7dd3e6efc938b3e8859509ba996",
+ "report_id": "sha256:cc00c6cd7277f8685af7484a3cd123abfccfa099f633a08e6bca3dd75240da4d",
  "schema": "ciw.lab-task-report.v1",
  "section": "lyapunov",
  "state": "completed",

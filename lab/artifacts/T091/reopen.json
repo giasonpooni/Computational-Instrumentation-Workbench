@@ -1,5 +1,10 @@
 {
+ "available_before_save": [
+  "ciw.energy-accuracy.v1",
+  "ciw.numerical-heat.v1"
+ ],
  "binding_keys_in_saved_workspace": 0,
+ "binding_paths_in_saved_workspace": 0,
  "guard_control": "intercepted",
  "guarded_paths": [
   "subprocess.Popen",
@@ -23,7 +28,58 @@
   "ciw.declared_workload.DeclaredWorkflow._step",
   "ciw.declared_workload.DeclaredWorkflow._execute",
   "ciw.declared_workload.DeclaredWorkflow.create_session",
-  "ciw.declared_workload.DeclaredWorkflow.replay_session"
+  "ciw.declared_workload.DeclaredWorkflow.replay_session",
+  "ciw.acquired_dataset.AcquisitionWorkflow._adapters",
+  "ciw.acquired_dataset.AcquisitionWorkflow._step",
+  "ciw.acquired_window._adapters",
+  "ciw.acquired_window.create_session",
+  "ciw.acquired_window.replay_session",
+  "ciw.bim_quantity.BimQuantityWorkflow._step",
+  "ciw.calibrated_observable._adapters",
+  "ciw.calibrated_observable._execute",
+  "ciw.calibrated_observable.create_session",
+  "ciw.calibrated_observable.replay_session",
+  "ciw.calibrated_window._adapters",
+  "ciw.calibrated_window._execute",
+  "ciw.calibrated_window.create_session",
+  "ciw.calibrated_window.replay_session",
+  "ciw.energy_workflow.EnergyAccuracyWorkflow._adapters",
+  "ciw.free_energy_workflow.FreeEnergyWorkflow._adapters",
+  "ciw.free_energy_workflow.FreeEnergyWorkflow._step",
+  "ciw.geodesic_reference.GeodesicReferenceWorkflow._adapters",
+  "ciw.geodesic_reference.GeodesicReferenceWorkflow._step",
+  "ciw.geometric_circle.GeometricCircleWorkflow._step",
+  "ciw.geometry_research.GeometryResearchWorkflow._step",
+  "ciw.identified_design._adapters",
+  "ciw.identified_design._execute",
+  "ciw.identified_design.create_session",
+  "ciw.identified_design.replay_session",
+  "ciw.identified_stability.IdentifiedStabilityWorkflow._adapters",
+  "ciw.identified_stability.IdentifiedStabilityWorkflow._execute_selected",
+  "ciw.identified_stability.IdentifiedStabilityWorkflow._step",
+  "ciw.identified_stability.IdentifiedStabilityWorkflow.create_session",
+  "ciw.identified_stability.IdentifiedStabilityWorkflow.replay_session",
+  "ciw.measurement_chain.MeasurementChainWorkflow._adapters",
+  "ciw.measurement_chain.MeasurementChainWorkflow._step",
+  "ciw.proved_heat.ProvedHeatWorkflow._adapters",
+  "ciw.proved_heat.ProvedHeatWorkflow._execute",
+  "ciw.proved_heat.ProvedHeatWorkflow._step",
+  "ciw.proved_heat.ProvedHeatWorkflow.replay_session",
+  "ciw.residual_monitor.ResidualMonitorWorkflow._adapters",
+  "ciw.residual_monitor.ResidualMonitorWorkflow._execute_selected",
+  "ciw.residual_monitor.ResidualMonitorWorkflow._step",
+  "ciw.residual_monitor.ResidualMonitorWorkflow.create_session",
+  "ciw.residual_monitor.ResidualMonitorWorkflow.replay_session",
+  "ciw.schematic_companions.SchematicCompanionWorkflow._adapters",
+  "ciw.schematic_companions.SchematicCompanionWorkflow._execute_selected",
+  "ciw.schematic_companions.SchematicCompanionWorkflow._step",
+  "ciw.schematic_companions.SchematicCompanionWorkflow.create_session",
+  "ciw.schematic_companions.SchematicCompanionWorkflow.replay_session",
+  "ciw.telemetry._adapters",
+  "ciw.telemetry._execute",
+  "ciw.telemetry._step",
+  "ciw.telemetry.create_session",
+  "ciw.telemetry.replay_session"
  ],
  "mismatches": {
   "catalog": 0,
@@ -35,23 +91,31 @@
   "available_operations": [
    "ciw.energy-accuracy.v1"
   ],
-  "bundles": 2,
+  "bindings_before_save": [
+   "numerical-heat"
+  ],
+  "bundles": 3,
   "execution_path_calls": 0,
   "executions": 1,
   "provider_bindings": [],
-  "read_requests": 10,
-  "read_requests_answered": 10,
+  "provider_kind_bundles": [
+   "numerical-heat"
+  ],
+  "read_requests": 11,
+  "read_requests_answered": 11,
   "results": 3,
   "workspace_version": 3
  },
+ "provider_bundle_replay": "operation_unavailable: No trusted repositories bound for this workbench workflow",
  "reads": {
+  "bundle.get numerical-heat": "response",
   "bundle.list": "response",
   "execution.list": "response",
   "experiment.inspect": "response",
   "operation.list": "response",
-  "result.get result-79a1b64ae69541e2a1c6b952613ce3b3": "response",
-  "result.get result-920d415679d04fc9b253a61a61d8e69b": "response",
-  "result.get result-cd91422a54f84c1a843c53ba53941654": "response",
+  "result.get result-47883a78ef884d94ad93e40b562cc4f8": "response",
+  "result.get result-bcb98bcd98c64a4aaf2e32e324a1e926": "response",
+  "result.get result-d3eeadfc6ed445afac9eede8dd3cc160": "response",
   "result.list": "response",
   "session.get": "response",
   "source.list": "response"
@@ -60,5 +124,9 @@
   "ciw.energy_records.analyze": 7
  },
  "reopen_attempts": [],
- "saved_workspace_sha256": "aa1cabf504ecf53db669a87466f5e0984a2e8416d7dd0ef0634c9b8bdac76f79"
+ "saved_workspace_sha256": "4f0c22292ee4b3cffc1e6a7f885ebadb1171742cdd0a62725ecce57e63124d74",
+ "synthetic_binding": {
+  "engine": "/ciw-lab/synthetic-binding/execution-cli",
+  "scr": "/ciw-lab/synthetic-binding/scr"
+ }
 }

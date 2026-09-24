@@ -17,13 +17,15 @@
   },
   "primary": "numerically_verified"
  },
- "expected_invariant": "The unmodified record validates and regenerates identically; each of 23 mutations is refused with its code and the pinned pre-release control is accepted; deployment is refused.",
- "experiment": "Build the record, regenerate it, apply 23 mutations and one positive control, request a deployment decision.",
+ "expected_invariant": "The unmodified record validates against every artifact; each of 26 mutations is refused with its code and the pinned pre-release control is accepted; deployment is refused. Reproducibility of the record across runs is left to the regression gate, which compares record_sha256 exactly.",
+ "experiment": "Build the record, validate it against the bitstream, constraint, source and toolchain files, apply 26 mutations and one positive control, request a deployment decision.",
  "failure_modes_checked": [
   "bitstream bit flip",
   "truncation",
   "constraint edit/addition",
   "source edit",
+  "toolchain installation file edited or added",
+  "installed toolchain version differs",
   "floating toolchain versions (latest, ranges, .x, nightly, unnumbered rc, trailing newline)",
   "non-string toolchain version",
   "toolchain without installation digest",
@@ -72,6 +74,27 @@
       "observed_refusal": "source_tree_mismatch",
       "passed": true,
       "reference": "edited source file",
+      "reference_kind": "refusal"
+     },
+     {
+      "expected_refusal": "toolchain_installation_mismatch",
+      "observed_refusal": "toolchain_installation_mismatch",
+      "passed": true,
+      "reference": "toolchain installation with an edited library",
+      "reference_kind": "refusal"
+     },
+     {
+      "expected_refusal": "toolchain_installation_mismatch",
+      "observed_refusal": "toolchain_installation_mismatch",
+      "passed": true,
+      "reference": "toolchain installation with an added executable",
+      "reference_kind": "refusal"
+     },
+     {
+      "expected_refusal": "toolchain_version_mismatch",
+      "observed_refusal": "toolchain_version_mismatch",
+      "passed": true,
+      "reference": "installed toolchain reporting version 0.0.2",
       "reference_kind": "refusal"
      },
      {
@@ -206,14 +229,6 @@
       "passed": true,
       "reference": "pinned pre-release version '2024.1-rc2' (positive control)",
       "reference_kind": "refusal"
-     },
-     {
-      "comparison": "abs_le",
-      "observed": 0.0,
-      "passed": true,
-      "reference": "record digest differs on regeneration",
-      "reference_kind": "exact_arithmetic",
-      "tolerance": 0.0
      }
     ],
     "generator": {
@@ -221,7 +236,7 @@
      "seed": 150
     }
    },
-   "claim": "Bitstream identity record binds bitstream, toolchain, constraints and source tree",
+   "claim": "Bitstream identity record binds bitstream, toolchain version and installation manifest, constraints and source tree",
    "domain": "provenance",
    "evidence_status": "numerically_verified",
    "regression_tolerance": {
@@ -236,8 +251,8 @@
    "unit": null,
    "value": {
     "accepted_positive_controls": 1,
-    "record_sha256": "4fb69fd0987666392beb39560114d68e4516bae9ac884814653de26dee734137",
-    "refused_mutations": 23
+    "record_sha256": "8f04faf1ada727853cb4084356fa5e83a3d767c8c8548ae4952ba8240ed13fe2",
+    "refused_mutations": 26
    }
   },
   {
@@ -293,7 +308,7 @@
   {
    "bytes": 954,
    "path": "artifacts/T150/bitstream-identity.json",
-   "sha256": "30b8f738190e6642922c770bc671acfd9436f9225b4631aa88bed38ff30d4433"
+   "sha256": "047c10e95b01c1c0822ec1fc4efa05c70c6ec85d13a3e26c53a7d9b4ac776511"
   },
   {
    "bytes": 469,
@@ -301,15 +316,15 @@
    "sha256": "f8d10354b176b6deed60f704b91d588b355552b901445a08cb1b685a639fc630"
   }
  ],
- "hypothesis": "An identity record over canonical JSON can bind a bitstream's sha256 to its exact toolchain version and installation digest, constraint files and source tree, so that a change to any of them is detected when the changed artifact is checked against the record.",
+ "hypothesis": "An identity record over canonical JSON can bind a bitstream's sha256 to its exact toolchain version and installation manifest digest, constraint files and source tree, so that a change to any of them is detected when the changed artifact (bitstream, installed toolchain files and reported version, constraint or source files) is checked against the record. The installation digest binds exactly the toolchain files supplied; which files of a vendor toolchain must be supplied is not specified here.",
  "input_data": [
   "Seeded synthetic placeholder bitstream (prefix CIW-SYNTHETIC-BITSTREAM-NOT-A-CONFIGURATION)",
   "placeholder constraint and source files",
-  "placeholder toolchain installation digest"
+  "three placeholder toolchain installation files"
  ],
- "mathematical_model": "record_sha256 = sha256(E(record without record_sha256)), E = ciw.canonical-json.v1; constraints_sha256 = sha256(E({file: sha256})); source tree = sha256(E({path: sha256})); toolchain version must match [0-9]+(\\.[0-9]+){1,3}([-_.](rc|beta|alpha)[0-9]+)?\\Z and the toolchain carries installation_sha256; every digest field is 64 lowercase hex digits, sizes are nonnegative integers and the synthetic flag is a boolean.",
+ "mathematical_model": "record_sha256 = sha256(E(record without record_sha256)), E = ciw.canonical-json.v1; constraints_sha256 = sha256(E({file: sha256})); source tree = sha256(E({path: sha256})); installation_sha256 = sha256(E({toolchain file: sha256})); toolchain version must match [0-9]+(\\.[0-9]+){1,3}([-_.](rc|beta|alpha)[0-9]+)?\\Z and equal the version the installed toolchain reports; every digest field is 64 lowercase hex digits, sizes are nonnegative integers and the synthetic flag is a boolean.",
  "number": 150,
- "numerical_result": "record_sha256 4fb69fd098766639...; 23/23 mutations refused with their codes; 1/1 pinned pre-release accepted; deployment refused (synthetic_bitstream).",
+ "numerical_result": "record_sha256 8f04faf1ada72785...; 26/26 mutations refused with their codes; 1/1 pinned pre-release accepted; deployment refused (synthetic_bitstream).",
  "observation_model": "Validator outcomes over the record and supplied artifacts; no FPGA toolchain ran.",
  "physical_validation_status": {
   "statement": "Physical validation requires acquired hardware evidence; none was acquired for this task.",
@@ -323,44 +338,46 @@
   "python": "3.12.3",
   "scipy": "1.16.2",
   "sources": {
-   "src/ciw/lab/implementation_targets.py": "4e27c12d31365590b7fb82d98b8d02e1668c7b8e73b03f71ef270eca9fcf6eea",
-   "src/ciw/lab/implementation_targets_fpga.py": "d546fbe93f98a17bb6a94d6e1e887da44edfb783f37684b9689d47adb1a9f477",
+   "src/ciw/lab/implementation_targets.py": "1df8bd67d28b18d70bcb5f74e4a14616ceb17868c7a9aa75595f15254426ee7e",
+   "src/ciw/lab/implementation_targets_fpga.py": "7af2bda8190c93108f5bac0d8b28ffd057267b6b428af3d8f820d0f594ea5e00",
    "src/ciw/lab/implementation_targets_serial.py": "7978adc19db2c04e37532de2a5dbff32738b3c286c40e19ab8ec1d78361ef3e6"
   },
   "sympy": "1.14.0"
  },
  "recommended_next_task": "T151 (compatibility and rollback records referencing these identities)",
- "report_id": "sha256:053c6428e0712719d34a27485fdb87fe542823c6e8ac14ebe4e442a3e2f9b1ef",
+ "report_id": "sha256:d6e890ed6bc676351a80db8b4821db1963b2f6c342ff84f79d9aaf6a820c7417",
  "schema": "ciw.lab-task-report.v1",
  "section": "implementation-targets",
  "state": "completed",
  "task_id": "T150",
  "tests_passed": [
-  "check: Bitstream identity record binds bitstream, toolchain, constraints and source tree vs one flipped bitstream bit",
-  "check: Bitstream identity record binds bitstream, toolchain, constraints and source tree vs truncated bitstream",
-  "check: Bitstream identity record binds bitstream, toolchain, constraints and source tree vs edited constraint file",
-  "check: Bitstream identity record binds bitstream, toolchain, constraints and source tree vs added constraint file",
-  "check: Bitstream identity record binds bitstream, toolchain, constraints and source tree vs edited source file",
-  "check: Bitstream identity record binds bitstream, toolchain, constraints and source tree vs floating toolchain version 'latest'",
-  "check: Bitstream identity record binds bitstream, toolchain, constraints and source tree vs floating toolchain version '>=2024.1'",
-  "check: Bitstream identity record binds bitstream, toolchain, constraints and source tree vs floating toolchain version '2024.1.x'",
-  "check: Bitstream identity record binds bitstream, toolchain, constraints and source tree vs floating toolchain version '1.0-latest'",
-  "check: Bitstream identity record binds bitstream, toolchain, constraints and source tree vs floating toolchain version '2023.2_nightly'",
-  "check: Bitstream identity record binds bitstream, toolchain, constraints and source tree vs floating toolchain version '2024.1-rc'",
-  "check: Bitstream identity record binds bitstream, toolchain, constraints and source tree vs toolchain version with a trailing newline '2024.1\\n'",
-  "check: Bitstream identity record binds bitstream, toolchain, constraints and source tree vs toolchain version as the number 2024.1, not a string",
-  "check: Bitstream identity record binds bitstream, toolchain, constraints and source tree vs toolchain without an installation digest",
-  "check: Bitstream identity record binds bitstream, toolchain, constraints and source tree vs installation digest with a trailing newline",
-  "check: Bitstream identity record binds bitstream, toolchain, constraints and source tree vs part changed without recomputing the record digest",
-  "check: Bitstream identity record binds bitstream, toolchain, constraints and source tree vs record without toolchain",
-  "check: Bitstream identity record binds bitstream, toolchain, constraints and source tree vs uppercase digest",
-  "check: Bitstream identity record binds bitstream, toolchain, constraints and source tree vs source-tree digest 'TBD'",
-  "check: Bitstream identity record binds bitstream, toolchain, constraints and source tree vs source-tree digest with a trailing newline",
-  "check: Bitstream identity record binds bitstream, toolchain, constraints and source tree vs source tree given as a bare string, with source files supplied",
-  "check: Bitstream identity record binds bitstream, toolchain, constraints and source tree vs synthetic flag 'no' instead of a boolean",
-  "check: Bitstream identity record binds bitstream, toolchain, constraints and source tree vs negative bitstream size",
-  "check: Bitstream identity record binds bitstream, toolchain, constraints and source tree vs pinned pre-release version '2024.1-rc2' (positive control)",
-  "check: Bitstream identity record binds bitstream, toolchain, constraints and source tree vs record digest differs on regeneration",
+  "check: Bitstream identity record binds bitstream, toolchain version and installation manifest, constraints and source tree vs one flipped bitstream bit",
+  "check: Bitstream identity record binds bitstream, toolchain version and installation manifest, constraints and source tree vs truncated bitstream",
+  "check: Bitstream identity record binds bitstream, toolchain version and installation manifest, constraints and source tree vs edited constraint file",
+  "check: Bitstream identity record binds bitstream, toolchain version and installation manifest, constraints and source tree vs added constraint file",
+  "check: Bitstream identity record binds bitstream, toolchain version and installation manifest, constraints and source tree vs edited source file",
+  "check: Bitstream identity record binds bitstream, toolchain version and installation manifest, constraints and source tree vs toolchain installation with an edited library",
+  "check: Bitstream identity record binds bitstream, toolchain version and installation manifest, constraints and source tree vs toolchain installation with an added executable",
+  "check: Bitstream identity record binds bitstream, toolchain version and installation manifest, constraints and source tree vs installed toolchain reporting version 0.0.2",
+  "check: Bitstream identity record binds bitstream, toolchain version and installation manifest, constraints and source tree vs floating toolchain version 'latest'",
+  "check: Bitstream identity record binds bitstream, toolchain version and installation manifest, constraints and source tree vs floating toolchain version '>=2024.1'",
+  "check: Bitstream identity record binds bitstream, toolchain version and installation manifest, constraints and source tree vs floating toolchain version '2024.1.x'",
+  "check: Bitstream identity record binds bitstream, toolchain version and installation manifest, constraints and source tree vs floating toolchain version '1.0-latest'",
+  "check: Bitstream identity record binds bitstream, toolchain version and installation manifest, constraints and source tree vs floating toolchain version '2023.2_nightly'",
+  "check: Bitstream identity record binds bitstream, toolchain version and installation manifest, constraints and source tree vs floating toolchain version '2024.1-rc'",
+  "check: Bitstream identity record binds bitstream, toolchain version and installation manifest, constraints and source tree vs toolchain version with a trailing newline '2024.1\\n'",
+  "check: Bitstream identity record binds bitstream, toolchain version and installation manifest, constraints and source tree vs toolchain version as the number 2024.1, not a string",
+  "check: Bitstream identity record binds bitstream, toolchain version and installation manifest, constraints and source tree vs toolchain without an installation digest",
+  "check: Bitstream identity record binds bitstream, toolchain version and installation manifest, constraints and source tree vs installation digest with a trailing newline",
+  "check: Bitstream identity record binds bitstream, toolchain version and installation manifest, constraints and source tree vs part changed without recomputing the record digest",
+  "check: Bitstream identity record binds bitstream, toolchain version and installation manifest, constraints and source tree vs record without toolchain",
+  "check: Bitstream identity record binds bitstream, toolchain version and installation manifest, constraints and source tree vs uppercase digest",
+  "check: Bitstream identity record binds bitstream, toolchain version and installation manifest, constraints and source tree vs source-tree digest 'TBD'",
+  "check: Bitstream identity record binds bitstream, toolchain version and installation manifest, constraints and source tree vs source-tree digest with a trailing newline",
+  "check: Bitstream identity record binds bitstream, toolchain version and installation manifest, constraints and source tree vs source tree given as a bare string, with source files supplied",
+  "check: Bitstream identity record binds bitstream, toolchain version and installation manifest, constraints and source tree vs synthetic flag 'no' instead of a boolean",
+  "check: Bitstream identity record binds bitstream, toolchain version and installation manifest, constraints and source tree vs negative bitstream size",
+  "check: Bitstream identity record binds bitstream, toolchain version and installation manifest, constraints and source tree vs pinned pre-release version '2024.1-rc2' (positive control)",
   "check: Deployment of a synthetic placeholder bitstream is refused vs deployment decision for a synthetic record",
   "pytest: tests/test_lab_implementation_targets.py::test_t150_bitstream_identity"
  ],
@@ -370,7 +387,8 @@
  "unresolved_assumptions": [
   "No real bitstream, toolchain log or device part exists here",
   "Toolchain determinism (same inputs -> same bitstream) is not established",
-  "How installation_sha256 is computed for a vendor toolchain (which files) is not specified here",
+  "installation_sha256 binds the toolchain files supplied; which files of a vendor toolchain must be supplied (executables, libraries, device databases) is not specified here, and a change outside them is not detected",
+  "The installed toolchain's reported version is taken as given",
   "Detection of unseen changes relies on sha256 collision resistance"
  ]
 }

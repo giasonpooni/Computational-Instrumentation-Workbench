@@ -11,19 +11,20 @@
    "hardware_measured": 0,
    "independently_verified": 0,
    "not_established": 1,
-   "numerically_verified": 2,
+   "numerically_verified": 3,
    "provider_backed": 0,
    "synthetic": 0
   },
   "primary": "numerically_verified"
  },
- "expected_invariant": "Every predicted refusal is observed; T084's sibling-execution survivor shows the subject and source moved together; the harness controls hold.",
+ "expected_invariant": "Every predicted refusal is observed; the injected subject_ref is returned by result.get after reopen; T084's sibling-execution survivor shows the energy subject and source moved together; the harness controls hold.",
  "experiment": "Edit the saved workspace (verification subject), recompute none, local or all unkeyed digests, write it and reopen with Session.from_workspace; pure ESM and exchange validators are also run on synthetic records. Rows retained as verification-subject-mutations.json/.md.",
  "failure_modes_checked": [
   "receipt-subject.naive: verification subject set to the replay bundle",
   "receipt-subject.resealed: subject set to the replay bundle; verification_id and replay_id recomputed",
   "bundle-subject.resealed: original bundle's verification subject set to a sibling; verification_id recomputed",
   "oscillator-verification.resealed: verification_id and verification_status forged; resealed",
+  "oscillator-subject.injected: subject_ref naming the sibling result R2 injected into a sealed result; resealed",
   "esm.bundle-subject: candidate bundleDigest set to another synthetic bundle",
   "exchange.verification-subject: subject_ref edited without recomputing verification_id"
  ],
@@ -149,6 +150,62 @@
    "basis": {
     "checks": [
      {
+      "comparison": "ge",
+      "observed": 1.0,
+      "passed": true,
+      "reference": "oscillator-subject.injected: accepted (1 = accepted)",
+      "reference_kind": "invariant",
+      "tolerance": 1.0
+     },
+     {
+      "comparison": "abs_le",
+      "observed": 0.0,
+      "passed": true,
+      "reference": "reopened result.get returns the injected subject_ref beside verification_status not_verified (0 = shown)",
+      "reference_kind": "exact_arithmetic",
+      "tolerance": 0.0
+     }
+    ]
+   },
+   "claim": "Surviving mutant oscillator-subject.injected: a sealed result carrying an injected verification subject naming its sibling result reopens",
+   "counterexample": {
+    "statement": "Sealed operation records refuse verification-subject claims outside their schema",
+    "witness": {
+     "description": "subject_ref naming the sibling result R2 injected into a sealed result; resealed",
+     "name": "oscillator-subject.injected",
+     "observed": "accepted",
+     "post_reopen": {
+      "result.get": {
+       "subject_ref": "result:R2",
+       "verification_status": "not_verified"
+      }
+     },
+     "recompute": "local",
+     "target": "oscillator result"
+    }
+   },
+   "domain": "provenance",
+   "evidence_status": "numerically_verified",
+   "regression_tolerance": {
+    "abs": 0.0,
+    "rel": 0.0
+   },
+   "uncertainty": {
+    "basis": "exact equality of SHA-256 digests, bytes, counts, booleans or refusal strings; no rounding",
+    "kind": "exact",
+    "value": 0.0
+   },
+   "unit": null,
+   "value": {
+    "mutant": "oscillator-subject.injected",
+    "observed": "accepted"
+   }
+  },
+  {
+   "assigned_by": "ciw.lab.evidence",
+   "basis": {
+    "checks": [
+     {
       "comparison": "abs_le",
       "observed": 0.0,
       "passed": true,
@@ -197,31 +254,35 @@
    "uncertainty": null,
    "unit": null,
    "value": {
-    "surviving_mutants_in_this_task": []
+    "surviving_mutants_in_this_task": [
+     "oscillator-subject.injected"
+    ]
    }
   }
  ],
  "generated_artifacts": [
   {
-   "bytes": 3546,
+   "bytes": 4168,
    "path": "artifacts/T086/verification-subject-mutations.json",
-   "sha256": "beb54b230bea51aad4105af0940d54129ab93dbf1a529957f84fa9977aef72e9"
+   "sha256": "32eb0d67a126a7ed49c2da256fb6a81c21cbe25d139c6c13c1d93fd8d05fab00"
   },
   {
-   "bytes": 1486,
+   "bytes": 1609,
    "path": "artifacts/T086/verification-subject-mutations.md",
-   "sha256": "1a31cdae8ce9ad93ebd074ac985455adffe8b9f2703c86c23e810f90220c345c"
+   "sha256": "a052b916ad82660868f01636409e98ed71368a92b2fa6ac7dc19ec69bd0a623d"
   }
  ],
- "hypothesis": "Predicted kills: a receipt verification subject edited with or without recomputed ids (reopen rebuilds the expected verification with subject = receipt source); a bundle verification subject other than the bundle's own digest; oscillator verification fields (protocol v1 fixes them); an ESM candidate naming another bundle; an exchange subject edit without a recomputed verification_id. No survivor of its own is predicted: the subject can move only together with the receipt source, which is T084's receipt-source.sibling-execution (cross-referenced here, not re-run).",
+ "hypothesis": "Predicted kills: a receipt verification subject edited with or without recomputed ids (reopen rebuilds the expected verification with subject = receipt source); a bundle verification subject other than the bundle's own digest; oscillator verification fields (protocol v1 fixes them); an ESM candidate naming another bundle; an exchange subject edit without a recomputed verification_id. On the energy path the subject can move only together with the receipt source, which is T084's receipt-source.sibling-execution (cross-referenced here, not re-run). Predicted survivor: oscillator-subject.injected, because sealed oscillator records do not refuse extra keys and their seal is unkeyed (as for the method, independence and admission injections of T087-T089).",
  "input_data": [
   "make_demo_run() damped-oscillator recording; statistics.v1 on channel v over [1, 2] s, twice, plus one legacy analysis.stats result",
   "examples/energy-accuracy/{baseline,reset}.json (origin synthetic_fixture): two original executions of baseline, one of reset, replays, and a separate session in the same process",
-  "Workspaces saved by Session.save_workspace and reopened by Session.from_workspace in temporary directories"
+  "Workspaces saved by Session.save_workspace and reopened by Session.from_workspace in temporary directories",
+  "Synthetic telemetry-shaped records (schema, bundle digest, three step occurrences; exchange_provenance_common.telemetry_shaped_bundle) and a minimal ESM candidate inspection of them (esm_case), judged only by candidate_evidence.validate_response; no telemetry workflow or ESM process",
+  "Synthetic exchange result and verification artifacts whose content identities are computed locally (exchange_provenance_common.exchange_artifact), judged only by exchange._identity"
  ],
  "mathematical_model": "Each record seal or identity d = sha256(canon(record \\ d)) is unkeyed, so any holder can recompute d after an edit. Reopen kills a mutant only if some check compares the edited field with an independently recomputed, fixed or cross-referenced value; otherwise a consistent recomputation survives.",
  "number": 86,
- "numerical_result": "6 rows (4 workspace mutants, 2 pure-validator rows): 6 refused; 0 surviving forgeries (none); kill/survive predictions matched 6/6; refusal messages matched their regression pins 6/6",
+ "numerical_result": "7 rows (5 workspace mutants, 2 pure-validator rows): 6 refused; 1 surviving forgery (oscillator-subject.injected); kill/survive predictions matched 7/7; refusal messages matched their regression pins 6/6",
  "observation_model": "No physical observation. The observed objects are CIW records (sessions, executions, results, bundles, receipts, saved workspace JSON) produced offline by the unmodified CIW code; the energy logs are synthetic fixtures and no hardware was sampled.",
  "physical_validation_status": {
   "statement": "Physical validation requires acquired hardware evidence; none was acquired for this task.",
@@ -235,13 +296,13 @@
   "python": "3.12.3",
   "scipy": "1.16.2",
   "sources": {
-   "src/ciw/lab/exchange_provenance.py": "5cc267c7777c9b434b8747b0cc841ac85313e1cfb6ff4c429ee93aa5ddbb645b",
-   "src/ciw/lab/exchange_provenance_common.py": "22028c4008079fba23c5e807de0104ba1a0014027e1d40a9209881cdf232f486"
+   "src/ciw/lab/exchange_provenance.py": "f55593eb90af9ed82e40f0f04987c7f0a06cf1c40e7079b0a371e0506607618b",
+   "src/ciw/lab/exchange_provenance_common.py": "f8e765184af4e893a0c4c6d9e5cb2988b79e6f3dfc3d941444f335ecc894d775"
   },
   "sympy": "1.14.0"
  },
  "recommended_next_task": "T087 (mutate verification method)",
- "report_id": "sha256:14daf835e681c3b0e48a6ac93bcdb6eb9e95ae5a9df67e0dc1fdfc3d1f3fcb4f",
+ "report_id": "sha256:6732d8d0b45a77b605648eed2d46b01e2a75938db58a63b0b6581bfb8a6fcb5f",
  "schema": "ciw.lab-task-report.v1",
  "section": "exchange-provenance",
  "state": "completed",
@@ -255,6 +316,8 @@
   "check: Verification subject forgeries that leave a digest stale or contradict a recomputed, fixed or cross-referenced value are refused with the pinned message vs exchange.verification-subject: validator refusal",
   "check: Verification subject forgeries that leave a digest stale or contradict a recomputed, fixed or cross-referenced value are refused with the pinned message vs harness control: the forger's recomputation of the unedited workspace reproduces every CIW digest",
   "check: Verification subject forgeries that leave a digest stale or contradict a recomputed, fixed or cross-referenced value are refused with the pinned message vs harness control: the unedited saved workspace reopens",
+  "check: Surviving mutant oscillator-subject.injected: a sealed result carrying an injected verification subject naming its sibling result reopens vs oscillator-subject.injected: accepted (1 = accepted)",
+  "check: Surviving mutant oscillator-subject.injected: a sealed result carrying an injected verification subject naming its sibling result reopens vs reopened result.get returns the injected subject_ref beside verification_status not_verified (0 = shown)",
   "check: The verification subject moves with the receipt source: T084's surviving mutant receipt-source.sibling-execution rebinds both to a sibling execution and reopens vs T084 sibling-execution row accepted with subject and source both naming the sibling (0 = observed)",
   "pytest: tests/test_lab_exchange_provenance.py::test_verification_mutations"
  ],

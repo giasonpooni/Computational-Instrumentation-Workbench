@@ -11,14 +11,14 @@
    "hardware_measured": 0,
    "independently_verified": 0,
    "not_established": 1,
-   "numerically_verified": 3,
+   "numerically_verified": 4,
    "provider_backed": 0,
    "synthetic": 0
   },
   "primary": "numerically_verified"
  },
  "expected_invariant": "Full gate refuses each scenario with its check's code; the gate without that check gives a different outcome; no admission without an explicit gate call; AdmittedState immutable.",
- "experiment": "Build each violating candidate (private state corruption simulates internal faults), run the full gate and the gate with the targeted check deleted, and exercise construction and mutation of each type.",
+ "experiment": "Build each violating candidate (private state corruption simulates internal faults), run the full gate and the gate with the targeted check deleted, follow an outlier update with a prediction, a later update and an explicit re-initialization, and exercise construction and mutation of each type.",
  "failure_modes_checked": [
   "subclass imposter",
   "tampered mean with a stale digest",
@@ -30,7 +30,9 @@
   "lost track",
   "excess uncertainty",
   "inconsistent innovation",
+  "prediction issued after an inconsistent update",
   "revoked calibration",
+  "prediction issued after a revocation",
   "read-only session",
   "missing declaration",
   "frame mismatch"
@@ -132,10 +134,24 @@
       "reference_kind": "refusal"
      },
      {
+      "expected_refusal": "inconsistent_innovation",
+      "observed_refusal": "inconsistent_innovation",
+      "passed": true,
+      "reference": "admission of a candidate in scenario 'prediction_after_inconsistent_update' (check 'innovation')",
+      "reference_kind": "refusal"
+     },
+     {
       "expected_refusal": "calibration_revoked",
       "observed_refusal": "calibration_revoked",
       "passed": true,
       "reference": "admission of a candidate in scenario 'calibration' (check 'calibration')",
+      "reference_kind": "refusal"
+     },
+     {
+      "expected_refusal": "calibration_revoked",
+      "observed_refusal": "calibration_revoked",
+      "passed": true,
+      "reference": "admission of a candidate in scenario 'prediction_after_revocation' (check 'calibration')",
       "reference_kind": "refusal"
      },
      {
@@ -149,7 +165,7 @@
     ],
     "derivation": "ADMISSION_CHECKS in ciw.lab.sensor_fusion_objects"
    },
-   "claim": "Every admission check refuses the candidates built to violate it, with that check's own refusal code, including a candidate superseded by a second update at the same tick",
+   "claim": "Every admission check refuses the candidates built to violate it, with that check's own refusal code, including a candidate superseded by a second update at the same tick and predictions issued after an inconsistent update or after a calibration revocation",
    "domain": "computational_pipeline",
    "evidence_status": "numerically_verified",
    "regression_tolerance": {
@@ -197,6 +213,16 @@
      "check": "integrity",
      "expected": "digest_mismatch",
      "full_gate": "digest_mismatch"
+    },
+    "prediction_after_inconsistent_update": {
+     "check": "innovation",
+     "expected": "inconsistent_innovation",
+     "full_gate": "inconsistent_innovation"
+    },
+    "prediction_after_revocation": {
+     "check": "calibration",
+     "expected": "calibration_revoked",
+     "full_gate": "calibration_revoked"
     },
     "provenance": {
      "check": "provenance",
@@ -284,9 +310,9 @@
      "provenance"
     ],
     "checks": 13,
-    "mutants_killed": 14,
-    "scenarios": 14,
-    "sole_guard_scenarios": 12,
+    "mutants_killed": 16,
+    "scenarios": 16,
+    "sole_guard_scenarios": 14,
     "without_targeted_check": {
      "calibration": "admitted",
      "covariance": "admitted",
@@ -295,6 +321,8 @@
      "frame": "admitted",
      "innovation": "admitted",
      "integrity": "admitted",
+     "prediction_after_inconsistent_update": "admitted",
+     "prediction_after_revocation": "admitted",
      "provenance": "stale_candidate",
      "stale_tick": "admitted",
      "superseded_same_tick": "admitted",
@@ -303,6 +331,79 @@
      "uncertainty": "admitted",
      "writable": "admitted"
     }
+   }
+  },
+  {
+   "assigned_by": "ciw.lab.evidence",
+   "basis": {
+    "checks": [
+     {
+      "expected_refusal": "inconsistent_innovation",
+      "observed_refusal": "inconsistent_innovation",
+      "passed": true,
+      "reference": "admission of an update fused after the inconsistent one",
+      "reference_kind": "refusal"
+     },
+     {
+      "expected_refusal": "none",
+      "observed_refusal": "none",
+      "passed": true,
+      "reference": "admission of an update after an explicit re-initialization",
+      "reference_kind": "refusal"
+     },
+     {
+      "comparison": "abs_le",
+      "observed": 0.0,
+      "passed": true,
+      "reference": "prediction after the revocation does not cite the revoked calibration",
+      "reference_kind": "invariant",
+      "tolerance": 0.0
+     },
+     {
+      "comparison": "abs_le",
+      "observed": 0.0,
+      "passed": true,
+      "reference": "innovations carried by the first update after an admission minus one",
+      "reference_kind": "exact_arithmetic",
+      "tolerance": 0.0
+     },
+     {
+      "comparison": "abs_le",
+      "observed": 0.0,
+      "passed": true,
+      "reference": "innovations carried by the admitted candidate minus the ten fused",
+      "reference_kind": "exact_arithmetic",
+      "tolerance": 0.0
+     }
+    ],
+    "derivation": "FusionSession._issue, fuse, initialize, reacquire and admit"
+   },
+   "claim": "A candidate carries every innovation fused since the last admitted, initialized or reacquired state and every calibration its state was built under since the last initialization or reacquisition: after an inconsistent update a later consistent update is still refused until an explicit re-initialization, a prediction after a revocation cites the revoked calibration, and after an admission the next candidate carries only the innovations fused after it",
+   "domain": "computational_pipeline",
+   "evidence_status": "numerically_verified",
+   "regression_tolerance": {
+    "abs": 1e-09,
+    "rel": 1e-06
+   },
+   "uncertainty": {
+    "basis": "deterministic gate outcomes; the recorded NIS values carry roundoff only",
+    "kind": "reference_error",
+    "value": 0.0
+   },
+   "unit": null,
+   "value": {
+    "calibrations_carried_by_prediction_after_revocation": [
+     "cam-cal"
+    ],
+    "codes": {
+     "update_after_outlier": "inconsistent_innovation",
+     "update_after_reinitialization": "none"
+    },
+    "innovations_carried_after_admission": 1,
+    "innovations_carried_before_admission": 10,
+    "update_after_outlier_innovations": 12,
+    "update_after_outlier_max_nis": 200.9420026895398,
+    "update_after_outlier_own_nis": 14.484112173837133
    }
   },
   {
@@ -425,19 +526,19 @@
  ],
  "generated_artifacts": [
   {
-   "bytes": 3572,
+   "bytes": 4438,
    "path": "artifacts/T075/admission_mutations.json",
-   "sha256": "109d6a2f7b721099a6e2d56b88fe9d10c56eac761a467a64ed57ce68a72ef6a4"
+   "sha256": "7ae899afa9e96356fe77c74612ef1922add50bc392bee587a8eccc88a17ff874"
   }
  ],
- "hypothesis": "Keeping observations, candidate states and admitted states as separate types, with a single explicit gate whose every check is load-bearing, guards against a candidate becoming state by accident, naive tampering or omission.",
+ "hypothesis": "Keeping observations, candidate states and admitted states as separate types, with a single explicit gate whose every check is load-bearing and candidates that carry the evidence of every update their state depends on, guards against a candidate becoming state by accident, naive tampering or omission, including a prediction issued after an inconsistent update.",
  "input_data": [
-  "one synthetic camera run (seed 752026) driving a FusionSession for each scenario",
-  "14 violation scenarios covering all 13 checks, plus one valid control"
+  "one synthetic camera run (seed 752026) driving a FusionSession for each scenario and for the inheritance sequence",
+  "16 violation scenarios covering all 13 checks, plus one valid control"
  ],
- "mathematical_model": "Admission = ordered conjunction of declared checks (declared, writable, typed, finite, covariance, integrity, provenance, frame, fresh, track, uncertainty, innovation, calibration); fresh means the most recently issued candidate at the session tick; fail closed on any exception. Mutation m_i removes check i.",
+ "mathematical_model": "Admission = ordered conjunction of declared checks (declared, writable, typed, finite, covariance, integrity, provenance, frame, fresh, track, uncertainty, innovation, calibration); fresh means the most recently issued candidate at the session tick; the innovation check covers every innovation since the last admitted, initialized or reacquired state and the calibration check every calibration since the last initialization or reacquisition; fail closed on any exception. Mutation m_i removes check i.",
  "number": 75,
- "numerical_result": "14/14 scenarios refused with the expected code; 14/14 mutants killed; in 12 scenarios the targeted check is the sole guard; backed up by a later check: declared, provenance (the provenance check adds a specific refusal code, but freshness already implies an issued digest).",
+ "numerical_result": "16/16 scenarios refused with the expected code; 16/16 mutants killed; in 14 scenarios the targeted check is the sole guard; backed up by a later check: declared, provenance (the provenance check adds a specific refusal code, but freshness already implies an issued digest).",
  "observation_model": "Typed Observation objects; candidates issued by the session and sealed by a content digest.",
  "physical_validation_status": {
   "statement": "Physical validation requires acquired hardware evidence; none was acquired for this task.",
@@ -451,38 +552,45 @@
   "python": "3.12.3",
   "scipy": "1.16.2",
   "sources": {
-   "src/ciw/lab/sensor_fusion_admission.py": "db737df809fa23fd26fb21a196b6efa2bda6326aba21a8ff0288a99a95746c2c",
+   "src/ciw/lab/sensor_fusion_admission.py": "a0d36bf665e88d2851b08c6181a8f794e39751a688a04ebd586fbc93164cc3c7",
    "src/ciw/lab/sensor_fusion_bench.py": "f373849a4c6836fa20685c59ce7a6fe6bf732f6df9d6a49646cdc017262dd656",
-   "src/ciw/lab/sensor_fusion_common.py": "6787aa47d199d50d0b4de4d7e53714ce7b8b5aad37d647cfc1a954414e90209f",
-   "src/ciw/lab/sensor_fusion_objects.py": "a795ffc235e0a4118cb7b9ac7800191a90984372d79e59f1a934442d98d7a1f1"
+   "src/ciw/lab/sensor_fusion_common.py": "db3b0430ad5c13920239cef354da61b64ab1b01f84b2d3d5aff2f78840a5867a",
+   "src/ciw/lab/sensor_fusion_objects.py": "93fc55ddca91f1adfb886d21805ea8f82586548ee84e1f6cc7daed4df1f53bb9"
   },
   "sympy": "1.14.0"
  },
  "recommended_next_task": "T076: confirm that the session defaults to read-only with sensor fusion and state admission not performed.",
- "report_id": "sha256:704ed0c5f054f06cf65ea1927b765e11fade7528ee9a864853f43223132f0dc5",
+ "report_id": "sha256:646be989e90b8f837ef8d5666f0e3b7d8bbe4e648a2601d3464e5ea1de65e881",
  "schema": "ciw.lab-task-report.v1",
  "section": "sensor-fusion",
  "state": "completed",
  "task_id": "T075",
  "tests_passed": [
-  "check: Every admission check refuses the candidates built to violate it, with that check's own refusal code, including a candidate superseded by a second update at the same tick vs admission of a candidate in scenario 'declared' (check 'declared')",
-  "check: Every admission check refuses the candidates built to violate it, with that check's own refusal code, including a candidate superseded by a second update at the same tick vs admission of a candidate in scenario 'writable' (check 'writable')",
-  "check: Every admission check refuses the candidates built to violate it, with that check's own refusal code, including a candidate superseded by a second update at the same tick vs admission of a candidate in scenario 'typed' (check 'typed')",
-  "check: Every admission check refuses the candidates built to violate it, with that check's own refusal code, including a candidate superseded by a second update at the same tick vs admission of a candidate in scenario 'finite' (check 'finite')",
-  "check: Every admission check refuses the candidates built to violate it, with that check's own refusal code, including a candidate superseded by a second update at the same tick vs admission of a candidate in scenario 'covariance' (check 'covariance')",
-  "check: Every admission check refuses the candidates built to violate it, with that check's own refusal code, including a candidate superseded by a second update at the same tick vs admission of a candidate in scenario 'integrity' (check 'integrity')",
-  "check: Every admission check refuses the candidates built to violate it, with that check's own refusal code, including a candidate superseded by a second update at the same tick vs admission of a candidate in scenario 'provenance' (check 'provenance')",
-  "check: Every admission check refuses the candidates built to violate it, with that check's own refusal code, including a candidate superseded by a second update at the same tick vs admission of a candidate in scenario 'frame' (check 'frame')",
-  "check: Every admission check refuses the candidates built to violate it, with that check's own refusal code, including a candidate superseded by a second update at the same tick vs admission of a candidate in scenario 'stale_tick' (check 'fresh')",
-  "check: Every admission check refuses the candidates built to violate it, with that check's own refusal code, including a candidate superseded by a second update at the same tick vs admission of a candidate in scenario 'superseded_same_tick' (check 'fresh')",
-  "check: Every admission check refuses the candidates built to violate it, with that check's own refusal code, including a candidate superseded by a second update at the same tick vs admission of a candidate in scenario 'track' (check 'track')",
-  "check: Every admission check refuses the candidates built to violate it, with that check's own refusal code, including a candidate superseded by a second update at the same tick vs admission of a candidate in scenario 'uncertainty' (check 'uncertainty')",
-  "check: Every admission check refuses the candidates built to violate it, with that check's own refusal code, including a candidate superseded by a second update at the same tick vs admission of a candidate in scenario 'innovation' (check 'innovation')",
-  "check: Every admission check refuses the candidates built to violate it, with that check's own refusal code, including a candidate superseded by a second update at the same tick vs admission of a candidate in scenario 'calibration' (check 'calibration')",
-  "check: Every admission check refuses the candidates built to violate it, with that check's own refusal code, including a candidate superseded by a second update at the same tick vs admission checks without a violation scenario",
+  "check: Every admission check refuses the candidates built to violate it, with that check's own refusal code, including a candidate superseded by a second update at the same tick and predictions issued after an inconsistent update or after a calibration revocation vs admission of a candidate in scenario 'declared' (check 'declared')",
+  "check: Every admission check refuses the candidates built to violate it, with that check's own refusal code, including a candidate superseded by a second update at the same tick and predictions issued after an inconsistent update or after a calibration revocation vs admission of a candidate in scenario 'writable' (check 'writable')",
+  "check: Every admission check refuses the candidates built to violate it, with that check's own refusal code, including a candidate superseded by a second update at the same tick and predictions issued after an inconsistent update or after a calibration revocation vs admission of a candidate in scenario 'typed' (check 'typed')",
+  "check: Every admission check refuses the candidates built to violate it, with that check's own refusal code, including a candidate superseded by a second update at the same tick and predictions issued after an inconsistent update or after a calibration revocation vs admission of a candidate in scenario 'finite' (check 'finite')",
+  "check: Every admission check refuses the candidates built to violate it, with that check's own refusal code, including a candidate superseded by a second update at the same tick and predictions issued after an inconsistent update or after a calibration revocation vs admission of a candidate in scenario 'covariance' (check 'covariance')",
+  "check: Every admission check refuses the candidates built to violate it, with that check's own refusal code, including a candidate superseded by a second update at the same tick and predictions issued after an inconsistent update or after a calibration revocation vs admission of a candidate in scenario 'integrity' (check 'integrity')",
+  "check: Every admission check refuses the candidates built to violate it, with that check's own refusal code, including a candidate superseded by a second update at the same tick and predictions issued after an inconsistent update or after a calibration revocation vs admission of a candidate in scenario 'provenance' (check 'provenance')",
+  "check: Every admission check refuses the candidates built to violate it, with that check's own refusal code, including a candidate superseded by a second update at the same tick and predictions issued after an inconsistent update or after a calibration revocation vs admission of a candidate in scenario 'frame' (check 'frame')",
+  "check: Every admission check refuses the candidates built to violate it, with that check's own refusal code, including a candidate superseded by a second update at the same tick and predictions issued after an inconsistent update or after a calibration revocation vs admission of a candidate in scenario 'stale_tick' (check 'fresh')",
+  "check: Every admission check refuses the candidates built to violate it, with that check's own refusal code, including a candidate superseded by a second update at the same tick and predictions issued after an inconsistent update or after a calibration revocation vs admission of a candidate in scenario 'superseded_same_tick' (check 'fresh')",
+  "check: Every admission check refuses the candidates built to violate it, with that check's own refusal code, including a candidate superseded by a second update at the same tick and predictions issued after an inconsistent update or after a calibration revocation vs admission of a candidate in scenario 'track' (check 'track')",
+  "check: Every admission check refuses the candidates built to violate it, with that check's own refusal code, including a candidate superseded by a second update at the same tick and predictions issued after an inconsistent update or after a calibration revocation vs admission of a candidate in scenario 'uncertainty' (check 'uncertainty')",
+  "check: Every admission check refuses the candidates built to violate it, with that check's own refusal code, including a candidate superseded by a second update at the same tick and predictions issued after an inconsistent update or after a calibration revocation vs admission of a candidate in scenario 'innovation' (check 'innovation')",
+  "check: Every admission check refuses the candidates built to violate it, with that check's own refusal code, including a candidate superseded by a second update at the same tick and predictions issued after an inconsistent update or after a calibration revocation vs admission of a candidate in scenario 'prediction_after_inconsistent_update' (check 'innovation')",
+  "check: Every admission check refuses the candidates built to violate it, with that check's own refusal code, including a candidate superseded by a second update at the same tick and predictions issued after an inconsistent update or after a calibration revocation vs admission of a candidate in scenario 'calibration' (check 'calibration')",
+  "check: Every admission check refuses the candidates built to violate it, with that check's own refusal code, including a candidate superseded by a second update at the same tick and predictions issued after an inconsistent update or after a calibration revocation vs admission of a candidate in scenario 'prediction_after_revocation' (check 'calibration')",
+  "check: Every admission check refuses the candidates built to violate it, with that check's own refusal code, including a candidate superseded by a second update at the same tick and predictions issued after an inconsistent update or after a calibration revocation vs admission checks without a violation scenario",
   "check: Mutation analysis: deleting the check a scenario targets changes that scenario's outcome for every scenario, and the violating candidate is then admitted except in two scenarios where a later check still refuses it (a missing declaration fails the innovation check closed; a forged candidate is not the latest issue, so the freshness check refuses it) vs surviving mutants",
   "check: Mutation analysis: deleting the check a scenario targets changes that scenario's outcome for every scenario, and the violating candidate is then admitted except in two scenarios where a later check still refuses it (a missing declaration fails the innovation check closed; a forged candidate is not the latest issue, so the freshness check refuses it) vs scenarios backed up by a later check differ from {declared, provenance}",
   "check: Mutation analysis: deleting the check a scenario targets changes that scenario's outcome for every scenario, and the violating candidate is then admitted except in two scenarios where a later check still refuses it (a missing declaration fails the innovation check closed; a forged candidate is not the latest issue, so the freshness check refuses it) vs forged candidate with the provenance check deleted",
+  "check: A candidate carries every innovation fused since the last admitted, initialized or reacquired state and every calibration its state was built under since the last initialization or reacquisition: after an inconsistent update a later consistent update is still refused until an explicit re-initialization, a prediction after a revocation cites the revoked calibration, and after an admission the next candidate carries only the innovations fused after it vs admission of an update fused after the inconsistent one",
+  "check: A candidate carries every innovation fused since the last admitted, initialized or reacquired state and every calibration its state was built under since the last initialization or reacquisition: after an inconsistent update a later consistent update is still refused until an explicit re-initialization, a prediction after a revocation cites the revoked calibration, and after an admission the next candidate carries only the innovations fused after it vs admission of an update after an explicit re-initialization",
+  "check: A candidate carries every innovation fused since the last admitted, initialized or reacquired state and every calibration its state was built under since the last initialization or reacquisition: after an inconsistent update a later consistent update is still refused until an explicit re-initialization, a prediction after a revocation cites the revoked calibration, and after an admission the next candidate carries only the innovations fused after it vs prediction after the revocation does not cite the revoked calibration",
+  "check: A candidate carries every innovation fused since the last admitted, initialized or reacquired state and every calibration its state was built under since the last initialization or reacquisition: after an inconsistent update a later consistent update is still refused until an explicit re-initialization, a prediction after a revocation cites the revoked calibration, and after an admission the next candidate carries only the innovations fused after it vs innovations carried by the first update after an admission minus one",
+  "check: A candidate carries every innovation fused since the last admitted, initialized or reacquired state and every calibration its state was built under since the last initialization or reacquisition: after an inconsistent update a later consistent update is still refused until an explicit re-initialization, a prediction after a revocation cites the revoked calibration, and after an admission the next candidate carries only the innovations fused after it vs innovations carried by the admitted candidate minus the ten fused",
   "check: Observations, candidates and admitted states are unrelated types; candidates are never admitted automatically; an admitted state exists only through the gate and is immutable vs subclass relations among the three types",
   "check: Observations, candidates and admitted states are unrelated types; candidates are never admitted automatically; an admitted state exists only through the gate and is immutable vs states admitted without calling the gate",
   "check: Observations, candidates and admitted states are unrelated types; candidates are never admitted automatically; an admitted state exists only through the gate and is immutable vs admitted states after one explicit gate call minus one",
@@ -491,6 +599,7 @@
   "check: Observations, candidates and admitted states are unrelated types; candidates are never admitted automatically; an admitted state exists only through the gate and is immutable vs a candidate accepted an attribute assignment (frozen dataclass)",
   "check: Observations, candidates and admitted states are unrelated types; candidates are never admitted automatically; an admitted state exists only through the gate and is immutable vs an observation accepted an attribute assignment (frozen dataclass)",
   "pytest: tests/test_lab_sensor_fusion.py::test_typed_objects_and_admission_mutations",
+  "pytest: tests/test_lab_sensor_fusion.py::test_candidates_inherit_inconsistent_innovations_and_revocations",
   "pytest: tests/test_lab_sensor_fusion.py::test_section_reports_labels_and_states[T075]"
  ],
  "tests_skipped": [],
@@ -498,6 +607,8 @@
  "uncertainty": "None: the outcomes are deterministic.",
  "unresolved_assumptions": [
   "Python objects can be forced (object.__setattr__) by code with that intent; the gate defends against accident and naive tampering, not a hostile process.",
-  "The declared thresholds are inputs; choosing them is outside this experiment."
+  "The declared thresholds are inputs; choosing them is outside this experiment.",
+  "The innovation check applies the declared quantile to each carried innovation, so a consistent track with n innovations since its last admission is refused with probability 1 - p^n; frequent admission keeps n small.",
+  "After an inconsistent innovation the only recovery is explicit: re-initialization, or reacquisition once the track is declared lost."
  ]
 }

@@ -4,4 +4,5 @@
 | T080 | alias.execution-result | workspace | oscillator execution | local | killed | Execution/result execution_id binding mismatch | Execution/result execution_id binding mismatch | killed |
 | T080 | alias.result-prefix | workspace | oscillator execution and result | local | killed | Invalid saved result identity | Invalid saved result identity | killed |
 | T080 | alias.operation | workspace | oscillator execution and result | local | killed | Invalid saved spectrum data fields or sample count | Invalid saved spectrum data fields or sample count | killed |
+| T080 | alias.swap-pairing | workspace | oscillator executions and results | local | accepted | accepted | accepted | SURVIVED |
 | T080 | revision.gap | workspace | oscillator selection history | local | accepted | accepted | accepted | SURVIVED |

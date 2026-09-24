@@ -3128,5 +3128,12 @@
    "id": "F3:3:512",
    "k": 512
   }
- ]
+ ],
+ "witness": {
+  "code": "CERTIFIED_WITH_MARGIN",
+  "details": "V=1.000e+00, decrease=-1.976e-323, max eig(M)=-4.941e-324 at infx resolution",
+  "margin": 5e-324,
+  "resolution": 0.0,
+  "unit_scale_code": "DECREASE_NOT_DEFINITE"
+ }
 }

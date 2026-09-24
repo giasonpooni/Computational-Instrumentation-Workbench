@@ -54,6 +54,14 @@
       "reference": "mirror route -5 deg has the +5 deg margin",
       "reference_kind": "invariant",
       "tolerance": 1e-09
+     },
+     {
+      "comparison": "signed_ge",
+      "observed": 0.8976866453067347,
+      "passed": true,
+      "reference": "smallest lower-bound margin of the unresolved tier minus the largest resolved margin (the tied tier leads)",
+      "reference_kind": "analytic",
+      "tolerance": 0.0
      }
     ]
    },
@@ -88,12 +96,25 @@
      "fan+5deg": 0.869631524514244
     },
     "ranking": [
+     [
+      "fan+15deg",
+      "fan+20deg",
+      "fan+25deg"
+     ],
+     [
+      "fan+10deg"
+     ],
+     [
+      "fan+5deg"
+     ],
+     [
+      "fan+0deg"
+     ]
+    ],
+    "unresolved_tier": [
      "fan+15deg",
      "fan+20deg",
-     "fan+25deg",
-     "fan+10deg",
-     "fan+5deg",
-     "fan+0deg"
+     "fan+25deg"
     ]
    }
   },
@@ -178,9 +199,9 @@
     "rel": 1e-05
    },
    "uncertainty": {
-    "basis": "Richardson correction of the finite difference (mm)",
-    "kind": "truncation_bound",
-    "value": 0.23847077784563453
+    "basis": "residual of the Richardson-extrapolated finite difference against the index form (mm)",
+    "kind": "reference_error",
+    "value": 0.0005939061125630474
    },
    "unit": "mm",
    "value": {
@@ -233,9 +254,9 @@
  ],
  "generated_artifacts": [
   {
-   "bytes": 7906,
+   "bytes": 7944,
    "path": "artifacts/T137/focus-ranking.json",
-   "sha256": "7fab52d766183569ee6f485646c084dbad5df2ae4a6d1fcf819670b7416c55b2"
+   "sha256": "f8f706d3d067f1edd053b95e945500ac31c441c4b4ea4cb0821ca43d98e0a541"
   },
   {
    "bytes": 2331,
@@ -250,7 +271,7 @@
  ],
  "mathematical_model": "Focal points: zeros of j_lat; conjugate points: zeros of j_head (s > 0); margin = s_focus / L, or horizon / L as a lower bound; L''(0) = j_head(L) j_head'(L) for routes from a point to a straight edge line.",
  "number": 137,
- "numerical_result": "ranking ['fan+15deg', 'fan+20deg', 'fan+25deg', 'fan+10deg', 'fan+5deg', 'fan+0deg']; shortest fan+0deg (202.1797 mm) has margin 0.759 with a focal point at 153.41 mm; L''(0) finite difference 36.9633 mm vs index form 36.9639 mm.",
+ "numerical_result": "ranking {fan+15deg, fan+20deg, fan+25deg} (no focus within the horizon: lower bounds, tied) > fan+10deg > fan+5deg > fan+0deg; shortest fan+0deg (202.1797 mm) has margin 0.759 with a focal point at 153.41 mm; L''(0) finite difference 36.9633 mm vs index form 36.9639 mm.",
  "observation_model": "No observation: margins and lengths are model outputs.",
  "physical_validation_status": {
   "statement": "Physical validation requires acquired hardware evidence; none was acquired for this task.",
@@ -264,15 +285,15 @@
   "python": "3.12.3",
   "scipy": "1.16.2",
   "sources": {
-   "src/ciw/lab/manufacturing.py": "088763a0bcc42bf085c1e228797a5dc0d702b994f2a49e053cbe2b0a5622e25d",
+   "src/ciw/lab/manufacturing.py": "f4cd90e1df33b910b78daf4b0556a8861e044d83701474f841e85fd9d96f9063",
    "src/ciw/lab/manufacturing_geometry.py": "1db6df2ddf778668da2ffd53a66bcddbff4fc933d6f299e8f283cedc60a9332f",
-   "src/ciw/lab/manufacturing_metrology.py": "afbb6fccf146ca4f47850805c118d2f1bf6186872f381b298ab924a9214257ec",
-   "src/ciw/lab/manufacturing_records.py": "66970104ea454e836c5cbafc3013c90e721c3e96ad7f16780c32250112cac921"
+   "src/ciw/lab/manufacturing_metrology.py": "aef4708b0f296fc66087a6382881a0564c5edcb6d7961b5e472aa711e29feb5d",
+   "src/ciw/lab/manufacturing_records.py": "015ea7fccc586f4b95f64e7ffbc1f6c34eec20b8245778ede3c2324006537087"
   },
   "sympy": "1.14.0"
  },
  "recommended_next_task": "T138: compare predicted and measured separation along the straight route once measured.",
- "report_id": "sha256:45a45fcc21fd52d94df865c9a1c16ba6c732e786a4f06d19490e52a650575d3c",
+ "report_id": "sha256:a6bf89dcfabe1cf3ca656c98807b0c506795ceab6e2db9e7de1e80f65a3dbfee",
  "schema": "ciw.lab-task-report.v1",
  "section": "manufacturing",
  "state": "completed",
@@ -281,6 +302,7 @@
   "check: Candidate coupon routes ranked by focus margin (nearest focal or conjugate point / route length) vs nearest-focus distance at h = 1 vs 2 mm (mm)",
   "check: Candidate coupon routes ranked by focus margin (nearest focal or conjugate point / route length) vs focus-found flags agree at h = 1 and 2 mm",
   "check: Candidate coupon routes ranked by focus margin (nearest focal or conjugate point / route length) vs mirror route -5 deg has the +5 deg margin",
+  "check: Candidate coupon routes ranked by focus margin (nearest focal or conjugate point / route length) vs smallest lower-bound margin of the unresolved tier minus the largest resolved margin (the tied tier leads)",
   "check: The shortest candidate route has the worst focus margin vs shortest route is last in the focus ranking",
   "check: The shortest candidate route has the worst focus margin vs its focal point lies inside the route (margin)",
   "check: The second variation of route length equals the Jacobi index form j_head(L) j_head'(L) vs relative difference (Richardson finite difference vs index form)",

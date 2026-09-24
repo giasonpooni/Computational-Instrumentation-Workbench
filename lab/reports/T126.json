@@ -19,8 +19,9 @@
   "primary": "numerically_verified"
  },
  "expected_invariant": "chord - geodesic = 0; det Phi = 1; separation of offset paths linear in s.",
- "experiment": "For 47 marker pairs, find the geodesic distance by shooting (RK4 geodesic from one marker, arclength where it passes the other) and compare it with the chord; integrate the control path and its exact offset paths; assemble and validate the ciw.lab-measurement-protocol.v1 record; mutate it nine ways and confirm each mutation is refused.",
+ "experiment": "For 47 marker pairs, find the geodesic distance by shooting (Newton on the miss distance with the Jacobi heading field, launched 0.1 rad off the chord direction; the arclength where the converged geodesic passes the other marker) and compare it with the chord; integrate the control path and its exact offset paths; assemble and validate the ciw.lab-measurement-protocol.v1 record; mutate it nine ways and confirm each mutation is refused.",
  "failure_modes_checked": [
+  "shooting from a wrong launch heading (solved by Newton)",
   "RK4 closure onto the target marker",
   "Wronskian drift",
   "nonlinear vs linear offset separation",
@@ -36,19 +37,27 @@
     "checks": [
      {
       "comparison": "abs_le",
-      "observed": 2.842170943040401e-14,
+      "observed": 5.684341886080802e-14,
       "passed": true,
-      "reference": "max |shooting geodesic arclength - chord| over 47 marker pairs (mm)",
+      "reference": "max |shooting geodesic arclength - chord| over 47 marker pairs, heading solved by Newton from 0.1 rad off the chord direction (mm)",
       "reference_kind": "analytic",
       "tolerance": 1e-09
      },
      {
       "comparison": "abs_le",
-      "observed": 2.0097183471152322e-14,
+      "observed": 8.171241461241152e-14,
       "passed": true,
       "reference": "RK4 geodesic of that arclength closes onto the target marker (mm)",
       "reference_kind": "analytic",
       "tolerance": 1e-09
+     },
+     {
+      "comparison": "abs_le",
+      "observed": 4.440892098500626e-16,
+      "passed": true,
+      "reference": "max |solved launch heading - chord direction| (rad)",
+      "reference_kind": "analytic",
+      "tolerance": 1e-12
      }
     ],
     "derivation": "Plane geodesics are straight segments, so chord = geodesic (docs/lab/MANUFACTURING.md#t126)"
@@ -63,10 +72,10 @@
    "uncertainty": {
     "basis": "shooting arclength vs chord and RK4 closure onto the target marker (mm)",
     "kind": "roundoff",
-    "value": 2.842170943040401e-14
+    "value": 8.171241461241152e-14
    },
    "unit": "mm",
-   "value": 2.842170943040401e-14
+   "value": 5.684341886080802e-14
   },
   {
    "assigned_by": "ciw.lab.evidence",
@@ -229,14 +238,14 @@
  ],
  "generated_artifacts": [
   {
-   "bytes": 8444,
+   "bytes": 8601,
    "path": "artifacts/T126/protocol-flat-plate.json",
-   "sha256": "b77eb11763c1b55b884aa04e1dfabb7a41d25d4778e71a02ffdc4af5a9507d37"
+   "sha256": "28f2e5cdc194f4c6a8f009ce63cc4695befb3402c469fcd764dea5d71e96a63a"
   },
   {
-   "bytes": 6112,
+   "bytes": 9952,
    "path": "artifacts/T126/plate-pairs.json",
-   "sha256": "6855683f8c83d6888db677de6f338fdaef3d0068152cc069752a00dd33dcd665"
+   "sha256": "2750a780e3fc7ef58128c65474befe24e38900e953536581443498f65d954da8"
   },
   {
    "bytes": 2805,
@@ -252,7 +261,7 @@
  ],
  "mathematical_model": "Plane z = 0; geodesics are straight lines; j'' = 0 gives j_lat = 1, j_head = s; offset-path separation e(s) = delta + s dtheta.",
  "number": 126,
- "numerical_result": "max |chord - geodesic| = 2.84e-14 mm; max |Phi(240) - exact| = 0; heading-offset separation at 240 mm = 1.2 mm.",
+ "numerical_result": "max |chord - geodesic| = 5.68e-14 mm; max |Phi(240) - exact| = 0; heading-offset separation at 240 mm = 1.2 mm.",
  "observation_model": "No observation. The protocol specifies camera/CMM observation of the markers, the tape start poses and the offset tapes; its hardware-evidence slot is empty.",
  "physical_validation_status": {
   "statement": "Physical validation requires acquired hardware evidence; none was acquired for this task.",
@@ -266,22 +275,23 @@
   "python": "3.12.3",
   "scipy": "1.16.2",
   "sources": {
-   "src/ciw/lab/manufacturing.py": "088763a0bcc42bf085c1e228797a5dc0d702b994f2a49e053cbe2b0a5622e25d",
+   "src/ciw/lab/manufacturing.py": "f4cd90e1df33b910b78daf4b0556a8861e044d83701474f841e85fd9d96f9063",
    "src/ciw/lab/manufacturing_geometry.py": "1db6df2ddf778668da2ffd53a66bcddbff4fc933d6f299e8f283cedc60a9332f",
-   "src/ciw/lab/manufacturing_metrology.py": "afbb6fccf146ca4f47850805c118d2f1bf6186872f381b298ab924a9214257ec",
-   "src/ciw/lab/manufacturing_records.py": "66970104ea454e836c5cbafc3013c90e721c3e96ad7f16780c32250112cac921"
+   "src/ciw/lab/manufacturing_metrology.py": "aef4708b0f296fc66087a6382881a0564c5edcb6d7961b5e472aa711e29feb5d",
+   "src/ciw/lab/manufacturing_records.py": "015ea7fccc586f4b95f64e7ffbc1f6c34eec20b8245778ede3c2324006537087"
   },
   "sympy": "1.14.0"
  },
- "recommended_next_task": "Execute MFG-FLAT-PLATE-01 on hardware, retain it through the T139 record, then compare with T138.",
- "report_id": "sha256:1448810e0f8a86a61c924bfd209985b562c783b9fe2f62bff7ba22ad6a752c93",
+ "recommended_next_task": "Execute MFG-FLAT-PLATE-01 on hardware, retain it through a T139 measurement record, then compare the marker-pair distances with the T138 pair comparator (compare_pair_distances, E_n per pair).",
+ "report_id": "sha256:be5fe72fa661f62ca6e90f4971503e61899e71eb4d9ae9d5295a1c923b663212",
  "schema": "ciw.lab-task-report.v1",
  "section": "manufacturing",
  "state": "completed",
  "task_id": "T126",
  "tests_passed": [
-  "check: Flat-plate control: chord and geodesic marker distances coincide vs max |shooting geodesic arclength - chord| over 47 marker pairs (mm)",
+  "check: Flat-plate control: chord and geodesic marker distances coincide vs max |shooting geodesic arclength - chord| over 47 marker pairs, heading solved by Newton from 0.1 rad off the chord direction (mm)",
   "check: Flat-plate control: chord and geodesic marker distances coincide vs RK4 geodesic of that arclength closes onto the target marker (mm)",
+  "check: Flat-plate control: chord and geodesic marker distances coincide vs max |solved launch heading - chord direction| (rad)",
   "check: Flat-plate Jacobi transfer is [[1, s], [0, 1]] along the 240 mm control path vs max |Phi(240) - [[1, 240], [0, 1]]|",
   "check: Flat-plate Jacobi transfer is [[1, s], [0, 1]] along the 240 mm control path vs Wronskian det Phi - 1",
   "check: Flat-plate Jacobi transfer is [[1, s], [0, 1]] along the 240 mm control path vs exactly offset path minus delta + s sin(dtheta) (mm)",
@@ -303,6 +313,7 @@
  "uncertainty": "Rounding only (flat metric, zero Christoffel symbols). Measurement uncertainty is declared, not known.",
  "unresolved_assumptions": [
   "Real plate flatness (declared 0.05 mm) and thermal state are not measured; their effect is bounded only by the declared tolerance.",
-  "Instrument uncertainties are declared planning values, not calibrated values."
+  "Instrument uncertainties are declared planning values, not calibrated values.",
+  "On the plane the chord-geodesic comparison is a zero-curvature sanity check of the shooting machinery: RK4 and the Jacobi heading field are exact there, so it cannot detect curvature errors."
  ]
 }

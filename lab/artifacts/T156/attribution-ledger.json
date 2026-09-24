@@ -1,103 +1,2973 @@
 {
  "contributions": [
   {
-   "contribution": "Evidence-label validator with non-upgrade rule and origin-based independence",
+   "description": null,
+   "file": "src/ciw/lab/energy_gpu.py",
+   "present": true,
+   "tasks": [
+    "T115",
+    "T116",
+    "T117",
+    "T118",
+    "T119",
+    "T120",
+    "T121",
+    "T122",
+    "T123",
+    "T124",
+    "T125"
+   ]
+  },
+  {
+   "description": null,
+   "file": "src/ciw/lab/energy_gpu_kernels.py",
+   "present": true,
+   "tasks": [
+    "T115",
+    "T116",
+    "T117",
+    "T118",
+    "T119",
+    "T120",
+    "T121",
+    "T122",
+    "T123",
+    "T124",
+    "T125"
+   ]
+  },
+  {
+   "description": null,
+   "file": "src/ciw/lab/energy_gpu_telemetry.py",
+   "present": true,
+   "tasks": [
+    "T115",
+    "T116",
+    "T117",
+    "T118",
+    "T119",
+    "T120",
+    "T121",
+    "T122",
+    "T123",
+    "T124",
+    "T125"
+   ]
+  },
+  {
+   "description": "Evidence-label validator with non-upgrade rule and origin-based independence",
    "file": "src/ciw/lab/evidence.py",
-   "present": true
+   "present": true,
+   "tasks": []
   },
   {
-   "contribution": "Nineteen-question task report with derived evidence and physical status",
-   "file": "src/ciw/lab/report.py",
-   "present": true
-  },
-  {
-   "contribution": "Queue runner that reports blocked, deferred and failed tasks instead of hiding them",
-   "file": "src/ciw/lab/runner.py",
-   "present": true
-  },
-  {
-   "contribution": "Chart-level surface interface with exact embedding derivatives and pullback charts",
-   "file": "src/ciw/lab/surfaces.py",
-   "present": true
-  },
-  {
-   "contribution": "Joint geodesic/Jacobi transfer integration without renormalization",
-   "file": "src/ciw/lab/jacobi.py",
-   "present": true
-  },
-  {
-   "contribution": "Identity matrix and mutation experiments over retained CIW workspaces",
+   "description": "Identity matrix and mutation experiments over retained CIW workspaces",
    "file": "src/ciw/lab/exchange_provenance.py",
-   "present": true
+   "present": true,
+   "tasks": [
+    "T077",
+    "T078",
+    "T079",
+    "T080",
+    "T081",
+    "T082",
+    "T083",
+    "T084",
+    "T085",
+    "T086",
+    "T087",
+    "T088",
+    "T089",
+    "T090"
+   ]
   },
   {
-   "contribution": "Counterexample library for shortest-versus-safest routes",
+   "description": null,
+   "file": "src/ciw/lab/exchange_provenance_bundles.py",
+   "present": true,
+   "tasks": [
+    "T091",
+    "T092",
+    "T093",
+    "T094",
+    "T095",
+    "T096",
+    "T097",
+    "T098",
+    "T099",
+    "T100"
+   ]
+  },
+  {
+   "description": null,
+   "file": "src/ciw/lab/exchange_provenance_bundles_fixtures.py",
+   "present": true,
+   "tasks": [
+    "T091",
+    "T092",
+    "T093",
+    "T094",
+    "T095",
+    "T096",
+    "T097",
+    "T099",
+    "T100"
+   ]
+  },
+  {
+   "description": null,
+   "file": "src/ciw/lab/exchange_provenance_bundles_providers.py",
+   "present": true,
+   "tasks": [
+    "T097",
+    "T098",
+    "T099"
+   ]
+  },
+  {
+   "description": null,
+   "file": "src/ciw/lab/exchange_provenance_common.py",
+   "present": true,
+   "tasks": [
+    "T077",
+    "T078",
+    "T079",
+    "T080",
+    "T081",
+    "T082",
+    "T083",
+    "T084",
+    "T085",
+    "T086",
+    "T087",
+    "T088",
+    "T089",
+    "T090"
+   ]
+  },
+  {
+   "description": "Counterexample library for shortest-versus-safest routes",
    "file": "src/ciw/lab/flat_torus_topology.py",
-   "present": true
+   "present": true,
+   "tasks": [
+    "T019",
+    "T020",
+    "T021",
+    "T022",
+    "T023",
+    "T024",
+    "T025",
+    "T026",
+    "T027",
+    "T028",
+    "T029",
+    "T030",
+    "T031",
+    "T032"
+   ]
   },
   {
-   "contribution": "Focus-margin route ranking for manufacturing paths",
+   "description": null,
+   "file": "src/ciw/lab/flat_torus_topology_discrete.py",
+   "present": true,
+   "tasks": [
+    "T030"
+   ]
+  },
+  {
+   "description": null,
+   "file": "src/ciw/lab/flat_torus_topology_lattice.py",
+   "present": true,
+   "tasks": [
+    "T019",
+    "T020",
+    "T021",
+    "T022",
+    "T023",
+    "T026",
+    "T031"
+   ]
+  },
+  {
+   "description": null,
+   "file": "src/ciw/lab/flat_torus_topology_provider.py",
+   "present": true,
+   "tasks": [
+    "T019",
+    "T020",
+    "T026"
+   ]
+  },
+  {
+   "description": null,
+   "file": "src/ciw/lab/flat_torus_topology_routes.py",
+   "present": true,
+   "tasks": [
+    "T024",
+    "T025",
+    "T032"
+   ]
+  },
+  {
+   "description": null,
+   "file": "src/ciw/lab/flat_torus_topology_surfaces.py",
+   "present": true,
+   "tasks": [
+    "T027",
+    "T028",
+    "T029"
+   ]
+  },
+  {
+   "description": null,
+   "file": "src/ciw/lab/geodesic_jacobi.py",
+   "present": true,
+   "tasks": [
+    "T001",
+    "T002",
+    "T003",
+    "T004",
+    "T005",
+    "T006",
+    "T007",
+    "T008",
+    "T009"
+   ]
+  },
+  {
+   "description": null,
+   "file": "src/ciw/lab/geodesic_jacobi_common.py",
+   "present": true,
+   "tasks": [
+    "T001",
+    "T002",
+    "T003",
+    "T004",
+    "T005",
+    "T006",
+    "T007",
+    "T008",
+    "T009"
+   ]
+  },
+  {
+   "description": null,
+   "file": "src/ciw/lab/geodesic_jacobi_limits.py",
+   "present": true,
+   "tasks": [
+    "T010",
+    "T011",
+    "T012",
+    "T013",
+    "T014",
+    "T015",
+    "T016",
+    "T017",
+    "T018"
+   ]
+  },
+  {
+   "description": null,
+   "file": "src/ciw/lab/geodesic_jacobi_limits_core.py",
+   "present": true,
+   "tasks": [
+    "T010",
+    "T011",
+    "T012",
+    "T013",
+    "T014",
+    "T015",
+    "T016",
+    "T017",
+    "T018"
+   ]
+  },
+  {
+   "description": null,
+   "file": "src/ciw/lab/implementation_targets.py",
+   "present": true,
+   "tasks": [
+    "T142",
+    "T143",
+    "T144",
+    "T145",
+    "T146",
+    "T147",
+    "T148",
+    "T149",
+    "T150",
+    "T151",
+    "T152",
+    "T153",
+    "T154"
+   ]
+  },
+  {
+   "description": null,
+   "file": "src/ciw/lab/implementation_targets_architecture.py",
+   "present": true,
+   "tasks": [
+    "T143",
+    "T144",
+    "T153",
+    "T154"
+   ]
+  },
+  {
+   "description": null,
+   "file": "src/ciw/lab/implementation_targets_authority.py",
+   "present": true,
+   "tasks": [
+    "T153",
+    "T154"
+   ]
+  },
+  {
+   "description": null,
+   "file": "src/ciw/lab/implementation_targets_fpga.py",
+   "present": true,
+   "tasks": [
+    "T149",
+    "T150",
+    "T151",
+    "T152"
+   ]
+  },
+  {
+   "description": null,
+   "file": "src/ciw/lab/implementation_targets_kernels.py",
+   "present": true,
+   "tasks": [
+    "T142",
+    "T147",
+    "T148"
+   ]
+  },
+  {
+   "description": null,
+   "file": "src/ciw/lab/implementation_targets_serial.py",
+   "present": true,
+   "tasks": [
+    "T142",
+    "T144",
+    "T146",
+    "T150"
+   ]
+  },
+  {
+   "description": "Joint geodesic/Jacobi transfer integration without renormalization",
+   "file": "src/ciw/lab/jacobi.py",
+   "present": true,
+   "tasks": []
+  },
+  {
+   "description": null,
+   "file": "src/ciw/lab/lyapunov.py",
+   "present": true,
+   "tasks": [
+    "T101",
+    "T102",
+    "T103",
+    "T104",
+    "T105",
+    "T106",
+    "T107",
+    "T108",
+    "T109",
+    "T110",
+    "T111",
+    "T112",
+    "T113",
+    "T114"
+   ]
+  },
+  {
+   "description": null,
+   "file": "src/ciw/lab/lyapunov_provider.py",
+   "present": true,
+   "tasks": [
+    "T101",
+    "T102",
+    "T103",
+    "T104",
+    "T105",
+    "T106",
+    "T107",
+    "T108",
+    "T109",
+    "T110",
+    "T111",
+    "T113",
+    "T114"
+   ]
+  },
+  {
+   "description": null,
+   "file": "src/ciw/lab/lyapunov_reference.py",
+   "present": true,
+   "tasks": [
+    "T101",
+    "T102",
+    "T103",
+    "T104",
+    "T105",
+    "T106",
+    "T107",
+    "T108",
+    "T109",
+    "T110",
+    "T111",
+    "T112",
+    "T113",
+    "T114"
+   ]
+  },
+  {
+   "description": null,
+   "file": "src/ciw/lab/lyapunov_research.py",
+   "present": true,
+   "tasks": [
+    "T112",
+    "T113",
+    "T114"
+   ]
+  },
+  {
+   "description": "Focus-margin route ranking for manufacturing paths",
    "file": "src/ciw/lab/manufacturing.py",
-   "present": true
+   "present": true,
+   "tasks": [
+    "T126",
+    "T127",
+    "T128",
+    "T129",
+    "T130",
+    "T131",
+    "T132",
+    "T133",
+    "T134",
+    "T135",
+    "T136",
+    "T137",
+    "T138",
+    "T139",
+    "T140",
+    "T141"
+   ]
   },
   {
-   "contribution": "Deterministic SVG figures",
+   "description": null,
+   "file": "src/ciw/lab/manufacturing_geometry.py",
+   "present": true,
+   "tasks": [
+    "T126",
+    "T127",
+    "T128",
+    "T129",
+    "T130",
+    "T131",
+    "T132",
+    "T133",
+    "T134",
+    "T135",
+    "T136",
+    "T137",
+    "T138",
+    "T139",
+    "T140",
+    "T141"
+   ]
+  },
+  {
+   "description": null,
+   "file": "src/ciw/lab/manufacturing_metrology.py",
+   "present": true,
+   "tasks": [
+    "T126",
+    "T127",
+    "T128",
+    "T129",
+    "T130",
+    "T131",
+    "T132",
+    "T133",
+    "T134",
+    "T135",
+    "T136",
+    "T137",
+    "T138",
+    "T139",
+    "T140",
+    "T141"
+   ]
+  },
+  {
+   "description": null,
+   "file": "src/ciw/lab/manufacturing_records.py",
+   "present": true,
+   "tasks": [
+    "T126",
+    "T127",
+    "T128",
+    "T129",
+    "T130",
+    "T131",
+    "T132",
+    "T133",
+    "T134",
+    "T135",
+    "T136",
+    "T137",
+    "T138",
+    "T139",
+    "T140",
+    "T141"
+   ]
+  },
+  {
+   "description": null,
+   "file": "src/ciw/lab/observation.py",
+   "present": true,
+   "tasks": [
+    "T045",
+    "T046",
+    "T047",
+    "T048",
+    "T049",
+    "T050",
+    "T051",
+    "T052",
+    "T053",
+    "T054",
+    "T055",
+    "T056",
+    "T057",
+    "T058",
+    "T059"
+   ]
+  },
+  {
+   "description": null,
+   "file": "src/ciw/lab/observation_camera.py",
+   "present": true,
+   "tasks": [
+    "T048",
+    "T049",
+    "T050",
+    "T051"
+   ]
+  },
+  {
+   "description": null,
+   "file": "src/ciw/lab/observation_chord.py",
+   "present": true,
+   "tasks": [
+    "T045",
+    "T046",
+    "T047",
+    "T048"
+   ]
+  },
+  {
+   "description": null,
+   "file": "src/ciw/lab/observation_modes.py",
+   "present": true,
+   "tasks": [
+    "T045",
+    "T048",
+    "T054",
+    "T055",
+    "T056",
+    "T058",
+    "T059"
+   ]
+  },
+  {
+   "description": null,
+   "file": "src/ciw/lab/observation_signals.py",
+   "present": true,
+   "tasks": [
+    "T051",
+    "T052",
+    "T053",
+    "T054",
+    "T055",
+    "T057"
+   ]
+  },
+  {
+   "description": "Nineteen-question task report with derived evidence and physical status",
+   "file": "src/ciw/lab/report.py",
+   "present": true,
+   "tasks": []
+  },
+  {
+   "description": "Retained-evidence aggregation with second-path checks",
+   "file": "src/ciw/lab/research_portfolio.py",
+   "present": true,
+   "tasks": [
+    "T155"
+   ]
+  },
+  {
+   "description": "Queue runner that reports blocked, deferred and failed tasks instead of hiding them",
+   "file": "src/ciw/lab/runner.py",
+   "present": true,
+   "tasks": []
+  },
+  {
+   "description": null,
+   "file": "src/ciw/lab/sensor_fusion.py",
+   "present": true,
+   "tasks": [
+    "T060",
+    "T061",
+    "T062"
+   ]
+  },
+  {
+   "description": null,
+   "file": "src/ciw/lab/sensor_fusion_admission.py",
+   "present": true,
+   "tasks": [
+    "T072",
+    "T073",
+    "T074",
+    "T075",
+    "T076"
+   ]
+  },
+  {
+   "description": null,
+   "file": "src/ciw/lab/sensor_fusion_bench.py",
+   "present": true,
+   "tasks": [
+    "T060",
+    "T061",
+    "T062",
+    "T063",
+    "T064",
+    "T065",
+    "T066",
+    "T067",
+    "T068",
+    "T069",
+    "T070",
+    "T071",
+    "T072",
+    "T073",
+    "T074",
+    "T075",
+    "T076"
+   ]
+  },
+  {
+   "description": null,
+   "file": "src/ciw/lab/sensor_fusion_common.py",
+   "present": true,
+   "tasks": [
+    "T060",
+    "T061",
+    "T062",
+    "T063",
+    "T064",
+    "T065",
+    "T066",
+    "T067",
+    "T068",
+    "T069",
+    "T070",
+    "T071",
+    "T072",
+    "T073",
+    "T074",
+    "T075",
+    "T076"
+   ]
+  },
+  {
+   "description": null,
+   "file": "src/ciw/lab/sensor_fusion_filtering.py",
+   "present": true,
+   "tasks": [
+    "T065",
+    "T066",
+    "T067",
+    "T068"
+   ]
+  },
+  {
+   "description": null,
+   "file": "src/ciw/lab/sensor_fusion_geometry.py",
+   "present": true,
+   "tasks": [
+    "T063",
+    "T064"
+   ]
+  },
+  {
+   "description": null,
+   "file": "src/ciw/lab/sensor_fusion_objects.py",
+   "present": true,
+   "tasks": [
+    "T060",
+    "T061",
+    "T062",
+    "T063",
+    "T064",
+    "T065",
+    "T066",
+    "T067",
+    "T068",
+    "T069",
+    "T070",
+    "T071",
+    "T072",
+    "T073",
+    "T074",
+    "T075",
+    "T076"
+   ]
+  },
+  {
+   "description": null,
+   "file": "src/ciw/lab/sensor_fusion_robustness.py",
+   "present": true,
+   "tasks": [
+    "T069",
+    "T070",
+    "T071"
+   ]
+  },
+  {
+   "description": "Chart-level surface interface with exact embedding derivatives and pullback charts",
+   "file": "src/ciw/lab/surfaces.py",
+   "present": true,
+   "tasks": []
+  },
+  {
+   "description": null,
+   "file": "src/ciw/lab/surfaces_discrete.py",
+   "present": true,
+   "tasks": [
+    "T033",
+    "T034",
+    "T035",
+    "T036",
+    "T037"
+   ]
+  },
+  {
+   "description": null,
+   "file": "src/ciw/lab/surfaces_discrete_ad.py",
+   "present": true,
+   "tasks": [
+    "T034",
+    "T035"
+   ]
+  },
+  {
+   "description": null,
+   "file": "src/ciw/lab/surfaces_discrete_charts.py",
+   "present": true,
+   "tasks": [
+    "T036",
+    "T037"
+   ]
+  },
+  {
+   "description": null,
+   "file": "src/ciw/lab/surfaces_discrete_geometry.py",
+   "present": true,
+   "tasks": [
+    "T033",
+    "T034",
+    "T035",
+    "T036",
+    "T037"
+   ]
+  },
+  {
+   "description": null,
+   "file": "src/ciw/lab/surfaces_discrete_mesh.py",
+   "present": true,
+   "tasks": [
+    "T038",
+    "T039",
+    "T040",
+    "T041",
+    "T042",
+    "T043",
+    "T044"
+   ]
+  },
+  {
+   "description": null,
+   "file": "src/ciw/lab/surfaces_discrete_mesh_geometry.py",
+   "present": true,
+   "tasks": [
+    "T038",
+    "T039",
+    "T040",
+    "T041",
+    "T042",
+    "T043",
+    "T044"
+   ]
+  },
+  {
+   "description": null,
+   "file": "src/ciw/lab/surfaces_discrete_mesh_studies.py",
+   "present": true,
+   "tasks": [
+    "T038",
+    "T039",
+    "T040",
+    "T041",
+    "T042",
+    "T043",
+    "T044"
+   ]
+  },
+  {
+   "description": "Deterministic SVG figures",
    "file": "src/ciw/lab/svg.py",
-   "present": true
+   "present": true,
+   "tasks": []
   }
  ],
+ "tasks": {
+  "T001": {
+   "sources": [
+    "src/ciw/lab/geodesic_jacobi.py",
+    "src/ciw/lab/geodesic_jacobi_common.py"
+   ],
+   "textbook": [
+    "Geodesic equation and Christoffel symbols",
+    "Brioschi formula; Theorema Egregium; fundamental forms",
+    "Floating-point arithmetic, rounding and exact rational reference arithmetic",
+    "Finite differences and step-size selection"
+   ]
+  },
+  "T002": {
+   "sources": [
+    "src/ciw/lab/geodesic_jacobi.py",
+    "src/ciw/lab/geodesic_jacobi_common.py"
+   ],
+   "textbook": [
+    "Jacobi equation j'' + K j = 0; conjugate and focal points",
+    "Clairaut relation on surfaces of revolution",
+    "Explicit Runge-Kutta methods (Euler, midpoint, RK4, Dormand-Prince 5(4))",
+    "Richardson extrapolation and observed order of convergence",
+    "Floating-point arithmetic, rounding and exact rational reference arithmetic"
+   ]
+  },
+  "T003": {
+   "sources": [
+    "src/ciw/lab/geodesic_jacobi.py",
+    "src/ciw/lab/geodesic_jacobi_common.py"
+   ],
+   "textbook": [
+    "Geodesic equation and Christoffel symbols",
+    "Explicit Runge-Kutta methods (Euler, midpoint, RK4, Dormand-Prince 5(4))",
+    "Richardson extrapolation and observed order of convergence",
+    "Floating-point arithmetic, rounding and exact rational reference arithmetic"
+   ]
+  },
+  "T004": {
+   "sources": [
+    "src/ciw/lab/geodesic_jacobi.py",
+    "src/ciw/lab/geodesic_jacobi_common.py"
+   ],
+   "textbook": [
+    "Geodesic equation and Christoffel symbols",
+    "Jacobi equation j'' + K j = 0; conjugate and focal points",
+    "Explicit Runge-Kutta methods (Euler, midpoint, RK4, Dormand-Prince 5(4))",
+    "Floating-point arithmetic, rounding and exact rational reference arithmetic"
+   ]
+  },
+  "T005": {
+   "sources": [
+    "src/ciw/lab/geodesic_jacobi.py",
+    "src/ciw/lab/geodesic_jacobi_common.py"
+   ],
+   "textbook": [
+    "Geodesic equation and Christoffel symbols",
+    "Jacobi equation j'' + K j = 0; conjugate and focal points",
+    "Explicit Runge-Kutta methods (Euler, midpoint, RK4, Dormand-Prince 5(4))"
+   ]
+  },
+  "T006": {
+   "sources": [
+    "src/ciw/lab/geodesic_jacobi.py",
+    "src/ciw/lab/geodesic_jacobi_common.py"
+   ],
+   "textbook": [
+    "Jacobi equation j'' + K j = 0; conjugate and focal points",
+    "Explicit Runge-Kutta methods (Euler, midpoint, RK4, Dormand-Prince 5(4))",
+    "Finite differences and step-size selection"
+   ]
+  },
+  "T007": {
+   "sources": [
+    "src/ciw/lab/geodesic_jacobi.py",
+    "src/ciw/lab/geodesic_jacobi_common.py"
+   ],
+   "textbook": [
+    "Jacobi equation j'' + K j = 0; conjugate and focal points",
+    "Explicit Runge-Kutta methods (Euler, midpoint, RK4, Dormand-Prince 5(4))"
+   ]
+  },
+  "T008": {
+   "sources": [
+    "src/ciw/lab/geodesic_jacobi.py",
+    "src/ciw/lab/geodesic_jacobi_common.py"
+   ],
+   "textbook": [
+    "Jacobi equation j'' + K j = 0; conjugate and focal points",
+    "Chord-arc expansion c = s - kappa^2 s^3/24",
+    "Explicit Runge-Kutta methods (Euler, midpoint, RK4, Dormand-Prince 5(4))",
+    "Interpolation and quadrature (Hermite, trapezoid, Gauss)"
+   ]
+  },
+  "T009": {
+   "sources": [
+    "src/ciw/lab/geodesic_jacobi.py",
+    "src/ciw/lab/geodesic_jacobi_common.py"
+   ],
+   "textbook": [
+    "Jacobi equation j'' + K j = 0; conjugate and focal points",
+    "Finite differences and step-size selection"
+   ]
+  },
+  "T010": {
+   "sources": [
+    "src/ciw/lab/geodesic_jacobi_limits.py",
+    "src/ciw/lab/geodesic_jacobi_limits_core.py"
+   ],
+   "textbook": [
+    "Jacobi equation j'' + K j = 0; conjugate and focal points",
+    "Chord-arc expansion c = s - kappa^2 s^3/24",
+    "Explicit Runge-Kutta methods (Euler, midpoint, RK4, Dormand-Prince 5(4))"
+   ]
+  },
+  "T011": {
+   "sources": [
+    "src/ciw/lab/geodesic_jacobi_limits.py",
+    "src/ciw/lab/geodesic_jacobi_limits_core.py"
+   ],
+   "textbook": [
+    "Jacobi equation j'' + K j = 0; conjugate and focal points",
+    "Explicit Runge-Kutta methods (Euler, midpoint, RK4, Dormand-Prince 5(4))",
+    "Interpolation and quadrature (Hermite, trapezoid, Gauss)"
+   ]
+  },
+  "T012": {
+   "sources": [
+    "src/ciw/lab/geodesic_jacobi_limits.py",
+    "src/ciw/lab/geodesic_jacobi_limits_core.py"
+   ],
+   "textbook": [
+    "Geodesic equation and Christoffel symbols",
+    "Jacobi equation j'' + K j = 0; conjugate and focal points",
+    "Explicit Runge-Kutta methods (Euler, midpoint, RK4, Dormand-Prince 5(4))",
+    "Brioschi formula; Theorema Egregium; fundamental forms",
+    "Floating-point arithmetic, rounding and exact rational reference arithmetic"
+   ]
+  },
+  "T013": {
+   "sources": [
+    "src/ciw/lab/geodesic_jacobi_limits.py",
+    "src/ciw/lab/geodesic_jacobi_limits_core.py"
+   ],
+   "textbook": [
+    "Jacobi equation j'' + K j = 0; conjugate and focal points",
+    "Chord-arc expansion c = s - kappa^2 s^3/24",
+    "Explicit Runge-Kutta methods (Euler, midpoint, RK4, Dormand-Prince 5(4))",
+    "Richardson extrapolation and observed order of convergence",
+    "Brioschi formula; Theorema Egregium; fundamental forms"
+   ]
+  },
+  "T014": {
+   "sources": [
+    "src/ciw/lab/geodesic_jacobi_limits.py",
+    "src/ciw/lab/geodesic_jacobi_limits_core.py"
+   ],
+   "textbook": [
+    "Jacobi equation j'' + K j = 0; conjugate and focal points",
+    "Explicit Runge-Kutta methods (Euler, midpoint, RK4, Dormand-Prince 5(4))"
+   ]
+  },
+  "T015": {
+   "sources": [
+    "src/ciw/lab/geodesic_jacobi_limits.py",
+    "src/ciw/lab/geodesic_jacobi_limits_core.py"
+   ],
+   "textbook": [
+    "Clairaut relation on surfaces of revolution",
+    "Explicit Runge-Kutta methods (Euler, midpoint, RK4, Dormand-Prince 5(4))",
+    "Richardson extrapolation and observed order of convergence"
+   ]
+  },
+  "T016": {
+   "sources": [
+    "src/ciw/lab/geodesic_jacobi_limits.py",
+    "src/ciw/lab/geodesic_jacobi_limits_core.py"
+   ],
+   "textbook": [
+    "Jacobi equation j'' + K j = 0; conjugate and focal points",
+    "Explicit Runge-Kutta methods (Euler, midpoint, RK4, Dormand-Prince 5(4))",
+    "Implicit and A-stable integrators; stiffness",
+    "Matrix factorizations and least squares (Cholesky, QR, SVD, eigenvalues)",
+    "Root finding by bisection and Newton iteration"
+   ]
+  },
+  "T017": {
+   "sources": [
+    "src/ciw/lab/geodesic_jacobi_limits.py",
+    "src/ciw/lab/geodesic_jacobi_limits_core.py"
+   ],
+   "textbook": [
+    "Jacobi equation j'' + K j = 0; conjugate and focal points",
+    "Chord-arc expansion c = s - kappa^2 s^3/24",
+    "Explicit Runge-Kutta methods (Euler, midpoint, RK4, Dormand-Prince 5(4))",
+    "Matrix factorizations and least squares (Cholesky, QR, SVD, eigenvalues)"
+   ]
+  },
+  "T018": {
+   "sources": [
+    "src/ciw/lab/geodesic_jacobi_limits.py",
+    "src/ciw/lab/geodesic_jacobi_limits_core.py"
+   ],
+   "textbook": [
+    "Jacobi equation j'' + K j = 0; conjugate and focal points",
+    "Explicit Runge-Kutta methods (Euler, midpoint, RK4, Dormand-Prince 5(4))",
+    "Brioschi formula; Theorema Egregium; fundamental forms",
+    "Floating-point arithmetic, rounding and exact rational reference arithmetic"
+   ]
+  },
+  "T019": {
+   "sources": [
+    "src/ciw/lab/flat_torus_topology.py",
+    "src/ciw/lab/flat_torus_topology_lattice.py",
+    "src/ciw/lab/flat_torus_topology_provider.py"
+   ],
+   "textbook": [
+    "Lattice reduction and the SL(2,Z) action"
+   ]
+  },
+  "T020": {
+   "sources": [
+    "src/ciw/lab/flat_torus_topology.py",
+    "src/ciw/lab/flat_torus_topology_lattice.py",
+    "src/ciw/lab/flat_torus_topology_provider.py"
+   ],
+   "textbook": [
+    "Lattice reduction and the SL(2,Z) action",
+    "Floating-point arithmetic, rounding and exact rational reference arithmetic"
+   ]
+  },
+  "T021": {
+   "sources": [
+    "src/ciw/lab/flat_torus_topology.py",
+    "src/ciw/lab/flat_torus_topology_lattice.py"
+   ],
+   "textbook": [
+    "Jacobi equation j'' + K j = 0; conjugate and focal points",
+    "Lattice reduction and the SL(2,Z) action"
+   ]
+  },
+  "T022": {
+   "sources": [
+    "src/ciw/lab/flat_torus_topology.py",
+    "src/ciw/lab/flat_torus_topology_lattice.py"
+   ],
+   "textbook": [
+    "Lattice reduction and the SL(2,Z) action",
+    "Floating-point arithmetic, rounding and exact rational reference arithmetic"
+   ]
+  },
+  "T023": {
+   "sources": [
+    "src/ciw/lab/flat_torus_topology.py",
+    "src/ciw/lab/flat_torus_topology_lattice.py"
+   ],
+   "textbook": [
+    "Lattice reduction and the SL(2,Z) action"
+   ]
+  },
+  "T024": {
+   "sources": [
+    "src/ciw/lab/flat_torus_topology.py",
+    "src/ciw/lab/flat_torus_topology_routes.py"
+   ],
+   "textbook": [
+    "Jacobi equation j'' + K j = 0; conjugate and focal points",
+    "Clairaut relation on surfaces of revolution",
+    "Explicit Runge-Kutta methods (Euler, midpoint, RK4, Dormand-Prince 5(4))",
+    "Interpolation and quadrature (Hermite, trapezoid, Gauss)",
+    "Root finding by bisection and Newton iteration"
+   ]
+  },
+  "T025": {
+   "sources": [
+    "src/ciw/lab/flat_torus_topology.py",
+    "src/ciw/lab/flat_torus_topology_routes.py"
+   ],
+   "textbook": [
+    "Jacobi equation j'' + K j = 0; conjugate and focal points",
+    "Compensated and pairwise summation"
+   ]
+  },
+  "T026": {
+   "sources": [
+    "src/ciw/lab/flat_torus_topology.py",
+    "src/ciw/lab/flat_torus_topology_lattice.py",
+    "src/ciw/lab/flat_torus_topology_provider.py"
+   ],
+   "textbook": [
+    "Lattice reduction and the SL(2,Z) action"
+   ]
+  },
+  "T027": {
+   "sources": [
+    "src/ciw/lab/flat_torus_topology.py",
+    "src/ciw/lab/flat_torus_topology_surfaces.py"
+   ],
+   "textbook": []
+  },
+  "T028": {
+   "sources": [
+    "src/ciw/lab/flat_torus_topology.py",
+    "src/ciw/lab/flat_torus_topology_surfaces.py"
+   ],
+   "textbook": [
+    "Gauss-Bonnet theorem; cone angles",
+    "Floating-point arithmetic, rounding and exact rational reference arithmetic"
+   ]
+  },
+  "T029": {
+   "sources": [
+    "src/ciw/lab/flat_torus_topology.py",
+    "src/ciw/lab/flat_torus_topology_surfaces.py"
+   ],
+   "textbook": [
+    "Gauss-Bonnet theorem; cone angles",
+    "Lyapunov equation, Hurwitz stability and Sylvester equations",
+    "Floating-point arithmetic, rounding and exact rational reference arithmetic"
+   ]
+  },
+  "T030": {
+   "sources": [
+    "src/ciw/lab/flat_torus_topology.py",
+    "src/ciw/lab/flat_torus_topology_discrete.py"
+   ],
+   "textbook": [
+    "Fast marching and Dijkstra shortest paths"
+   ]
+  },
+  "T031": {
+   "sources": [
+    "src/ciw/lab/flat_torus_topology.py",
+    "src/ciw/lab/flat_torus_topology_lattice.py"
+   ],
+   "textbook": [
+    "Floating-point arithmetic, rounding and exact rational reference arithmetic",
+    "Root finding by bisection and Newton iteration"
+   ]
+  },
+  "T032": {
+   "sources": [
+    "src/ciw/lab/flat_torus_topology.py",
+    "src/ciw/lab/flat_torus_topology_routes.py"
+   ],
+   "textbook": [
+    "Jacobi equation j'' + K j = 0; conjugate and focal points",
+    "Root finding by bisection and Newton iteration"
+   ]
+  },
+  "T033": {
+   "sources": [
+    "src/ciw/lab/surfaces_discrete.py",
+    "src/ciw/lab/surfaces_discrete_geometry.py"
+   ],
+   "textbook": [
+    "Geodesic equation and Christoffel symbols",
+    "Brioschi formula; Theorema Egregium; fundamental forms",
+    "Floating-point arithmetic, rounding and exact rational reference arithmetic"
+   ]
+  },
+  "T034": {
+   "sources": [
+    "src/ciw/lab/surfaces_discrete.py",
+    "src/ciw/lab/surfaces_discrete_ad.py",
+    "src/ciw/lab/surfaces_discrete_geometry.py"
+   ],
+   "textbook": [
+    "Geodesic equation and Christoffel symbols",
+    "Brioschi formula; Theorema Egregium; fundamental forms",
+    "Floating-point arithmetic, rounding and exact rational reference arithmetic",
+    "Automatic differentiation with dual numbers"
+   ]
+  },
+  "T035": {
+   "sources": [
+    "src/ciw/lab/surfaces_discrete.py",
+    "src/ciw/lab/surfaces_discrete_ad.py",
+    "src/ciw/lab/surfaces_discrete_geometry.py"
+   ],
+   "textbook": [
+    "Floating-point arithmetic, rounding and exact rational reference arithmetic",
+    "Finite differences and step-size selection"
+   ]
+  },
+  "T036": {
+   "sources": [
+    "src/ciw/lab/surfaces_discrete.py",
+    "src/ciw/lab/surfaces_discrete_charts.py",
+    "src/ciw/lab/surfaces_discrete_geometry.py"
+   ],
+   "textbook": [
+    "Explicit Runge-Kutta methods (Euler, midpoint, RK4, Dormand-Prince 5(4))",
+    "Floating-point arithmetic, rounding and exact rational reference arithmetic"
+   ]
+  },
+  "T037": {
+   "sources": [
+    "src/ciw/lab/surfaces_discrete.py",
+    "src/ciw/lab/surfaces_discrete_charts.py",
+    "src/ciw/lab/surfaces_discrete_geometry.py"
+   ],
+   "textbook": [
+    "Geodesic equation and Christoffel symbols",
+    "Implicit and A-stable integrators; stiffness",
+    "Interpolation and quadrature (Hermite, trapezoid, Gauss)"
+   ]
+  },
+  "T038": {
+   "sources": [
+    "src/ciw/lab/surfaces_discrete_mesh.py",
+    "src/ciw/lab/surfaces_discrete_mesh_geometry.py",
+    "src/ciw/lab/surfaces_discrete_mesh_studies.py"
+   ],
+   "textbook": [
+    "Fast marching and Dijkstra shortest paths"
+   ]
+  },
+  "T039": {
+   "sources": [
+    "src/ciw/lab/surfaces_discrete_mesh.py",
+    "src/ciw/lab/surfaces_discrete_mesh_geometry.py",
+    "src/ciw/lab/surfaces_discrete_mesh_studies.py"
+   ],
+   "textbook": [
+    "Chord-arc expansion c = s - kappa^2 s^3/24",
+    "Richardson extrapolation and observed order of convergence",
+    "Compensated and pairwise summation",
+    "Fast marching and Dijkstra shortest paths"
+   ]
+  },
+  "T040": {
+   "sources": [
+    "src/ciw/lab/surfaces_discrete_mesh.py",
+    "src/ciw/lab/surfaces_discrete_mesh_geometry.py",
+    "src/ciw/lab/surfaces_discrete_mesh_studies.py"
+   ],
+   "textbook": [
+    "Jacobi equation j'' + K j = 0; conjugate and focal points",
+    "Gauss-Bonnet theorem; cone angles",
+    "Finite differences and step-size selection"
+   ]
+  },
+  "T041": {
+   "sources": [
+    "src/ciw/lab/surfaces_discrete_mesh.py",
+    "src/ciw/lab/surfaces_discrete_mesh_geometry.py",
+    "src/ciw/lab/surfaces_discrete_mesh_studies.py"
+   ],
+   "textbook": [
+    "Compensated and pairwise summation"
+   ]
+  },
+  "T042": {
+   "sources": [
+    "src/ciw/lab/surfaces_discrete_mesh.py",
+    "src/ciw/lab/surfaces_discrete_mesh_geometry.py",
+    "src/ciw/lab/surfaces_discrete_mesh_studies.py"
+   ],
+   "textbook": []
+  },
+  "T043": {
+   "sources": [
+    "src/ciw/lab/surfaces_discrete_mesh.py",
+    "src/ciw/lab/surfaces_discrete_mesh_geometry.py",
+    "src/ciw/lab/surfaces_discrete_mesh_studies.py"
+   ],
+   "textbook": [
+    "Monte Carlo estimation and binomial confidence intervals",
+    "Finite differences and step-size selection"
+   ]
+  },
+  "T044": {
+   "sources": [
+    "src/ciw/lab/surfaces_discrete_mesh.py",
+    "src/ciw/lab/surfaces_discrete_mesh_geometry.py",
+    "src/ciw/lab/surfaces_discrete_mesh_studies.py"
+   ],
+   "textbook": [
+    "Gage R&R by the ANOVA method",
+    "Monte Carlo estimation and binomial confidence intervals"
+   ]
+  },
+  "T045": {
+   "sources": [
+    "src/ciw/lab/observation.py",
+    "src/ciw/lab/observation_chord.py",
+    "src/ciw/lab/observation_modes.py"
+   ],
+   "textbook": [
+    "Chord-arc expansion c = s - kappa^2 s^3/24"
+   ]
+  },
+  "T046": {
+   "sources": [
+    "src/ciw/lab/observation.py",
+    "src/ciw/lab/observation_chord.py"
+   ],
+   "textbook": [
+    "Chord-arc expansion c = s - kappa^2 s^3/24",
+    "Explicit Runge-Kutta methods (Euler, midpoint, RK4, Dormand-Prince 5(4))",
+    "Floating-point arithmetic, rounding and exact rational reference arithmetic"
+   ]
+  },
+  "T047": {
+   "sources": [
+    "src/ciw/lab/observation.py",
+    "src/ciw/lab/observation_chord.py"
+   ],
+   "textbook": [
+    "Chord-arc expansion c = s - kappa^2 s^3/24",
+    "Explicit Runge-Kutta methods (Euler, midpoint, RK4, Dormand-Prince 5(4))",
+    "Matrix factorizations and least squares (Cholesky, QR, SVD, eigenvalues)",
+    "Floating-point arithmetic, rounding and exact rational reference arithmetic"
+   ]
+  },
+  "T048": {
+   "sources": [
+    "src/ciw/lab/observation.py",
+    "src/ciw/lab/observation_camera.py",
+    "src/ciw/lab/observation_chord.py",
+    "src/ciw/lab/observation_modes.py"
+   ],
+   "textbook": [
+    "Jacobi equation j'' + K j = 0; conjugate and focal points",
+    "Chord-arc expansion c = s - kappa^2 s^3/24",
+    "Explicit Runge-Kutta methods (Euler, midpoint, RK4, Dormand-Prince 5(4))",
+    "Monte Carlo estimation and binomial confidence intervals",
+    "Floating-point arithmetic, rounding and exact rational reference arithmetic",
+    "Pinhole camera model and lens distortion"
+   ]
+  },
+  "T049": {
+   "sources": [
+    "src/ciw/lab/observation.py",
+    "src/ciw/lab/observation_camera.py"
+   ],
+   "textbook": [
+    "Jacobi equation j'' + K j = 0; conjugate and focal points",
+    "Chord-arc expansion c = s - kappa^2 s^3/24",
+    "Finite differences and step-size selection",
+    "Pinhole camera model and lens distortion"
+   ]
+  },
+  "T050": {
+   "sources": [
+    "src/ciw/lab/observation.py",
+    "src/ciw/lab/observation_camera.py"
+   ],
+   "textbook": [
+    "Jacobi equation j'' + K j = 0; conjugate and focal points",
+    "Chord-arc expansion c = s - kappa^2 s^3/24",
+    "Richardson extrapolation and observed order of convergence",
+    "Pinhole camera model and lens distortion"
+   ]
+  },
+  "T051": {
+   "sources": [
+    "src/ciw/lab/observation.py",
+    "src/ciw/lab/observation_camera.py",
+    "src/ciw/lab/observation_signals.py"
+   ],
+   "textbook": [
+    "Jacobi equation j'' + K j = 0; conjugate and focal points",
+    "Chord-arc expansion c = s - kappa^2 s^3/24",
+    "Monte Carlo estimation and binomial confidence intervals",
+    "Floating-point arithmetic, rounding and exact rational reference arithmetic"
+   ]
+  },
+  "T052": {
+   "sources": [
+    "src/ciw/lab/observation.py",
+    "src/ciw/lab/observation_signals.py"
+   ],
+   "textbook": [
+    "Matrix factorizations and least squares (Cholesky, QR, SVD, eigenvalues)",
+    "Floating-point arithmetic, rounding and exact rational reference arithmetic"
+   ]
+  },
+  "T053": {
+   "sources": [
+    "src/ciw/lab/observation.py",
+    "src/ciw/lab/observation_signals.py"
+   ],
+   "textbook": [
+    "Monte Carlo estimation and binomial confidence intervals"
+   ]
+  },
+  "T054": {
+   "sources": [
+    "src/ciw/lab/observation.py",
+    "src/ciw/lab/observation_modes.py",
+    "src/ciw/lab/observation_signals.py"
+   ],
+   "textbook": [
+    "Monte Carlo estimation and binomial confidence intervals",
+    "Interpolation and quadrature (Hermite, trapezoid, Gauss)"
+   ]
+  },
+  "T055": {
+   "sources": [
+    "src/ciw/lab/observation.py",
+    "src/ciw/lab/observation_modes.py",
+    "src/ciw/lab/observation_signals.py"
+   ],
+   "textbook": [
+    "Monte Carlo estimation and binomial confidence intervals"
+   ]
+  },
+  "T056": {
+   "sources": [
+    "src/ciw/lab/observation.py",
+    "src/ciw/lab/observation_modes.py"
+   ],
+   "textbook": []
+  },
+  "T057": {
+   "sources": [
+    "src/ciw/lab/observation.py",
+    "src/ciw/lab/observation_signals.py"
+   ],
+   "textbook": [
+    "Kalman filter, extended Kalman filter and Rauch-Tung-Striebel smoother",
+    "NEES/NIS chi-square consistency, gating and Mahalanobis distance",
+    "Monte Carlo estimation and binomial confidence intervals",
+    "Matrix factorizations and least squares (Cholesky, QR, SVD, eigenvalues)"
+   ]
+  },
+  "T058": {
+   "sources": [
+    "src/ciw/lab/observation.py",
+    "src/ciw/lab/observation_modes.py"
+   ],
+   "textbook": [
+    "Floating-point arithmetic, rounding and exact rational reference arithmetic"
+   ]
+  },
+  "T059": {
+   "sources": [
+    "src/ciw/lab/observation.py",
+    "src/ciw/lab/observation_modes.py"
+   ],
+   "textbook": [
+    "Chord-arc expansion c = s - kappa^2 s^3/24",
+    "Kalman filter, extended Kalman filter and Rauch-Tung-Striebel smoother"
+   ]
+  },
+  "T060": {
+   "sources": [
+    "src/ciw/lab/sensor_fusion.py",
+    "src/ciw/lab/sensor_fusion_bench.py",
+    "src/ciw/lab/sensor_fusion_common.py",
+    "src/ciw/lab/sensor_fusion_objects.py"
+   ],
+   "textbook": [
+    "Matrix factorizations and least squares (Cholesky, QR, SVD, eigenvalues)"
+   ]
+  },
+  "T061": {
+   "sources": [
+    "src/ciw/lab/sensor_fusion.py",
+    "src/ciw/lab/sensor_fusion_bench.py",
+    "src/ciw/lab/sensor_fusion_common.py",
+    "src/ciw/lab/sensor_fusion_objects.py"
+   ],
+   "textbook": [
+    "NEES/NIS chi-square consistency, gating and Mahalanobis distance",
+    "Monte Carlo estimation and binomial confidence intervals"
+   ]
+  },
+  "T062": {
+   "sources": [
+    "src/ciw/lab/sensor_fusion.py",
+    "src/ciw/lab/sensor_fusion_bench.py",
+    "src/ciw/lab/sensor_fusion_common.py",
+    "src/ciw/lab/sensor_fusion_objects.py"
+   ],
+   "textbook": [
+    "Kalman filter, extended Kalman filter and Rauch-Tung-Striebel smoother",
+    "NEES/NIS chi-square consistency, gating and Mahalanobis distance",
+    "Monte Carlo estimation and binomial confidence intervals",
+    "Matrix factorizations and least squares (Cholesky, QR, SVD, eigenvalues)"
+   ]
+  },
+  "T063": {
+   "sources": [
+    "src/ciw/lab/sensor_fusion_bench.py",
+    "src/ciw/lab/sensor_fusion_common.py",
+    "src/ciw/lab/sensor_fusion_geometry.py",
+    "src/ciw/lab/sensor_fusion_objects.py"
+   ],
+   "textbook": [
+    "NEES/NIS chi-square consistency, gating and Mahalanobis distance",
+    "Monte Carlo estimation and binomial confidence intervals",
+    "Matrix factorizations and least squares (Cholesky, QR, SVD, eigenvalues)"
+   ]
+  },
+  "T064": {
+   "sources": [
+    "src/ciw/lab/sensor_fusion_bench.py",
+    "src/ciw/lab/sensor_fusion_common.py",
+    "src/ciw/lab/sensor_fusion_geometry.py",
+    "src/ciw/lab/sensor_fusion_objects.py"
+   ],
+   "textbook": [
+    "Geodesic equation and Christoffel symbols",
+    "Jacobi equation j'' + K j = 0; conjugate and focal points",
+    "Explicit Runge-Kutta methods (Euler, midpoint, RK4, Dormand-Prince 5(4))",
+    "Monte Carlo estimation and binomial confidence intervals",
+    "Interpolation and quadrature (Hermite, trapezoid, Gauss)"
+   ]
+  },
+  "T065": {
+   "sources": [
+    "src/ciw/lab/sensor_fusion_bench.py",
+    "src/ciw/lab/sensor_fusion_common.py",
+    "src/ciw/lab/sensor_fusion_filtering.py",
+    "src/ciw/lab/sensor_fusion_objects.py"
+   ],
+   "textbook": [
+    "Kalman filter, extended Kalman filter and Rauch-Tung-Striebel smoother",
+    "Monte Carlo estimation and binomial confidence intervals",
+    "Floating-point arithmetic, rounding and exact rational reference arithmetic"
+   ]
+  },
+  "T066": {
+   "sources": [
+    "src/ciw/lab/sensor_fusion_bench.py",
+    "src/ciw/lab/sensor_fusion_common.py",
+    "src/ciw/lab/sensor_fusion_filtering.py",
+    "src/ciw/lab/sensor_fusion_objects.py"
+   ],
+   "textbook": [
+    "Kalman filter, extended Kalman filter and Rauch-Tung-Striebel smoother",
+    "NEES/NIS chi-square consistency, gating and Mahalanobis distance",
+    "Monte Carlo estimation and binomial confidence intervals"
+   ]
+  },
+  "T067": {
+   "sources": [
+    "src/ciw/lab/sensor_fusion_bench.py",
+    "src/ciw/lab/sensor_fusion_common.py",
+    "src/ciw/lab/sensor_fusion_filtering.py",
+    "src/ciw/lab/sensor_fusion_objects.py"
+   ],
+   "textbook": [
+    "Kalman filter, extended Kalman filter and Rauch-Tung-Striebel smoother",
+    "NEES/NIS chi-square consistency, gating and Mahalanobis distance",
+    "Monte Carlo estimation and binomial confidence intervals"
+   ]
+  },
+  "T068": {
+   "sources": [
+    "src/ciw/lab/sensor_fusion_bench.py",
+    "src/ciw/lab/sensor_fusion_common.py",
+    "src/ciw/lab/sensor_fusion_filtering.py",
+    "src/ciw/lab/sensor_fusion_objects.py"
+   ],
+   "textbook": [
+    "NEES/NIS chi-square consistency, gating and Mahalanobis distance"
+   ]
+  },
+  "T069": {
+   "sources": [
+    "src/ciw/lab/sensor_fusion_bench.py",
+    "src/ciw/lab/sensor_fusion_common.py",
+    "src/ciw/lab/sensor_fusion_objects.py",
+    "src/ciw/lab/sensor_fusion_robustness.py"
+   ],
+   "textbook": [
+    "NEES/NIS chi-square consistency, gating and Mahalanobis distance",
+    "Monte Carlo estimation and binomial confidence intervals"
+   ]
+  },
+  "T070": {
+   "sources": [
+    "src/ciw/lab/sensor_fusion_bench.py",
+    "src/ciw/lab/sensor_fusion_common.py",
+    "src/ciw/lab/sensor_fusion_objects.py",
+    "src/ciw/lab/sensor_fusion_robustness.py"
+   ],
+   "textbook": [
+    "Kalman filter, extended Kalman filter and Rauch-Tung-Striebel smoother"
+   ]
+  },
+  "T071": {
+   "sources": [
+    "src/ciw/lab/sensor_fusion_bench.py",
+    "src/ciw/lab/sensor_fusion_common.py",
+    "src/ciw/lab/sensor_fusion_objects.py",
+    "src/ciw/lab/sensor_fusion_robustness.py"
+   ],
+   "textbook": [
+    "NEES/NIS chi-square consistency, gating and Mahalanobis distance"
+   ]
+  },
+  "T072": {
+   "sources": [
+    "src/ciw/lab/sensor_fusion_admission.py",
+    "src/ciw/lab/sensor_fusion_bench.py",
+    "src/ciw/lab/sensor_fusion_common.py",
+    "src/ciw/lab/sensor_fusion_objects.py"
+   ],
+   "textbook": [
+    "NEES/NIS chi-square consistency, gating and Mahalanobis distance",
+    "Monte Carlo estimation and binomial confidence intervals"
+   ]
+  },
+  "T073": {
+   "sources": [
+    "src/ciw/lab/sensor_fusion_admission.py",
+    "src/ciw/lab/sensor_fusion_bench.py",
+    "src/ciw/lab/sensor_fusion_common.py",
+    "src/ciw/lab/sensor_fusion_objects.py"
+   ],
+   "textbook": [
+    "NEES/NIS chi-square consistency, gating and Mahalanobis distance",
+    "Monte Carlo estimation and binomial confidence intervals"
+   ]
+  },
+  "T074": {
+   "sources": [
+    "src/ciw/lab/sensor_fusion_admission.py",
+    "src/ciw/lab/sensor_fusion_bench.py",
+    "src/ciw/lab/sensor_fusion_common.py",
+    "src/ciw/lab/sensor_fusion_objects.py"
+   ],
+   "textbook": [
+    "Kalman filter, extended Kalman filter and Rauch-Tung-Striebel smoother",
+    "NEES/NIS chi-square consistency, gating and Mahalanobis distance",
+    "Monte Carlo estimation and binomial confidence intervals",
+    "Floating-point arithmetic, rounding and exact rational reference arithmetic"
+   ]
+  },
+  "T075": {
+   "sources": [
+    "src/ciw/lab/sensor_fusion_admission.py",
+    "src/ciw/lab/sensor_fusion_bench.py",
+    "src/ciw/lab/sensor_fusion_common.py",
+    "src/ciw/lab/sensor_fusion_objects.py"
+   ],
+   "textbook": [
+    "Kalman filter, extended Kalman filter and Rauch-Tung-Striebel smoother"
+   ]
+  },
+  "T076": {
+   "sources": [
+    "src/ciw/lab/sensor_fusion_admission.py",
+    "src/ciw/lab/sensor_fusion_bench.py",
+    "src/ciw/lab/sensor_fusion_common.py",
+    "src/ciw/lab/sensor_fusion_objects.py"
+   ],
+   "textbook": []
+  },
+  "T077": {
+   "sources": [
+    "src/ciw/lab/exchange_provenance.py",
+    "src/ciw/lab/exchange_provenance_common.py"
+   ],
+   "textbook": [
+    "Cryptographic digests and canonical serialization"
+   ]
+  },
+  "T078": {
+   "sources": [
+    "src/ciw/lab/exchange_provenance.py",
+    "src/ciw/lab/exchange_provenance_common.py"
+   ],
+   "textbook": []
+  },
+  "T079": {
+   "sources": [
+    "src/ciw/lab/exchange_provenance.py",
+    "src/ciw/lab/exchange_provenance_common.py"
+   ],
+   "textbook": [
+    "Compensated and pairwise summation",
+    "Cryptographic digests and canonical serialization",
+    "Sampling and aliasing"
+   ]
+  },
+  "T080": {
+   "sources": [
+    "src/ciw/lab/exchange_provenance.py",
+    "src/ciw/lab/exchange_provenance_common.py"
+   ],
+   "textbook": [
+    "Cryptographic digests and canonical serialization",
+    "Sampling and aliasing"
+   ]
+  },
+  "T081": {
+   "sources": [
+    "src/ciw/lab/exchange_provenance.py",
+    "src/ciw/lab/exchange_provenance_common.py"
+   ],
+   "textbook": [
+    "Cryptographic digests and canonical serialization"
+   ]
+  },
+  "T082": {
+   "sources": [
+    "src/ciw/lab/exchange_provenance.py",
+    "src/ciw/lab/exchange_provenance_common.py"
+   ],
+   "textbook": []
+  },
+  "T083": {
+   "sources": [
+    "src/ciw/lab/exchange_provenance.py",
+    "src/ciw/lab/exchange_provenance_common.py"
+   ],
+   "textbook": [
+    "Cryptographic digests and canonical serialization"
+   ]
+  },
+  "T084": {
+   "sources": [
+    "src/ciw/lab/exchange_provenance.py",
+    "src/ciw/lab/exchange_provenance_common.py"
+   ],
+   "textbook": []
+  },
+  "T085": {
+   "sources": [
+    "src/ciw/lab/exchange_provenance.py",
+    "src/ciw/lab/exchange_provenance_common.py"
+   ],
+   "textbook": []
+  },
+  "T086": {
+   "sources": [
+    "src/ciw/lab/exchange_provenance.py",
+    "src/ciw/lab/exchange_provenance_common.py"
+   ],
+   "textbook": []
+  },
+  "T087": {
+   "sources": [
+    "src/ciw/lab/exchange_provenance.py",
+    "src/ciw/lab/exchange_provenance_common.py"
+   ],
+   "textbook": []
+  },
+  "T088": {
+   "sources": [
+    "src/ciw/lab/exchange_provenance.py",
+    "src/ciw/lab/exchange_provenance_common.py"
+   ],
+   "textbook": []
+  },
+  "T089": {
+   "sources": [
+    "src/ciw/lab/exchange_provenance.py",
+    "src/ciw/lab/exchange_provenance_common.py"
+   ],
+   "textbook": []
+  },
+  "T090": {
+   "sources": [
+    "src/ciw/lab/exchange_provenance.py",
+    "src/ciw/lab/exchange_provenance_common.py"
+   ],
+   "textbook": []
+  },
+  "T091": {
+   "sources": [
+    "src/ciw/lab/exchange_provenance_bundles.py",
+    "src/ciw/lab/exchange_provenance_bundles_fixtures.py"
+   ],
+   "textbook": []
+  },
+  "T092": {
+   "sources": [
+    "src/ciw/lab/exchange_provenance_bundles.py",
+    "src/ciw/lab/exchange_provenance_bundles_fixtures.py"
+   ],
+   "textbook": []
+  },
+  "T093": {
+   "sources": [
+    "src/ciw/lab/exchange_provenance_bundles.py",
+    "src/ciw/lab/exchange_provenance_bundles_fixtures.py"
+   ],
+   "textbook": [
+    "Cryptographic digests and canonical serialization"
+   ]
+  },
+  "T094": {
+   "sources": [
+    "src/ciw/lab/exchange_provenance_bundles.py",
+    "src/ciw/lab/exchange_provenance_bundles_fixtures.py"
+   ],
+   "textbook": [
+    "Jacobi equation j'' + K j = 0; conjugate and focal points",
+    "Cryptographic digests and canonical serialization"
+   ]
+  },
+  "T095": {
+   "sources": [
+    "src/ciw/lab/exchange_provenance_bundles.py",
+    "src/ciw/lab/exchange_provenance_bundles_fixtures.py"
+   ],
+   "textbook": []
+  },
+  "T096": {
+   "sources": [
+    "src/ciw/lab/exchange_provenance_bundles.py",
+    "src/ciw/lab/exchange_provenance_bundles_fixtures.py"
+   ],
+   "textbook": [
+    "Cryptographic digests and canonical serialization"
+   ]
+  },
+  "T097": {
+   "sources": [
+    "src/ciw/lab/exchange_provenance_bundles.py",
+    "src/ciw/lab/exchange_provenance_bundles_fixtures.py",
+    "src/ciw/lab/exchange_provenance_bundles_providers.py"
+   ],
+   "textbook": []
+  },
+  "T098": {
+   "sources": [
+    "src/ciw/lab/exchange_provenance_bundles.py",
+    "src/ciw/lab/exchange_provenance_bundles_providers.py"
+   ],
+   "textbook": [
+    "Cryptographic digests and canonical serialization"
+   ]
+  },
+  "T099": {
+   "sources": [
+    "src/ciw/lab/exchange_provenance_bundles.py",
+    "src/ciw/lab/exchange_provenance_bundles_fixtures.py",
+    "src/ciw/lab/exchange_provenance_bundles_providers.py"
+   ],
+   "textbook": []
+  },
+  "T100": {
+   "sources": [
+    "src/ciw/lab/exchange_provenance_bundles.py",
+    "src/ciw/lab/exchange_provenance_bundles_fixtures.py"
+   ],
+   "textbook": []
+  },
+  "T101": {
+   "sources": [
+    "src/ciw/lab/lyapunov.py",
+    "src/ciw/lab/lyapunov_provider.py",
+    "src/ciw/lab/lyapunov_reference.py"
+   ],
+   "textbook": [
+    "Lyapunov equation, Hurwitz stability and Sylvester equations",
+    "Floating-point arithmetic, rounding and exact rational reference arithmetic"
+   ]
+  },
+  "T102": {
+   "sources": [
+    "src/ciw/lab/lyapunov.py",
+    "src/ciw/lab/lyapunov_provider.py",
+    "src/ciw/lab/lyapunov_reference.py"
+   ],
+   "textbook": [
+    "Floating-point arithmetic, rounding and exact rational reference arithmetic",
+    "Root finding by bisection and Newton iteration"
+   ]
+  },
+  "T103": {
+   "sources": [
+    "src/ciw/lab/lyapunov.py",
+    "src/ciw/lab/lyapunov_provider.py",
+    "src/ciw/lab/lyapunov_reference.py"
+   ],
+   "textbook": [
+    "Floating-point arithmetic, rounding and exact rational reference arithmetic"
+   ]
+  },
+  "T104": {
+   "sources": [
+    "src/ciw/lab/lyapunov.py",
+    "src/ciw/lab/lyapunov_provider.py",
+    "src/ciw/lab/lyapunov_reference.py"
+   ],
+   "textbook": [
+    "Lyapunov equation, Hurwitz stability and Sylvester equations",
+    "Floating-point arithmetic, rounding and exact rational reference arithmetic"
+   ]
+  },
+  "T105": {
+   "sources": [
+    "src/ciw/lab/lyapunov.py",
+    "src/ciw/lab/lyapunov_provider.py",
+    "src/ciw/lab/lyapunov_reference.py"
+   ],
+   "textbook": [
+    "Implicit and A-stable integrators; stiffness",
+    "Matrix factorizations and least squares (Cholesky, QR, SVD, eigenvalues)",
+    "Floating-point arithmetic, rounding and exact rational reference arithmetic"
+   ]
+  },
+  "T106": {
+   "sources": [
+    "src/ciw/lab/lyapunov.py",
+    "src/ciw/lab/lyapunov_provider.py",
+    "src/ciw/lab/lyapunov_reference.py"
+   ],
+   "textbook": [
+    "Matrix factorizations and least squares (Cholesky, QR, SVD, eigenvalues)",
+    "Floating-point arithmetic, rounding and exact rational reference arithmetic"
+   ]
+  },
+  "T107": {
+   "sources": [
+    "src/ciw/lab/lyapunov.py",
+    "src/ciw/lab/lyapunov_provider.py",
+    "src/ciw/lab/lyapunov_reference.py"
+   ],
+   "textbook": [
+    "Lyapunov equation, Hurwitz stability and Sylvester equations",
+    "Floating-point arithmetic, rounding and exact rational reference arithmetic"
+   ]
+  },
+  "T108": {
+   "sources": [
+    "src/ciw/lab/lyapunov.py",
+    "src/ciw/lab/lyapunov_provider.py",
+    "src/ciw/lab/lyapunov_reference.py"
+   ],
+   "textbook": []
+  },
+  "T109": {
+   "sources": [
+    "src/ciw/lab/lyapunov.py",
+    "src/ciw/lab/lyapunov_provider.py",
+    "src/ciw/lab/lyapunov_reference.py"
+   ],
+   "textbook": [
+    "Lyapunov equation, Hurwitz stability and Sylvester equations",
+    "Bartels-Stewart and Schur-form solvers",
+    "Matrix factorizations and least squares (Cholesky, QR, SVD, eigenvalues)",
+    "Floating-point arithmetic, rounding and exact rational reference arithmetic"
+   ]
+  },
+  "T110": {
+   "sources": [
+    "src/ciw/lab/lyapunov.py",
+    "src/ciw/lab/lyapunov_provider.py",
+    "src/ciw/lab/lyapunov_reference.py"
+   ],
+   "textbook": [
+    "Lyapunov equation, Hurwitz stability and Sylvester equations",
+    "Bartels-Stewart and Schur-form solvers",
+    "Matrix factorizations and least squares (Cholesky, QR, SVD, eigenvalues)"
+   ]
+  },
+  "T111": {
+   "sources": [
+    "src/ciw/lab/lyapunov.py",
+    "src/ciw/lab/lyapunov_provider.py",
+    "src/ciw/lab/lyapunov_reference.py"
+   ],
+   "textbook": [
+    "Lyapunov equation, Hurwitz stability and Sylvester equations",
+    "Bartels-Stewart and Schur-form solvers",
+    "Matrix factorizations and least squares (Cholesky, QR, SVD, eigenvalues)",
+    "Floating-point arithmetic, rounding and exact rational reference arithmetic"
+   ]
+  },
+  "T112": {
+   "sources": [
+    "src/ciw/lab/lyapunov.py",
+    "src/ciw/lab/lyapunov_reference.py",
+    "src/ciw/lab/lyapunov_research.py"
+   ],
+   "textbook": [
+    "Lyapunov equation, Hurwitz stability and Sylvester equations",
+    "Interpolation and quadrature (Hermite, trapezoid, Gauss)"
+   ]
+  },
+  "T113": {
+   "sources": [
+    "src/ciw/lab/lyapunov.py",
+    "src/ciw/lab/lyapunov_provider.py",
+    "src/ciw/lab/lyapunov_reference.py",
+    "src/ciw/lab/lyapunov_research.py"
+   ],
+   "textbook": [
+    "Kalman filter, extended Kalman filter and Rauch-Tung-Striebel smoother",
+    "NEES/NIS chi-square consistency, gating and Mahalanobis distance",
+    "Lyapunov equation, Hurwitz stability and Sylvester equations"
+   ]
+  },
+  "T114": {
+   "sources": [
+    "src/ciw/lab/lyapunov.py",
+    "src/ciw/lab/lyapunov_provider.py",
+    "src/ciw/lab/lyapunov_reference.py",
+    "src/ciw/lab/lyapunov_research.py"
+   ],
+   "textbook": [
+    "Lyapunov equation, Hurwitz stability and Sylvester equations",
+    "Floating-point arithmetic, rounding and exact rational reference arithmetic"
+   ]
+  },
+  "T115": {
+   "sources": [
+    "src/ciw/lab/energy_gpu.py",
+    "src/ciw/lab/energy_gpu_kernels.py",
+    "src/ciw/lab/energy_gpu_telemetry.py"
+   ],
+   "textbook": [
+    "Explicit Runge-Kutta methods (Euler, midpoint, RK4, Dormand-Prince 5(4))"
+   ]
+  },
+  "T116": {
+   "sources": [
+    "src/ciw/lab/energy_gpu.py",
+    "src/ciw/lab/energy_gpu_kernels.py",
+    "src/ciw/lab/energy_gpu_telemetry.py"
+   ],
+   "textbook": [
+    "Floating-point arithmetic, rounding and exact rational reference arithmetic"
+   ]
+  },
+  "T117": {
+   "sources": [
+    "src/ciw/lab/energy_gpu.py",
+    "src/ciw/lab/energy_gpu_kernels.py",
+    "src/ciw/lab/energy_gpu_telemetry.py"
+   ],
+   "textbook": [
+    "Geodesic equation and Christoffel symbols",
+    "Explicit Runge-Kutta methods (Euler, midpoint, RK4, Dormand-Prince 5(4))",
+    "Floating-point arithmetic, rounding and exact rational reference arithmetic"
+   ]
+  },
+  "T118": {
+   "sources": [
+    "src/ciw/lab/energy_gpu.py",
+    "src/ciw/lab/energy_gpu_kernels.py",
+    "src/ciw/lab/energy_gpu_telemetry.py"
+   ],
+   "textbook": []
+  },
+  "T119": {
+   "sources": [
+    "src/ciw/lab/energy_gpu.py",
+    "src/ciw/lab/energy_gpu_kernels.py",
+    "src/ciw/lab/energy_gpu_telemetry.py"
+   ],
+   "textbook": []
+  },
+  "T120": {
+   "sources": [
+    "src/ciw/lab/energy_gpu.py",
+    "src/ciw/lab/energy_gpu_kernels.py",
+    "src/ciw/lab/energy_gpu_telemetry.py"
+   ],
+   "textbook": [
+    "Explicit Runge-Kutta methods (Euler, midpoint, RK4, Dormand-Prince 5(4))",
+    "Floating-point arithmetic, rounding and exact rational reference arithmetic"
+   ]
+  },
+  "T121": {
+   "sources": [
+    "src/ciw/lab/energy_gpu.py",
+    "src/ciw/lab/energy_gpu_kernels.py",
+    "src/ciw/lab/energy_gpu_telemetry.py"
+   ],
+   "textbook": [
+    "Compensated and pairwise summation",
+    "Floating-point arithmetic, rounding and exact rational reference arithmetic"
+   ]
+  },
+  "T122": {
+   "sources": [
+    "src/ciw/lab/energy_gpu.py",
+    "src/ciw/lab/energy_gpu_kernels.py",
+    "src/ciw/lab/energy_gpu_telemetry.py"
+   ],
+   "textbook": []
+  },
+  "T123": {
+   "sources": [
+    "src/ciw/lab/energy_gpu.py",
+    "src/ciw/lab/energy_gpu_kernels.py",
+    "src/ciw/lab/energy_gpu_telemetry.py"
+   ],
+   "textbook": [
+    "Floating-point arithmetic, rounding and exact rational reference arithmetic"
+   ]
+  },
+  "T124": {
+   "sources": [
+    "src/ciw/lab/energy_gpu.py",
+    "src/ciw/lab/energy_gpu_kernels.py",
+    "src/ciw/lab/energy_gpu_telemetry.py"
+   ],
+   "textbook": []
+  },
+  "T125": {
+   "sources": [
+    "src/ciw/lab/energy_gpu.py",
+    "src/ciw/lab/energy_gpu_kernels.py",
+    "src/ciw/lab/energy_gpu_telemetry.py"
+   ],
+   "textbook": []
+  },
+  "T126": {
+   "sources": [
+    "src/ciw/lab/manufacturing.py",
+    "src/ciw/lab/manufacturing_geometry.py",
+    "src/ciw/lab/manufacturing_metrology.py",
+    "src/ciw/lab/manufacturing_records.py"
+   ],
+   "textbook": [
+    "Jacobi equation j'' + K j = 0; conjugate and focal points",
+    "Chord-arc expansion c = s - kappa^2 s^3/24",
+    "Explicit Runge-Kutta methods (Euler, midpoint, RK4, Dormand-Prince 5(4))",
+    "Root finding by bisection and Newton iteration"
+   ]
+  },
+  "T127": {
+   "sources": [
+    "src/ciw/lab/manufacturing.py",
+    "src/ciw/lab/manufacturing_geometry.py",
+    "src/ciw/lab/manufacturing_metrology.py",
+    "src/ciw/lab/manufacturing_records.py"
+   ],
+   "textbook": [
+    "Jacobi equation j'' + K j = 0; conjugate and focal points",
+    "Chord-arc expansion c = s - kappa^2 s^3/24",
+    "Explicit Runge-Kutta methods (Euler, midpoint, RK4, Dormand-Prince 5(4))",
+    "Root finding by bisection and Newton iteration"
+   ]
+  },
+  "T128": {
+   "sources": [
+    "src/ciw/lab/manufacturing.py",
+    "src/ciw/lab/manufacturing_geometry.py",
+    "src/ciw/lab/manufacturing_metrology.py",
+    "src/ciw/lab/manufacturing_records.py"
+   ],
+   "textbook": [
+    "Geodesic equation and Christoffel symbols",
+    "Jacobi equation j'' + K j = 0; conjugate and focal points",
+    "Explicit Runge-Kutta methods (Euler, midpoint, RK4, Dormand-Prince 5(4))",
+    "Richardson extrapolation and observed order of convergence",
+    "Finite differences and step-size selection"
+   ]
+  },
+  "T129": {
+   "sources": [
+    "src/ciw/lab/manufacturing.py",
+    "src/ciw/lab/manufacturing_geometry.py",
+    "src/ciw/lab/manufacturing_metrology.py",
+    "src/ciw/lab/manufacturing_records.py"
+   ],
+   "textbook": [
+    "NEES/NIS chi-square consistency, gating and Mahalanobis distance",
+    "Monte Carlo estimation and binomial confidence intervals",
+    "Matrix factorizations and least squares (Cholesky, QR, SVD, eigenvalues)",
+    "Rigid registration (Kabsch)",
+    "Root finding by bisection and Newton iteration"
+   ]
+  },
+  "T130": {
+   "sources": [
+    "src/ciw/lab/manufacturing.py",
+    "src/ciw/lab/manufacturing_geometry.py",
+    "src/ciw/lab/manufacturing_metrology.py",
+    "src/ciw/lab/manufacturing_records.py"
+   ],
+   "textbook": [
+    "Monte Carlo estimation and binomial confidence intervals"
+   ]
+  },
+  "T131": {
+   "sources": [
+    "src/ciw/lab/manufacturing.py",
+    "src/ciw/lab/manufacturing_geometry.py",
+    "src/ciw/lab/manufacturing_metrology.py",
+    "src/ciw/lab/manufacturing_records.py"
+   ],
+   "textbook": [
+    "Gage R&R by the ANOVA method",
+    "Cryptographic digests and canonical serialization"
+   ]
+  },
+  "T132": {
+   "sources": [
+    "src/ciw/lab/manufacturing.py",
+    "src/ciw/lab/manufacturing_geometry.py",
+    "src/ciw/lab/manufacturing_metrology.py",
+    "src/ciw/lab/manufacturing_records.py"
+   ],
+   "textbook": [
+    "Jacobi equation j'' + K j = 0; conjugate and focal points",
+    "Measurement uncertainty (GUM) and tolerance stacking"
+   ]
+  },
+  "T133": {
+   "sources": [
+    "src/ciw/lab/manufacturing.py",
+    "src/ciw/lab/manufacturing_geometry.py",
+    "src/ciw/lab/manufacturing_metrology.py",
+    "src/ciw/lab/manufacturing_records.py"
+   ],
+   "textbook": [
+    "Jacobi equation j'' + K j = 0; conjugate and focal points",
+    "Clairaut relation on surfaces of revolution",
+    "Floating-point arithmetic, rounding and exact rational reference arithmetic",
+    "Interpolation and quadrature (Hermite, trapezoid, Gauss)"
+   ]
+  },
+  "T134": {
+   "sources": [
+    "src/ciw/lab/manufacturing.py",
+    "src/ciw/lab/manufacturing_geometry.py",
+    "src/ciw/lab/manufacturing_metrology.py",
+    "src/ciw/lab/manufacturing_records.py"
+   ],
+   "textbook": [
+    "Jacobi equation j'' + K j = 0; conjugate and focal points"
+   ]
+  },
+  "T135": {
+   "sources": [
+    "src/ciw/lab/manufacturing.py",
+    "src/ciw/lab/manufacturing_geometry.py",
+    "src/ciw/lab/manufacturing_metrology.py",
+    "src/ciw/lab/manufacturing_records.py"
+   ],
+   "textbook": [
+    "Jacobi equation j'' + K j = 0; conjugate and focal points"
+   ]
+  },
+  "T136": {
+   "sources": [
+    "src/ciw/lab/manufacturing.py",
+    "src/ciw/lab/manufacturing_geometry.py",
+    "src/ciw/lab/manufacturing_metrology.py",
+    "src/ciw/lab/manufacturing_records.py"
+   ],
+   "textbook": [
+    "Jacobi equation j'' + K j = 0; conjugate and focal points",
+    "Explicit Runge-Kutta methods (Euler, midpoint, RK4, Dormand-Prince 5(4))"
+   ]
+  },
+  "T137": {
+   "sources": [
+    "src/ciw/lab/manufacturing.py",
+    "src/ciw/lab/manufacturing_geometry.py",
+    "src/ciw/lab/manufacturing_metrology.py",
+    "src/ciw/lab/manufacturing_records.py"
+   ],
+   "textbook": [
+    "Jacobi equation j'' + K j = 0; conjugate and focal points",
+    "Richardson extrapolation and observed order of convergence",
+    "Finite differences and step-size selection",
+    "Interpolation and quadrature (Hermite, trapezoid, Gauss)"
+   ]
+  },
+  "T138": {
+   "sources": [
+    "src/ciw/lab/manufacturing.py",
+    "src/ciw/lab/manufacturing_geometry.py",
+    "src/ciw/lab/manufacturing_metrology.py",
+    "src/ciw/lab/manufacturing_records.py"
+   ],
+   "textbook": [
+    "Chord-arc expansion c = s - kappa^2 s^3/24"
+   ]
+  },
+  "T139": {
+   "sources": [
+    "src/ciw/lab/manufacturing.py",
+    "src/ciw/lab/manufacturing_geometry.py",
+    "src/ciw/lab/manufacturing_metrology.py",
+    "src/ciw/lab/manufacturing_records.py"
+   ],
+   "textbook": [
+    "Matrix factorizations and least squares (Cholesky, QR, SVD, eigenvalues)",
+    "Floating-point arithmetic, rounding and exact rational reference arithmetic",
+    "Cryptographic digests and canonical serialization"
+   ]
+  },
+  "T140": {
+   "sources": [
+    "src/ciw/lab/manufacturing.py",
+    "src/ciw/lab/manufacturing_geometry.py",
+    "src/ciw/lab/manufacturing_metrology.py",
+    "src/ciw/lab/manufacturing_records.py"
+   ],
+   "textbook": [
+    "Jacobi equation j'' + K j = 0; conjugate and focal points",
+    "Chord-arc expansion c = s - kappa^2 s^3/24",
+    "Richardson extrapolation and observed order of convergence"
+   ]
+  },
+  "T141": {
+   "sources": [
+    "src/ciw/lab/manufacturing.py",
+    "src/ciw/lab/manufacturing_geometry.py",
+    "src/ciw/lab/manufacturing_metrology.py",
+    "src/ciw/lab/manufacturing_records.py"
+   ],
+   "textbook": []
+  },
+  "T142": {
+   "sources": [
+    "src/ciw/lab/implementation_targets.py",
+    "src/ciw/lab/implementation_targets_kernels.py",
+    "src/ciw/lab/implementation_targets_serial.py"
+   ],
+   "textbook": [
+    "Jacobi equation j'' + K j = 0; conjugate and focal points",
+    "Explicit Runge-Kutta methods (Euler, midpoint, RK4, Dormand-Prince 5(4))",
+    "Kalman filter, extended Kalman filter and Rauch-Tung-Striebel smoother",
+    "Floating-point arithmetic, rounding and exact rational reference arithmetic",
+    "Roofline model and operation counts"
+   ]
+  },
+  "T143": {
+   "sources": [
+    "src/ciw/lab/implementation_targets.py",
+    "src/ciw/lab/implementation_targets_architecture.py"
+   ],
+   "textbook": []
+  },
+  "T144": {
+   "sources": [
+    "src/ciw/lab/implementation_targets.py",
+    "src/ciw/lab/implementation_targets_architecture.py",
+    "src/ciw/lab/implementation_targets_serial.py"
+   ],
+   "textbook": []
+  },
+  "T145": {
+   "sources": [
+    "src/ciw/lab/implementation_targets.py"
+   ],
+   "textbook": [
+    "Geodesic equation and Christoffel symbols",
+    "Floating-point arithmetic, rounding and exact rational reference arithmetic"
+   ]
+  },
+  "T146": {
+   "sources": [
+    "src/ciw/lab/implementation_targets.py",
+    "src/ciw/lab/implementation_targets_serial.py"
+   ],
+   "textbook": [
+    "Floating-point arithmetic, rounding and exact rational reference arithmetic",
+    "Cryptographic digests and canonical serialization",
+    "Root finding by bisection and Newton iteration"
+   ]
+  },
+  "T147": {
+   "sources": [
+    "src/ciw/lab/implementation_targets.py",
+    "src/ciw/lab/implementation_targets_kernels.py"
+   ],
+   "textbook": [
+    "Compensated and pairwise summation",
+    "Floating-point arithmetic, rounding and exact rational reference arithmetic"
+   ]
+  },
+  "T148": {
+   "sources": [
+    "src/ciw/lab/implementation_targets.py",
+    "src/ciw/lab/implementation_targets_kernels.py"
+   ],
+   "textbook": [
+    "Compensated and pairwise summation",
+    "Floating-point arithmetic, rounding and exact rational reference arithmetic"
+   ]
+  },
+  "T149": {
+   "sources": [
+    "src/ciw/lab/implementation_targets.py",
+    "src/ciw/lab/implementation_targets_fpga.py"
+   ],
+   "textbook": [
+    "Floating-point arithmetic, rounding and exact rational reference arithmetic",
+    "Cryptographic digests and canonical serialization"
+   ]
+  },
+  "T150": {
+   "sources": [
+    "src/ciw/lab/implementation_targets.py",
+    "src/ciw/lab/implementation_targets_fpga.py",
+    "src/ciw/lab/implementation_targets_serial.py"
+   ],
+   "textbook": [
+    "Cryptographic digests and canonical serialization"
+   ]
+  },
+  "T151": {
+   "sources": [
+    "src/ciw/lab/implementation_targets.py",
+    "src/ciw/lab/implementation_targets_fpga.py"
+   ],
+   "textbook": []
+  },
+  "T152": {
+   "sources": [
+    "src/ciw/lab/implementation_targets.py",
+    "src/ciw/lab/implementation_targets_fpga.py"
+   ],
+   "textbook": []
+  },
+  "T153": {
+   "sources": [
+    "src/ciw/lab/implementation_targets.py",
+    "src/ciw/lab/implementation_targets_architecture.py",
+    "src/ciw/lab/implementation_targets_authority.py"
+   ],
+   "textbook": []
+  },
+  "T154": {
+   "sources": [
+    "src/ciw/lab/implementation_targets.py",
+    "src/ciw/lab/implementation_targets_architecture.py",
+    "src/ciw/lab/implementation_targets_authority.py"
+   ],
+   "textbook": [
+    "Jacobi equation j'' + K j = 0; conjugate and focal points",
+    "Explicit Runge-Kutta methods (Euler, midpoint, RK4, Dormand-Prince 5(4))"
+   ]
+  },
+  "T155": {
+   "sources": [
+    "src/ciw/lab/research_portfolio.py"
+   ],
+   "textbook": []
+  }
+ },
  "textbook": [
   {
-   "reference": "do Carmo, Differential Geometry of Curves and Surfaces, ch. 4",
-   "result": "Geodesic equation and Christoffel symbols"
+   "reference": "do Carmo (1976), Differential Geometry of Curves and Surfaces, ch. 4",
+   "result": "Geodesic equation and Christoffel symbols",
+   "tasks": [
+    "T001",
+    "T003",
+    "T004",
+    "T005",
+    "T012",
+    "T033",
+    "T034",
+    "T037",
+    "T064",
+    "T117",
+    "T128",
+    "T145"
+   ]
   },
   {
-   "reference": "do Carmo, Riemannian Geometry, ch. 5",
-   "result": "Jacobi equation j'' + K j = 0, conjugate and focal points"
+   "reference": "do Carmo (1992), Riemannian Geometry, ch. 5",
+   "result": "Jacobi equation j'' + K j = 0; conjugate and focal points",
+   "tasks": [
+    "T002",
+    "T004",
+    "T005",
+    "T006",
+    "T007",
+    "T008",
+    "T009",
+    "T010",
+    "T011",
+    "T012",
+    "T013",
+    "T014",
+    "T016",
+    "T017",
+    "T018",
+    "T021",
+    "T024",
+    "T025",
+    "T032",
+    "T040",
+    "T048",
+    "T049",
+    "T050",
+    "T051",
+    "T064",
+    "T094",
+    "T126",
+    "T127",
+    "T128",
+    "T132",
+    "T133",
+    "T134",
+    "T135",
+    "T136",
+    "T137",
+    "T140",
+    "T142",
+    "T154"
+   ]
   },
   {
-   "reference": "do Carmo, Differential Geometry of Curves and Surfaces, 4-4",
-   "result": "Clairaut relation on surfaces of revolution"
+   "reference": "do Carmo (1976), section 4-4",
+   "result": "Clairaut relation on surfaces of revolution",
+   "tasks": [
+    "T002",
+    "T015",
+    "T024",
+    "T133"
+   ]
   },
   {
-   "reference": "Gauss-Bonnet theorem; flat surfaces with cone points (Troyanov)",
-   "result": "Gauss-Bonnet and cone angles"
+   "reference": "do Carmo (1976), section 4-5; Troyanov (1986)",
+   "result": "Gauss-Bonnet theorem; cone angles",
+   "tasks": [
+    "T028",
+    "T029",
+    "T040"
+   ]
   },
   {
-   "reference": "Taylor expansion of a space curve",
-   "result": "Chord-arc expansion c = s - kappa^2 s^3/24"
+   "reference": "Taylor expansion of a space curve (do Carmo 1976, ch. 1)",
+   "result": "Chord-arc expansion c = s - kappa^2 s^3/24",
+   "tasks": [
+    "T008",
+    "T010",
+    "T013",
+    "T017",
+    "T039",
+    "T045",
+    "T046",
+    "T047",
+    "T048",
+    "T049",
+    "T050",
+    "T051",
+    "T059",
+    "T126",
+    "T127",
+    "T138",
+    "T140"
+   ]
   },
   {
-   "reference": "Hairer, Norsett and Wanner, Solving ODEs I",
-   "result": "Classical RK4, explicit Euler/midpoint, Dormand-Prince 5(4)"
+   "reference": "Hairer, Norsett and Wanner (1993), Solving ODEs I",
+   "result": "Explicit Runge-Kutta methods (Euler, midpoint, RK4, Dormand-Prince 5(4))",
+   "tasks": [
+    "T002",
+    "T003",
+    "T004",
+    "T005",
+    "T006",
+    "T007",
+    "T008",
+    "T010",
+    "T011",
+    "T012",
+    "T013",
+    "T014",
+    "T015",
+    "T016",
+    "T017",
+    "T018",
+    "T024",
+    "T036",
+    "T046",
+    "T047",
+    "T048",
+    "T064",
+    "T115",
+    "T117",
+    "T120",
+    "T126",
+    "T127",
+    "T128",
+    "T136",
+    "T142",
+    "T154"
+   ]
   },
   {
-   "reference": "Richardson (1911); Hairer et al.",
-   "result": "Richardson extrapolation"
+   "reference": "Hairer and Wanner (1996), Solving ODEs II",
+   "result": "Implicit and A-stable integrators; stiffness",
+   "tasks": [
+    "T016",
+    "T037",
+    "T105"
+   ]
+  },
+  {
+   "reference": "Richardson (1911); Roache (1998)",
+   "result": "Richardson extrapolation and observed order of convergence",
+   "tasks": [
+    "T002",
+    "T003",
+    "T013",
+    "T015",
+    "T039",
+    "T050",
+    "T128",
+    "T137",
+    "T140"
+   ]
   },
   {
    "reference": "Kalman (1960); Rauch, Tung and Striebel (1965)",
-   "result": "Kalman filter and Rauch-Tung-Striebel smoother"
+   "result": "Kalman filter, extended Kalman filter and Rauch-Tung-Striebel smoother",
+   "tasks": [
+    "T057",
+    "T059",
+    "T062",
+    "T065",
+    "T066",
+    "T067",
+    "T070",
+    "T074",
+    "T075",
+    "T113",
+    "T142"
+   ]
   },
   {
    "reference": "Bar-Shalom, Li and Kirubarajan (2001)",
-   "result": "NEES/NIS chi-square consistency and gating"
+   "result": "NEES/NIS chi-square consistency, gating and Mahalanobis distance",
+   "tasks": [
+    "T057",
+    "T061",
+    "T062",
+    "T063",
+    "T066",
+    "T067",
+    "T068",
+    "T069",
+    "T071",
+    "T072",
+    "T073",
+    "T074",
+    "T113",
+    "T129"
+   ]
   },
   {
-   "reference": "Brioschi (1852); Gauss's Theorema Egregium",
-   "result": "Brioschi formula for Gaussian curvature"
+   "reference": "Brioschi (1852); Gauss (1827)",
+   "result": "Brioschi formula; Theorema Egregium; fundamental forms",
+   "tasks": [
+    "T001",
+    "T012",
+    "T013",
+    "T018",
+    "T033",
+    "T034"
+   ]
   },
   {
-   "reference": "Lagrange/Gauss reduction of binary quadratic forms",
-   "result": "Lattice reduction and SL(2,Z) action"
+   "reference": "Lagrange (1773) and Gauss (1801) reduction of binary quadratic forms",
+   "result": "Lattice reduction and the SL(2,Z) action",
+   "tasks": [
+    "T019",
+    "T020",
+    "T021",
+    "T022",
+    "T023",
+    "T026"
+   ]
   },
   {
-   "reference": "AIAG Measurement Systems Analysis manual",
-   "result": "Gage R&R ANOVA method"
+   "reference": "AIAG, Measurement Systems Analysis, 4th ed. (2010)",
+   "result": "Gage R&R by the ANOVA method",
+   "tasks": [
+    "T044",
+    "T131"
+   ]
   },
   {
-   "reference": "Lyapunov (1892); Khalil, Nonlinear Systems",
-   "result": "Lyapunov equation and quadratic stability"
+   "reference": "Lyapunov (1892); Khalil (2002), Nonlinear Systems",
+   "result": "Lyapunov equation, Hurwitz stability and Sylvester equations",
+   "tasks": [
+    "T029",
+    "T101",
+    "T104",
+    "T107",
+    "T109",
+    "T110",
+    "T111",
+    "T112",
+    "T113",
+    "T114"
+   ]
+  },
+  {
+   "reference": "Bartels and Stewart (1972)",
+   "result": "Bartels-Stewart and Schur-form solvers",
+   "tasks": [
+    "T109",
+    "T110",
+    "T111"
+   ]
+  },
+  {
+   "reference": "Kahan (1965); Neumaier (1974); Higham (2002), ch. 4",
+   "result": "Compensated and pairwise summation",
+   "tasks": [
+    "T025",
+    "T039",
+    "T041",
+    "T079",
+    "T121",
+    "T147",
+    "T148"
+   ]
+  },
+  {
+   "reference": "Sethian (1996); Dijkstra (1959)",
+   "result": "Fast marching and Dijkstra shortest paths",
+   "tasks": [
+    "T030",
+    "T038",
+    "T039"
+   ]
+  },
+  {
+   "reference": "Metropolis and Ulam (1949); Wilson (1927)",
+   "result": "Monte Carlo estimation and binomial confidence intervals",
+   "tasks": [
+    "T043",
+    "T044",
+    "T048",
+    "T051",
+    "T053",
+    "T054",
+    "T055",
+    "T057",
+    "T061",
+    "T062",
+    "T063",
+    "T064",
+    "T065",
+    "T066",
+    "T067",
+    "T069",
+    "T072",
+    "T073",
+    "T074",
+    "T129",
+    "T130"
+   ]
+  },
+  {
+   "reference": "Golub and Van Loan (2013)",
+   "result": "Matrix factorizations and least squares (Cholesky, QR, SVD, eigenvalues)",
+   "tasks": [
+    "T016",
+    "T017",
+    "T047",
+    "T052",
+    "T057",
+    "T060",
+    "T062",
+    "T063",
+    "T105",
+    "T106",
+    "T109",
+    "T110",
+    "T111",
+    "T129",
+    "T139"
+   ]
+  },
+  {
+   "reference": "IEEE 754-2019; Goldberg (1991); Higham (2002)",
+   "result": "Floating-point arithmetic, rounding and exact rational reference arithmetic",
+   "tasks": [
+    "T001",
+    "T002",
+    "T003",
+    "T004",
+    "T012",
+    "T018",
+    "T020",
+    "T022",
+    "T028",
+    "T029",
+    "T031",
+    "T033",
+    "T034",
+    "T035",
+    "T036",
+    "T046",
+    "T047",
+    "T048",
+    "T051",
+    "T052",
+    "T058",
+    "T065",
+    "T074",
+    "T101",
+    "T102",
+    "T103",
+    "T104",
+    "T105",
+    "T106",
+    "T107",
+    "T109",
+    "T111",
+    "T114",
+    "T116",
+    "T117",
+    "T120",
+    "T121",
+    "T123",
+    "T133",
+    "T139",
+    "T142",
+    "T145",
+    "T146",
+    "T147",
+    "T148",
+    "T149"
+   ]
+  },
+  {
+   "reference": "Nocedal and Wright (2006), ch. 8",
+   "result": "Finite differences and step-size selection",
+   "tasks": [
+    "T001",
+    "T006",
+    "T009",
+    "T035",
+    "T040",
+    "T043",
+    "T049",
+    "T128",
+    "T137"
+   ]
+  },
+  {
+   "reference": "Griewank and Walther (2008)",
+   "result": "Automatic differentiation with dual numbers",
+   "tasks": [
+    "T034"
+   ]
+  },
+  {
+   "reference": "Hartley and Zisserman (2004); Brown (1966)",
+   "result": "Pinhole camera model and lens distortion",
+   "tasks": [
+    "T048",
+    "T049",
+    "T050"
+   ]
+  },
+  {
+   "reference": "Kabsch (1976)",
+   "result": "Rigid registration (Kabsch)",
+   "tasks": [
+    "T129"
+   ]
+  },
+  {
+   "reference": "Burden and Faires (2010)",
+   "result": "Interpolation and quadrature (Hermite, trapezoid, Gauss)",
+   "tasks": [
+    "T008",
+    "T011",
+    "T024",
+    "T037",
+    "T054",
+    "T064",
+    "T112",
+    "T133",
+    "T137"
+   ]
+  },
+  {
+   "reference": "JCGM 100:2008 (GUM)",
+   "result": "Measurement uncertainty (GUM) and tolerance stacking",
+   "tasks": [
+    "T132"
+   ]
+  },
+  {
+   "reference": "FIPS 180-4 (SHA-256); RFC 8785 (JSON canonicalization)",
+   "result": "Cryptographic digests and canonical serialization",
+   "tasks": [
+    "T077",
+    "T079",
+    "T080",
+    "T081",
+    "T083",
+    "T093",
+    "T094",
+    "T096",
+    "T098",
+    "T131",
+    "T139",
+    "T146",
+    "T149",
+    "T150"
+   ]
+  },
+  {
+   "reference": "Burden and Faires (2010), ch. 2",
+   "result": "Root finding by bisection and Newton iteration",
+   "tasks": [
+    "T016",
+    "T024",
+    "T031",
+    "T032",
+    "T102",
+    "T126",
+    "T127",
+    "T129",
+    "T146"
+   ]
+  },
+  {
+   "reference": "Williams, Waterman and Patterson (2009)",
+   "result": "Roofline model and operation counts",
+   "tasks": [
+    "T142"
+   ]
+  },
+  {
+   "reference": "Shannon (1949)",
+   "result": "Sampling and aliasing",
+   "tasks": [
+    "T079",
+    "T080"
+   ]
   }
- ]
+ ],
+ "unattributed": [],
+ "unused_textbook": []
 }

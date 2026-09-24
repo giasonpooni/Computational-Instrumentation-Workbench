@@ -15,12 +15,14 @@
   },
   "primary": "numerically_verified"
  },
- "expected_invariant": "Aggregates are exact functions of retained reports and never change a label.",
- "experiment": "When the queue runs inside that command, it exports CIW_LAB_CLEAN_ROOM with the wheel digest; this task checks that the imported package is that wheel's files. Outside the command the task is partial.",
+ "expected_invariant": "The wheel's bytes match the marker's digest, the installed package files equal the wheel's members byte for byte (bytecode caches aside), and the interpreter is a virtual environment containing the package.",
+ "experiment": "Read the marker, hash the named wheel, compare the imported package file by file with the wheel's members, and check the interpreter prefixes; retain the observed conditions without the wheel digest.",
  "failure_modes_checked": [
-  "missing reports",
-  "report identity mismatch (validate_report)",
-  "aggregate differs from its re-read bytes"
+  "marker absent",
+  "marker naming a file that is not the wheel (digest or RECORD mismatch)",
+  "installed files differing from the wheel's members",
+  "interpreter not isolated",
+  "package outside the environment"
  ],
  "findings": [
   {
@@ -37,7 +39,7 @@
      }
     ]
    },
-   "claim": "This queue run executed inside the clean-room reproduction",
+   "claim": "The imported ciw package is the named wheel's files inside an isolated virtual environment",
    "domain": "computational_pipeline",
    "evidence_status": "numerically_verified",
    "uncertainty": null,
@@ -45,15 +47,23 @@
    "value": true
   }
  ],
- "generated_artifacts": [],
- "hypothesis": "One command builds an isolated wheel, installs it into a fresh virtual environment, runs the lab tests and the whole queue, and matches the retained reports within their regression tolerances.",
- "input_data": [
-  "Retained reports T001-T154 in the same output directory"
+ "generated_artifacts": [
+  {
+   "bytes": 222,
+   "path": "artifacts/T164/clean-room-observation.json",
+   "sha256": "d5e9db91ab228549dadf589423ad0e05f4903729e498185933baf4b0b6d25366"
+  }
  ],
- "mathematical_model": "scripts/reproduce_lab.py: wheel -> venv -> pytest (JUnit) -> ciw lab run --all -> ciw lab verify.",
+ "hypothesis": "When the queue runs inside scripts/reproduce_lab.py, the imported ciw package is exactly the named wheel's files, installed in an isolated virtual environment.",
+ "input_data": [
+  "CIW_LAB_CLEAN_ROOM marker exported by scripts/reproduce_lab.py (wheel path and digest)",
+  "Files of the imported ciw package",
+  "sys.prefix and sys.base_prefix of this interpreter"
+ ],
+ "mathematical_model": "scripts/reproduce_lab.py: wheel -> venv -> pytest (JUnit) -> ciw lab run --all (this task) -> ciw lab verify (unless --no-compare). This task observes the step it runs in: package files against the wheel's members, interpreter prefixes and the package location.",
  "number": 164,
  "numerical_result": "Clean-room evidence for the built wheel: {'wheel_bytes_match': True, 'installed_from_wheel': True, 'isolated_interpreter': True, 'package_inside_environment': True}.",
- "observation_model": "No physical observation; reads retained computational records only.",
+ "observation_model": "Observes the imported package files, the interpreter prefixes and the named wheel's bytes; no physical observation.",
  "physical_validation_status": {
   "statement": "Physical validation requires acquired hardware evidence; none was acquired for this task.",
   "status": "not_established"
@@ -62,22 +72,25 @@
   "ciw_version": "0.1.0",
   "implementation": "ciw.lab",
   "python": "3.12.3",
-  "wheel_sha256": "b6b15d0cc4b49a49064c6a021c7009fcae91ca0529f65249534b8d87d9e9d3cd"
+  "wheel_sha256": "4d7f1f9fc9a39df274ffaff0230ad941edbd2a483b93cae97ad051e70ca30827"
  },
  "recommended_next_task": "Run scripts/check_lab.py under Python 3.12 on Windows and on a second Linux host and retain both gate records.",
- "report_id": "sha256:c23cc65b871f8de27563d2eb423c8741cf3b07525a0d2f64607aa217a4b805c1",
+ "report_id": "sha256:911c614762ad99de398ecbee4aedd11c83508b4ae1729be16da001885868a8b7",
  "schema": "ciw.lab-task-report.v1",
  "section": "research-portfolio",
  "state": "completed",
  "task_id": "T164",
  "tests_passed": [
-  "check: This queue run executed inside the clean-room reproduction vs clean-room conditions failing (wheel digest, package files equal to the wheel's, isolated venv, installed package)",
+  "check: The imported ciw package is the named wheel's files inside an isolated virtual environment vs clean-room conditions failing (wheel digest, package files equal to the wheel's, isolated venv, installed package)",
   "pytest: tests/test_lab_research_portfolio.py::test_clean_room_marker_is_recognized",
   "pytest: tests/test_lab_research_portfolio.py::test_clean_room_needs_the_installed_package_to_be_the_named_wheel",
   "pytest: tests/test_lab_research_portfolio.py::test_clean_room_prose_does_not_carry_the_wheel_digest"
  ],
  "tests_skipped": [],
  "title": "Produce a one-command clean-room reproduction.",
- "uncertainty": "Comparison with retained reports is performed by the command after this run.",
- "unresolved_assumptions": []
+ "uncertainty": "Exact byte and path comparisons; no numerical quantity.",
+ "unresolved_assumptions": [
+  "The comparison of this run with the retained reports (ciw lab verify) runs after the queue, outside this report; the retained baseline is produced with --no-compare, so no comparison backs it.",
+  "The lab tests' JUnit outcomes are recorded in each task's report, not by this task."
+ ]
 }

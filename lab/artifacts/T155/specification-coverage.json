@@ -1,40 +1,234 @@
 {
- "Chord versus geodesic distance": {
-  "T046": 5,
-  "T047": 5
+ "missing_pages": [],
+ "recount_disagreements": [],
+ "uncovered_units": [],
+ "units": {
+  "ENERGY_GPU.md": {
+   "T115": 3,
+   "T116": 0,
+   "T117": 5,
+   "T118": 0,
+   "T119": 5,
+   "T120": 5,
+   "T121": 9,
+   "T122": 5,
+   "T123": 4,
+   "T124": 5,
+   "T125": 5,
+   "T147": 5,
+   "T148": 8
+  },
+  "EXCHANGE_BUNDLES.md": {
+   "T001": 8,
+   "T091": 4,
+   "T092": 3,
+   "T093": 3,
+   "T094": 5,
+   "T095": 7,
+   "T096": 4,
+   "T097": 6,
+   "T098": 7,
+   "T099": 3,
+   "T100": 8
+  },
+  "EXCHANGE_PROVENANCE.md": {
+   "T077": 3,
+   "T078": 4,
+   "T079": 5,
+   "T080": 4,
+   "T081": 9,
+   "T082": 3,
+   "T083": 5,
+   "T084": 2,
+   "T085": 2,
+   "T086": 3,
+   "T087": 2,
+   "T088": 3,
+   "T089": 2,
+   "T090": 5
+  },
+  "FLAT_TORUS_TOPOLOGY.md": {
+   "T019": 4,
+   "T020": 6,
+   "T021": 3,
+   "T022": 5,
+   "T023": 3,
+   "T024": 4,
+   "T025": 1,
+   "T026": 6,
+   "T027": 3,
+   "T028": 5,
+   "T029": 3,
+   "T030": 3,
+   "T031": 2,
+   "T032": 7
+  },
+  "GEODESIC_JACOBI.md": {
+   "T001": 8,
+   "T002": 5,
+   "T003": 7,
+   "T004": 5,
+   "T005": 6,
+   "T006": 3,
+   "T007": 5,
+   "T008": 7,
+   "T009": 4,
+   "T010": 9,
+   "T011": 4
+  },
+  "GEODESIC_JACOBI_LIMITS.md": {
+   "T010": 9,
+   "T011": 4,
+   "T012": 7,
+   "T013": 5,
+   "T014": 5,
+   "T015": 9,
+   "T016": 6,
+   "T017": 6,
+   "T018": 5
+  },
+  "IMPLEMENTATION_TARGETS.md": {
+   "T114": 8,
+   "T142": 4,
+   "T143": 2,
+   "T144": 6,
+   "T145": 2,
+   "T146": 10,
+   "T147": 5,
+   "T148": 8,
+   "T149": 7,
+   "T150": 2,
+   "T151": 3,
+   "T152": 6,
+   "T153": 4,
+   "T154": 4
+  },
+  "LYAPUNOV.md": {
+   "T101": 8,
+   "T102": 6,
+   "T103": 11,
+   "T104": 5,
+   "T105": 10,
+   "T106": 9,
+   "T107": 7,
+   "T108": 5,
+   "T109": 7,
+   "T110": 6,
+   "T111": 8,
+   "T112": 6,
+   "T113": 8,
+   "T114": 8
+  },
+  "MANUFACTURING.md": {
+   "T126": 3,
+   "T127": 5,
+   "T128": 9,
+   "T129": 9,
+   "T130": 4,
+   "T131": 4,
+   "T132": 5,
+   "T133": 6,
+   "T134": 4,
+   "T135": 4,
+   "T136": 3,
+   "T137": 4,
+   "T138": 3,
+   "T139": 4,
+   "T140": 5,
+   "T141": 2
+  },
+  "MESH_GEODESICS.md": {
+   "T038": 6,
+   "T039": 6,
+   "T040": 7,
+   "T041": 15,
+   "T042": 6,
+   "T043": 11,
+   "T044": 6,
+   "T045": 4
+  },
+  "OBSERVATION.md": {
+   "T045": 4,
+   "T046": 5,
+   "T047": 5,
+   "T048": 5,
+   "T049": 5,
+   "T050": 6,
+   "T051": 4,
+   "T052": 4,
+   "T053": 5,
+   "T054": 4,
+   "T055": 5,
+   "T056": 4,
+   "T057": 6,
+   "T058": 4,
+   "T059": 4,
+   "T060": 5,
+   "T066": 5
+  },
+  "SENSOR_FUSION.md": {
+   "T060": 5,
+   "T061": 4,
+   "T062": 6,
+   "T063": 7,
+   "T064": 6,
+   "T065": 4,
+   "T066": 5,
+   "T067": 5,
+   "T068": 7,
+   "T069": 4,
+   "T070": 5,
+   "T071": 5,
+   "T072": 4,
+   "T073": 4,
+   "T074": 3,
+   "T075": 4,
+   "T076": 4
+  },
+  "SPECIFICATIONS.md: Chord versus geodesic distance": {
+   "T046": 5,
+   "T047": 5
+  },
+  "SPECIFICATIONS.md: Deterministic serialization and reduction": {
+   "T121": 9,
+   "T146": 10,
+   "T148": 8
+  },
+  "SPECIFICATIONS.md: Evidence labels": {
+   "T100": 8
+  },
+  "SPECIFICATIONS.md: Filter consistency (NEES/NIS)": {
+   "T062": 6,
+   "T066": 5,
+   "T074": 3
+  },
+  "SPECIFICATIONS.md: First-order validity and focal counterexamples": {
+   "T010": 9,
+   "T017": 6
+  },
+  "SPECIFICATIONS.md: Flat torus lattices and winding": {
+   "T019": 4,
+   "T020": 6,
+   "T021": 3,
+   "T026": 6
+  },
+  "SPECIFICATIONS.md: Geodesic equation and references": {
+   "T002": 5,
+   "T003": 7,
+   "T004": 5
+  },
+  "SPECIFICATIONS.md: Jacobi equation, transfer matrix and Wronskian": {
+   "T005": 6,
+   "T007": 5,
+   "T008": 7
+  },
+  "SURFACE_INTERFACE.md": {
+   "T033": 10,
+   "T034": 9,
+   "T035": 7,
+   "T036": 10,
+   "T037": 13
+  }
  },
- "Deterministic serialization and reduction": {
-  "T146": 10,
-  "T148": 8
- },
- "Evidence labels": {
-  "T100": 7
- },
- "Filter consistency (NEES/NIS)": {
-  "T062": 4,
-  "T066": 4,
-  "T074": 3
- },
- "First-order validity and focal counterexamples": {
-  "T010": 8,
-  "T017": 6
- },
- "Flat torus lattices and winding": {
-  "T019": 4,
-  "T020": 6,
-  "T026": 6
- },
- "Geodesic equation and references": {
-  "T001": 8,
-  "T002": 5,
-  "T003": 7,
-  "T004": 5
- },
- "Jacobi equation, transfer matrix and Wronskian": {
-  "T005": 6,
-  "T006": 3,
-  "T007": 5,
-  "T008": 6,
-  "T009": 4
- }
+ "unnamed_tasks": []
 }
