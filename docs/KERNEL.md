@@ -165,6 +165,35 @@ declared module and runner class.
 `implementation.view` names the kind's `experiment.inspect` projector and
 whether it takes fusion context, so the inspection verb has no per-kind branch.
 
+### What the workbench reads from descriptors and workflows
+
+The workbench names no kind except the source-only geographic context. Every
+kind-specific decision comes from the kind's descriptor or from an optional
+hook on its workflow.
+
+| Decision | Source |
+| --- | --- |
+| Which workflow runs the kind | `implementation.entry` |
+| `experiment.inspect` projector, fusion context | `implementation.view`; `mapped_source` hook swaps the declaration |
+| Declared, reproduced and contract-validated kinds | `verification.method` |
+| Single or ordered upstream selection | `inputs.upstream_kinds`, `inputs.upstream_cardinality` |
+| Operator configuration separate from the source | `inputs.configuration` |
+| Providers the operator may leave unbound | `steps[].optional` |
+| Operation listing role | `operation_role` |
+| Binding optional providers or a separate configuration | `check_bindings`, `select_bindings`, `replay_bindings` hooks |
+| Binding a selected upstream | `validate_upstream` (one) or `requested_upstream_ids` and `validate_upstreams` (ordered) |
+| Replay rules beyond the runner's | `validate_replay` hook |
+| Embedded native occurrences | `catalog_steps`, `identity_claims`, `native_occurrences` hooks |
+| Extra inspection summary fields | `summary_fields` hook |
+| Roles whose identical result may repeat on replay | `REUSABLE_RESULT_ROLES` |
+| Fusion context of the pinned-set kinds | [`ciw.fusion_context`](../src/ciw/fusion_context.py) |
+
+`pipelines.check()` ties the descriptor data to the hooks. Its checks cover
+upstream cardinality against the upstream hooks, optional providers and
+separate configuration against the binding hooks, and entries, views and
+domain-rule code references against importable symbols. Hosts bind any kind
+role by role with `ciw serve --bind-role KIND:ROLE=PATH`.
+
 A pipeline verified by a proof instead of a reproduction (proved heat: an SP1
 proof checked against the registered guest) overrides `_verify`,
 `_check_verification` and `_check_receipts`; the bundle, source evidence and
