@@ -22,6 +22,26 @@ jobs:
       - run: python -m pip install -e ".[dev]"
       - run: python -m pytest -q
 
+  lab-blas-kernels:
+    # Retained lab evidence must regenerate on any OpenBLAS kernel a host picks: run the lab tests on an AVX2 kernel
+    # and on a kernel without FMA, forced through OPENBLAS_CORETYPE and confirmed from the loaded library.
+    strategy:
+      fail-fast: false
+      matrix:
+        core: [Haswell, Sandybridge]
+    runs-on: ubuntu-latest
+    env:
+      OPENBLAS_CORETYPE: ${{ matrix.core }}
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-python@v5
+        with:
+          python-version: '3.12'
+      - run: python -m pip install -e ".[dev,lab]"
+      - name: Confirm the forced kernel
+        run: python -c "from ciw.lab.blas_probe import openblas_core; import sys; core = openblas_core(); print(core); sys.exit(core != '${{ matrix.core }}')"
+      - run: python -m pytest -q tests/test_lab_*.py
+
   plsr-terminal:
     strategy:
       matrix:

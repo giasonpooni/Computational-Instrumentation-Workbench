@@ -349,6 +349,11 @@ python scripts/check_lab.py --blas-core Haswell --output-dir results/lab-gate-ha
 python scripts/check_lab.py --blas-core Sandybridge --output-dir results/lab-gate-sandybridge   # no FMA
 ```
 
+CI's `lab-blas-kernels` job (`.github/workflows/test.yml`) runs the lab tests
+on the Haswell and Sandybridge kernels, forced through `OPENBLAS_CORETYPE` and
+confirmed from the loaded library, so a test that holds only on the kernel of
+the machine that wrote it fails there.
+
 For a few tasks, run them with the variable set and compare only those:
 `OPENBLAS_CORETYPE=Haswell ciw lab run T094 --output-dir results/haswell`, then
 `python -c "from pathlib import Path; from ciw.lab import runner; print(runner.compare(Path('lab'), Path('results/haswell'), tasks=['T094']))"`.
