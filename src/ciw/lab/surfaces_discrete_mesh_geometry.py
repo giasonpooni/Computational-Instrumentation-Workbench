@@ -1,12 +1,13 @@
 """Triangle meshes, their refusal states and intrinsic geodesics (NumPy only).
 
 Scope: deterministic mesh generators (icosphere, latitude-longitude sphere,
-prism cylinder, Schwarz lantern, planar grid, torus grid, refined cube), a
-validator that names every structural defect it refuses (and, for a mesh
-declared star-shaped about a centre, every face oriented towards that
-centre), straightest geodesics traced by unfolding across edges
-(Polthier-Schmies: straight inside a face, equal angles on both sides of an
-edge), graph distances on the edge graph and on a Steiner-point graph, a
+prism cylinder, Schwarz lantern, planar grid, torus grid, refined cube, a
+one-vertex cone or saddle fan), a validator that names every structural
+defect it refuses (and, for a mesh declared star-shaped about a centre, every
+face oriented towards that centre), straightest geodesics traced by unfolding
+across edges (Polthier-Schmies: straight inside a face, equal angles on both
+sides of an edge, and on request equal total angles on both sides of a
+vertex), graph distances on the edge graph and on a Steiner-point graph, a
 direct heat-method distance for small meshes, angle-defect Gaussian
 curvature, batched one-ring vertex normals, linearized per-vertex standard
 deviations of normals and curvature under a declared vertex covariance, and
@@ -14,9 +15,12 @@ the planar unfolding of a face strip. Exact polyhedral distances are in
 ``surfaces_discrete_mesh_exact``.
 
 Declared rules: a traced geodesic that reaches a vertex (within a relative
-edge-parameter tolerance) is refused with ``vertex_hit`` rather than continued
-by the vertex angle-bisection rule; a geodesic that reaches a boundary edge is
-refused with ``boundary_reached`` and keeps its partial path.
+edge-parameter tolerance) is refused with ``vertex_hit`` unless the trace
+asks for ``vertex_rule="polthier_schmies"``, which moves it onto the vertex
+and continues so that the angles on both sides are half the vertex's total
+angle; at a boundary vertex no continuation is declared and the trace stops
+with ``boundary_reached``, as it does at a boundary edge, keeping its partial
+path.
 
 Non-claims: every mesh is generated from a declared formula in normalized
 units. Nothing here reads, represents or validates a scanned physical surface,
@@ -43,6 +47,8 @@ MESH_CODES = ("invalid_shape", "empty_mesh", "nonfinite_vertex", "invalid_face_i
               "inverted_face", "unreferenced_vertex", "disconnected_components", "open_boundary")
 TRACE_CODES = ("point_outside_face", "invalid_direction", "boundary_reached", "vertex_hit",
                "step_budget_exceeded")
+# What a trace does at a vertex hit: refuse it (the default), or continue by the Polthier-Schmies rule.
+VERTEX_RULES = ("refuse", "polthier_schmies")
 QUERY_CODES = ("unreachable_target", "boundary_vertex_curvature", "mesh_too_large", "invalid_strip")
 
 
@@ -476,10 +482,43 @@ def torus_mesh(n_phi: int, n_theta: int, major: float = 2.0, minor: float = 1.0)
                    {"n_phi": n_phi, "n_theta": n_theta, "major": major, "minor": minor})
 
 
+def fan_mesh(n: int, total_angle: float, radius: float = 1.0) -> TriMesh:
+    """A disk of n congruent isosceles triangles around vertex 0, whose angle sum is ``total_angle``.
+
+    Ring vertex i sits at azimuth 2 pi i / n and distance ``radius`` from the
+    axis. Below 2 pi vertex 0 is the apex of a right circular cone over the
+    planar ring; above 2 pi the ring zigzags (heights +h and -h alternately,
+    n even) around vertex 0 at the origin; at 2 pi the fan is planar. Every
+    other vertex is on the boundary, so the disk is intrinsically flat except
+    at vertex 0 (a cone vertex, a flat vertex or a saddle vertex).
+    """
+    step, apex = 2 * math.pi / n, total_angle / n
+    if not 0.0 < apex < math.pi:
+        raise ValueError("Each triangle's apex angle total_angle / n must lie strictly between 0 and pi")
+    azimuth = step * np.arange(n)
+    ring = np.stack([radius * np.cos(azimuth), radius * np.sin(azimuth), np.zeros(n)], axis=1)
+    center = np.zeros(3)
+    if apex < step:  # cone: cos(apex) (R^2 + H^2) = R^2 cos(step) + H^2
+        center[2] = radius * math.sqrt((math.cos(apex) - math.cos(step)) / (1 - math.cos(apex)))
+    elif apex > step:  # saddle: cos(apex) (R^2 + h^2) = R^2 cos(step) - h^2
+        if n % 2:
+            raise ValueError("A saddle fan needs an even number of triangles")
+        ring[:, 2] = radius * math.sqrt((math.cos(step) - math.cos(apex)) / (1 + math.cos(apex))) * (
+            1 - 2 * (np.arange(n) % 2))
+    faces = [[0, 1 + i, 1 + (i + 1) % n] for i in range(n)]
+    return TriMesh(np.vstack([center, ring]), np.array(faces), f"fan-{n}-{total_angle / math.pi:.4g}pi",
+                   {"n": n, "total_angle": total_angle, "radius": radius})
+
+
 # ---------------------------------------------------------------- tracing
 @dataclass
 class Trace:
-    """A straightest geodesic: polyline, visited faces and its outcome."""
+    """A straightest geodesic: polyline, visited faces and its outcome.
+
+    Consecutive faces share an edge, except where the trace passed through a
+    vertex listed in ``vertices`` (the Polthier-Schmies continuation), after
+    which the next face shares only that vertex.
+    """
 
     status: str
     message: str
@@ -490,21 +529,88 @@ class Trace:
     end_point: np.ndarray
     end_direction: np.ndarray
     min_vertex_margin: float
+    vertices: list = field(default_factory=list)
 
     @property
     def completed(self) -> bool:
         return self.status == "completed"
 
 
+def vertex_fan(mesh: TriMesh, face: int, corner: int):
+    """Faces around the vertex at ``corner`` of ``face``, counterclockwise from ``face``, or None on the boundary.
+
+    Each entry is (face, corner of the vertex in that face, corner angle). A
+    face (v, p, q) spans the angle from v -> p to v -> q; the next face lies
+    across the edge v-q, so the angles add up counterclockwise about the
+    normals to the vertex's total angle.
+    """
+    vertex = int(mesh.faces[face, corner])
+    fan, f, k = [], int(face), int(corner)
+    for _ in range(len(mesh.faces)):
+        ids = mesh.faces[f]
+        a = mesh.vertices[ids[(k + 1) % 3]] - mesh.vertices[vertex]
+        b = mesh.vertices[ids[(k + 2) % 3]] - mesh.vertices[vertex]
+        fan.append((f, k, math.atan2(float(np.linalg.norm(np.cross(a, b))), float(np.dot(a, b)))))
+        f = int(mesh.neighbors[f, (k + 2) % 3])
+        if f < 0:
+            return None
+        if f == face:
+            return fan
+        k = int(np.flatnonzero(mesh.faces[f] == vertex)[0])
+    raise MeshRefusal("non_manifold_vertex", f"The faces around vertex {vertex} do not close into one fan")
+
+
+def straightest_continuation(mesh: TriMesh, face: int, corner: int, incoming):
+    """Polthier-Schmies continuation through the vertex at ``corner`` of ``face`` (an interior vertex).
+
+    The ray arrives inside ``face`` along the unit tangent ``incoming``. The
+    outgoing direction leaves the reversed incoming direction by half the
+    vertex's total angle theta, so the angles on both sides are theta / 2: a
+    straight continuation at a flat vertex (theta = 2 pi). Returns (face,
+    corner of the vertex in it, unit direction in its plane, theta).
+    """
+    fan = vertex_fan(mesh, face, corner)
+    total = sum(angle for _, _, angle in fan)
+    ids = mesh.faces[face]
+    first = mesh.vertices[ids[(corner + 1) % 3]] - mesh.vertices[ids[corner]]
+    first /= np.linalg.norm(first)
+    back = -np.asarray(incoming, dtype=float)
+    # Angle of the reversed ray from the face's first edge, clamped into the face's wedge (it lies there up to the
+    # vertex tolerance).
+    alpha = math.atan2(float(np.dot(np.cross(first, back), mesh.face_normals[face])), float(np.dot(first, back)))
+    alpha = min(max(alpha, 0.0), fan[0][2])
+    spans = [(face, corner, alpha, fan[0][2])] + [(f, k, 0.0, angle) for f, k, angle in fan[1:]]
+    spans.append((face, corner, 0.0, alpha))
+    left = 0.5 * total
+    for index, (f, k, lo, hi) in enumerate(spans):
+        if left <= hi - lo or index == len(spans) - 1:
+            beta = min(lo + left, hi)
+            break
+        left -= hi - lo
+    ids = mesh.faces[f]
+    edge = mesh.vertices[ids[(k + 1) % 3]] - mesh.vertices[ids[k]]
+    edge /= np.linalg.norm(edge)
+    out = math.cos(beta) * edge + math.sin(beta) * np.cross(mesh.face_normals[f], edge)
+    return int(f), int(k), out / np.linalg.norm(out), total
+
+
 def trace(mesh: TriMesh, face: int, point, direction, length: float, *, vertex_tolerance=VERTEX_TOLERANCE,
-          max_steps: int | None = None, strict: bool = False) -> Trace:
+          max_steps: int | None = None, strict: bool = False, vertex_rule: str = "refuse") -> Trace:
     """Straightest geodesic of ``length`` from ``point`` in ``face`` along a tangent ``direction``.
 
     Straight inside a face; across an edge the direction keeps its component
     along the edge and its perpendicular magnitude (equal angles on both sides,
-    i.e. rotation about the edge onto the next face). ``strict`` raises the
-    refusal instead of returning a partial trace.
+    i.e. rotation about the edge onto the next face). An edge crossing within
+    ``vertex_tolerance`` (edge parameter) of an endpoint is a vertex hit:
+    refused as ``vertex_hit`` under ``vertex_rule="refuse"``; under
+    ``"polthier_schmies"`` the path is moved onto the vertex (by at most the
+    tolerance times the edge length, keeping its direction) and continues by
+    ``straightest_continuation``, and a start at a vertex leaves through the
+    declared face. ``strict`` raises the refusal instead of returning a
+    partial trace.
     """
+    if vertex_rule not in VERTEX_RULES:
+        raise ValueError(f"vertex_rule must be one of {', '.join(VERTEX_RULES)}")
     point = np.asarray(point, dtype=float)
     direction = np.asarray(direction, dtype=float)
     ids = mesh.faces[face]
@@ -520,9 +626,15 @@ def trace(mesh: TriMesh, face: int, point, direction, length: float, *, vertex_t
         return _refuse(strict, "invalid_direction", "The start direction must be a nonzero tangent of the start face",
                        [point], [], 0.0, face, point, direction, math.inf)
     direction = direction / norm
+    continue_through = vertex_rule == "polthier_schmies"
+    # After a vertex the ray leaves through the edge opposite it (``only``); every other exit is excluded.
+    only = -1
+    if continue_through and np.max(bary) >= 1.0 - vertex_tolerance:
+        corner = int(np.argmax(bary))
+        point, only = corners[corner].copy(), (corner + 1) % 3
     max_steps = max_steps or 50 * len(mesh.faces) + 100
     remaining, travelled = float(length), 0.0
-    points, faces = [point.copy()], [int(face)]
+    points, faces, through = [point.copy()], [int(face)], []
     entry = -1
     margin = math.inf
     for _ in range(max_steps):
@@ -538,7 +650,7 @@ def trace(mesh: TriMesh, face: int, point, direction, length: float, *, vertex_t
         w = np.array([direction @ e1, direction @ e2])
         best = None
         for k in range(3):
-            if k == entry:
+            if k == entry or (only >= 0 and k != only):
                 continue
             a, edge = local[k], local[(k + 1) % 3] - local[k]
             den = w[0] * edge[1] - w[1] * edge[0]
@@ -547,31 +659,55 @@ def trace(mesh: TriMesh, face: int, point, direction, length: float, *, vertex_t
             rel = a - q
             t = (rel[0] * edge[1] - rel[1] * edge[0]) / den
             s = (rel[0] * w[1] - rel[1] * w[0]) / den
+            if only >= 0 and not -vertex_tolerance <= s <= 1.0 + vertex_tolerance:
+                continue  # from a vertex the ray must leave through the opposite edge
             if best is None or t < best[0]:
                 best = (max(t, 0.0), k, min(max(s, 0.0), 1.0))
         if best is None:
             return _refuse(strict, "invalid_direction", "No exit edge: the direction is not inside the face",
-                           points, faces, travelled, face, point, direction, margin)
+                           points, faces, travelled, face, point, direction, margin, through)
         t, k, s = best
         if t >= remaining:
             end = origin + (q[0] + remaining * w[0]) * e1 + (q[1] + remaining * w[1]) * e2
             points.append(end)
             return Trace("completed", "", points, faces, travelled + remaining, int(face), end,
-                         w[0] * e1 + w[1] * e2, margin)
+                         w[0] * e1 + w[1] * e2, margin, through)
         a3, b3 = corners[k], corners[(k + 1) % 3]
         crossing = a3 + s * (b3 - a3)
+        margin = min(margin, s, 1.0 - s)
+        if min(s, 1.0 - s) <= vertex_tolerance and continue_through:
+            corner = k if s < 0.5 else (k + 1) % 3
+            hit, vertex = int(ids[corner]), corners[corner]
+            step = float(np.linalg.norm(vertex - point))
+            if step >= remaining:  # the length ends within the tolerance of the vertex: end there
+                points.append(vertex.copy())
+                return Trace("completed", "", points, faces, travelled + remaining, int(face), vertex.copy(),
+                             w[0] * e1 + w[1] * e2, margin, through)
+            travelled += step
+            remaining -= step
+            point = vertex.copy()
+            points.append(point.copy())
+            if mesh.boundary_vertices[hit]:
+                return _refuse(strict, "boundary_reached", f"The geodesic reached boundary vertex {hit}, where no "
+                               "straightest continuation is declared", points, faces, travelled, face, point,
+                               direction, margin, through)
+            face, corner, direction, _ = straightest_continuation(mesh, face, corner, w[0] * e1 + w[1] * e2)
+            through.append(hit)
+            faces.append(face)
+            entry, only = -1, (corner + 1) % 3
+            continue
         travelled += t
         remaining -= t
         points.append(crossing)
-        margin = min(margin, s, 1.0 - s)
         if min(s, 1.0 - s) <= vertex_tolerance:
             hit = int(ids[k] if s < 0.5 else ids[(k + 1) % 3])
-            return _refuse(strict, "vertex_hit", f"The geodesic reaches vertex {hit} where the straightest "
-                           "continuation is not unique", points, faces, travelled, face, crossing, direction, margin)
+            return _refuse(strict, "vertex_hit", f"The geodesic reaches vertex {hit}, where the default rule declares "
+                           "no continuation (vertex_rule='polthier_schmies' continues)", points, faces, travelled,
+                           face, crossing, direction, margin)
         nxt = int(mesh.neighbors[face, k])
         if nxt < 0:
             return _refuse(strict, "boundary_reached", "The geodesic reached a boundary edge before its length",
-                           points, faces, travelled, face, crossing, direction, margin)
+                           points, faces, travelled, face, crossing, direction, margin, through)
         axis = (b3 - a3) / np.linalg.norm(b3 - a3)
         d3 = w[0] * e1 + w[1] * e2
         along = float(d3 @ axis)
@@ -583,18 +719,18 @@ def trace(mesh: TriMesh, face: int, point, direction, length: float, *, vertex_t
         inward /= np.linalg.norm(inward)
         direction = along * axis + across * inward
         direction /= np.linalg.norm(direction)
-        entry = int(np.flatnonzero(mesh.neighbors[nxt] == face)[0])
+        entry, only = int(np.flatnonzero(mesh.neighbors[nxt] == face)[0]), -1
         face, point = nxt, crossing
         faces.append(face)
     return _refuse(strict, "step_budget_exceeded", "The trace exceeded its face-crossing budget",
-                   points, faces, travelled, face, point, direction, margin)
+                   points, faces, travelled, face, point, direction, margin, through)
 
 
-def _refuse(strict, code, message, points, faces, travelled, face, point, direction, margin):
+def _refuse(strict, code, message, points, faces, travelled, face, point, direction, margin, through=()):
     if strict:
         raise MeshRefusal(code, message)
     return Trace(code, message, list(points), list(faces), float(travelled), int(face), np.asarray(point),
-                 np.asarray(direction), margin)
+                 np.asarray(direction), margin, list(through))
 
 
 # ---------------------------------------------------------------- graph distances

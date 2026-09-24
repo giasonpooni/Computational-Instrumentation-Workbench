@@ -26,11 +26,21 @@ edge (``insert_points``), after moving the point onto that face or edge. The
 new faces lie in the old face planes, so the polyhedral metric, and every
 distance, is unchanged.
 
-Non-claims: exactness holds in exact arithmetic; computed distances carry the
-rounding of the unfoldings. The loop is plain Python, for meshes of a few
-thousand vertices. It returns distances, not the shortest path polyline.
-Every mesh here is generated from a declared formula in normalized units, and
-nothing measures a physical surface.
+Every window records the window it was propagated from (or the pseudo-source
+that emitted it), and every vertex the window or pseudo-source that last
+lowered its distance. ``Propagation.path`` back-traces the shortest path
+polyline from a target through that chain: from the target along the ray to
+the window's unfolded source, edge crossing by edge crossing, to the
+pseudo-source, and on from there to the source. ``Propagation.distance_at``
+evaluates the exact distance at any surface point from the recorded windows
+of its face and the distances of its vertices.
+
+Non-claims: exactness holds in exact arithmetic; computed distances and paths
+carry the rounding of the unfoldings. Where several shortest paths tie, the
+back-trace returns the one whose window reached the target first. The loop
+is plain Python, for meshes of a few thousand vertices. Every mesh here is
+generated from a declared formula in normalized units, and nothing measures
+a physical surface.
 """
 from __future__ import annotations
 
@@ -66,6 +76,7 @@ class ExactGeodesic:
 
     def __init__(self, mesh: G.TriMesh):
         vertices, faces = mesh.vertices, mesh.faces
+        self.mesh = mesh
         m = len(faces)
         table = G._edge_table(faces, len(vertices))
         twin = np.full(3 * m, -1, dtype=np.int64)
@@ -116,26 +127,40 @@ class ExactGeodesic:
 
     def solve(self, source: int, targets=None):
         """(distances, counters) with counters of windows created, propagated and pseudo-sources expanded."""
+        propagation = self.propagate(source, targets)
+        return propagation.distances, propagation.counters
+
+    def propagate(self, source: int, targets=None, limit=None) -> "Propagation":
+        """Propagate windows from vertex ``source``, recording what shortest paths need to be back-traced.
+
+        With ``targets`` propagation stops once every target distance is final;
+        with ``limit`` once no queued window carries a distance up to ``limit``,
+        so that every distance up to it is final. Other distances are then upper
+        bounds only.
+        """
         half, ring, pseudo = self.half, self.ring, self.pseudo
         slack = PRUNE_TOLERANCE * self.scale
         hypot, inf = math.hypot, math.inf
         dist = [inf] * self.n
         dist[source] = 0.0
+        # How each vertex's distance was last lowered: a window id (>= 0) or -1 - pseudo-source vertex.
+        via = [None] * self.n
+        # Per heap sequence number: (half-edge, b0, b1, sx, sy, sigma, parent) for a window, None for a vertex entry.
+        windows = [None]
         heap = [(0.0, 0, -1 - source, 0.0, 0.0, 0.0, 0.0, 0.0)]
         counters = {"windows": 0, "propagated": 0, "pseudo_sources": 0}
-        sequence = 1
         wanted = None if targets is None else sorted({int(t) for t in targets})
+        stop = inf if limit is None else float(limit) + slack
 
-        def relax(vertex, value):
-            nonlocal sequence
+        def relax(vertex, value, parent):
             if value < dist[vertex]:
                 dist[vertex] = value
+                via[vertex] = parent
                 if pseudo[vertex]:
-                    heapq.heappush(heap, (value, sequence, -1 - vertex, 0.0, 0.0, 0.0, 0.0, 0.0))
-                    sequence += 1
+                    heapq.heappush(heap, (value, len(windows), -1 - vertex, 0.0, 0.0, 0.0, 0.0, 0.0))
+                    windows.append(None)
 
-        def push(h, b0, b1, sx, sy, sigma):
-            nonlocal sequence
+        def push(h, b0, b1, sx, sy, sigma, parent):
             window = _prune(half[h], b0, b1, sx, sy, sigma, dist, slack)
             if window is None:
                 return
@@ -146,13 +171,13 @@ class ExactGeodesic:
                 key = sigma + hypot(b1 - sx, sy)
             else:
                 key = sigma - sy
-            heapq.heappush(heap, (key, sequence, h, b0, b1, sx, sy, sigma))
-            sequence += 1
+            heapq.heappush(heap, (key, len(windows), h, b0, b1, sx, sy, sigma))
+            windows.append((h, b0, b1, sx, sy, sigma, parent))
             counters["windows"] += 1
 
         while heap:
-            key, _, h, b0, b1, sx, sy, sigma = heapq.heappop(heap)
-            if wanted is not None and key > max(dist[t] for t in wanted) + slack:
+            key, sequence, h, b0, b1, sx, sy, sigma = heapq.heappop(heap)
+            if key > stop or (wanted is not None and key > max(dist[t] for t in wanted) + slack):
                 break
             if h < 0:
                 vertex = -1 - h
@@ -164,10 +189,10 @@ class ExactGeodesic:
                     # through the whole edge, from its position unfolded below the twin's frame.
                     record = half[o]
                     length, cx, cy, tail, head = record[:5]
-                    relax(tail, key + record[7])
-                    relax(head, key + record[9])
+                    relax(tail, key + record[7], h)
+                    relax(head, key + record[9], h)
                     if record[13] >= 0:
-                        push(record[13], 0.0, length, length - cx, -cy, key)
+                        push(record[13], 0.0, length, length - cx, -cy, key, h)
                 continue
             record = half[h]
             window = _prune(record, b0, b1, sx, sy, sigma, dist, slack)
@@ -180,21 +205,171 @@ class ExactGeodesic:
             # Where the ray from the source through the apex crosses this edge.
             cross = sx - (cx - sx) * sy / (cy - sy)
             if b0 - tolerance <= cross <= b1 + tolerance:
-                relax(apex, sigma + hypot(cx - sx, cy - sy))
+                relax(apex, sigma + hypot(cx - sx, cy - sy), sequence)
             if cross > b0 + tolerance and twin_left >= 0:
                 # Rays through [b0, min(b1, cross)] leave through the edge tail -> apex (child frame: tail, apex).
                 ex, ey = cx / left_length, cy / left_length
                 u0 = b0 * sy / ((b0 - sx) * ey + sy * ex) if b0 > 0.0 else 0.0
                 u1 = left_length if cross <= b1 + tolerance else b1 * sy / ((b1 - sx) * ey + sy * ex)
-                push(twin_left, max(u0, 0.0), min(u1, left_length), sx * ex + sy * ey, sy * ex - sx * ey, sigma)
+                push(twin_left, max(u0, 0.0), min(u1, left_length), sx * ex + sy * ey, sy * ex - sx * ey, sigma,
+                     sequence)
             if cross < b1 - tolerance and twin_right >= 0:
                 # Rays through [max(b0, cross), b1] leave through the edge apex -> head (child frame: apex, head).
                 ex, ey = (length - cx) / right_length, -cy / right_length
                 dx, dy = sx - cx, sy - cy
                 v0 = 0.0 if cross >= b0 - tolerance else _right_parameter(b0, sx, sy, dx, dy, ex, ey)
                 v1 = right_length if b1 >= length else _right_parameter(b1, sx, sy, dx, dy, ex, ey)
-                push(twin_right, max(v0, 0.0), min(v1, right_length), dx * ex + dy * ey, dy * ex - dx * ey, sigma)
-        return np.array(dist), counters
+                push(twin_right, max(v0, 0.0), min(v1, right_length), dx * ex + dy * ey, dy * ex - dx * ey, sigma,
+                     sequence)
+        return Propagation(self, source, np.array(dist), via, windows, counters)
+
+
+class Propagation:
+    """One source's recorded propagation: distances, windows and how every vertex was reached.
+
+    ``via[v]`` is the window (id >= 0) or pseudo-source (-1 - vertex) that
+    last lowered vertex v's distance, and each window records its parent the
+    same way. Following that chain from a vertex back-traces a shortest path:
+    each window's ray runs straight to its unfolded source through the
+    windows it was propagated from, and ends at the pseudo-source that
+    emitted the first of them.
+    """
+
+    def __init__(self, solver: ExactGeodesic, source: int, distances, via, windows, counters):
+        self.solver, self.source, self.distances, self.via = solver, source, distances, via
+        self.windows, self.counters = windows, counters
+        self._frames = {}
+        self._by_half = None
+
+    def _frame(self, h):
+        """Tail position and in-plane unit axes of half-edge h's frame (x along the edge, y towards the apex)."""
+        if h not in self._frames:
+            record = self.solver.half[h]
+            vertices = self.solver.mesh.vertices
+            tail = vertices[record[3]]
+            ex = (vertices[record[4]] - tail) / record[0]
+            ey = vertices[record[5]] - tail
+            ey = ey - float(np.dot(ey, ex)) * ex
+            self._frames[h] = (tail, ex, ey / np.linalg.norm(ey))
+        return self._frames[h]
+
+    def _ray_crossing(self, h, point, sx, sy):
+        """Parameter along half-edge h where the ray from the unfolded source (sx, sy) to ``point`` crosses it."""
+        tail, ex, ey = self._frame(h)
+        px, py = float(np.dot(point - tail, ex)), float(np.dot(point - tail, ey))
+        return sx + (px - sx) * (-sy) / (py - sy), px, py
+
+    def path(self, target: int) -> dict:
+        """The shortest path polyline from vertex ``target`` back to the source.
+
+        Returns the points (target first, source last), the face holding each
+        segment, the mesh vertex at each point (-1 elsewhere), the path length,
+        the target's distance and the largest distance by which a crossing fell
+        outside its window's edge interval (rounding only; the crossing is
+        clamped to the edge).
+        """
+        if not math.isfinite(self.distances[target]):
+            raise G.MeshRefusal("unreachable_target", f"Vertex {target} was not reached from the source")
+        vertices = self.solver.mesh.vertices
+        return self._back_trace([vertices[target].copy()], [], [int(target)], int(target), None,
+                                float(self.distances[target]))
+
+    def path_to_point(self, face: int, point) -> dict:
+        """The shortest path polyline from a surface point of ``face`` back to the source (as ``path``).
+
+        The path's last segment is the one ``distance_at`` found shortest: from
+        a vertex of the point's face, or along a window's ray into it.
+        """
+        point = np.asarray(point, dtype=float)
+        distance, face, code = self._best_at(face, point)
+        if code < 0:
+            vertex = -1 - code
+            return self._back_trace([point.copy(), self.solver.mesh.vertices[vertex].copy()], [face], [-1, vertex],
+                                    vertex, None, distance)
+        return self._back_trace([point.copy()], [], [-1], None, (code, point), distance)
+
+    def _back_trace(self, points, faces, at_vertex, vertex, ray, distance) -> dict:
+        """Follow the recorded chain from ``vertex`` (or from a point on a window's ray) to the source."""
+        solver, vertices = self.solver, self.solver.mesh.vertices
+        faces_of = solver.mesh.faces
+        outside = 0.0
+        while ray is not None or self.via[vertex] is not None:
+            if ray is not None:
+                code, point = ray
+                ray = None
+            else:
+                code = self.via[vertex]
+                point = vertices[vertex]
+            if code < 0:  # straight along an edge from the pseudo-source that relaxed this vertex
+                q = -1 - code
+                faces.append(next(o // 3 for o in solver.ring[q] if vertex in faces_of[o // 3]))
+                points.append(vertices[q].copy())
+                at_vertex.append(q)
+                vertex = q
+                continue
+            while True:
+                h, b0, b1, sx, sy, _, parent = self.windows[code]
+                x, _, _ = self._ray_crossing(h, point, sx, sy)
+                outside = max(outside, b0 - x, x - b1)
+                length = solver.half[h][0]
+                x = min(max(x, 0.0), length)
+                tail, ex, _ = self._frame(h)
+                point = tail + x * ex
+                faces.append(h // 3)
+                points.append(point.copy())
+                at_vertex.append(-1)
+                if parent >= 0:
+                    code = parent
+                    continue
+                q = -1 - parent  # the emitting pseudo-source lies in the face across this edge
+                faces.append(solver.half[h][13] // 3)
+                points.append(vertices[q].copy())
+                at_vertex.append(q)
+                vertex = q
+                break
+        return {"points": np.array(points), "faces": faces, "vertices": at_vertex, "outside_interval": outside,
+                "length": float(np.sum(np.linalg.norm(np.diff(np.array(points), axis=0), axis=1))),
+                "distance": distance}
+
+    def distance_at(self, face: int, point) -> float:
+        """Exact distance from the source to ``point`` on ``face`` (inside it or on its boundary).
+
+        A shortest path's last segment lies in the point's face, or for a point
+        on an edge possibly in the face across it: it starts at a vertex of that
+        face or enters it through a window on one of its edges. The windows
+        pushed are all kept, so this needs a propagation without a target stop
+        and with a limit, if any, at least the point's distance.
+        """
+        return self._best_at(face, np.asarray(point, dtype=float))[0]
+
+    def _best_at(self, face, point):
+        """(distance, face holding the last segment, window id or -1 - vertex it starts from)."""
+        solver = self.solver
+        mesh = solver.mesh
+        if self._by_half is None:
+            self._by_half = {}
+            for index, window in enumerate(self.windows):
+                if window is not None:
+                    self._by_half.setdefault(window[0], []).append(index)
+        bary = mesh.barycentric(face, point)
+        candidates = [int(face)] + [int(mesh.neighbors[face, (k + 1) % 3]) for k in range(3)
+                                    if bary[k] <= ON_EDGE and mesh.neighbors[face, (k + 1) % 3] >= 0]
+        best = (math.inf, int(face), None)
+        for f in candidates:
+            for vertex in mesh.faces[f]:
+                value = float(self.distances[vertex]) + float(np.linalg.norm(mesh.vertices[vertex] - point))
+                if value < best[0]:
+                    best = (value, f, -1 - int(vertex))
+            for h in range(3 * f, 3 * f + 3):
+                tolerance = PARAMETER_TOLERANCE * solver.half[h][0]
+                for index in self._by_half.get(h, ()):
+                    _, b0, b1, sx, sy, sigma, _ = self.windows[index]
+                    x, px, py = self._ray_crossing(h, point, sx, sy)
+                    if b0 - tolerance <= x <= b1 + tolerance:
+                        value = sigma + math.hypot(px - sx, py - sy)
+                        if value < best[0]:
+                            best = (value, f, index)
+        return best
 
 
 def insert_points(mesh: G.TriMesh, points) -> tuple:

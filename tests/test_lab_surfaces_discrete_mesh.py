@@ -24,9 +24,21 @@ PYGEODESIC_CLAIM = ("Exact polyhedral distances from three sources are symmetric
                     "and a torus with saddle vertices")
 FLIPOUT_CLAIM = ("FlipOut edge-flip geodesics between vertex pairs (potpourri3d; without it, the edge-graph paths FlipOut "
                  "starts from) are never shorter than the exact distance")
+FAN_CLAIM = ("Through one vertex of total angle theta the Polthier-Schmies continuation ends at polar angle theta / 2 "
+             "on both sides, where the exact distance from the start takes its closed form (and agrees with "
+             "pygeodesic's exact MMP when installed), so the continued geodesic is shortest exactly when theta is at "
+             "least 2 pi")
+PATH_CLAIM = ("Shortest paths back-traced from the exact solver's windows have the exact length, lie on the surface, "
+              "run straight across every edge and bend only at saddle and reflex boundary vertices (and match "
+              "pygeodesic's paths when installed)")
+CUT_CLAIM = ("The first cut point of every declared straightest geodesic, where its length first exceeds the exact "
+             "distance from its start, comes no later than the smallest isolated-cone prediction r sin(delta / 2) / "
+             "sin(delta / 2 - phi) over the vertices it passes, and equals it when the digon between the trace and the "
+             "other shortest path encloses one vertex")
 # The memoized studies T038 reads (surfaces_discrete_mesh:<name>).
 T038_STUDIES = ("sphere-traces", "cylinder", "plane", "steiner-nested", "dijkstra-independent", "exact-distances",
-                "exact-independent", "exact-comparison", "traced-exact", "exact-analytic", "exact-insertion")
+                "exact-independent", "exact-comparison", "traced-exact", "exact-analytic", "exact-insertion",
+                "continuation", "fans", "vertex-hits", "paths", "continuation-independent")
 RANK_CLAIM = ("Maximum radius ratio is positively rank-correlated with the mixed-Voronoi curvature error and the "
               "geodesic error across the pooled valid 642-vertex meshes, but not within the latitude-longitude family")
 
@@ -122,7 +134,10 @@ def test_solver_task_report(reports):
     report = reports["T038"]
     # Completed: the exact polyhedral distance is delivered and every computational finding is established.
     _completed_with_unestablished_physics(report)
-    assert any("back-tracing the path" in a for a in report["unresolved_assumptions"])
+    # Back-tracing and the vertex rule are delivered; what stays open is named.
+    assumptions = " ".join(report["unresolved_assumptions"])
+    assert "back-tracing the path" not in assumptions and "refused rather than continued" not in assumptions
+    assert "several vertices" in assumptions and "ties are not enumerated" in assumptions
     steiner = _value(report, "Nested Steiner-graph distances never increase with k")
     assert steiner["value"]["edges_outside_faces"] == 0
     assert "chord" not in " ".join(c["reference"] for c in steiner["basis"]["checks"])
@@ -156,8 +171,25 @@ def test_solver_task_report(reports):
     assert "Complete T038" not in report["recommended_next_task"]
     physical = [f for f in report["findings"] if f["domain"] == "physical"]
     assert physical and physical[0]["evidence_status"] == "not_established"
-    assert any(a["path"].endswith("sphere-traces.json") for a in report["generated_artifacts"])
-    assert any(a["path"].endswith("exact-distances.json") for a in report["generated_artifacts"])
+    for name in ("sphere-traces.json", "exact-distances.json", "vertex-continuation.json", "shortest-paths.json"):
+        assert any(a["path"].endswith(name) for a in report["generated_artifacts"]), name
+    # Vertex continuation, back-traced paths and cut points.
+    external = "independently_verified" if S.package_version("pygeodesic") else "numerically_verified"
+    assert labels[FAN_CLAIM] == labels[PATH_CLAIM] == labels[CUT_CLAIM] == external
+    for prefix in ("Straightest geodesics continued through flat vertices", "At a cube corner",
+                   "At a saddle vertex every end direction", "Generic straightest geodesics on jittered icospheres",
+                   "A straightest geodesic can stop being shortest"):
+        assert _value(report, prefix)["evidence_status"] == "numerically_verified", prefix
+    hits = _value(report, "Generic straightest geodesics on jittered icospheres")["value"]
+    assert hits["vertex_hits"] == 0 and sum(hits["crossings"]) > 10000 and hits["expected_hits"] < 1e-3
+    limits = _value(report, "At a saddle vertex every end direction")
+    assert limits["counterexample"]["statement"].startswith("A straightest geodesic through a vertex is the limit")
+    paths = _value(report, PATH_CLAIM)["value"]
+    assert paths["bends"]["saddle"] > 0 and paths["bends"]["boundary"] > 0 and paths["max_path_distance"] <= 1e-9
+    cut = _value(report, CUT_CLAIM)["value"]
+    assert cut["one_vertex_digons"] >= 10 and cut["several_vertex_digons"] >= 1 and cut["cut"] < cut["traces"]
+    several = _value(report, "A straightest geodesic can stop being shortest")["counterexample"]["witness"]
+    assert len(several["enclosed_vertices"]) >= 2 and several["prediction"] > several["cut_point"] + 0.1
 
 
 @pytest.mark.lab_task("T038")
@@ -204,11 +236,13 @@ def test_dijkstra_check_falls_back_without_scipy(monkeypatch, tmp_path, reports,
 @pytest.mark.lab_task("T038")
 def test_exact_checks_fall_back_without_external_packages(monkeypatch, tmp_path, reports, mesh_ctx):
     """Without pygeodesic and potpourri3d the same claims rest on same-origin checks; claims and prose are unchanged."""
-    report = _t038_without(monkeypatch, tmp_path, mesh_ctx, ("exact-independent",), absent=("package_version",))
+    report = _t038_without(monkeypatch, tmp_path, mesh_ctx, ("exact-independent", "continuation-independent"),
+                           absent=("package_version",))
     assert S.package_version("pygeodesic") is None and S.package_version("potpourri3d") is None
     labels = _labels(report)
-    assert labels[PYGEODESIC_CLAIM] == labels[FLIPOUT_CLAIM] == "numerically_verified"
-    for claim in (PYGEODESIC_CLAIM, FLIPOUT_CLAIM):
+    external = (PYGEODESIC_CLAIM, FLIPOUT_CLAIM, FAN_CLAIM, PATH_CLAIM, CUT_CLAIM)
+    assert {labels[claim] for claim in external} == {"numerically_verified"}
+    for claim in external:
         record = _value(report, claim)
         assert "independent_check" not in record["basis"] and record["basis"]["checks"]
     assert report["state"] == "completed" and report["evidence_status"]["primary"] == "numerically_verified"
@@ -374,6 +408,147 @@ def test_paths_and_approximations_never_beat_the_exact_distance():
     for level in (1, 2):  # some traces below pi are shortest paths and some are not
         shortest = [r["shortest"] for r in rows if r["level"] == level]
         assert 0 < sum(shortest) < len(shortest)
+
+
+@pytest.mark.lab_task("T038")
+def test_vertex_continuation_on_flat_and_cone_vertices():
+    study = S.continuation_study()
+    assert all(r["status"] == "completed" and r["vertices_passed"] >= 1 for r in study["flat"])
+    assert study["flat_max_error"] <= 1e-12
+    assert max(study["flat_vertices_passed"]) >= 5  # rows of vertices, one at every step
+    for row in study["cube"]["rows"]:  # a cone vertex: 3 pi / 4 on both sides
+        assert row["vertices_passed"] == 1 and row["endpoint_error"] <= 1e-12
+        assert abs(row["exact_minus_closed_form"]) <= 1e-12 and row["traced_minus_exact"] > 0.05
+    plane = G.plane_mesh(4, 4)
+    start = np.array([0.43, 0.61, 0.0])
+    face = plane.locate(start)[0]
+    toward = S._unit(plane.vertices[18] - start)  # vertex 18 = (0.75, 0.75), interior and flat
+    # The default rule still refuses a vertex hit; the continuation is asked for.
+    assert G.trace(plane, face, start, toward, 1.0).status == "vertex_hit"
+    continued = G.trace(plane, face, start, toward, 0.5, vertex_rule=S.PS)
+    assert continued.completed and continued.vertices == [18]
+    assert np.max(np.abs(continued.end_point - (start + 0.5 * toward))) <= 1e-12
+    assert continued.length == pytest.approx(0.5, abs=1e-15)
+    # A start at a vertex leaves through the declared face; a direction outside that face's wedge is refused.
+    out = S._unit(np.array([1.0, 0.3, 0.0]))
+    leaving = S._leaving_face(plane, plane.vertices[18], out)
+    from_vertex = G.trace(plane, leaving, plane.vertices[18], out, 0.2, vertex_rule=S.PS)
+    assert from_vertex.completed and np.max(np.abs(from_vertex.end_point - (plane.vertices[18] + 0.2 * out))) <= 1e-12
+    wrong = G.trace(plane, S._leaving_face(plane, plane.vertices[18], -out), plane.vertices[18], out, 0.2,
+                    vertex_rule=S.PS)
+    assert wrong.status == "invalid_direction"
+    # At a boundary vertex no continuation is declared: the trace stops there.
+    stopped = G.trace(plane, face, start, S._unit(plane.vertices[24] - start), 1.0, vertex_rule=S.PS)
+    assert stopped.status == "boundary_reached" and np.allclose(stopped.points[-1], plane.vertices[24])
+    with pytest.raises(ValueError):
+        G.trace(plane, face, start, toward, 0.5, vertex_rule="bisect")
+
+
+@pytest.mark.lab_task("T038")
+def test_fan_continuation_bisects_the_total_angle():
+    study = S.fan_study()
+    offset = study["offset"] * sum(study["radii"]) / study["radii"][1]
+    for row in study["rows"]:
+        assert row["issues"] == [] and row["status"] == "completed" and row["vertices_passed"] == 1
+        assert abs(row["polar_minus_half"]) <= 1e-12 and abs(row["radius_error"]) <= 1e-12
+        assert row["reverse_error"] <= 1e-12
+        assert max(abs(d) for d in row["exact_minus_closed_form"]) <= 1e-12
+        assert row["through_measured"] == row["through_expected"]
+        shortest = abs(row["traced_minus_exact"]) <= S.SHORTEST
+        assert shortest == (row["total_angle_over_pi"] >= 2.0) == row["path_through_centre"]
+        # The two one-sided limits, pi and theta - pi, are the continuation's first-order neighbours.
+        assert abs(row["one_sided_limit_error"] - offset) <= 1e-9
+    saddle = next(r for r in study["rows"] if r["total_angle_over_pi"] == 2.5)
+    assert saddle["through_expected"] == [False, False, False, True, True]  # the fan between pi and theta - pi
+    with pytest.raises(ValueError):
+        G.fan_mesh(5, 2.5 * math.pi)  # a saddle fan zigzags, so it needs an even number of triangles
+
+
+@pytest.mark.lab_task("T038")
+def test_generic_traces_do_not_hit_vertices():
+    study = S.vertex_hit_study(levels=(2, 3), traces=40)
+    assert study["vertex_hits"] == 0
+    assert all(r["statuses"] == ["completed"] and r["min_margin"] > G.VERTEX_TOLERANCE for r in study["rows"])
+    assert study["rows"][1]["crossings_per_trace"] > 1.5 * study["rows"][0]["crossings_per_trace"]
+    # The margins are those of the edge crossings: a trace across a planar grid row by row.
+    plane = G.plane_mesh(4, 4)
+    tr = G.trace(plane, plane.locate([0.1, 0.05, 0.0])[0], np.array([0.1, 0.05, 0.0]), np.array([0.0, 1.0, 0.0]),
+                 0.9)
+    margins = S.crossing_margins(plane, tr)
+    assert len(margins) == len(tr.faces) - 1 and min(margins) == pytest.approx(0.4, abs=1e-12)
+
+
+@pytest.mark.lab_task("T038")
+def test_back_traced_paths_are_shortest_and_bend_only_at_saddles_and_boundaries():
+    study = S.path_study(sources=2, targets=3)
+    for row in study["rows"]:
+        assert row["length_error"] <= 1e-12 and row["off_surface"] == 0 and row["outside_interval"] <= 1e-12
+        assert row["max_turn"] <= S.BEND and row["min_side_minus_pi"] >= -S.BEND
+        assert row["reverse_distance"] <= 1e-9 and row["bends"]["cone"] == row["bends"]["flat"] == 0
+    # The L-shape's hidden target is reached around the reflex corner, where the path bends.
+    shape = S._l_shape(8)
+    nearest = [int(np.argmin(np.linalg.norm(shape.vertices - p, axis=1)))
+               for p in ([1.0, 0.0, 0.0], [0.5, 1.0, 0.0], [0.5, 0.5, 0.0])]
+    source, target, corner = nearest
+    path = E.ExactGeodesic(shape).propagate(source).path(target)
+    assert corner in path["vertices"] and path["length"] == pytest.approx(math.sqrt(0.5) + 0.5, abs=1e-12)
+    assert np.allclose(path["points"][0], shape.vertices[target]) and np.allclose(path["points"][-1],
+                                                                                    shape.vertices[source])
+    assert S.side_angles(shape, corner, path["points"][path["vertices"].index(corner) - 1],
+                         path["faces"][path["vertices"].index(corner) - 1],
+                         path["points"][path["vertices"].index(corner) + 1],
+                         path["faces"][path["vertices"].index(corner)])[0] > math.pi + 1e-3
+    # Distances at surface points from the recorded windows equal the distances to the points inserted as vertices.
+    mesh = G.icosphere(2)
+    inside, on_edge = mesh.point(7, [0.2, 0.5, 0.3]), mesh.point(40, [0.4, 0.6, 0.0])
+    refined, ids = E.insert_points(mesh, [(7, inside), (40, on_edge)])
+    exact = E.ExactGeodesic(refined).distances(0)
+    propagation = E.ExactGeodesic(mesh).propagate(0)
+    assert np.array_equal(propagation.distances, E.ExactGeodesic(mesh).distances(0))
+    assert propagation.distance_at(7, inside) == pytest.approx(exact[ids[0]], abs=1e-12)
+    assert propagation.distance_at(40, on_edge) == pytest.approx(exact[ids[1]], abs=1e-12)
+    assert propagation.path_to_point(7, inside)["length"] == pytest.approx(exact[ids[0]], abs=1e-12)
+    vertices, faces = S._octahedron()
+    split = G.TriMesh.build(np.vstack([vertices, vertices + 5]), np.vstack([faces, faces + 6]), require_connected=False)
+    with pytest.raises(G.MeshRefusal) as refused:
+        E.ExactGeodesic(split).propagate(0).path(7)
+    assert refused.value.code == "unreachable_target"
+
+
+@pytest.mark.lab_task("T038")
+def test_cut_points_match_the_isolated_cone_prediction():
+    traced = S.traced_exact_study(configs=((1, 2.0), (2, 2.0)))
+    summary = M.cut_summary(traced)
+    assert summary["max_decrease"] <= 1e-12 and summary["endpoint_gap"] <= 1e-12 and summary["mismatched"] == 0
+    assert len(summary["single"]) >= 5 and summary["single_error"] <= 0.0
+    assert summary["later_than_predicted"] <= 0.0 and summary["uncut_margin"] >= 0.0
+    # Level 2, trace 5: the digon encloses two vertices, and the cut comes before either one alone predicts.
+    witness = next(r for r in summary["several"] if (r["level"], r["start"]) == (2, 5))
+    assert len(witness["cut"]["enclosed"]) == 2
+    assert summary["prediction"](witness) - witness["cut"]["arclength"] > 0.1
+    # The isolated-cone formula: the vertex itself when aimed at it, no crossing from half the defect on.
+    assert S.single_cone_cut(1.0, 0.0, 0.2) == pytest.approx(1.0, abs=1e-15)
+    assert S.single_cone_cut(1.0, math.tan(0.1), 0.2) == math.inf
+    assert S.single_cone_cut(1.0, math.tan(0.05), 0.2) == pytest.approx(
+        math.hypot(1.0, math.tan(0.05)) * math.sin(0.1) / math.sin(0.05), rel=1e-12)
+    # A loop through the spoke midpoints of a vertex's one-ring encloses exactly that vertex.
+    mesh = G.icosphere(2)
+    center = int(mesh.faces[0, 0])
+    loop = [0.5 * (mesh.vertices[center] + mesh.vertices[mesh.faces[f, (k + 1) % 3]])
+            for f, k, _ in G.vertex_fan(mesh, 0, 0)]
+    assert S.enclosed_vertices(mesh.vertices, np.array(loop)) == [center]
+
+
+@pytest.mark.lab_task("T038")
+def test_continuation_paths_and_cut_points_agree_with_pygeodesic():
+    pytest.importorskip("pygeodesic.geodesic")
+    fans = S.fan_study(angles=(1.5, 2.5))
+    paths = S.path_study(sources=2, targets=2)
+    traced = S.traced_exact_study(configs=((1, 2.0),))
+    result = S.continuation_independent_study(fans, paths, traced)
+    assert result["fan_max_abs"] <= 1e-12 and result["path_max_distance"] <= 1e-9
+    assert result["path_length_max_abs"] <= 1e-12
+    assert result["cut_probes"] >= 2 and result["cut_probe_max_abs"] <= 1e-12
 
 
 # ---------------------------------------------------------------- T039
@@ -760,11 +935,13 @@ def test_next_steps_name_forward_work(reports):
         assert text == M.NEXT_STEPS[task_id], task_id
         if report["state"] == "completed":
             assert text.startswith("Deferred research question: "), (task_id, text)
-    # T038 delivered the exact solver; its next step names the work it leaves open, not the solver again.
+    # T038 delivered the exact solver, the vertex rule, back-traced paths and located cut points; its next step names
+    # the work they leave open, not the delivered work again.
     step = reports["T038"]["recommended_next_task"]
     assert reports["T038"]["state"] == "completed"
-    assert "Polthier-Schmies" in step and "polyline" in step and "cut locus" in step
+    assert "several vertices" in step and "cut locus" in step and "saddle-bearing" in step and "exp(-K L^2 / 6)" in step
     assert "T039" not in step and "exact two-point" not in step
+    assert "refused as vertex_hit" not in step and "back-trace the shortest path" not in step
     # T045 now carries the split for model-derived distances on parametric surfaces; T044 hands out only the
     # part still open there (the mesh form of geometry_m2), naming T045 and T140 as partial deliverers.
     step = M.NEXT_STEPS["T044"]
