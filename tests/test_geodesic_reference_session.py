@@ -114,4 +114,4 @@ def test_reference_restore_needs_no_provider_and_replay_refuses_without_binding(
         assert call(restored, "experiment.inspect", {"bundle_id": refs["original"]})["kind"] == kind
         call(restored, "bundle.replay", {"bundle_id": refs["original"]}, error=True)
         assert restored.workbench.serialize() == before
-    assert {o["operation_id"] for o in restored.workbench.describe_operations() if o["available"]} == {"ciw.energy-accuracy.v1", "ciw.encoder-position.v1", "ciw.thermal-observer.v1"}
+    assert {o["operation_id"] for o in restored.workbench.describe_operations() if o["available"]} == {"ciw.energy-accuracy.v1", "ciw.encoder-position.v1", "ciw.thermal-observer.v1", "ciw.project-graph.v1"}

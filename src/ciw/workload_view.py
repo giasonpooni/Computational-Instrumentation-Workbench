@@ -12,7 +12,8 @@ def project(record, source, declaration, revision):
     object_kinds = {"schematic-assessment": "declared_schematic", "schematic-companions": "local_model_analysis",
                     "numerical-heat": "integer_numerical_field", "proved-heat": "proved_integer_numerical_field", "bim-quantity": "construction_quantity",
                     "acquired-dataset": "acquired_evidence", "thermal-observer": "thermal_observer_reference",
-                    "machine-manifest": "machine_manifest_reference"}
+                    "machine-manifest": "machine_manifest_reference",
+                    "project-graph": "project_graph_declaration"}
     context = {"object_kind": object_kinds[kind],
                "owner": step["runtime_ref"], "configuration": native["configuration"],
                "covariance_status": "not_applicable", "sensor_fusion": "not_performed",
@@ -102,6 +103,27 @@ def project(record, source, declaration, revision):
                              {**provenance, "result_id": step["result_id"], "execution_id": step["execution_id"]},
                              frame=position["frame"], time_basis=position["time_basis"],
                              uncertainty_scope=context["uncertainty_scope"], claim_scope=data["claim_scope"]))
+    elif kind == "project-graph":
+        summary = data["summary"]
+        context.update(
+            summary="Provider-free project graph inspection: " + summary["status"],
+            project_id=data["project_id"],
+            project_revision=data["project_revision"],
+            history_length=data["history_length"],
+            status=summary["status"],
+            result_statuses=deepcopy(summary["result_statuses"]),
+            edge_counts=deepcopy(summary["edge_counts"]),
+            unresolved_physical_edges=deepcopy(data["inspection"]["unresolved_physical_edges"]),
+            context_status=deepcopy(summary["context_status"]),
+            declared_computation_execution="not_performed",
+            physical_validation="not_performed",
+        )
+        counts = summary["object_counts"]
+        panels.append(_panel("object-counts", "Declared project objects", list(counts), list(counts.values()),
+                             ["count"] * len(counts), None,
+                             {**provenance, "result_id": step["result_id"], "execution_id": step["execution_id"]},
+                             project_revision=data["project_revision"], status=summary["status"],
+                             claim_scope=data["claim_scope"]))
     return deepcopy({"schema": SCHEMA, "catalog_revision": revision, "bundle_id": record["bundle_id"],
         "kind": record["kind"], "label": source["label"], "source_id": source["source_id"], "evidence_id": source["evidence_id"],
         "upstream_bundle_id": record["upstream_bundle_id"], "replay_source_bundle_ids": [r["source_bundle_digest"] for r in native.get("replay_receipts", [])],
