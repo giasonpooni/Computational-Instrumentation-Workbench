@@ -36,3 +36,13 @@ def test_serve_bind_refuses_an_undeclared_role_or_kind(monkeypatch, tmp_path, ca
                            ("not-a-kind:role=/x", "no executable operation")):
         code, calls = _serve(monkeypatch, tmp_path, "--bind-role", value)
         assert code != 0 and calls == [] and message in capsys.readouterr().err
+
+
+def test_serve_bind_role_refuses_a_kind_another_option_already_bound(monkeypatch, tmp_path, capsys):
+    def bind(self, kind, repositories):
+        self._bindings[kind] = repositories
+
+    monkeypatch.setattr("ciw.workbench.Workbench.bind_workflow", bind)
+    code, calls = _serve(monkeypatch, tmp_path, "--intrinsic-surface-repo", str(tmp_path / "isgt"),
+                         "--bind-role", "mesh-path:isgt=" + str(tmp_path / "other"))
+    assert code != 0 and calls == [] and "repeats a binding another option already made" in capsys.readouterr().err
