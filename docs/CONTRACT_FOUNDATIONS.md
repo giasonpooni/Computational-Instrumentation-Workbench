@@ -27,7 +27,9 @@ evaluation and the read-only inspection authority.
 ## Machine manifest operation
 
 `src/ciw/machine_workflow.py` wraps the manifest contract in the shared CIW
-operation lifecycle as `ciw.encoder-position.v1`. A retained source must carry
+operation lifecycle as `ciw.encoder-position.v1`, run by the shared pipeline
+runner with its own record profile (result and verification schemas, method and
+authority). A retained source must carry
 the evidence bundle, candidate manifest and deterministic challenge report. The
 adapter emits separate operation, execution, result and numerical-result identities,
 then supports save/reopen without provider execution and fresh replay with a new

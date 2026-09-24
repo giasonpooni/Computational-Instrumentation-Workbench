@@ -165,6 +165,12 @@ declared module and runner class.
 `implementation.view` names the kind's `experiment.inspect` projector and
 whether it takes fusion context, so the inspection verb has no per-kind branch.
 
+Pipelines whose records carry their own schemas and authority (the provider-free
+thermal and machine-manifest references) set a `RecordProfile` on the runner:
+result schema, verification schema and method, and authority. A step whose
+retained request is narrower than its source overrides `step_request`;
+`check_data` always receives the whole source.
+
 ### What the workbench reads from descriptors and workflows
 
 The workbench names no kind except the source-only geographic context. Every
