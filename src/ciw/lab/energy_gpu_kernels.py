@@ -278,6 +278,12 @@ def rust_source_sha256() -> str:
     return hashlib.sha256(RUST_SOURCE.encode("utf-8")).hexdigest()
 
 
+def _msvc_host(rustc) -> bool:
+    """Whether rustc builds for an MSVC host, whose linker needs extra flags for reproducible binaries."""
+    verbose = subprocess.run([rustc, "-vV"], capture_output=True, text=True, timeout=30).stdout
+    return any(line.startswith("host:") and line.strip().endswith("-msvc") for line in verbose.splitlines())
+
+
 def build_rust_kernel(directory) -> dict:
     """Compile the embedded sphere RK4 source with rustc into ``directory``; return its identity."""
     return build_rust_program(directory, RUST_SOURCE, "sphere_rk4", "ciw.lab.energy_gpu_kernels.RUST_SOURCE")
@@ -301,8 +307,12 @@ def build_rust_program(directory, source_text: str, stem: str, implementation: s
     # Remapping the scratch path and one codegen unit make the binary digest
     # reproducible for a given rustc and target.
     flags = ["-O", "-C", "debuginfo=0", "-C", "codegen-units=1", "--edition", "2021"]
-    command = [rustc, *flags, f"--remap-path-prefix={directory}=.", "-o", str(executable), str(source)]
     try:
+        if _msvc_host(rustc):
+            # The MSVC linker also stamps the link time and a fresh PDB signature into each binary: /Brepro derives
+            # the stamp from the content and stripping drops the PDB record (rustc then links with /DEBUG:NONE).
+            flags += ["-C", "strip=symbols", "-C", "link-arg=/Brepro"]
+        command = [rustc, *flags, f"--remap-path-prefix={directory}=.", "-o", str(executable), str(source)]
         built = subprocess.run(command, capture_output=True, text=True, timeout=120)
         version = subprocess.run([rustc, "--version"], capture_output=True, text=True, timeout=30).stdout.strip()
     except (OSError, subprocess.TimeoutExpired) as exc:

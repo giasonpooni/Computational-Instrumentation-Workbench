@@ -152,7 +152,9 @@ def test_host_paths_in_reports_never_reach_retained_hardware_runs(tmp_path, monk
     _fake(monkeypatch, "T116", quotes_the_path)
     run = tmp_path / "run"
     runner.run_queue(run, ["T116"])
-    assert str(secret) in (run / "reports" / "T116.json").read_text(encoding="utf-8")
+    # The OSError message shows the path raw or, on Windows, as its repr (doubled backslashes).
+    quoted = json.dumps(json.loads((run / "reports" / "T116.json").read_text(encoding="utf-8")))
+    assert any(json.dumps(form)[1:-1] in quoted for form in (str(secret), repr(str(secret))[1:-1]))
     with pytest.raises(ValueError, match="holds a host path"):
         runner.retain_hardware_run(run, tmp_path / "lab", RUN_ID, "RTX 2080 workstation")
     assert not (tmp_path / "lab" / "hardware").exists()
