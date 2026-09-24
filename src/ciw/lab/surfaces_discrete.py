@@ -178,7 +178,7 @@ def surface_interface(ctx):
     ctx.artifact_text("conformance-residuals.svg", svg.line_plot(
         series, title="Worst residual per surface; values < 1e-17 (and zeros) drawn at 1e-17",
         xlabel=" ".join(f"{i} {short.get(k, k)}" for i, k in enumerate(keys, 1)), ylabel="normalized residual",
-        logy=True))
+        logy=True), rounding_level=True)
     misscaled, flipped = mutants["misscaled-curvature"], mutants["sign-flipped-derivatives"]
     nan_mutant = mutants["nan-derivatives"]
     fields = {
@@ -698,7 +698,8 @@ def finite_difference_derivatives(ctx):
     series.append(("predicted (sphere)", hs, rows["sphere"]["median_predicted"]))
     ctx.artifact_text("fd-v-shape.svg", svg.line_plot(
         series, title="Central-difference error of metric derivatives vs step",
-        xlabel="relative step h", ylabel="median max |D_h g - dg| / (max|g|/l)", logx=True, logy=True))
+        xlabel="relative step h", ylabel="median max |D_h g - dg| / (max|g|/l)", logx=True, logy=True),
+        rounding_level=True)
     fields = {
         "hypothesis": ("Central differences of the metric approach the analytic dg as h^2 until rounding, which grows "
                        "as eps/h, takes over; the optimum lies near h* = (3 eps |g| / |d^3 g|)^(1/3) ~ eps^(1/3)."),

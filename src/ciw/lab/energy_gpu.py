@@ -1566,7 +1566,7 @@ def precision_versus_cost(ctx):
     ctx.artifact_text("common-workload-precision.svg", svg.line_plot(
         [(p, iterations, [max(value, 1e-40) for value in vi["kl_nats"][p]]) for p in common.PRECISIONS],
         title="Common Gaussian VI workload: KL to the exact posterior", xlabel="iteration",
-        ylabel="KL (nats, floored at 1e-40)", logy=True))
+        ylabel="KL (nats, floored at 1e-40)", logy=True), rounding_level=True)
     target = f"{common.SPEC['target_kl_nats']:g}"
     fields = _fields(
         hypothesis="Lower precision buys nothing once roundoff dominates: float32 RK4 matches float64 until truncation "

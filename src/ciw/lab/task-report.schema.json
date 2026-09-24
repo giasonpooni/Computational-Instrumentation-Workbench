@@ -38,10 +38,17 @@
      "wall_clock_timing": {
       "description": "Declared by the task that wrote this SVG figure: its bytes depend on wall-clock timing, so a re-execution compares it for presence and structure only (T158, scripts/check_figures.py). Absent on every other artifact.",
       "const": true
+     },
+     "rounding_level": {
+      "description": "Declared by the task that wrote this SVG figure: it plots values at binary64 rounding level, whose last bits and so the figure's bytes follow the BLAS kernel and platform, so a re-execution compares it for presence and structure only (T158, scripts/check_figures.py). Absent on every other artifact; never together with wall_clock_timing.",
+      "const": true
      }
     },
-    "if": {"required": ["wall_clock_timing"]},
-    "then": {"properties": {"path": {"pattern": "\\.svg$"}}}
+    "allOf": [
+     {"if": {"required": ["wall_clock_timing"]}, "then": {"properties": {"path": {"pattern": "\\.svg$"}}}},
+     {"if": {"required": ["rounding_level"]}, "then": {"properties": {"path": {"pattern": "\\.svg$"}}}},
+     {"not": {"required": ["wall_clock_timing", "rounding_level"]}}
+    ]
    }
   },
   "numerical_result": true,

@@ -241,6 +241,15 @@ def test_t012_frame_invariance_and_refusal(run):
     assert "to first order in eps" in report["mathematical_model"]
     artifacts = {a["path"].rsplit("/", 1)[-1] for a in report["generated_artifacts"]}
     assert {"frame-invariance.svg", "orientation-separation.svg"} <= artifacts
+    # frame-invariance.svg plots state differences between frames that agree in exact arithmetic: each is a few
+    # ulps of states of order one (zeros are drawn at its 1e-18 floor), and their last bits follow the BLAS kernel,
+    # so it is declared a rounding-level figure; orientation-separation.svg plots the separations themselves.
+    study = json.loads((run[0] / "artifacts" / "T012" / "frame-invariance.json").read_text(encoding="utf-8"))
+    plotted = [r["max_state_difference"] for r in study["rotations"] + study["basis_rotations"]]
+    assert max(plotted) <= 16 * np.finfo(float).eps
+    declared = {a["path"].rsplit("/", 1)[-1]: a.get("rounding_level") for a in report["generated_artifacts"]
+                if a["path"].endswith(".svg")}
+    assert declared == {"frame-invariance.svg": True, "orientation-separation.svg": None}
     refusal = _labelled(report, "improper rotation")
     assert refusal["evidence_status"] == "numerically_verified"
     assert refusal["basis"]["checks"][0]["observed_refusal"] == "Frame change requires a proper rotation matrix"

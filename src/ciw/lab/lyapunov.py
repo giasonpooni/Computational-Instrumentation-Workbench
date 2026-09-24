@@ -2474,7 +2474,7 @@ def inconclusive_band(ctx):
     ctx.artifact_text("ratio-vs-target.svg", svg.line_plot(
         [(code, xs, ys) for code, (xs, ys) in sorted(by_code.items()) if abs(max(xs)) < 20],
         title="T107 computed max eig / resolution against target kappa", xlabel="target kappa",
-        ylabel="max eig(M) / resolution", markers=True))
+        ylabel="max eig(M) / resolution", markers=True), rounding_level=True)
     exact_checker = _independent(_check("exact bins and classes of the declared forms", unsound, 0.0), identity)
     band_extra = {}
     if window_certified:
@@ -2937,7 +2937,7 @@ def adversarial_eigenvalues(ctx):
         [("PLSR vs independent P", [c for c, _, _ in agreement], [max(r, 1e-18) for _, r, _ in agreement]),
          ("n^2 u cond(P) for n = 2", [c for c, _, _ in agreement], [4 * R.U * max(c, 1.0) for c, _, _ in agreement])],
         title="T109 relative difference of Lyapunov solutions", xlabel="condition number of P",
-        ylabel="||P_PLSR - P_ind|| / ||P_ind||", logx=True, logy=True))
+        ylabel="||P_PLSR - P_ind|| / ||P_ind||", logx=True, logy=True), rounding_level=True)
     checker = {"implementation": independent[0]["implementation"], "revision": independent[0]["revision"]}
     max_relative = max(r for _, r, _ in agreement)
     max_normalised = max(m for _, _, m in agreement)

@@ -73,6 +73,12 @@ def _artifact(ctx, task_id, name):
     return json.loads((ctx.output_dir / "artifacts" / task_id / name).read_text(encoding="utf-8"))
 
 
+def _figure_declarations(report):
+    """Each SVG figure of a report by file name, with its rounding-level declaration (None when undeclared)."""
+    return {a["path"].rsplit("/", 1)[1]: a.get("rounding_level") for a in report["generated_artifacts"]
+            if a["path"].endswith(".svg")}
+
+
 def test_registrations_name_existing_tests():
     names = set(globals())
     assert set(IMPLEMENTATIONS) == set(SECTION)
@@ -186,6 +192,12 @@ def test_t002_references_agree(lab):
     rows = _artifact(lab.ctx, "T002", "references.json")["rows"]
     assert all(rows[k]["reference_error_estimate"] < 1e-18 for k in gj.VARIABLE_KEYS)
     assert all(rows[k]["scipy_vs_reference"]["max"] < 1e-11 for k in rows)
+    # agreement.svg plots rounding-level data: every gap it draws lies between binary64 end states of order one
+    # below 1e-12, and the smallest, which sets its log axis, is a few ulps. Their last bits follow the BLAS kernel,
+    # so it is declared a rounding-level figure; clairaut.svg plots RK4 truncation drift and is not.
+    plotted = [rows[k][gap]["max"] for k in rows for gap in ("ciw_vs_reference", "scipy_vs_reference")]
+    assert max(plotted) < 1e-12 and min(plotted) <= 8 * np.finfo(float).eps
+    assert _figure_declarations(report) == {"agreement.svg": True, "clairaut.svg": None}
     closed = _findings(report)["ciw Richardson RK4 end states match closed-form geodesics and transfer matrices on "
                                "the six closed-form charts"]
     # scipy integrates the ciw equations: a high_precision check, not an independent one.
@@ -249,6 +261,16 @@ def test_t003_integrator_orders(lab):
                  "there"]
     assert flat["counterexample"]["witness"]["charts"] == ["plane", "cylinder"]
     assert max(flat["value"].values()) < 1e-12
+    # adaptive.svg reaches the rounding floor: its smallest error, at the tightest tolerance, is below 1e-12 of the
+    # endpoint it measures, so the endpoint's last bits, which follow the BLAS kernel, move its points and its log
+    # axis. It is declared a rounding-level figure; the fixed-step order figures are not.
+    charts = _artifact(lab.ctx, "T003", "orders.json")["adaptive"]["charts"]
+    key, row = min(((k, r) for k, c in charts.items() for r in c["rows"]), key=lambda item: item[1]["error"])
+    assert row["rtol"] == min(gjt.ADAPTIVE_RTOL)
+    assert row["error"] < 1e-12 * np.linalg.norm(gjt.reference(lab.ctx, key)["position"])
+    declared = _figure_declarations(report)
+    assert declared.pop("adaptive.svg") is True
+    assert declared == {f"orders-{k}.svg": None for k in gjt.GAMMA_CHARTS}
 
 
 @pytest.mark.lab_task("T004")

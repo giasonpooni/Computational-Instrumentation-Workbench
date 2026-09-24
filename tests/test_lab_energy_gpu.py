@@ -1218,6 +1218,17 @@ def test_common_workload_precision_study(lab):
     counts = by_claim(report, "Per replica iteration the float32 and float64 runs")
     assert counts["evidence_status"] == "numerically_verified"
     assert {p: counts["value"][p]["iteration_flops"] for p in common.PRECISIONS} == {"float64": 24, "float32": 24}
+    # common-workload-precision.svg plots both runs down to their rounding floors: the float64 KL ends a few u^2
+    # above zero (its iterate a few ulps from the posterior) and, as the smallest plotted value, sets the log axis;
+    # the float32 KL stalls at its own floor. Their last bits follow the BLAS kernel, so it is declared a
+    # rounding-level figure; precision.svg (RK4 endpoint errors) is not.
+    kl = json.loads((lab.context.output_dir / "artifacts" / "T120" / "precision.json").read_text(
+        encoding="utf-8"))["common_workload"]["kl_nats"]
+    smallest = min(min(values) for values in kl.values())
+    assert 0 < smallest == min(kl["float64"]) <= 32 * (np.finfo(np.float64).eps / 2) ** 2
+    declared = {a["path"].rsplit("/", 1)[1]: a.get("rounding_level") for a in report["generated_artifacts"]
+                if a["path"].endswith(".svg")}
+    assert declared == {"precision.svg": None, "common-workload-precision.svg": True}
 
 
 @pytest.mark.lab_task("T121")

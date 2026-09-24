@@ -193,7 +193,9 @@ Rules that are never relaxed:
    `Sandybridge`, or `scripts/check_lab.py --blas-core ...`) and compare: a
    rounding-level difference gets a tolerance justified by that spread, and a
    state or label that changes with the kernel means the claim must be
-   redesigned, never a wider tolerance.
+   redesigned, never a wider tolerance. Its figures are compared the same way
+   by `scripts/check_figures.py` under the forced kernel (see
+   [Code and tests](#code-and-tests)).
 
 ## Registering a task
 
@@ -325,12 +327,25 @@ exception by its type, not its message, when it may name a path.
   out of findings (they are not reproducible); retain them in artifacts. A
   figure that plots them is declared when written,
   `ctx.artifact_text("timings.svg", svg.line_plot(...), wall_clock_timing=True)`,
-  which records `wall_clock_timing: true` on its generated-artifact entry (only
-  SVG figures can be declared). T158 and `scripts/check_figures.py` compare a
-  declared figure for presence and structure only; every other figure must
-  regenerate byte for byte, so an undeclared timing figure is a mismatch.
-  Declare only figures whose plotted data are wall-clock timings: a figure
-  that differs for another reason (platform numerics) is fixed, not declared.
+  which records `wall_clock_timing: true` on its generated-artifact entry. A
+  figure that plots values at binary64 rounding level (errors, gaps and
+  residuals near machine epsilon) is declared the same way with
+  `rounding_level=True` (`rounding_level: true`): the last bits of such values
+  follow the OpenBLAS kernel and the platform, and on a log axis they move a
+  point, or every coordinate when the smallest plotted value is one of them.
+  Only SVG figures can be declared, each with one declaration at most. T158
+  and `scripts/check_figures.py` compare a declared figure for presence and
+  structure (series and points) only; every other figure must regenerate byte
+  for byte on every kernel and platform, so an undeclared timing or
+  rounding-level figure is a mismatch. Declare `wall_clock_timing` only when
+  the plotted data are wall-clock timings, and `rounding_level` only when the
+  plotted values are at rounding level (for example below about 1e-12 relative
+  to the quantities they compare, within a few rounding-error bounds of zero,
+  or rounding error scaled by a difference quotient's 1/h), with a regression
+  test that checks this on the task's own plotted data (T002, T003, T012,
+  T033, T035, T107, T109 and T120 do). Never declare a figure to hide a real
+  numerical difference: a figure whose plotted values differ above rounding
+  level on another kernel or platform is fixed, not declared.
 - Budget: the whole section run ≤ 60 s and its tests ≤ 60 s on one CPU core.
   The clean-room gate pins `OPENBLAS_NUM_THREADS=1`; do not rely on BLAS
   threading, and avoid large dense solves where a structured solver exists.

@@ -899,7 +899,7 @@ def frame_change_invariance(ctx):
     ctx.artifact_text("frame-invariance.svg", svg.line_plot(
         figure, title="Max chart/Jacobi state difference under frame changes (RK4, N = 64)",
         xlabel="case index (rotations 1-3, basis angles 1-4)", ylabel="max |state - base state| (floored at 1e-18)",
-        logy=True))
+        logy=True), rounding_level=True)
     orient = study["orientation"]
     ctx.artifact_text("orientation-separation.svg", svg.line_plot(
         [(name, orient["s"], values) for name, values in orient["series"].items()]

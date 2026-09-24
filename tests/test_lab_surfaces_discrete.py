@@ -2,6 +2,7 @@
 from __future__ import annotations
 
 from copy import deepcopy
+import json
 import math
 import os
 
@@ -185,6 +186,18 @@ def test_t033_report(tmp_path):
         "gauss_equation"]
     assert all(check["passed"] for check in misscaled["basis"]["checks"])
     assert report["findings"][0]["value"] <= 1e-7
+    # conformance-residuals.svg plots the worst residuals of identities that hold exactly: evaluation error within
+    # the error the task declares for each identity (a few ulps of rounding for the algebraic compatibility
+    # identity; the fourth-order stencil's h^4 truncation and eps/h rounding for the others), not a defect. Their
+    # last bits follow the BLAS kernel, so it is declared a rounding-level figure.
+    surfaces = json.loads((tmp_path / "artifacts" / "T033" / "conformance.json").read_text(encoding="utf-8"))["surfaces"]
+    bounds = {"compatibility": sd.ALGEBRAIC_UNCERTAINTY["value"],
+              **{name: declared["value"] for name, declared in sd.STENCIL_UNCERTAINTY.items()}}
+    assert set(bounds) == {"gauss_equation", "derivative_consistency", "mixed_partials", "compatibility"}
+    assert bounds["compatibility"] <= 8 * np.finfo(float).eps
+    for name, bound in bounds.items():
+        assert max(row["worst"][name] for row in surfaces.values()) <= bound, name
+    assert [a.get("rounding_level") for a in report["generated_artifacts"] if a["path"].endswith(".svg")] == [True]
     _common_report_checks(report)
 
 
@@ -319,6 +332,21 @@ def test_t035_report(tmp_path):
                                                          "log10_error_at_1e-12"}
     assert _labels(report)["The optimal-step law derived here applies to derivatives of measured surface samples"] \
         == "not_established"
+    # fd-v-shape.svg plots the rounding branch of central differences: from h = 1e-10 down, every plotted error
+    # times h is within two ulps of the metric (eps/h rounding). The saddle control, whose quadratic metric central
+    # differences reproduce exactly, is rounding at every step and gives the smallest plotted value, a few ulps,
+    # which sets the log axis. Their last bits follow the BLAS kernel, so it is declared a rounding-level figure.
+    scan = json.loads((tmp_path / "artifacts" / "T035" / "fd-scan.json").read_text(encoding="utf-8"))
+    hs, rows, eps = np.array(scan["steps"]), scan["surfaces"], np.finfo(float).eps
+    plotted = {key: np.array(rows[key]["median_error"]) for key in sd.FD_SURFACES + ("saddle",)}
+    rounding = hs <= sd.ROUNDING_WINDOW[1] * (1 + 1e-9)
+    assert rounding.sum() >= 12
+    assert all(np.max(errors[rounding] * hs[rounding]) <= 2 * eps for errors in plotted.values())
+    assert np.max(plotted["saddle"] * hs) <= 2 * eps
+    smallest = min(np.min(errors[errors > 0]) for errors in [*plotted.values(),
+                                                              np.array(rows["sphere"]["median_predicted"])])
+    assert smallest == np.min(plotted["saddle"]) <= 8 * eps
+    assert [a.get("rounding_level") for a in report["generated_artifacts"] if a["path"].endswith(".svg")] == [True]
     _common_report_checks(report)
 
 

@@ -54,15 +54,27 @@ def _provider():
 
 
 @pytest.fixture(scope="module")
-def reports(tmp_path_factory):
-    """Run every provider-dependent task once with the bound runtime."""
+def provider_run(tmp_path_factory):
+    """Run every provider-dependent task once with the bound runtime; the run's directory."""
     if PLSR_PYTHON is None:
         pytest.skip("PLSR provider interpreter not configured")
     python = _provider()
     directory = tmp_path_factory.mktemp("lyapunov")
     run_queue(directory, task_ids=PROVIDER_TASKS, providers={PLSR_ROLE: python})
-    return {task_id: validate_report(json.loads((directory / "reports" / f"{task_id}.json").read_text(encoding="utf-8")))
-            for task_id in PROVIDER_TASKS}
+    return directory
+
+
+@pytest.fixture(scope="module")
+def reports(provider_run):
+    """The provider-dependent tasks' reports by task identity."""
+    return {task_id: validate_report(json.loads((provider_run / "reports" / f"{task_id}.json").read_text(
+        encoding="utf-8"))) for task_id in PROVIDER_TASKS}
+
+
+def _figure_declarations(report):
+    """Each SVG figure of a report by file name, with its rounding-level declaration (None when undeclared)."""
+    return {a["path"].rsplit("/", 1)[1]: a.get("rounding_level") for a in report["generated_artifacts"]
+            if a["path"].endswith(".svg")}
 
 
 def _run(task_id, tmp_path, providers=None):
@@ -702,7 +714,7 @@ def test_t106_status_coverage(reports):
 
 @pytest.mark.lab_task("T107")
 @needs_provider
-def test_t107_inconclusive_band(reports):
+def test_t107_inconclusive_band(reports, provider_run):
     report = reports["T107"]
     _completed(report, "provider_backed")
     for prefix in ("No near-boundary case receives", "Every window case receives", "Beyond two resolutions",
@@ -731,6 +743,14 @@ def test_t107_inconclusive_band(reports):
     for record in report["findings"]:
         expected = {"abs": 0.03, "rel": 0.0} if record is band else {"abs": 0.0, "rel": 0.0}
         assert record["regression_tolerance"] == expected, record["claim"]
+    # ratio-vs-target.svg plots computed max eig(M) in units of the float64 resolution, the rounding-error bound of
+    # forming M: every point lies within ten resolutions of zero and within a tenth of one of its exact target, so
+    # the BLAS kernel's last bits move its points and its axis range. It is declared a rounding-level figure.
+    points = json.loads((provider_run / "artifacts" / "T107" / "inconclusive-band.json").read_text(
+        encoding="utf-8"))["points"]
+    assert points and max(abs(ratio) for _, ratio, _ in points) <= 10.0
+    assert max(abs(ratio + kappa) for kappa, ratio, _ in points) <= 0.1
+    assert _figure_declarations(report) == {"ratio-vs-target.svg": True}
 
 
 @pytest.mark.lab_task("T108")
@@ -749,7 +769,7 @@ def test_t108_margin_monotonicity(reports):
 
 @pytest.mark.lab_task("T109")
 @needs_provider
-def test_t109_adversarial_eigenvalues(reports):
+def test_t109_adversarial_eigenvalues(reports, provider_run):
     report = reports["T109"]
     _completed(report, "numerically_verified")
     sound = _finding(report, "Every certifying PLSR verdict")
@@ -781,6 +801,14 @@ def test_t109_adversarial_eigenvalues(reports):
     assert refused["regression_tolerance"]["rel"] == pytest.approx(16 * R.U * witness["certificate_condition"],
                                                                    rel=1e-12)
     assert _label(report, "numpy.linalg.eigvals misplaces") == "numerically_verified"
+    # solver-agreement.svg plots the relative difference of two binary64 Lyapunov solutions, each below 1e-12 and
+    # within 10 n^2 u cond(P), beside that rounding bound: the BLAS kernel's last bits move its points, so it is
+    # declared a rounding-level figure.
+    rows = [row for row in json.loads((provider_run / "artifacts" / "T109" / "adversarial.json").read_text(
+        encoding="utf-8"))["rows"] if "relative_difference" in row]
+    assert rows and max(row["relative_difference"] for row in rows) < 1e-12
+    assert max(row["normalised_difference"] for row in rows) <= 10.0
+    assert _figure_declarations(report) == {"solver-agreement.svg": True}
 
 
 @pytest.mark.lab_task("T110")
