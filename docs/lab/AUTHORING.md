@@ -214,6 +214,38 @@ to the registration. `regression_tests` are pytest node ids
 record matches a node exactly or through its parametrized cases, and any
 failed case fails the node.
 
+Each registered test declares the tasks it guards with the `lab_task` marker,
+naming exactly the tasks that register it, sorted, as literal strings. pytest
+applies a test's marker to every parametrized case, so when tasks register
+single cases (`test_f[T060]`), each case carries its own task's marker in its
+`pytest.param(..., marks=...)` instead:
+
+```python
+@pytest.mark.lab_task("T003")
+def test_integrator_orders(run):
+    assert run("T003")["evidence_status"]["primary"] == "numerically_verified"
+
+@pytest.mark.parametrize("task_id", [pytest.param("T060", marks=pytest.mark.lab_task("T060")),
+                                     pytest.param("T061", marks=pytest.mark.lab_task("T061"))])
+def test_section_reports(run, task_id):
+    assert run(task_id)["evidence_status"]["primary"] == "numerically_verified"
+```
+
+`pyproject.toml` registers the marker, and `scripts/reproduce_lab.py` writes
+the same registration into the clean room's `pytest.ini`, so the tests pass
+under `--strict-markers` in both places. T168 reads the markers from the
+decorators of the test and its class, and from the `pytest.param` literals of
+its one parametrize decorator (a module-level `pytestmark` or a computed task
+id is not read), and counts registrations whose test does not declare the
+task and declarations of a task that does not register what they mark (a
+test's marker names a task registering only some of its cases); a task is
+tied when one of its declared tests asserts an evidence label. As advisory,
+it also counts tied tasks none of whose tied tests names the task or its
+function (a declared test may not run its task). A
+registered test must run where the JUnit record is written: a check that
+needs repository files the clean room does not copy (`scripts/`) belongs in
+a separate, unregistered test.
+
 States: `completed` (planned computation ran, checks passed), `partial` (some
 planned parts could not run here; say which), `blocked` (a hard requirement is
 unavailable), `deferred` (not attempted). `requires=("module:scipy",)`,

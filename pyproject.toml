@@ -33,3 +33,4 @@ ciw = ["plsr-runtime.json", "adapter-runtimes.json", "exchange-runtime.json", "t
 testpaths = ["tests"]
 pythonpath = ["src"]
 addopts = "-ra"
+markers = ["lab_task(*task_ids): the lab queue tasks that register this test as a regression test (read by T168)"]

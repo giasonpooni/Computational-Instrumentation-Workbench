@@ -43,7 +43,18 @@ def _labels(report):
     return [f["evidence_status"] for f in report["findings"]]
 
 
-@pytest.mark.parametrize("task_id", TASK_IDS)
+# Each case carries its own task's marker: every task registers only its own case.
+@pytest.mark.parametrize("task_id", [
+    pytest.param("T060", marks=pytest.mark.lab_task("T060")), pytest.param("T061", marks=pytest.mark.lab_task("T061")),
+    pytest.param("T062", marks=pytest.mark.lab_task("T062")), pytest.param("T063", marks=pytest.mark.lab_task("T063")),
+    pytest.param("T064", marks=pytest.mark.lab_task("T064")), pytest.param("T065", marks=pytest.mark.lab_task("T065")),
+    pytest.param("T066", marks=pytest.mark.lab_task("T066")), pytest.param("T067", marks=pytest.mark.lab_task("T067")),
+    pytest.param("T068", marks=pytest.mark.lab_task("T068")), pytest.param("T069", marks=pytest.mark.lab_task("T069")),
+    pytest.param("T070", marks=pytest.mark.lab_task("T070")), pytest.param("T071", marks=pytest.mark.lab_task("T071")),
+    pytest.param("T072", marks=pytest.mark.lab_task("T072")), pytest.param("T073", marks=pytest.mark.lab_task("T073")),
+    pytest.param("T074", marks=pytest.mark.lab_task("T074")), pytest.param("T075", marks=pytest.mark.lab_task("T075")),
+    pytest.param("T076", marks=pytest.mark.lab_task("T076")),
+])
 def test_section_reports_labels_and_states(reports, task_id):
     """One case per task, so a failure marks only its own task partial in a JUnit-linked run."""
     report = reports[task_id]
@@ -109,6 +120,7 @@ def test_findings_are_deterministic(tmp_path):
     assert json.dumps(first["findings"], sort_keys=True) == json.dumps(second["findings"], sort_keys=True)
 
 
+@pytest.mark.lab_task("T060")
 def test_bench_is_deterministic_rate_exact_and_stream_independent(reports):
     report = reports["T060"]
     regen = _find(report, "Regenerating the bench")["value"]
@@ -130,6 +142,7 @@ def test_bench_is_deterministic_rate_exact_and_stream_independent(reports):
     assert bench.bench_digest(a) != bench.bench_digest(bench.generate_bench(small, 6, 3))
 
 
+@pytest.mark.lab_task("T061")
 def test_declared_covariance_matches_and_power_is_quantified(reports):
     report = reports["T061"]
     moments_finding = _find(report, "Sample means and covariances")
@@ -158,6 +171,7 @@ def test_declared_covariance_matches_and_power_is_quantified(reports):
     assert section.variance_power(2000, 1 / (1 + delta), moments["z_critical"]) == pytest.approx(0.5, abs=1e-9)
 
 
+@pytest.mark.lab_task("T062")
 def test_correlated_noise_consistency_and_ignored_correlation_counterexample(reports):
     report = reports["T062"]
     good = _find(report, "With the correct cross-correlated")["value"]
@@ -183,6 +197,7 @@ def test_correlated_noise_consistency_and_ignored_correlation_counterexample(rep
     assert predicted["max_gap_in_standard_errors"] <= 4.0
 
 
+@pytest.mark.lab_task("T063")
 def test_frame_transform_covariance_and_mahalanobis_invariance(reports, monkeypatch):
     report = reports["T063"]
     mc = _find(report, "Monte Carlo covariances of rotated")["value"]
@@ -212,6 +227,7 @@ def test_frame_transform_covariance_and_mahalanobis_invariance(reports, monkeypa
     assert _find(report, "The declared 35 degree")["domain"] == "calibration"
 
 
+@pytest.mark.lab_task("T064")
 def test_jacobi_transfer_covariance_collapse_and_breakdown(reports):
     report = reports["T064"]
     phi = _find(report, "The Jacobi transfer matrix")["value"]
@@ -230,6 +246,7 @@ def test_jacobi_transfer_covariance_collapse_and_breakdown(reports):
     assert errors == sorted(errors) and errors[0] < 2e-3 and errors[-1] > 1.0
 
 
+@pytest.mark.lab_task("T065")
 def test_filter_induced_correlation_and_naive_average(reports):
     exact = filtering.rational_steady_state(Fraction(1), Fraction(30))
     assert (exact["M"], exact["P"], exact["K"], exact["a"]) == (6, 5, Fraction(1, 6), Fraction(5, 6))
@@ -246,6 +263,7 @@ def test_filter_induced_correlation_and_naive_average(reports):
     assert lag["max_abs_z"] < lag["z_critical"] and lag["position_correlation_by_lag"][1] > 0.8
 
 
+@pytest.mark.lab_task("T066")
 def test_residuals_need_filter_covariance(reports):
     report = reports["T066"]
     assert _find(report, "Innovations normalized by S")["value"]["fraction_inside"] >= 0.9
@@ -262,6 +280,7 @@ def test_residuals_need_filter_covariance(reports):
     assert api["max_ratio_to_raw_R_nis"] <= api["ratio_bound"] + 1e-12 < 0.99
 
 
+@pytest.mark.lab_task("T067")
 def test_gating_rates_open_and_closed_loop(reports):
     report = reports["T067"]
     open_loop = _find(report, "Open loop")["value"]
@@ -293,6 +312,7 @@ def test_chi2_and_noncentral_laws_match_scipy():
     assert lo < 0.05 < hi
 
 
+@pytest.mark.lab_task("T068")
 def test_outlier_rejection_detection_lockout_and_cost(reports):
     report = reports["T068"]
     gross = _find(report, "Gross 1.5 m outliers")["value"]
@@ -322,6 +342,7 @@ def test_outlier_rejection_detection_lockout_and_cost(reports):
     assert _find(report, "Subtle 0.3 m outliers")["value"]["detection_rate"] < 0.2
 
 
+@pytest.mark.lab_task("T069")
 def test_missing_data_prediction_only_and_zero_fill_refusal(reports):
     report = reports["T069"]
     assert _find(report, "Prediction-only steps grow")["value"]["max_relative_error"] < 1e-12
@@ -345,6 +366,7 @@ def test_missing_data_prediction_only_and_zero_fill_refusal(reports):
     assert caught.value.code == "zero_fill_refused" and session.tick == 0
 
 
+@pytest.mark.lab_task("T070")
 def test_stale_clock_bias_detection_and_augmented_offset(reports):
     report = reports["T070"]
     detected = _find(report, "With a correctly clocked tracker")["value"]
@@ -367,6 +389,7 @@ def test_stale_clock_bias_detection_and_augmented_offset(reports):
     assert order["lagged_reading_at_clock_fused_at"] == order["reference_tick"]
 
 
+@pytest.mark.lab_task("T071")
 def test_frame_mismatch_inflation_blind_spot_and_refusal(reports):
     report = reports["T071"]
     mixed = _find(report, "Fusing a tracker expressed")["value"]
@@ -382,6 +405,7 @@ def test_frame_mismatch_inflation_blind_spot_and_refusal(reports):
     assert api["fuse_after_transform"] == "none"
 
 
+@pytest.mark.lab_task("T072")
 def test_calibration_expiry_retains_but_refuses(reports):
     report = reports["T072"]
     counts = _find(report, "Readings inside the half-open")["value"]
@@ -398,6 +422,7 @@ def test_calibration_expiry_retains_but_refuses(reports):
     assert (record.covers(10), record.covers(19), record.covers(20)) == (True, True, False)
 
 
+@pytest.mark.lab_task("T073")
 def test_track_lost_prediction_refusals_and_reacquisition(reports):
     report = reports["T073"]
     lost = _find(report, "The track is declared lost")["value"]
@@ -419,6 +444,7 @@ def test_track_lost_prediction_refusals_and_reacquisition(reports):
     assert abs(turn["monte_carlo"]["z_vs_expected"]) < 3.3
 
 
+@pytest.mark.lab_task("T074")
 def test_fused_state_equals_batch_posterior(reports):
     report = reports["T074"]
     batch = _find(report, "The recursive covariance-form Kalman estimate")["value"]
@@ -441,6 +467,7 @@ def test_fused_state_equals_batch_posterior(reports):
     assert np.allclose(estimates[0, -1], banded[-1], atol=1e-12) and np.allclose(steps[-1].post, last, atol=1e-12)
 
 
+@pytest.mark.lab_task("T075")
 def test_typed_objects_and_admission_mutations(reports):
     report = reports["T075"]
     refused = _find(report, "Every admission check refuses")["value"]
@@ -475,6 +502,7 @@ def test_typed_objects_and_admission_mutations(reports):
     assert caught.value.code == "covariance_not_positive_definite"
 
 
+@pytest.mark.lab_task("T075")
 def test_observation_to_admission_pipeline_end_to_end(reports):
     report = reports["T075"]
     pipeline = _find(report, "End to end, section-4 tracker records")
@@ -495,6 +523,7 @@ def test_observation_to_admission_pipeline_end_to_end(reports):
     assert dict(demo["authorities"]["admitted"])["state_admission"] == "synthetic_only"
 
 
+@pytest.mark.lab_task("T075")
 def test_intake_refusals_leave_the_session_unchanged(reports):
     refused = _find(reports["T075"], "The intake refuses, before fusing")["value"]
     assert refused["state_unchanged"] is True
@@ -537,6 +566,7 @@ def _intake_route(ticks=3, initialize=True):
     return session, route, ledger, records, digests
 
 
+@pytest.mark.lab_task("T075")
 def test_intake_counts_each_measurement_once_and_trace_refuses_bypasses(reports):
     pipeline = _find(reports["T075"], "End to end, section-4 tracker records")["value"]
     assert pipeline["trace"]["distinct_records"] == pipeline["trace"]["readings"] == intake.DEMO_TICKS
@@ -584,6 +614,7 @@ def test_intake_counts_each_measurement_once_and_trace_refuses_bypasses(reports)
     assert refused.value.code == "untraced_reading"
 
 
+@pytest.mark.lab_task("T076")
 def test_no_lab_estimator_leaves_the_admission_vocabulary(reports):
     report = reports["T076"]
     audit = _find(report, "No lab estimator writes a state_admission value")
@@ -603,6 +634,7 @@ def test_no_lab_estimator_leaves_the_admission_vocabulary(reports):
     assert intake.admission_vocabulary_audit(demo)["outside_vocabulary"] == ["admitted"]
 
 
+@pytest.mark.lab_task("T076")
 def test_defaults_are_read_only_and_not_performed(reports):
     from ciw.declared_workload import AUTHORITY
 
@@ -692,6 +724,7 @@ def _state(session):
     return (session.x.tobytes(), session.P.tobytes(), session.tick, session.track_status, session._latest)
 
 
+@pytest.mark.lab_task("T070")
 def test_out_of_order_fuse_and_predict_leave_no_side_effects_and_latency_is_applied():
     R = np.array([[0.04, 0.012], [0.012, 0.04]])
     session = _tracking_session()
@@ -715,6 +748,7 @@ def test_out_of_order_fuse_and_predict_leave_no_side_effects_and_latency_is_appl
     assert caught.value.code == "malformed_calibration"
 
 
+@pytest.mark.lab_task("T067", "T068")
 def test_session_gate_refuses_without_side_effects():
     R = np.array([[0.04, 0.012], [0.012, 0.04]])
     with pytest.raises(objects.FusionRefusal) as caught:
@@ -735,6 +769,7 @@ def test_session_gate_refuses_without_side_effects():
     assert open_session.fuse(objects.Observation("camera", "world", 2, (3.2, 3.1), R, "cam")).tick == 2
 
 
+@pytest.mark.lab_task("T075")
 def test_candidates_inherit_inconsistent_innovations_and_revocations():
     R = np.array([[0.04, 0.012], [0.012, 0.04]])
     admit = {"expected_frame_id": "world", "nis_probability": 0.99, "max_position_std": 10.0}
@@ -756,6 +791,7 @@ def test_candidates_inherit_inconsistent_innovations_and_revocations():
     assert caught.value.code == "calibration_revoked"
 
 
+@pytest.mark.lab_task("T073")
 def test_refused_reacquisition_marks_both_readings():
     R = np.array([[0.04, 0.012], [0.012, 0.04]])
     session = _tracking_session(track_radius=0.5)

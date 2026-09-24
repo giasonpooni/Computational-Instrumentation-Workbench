@@ -59,6 +59,8 @@ def _measurement_record(data):
     return record
 
 
+@pytest.mark.lab_task("T126", "T127", "T128", "T129", "T130", "T131", "T132", "T133", "T134", "T135", "T136", "T137",
+                      "T138", "T139", "T140", "T141")
 def test_every_task_is_registered_and_reports_honestly(section):
     _, reports = section
     assert set(section_implementations("manufacturing")) == set(TASK_IDS)
@@ -94,6 +96,7 @@ def test_every_task_is_registered_and_reports_honestly(section):
     assert len(demand) == 1 and demand[0]["evidence_status"] == "not_established" and demand[0]["basis"] == {}
 
 
+@pytest.mark.lab_task("T126")
 def test_flat_plate_protocol_is_a_zero_curvature_control(section):
     directory, reports = section
     report = reports["T126"]
@@ -119,6 +122,7 @@ def test_flat_plate_protocol_is_a_zero_curvature_control(section):
     assert shot["heading_rad"] == pytest.approx(math.atan2(40.0, 30.0), abs=1e-12)
 
 
+@pytest.mark.lab_task("T126", "T127", "T128", "T129")
 def test_protocols_refuse_filled_slots_and_decisions(section):
     directory, reports = section
     for task_id, name in (("T126", "protocol-flat-plate.json"), ("T127", "protocol-rolled-cylinder.json"),
@@ -376,6 +380,7 @@ def test_axis_datum_frame_recovers_a_tube_pose():
     assert study["too_few_points"] == "cylinder_underdetermined"
 
 
+@pytest.mark.lab_task("T127")
 def test_cylinder_protocol_predicts_chord_geodesic_gaps(section):
     _, reports = section
     report = reports["T127"]
@@ -403,6 +408,7 @@ def test_cylinder_protocol_predicts_chord_geodesic_gaps(section):
         == "not_established"
 
 
+@pytest.mark.lab_task("T128")
 def test_coupon_protocol_predicts_focal_crossing(section):
     _, reports = section
     report = reports["T128"]
@@ -438,6 +444,7 @@ def test_coupon_protocol_predicts_focal_crossing(section):
             assert record["evidence_status"] == "not_established" and record["expected_not_established"] is True
 
 
+@pytest.mark.lab_task("T128")
 def test_coupon_report_wording_does_not_depend_on_optional_modules(section, monkeypatch, tmp_path):
     _, reports = section
     real = importlib.util.find_spec
@@ -460,6 +467,7 @@ def test_coupon_report_wording_does_not_depend_on_optional_modules(section, monk
     assert changed <= optional
 
 
+@pytest.mark.lab_task("T129")
 def test_metrology_sampling_design_and_counterexamples(section):
     _, reports = section
     report = reports["T129"]
@@ -480,6 +488,7 @@ def test_metrology_sampling_design_and_counterexamples(section):
     assert 2 * met.curvature_noise_std_continuum(rule["window_mm"], rule["max_spacing_mm"], 0.01) == pytest.approx(2.5e-4)
 
 
+@pytest.mark.lab_task("T129")
 def test_scan_protocol_and_as_built_fit(section):
     directory, reports = section
     report = reports["T129"]
@@ -517,6 +526,7 @@ def test_scan_protocol_and_as_built_fit(section):
     assert max(prediction["scan_conditioned_expanded_mm"]) < max(prediction["conditioned_expanded_mm"])
 
 
+@pytest.mark.lab_task("T130")
 def test_artifacts_datum_frames_and_chain_covariance(section):
     _, reports = section
     report = reports["T130"]
@@ -546,6 +556,7 @@ def test_artifacts_datum_frames_and_chain_covariance(section):
                        [1e-4, 0, 0, 0, 0, 2e-5], atol=1e-8)  # first order: the left Jacobian adds 1e-9
 
 
+@pytest.mark.lab_task("T131")
 def test_gage_rr_recovers_components_and_refuses_unbalanced(section):
     directory, reports = section
     report = reports["T131"]
@@ -586,6 +597,7 @@ def test_gage_rr_recovers_components_and_refuses_unbalanced(section):
     assert result["ss"]["part"] == pytest.approx(2.0) and result["ss"]["error"] == 0.0
 
 
+@pytest.mark.lab_task("T132")
 def test_placement_curvature_stack_and_radius_counterexample(section):
     _, reports = section
     report = reports["T132"]
@@ -599,6 +611,7 @@ def test_placement_curvature_stack_and_radius_counterexample(section):
     assert mfg.placement_deviation(500.0, math.pi / 4, 0.0, 0.0, 0.0, 0.0) == pytest.approx(0.0, abs=1e-12)
 
 
+@pytest.mark.lab_task("T133")
 def test_winding_clairaut_sensitivity_and_slippage(section):
     _, reports = section
     report = reports["T133"]
@@ -622,6 +635,7 @@ def test_winding_clairaut_sensitivity_and_slippage(section):
     assert math.degrees(turn["turn_rad"]) == pytest.approx(115.39, abs=0.01)
 
 
+@pytest.mark.lab_task("T134")
 def test_coating_standoff_and_offset_cusp(section):
     _, reports = section
     report = reports["T134"]
@@ -659,6 +673,7 @@ def test_coating_standoff_and_offset_cusp(section):
     assert exact == pytest.approx(-0.5 * float(n @ geo.second_fundamental_form(geo.COUPON, u) @ n) * 1e-4, rel=1e-3)
 
 
+@pytest.mark.lab_task("T135")
 def test_scan_plans_coverage_and_counterexample(section):
     _, reports = section
     report = reports["T135"]
@@ -678,6 +693,7 @@ def test_scan_plans_coverage_and_counterexample(section):
     assert geo.coverage_fraction(sample, rows[:1], 2.0) == pytest.approx(0.5, abs=0.02)
 
 
+@pytest.mark.lab_task("T136", "T137")
 def test_rankings_by_calibration_tolerance_and_focus_margin(section):
     _, reports = section
     calibration = _finding(reports["T136"], "Candidate coupon routes ranked by the heading calibration tolerance")
@@ -740,6 +756,7 @@ def _length(reports, route):
     return next(s["length_mm"] for s in mfg.fan_study()["summaries"] if s["route"] == route)
 
 
+@pytest.mark.lab_task("T136")
 def test_ranking_evidence_detects_a_wrong_exact_perturbation(monkeypatch):
     """A wrong exact perturbation still satisfies the derating loop's stop condition but disagrees with the re-evaluation."""
     fan = mfg.fan_study()
@@ -750,6 +767,7 @@ def test_ranking_evidence_detects_a_wrong_exact_perturbation(monkeypatch):
     assert max(abs(row["independent_corner_ratios"][c] - v) for c, v in row["corner_ratios"].items()) > 1e-2
 
 
+@pytest.mark.lab_task("T138")
 def test_predicted_separation_has_no_measured_counterpart(section):
     _, reports = section
     report = reports["T138"]
@@ -779,6 +797,7 @@ def test_predicted_separation_has_no_measured_counterpart(section):
     assert rec.normalized_error([1.1], [1.0], [0.06], [0.08])[0] == pytest.approx(1.0)
 
 
+@pytest.mark.lab_task("T138")
 def test_comparators_compute_normalized_errors_for_a_measurement_record():
     """The success path of both comparators on a synthetic measurement-kind record (never retained, never cited)."""
     data = {"targets.csv": b"station,separation\n"}
@@ -977,6 +996,7 @@ def test_acceptance_criteria_name_only_declared_devices(section):
                                                                 "observed": "undeclared_device"}
 
 
+@pytest.mark.lab_task("T139")
 def test_retention_schema_refusals_and_fixture_boundary(section, tmp_path):
     _, reports = section
     report = reports["T139"]
@@ -1040,6 +1060,7 @@ def _run_t139(tmp_path, name, captures):
     return validate_report(runner.run_task(queue["T139"], section_implementations("manufacturing")["T139"], ctx, {})), ctx
 
 
+@pytest.mark.lab_task("T139")
 def test_bound_retention_record_is_validated_against_its_raw_bytes(tmp_path):
     """T139 reads a retention record bound with --capture retention=, matches its raw entries to the bytes bound
     under the capture roles by digest, builds the acquisition fields and retains both; it completes only for a
@@ -1084,6 +1105,7 @@ def test_bound_retention_record_is_validated_against_its_raw_bytes(tmp_path):
         assert _finding(refused, "A real measurement with raw bytes")["value"] == 0
 
 
+@pytest.mark.lab_task("T140")
 def test_uncertainty_budget_classifies_limiting_terms(section):
     _, reports = section
     report = reports["T140"]
@@ -1127,6 +1149,7 @@ def test_uncertainty_budget_classifies_limiting_terms(section):
         assert 0.0 < scanned < 0.1 * declared, key
 
 
+@pytest.mark.lab_task("T141")
 def test_production_acceptance_stays_outside_the_system(section):
     _, reports = section
     report = reports["T141"]

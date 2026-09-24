@@ -76,6 +76,7 @@ def test_embedded_examples_are_the_repository_examples():
         assert sha256(fixtures.example_bytes(name)).hexdigest() == digest
 
 
+@pytest.mark.lab_task("T091")
 def test_execution_guard_restores_every_patched_attribute():
     from importlib import import_module
     before = {}
@@ -103,6 +104,7 @@ def test_execution_guard_covers_every_workbench_workflow_kind():
     assert len(guard["attempts"]) == 2 * len(OPERATIONS)
 
 
+@pytest.mark.lab_task("T091")
 def test_t091_reopen_needs_no_provider_and_reaches_no_execution_path(tmp_path):
     report = run("T091", tmp_path)
     assert report["state"] == "completed"
@@ -144,6 +146,7 @@ def test_t091_refutes_its_claim_when_reopen_recovers_a_binding(tmp_path, monkeyp
     assert report["state"] == "partial" and report["evidence_status"]["primary"] == "not_established"
 
 
+@pytest.mark.lab_task("T092")
 def test_t092_unbound_replay_and_execution_are_refused(tmp_path):
     report = run("T092", tmp_path)
     assert report["state"] == "completed"
@@ -192,6 +195,7 @@ def test_t092_keeps_its_refusals_when_reopen_refuses_the_fabricated_bundle(tmp_p
     assert fabricated["evidence_status"] == "not_established" and fabricated["value"]["reopen_outcome"] != "accepted"
 
 
+@pytest.mark.lab_task("T092")
 def test_fabricated_heat_bundle_is_content_consistent_but_wrong():
     from ciw.workbench import Workbench
     catalog = fixtures.fabricated_heat_catalog([0, 1, 2, 3, 0])
@@ -213,6 +217,7 @@ def test_heat_reference_truncates_toward_zero_with_fixed_ends(values, steps, exp
     assert fixtures.heat_reference(values, steps) == expected
 
 
+@pytest.mark.lab_task("T093")
 def test_t093_refusals_leave_workspace_and_state_unchanged(tmp_path):
     report = run("T093", tmp_path)
     assert report["state"] == "completed"
@@ -233,6 +238,7 @@ def test_t093_refusals_leave_workspace_and_state_unchanged(tmp_path):
     assert counter["evidence_status"] == "numerically_verified" and counter["counterexample"]
 
 
+@pytest.mark.lab_task("T094")
 def test_golden_manifest_matches_committed_fixtures():
     root = fixtures.fixture_root()
     if root is None:
@@ -241,6 +247,7 @@ def test_golden_manifest_matches_committed_fixtures():
         assert sha256((root / name).read_bytes()).hexdigest() == digest, name
 
 
+@pytest.mark.lab_task("T094")
 def test_t094_golden_workspaces_reopen_with_current_code(tmp_path, monkeypatch):
     if fixtures.fixture_root() is None:
         pytest.skip("tests/fixtures/lab is not reachable")
@@ -269,6 +276,7 @@ def test_t094_golden_workspaces_reopen_with_current_code(tmp_path, monkeypatch):
     assert blocked["state"] == "blocked" and blocked["findings"] == []
 
 
+@pytest.mark.lab_task("T095")
 def test_committed_malformed_fixtures_match_their_generator():
     root = fixtures.fixture_root()
     if root is None:
@@ -279,6 +287,7 @@ def test_committed_malformed_fixtures_match_their_generator():
         assert (root / "malformed" / name).read_bytes() == raw, name
 
 
+@pytest.mark.lab_task("T095")
 def test_t095_malformed_fixtures_are_refused_with_retained_text(tmp_path):
     report = run("T095", tmp_path)
     assert report["state"] == "completed"
@@ -325,6 +334,7 @@ def test_canonical_encoder_matches_json_dumps_on_seeded_records():
         fixtures.canonical_text({"x": float("nan")})
 
 
+@pytest.mark.lab_task("T096")
 def test_t096_provider_free_conformance(tmp_path):
     report = run("T096", tmp_path)
     assert report["state"] == "completed"
@@ -357,6 +367,7 @@ def test_t096_provider_free_conformance(tmp_path):
     assert candidate["basis"]["generator"]["count"] == 72
 
 
+@pytest.mark.lab_task("T097")
 def test_t097_is_blocked_without_scr(tmp_path):
     report = run("T097", tmp_path)
     assert report["state"] == "blocked"
@@ -398,6 +409,7 @@ SET_RESULT = {"status": "conformant", "effective_rank": 2, "identity_status": "c
               "indefinite_covariance": "covariance.matrix is not positive-semidefinite"}
 
 
+@pytest.mark.lab_task("T097")
 @pytest.mark.parametrize("outcome", ["as_expected", "contrary"])
 def test_t097_keeps_set_results_when_the_engine_is_missing(tmp_path, monkeypatch, outcome):
     if shutil.which("git") is None:
@@ -533,6 +545,7 @@ def _mocked_scr_run(monkeypatch):
     return engine
 
 
+@pytest.mark.lab_task("T097")
 def test_t097_names_each_executed_provider_beside_its_label(tmp_path, monkeypatch):
     # Every finding resting on a provider's execution declares it, so the Basis column names it; the labels stay.
     if shutil.which("git") is None:
@@ -567,6 +580,7 @@ def test_t097_names_each_executed_provider_beside_its_label(tmp_path, monkeypatc
     assert sources["value"]["provider_findings"] == len(expected) and sources["value"]["not_shown"] == 0
 
 
+@pytest.mark.lab_task("T097", "T099")
 def test_t097_t099_refuse_a_non_repository_scr_binding(tmp_path):
     folder = tmp_path / "not-a-repository"
     folder.mkdir()
@@ -595,6 +609,7 @@ def _scr_bindings():
     return bound
 
 
+@pytest.mark.lab_task("T097")
 def test_t097_scr_numerical_heat_integration(tmp_path):
     bound = _scr_bindings()
     report = run("T097", tmp_path, bound)
@@ -624,6 +639,7 @@ def test_t097_scr_numerical_heat_integration(tmp_path):
         assert roundtrip["value"]["changed_result_refusal"] == "result_id does not match the artifact content"
 
 
+@pytest.mark.lab_task("T098")
 def test_t098_provider_identities(tmp_path):
     blocked = run("T098", tmp_path / "none")
     assert blocked["state"] == "blocked" and blocked["findings"] == []
@@ -676,6 +692,7 @@ def test_t098_provider_identities(tmp_path):
     assert '"path": "<scr>"' in retained
 
 
+@pytest.mark.lab_task("T098")
 def test_t098_refuses_an_unpinned_checkout_and_is_location_independent(tmp_path):
     if shutil.which("git") is None:
         pytest.skip("git is not available")
@@ -702,6 +719,7 @@ def test_t098_refuses_an_unpinned_checkout_and_is_location_independent(tmp_path)
     assert runner.compare(tmp_path / "one", tmp_path / "two")["problems"] == []
 
 
+@pytest.mark.lab_task("T098")
 def test_tree_recomputation_matches_git_on_a_synthetic_repository(tmp_path):
     if shutil.which("git") is None:
         pytest.skip("git is not available")
@@ -795,6 +813,7 @@ def test_sp1_requirements_mirror_the_proved_heat_workflow():
         assert value in text, value
 
 
+@pytest.mark.lab_task("T099")
 def test_t099_locked_offline_scr_build(tmp_path):
     scr = os.environ.get("CIW_LAB_SCR_REPO")
     if not scr or shutil.which("cargo") is None:
@@ -816,6 +835,7 @@ def test_t099_locked_offline_scr_build(tmp_path):
     assert "probes here" not in prose
 
 
+@pytest.mark.lab_task("T099")
 def test_t099_names_the_built_checkout_beside_its_label(tmp_path, monkeypatch):
     # The build and the engine run rest on the bound SCR checkout: each declares it, and the labels stay.
     if shutil.which("git") is None:
@@ -844,6 +864,7 @@ def test_t099_names_the_built_checkout_beside_its_label(tmp_path, monkeypatch):
     assert claim(report, "The freshly built engine")["basis"]["provider"]["runtime_digest"] == "sha256:" + digest
 
 
+@pytest.mark.lab_task("T100")
 def test_t100_labels_and_origins_stay_distinct(tmp_path):
     t096 = run("T096", tmp_path)
     t092 = run("T092", tmp_path)
@@ -907,6 +928,7 @@ def test_t100_labels_and_origins_stay_distinct(tmp_path):
         assert task_report["recommended_next_task"] == section.NEXT_STEPS[task_report["task_id"]]
 
 
+@pytest.mark.lab_task("T100")
 def test_t100_classifier_study_separates_an_invented_tree_from_a_copied_pin():
     from ciw.proved_heat import PIN
     study = section._provider_origin_study()
@@ -948,6 +970,7 @@ def _origin_words_only(report):
     return "\n".join(lines[:start] + rows) + "\n"
 
 
+@pytest.mark.lab_task("T100")
 def test_t100_flags_a_rendered_row_that_hides_its_generator_or_provider(tmp_path, monkeypatch):
     (tmp_path / "reports").mkdir()
     (tmp_path / "reports" / "T001.json").write_text(
@@ -982,6 +1005,7 @@ def _upgraded_acquisitions(record):
     return text.replace(UNACCEPTED_ACQUISITION, f"{ACCEPTED_ACQUISITION} ({record['basis']['acquisition']['device']})")
 
 
+@pytest.mark.lab_task("T100")
 def test_t100_flags_an_unaccepted_acquisition_shown_as_hardware_acquisition(tmp_path, monkeypatch):
     from ciw.lab import report as report_module
     authority = finding("The coupon energy draw is within its declared budget", "production_acceptance", None,
@@ -1011,6 +1035,7 @@ def test_t100_flags_an_unaccepted_acquisition_shown_as_hardware_acquisition(tmp_
     assert all(section.UPGRADED_ACQUISITION in violation for violation in violations) and len(violations) == 2
 
 
+@pytest.mark.lab_task("T100")
 def test_basis_audit_compares_the_whole_cell():
     from ciw.lab.evidence import describe_basis
     # A component word inside a declared identity does not stand in for the component.
@@ -1048,6 +1073,7 @@ def _unescaped_markdown(report):
     return "\n".join(lines[:start] + rows) + "\n"
 
 
+@pytest.mark.lab_task("T100")
 def test_t100_flags_a_retained_report_whose_label_leaves_its_column(tmp_path, monkeypatch):
     record = finding("pipe | in a claim", "numerical", 1.0, {"generator": {"name": "probe"}})
     (tmp_path / "reports").mkdir()
@@ -1061,6 +1087,7 @@ def test_t100_flags_a_retained_report_whose_label_leaves_its_column(tmp_path, mo
     assert claim(report, "An unescaped pipe")["evidence_status"] == "numerically_verified"
 
 
+@pytest.mark.lab_task("T100")
 def test_render_markdown_pipe_probe_matches_the_renderer():
     record = finding("claim with a | pipe", "numerical", 1.0, {"generator": {"name": "rendering probe"}})
     validate_finding(record)
@@ -1090,6 +1117,7 @@ def test_render_markdown_pipe_probe_matches_the_renderer():
     assert research_portfolio._counterexample_statements([{"task_id": "T100", "findings": [lost]}], {"T100"}) == []
 
 
+@pytest.mark.lab_task("T092")
 def test_t092_next_step_names_the_manifest_that_pins_each_kind():
     # Telemetry and calibrated-observable bundles come from different stacks pinned in different manifests.
     from ciw.lab.bridge import declared_pins
@@ -1103,6 +1131,7 @@ def test_t092_next_step_names_the_manifest_that_pins_each_kind():
         assert f"`{manifest}`" in open_question, kind
 
 
+@pytest.mark.lab_task("T100")
 def test_next_steps_name_forward_work():
     # No next step of T091-T100 points at a queue task, since every queue task has run by the time it is read.
     everything = {task["id"] for task in registry.load_queue()["tasks"]}

@@ -26,6 +26,7 @@ import shutil
 import subprocess
 import sys
 import tempfile
+import tomllib
 import venv
 
 ROOT = Path(__file__).resolve().parents[1]
@@ -69,6 +70,12 @@ def bindings(providers, python: Path) -> list:
             path = os.path.abspath(path)
         resolved.append((role, path))
     return resolved
+
+
+def pytest_ini() -> str:
+    """The checkout's pytest markers (``lab_task``) as a ``pytest.ini``: the clean room copies no pyproject.toml."""
+    markers = tomllib.loads((ROOT / "pyproject.toml").read_text(encoding="utf-8"))["tool"]["pytest"]["ini_options"]
+    return "[pytest]\nmarkers =\n" + "".join(f"    {marker}\n" for marker in markers["markers"])
 
 
 def clean_room_environment(work: Path, providers=()) -> dict:
@@ -120,6 +127,7 @@ def main() -> int:
             shutil.copy2(path, tests / path.name)
         if (ROOT / "tests" / "fixtures" / "lab").is_dir():
             shutil.copytree(ROOT / "tests" / "fixtures" / "lab", tests / "fixtures" / "lab")
+        (work / "pytest.ini").write_text(pytest_ini(), encoding="utf-8")  # the rootdir's configuration
         # Tasks that read example inputs find these copies, never the checkout.
         shutil.copytree(ROOT / "examples", work / "examples")
         for name in ("docs",):

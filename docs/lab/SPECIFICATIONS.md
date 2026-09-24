@@ -344,9 +344,11 @@ wrong aggregate, never by re-reading what was just written:
   differs refute it; figures not re-executed leave the task `partial`
   (`scripts/check_figures.py` re-executes all of them outside the queue, on
   any platform);
-- for T168, a static tie analysis (a registered test names its task and
-  mentions an evidence label), itself checked on probe cases, and the JUnit
-  outcomes the reports recorded.
+- for T168, a static tie analysis (a registered test, or its parametrized
+  case, declares its task with a `lab_task` marker and mentions an evidence
+  label; markers naming a task that does not register what they mark are
+  counted, and, as advisory, tied tasks whose tied tests never name the task),
+  itself checked on probe cases, and the JUnit outcomes the reports recorded.
 
 Every count finding declares an exact uncertainty and a zero regression
 tolerance. The release digest (T165) covers task states, headline labels,

@@ -146,6 +146,7 @@ def test_every_section_task_is_registered_with_tests():
             assert path == "tests/test_lab_energy_gpu.py" and callable(globals()[name]), node
 
 
+@pytest.mark.lab_task("T115", "T116", "T117", "T118", "T119", "T120", "T121", "T122", "T123", "T124", "T125")
 def test_every_numerical_finding_declares_uncertainty_and_tolerance(lab):
     for task_id in TASK_IDS:
         for record in lab(task_id)["findings"]:
@@ -160,6 +161,7 @@ def test_every_numerical_finding_declares_uncertainty_and_tolerance(lab):
                 assert record.get("regression_tolerance", {}).get("rel", 0.0) < 1.0, (task_id, record["claim"])
 
 
+@pytest.mark.lab_task("T115")
 def test_cpu_energy_task_counts_work_and_leaves_energy_unestablished(lab):
     report = lab("T115")
     assert report["state"] == "partial"
@@ -182,6 +184,7 @@ def test_cpu_energy_task_counts_work_and_leaves_energy_unestablished(lab):
     assert not any("time" in f["claim"].lower() for f in report["findings"])
 
 
+@pytest.mark.lab_task("T115")
 def test_lab_run_acquires_no_energy_measurement(tmp_path, clean_environment):
     """Even where RAPL answers the probe, T115 reads no counter without an operator capture."""
     def refuse(domains):
@@ -223,6 +226,7 @@ def simulated_rapl_capture(tmp_path, monkeypatch, host, rust=False):
     return record, capture
 
 
+@pytest.mark.lab_task("T115")
 @pytest.mark.skipif(sys.platform == "win32", reason="powercap zone directories contain ':'")
 def test_rapl_probe_is_the_only_counter_read(tmp_path, clean_environment):
     """The runner's real hardware:rapl probe on a simulated powercap tree is T115's only counter access.
@@ -263,6 +267,7 @@ def test_rapl_probe_is_the_only_counter_read(tmp_path, clean_environment):
     assert "987654321" not in json.dumps(report)
 
 
+@pytest.mark.lab_task("T115")
 def test_rapl_helpers_read_counters_and_one_wrap(tmp_path):
     # '_' stands in for ':' so the tree can be built on Windows too.
     for zone, name, value in (("intel-rapl_0", "package-0", 1000), ("intel-rapl_0_0", "core", 5)):
@@ -280,6 +285,7 @@ def test_rapl_helpers_read_counters_and_one_wrap(tmp_path):
         telemetry.rapl_delta_uj(10, 5, None)
 
 
+@pytest.mark.lab_task("T115", "T120")
 def test_rapl_capture_is_analyzed_read_only_and_gated(tmp_path, clean_environment):
     """A simulated operator capture: gross and idle-subtracted energy per bracket, retained raw bytes, identity gate."""
     monkeypatch = clean_environment
@@ -373,6 +379,7 @@ def counting_rapl(monkeypatch, host):
     return state
 
 
+@pytest.mark.lab_task("T115", "T117", "T120")
 def test_rapl_brackets_exclude_preparation_and_respect_the_port_limit(tmp_path, monkeypatch):
     """No bracket prepares inputs; batches follow the Rust port's repeats limit; a failing port loses only its bracket."""
     host = {"cpu_model": "Simulated CPU", "machine": "x86_64", "system": "Linux", "zones": ["intel-rapl:0 package-0"]}
@@ -421,6 +428,7 @@ def test_rapl_brackets_exclude_preparation_and_respect_the_port_limit(tmp_path, 
     assert json.loads((tmp_path / "rust.json").read_text(encoding="utf-8"))["brackets"].keys() == record["brackets"].keys()
 
 
+@pytest.mark.lab_task("T116", "T118")
 def test_gpu_tasks_are_blocked_with_the_recording_protocol(lab, tmp_path, clean_environment):
     for task_id in ("T116", "T118"):
         report = lab(task_id)
@@ -458,6 +466,7 @@ def test_gpu_tasks_are_blocked_with_the_recording_protocol(lab, tmp_path, clean_
     assert physical_labels(invalid) == {"not_established"}
 
 
+@pytest.mark.lab_task("T116", "T118")
 @needs_fixtures
 def test_operator_log_gate_withholds_physical_labels_from_synthetic_logs(tmp_path):
     raw = telemetry.fixture_bytes()["baseline"]
@@ -491,6 +500,7 @@ def test_operator_log_gate_withholds_physical_labels_from_synthetic_logs(tmp_pat
     assert kernel["value"] is None and kernel["evidence_status"] == "not_established"
 
 
+@pytest.mark.lab_task("T116")
 @needs_fixtures
 def test_operator_log_gate_trust_boundary_is_the_host_identity(tmp_path, clean_environment):
     """Through the runner: the gate binds a declared physical log to this host's NVML identity, nothing more.
@@ -545,6 +555,7 @@ def smi_csv(start_utc, rows, offset_hours, newline):
     return (newline.join(lines) + newline).encode("utf-8")
 
 
+@pytest.mark.lab_task("T118")
 @needs_fixtures
 def test_t118_sidecar_rows_are_restricted_to_the_measurement_window(tmp_path, clean_environment):
     log = relabelled_log("NVIDIA GeForce RTX 2080")
@@ -581,6 +592,7 @@ def rust_identity(tmp_path):
         pytest.skip(f"Rust kernel unavailable: {exc}")
 
 
+@pytest.mark.lab_task("T117")
 def test_rust_kernel_matches_python_kernel(lab, tmp_path):
     identity = rust_identity(tmp_path)
     report = lab("T117")
@@ -607,6 +619,7 @@ def test_rust_kernel_matches_python_kernel(lab, tmp_path):
         kernels.run_rust_kernel(identity["executable"], [[1.0, 0.0, 1.0, 0.0]], 1.0, 0)
 
 
+@pytest.mark.lab_task("T117")
 def test_cross_language_agreement_is_not_independent(lab, tmp_path, clean_environment):
     # Declaring the Rust kernel an independent checker of the Python kernel is refused: both are ciw code.
     check = {"reference_kind": "high_precision", "reference": "Python RK4 endpoint", "observed": 0.0,
@@ -650,6 +663,7 @@ def test_cross_language_agreement_is_not_independent(lab, tmp_path, clean_enviro
     assert by_claim(report, energy_gpu.AGREE)["unit"] == energy_gpu.ANGLE_UNIT
 
 
+@pytest.mark.lab_task("T119")
 @needs_fixtures
 def test_energy_per_accepted_result_on_fixtures(lab):
     report = lab("T119")
@@ -675,6 +689,7 @@ def test_energy_per_accepted_result_on_fixtures(lab):
     assert energy_gpu.GPU_LAB_RUN in report["recommended_next_task"]
 
 
+@pytest.mark.lab_task("T119")
 @needs_fixtures
 def test_t119_operator_log_is_gated_like_t116(tmp_path, clean_environment):
     """On a (simulated) GPU host T119 measures energy per accepted solve from the operator log, or withholds it."""
@@ -702,6 +717,7 @@ def test_t119_operator_log_is_gated_like_t116(tmp_path, clean_environment):
     assert any("synthetic fixture" in item for item in fixture_log["unresolved_assumptions"])
 
 
+@pytest.mark.lab_task("T119")
 def test_textbook_kl_matches_closed_form_values():
     mean, covariance = energy_gpu._textbook_posterior({"prior_mean": [0.0, 0.0], "prior_covariance": np.eye(2),
                                                        "observation_matrix": np.eye(2), "observations": [2.0, 0.0],
@@ -712,6 +728,7 @@ def test_textbook_kl_matches_closed_form_values():
         pytest.approx(np.log(2) - 0.5)
 
 
+@pytest.mark.lab_task("T120")
 def test_precision_study_float32_floor_and_counterexample(lab):
     report = lab("T120")
     assert report["state"] == "partial"
@@ -756,6 +773,7 @@ def test_operation_count_detects_precision_promotion(monkeypatch):
     assert kernels.counted_operations_per_step(np.float64)["results_outside_dtype"] == 0
 
 
+@pytest.mark.lab_task("T121")
 def test_reduction_orders_bound_and_sign_counterexample(lab):
     report = lab("T121")
     assert report["state"] == "partial"
@@ -810,6 +828,7 @@ def test_reduction_orders_bound_and_sign_counterexample(lab):
     assert abs(float(kernels.sum_kahan(y)) - exact) <= 2 * kernels.unit_roundoff(np.float32) * exact
 
 
+@pytest.mark.lab_task("T122")
 def test_bounded_free_energy_identity_and_counterexamples(lab):
     report = lab("T122")
     assert report["state"] == "completed"
@@ -829,6 +848,7 @@ def test_bounded_free_energy_identity_and_counterexamples(lab):
     assert physical_labels(report) == {"not_established"}
 
 
+@pytest.mark.lab_task("T123")
 def test_typed_quantities_refuse_nats_plus_joules(lab):
     Q = kernels.Quantity
     with pytest.raises(kernels.QuantityRefusal, match="Cannot add information and energy"):
@@ -874,6 +894,7 @@ def test_typed_quantities_refuse_nats_plus_joules(lab):
     assert physical_labels(report) == {"not_established"}
 
 
+@pytest.mark.lab_task("T119", "T123", "T124", "T125")
 def test_fixture_tasks_without_repository_files(tmp_path, clean_environment):
     """Clean room without examples/: T119, T124 and T125 block informatively; T123 is partial, not failed."""
     clean_environment.setenv("CIW_LAB_REPOSITORY_ROOT", str(tmp_path))
@@ -892,6 +913,7 @@ def test_fixture_tasks_without_repository_files(tmp_path, clean_environment):
     assert by_claim(t123, "Typed arithmetic refuses")["evidence_status"] == "numerically_verified"
 
 
+@pytest.mark.lab_task("T124")
 @needs_fixtures
 def test_raw_telemetry_retention_and_tampering(lab):
     report = lab("T124")
@@ -925,6 +947,7 @@ def test_raw_telemetry_retention_and_tampering(lab):
     assert telemetry.is_placeholder("a" * 64) and not telemetry.is_placeholder(hashlib.sha256(b"x").hexdigest())
 
 
+@pytest.mark.lab_task("T125")
 @needs_fixtures
 def test_session_replay_keeps_numerical_result_id(lab):
     report = lab("T125")
@@ -943,6 +966,7 @@ def test_session_replay_keeps_numerical_result_id(lab):
 
 
 # ----------------------------------------------------------------- the common Gaussian VI workload
+@pytest.mark.lab_task("T115", "T117", "T120", "T121")
 def test_common_workload_matches_the_ptx_kernel_and_the_energy_problem(lab, monkeypatch):
     """One workload for CPU energy, languages, precision, reductions and the CPU/GPU harness: the PTX kernel's own."""
     problem = runner.repository_path("examples", "energy-accuracy", "problem.json")
@@ -983,6 +1007,7 @@ def rust_port(tmp_path):
         pytest.skip(f"Rust port unavailable: {exc}")
 
 
+@pytest.mark.lab_task("T117")
 def test_rust_port_of_the_common_workload_is_bitwise(lab, tmp_path):
     identity = rust_port(tmp_path)
     for precision in common.PRECISIONS:
@@ -1019,6 +1044,7 @@ def simulated_gpu(monkeypatch, outputs=None, unavailable=None):
     monkeypatch.setattr(common, "run_gpu", lambda: result)
 
 
+@pytest.mark.lab_task("T117", "T121")
 def test_gpu_comparisons_follow_the_probe(lab, tmp_path, clean_environment):
     """Without a GPU the comparisons name the probe; with one they are computed, and a mismatch refutes them."""
     for task_id, claim in (("T117", energy_gpu.GPU_AGREE), ("T121", energy_gpu.KERNEL_GPU)):
@@ -1068,6 +1094,7 @@ def test_gpu_comparisons_follow_the_probe(lab, tmp_path, clean_environment):
         "the PTX kernel did not run: CudaError: simulated"]
 
 
+@pytest.mark.lab_task("T117", "T121")
 def test_ulp_distance_counts_across_signs():
     """ULP distance is zero exactly for equal bits: a sign flip is far, and +0.0 against -0.0 is one step."""
     for dtype in (np.float64, np.float32):
@@ -1108,6 +1135,7 @@ class RejectingWorker:
         raise ValueError("GPU covariance lost symmetry")
 
 
+@pytest.mark.lab_task("T117", "T121")
 def test_rejected_gpu_outputs_refute_the_comparisons(tmp_path, clean_environment):
     """Outputs the CUDA worker rejects after the kernel ran are a failed check, never an expected gap."""
     clean_environment.setattr(runner, "_probe_hardware", lambda name: name == "nvidia-gpu")
@@ -1124,6 +1152,7 @@ def test_rejected_gpu_outputs_refute_the_comparisons(tmp_path, clean_environment
         assert "GPU comparison refuted" in report["numerical_result"]
 
 
+@pytest.mark.lab_task("T117")
 def test_run_gpu_drives_the_cuda_worker_on_the_common_workload(monkeypatch):
     calls = []
     reference = common.run_numpy(np.float64, replicas=4)
@@ -1174,6 +1203,7 @@ def test_run_gpu_drives_the_cuda_worker_on_the_common_workload(monkeypatch):
     assert "outputs" not in rejected and rejected["invalid"].endswith("ValueError: GPU covariance lost symmetry")
 
 
+@pytest.mark.lab_task("T120")
 def test_common_workload_precision_study(lab):
     report = lab("T120")
     same = by_claim(report, "float32 and float64 runs of the common Gaussian VI workload first meet")
@@ -1190,6 +1220,7 @@ def test_common_workload_precision_study(lab):
     assert {p: counts["value"][p]["iteration_flops"] for p in common.PRECISIONS} == {"float64": 24, "float32": 24}
 
 
+@pytest.mark.lab_task("T121")
 def test_kernel_reductions_under_contraction(lab, tmp_path, clean_environment):
     report = lab("T121")
     fused = by_claim(report, energy_gpu.KERNEL_FMA)
@@ -1222,6 +1253,7 @@ def realistic_log():
     return telemetry.reseal(dict(log, origin="physical_measurement"))
 
 
+@pytest.mark.lab_task("T124")
 @needs_fixtures
 def test_t124_retains_an_operator_log_through_the_gate(lab, tmp_path, clean_environment):
     """T124 completes only when a real-looking operator log is retained and bound through the acquisition gate."""
@@ -1278,6 +1310,7 @@ def with_workload(log, iterations=None, replicas=None, kernel_sha256=None):
     return telemetry.reseal(log)
 
 
+@pytest.mark.lab_task("T116", "T118", "T119", "T124")
 @needs_fixtures
 def test_operator_logs_of_another_workload_are_withheld(tmp_path, clean_environment):
     """T116, T118, T119 and T124 label a log hardware_measured only when it names the common workload."""
@@ -1308,6 +1341,7 @@ def test_operator_logs_of_another_workload_are_withheld(tmp_path, clean_environm
     assert by_claim(run("T116", context), energy_gpu.GPU_ENERGY)["evidence_status"] == "hardware_measured"
 
 
+@pytest.mark.lab_task("T115", "T117", "T119", "T120", "T121", "T124")
 def test_workload_tasks_digest_the_workload_sources(lab):
     """Tasks whose results depend on the common workload digest the modules that define it and record it."""
     for task_id in ("T115", "T117", "T119", "T120", "T121", "T124"):
@@ -1318,6 +1352,7 @@ def test_workload_tasks_digest_the_workload_sources(lab):
     assert common.SOURCES == ("src/ciw/energy_cuda.py", "src/ciw/energy_bench.py", "src/ciw/free_energy_math.py")
 
 
+@pytest.mark.lab_task("T115", "T116", "T117", "T118", "T119", "T120", "T121", "T122", "T123", "T124", "T125")
 def test_next_steps_name_work_that_delivers(lab):
     """No next step points at a queue task; hardware steps name capture roles and the retention command."""
     for task_id in TASK_IDS:
@@ -1332,6 +1367,7 @@ def test_next_steps_name_work_that_delivers(lab):
         assert lab(task_id)["recommended_next_task"].startswith("Deferred research question:")
 
 
+@pytest.mark.lab_task("T117")
 def test_native_build_failures_name_no_host_path(tmp_path, monkeypatch):
     """A failed rustc or kernel launch is reported by exception type: a retained report must hold no host path."""
     secret = str(tmp_path / "operator" / "secret")
@@ -1349,6 +1385,7 @@ def test_native_build_failures_name_no_host_path(tmp_path, monkeypatch):
         assert secret not in str(refused.value) and str(refused.value).endswith("OSError")
 
 
+@pytest.mark.lab_task("T117")
 def test_rust_energy_is_read_from_the_captures_rust_bracket(tmp_path, clean_environment):
     """The Rust bracket binds to the port T117 builds (same rustc, same binary digest); then T117 reports it."""
     monkeypatch = clean_environment

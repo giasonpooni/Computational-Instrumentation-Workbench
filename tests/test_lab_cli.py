@@ -155,7 +155,7 @@ def test_clean_room_builds_with_build_isolation_under_a_relative_temporary_root(
 def test_gate_record_names_the_bindings_the_queue_received(tmp_path, monkeypatch):
     from types import SimpleNamespace
     reproduce = _script("reproduce_lab")
-    commands = []
+    commands, configurations = [], []
 
     def run(command, **kwargs):
         command = [str(part) for part in command]
@@ -164,6 +164,8 @@ def test_gate_record_names_the_bindings_the_queue_received(tmp_path, monkeypatch
             dist = Path(command[command.index("--wheel-dir") + 1])
             dist.mkdir(parents=True)
             (dist / "ciw-0-py3-none-any.whl").write_bytes(b"wheel")
+        if "pytest" in command:
+            configurations.append((Path(command[command.index("--rootdir") + 1]) / "pytest.ini").read_text())
 
     monkeypatch.chdir(tmp_path)
     monkeypatch.setattr(reproduce, "run", run)
@@ -181,6 +183,8 @@ def test_gate_record_names_the_bindings_the_queue_received(tmp_path, monkeypatch
     record = json.loads((tmp_path / "out" / "gate.json").read_text(encoding="utf-8"))
     # The record shows what the queue and the tests were bound to, and the clean-room Python.
     assert record["providers"] == passed and record["python"] == sys.version.split()[0]
+    # The copied tests run under the checkout's markers (lab_task), although pyproject.toml is not copied.
+    assert len(configurations) == 1 and "\n    lab_task(*task_ids): " in configurations[0]
 
 
 def test_clean_room_tests_see_the_bound_providers(tmp_path, monkeypatch):
